@@ -24,13 +24,6 @@ A self-hosted alternative to GoLogin, Multilogin and AdsPower.
 
 ---
 
-> **Numera began as a fork** of [TechQaiser/persona-studio](https://github.com/TechQaiser/persona-studio)
-> and is now an independent project under GPL-3.0. It adds the pieces a
-> headless/server deployment needs: extensions that load without a display, a
-> global extension set for new profiles, headless launching from the dashboard,
-> and optional API authentication. See [What Numera adds](#what-numera-adds).
-> The upstream MIT notice is preserved at the end of [LICENSE](LICENSE).
-
 ## Why Numera?
 
 Most fingerprint tools randomise each value on its own — and that's exactly what
@@ -105,8 +98,7 @@ Numera/
 
 ## What Numera adds
 
-The gaps that showed up running an anti-detect manager unattended on a server.
-These began as fixes on top of persona-studio and are now part of Numera:
+The gaps that show up running an anti-detect manager unattended on a server:
 
 | | |
 |---|---|
