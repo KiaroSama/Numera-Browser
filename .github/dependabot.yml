@@ -1,0 +1,38 @@
+version: 2
+
+updates:
+  # The Python engine. Its runtime deps live in optional extras, so the
+  # manifest is engine/pyproject.toml rather than a requirements file.
+  - package-ecosystem: pip
+    directory: /engine
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    labels: [dependencies, engine]
+    groups:
+      # Test-only churn is noise on its own; one PR is enough.
+      dev-tooling:
+        patterns: ["pytest*", "httpx"]
+    ignore:
+      # Playwright's Python package is pinned to a browser build, so a major
+      # bump means re-downloading browsers and re-checking the stealth surface.
+      - dependency-name: playwright
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: npm
+    directory: /dashboard
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    labels: [dependencies, dashboard]
+    groups:
+      # Vite and its React plugin move together; splitting them creates PRs
+      # that cannot pass on their own.
+      build-tooling:
+        patterns: ["vite", "@vitejs/*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, ci]
