@@ -357,9 +357,3 @@ responsible for how you use it.
 
 [GPL-3.0-or-later](LICENSE). You may use, modify and redistribute it, but any
 distributed derivative must also be GPL-3 and ship its source.
-
-Numera derives from [persona-studio](https://github.com/TechQaiser/persona-studio)
-(MIT, Copyright (c) 2025 Ahsan). That notice is reproduced verbatim under
-**Third-party notices** at the end of [LICENSE](LICENSE), as MIT requires, and
-covers the portions that originated there. The same section lists the licence of
-each browser engine that may be bundled in a build.
