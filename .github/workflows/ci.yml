@@ -72,7 +72,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           # vite 8 needs ^20.19 || >=22.12. Pinning "20" resolves to the latest
           # 20.x, which satisfies that only by a hair - 22 keeps real headroom.
