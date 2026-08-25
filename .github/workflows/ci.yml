@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Read-only by default; nothing here writes to the repo.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine:
+    name: Engine tests (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # Oldest and newest supported, plus the current default.
+        python-version: ["3.9", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: engine/pyproject.toml
+      - name: Install engine
+        working-directory: engine
+        run: pip install -e ".[api,dev]"
+      - name: Compile check
+        working-directory: engine
+        run: python -m compileall -q numera
+      - name: Unit tests
+        working-directory: engine
+        run: python -m pytest -q --durations=10
+
+  browser:
+    name: Live browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: engine/pyproject.toml
+      - name: Install engine with the launcher
+        working-directory: engine
+        run: pip install -e ".[api,launch,dev]"
+      - name: Install Chromium
+        working-directory: engine
+        run: python -m playwright install --with-deps chromium
+      # Proves the flags actually take effect in the browser - the unit tests
+      # can pass while Chromium quietly ignores what we asked for. Globbed so a
+      # new *_live.py cannot silently go unrun: the jobs above install no
+      # browser, so these skip everywhere except here.
+      - name: Browser-backed tests
+        working-directory: engine
+        run: python -m pytest -q tests/test_*_live.py --durations=10
+
+  dashboard:
+    name: Dashboard build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # vite 8 needs ^20.19 || >=22.12. Pinning "20" resolves to the latest
+          # 20.x, which satisfies that only by a hair - 22 keeps real headroom.
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - name: Install (from the lockfile)
+        working-directory: dashboard
+        run: npm ci
+      - name: Build
+        working-directory: dashboard
+        run: npm run build
