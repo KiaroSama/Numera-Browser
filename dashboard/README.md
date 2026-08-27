@@ -2,7 +2,7 @@
 
 The web front-end for [Numera](../README.md) — an operations console for
 managing browser profiles, styled after commercial anti-detect browsers but
-open-source and self-hosted.
+self-hosted.
 
 > This is the UI. For the engine that actually generates fingerprints and
 > launches browsers, see [`../engine`](../engine).

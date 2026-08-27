@@ -812,7 +812,7 @@ def _print_summary(prof: Profile, full: bool = False) -> None:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="numera",
-        description="Open-source browser fingerprint & profile manager.",
+        description="Browser fingerprint & profile manager.",
     )
     p.add_argument("--version", action="version", version=f"numera {__version__}")
     p.add_argument("--data-dir", default=None,

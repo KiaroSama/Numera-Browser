@@ -2,7 +2,7 @@
 
 # Numera
 
-### Open-source, self-hosted anti-detect browser & profile manager
+### Self-hosted anti-detect browser & profile manager
 
 Create browser profiles that each look like a real, separate device — a
 *coherent* fingerprint, its own proxy, and a persistent session — then manage
@@ -12,7 +12,7 @@ A self-hosted alternative to GoLogin, Multilogin and AdsPower.
 
 ![python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![react](https://img.shields.io/badge/react-18-61DAFB)
-![license](https://img.shields.io/badge/license-GPL--3.0-green)
+![license](https://img.shields.io/badge/license-proprietary-lightgrey)
 ![tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![status](https://img.shields.io/badge/status-beta-orange)
 
@@ -45,8 +45,7 @@ what makes Numera distinctive.
 |  | **Numera** | Multilogin | GoLogin | AdsPower |
 |---|:---:|:---:|:---:|:---:|
 | **Price** | **Free** | from ~$99/mo | from ~$49/mo | free tier + paid |
-| **Open source** | ✅ GPL-3 | ❌ | ❌ | ❌ |
-| **Self-hosted — data never leaves your machine** | ✅ | ❌ cloud | ❌ cloud | ❌ cloud |
+| **Self-hosted** — data never leaves your machine | ✅ | ❌ cloud | ❌ cloud | ❌ cloud |
 | **Live coherence meter** (proves the fingerprint agrees with itself) | ✅ | ❌ | ❌ | ❌ |
 | **Trust checker** — grades the *real* browser, not the config | ✅ | ❌ | ❌ | ❌ |
 | **Patched-binary stealth engine** | ✅ Camoufox / Cloak\* | ✅ | ⚠️ | ✅ |
@@ -370,5 +369,5 @@ If this project helps you, donations are appreciated.
 
 ## License
 
-[GPL-3.0-or-later](LICENSE). You may use, modify and redistribute it, but any
-distributed derivative must also be GPL-3 and ship its source.
+Proprietary. **All rights reserved.** See [LICENSE](LICENSE). This repository is not open
+source: no permission is granted to use, copy, modify or distribute it.

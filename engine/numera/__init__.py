@@ -1,5 +1,5 @@
 """
-Numera -- open-source browser fingerprint & profile manager.
+Numera -- browser fingerprint & profile manager.
 
 A lightweight, self-hosted alternative to commercial anti-detect browsers for
 multi-account management, QA testing and privacy research. Create named browser
