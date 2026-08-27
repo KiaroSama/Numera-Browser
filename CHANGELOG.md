@@ -6,8 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed - BREAKING
 
-- **The project is now `Numera`, licensed GPL-3.0-or-later.** It was
-  `persona-studio` under MIT. Every user-facing name moved with it:
+- **The project is now `Numera`.** It was `persona-studio` under MIT. Every user-facing name
+  moved with it:
 
   | | Was | Is |
   |---|---|---|
@@ -26,11 +26,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   so an existing install keeps reading its profiles, proxies and config in place.
   A real move to a portable application-local root is planned separately.
 
-- **Licence: MIT -> GPL-3.0-or-later.** Redistribution is still allowed, but a
-  distributed derivative must also be GPL-3 and ship its corresponding source.
-  The upstream MIT notice is preserved verbatim under **Third-party notices** at
-  the end of `LICENSE` and covers the portions that originated in persona-studio.
-  That section also records the licence of each browser engine that may be bundled.
+- **Licence: MIT -> proprietary, all rights reserved.** No redistribution, modification or
+  reuse is permitted without written permission - this repository is closed source. The upstream
+  MIT notice from persona-studio is still preserved verbatim under **Third-party notices** at the
+  end of `LICENSE`, since MIT requires that regardless of the licence wrapped around it; that
+  section also records the licence of each browser engine that may be bundled.
 
 ### Removed
 
@@ -38,6 +38,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Documentation
 
+- Every "open source" / GPL claim was swept from the README, badges, comparison table, the
+  dashboard footer, the CLI description, `engine/numera/__init__.py`, `docs/social-preview.html`
+  and `dashboard/README.md`.
 - The `cloak` engine is documented honestly: it is still
   `ProfileStore.DEFAULT_ENGINE`, but **CloakBrowser requires a paid subscription
   and its licence forbids redistribution**, so it cannot be bundled. Camoufox is
