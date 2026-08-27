@@ -23,4 +23,4 @@ never touches disk. The rest of each profile stays readable. There is no passwor
 recovery — losing it means losing the encrypted secrets.
 
 Not yet covered: the dashboard's own profile store, cookies (Chromium keeps those
-in its own OS-encrypted store), and full-profile encryption. Contributions welcome.
+in its own OS-encrypted store), and full-profile encryption.
