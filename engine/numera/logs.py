@@ -64,14 +64,27 @@ class RedactingFilter(logging.Filter):
     On the handler rather than on a logger, so a library logging under its own
     name cannot bypass it."""
 
+    @staticmethod
+    def _scrub(value):
+        """Redact strings; leave everything else at its original type.
+
+        Stringifying every argument looked harmless and was not: it turned an
+        int into "3", so a "%d" format then raised TypeError and logging
+        dropped the record entirely. A redaction filter that silently deletes
+        log lines is worse than the leak it prevents, and only numeric formats
+        were affected, so it would have gone unnoticed. Non-strings cannot
+        carry a credential anyway - only their repr could, and that is what
+        record.msg covers."""
+        return redact(value) if isinstance(value, str) else value
+
     def filter(self, record: logging.LogRecord) -> bool:
         try:
             record.msg = redact(str(record.msg))
             if record.args:
                 if isinstance(record.args, dict):
-                    record.args = {k: redact(str(v)) for k, v in record.args.items()}
+                    record.args = {k: self._scrub(v) for k, v in record.args.items()}
                 else:
-                    record.args = tuple(redact(str(a)) for a in record.args)
+                    record.args = tuple(self._scrub(a) for a in record.args)
         except Exception:       # a broken record must never silence the log
             pass
         return True

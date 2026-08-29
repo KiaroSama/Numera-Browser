@@ -8,9 +8,16 @@
  *             (great for exploring the project without a backend).
  *
  *  Override the API location with a VITE_API_URL env var if needed.
+ *
+ *  The default is EMPTY, i.e. same-origin, and that matters. The engine now
+ *  serves this bundle itself, and the desktop shell picks a free port at
+ *  runtime - so a hardcoded "http://localhost:8787" is a compile-time constant
+ *  that is wrong on every run but the first. Worse, it failed quietly: the app
+ *  rendered, could not reach its own API, and fell back to demo mode showing
+ *  fabricated profiles. Same-origin has no port to get wrong.
  * ------------------------------------------------------------------ */
 
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:8787";
+const BASE = import.meta.env.VITE_API_URL || "";
 
 async function req(method, path, body) {
   const res = await fetch(BASE + path, {
