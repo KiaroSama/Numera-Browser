@@ -40,6 +40,43 @@ const LIGHT = {
 // re-renders from the root (see App), so every inline style and icon colour
 // follows along without the theme being threaded through each component.
 const T = { ...DARK };
+
+/* ---- CSS custom properties ---------------------------------------
+ * The `T` object above can only reach inline styles, and an inline style
+ * cannot express :hover, :focus-visible or a media query — which is the real
+ * reason parts of this UI felt unfinished rather than any colour being wrong.
+ * So the same tokens are also emitted as custom properties: dark on bare
+ * :root, light as a [data-theme="light"] override, exactly as the target
+ * design does. New CSS should reach for var(--…) and never interpolate T.
+ *
+ * The four-step background and text ramps come from the target design and are
+ * the structural upgrade over the flatter set above: enough steps to separate
+ * page, panel, card and raised surfaces without inventing one-off colours. */
+const RAMPS = {
+  dark: {
+    "bg-0": "#0a0c11", "bg-1": "#11141c", "bg-2": "#181c26", "bg-3": "#1f242f",
+    "bg-hover": "#1d2230",
+    "bd-1": "#232734", "bd-2": "#2d3242", "bd-3": "#3b4256",
+    "tx-1": "#ecedf3", "tx-2": "#a6acbc", "tx-3": "#767c8e", "tx-4": "#4f5566",
+  },
+  light: {
+    "bg-0": "#eef0f4", "bg-1": "#ffffff", "bg-2": "#f6f7fa", "bg-3": "#e9ebf1",
+    "bg-hover": "#eceef4",
+    "bd-1": "#e3e6ec", "bd-2": "#d3d7e0", "bd-3": "#c3c8d4",
+    "tx-1": "#171826", "tx-2": "#5c5f79", "tx-3": "#7d8096", "tx-4": "#9a9db8",
+  },
+};
+
+const varBlock = (mode) => {
+  const flat = mode === "light" ? LIGHT : DARK;
+  const pairs = [
+    ...Object.entries(RAMPS[mode]).map(([k, v]) => `  --${k}: ${v};`),
+    // The existing flat names stay available so the two systems agree while
+    // the remaining inline styles are migrated across.
+    ...Object.entries(flat).map(([k, v]) => `  --${k}: ${v};`),
+  ];
+  return pairs.join("\n");
+};
 const FONT = {
   display: '"Space Grotesk", ui-sans-serif, system-ui, sans-serif',
   body: '"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
@@ -2256,7 +2293,57 @@ const Pick = ({ label, opts, val, on }) => (
 // A function (not a const string) so it re-reads the live palette T on every
 // render — that's what makes the light/dark toggle repaint the whole stylesheet.
 const makeCss = () => `
+:root {
+  color-scheme: dark;
+${varBlock("dark")}
+  --radius-sm: 6px; --radius: 8px; --radius-lg: 12px;
+  --focus-ring: ${T.lilac};
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+${varBlock("light")}
+  --focus-ring: ${LIGHT.violetDeep};
+}
+
 * { box-sizing: border-box; }
+
+/* Keyboard focus.
+   There was no *authored* focus style for buttons or links before - only
+   .ps-in:focus and .ps-search:focus-within for text fields, plus one
+   outline:none. Everything else fell through to Chromium's default ring,
+   which is drawn in currentColor, differs between browsers, and vanishes
+   wherever an outline is reset. So the ring is defined here instead, in the
+   theme's own token.
+
+   Not written with :where(): its zero specificity loses to the UA ring for
+   outline-width and outline-color (verified in the browser - only
+   outline-style took effect), which is exactly the trap that makes a focus
+   fix look applied while rendering the browser default. Plain selectors.
+   NOTE: no backticks anywhere in this block - it lives inside a JS template
+   literal, and one backtick ends the whole stylesheet string. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+  /* A focused control inside a scroll area must not be clipped out of sight. */
+  scroll-margin: 12px;
+}
+
+/* Honour the OS setting rather than deciding for the user. Transitions become
+   instant instead of being dropped, so state changes are still legible. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: ${T.line}; border-radius: 6px; }
 ::-webkit-scrollbar-thumb:hover { background: #33334f; }
