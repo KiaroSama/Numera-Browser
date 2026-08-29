@@ -1,0 +1,123 @@
+# Linux artifacts. Two very different things, which is why they are separate jobs.
+#
+# The server wheel is platform-independent, so building it here is a convenience
+# rather than a necessity. The desktop app is not: a Tauri binary links against
+# the host's WebKitGTK and cannot be cross-compiled from Windows, so this runner
+# is the only way the project produces a Linux desktop build at all.
+name: Build (Linux)
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  server:
+    name: Server wheel (any OS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Build the dashboard
+        working-directory: dashboard
+        run: npm ci && npm run build
+
+      # The engine serves numera/web, so the built dashboard has to be inside
+      # the package before the wheel is made. Mirrors scripts/build-server.ps1.
+      - name: Stage the dashboard into the package
+        run: cp -r dashboard/dist engine/numera/web
+
+      - name: Build wheel and sdist
+        working-directory: engine
+        run: python -m pip install --quiet build && python -m build
+
+      # A wheel tagged for one platform would install nowhere else, and the tag
+      # is the only evidence either way.
+      - name: Assert the wheel is platform-independent
+        run: ls engine/dist/*py3-none-any.whl
+
+      # Installing and starting it is the only proof the artifact actually works;
+      # a wheel that builds and cannot serve is the failure worth catching.
+      - name: Install it and check it serves
+        run: |
+          python -m venv /tmp/v
+          /tmp/v/bin/pip install --quiet "$(ls engine/dist/*.whl)[api]"
+          /tmp/v/bin/numera serve --port 8788 &
+          for i in $(seq 1 40); do
+            curl -sf http://127.0.0.1:8788/api/health && break || sleep 0.5
+          done
+          curl -sf http://127.0.0.1:8788/api/health
+          curl -sf http://127.0.0.1:8788/ | grep -q Numera
+          echo "server artifact serves both the API and the dashboard"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: numera-server-wheel
+          path: engine/dist/*
+
+  desktop:
+    name: Desktop app (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+
+      # Tauri's Linux backend is WebKitGTK; without these the Rust build fails
+      # at link time with missing pkg-config packages rather than anything that
+      # names Tauri.
+      - name: System dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
+                                  librsvg2-dev patchelf libssl-dev
+
+      - name: Build the dashboard
+        working-directory: dashboard
+        run: npm ci && npm run build
+
+      - name: Freeze the engine
+        run: |
+          python -m pip install --quiet pyinstaller ".[api,launch]" --prefix /tmp/eng || true
+          python -m pip install --quiet pyinstaller
+          python -m pip install --quiet ./engine[api,launch]
+          cp -r dashboard/dist engine/numera/web
+          pyinstaller --noconfirm --name numera-engine --distpath desktop/dist/.build \
+                      --collect-all uvicorn --collect-submodules numera \
+                      engine/numera/__main__.py
+
+      - name: Build the shell
+        working-directory: desktop/src-tauri
+        run: cargo build --release
+
+      - name: Assemble the portable folder
+        run: |
+          mkdir -p out/Numera
+          cp desktop/src-tauri/target/release/numera-desktop out/Numera/numera
+          cp -r desktop/dist/.build/numera-engine out/Numera/engine
+          du -sh out/Numera
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: numera-desktop-linux
+          path: out/Numera

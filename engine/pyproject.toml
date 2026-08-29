@@ -40,5 +40,12 @@ numera = "numera.cli:main"
 [tool.setuptools.packages.find]
 include = ["numera*"]
 
+# The built dashboard ships inside the package, because `numera serve` serves it
+# from `numera/web`. Without this, setuptools packages only the .py files and the
+# server wheel installs with no interface at all - which looks like a working
+# install right up until someone opens the port.
+[tool.setuptools.package-data]
+numera = ["web/**/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
