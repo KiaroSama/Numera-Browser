@@ -4,6 +4,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Canvas, Audio, Fonts, Geolocation and Do-Not-Track pickers did nothing** (B14). All five
+  were rendered by the dashboard and never read by `to_engine_profile()`, so choosing "Real" or
+  "Off" changed no browser behaviour at all - the same class as the WebRTC bug fixed in 0.3.0.
+  Each is now a real `Fingerprint` field, carried in *both* directions, and enforced where it
+  actually matters: canvas honours noise/block/real, audio and font masking can be switched off,
+  geolocation distinguishes prompt from allow from block, and DNT reaches both the request header
+  and `navigator.doNotTrack`. Proven in a live browser by `tests/test_dead_controls_live.py` -
+  reading the mode back out of a dict is not evidence.
+- **A fresh install defaulted to an engine it did not have** (B8). `cloak` was hardcoded as the
+  default while the installer ships only Playwright, so the first launch click always failed. A
+  new install now resolves to an engine that is actually present; an explicit user choice is still
+  honoured as-is rather than silently substituted.
+- **The engine default could be overwritten by a client's guess** (B7, engine side). Only an
+  engine the caller genuinely chose is remembered now - one filled in from the current default is
+  not a choice.
+- **The API stored profile shapes the dashboard could not render** (B10). `POST`/`PUT` now reject
+  a bad shape instead of persisting it and taking the UI down on the next load.
+- **Proxy import collapsed same-country entries** (B13). A label like `IT 1` was reduced to `IT`,
+  making four Italian proxies indistinguishable. The country code still aligns the fingerprint; the
+  rest is kept as the label.
+
 ### Changed - BREAKING
 
 - **The project is now `Numera`.** It was `persona-studio` under MIT. Every user-facing name
