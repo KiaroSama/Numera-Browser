@@ -22,7 +22,7 @@
     only drives an already-running browser over CDP (`numera attach`) needs none.
 
 .PARAMETER OutDir
-    Where to put the artifacts. Default: <repo>/dist-server, which is ignored.
+    Where to put the artifacts. Default: <repo>/build/server, which is ignored.
 
 .EXAMPLE
     pwsh -File scripts/build-server.ps1
@@ -34,7 +34,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-if (-not $OutDir) { $OutDir = Join-Path $repo 'dist-server' }
+if (-not $OutDir) { $OutDir = Join-Path $repo 'build\server' }
 
 $python = Join-Path $repo '.venv\Scripts\python.exe'
 if (-not (Test-Path $python)) { $python = 'python' }

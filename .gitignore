@@ -45,4 +45,7 @@ node_modules/
 # The portable data root: profiles, browser sessions, the proxy pool and logs.
 # Created beside the app by design - never tracked.
 /data/
-/dist-server/
+
+# Build outputs. Source and builds are kept apart on purpose: everything under
+# build/ is produced by scripts/, never edited, and published through Releases.
+/build/

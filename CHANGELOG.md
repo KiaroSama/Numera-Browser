@@ -58,6 +58,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **`build/`, one directory per platform.** Source and artifacts are kept apart: everything under
+  `build/` is produced by `scripts/`, never edited by hand, git-ignored, and published through
+  GitHub Releases rather than carried in the repository. `build/windows/Numera/numera.exe` is the
+  app; `build/server/` holds the wheel.
+- **Linux and macOS desktop builds in CI.** `.github/workflows/build-desktop.yml` builds both, plus
+  the server wheel, and attaches every platform to the Release for a `v*` tag. They cannot be built
+  on Windows: a Tauri binary links against the host's web view.
+
 - **A server / CLI build.** `scripts/build-server.ps1` produces a **platform-independent** wheel
   (`py3-none-any`), so the same file installs on Linux, macOS or Windows. No desktop shell, no
   bundled browser. Verified by installing it into a clean venv and confirming it serves both the
@@ -113,6 +121,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   browser session. HTTP `CONNECT` and SOCKS5 upstreams are both supported.
 
 ### Fixed
+
+- **The CLI and the dashboard kept separate profile stores** (B17). A profile created headlessly
+  was invisible in the GUI, and one created in the GUI was invisible to `numera list` until a
+  launch happened to materialise it. `DashboardStore` now mirrors every write into the engine
+  store, and the profile list adopts anything the CLI created. Mirroring lives in the store rather
+  than in each of the five API write paths, so the next one added cannot miss it.
 
 - **`device_scale_factor` ignored the profile and `has_touch` was never set.** The launcher
   hardcoded a 2-or-1 scale factor, so CSS resolution queries disagreed with

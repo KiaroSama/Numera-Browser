@@ -64,11 +64,25 @@ OS_TO_DASH = {v: k for k, v in OS_TO_ENGINE.items()}
 
 
 class DashboardStore:
-    """Persists dashboard-shaped profile dicts, one JSON file per profile."""
+    """Persists dashboard-shaped profile dicts, one JSON file per profile.
 
-    def __init__(self, root: Path):
+    **Every write mirrors into the engine store.** The two shapes are different -
+    the dashboard's is richer (folders, per-signal modes, media counts) and the
+    engine's is what a launch actually needs - but they must describe the same
+    set of profiles. Before this, they did not: the engine copy was only written
+    when a profile was launched, so a profile created in the GUI was invisible to
+    `numera list` until someone pressed play, and one created by the CLI never
+    appeared in the GUI at all (bug B17).
+
+    Mirroring lives here rather than in each API route because there are five
+    separate write paths (create, update, bulk, import, bulk-create). Fixing it
+    per-route would leave the next one to be written broken again.
+    """
+
+    def __init__(self, root: Path, engine_store=None):
         self.dir = root / "dashboard"
         self.dir.mkdir(parents=True, exist_ok=True)
+        self._engine = engine_store
 
     def _path(self, pid: str) -> Path:
         return self.dir / f"{pid}.json"
@@ -91,13 +105,32 @@ class DashboardStore:
             prof["id"] = uuid.uuid4().hex[:12]
         prof.setdefault("_created", time.time())
         self._path(prof["id"]).write_text(json.dumps(prof, indent=2), encoding="utf-8")
+        self._mirror(prof)
         return prof
+
+    def _mirror(self, prof: dict) -> None:
+        """Write the engine-shaped twin. Never fatal: a profile the dashboard
+        can hold but the engine cannot convert must still save, or the UI would
+        start refusing edits for a reason the user cannot see."""
+        if self._engine is None:
+            return
+        try:
+            self._engine.save(to_engine_profile(prof))
+        except Exception:       # pragma: no cover - conversion is best-effort
+            pass
 
     def delete(self, pid: str) -> bool:
         f = self._path(pid)
         if not f.exists():
             return False
         f.unlink()
+        if self._engine is not None:
+            # Leaving the twin behind would resurrect the profile in `numera
+            # list` after the GUI said it was gone.
+            try:
+                self._engine.delete(pid)
+            except Exception:   # pragma: no cover
+                pass
         return True
 
     # Dashboard-only settings (folder list, etc.) live in a sibling file rather
@@ -428,7 +461,7 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
     from .scheduler import ScheduleStore, due_schedules, next_run_at
 
     engine_store = ProfileStore(data_dir)
-    dash = DashboardStore(engine_store.root)
+    dash = DashboardStore(engine_store.root, engine_store)
     pool = ProxyPool(engine_store.root)
     sched = ScheduleStore(engine_store.root)
     running: dict[str, subprocess.Popen] = {}
@@ -611,6 +644,16 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
 
     @app.get("/api/profiles")
     def list_profiles():
+        # Adopt anything the CLI created that the dashboard has never seen.
+        # `to_dashboard_profile` is the existing reverse mapping; without this
+        # the two stores only converge in one direction and a headless-created
+        # profile stays invisible in the GUI forever (B17).
+        known = {p["id"] for p in dash.list()}
+        for prof in engine_store.list():
+            if prof.id not in known:
+                d = to_dashboard_profile(prof)
+                d["id"] = prof.id
+                dash.save(d)
         return [decorate(p) for p in dash.list()]
 
     def _apply_default_extensions(profile: dict) -> dict:

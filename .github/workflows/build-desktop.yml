@@ -1,10 +1,13 @@
-# Linux artifacts. Two very different things, which is why they are separate jobs.
+# The builds that cannot happen on the maintainer's Windows machine.
 #
-# The server wheel is platform-independent, so building it here is a convenience
-# rather than a necessity. The desktop app is not: a Tauri binary links against
-# the host's WebKitGTK and cannot be cross-compiled from Windows, so this runner
-# is the only way the project produces a Linux desktop build at all.
-name: Build (Linux)
+# A Tauri binary links against the host's web view - WebKitGTK on Linux, WKWebView
+# on macOS - so it cannot be cross-compiled. These runners are the only way the
+# project produces a Linux or macOS desktop build at all.
+#
+# The server wheel is the opposite: pure Python, tagged py3-none-any, so one build
+# runs everywhere. It is here for convenience and because installing it on Linux
+# is the only real proof it works there.
+name: Build (desktop + server)
 
 on:
   workflow_dispatch:
@@ -41,19 +44,19 @@ jobs:
 
       - name: Build wheel and sdist
         working-directory: engine
-        run: python -m pip install --quiet build && python -m build
+        run: python -m pip install --quiet build && python -m build --outdir ../build/server
 
       # A wheel tagged for one platform would install nowhere else, and the tag
       # is the only evidence either way.
       - name: Assert the wheel is platform-independent
-        run: ls engine/dist/*py3-none-any.whl
+        run: ls build/server/*py3-none-any.whl
 
       # Installing and starting it is the only proof the artifact actually works;
       # a wheel that builds and cannot serve is the failure worth catching.
       - name: Install it and check it serves
         run: |
           python -m venv /tmp/v
-          /tmp/v/bin/pip install --quiet "$(ls engine/dist/*.whl)[api]"
+          /tmp/v/bin/pip install --quiet "$(ls build/server/*.whl)[api]"
           /tmp/v/bin/numera serve --port 8788 &
           for i in $(seq 1 40); do
             curl -sf http://127.0.0.1:8788/api/health && break || sleep 0.5
@@ -65,12 +68,16 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: numera-server-wheel
-          path: engine/dist/*
+          path: build/server/*
 
   desktop:
-    name: Desktop app (Linux)
-    runs-on: ubuntu-latest
+    name: Desktop app (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -86,7 +93,8 @@ jobs:
       # Tauri's Linux backend is WebKitGTK; without these the Rust build fails
       # at link time with missing pkg-config packages rather than anything that
       # names Tauri.
-      - name: System dependencies
+      - name: System dependencies (Linux only)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
@@ -112,12 +120,41 @@ jobs:
 
       - name: Assemble the portable folder
         run: |
-          mkdir -p out/Numera
-          cp desktop/src-tauri/target/release/numera-desktop out/Numera/numera
-          cp -r desktop/dist/.build/numera-engine out/Numera/engine
-          du -sh out/Numera
+          plat=$([ "$RUNNER_OS" = "macOS" ] && echo macos || echo linux)
+          echo "PLAT=$plat" >> "$GITHUB_ENV"
+          mkdir -p "build/$plat/Numera"
+          cp desktop/src-tauri/target/release/numera-desktop "build/$plat/Numera/numera"
+          cp -r desktop/dist/.build/numera-engine "build/$plat/Numera/engine"
+          du -sh "build/$plat/Numera"
+
+      # Proof the binary is for the runner it was built on. A silently
+      # mis-targeted artifact would upload happily and fail on a user's machine.
+      - name: Check the binary matches the platform
+        run: file "build/$PLAT/Numera/numera"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: numera-desktop-linux
-          path: out/Numera
+          name: numera-desktop-${{ runner.os }}
+          path: build/${{ env.PLAT }}/Numera
+
+  # Attach everything to the tag that triggered the run. This is how a build
+  # reaches a user: the repository never carries one.
+  release:
+    name: Publish to the release
+    needs: [server, desktop]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: artifacts }
+      - name: Zip each platform folder
+        run: |
+          cd artifacts
+          for d in */; do zip -rq "../${d%/}.zip" "$d"; done
+          ls -la ../*.zip
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: "*.zip"
+          fail_on_unmatched_files: true

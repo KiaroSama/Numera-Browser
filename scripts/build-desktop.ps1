@@ -17,8 +17,9 @@
               numera/web/          the built dashboard, served by the engine
 
 .PARAMETER OutDir
-    Where to assemble. Default: <repo>/desktop/dist, which the repository
-    already ignores.
+    Where to assemble. Default: <repo>/build/windows, so the finished app sits at
+    build/windows/Numera/numera.exe. Everything under build/ is ignored by git and
+    is what gets attached to a GitHub Release.
 
 .PARAMETER SkipFreeze
     Reuse the engine already frozen in the build cache. Saves a couple of
@@ -37,8 +38,11 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-if (-not $OutDir) { $OutDir = Join-Path $repo 'desktop\dist' }
-$build = Join-Path $OutDir '.build'
+# Source and builds stay apart: everything produced lands under build/, one
+# directory per platform, and nothing there is ever edited by hand. That is also
+# what gets attached to a GitHub Release.
+if (-not $OutDir) { $OutDir = Join-Path $repo 'build\windows' }
+$build = Join-Path $repo 'build\.cache'
 $stage = Join-Path $OutDir 'Numera'
 
 function Step($text) { Write-Host "==> $text" -ForegroundColor Cyan }
