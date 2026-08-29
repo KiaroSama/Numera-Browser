@@ -66,6 +66,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   the server wheel, and attaches every platform to the Release for a `v*` tag. They cannot be built
   on Windows: a Tauri binary links against the host's web view.
 
+- **`numera folder list|create|rename|delete`**, with `--json`. Folders were the last capability
+  the GUI had and the CLI did not (B18), which made "headless parity" not quite true. The rules
+  live in a shared `folders.py` that both the API routes and the CLI call — a rename moves the
+  folder's profiles, a delete reassigns rather than destroys them — so the two surfaces cannot
+  drift on behaviour subtle enough that the drift would be silent. Parity is now **37/37**.
+
 - **A server / CLI build.** `scripts/build-server.ps1` produces a **platform-independent** wheel
   (`py3-none-any`), so the same file installs on Linux, macOS or Windows. No desktop shell, no
   bundled browser. Verified by installing it into a clean venv and confirming it serves both the
