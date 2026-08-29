@@ -225,11 +225,22 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
     }
     if profile.proxy:
         context_opts["proxy"] = profile.proxy.to_playwright()
-    if geolocation:
-        # Grant the permission too, so a site that asks gets the coordinates
-        # rather than a prompt that would stall an unattended session.
+    geo_mode = (fp.geolocation or "prompt").lower()
+    if geo_mode == "block":
+        # Deny outright: no coordinates, and the permission is explicitly refused
+        # so a site gets a hard "denied" instead of a prompt that never resolves.
+        context_opts["permissions"] = []
+    elif geolocation:
         context_opts["geolocation"] = geolocation
-        context_opts["permissions"] = ["geolocation"]
+        if geo_mode == "allow":
+            # Grant it, so a site that asks gets the coordinates rather than a
+            # prompt that would stall an unattended session.
+            context_opts["permissions"] = ["geolocation"]
+        # "prompt" keeps the coordinates ready but leaves the grant to the user,
+        # which is what a real browser does on first visit.
+
+    if fp.do_not_track:
+        context_opts["extra_http_headers"]["dnt"] = "1"
 
     pw = sync_playwright().start()
     context = pw.chromium.launch_persistent_context(

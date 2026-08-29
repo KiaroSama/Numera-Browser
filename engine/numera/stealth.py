@@ -56,6 +56,10 @@ def build_init_script(fp: Fingerprint) -> str:
         "cameras": fp.cameras,
         "microphones": fp.microphones,
         "webrtc": fp.webrtc,
+        "canvas": fp.canvas,
+        "audio": fp.audio,
+        "fontMode": fp.font_mode,
+        "doNotTrack": fp.do_not_track,
     }
     cfg_json = json.dumps(cfg)
 
@@ -181,6 +185,18 @@ def build_init_script(fp: Fingerprint) -> str:
         "  const rnd = mkRnd(cfg.seed);   // init-time draws (device ids, rect jitter)\n"
         "\n"
         "  const origToDataURL = HTMLCanvasElement.prototype.toDataURL;\n"
+        "  // 'real' leaves the canvas untouched; 'block' hands back a blank surface of\n"
+        "  // the same size, so a reader gets a valid image carrying no signal.\n"
+        "  if (cfg.canvas === 'block') {\n"
+        "    HTMLCanvasElement.prototype.toDataURL = asNative(function toDataURL(...args) {\n"
+        "      try {\n"
+        "        const blank = document.createElement('canvas');\n"
+        "        blank.width = this.width || 1;\n"
+        "        blank.height = this.height || 1;\n"
+        "        return origToDataURL.apply(blank, args);\n"
+        "      } catch (e) { return origToDataURL.apply(this, args); }\n"
+        "    }, 'toDataURL');\n"
+        "  } else if (cfg.canvas !== 'real') {\n"
         "  HTMLCanvasElement.prototype.toDataURL = asNative(function toDataURL(...args) {\n"
         "    try {\n"
         "      if (this.getContext('2d') && this.width && this.height) {\n"
@@ -208,12 +224,13 @@ def build_init_script(fp: Fingerprint) -> str:
         "    } catch (e) {}\n"
         "    return origToDataURL.apply(this, args);\n"
         "  }, 'toDataURL');\n"
+        "  }\n"
         "\n"
         "  // --- Installed fonts ---\n"
         "  // Font probing asks 'can you render X?'. Answer from the archetype's\n"
         "  // real font set so the reply matches the OS we claim to be.\n"
         "  try {\n"
-        "    if (cfg.fonts.length && document.fonts && document.fonts.check) {\n"
+        "    if (cfg.fontMode !== 'real' && cfg.fonts.length && document.fonts && document.fonts.check) {\n"
         "      const installed = new Set(cfg.fonts.map((f) => f.toLowerCase()));\n"
         "      const generic = new Set(['serif', 'sans-serif', 'monospace', 'cursive',\n"
         "                               'fantasy', 'system-ui', 'ui-sans-serif', 'ui-serif',\n"
@@ -317,6 +334,7 @@ def build_init_script(fp: Fingerprint) -> str:
         "\n"
         "  // --- Audio context: seeded noise, restarted per read so it stays stable ---\n"
         "  try {\n"
+        "    if (cfg.audio === 'real') throw 0;   // leave the audio stack untouched\n"
         "    if (window.AnalyserNode) {\n"
         "      const origFreq = AnalyserNode.prototype.getFloatFrequencyData;\n"
         "      AnalyserNode.prototype.getFloatFrequencyData = asNative(\n"
@@ -342,6 +360,17 @@ def build_init_script(fp: Fingerprint) -> str:
         "        return data;\n"
         "      }, 'getChannelData');\n"
         "    }\n"
+        "  } catch (e) {}\n"
+        "\n"
+        "  // --- Do Not Track ---\n"
+        "  // The header is set on the context; navigator.doNotTrack has to agree with\n"
+        "  // it, or the mismatch is itself a signal.\n"
+        "  try {\n"
+        "    Object.defineProperty(Navigator.prototype, 'doNotTrack', {\n"
+        "      get: asNative(function doNotTrack() { return cfg.doNotTrack ? '1' : null; },\n"
+        "                    'doNotTrack'),\n"
+        "      configurable: true,\n"
+        "    });\n"
         "  } catch (e) {}\n"
         "\n"
         "  // ---- WebRTC -------------------------------------------------\n"

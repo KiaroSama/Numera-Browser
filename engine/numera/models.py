@@ -45,6 +45,13 @@ class Fingerprint:
     # has to finish the job: "altered" drops those candidates, "disabled"
     # removes RTCPeerConnection outright, "real" leaves WebRTC untouched.
     webrtc: str = "altered"
+    # The rest of the anti-detect surfaces the dashboard exposes. Each one used
+    # to be hardcoded in the patch layer, so picking a mode changed nothing.
+    canvas: str = "noise"        # noise | block | real
+    audio: str = "noise"         # noise | real
+    font_mode: str = "masked"    # masked | real -- distinct from `fonts`, the list
+    geolocation: str = "prompt"  # prompt | allow | block
+    do_not_track: bool = False
 
     def to_dict(self) -> dict:
         return asdict(self)

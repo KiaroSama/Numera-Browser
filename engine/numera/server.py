@@ -262,8 +262,13 @@ def to_engine_profile(d: dict) -> Profile:
         fonts=devices.FONTS.get(os_key, []),
         cameras=int(d.get("mediaVideo", 1)),
         microphones=int(d.get("mediaAudio", 1)),
-        # The dashboard's WebRTC picker used to be cosmetic - carry it through.
+        # These pickers used to be cosmetic - every one is carried through now.
         webrtc=str(d.get("webrtc") or "Altered").strip().lower(),
+        canvas=str(d.get("canvas") or "Noise").strip().lower(),
+        audio=str(d.get("audio") or "Noise").strip().lower(),
+        font_mode=str(d.get("fonts") or "Masked").strip().lower(),
+        geolocation=str(d.get("geo") or "Prompt").strip().lower(),
+        do_not_track=bool(d.get("dnt")),
         webgl_vendor=vendor,
         webgl_renderer=renderer,
         locale=locale,
@@ -332,10 +337,12 @@ def to_dashboard_profile(prof: Profile) -> dict:
         "memory": fp.device_memory,
         "webglVendor": fp.webgl_vendor,
         "webglRenderer": fp.webgl_renderer,
-        "canvas": "Noise", "webrtc": fp.webrtc.capitalize(),
-        "audio": "Noise", "fonts": "Masked",
-        "locale": fp.locale, "timezone": fp.timezone, "geo": "Prompt",
-        "mediaVideo": fp.cameras, "mediaAudio": fp.microphones, "dnt": False,
+        "canvas": fp.canvas.capitalize(), "webrtc": fp.webrtc.capitalize(),
+        "audio": fp.audio.capitalize(), "fonts": fp.font_mode.capitalize(),
+        "locale": fp.locale, "timezone": fp.timezone,
+        "geo": fp.geolocation.capitalize(),
+        "mediaVideo": fp.cameras, "mediaAudio": fp.microphones,
+        "dnt": fp.do_not_track,
         "proxy": _proxy_to_dash(prof.proxy),
         "notes": prof.notes or "",
         "tags": list(prof.tags),
@@ -524,9 +531,36 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
                 dash.save(p)
         return {"folders": _persist_folders([f for f in _folder_list() if f != name])}
 
+    def _validate_profile(profile: dict) -> dict:
+        """Reject shapes the dashboard cannot render, before they reach disk.
+
+        An unrenderable profile used to be stored happily and then take the
+        whole UI down on the next load, so the write path is where it has to
+        be caught."""
+        from . import drivers  # local, matching the other call sites in this module
+        if not isinstance(profile, dict):
+            raise HTTPException(422, "profile must be an object")
+        name = profile.get("name")
+        if name is not None and not isinstance(name, str):
+            raise HTTPException(422, "'name' must be a string")
+        eng = profile.get("engine")
+        if eng is not None:
+            if not isinstance(eng, str) or eng not in drivers.names():
+                raise HTTPException(
+                    422, f"unknown engine {eng!r}; known: {', '.join(drivers.names())}")
+        for key in ("cores", "memory", "mediaVideo", "mediaAudio"):
+            val = profile.get(key)
+            if val is not None and not isinstance(val, (int, float)):
+                raise HTTPException(422, f"'{key}' must be a number")
+        px = profile.get("proxy")
+        if px is not None and not isinstance(px, dict):
+            raise HTTPException(422, "'proxy' must be an object or null")
+        return profile
+
     def _remember_engine(profile: dict):
-        # "Last engine wins": the engine picked for a profile becomes the
-        # default for the next new profile.
+        # "Last engine wins" - but only for an engine the caller actually chose.
+        # An engine we filled in from the current default is not a choice, and
+        # persisting it lets a client's guess overwrite the real default.
         eng = profile.get("engine")
         if eng:
             engine_store.set_default_engine(eng)
@@ -547,10 +581,12 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
     @app.post("/api/profiles")
     def create_profile(profile: dict):
         profile.pop("_new", None)
+        _validate_profile(profile)
         _apply_default_extensions(profile)
-        if not profile.get("engine"):
+        if profile.get("engine"):
+            _remember_engine(profile)          # an explicit choice, worth remembering
+        else:
             profile["engine"] = engine_store.get_default_engine()
-        _remember_engine(profile)
         saved = dash.save(profile)
         return decorate(saved)
 
@@ -560,6 +596,7 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
             raise HTTPException(404, "profile not found")
         profile["id"] = pid
         profile.pop("_new", None)
+        _validate_profile(profile)
         _remember_engine(profile)
         return decorate(dash.save(profile))
 
