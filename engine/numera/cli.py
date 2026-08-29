@@ -765,7 +765,8 @@ def cmd_import_from(args, store: ProfileStore) -> int:
 
 def cmd_serve(args, store: ProfileStore) -> int:
     from .server import serve
-    serve(host=args.host, port=args.port, data_dir=args.data_dir)
+    serve(host=args.host, port=args.port, data_dir=args.data_dir,
+          verbose=getattr(args, "verbose", False))
     return 0
 
 
@@ -1062,9 +1063,11 @@ def build_parser() -> argparse.ArgumentParser:
     vt.add_parser("status", help="Show whether the vault is on, locked or unlocked").set_defaults(func=cmd_vault)
     vt.add_parser("enable", help="Turn on encryption and encrypt existing secrets").set_defaults(func=cmd_vault)
 
-    c = sub.add_parser("serve", help="Run the HTTP API for the dashboard")
+    c = sub.add_parser("serve", help="Run Numera (serves the dashboard and the API)")
     c.add_argument("--host", default="127.0.0.1")
     c.add_argument("--port", type=int, default=8787)
+    c.add_argument("--verbose", action="store_true",
+                   help="Debug-level detail in the run log (credentials stay redacted)")
     c.set_defaults(func=cmd_serve)
 
     return p
