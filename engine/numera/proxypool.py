@@ -99,21 +99,25 @@ def parse_many(text: str) -> list[dict]:
     return out
 
 
+# Kept for callers that still import it, but no longer a warning worth showing:
+# a credentialed SOCKS proxy now works, because the launcher routes it through a
+# local relay that terminates the authentication (see relay.py). Chromium's own
+# refusal ("Browser does not support socks5 proxy authentication") is real, and
+# the relay is what steps around it.
 SOCKS_AUTH_NOTE = (
-    "Chromium implements proxy authentication for HTTP(S) proxies only, so a "
-    "SOCKS proxy's username/password is ignored and the connection will most "
-    "likely fail. Use the vendor's HTTP endpoint, or point the profile at a "
-    "local SOCKS forwarder that needs no credentials."
+    "Chromium cannot authenticate a SOCKS proxy itself. Numera launches this "
+    "profile through a local relay that supplies the credentials, so the proxy "
+    "works - no change needed."
 )
 
 
 def proxy_warnings(profile) -> list:
-    """Problems with a profile's proxy that the browser cannot work around."""
-    pr = getattr(profile, "proxy", None)
-    if not pr:
-        return []
-    if str(pr.server or "").lower().startswith("socks") and (pr.username or pr.password):
-        return [SOCKS_AUTH_NOTE]
+    """Problems with a profile's proxy that the browser cannot work around.
+
+    Credentialed SOCKS used to be listed here. It is not a problem any more -
+    the launcher puts a local relay in front of it - so warning about it would
+    now be the opposite mistake: telling the user something is broken when it
+    works."""
     return []
 
 
