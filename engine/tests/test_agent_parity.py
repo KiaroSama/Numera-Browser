@@ -467,12 +467,9 @@ def test_trust_and_align_exit_zero_under_json_whatever_the_grade(monkeypatch, tm
 # --------------------------------------------------------------------------
 # The gap no command map can see.
 # --------------------------------------------------------------------------
-@pytest.mark.xfail(strict=True, reason=(
-    "Known divergence: the CLI owns <root>/profiles (engine Profile shape) and the "
-    "dashboard owns <root>/dashboard (its own richer shape). Nothing writes both, so "
-    "a profile created headlessly is invisible in the GUI, and a profile created in "
-    "the GUI is invisible to the CLI until a launch materialises it. Closing it means "
-    "changing server.py or store.py, which this workstream does not own."))
+# Was a strict xfail while the two stores diverged (B17). `DashboardStore` now
+# mirrors every write into the engine store, and `list_profiles` adopts anything
+# the CLI created, so this passes outright - the strictness is what announced it.
 def test_a_cli_created_profile_is_visible_to_the_dashboard(tmp_path):
     pytest.importorskip("fastapi")
     from fastapi.testclient import TestClient
