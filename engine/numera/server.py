@@ -41,6 +41,7 @@ from . import cookies as cookies_mod
 from . import devices
 from .fingerprint import validate
 from .models import Fingerprint, Profile, Proxy
+from . import folders
 from .store import ProfileStore
 
 
@@ -577,36 +578,30 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
             engine_store.set_headless_launch(bool(cfg["headless_launch"]))
         return get_config()
 
+    # These delegate to numera.folders so the CLI and the API cannot drift on
+    # what a rename or a delete does to the profiles inside (B18).
     @app.post("/api/folders")
     def create_folder(body: dict):
-        name = (body.get("name") or "").strip()
-        if not name:
-            raise HTTPException(400, "folder name required")
-        return {"folders": _persist_folders([*_folder_list(), name])}
+        try:
+            return {"folders": folders.create(engine_store.root, body.get("name"))}
+        except ValueError as e:
+            raise HTTPException(400, str(e))
 
     @app.post("/api/folders/rename")
     def rename_folder(body: dict):
-        src = (body.get("from") or "").strip()
-        dst = (body.get("to") or "").strip()
-        if not src or not dst:
-            raise HTTPException(400, "both 'from' and 'to' are required")
-        for p in dash.list():                       # move every profile over
-            if p.get("folder") == src:
-                p["folder"] = dst
-                dash.save(p)
-        return {"folders": _persist_folders([dst if f == src else f for f in _folder_list()])}
+        try:
+            return {"folders": folders.rename(engine_store.root,
+                                              body.get("from"), body.get("to"))}
+        except ValueError as e:
+            raise HTTPException(400, str(e))
 
     @app.post("/api/folders/delete")
     def delete_folder(body: dict):
-        name = (body.get("name") or "").strip()
-        reassign = (body.get("reassignTo") or "Unfiled").strip() or "Unfiled"
-        if not name:
-            raise HTTPException(400, "folder name required")
-        for p in dash.list():                       # its profiles aren't deleted
-            if p.get("folder") == name:
-                p["folder"] = reassign
-                dash.save(p)
-        return {"folders": _persist_folders([f for f in _folder_list() if f != name])}
+        try:
+            return {"folders": folders.delete(engine_store.root, body.get("name"),
+                                              body.get("reassignTo"))}
+        except ValueError as e:
+            raise HTTPException(400, str(e))
 
     def _validate_profile(profile: dict) -> dict:
         """Reject shapes the dashboard cannot render, before they reach disk.
