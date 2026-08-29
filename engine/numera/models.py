@@ -52,6 +52,19 @@ class Fingerprint:
     font_mode: str = "masked"    # masked | real -- distinct from `fonts`, the list
     geolocation: str = "prompt"  # prompt | allow | block
     do_not_track: bool = False
+    client_rects: str = "noise"  # noise | real
+    webgl_image: str = "noise"   # noise | real -- the rendered pixels, not the
+                                 # vendor/renderer strings above
+    media_mode: str = "masked"   # masked | real -- whether enumerateDevices is
+                                 # answered from the profile at all
+    speakers: int = 1            # enumerateDevices() audiooutput
+    # Which release of `os` this profile claims. Desktop Chrome freezes the OS
+    # token in the UA string, so on Windows and macOS this only shows up in the
+    # UA-CH platformVersion hint; on Android and iOS it is in the UA itself.
+    os_version: str = ""
+    device_model: str = ""       # Android handset name in the UA string
+    max_touch_points: int = 0
+    device_pixel_ratio: float = 1.0
 
     def to_dict(self) -> dict:
         return asdict(self)

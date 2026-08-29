@@ -22,6 +22,7 @@ Run it with:  ``numera serve``  (see ``cli.py``).
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import secrets
@@ -38,7 +39,7 @@ from typing import Optional
 from . import __version__
 from . import cookies as cookies_mod
 from . import devices
-from .fingerprint import generate, validate
+from .fingerprint import validate
 from .models import Fingerprint, Profile, Proxy
 from .store import ProfileStore
 
@@ -57,7 +58,8 @@ def _require_fastapi():
 # --------------------------------------------------------------------------
 # OS name mapping between the dashboard ("Windows") and engine ("windows").
 # --------------------------------------------------------------------------
-OS_TO_ENGINE = {"Windows": "windows", "macOS": "macos", "Linux": "linux", "Android": "android"}
+OS_TO_ENGINE = {"Windows": "windows", "macOS": "macos", "Linux": "linux",
+                "Android": "android", "iOS": "ios"}
 OS_TO_DASH = {v: k for k, v in OS_TO_ENGINE.items()}
 
 
@@ -229,23 +231,40 @@ def _parse_startup_urls(raw) -> list[str]:
     return urls
 
 
+def _stable_seed(pid: str) -> int:
+    """A seed derived from the profile id, for a profile that carries none.
+
+    The seed drives canvas, audio, ClientRects and media-device noise, so it has
+    to be the *same* on every launch — that is the whole promise of a profile
+    looking identical each time it opens. The dashboard has never sent one, and
+    the old fallback minted a fresh random seed on every conversion, which meant
+    every launch of a dashboard profile presented a different canvas hash.
+    Deriving it from the id fixes that for profiles already on disk without a
+    migration, and an explicit ``seed`` still wins when one is present.
+    """
+    return int(hashlib.sha256(pid.encode("utf-8")).hexdigest()[:8], 16) or 1
+
+
 def to_engine_profile(d: dict) -> Profile:
     """Convert a stored dashboard profile dict into an engine :class:`Profile`."""
     os_key = OS_TO_ENGINE.get(d.get("os", "Windows"), "windows")
-    is_mobile = os_key == "android"
+    is_mobile = os_key in devices.MOBILE_OS
 
     try:
         sw, sh = (int(x) for x in str(d.get("screen", "1920x1080")).lower().split("x"))
     except ValueError:
         sw, sh = 1920, 1080
     if is_mobile:
-        vw, vh = sw, max(1, sh - 80)
+        vw, vh = sw, max(1, sh - (113 if os_key == "ios" else 80))
     else:
         vw, vh = sw, max(1, sh - 88)
 
     locale = d.get("locale", "en-US")
     tz, langs = devices.LOCALES.get(locale, devices.LOCALES["en-US"])
     vendor, renderer = _engine_webgl(os_key, d.get("webglRenderer", ""), d.get("webglVendor", ""))
+    os_version = str(d.get("osVersion") or devices.OS_VERSIONS[os_key][0][0])
+    # iOS has no navigator.deviceMemory to report, whatever the profile says.
+    memory = 0 if os_key == "ios" else int(d.get("memory", 16))
 
     fp = Fingerprint(
         os=os_key,
@@ -258,14 +277,20 @@ def to_engine_profile(d: dict) -> Profile:
         viewport_width=vw,
         viewport_height=vh,
         hardware_concurrency=int(d.get("cores", 8)),
-        device_memory=int(d.get("memory", 16)),
-        fonts=devices.FONTS.get(os_key, []),
+        device_memory=memory,
+        # An edited font list is the profile's own; only fall back to the whole
+        # OS set when the dashboard sent nothing.
+        fonts=_parse_lines(d.get("fontList")) or devices.FONTS.get(os_key, []),
         cameras=int(d.get("mediaVideo", 1)),
         microphones=int(d.get("mediaAudio", 1)),
+        speakers=int(d.get("mediaSpeakers", 1)),
         # These pickers used to be cosmetic - every one is carried through now.
         webrtc=str(d.get("webrtc") or "Altered").strip().lower(),
         canvas=str(d.get("canvas") or "Noise").strip().lower(),
         audio=str(d.get("audio") or "Noise").strip().lower(),
+        client_rects=str(d.get("clientRects") or "Noise").strip().lower(),
+        webgl_image=str(d.get("webglImage") or "Noise").strip().lower(),
+        media_mode=str(d.get("mediaDevices") or "Masked").strip().lower(),
         font_mode=str(d.get("fonts") or "Masked").strip().lower(),
         geolocation=str(d.get("geo") or "Prompt").strip().lower(),
         do_not_track=bool(d.get("dnt")),
@@ -275,7 +300,13 @@ def to_engine_profile(d: dict) -> Profile:
         timezone=d.get("timezone") or tz,
         languages=langs,
         is_mobile=is_mobile,
-        seed=int(d.get("seed") or 0) or generate(os=os_key).seed,
+        os_version=os_version,
+        device_model=str(d.get("deviceModel") or ""),
+        max_touch_points=int(d.get("maxTouchPoints",
+                                   devices.TOUCH_POINTS[os_key][0])),
+        device_pixel_ratio=float(d.get("devicePixelRatio")
+                                 or devices.PIXEL_RATIOS[os_key][0]),
+        seed=int(d.get("seed") or 0) or _stable_seed(str(d.get("id") or "unsaved")),
     )
 
     proxy = None
@@ -339,9 +370,22 @@ def to_dashboard_profile(prof: Profile) -> dict:
         "webglRenderer": fp.webgl_renderer,
         "canvas": fp.canvas.capitalize(), "webrtc": fp.webrtc.capitalize(),
         "audio": fp.audio.capitalize(), "fonts": fp.font_mode.capitalize(),
+        "clientRects": fp.client_rects.capitalize(),
+        "webglImage": fp.webgl_image.capitalize(),
+        "mediaDevices": fp.media_mode.capitalize(),
         "locale": fp.locale, "timezone": fp.timezone,
         "geo": fp.geolocation.capitalize(),
         "mediaVideo": fp.cameras, "mediaAudio": fp.microphones,
+        "mediaSpeakers": fp.speakers,
+        "fontList": "\n".join(fp.fonts or []),
+        "osVersion": fp.os_version,
+        "deviceModel": fp.device_model,
+        "maxTouchPoints": fp.max_touch_points,
+        "devicePixelRatio": fp.device_pixel_ratio,
+        # Without this the fingerprint's noise seed was dropped on import and a
+        # fresh one was invented at every launch, so an imported profile never
+        # looked the same twice.
+        "seed": fp.seed,
         "dnt": fp.do_not_track,
         "proxy": _proxy_to_dash(prof.proxy),
         "notes": prof.notes or "",

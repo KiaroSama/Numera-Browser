@@ -20,6 +20,11 @@ tell-tale traces of an automated browser:
   * ``navigator.permissions.query`` agrees with ``Notification.permission``;
   * platform, hardwareConcurrency, deviceMemory, languages, WebGL vendor/renderer
     match the chosen device;
+  * ``navigator.userAgentData`` reports the profile's platform, brands and OS
+    version instead of the host's, so the Client Hints header and the in-page
+    object cannot contradict each other;
+  * ``maxTouchPoints``/``ontouchstart`` and ``devicePixelRatio`` match the form
+    factor, which is what makes an emulated phone or tablet hold up;
   * ``document.fonts.check`` answers from the archetype's real font set, so font
     probing can't place a "Windows" browser on a Mac;
   * ``enumerateDevices`` reports the profile's camera/microphone count with
@@ -36,28 +41,55 @@ from __future__ import annotations
 
 import json
 
+from .fingerprint import platform_version, ua_brands
 from .models import Fingerprint
 
 
 def build_init_script(fp: Fingerprint) -> str:
-    """Return a JS string that patches a page to match ``fp``."""
+    """Return a JS string that patches a page to match ``fp``.
+
+    Honest limit, stated here because it is the one claim in this module that
+    cannot be made true by patching: **an iOS profile is not running WebKit.**
+    Apple does not permit a third-party engine on iOS, so a real iPhone browser
+    is Safari's WebKit no matter whose name is on it, while Numera is driving
+    Blink. Everything a page can *read* is shaped like iOS — the CriOS user
+    agent, five touch points, the Apple GPU strings, the sealed font set, no
+    Client Hints, no ``deviceMemory`` — but a probe that fingerprints the engine
+    rather than the device (WebKit-only CSS quirks, JavaScriptCore's error
+    messages and number formatting, Blink-only APIs) will see Blink. This is the
+    same emulated-not-native position AdsPower ships its iOS profiles in; it is
+    parity, not a native iOS browser.
+    """
     cfg = {
         "platform": fp.platform,
         "uaPlatform": fp.ch_platform.strip('"'),
+        "uaBrands": ua_brands(fp),
+        "platformVersion": platform_version(fp.os, fp.os_version),
         "isMobile": fp.is_mobile,
-        "chromeMajor": int(fp.chrome_version.split(".")[0]),
+        # WebKit ships no Client Hints at all, so an iOS profile has to have no
+        # navigator.userAgentData rather than a plausible-looking one.
+        "hasUaData": fp.os != "ios",
+        "deviceModel": fp.device_model,
         "hardwareConcurrency": fp.hardware_concurrency,
+        # 0 means "this platform does not expose deviceMemory" (iOS), which is a
+        # different claim from "0 GB" and is handled by deleting the property.
         "deviceMemory": fp.device_memory,
+        "maxTouchPoints": fp.max_touch_points,
+        "devicePixelRatio": fp.device_pixel_ratio,
         "languages": fp.languages,
         "webglVendor": fp.webgl_vendor,
         "webglRenderer": fp.webgl_renderer,
+        "webglImage": fp.webgl_image,
         "seed": fp.seed,
         "fonts": fp.fonts,
         "cameras": fp.cameras,
         "microphones": fp.microphones,
+        "speakers": fp.speakers,
+        "mediaMode": fp.media_mode,
         "webrtc": fp.webrtc,
         "canvas": fp.canvas,
         "audio": fp.audio,
+        "clientRects": fp.client_rects,
         "fontMode": fp.font_mode,
         "doNotTrack": fp.do_not_track,
     }
@@ -98,8 +130,76 @@ def build_init_script(fp: Fingerprint) -> str:
         "  // --- Navigator basics ---\n"
         "  define(Navigator.prototype, 'platform', () => cfg.platform);\n"
         "  define(Navigator.prototype, 'hardwareConcurrency', () => cfg.hardwareConcurrency);\n"
-        "  define(Navigator.prototype, 'deviceMemory', () => cfg.deviceMemory);\n"
         "  define(Navigator.prototype, 'languages', () => Object.freeze(cfg.languages.slice()));\n"
+        "  define(Navigator.prototype, 'maxTouchPoints', () => cfg.maxTouchPoints);\n"
+        "\n"
+        "  // deviceMemory: 0 is not '0 GB', it is 'this platform has no such\n"
+        "  // property' — WebKit never shipped it, so an iOS profile must not have\n"
+        "  // one. Answering with a number would be a harder tell than the value.\n"
+        "  if (cfg.deviceMemory) {\n"
+        "    define(Navigator.prototype, 'deviceMemory', () => cfg.deviceMemory);\n"
+        "  } else {\n"
+        "    try { delete Navigator.prototype.deviceMemory; } catch (e) {}\n"
+        "    try { delete navigator.deviceMemory; } catch (e) {}\n"
+        "  }\n"
+        "\n"
+        "  // --- Touch surface ---\n"
+        "  // maxTouchPoints alone is not enough: the usual mobile test is feature\n"
+        "  // detection ('ontouchstart' in window), and a phone that reports five\n"
+        "  // touch points while failing that check is contradicting itself.\n"
+        "  try {\n"
+        "    if (cfg.maxTouchPoints > 0) {\n"
+        "      if (!('ontouchstart' in window))\n"
+        "        Object.defineProperty(window, 'ontouchstart', { value: null, writable: true, configurable: true });\n"
+        "    } else if ('ontouchstart' in window) {\n"
+        "      delete window.ontouchstart;\n"
+        "    }\n"
+        "  } catch (e) {}\n"
+        "\n"
+        "  // --- devicePixelRatio ---\n"
+        "  // Playwright sets a context-level device scale factor, but it is a flat\n"
+        "  // 2-for-mobile / 1-for-desktop guess, so real display scaling (a 125%\n"
+        "  // Windows laptop, a 3x phone panel) never reaches the page without this.\n"
+        "  try {\n"
+        "    define(window, 'devicePixelRatio', () => cfg.devicePixelRatio);\n"
+        "  } catch (e) {}\n"
+        "\n"
+        "  // --- User-Agent Client Hints ---\n"
+        "  // The header is set on the context, but navigator.userAgentData was left\n"
+        "  // reporting the *host* — a macOS profile on a Windows box answered\n"
+        "  // platform 'Windows' in JS while navigator.platform said 'MacIntel'.\n"
+        "  // Patch the real prototype getters rather than substituting an object,\n"
+        "  // so the shape, prototype chain and instanceof all stay genuine.\n"
+        "  try {\n"
+        "    if (window.NavigatorUAData) {\n"
+        "      const uaProto = NavigatorUAData.prototype;\n"
+        "      if (!cfg.hasUaData) {\n"
+        "        delete Navigator.prototype.userAgentData;\n"
+        "      } else {\n"
+        "        const values = {\n"
+        "          brands: () => cfg.uaBrands.map((b) => ({ brand: b.brand, version: b.version })),\n"
+        "          mobile: () => cfg.isMobile,\n"
+        "          platform: () => cfg.uaPlatform,\n"
+        "        };\n"
+        "        for (const key of Object.keys(values)) define(uaProto, key, values[key]);\n"
+        "        const high = uaProto.getHighEntropyValues;\n"
+        "        uaProto.getHighEntropyValues = asNative(function getHighEntropyValues(hints) {\n"
+        "          return Promise.resolve(high.call(this, hints)).catch(() => ({})).then((base) => {\n"
+        "            const out = Object.assign({}, base, {\n"
+        "              brands: values.brands(), mobile: cfg.isMobile, platform: cfg.uaPlatform,\n"
+        "            });\n"
+        "            const want = Array.isArray(hints) ? hints : [];\n"
+        "            if (want.includes('platformVersion')) out.platformVersion = cfg.platformVersion;\n"
+        "            if (want.includes('architecture')) out.architecture = cfg.isMobile ? 'arm' : 'x86';\n"
+        "            if (want.includes('bitness')) out.bitness = '64';\n"
+        "            if (want.includes('model')) out.model = cfg.deviceModel || '';\n"
+        "            if (want.includes('uaFullVersion')) out.uaFullVersion = cfg.uaBrands[0].version + '.0.0.0';\n"
+        "            return out;\n"
+        "          });\n"
+        "        }, 'getHighEntropyValues');\n"
+        "      }\n"
+        "    }\n"
+        "  } catch (e) {}\n"
         "\n"
         "  // --- window.chrome (present on real Chrome, missing under automation) ---\n"
         "  try {\n"
@@ -169,9 +269,32 @@ def build_init_script(fp: Fingerprint) -> str:
         "      if (p === 37446) return cfg.webglRenderer;\n"
         "      return orig.call(this, p);\n"
         "    }, 'getParameter');\n"
+        "    // The vendor/renderer strings are metadata. The stronger WebGL\n"
+        "    // fingerprint is the *rendered image*: a page draws a known scene and\n"
+        "    // hashes readPixels(), which reports the real GPU's rasterisation no\n"
+        "    // matter what getParameter claims. Spoofing only the strings leaves\n"
+        "    // that hash tied to the host, so every profile on one machine shares\n"
+        "    // it. Perturb the low bit of a sparse, seed-chosen set of samples:\n"
+        "    // enough to move the hash, far too little to be visible.\n"
+        "    if (cfg.webglImage === 'real') return;\n"
+        "    const origRead = proto.readPixels;\n"
+        "    if (!origRead) return;\n"
+        "    proto.readPixels = asNative(function readPixels(x, y, w, h, fmt, type, pixels) {\n"
+        "      const out = origRead.apply(this, arguments);\n"
+        "      try {\n"
+        "        if (pixels && pixels.length) {\n"
+        "          // Reseeded per call from the request geometry, so reading the\n"
+        "          // same region twice gives the same bytes — per-call randomness\n"
+        "          // is itself detectable (see the canvas note below).\n"
+        "          const r = mkRnd(cfg.seed ^ (w * 73856093) ^ (h * 19349663));\n"
+        "          for (let i = 0; i < pixels.length; i += 4) {\n"
+        "            if (r() < 0.02) pixels[i] ^= 1;\n"
+        "          }\n"
+        "        }\n"
+        "      } catch (e) {}\n"
+        "      return out;\n"
+        "    }, 'readPixels');\n"
         "  };\n"
-        "  if (window.WebGLRenderingContext) patchGL(WebGLRenderingContext.prototype);\n"
-        "  if (window.WebGL2RenderingContext) patchGL(WebGL2RenderingContext.prototype);\n"
         "\n"
         "  // --- Deterministic noise ---\n"
         "  // Every noise source draws from a PRNG restarted from the profile seed,\n"
@@ -183,6 +306,11 @@ def build_init_script(fp: Fingerprint) -> str:
         "    return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };\n"
         "  };\n"
         "  const rnd = mkRnd(cfg.seed);   // init-time draws (device ids, rect jitter)\n"
+        "\n"
+        "  // Applied here rather than where patchGL is defined: its readPixels\n"
+        "  // noise needs mkRnd, which is declared just above.\n"
+        "  if (window.WebGLRenderingContext) patchGL(WebGLRenderingContext.prototype);\n"
+        "  if (window.WebGL2RenderingContext) patchGL(WebGL2RenderingContext.prototype);\n"
         "\n"
         "  const origToDataURL = HTMLCanvasElement.prototype.toDataURL;\n"
         "  // 'real' leaves the canvas untouched; 'block' hands back a blank surface of\n"
@@ -199,7 +327,19 @@ def build_init_script(fp: Fingerprint) -> str:
         "  } else if (cfg.canvas !== 'real') {\n"
         "  HTMLCanvasElement.prototype.toDataURL = asNative(function toDataURL(...args) {\n"
         "    try {\n"
-        "      if (this.getContext('2d') && this.width && this.height) {\n"
+        "      // A WebGL canvas has no 2d context but is still a valid drawImage\n"
+        "      // source, and toDataURL() on one is the *other* way a page reads the\n"
+        "      // rendered WebGL image (readPixels above is the first). Covering only\n"
+        "      // readPixels left this path answering with the host GPU's\n"
+        "      // rasterisation, identical across every profile on the machine.\n"
+        "      // Ask for 2d first: on a canvas that has no context yet that call\n"
+        "      // creates one, which keeps the WebGL probe below from ever running\n"
+        "      // against a blank canvas and quietly turning it into a GL one.\n"
+        "      const ctx2d = this.getContext('2d');\n"
+        "      const isGl = !ctx2d && cfg.webglImage !== 'real' &&\n"
+        "        !!(this.getContext('webgl') || this.getContext('webgl2') ||\n"
+        "           this.getContext('experimental-webgl'));\n"
+        "      if ((ctx2d || isGl) && this.width && this.height) {\n"
         "        // Noise goes on a throwaway copy, never the caller's canvas: the\n"
         "        // page keeps its real pixels and repeated reads stay identical.\n"
         "        const copy = document.createElement('canvas');\n"
@@ -252,6 +392,7 @@ def build_init_script(fp: Fingerprint) -> str:
         "  // --- Media devices (cameras / microphones) ---\n"
         "  // Ids are derived from the seed so they stay stable for this profile.\n"
         "  try {\n"
+        "    if (cfg.mediaMode === 'real') throw 0;   // report the host's real devices\n"
         "    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {\n"
         "      const hex = (n) => {\n"
         "        let out = '';\n"
@@ -287,8 +428,7 @@ def build_init_script(fp: Fingerprint) -> str:
         "        const list = [];\n"
         "        for (let i = 0; i < cfg.cameras; i++) list.push(mkDevice('videoinput'));\n"
         "        for (let i = 0; i < cfg.microphones; i++) list.push(mkDevice('audioinput'));\n"
-        "        // A machine with a microphone almost always has an output too.\n"
-        "        if (cfg.microphones) list.push(mkDevice('audiooutput'));\n"
+        "        for (let i = 0; i < cfg.speakers; i++) list.push(mkDevice('audiooutput'));\n"
         "        return list;\n"
         "      };\n"
         "      const devices = build();\n"
@@ -302,6 +442,7 @@ def build_init_script(fp: Fingerprint) -> str:
         "  // Real machines differ by fractions of a pixel; identical rects across\n"
         "  // profiles are the giveaway, so each profile gets its own tiny offset.\n"
         "  try {\n"
+        "    if (cfg.clientRects === 'real') throw 0;   // leave layout measurement alone\n"
         "    const jitter = (rnd() - 0.5) * 0.0002;\n"
         "    const nudge = (v) => (typeof v === 'number' && v !== 0 ? v + v * jitter : v);\n"
         "    const patchRect = (proto, name) => {\n"
