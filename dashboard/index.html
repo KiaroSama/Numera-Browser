@@ -10,8 +10,18 @@
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
+    <style>
+      /* The pre-paint background, before React or the app stylesheet exist.
+         It has to be a token or the light theme leaves a dark page behind the
+         app - the hardcoded value that used to live here could never follow a
+         theme switch. Repeated from theme.js on purpose: this must work with
+         no JS at all, so it cannot read from the bundle. */
+      :root { --boot-bg: #0a0c11; color-scheme: dark; }
+      :root[data-theme="light"] { --boot-bg: #eef0f4; color-scheme: light; }
+      html, body { margin: 0; background: var(--boot-bg); }
+    </style>
   </head>
-  <body style="margin:0; background:#0B0B10;">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
