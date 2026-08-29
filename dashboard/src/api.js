@@ -41,6 +41,7 @@ export const api = {
   engines: () => req("GET", "/api/engines"),
   getConfig: () => req("GET", "/api/config"),
   setDefaultEngine: (name) => req("PUT", "/api/config", { default_engine: name }),
+  setDefaultExtensions: (paths) => req("PUT", "/api/config", { default_extensions: paths }),
   // Folders: a persisted list the sidebar and editor share. Rename/delete also
   // reassign the profiles that live in the folder.
   createFolder: (name) => req("POST", "/api/folders", { name }),
