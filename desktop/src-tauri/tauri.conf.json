@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Numera",
+  "version": "0.1.0",
+  "identifier": "com.numera.desktop",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Numera",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 940,
+        "minHeight": 600,
+        "center": true,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico"],
+    "copyright": "Numera",
+    "category": "DeveloperTool",
+    "shortDescription": "Anti-detect browser profile manager"
+  }
+}

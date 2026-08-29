@@ -58,6 +58,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **A portable desktop app.** `scripts/build-desktop.ps1` produces a 32.6 MB folder containing a
+  Tauri shell and a frozen engine. Copy it anywhere and double-click: no Python, no Rust, no
+  VC++ redistributable, no installer. Only WebView2 is required, which ships with Windows 11.
+  The shell picks a free port at runtime, waits for the engine's health endpoint rather than
+  sleeping, shows the engine's real stderr if it fails to start, and tears the engine down with
+  the window - including when the shell is killed, which is what the job object is for. macOS and
+  Linux need their own build hosts; Tauri cannot be cross-compiled from Windows.
+
 - **A local proxy-authentication relay.** A profile whose proxy carries credentials is now
   launched through a small loopback relay that terminates the authentication and forwards
   upstream, so the browser only ever sees an unauthenticated `http://127.0.0.1:<port>`. That is
@@ -77,6 +85,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   takes the same proxy path as every other launch.
 - `proxy_warnings()` no longer tells the user a SOCKS proxy's credentials are ignored; with the
   relay in front, they are not.
+- **The dashboard silently showed fabricated profiles on any port but 8787.** `api.js` baked
+  `http://localhost:8787` in at build time, so once the engine started choosing its port the app
+  could not reach its own API - and instead of failing, it fell back to demo mode and rendered
+  sample data. It is same-origin now, which has no port to get wrong.
+- **The log redaction filter dropped any record with a numeric format.** It stringified every
+  argument, so a `%d` then raised `TypeError` and `logging` discarded the line. Only strings are
+  scrubbed now; a redaction filter that silently deletes log lines is worse than the leak it
+  prevents.
 
 ### Changed
 
