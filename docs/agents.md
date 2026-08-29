@@ -192,6 +192,19 @@ saves, because refusing the edit would fail for a reason the user cannot see.
 this was open; it passes outright now, and the strictness is what announced the
 fix rather than letting it go unnoticed.
 
+**Web Store extensions install headlessly too.** `numera ext install <url>`
+takes the same link the Extensions page takes, so an agent is not restricted to
+folders a human unpacked by hand. Chromium cannot install from the store once
+automation is enabled and `--load-extension` only accepts an unpacked directory,
+so the link is resolved to a 32-character id, fetched as a `.crx` from Google's
+update endpoint and unpacked into `<data-dir>/extensions/<id>/` — which means it
+travels with a portable install instead of pointing at one machine.
+
+Ids are exactly 32 letters from `a`–`p`. An id that is nearly right is diagnosed
+rather than reported as missing: the error names the offending letter, or the
+actual length, because "not found" would send a caller to check whether the
+extension still exists when the real problem is a truncated copy-paste.
+
 ### `numera health` reports no trust grade
 
 The dashboard's Health page shows a *cached* grade, written into the dashboard

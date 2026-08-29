@@ -53,6 +53,9 @@ export const api = {
   getConfig: () => req("GET", "/api/config"),
   setDefaultEngine: (name) => req("PUT", "/api/config", { default_engine: name }),
   setDefaultExtensions: (paths) => req("PUT", "/api/config", { default_extensions: paths }),
+  // A Web Store link is downloaded and unpacked engine-side: Chromium cannot
+  // install from the store itself once automation is enabled.
+  installExtension: (url) => req("POST", "/api/extensions/install", { url }),
   // Folders: a persisted list the sidebar and editor share. Rename/delete also
   // reassign the profiles that live in the folder.
   createFolder: (name) => req("POST", "/api/folders", { name }),
