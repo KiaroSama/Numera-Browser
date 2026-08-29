@@ -44,28 +44,40 @@ def test_token_is_required_when_configured(tmp_path, monkeypatch):
 
 # ---- config -------------------------------------------------------------
 
-def test_config_round_trips_the_new_settings(tmp_path, monkeypatch):
+@pytest.fixture
+def unpacked(tmp_path):
+    """A real unpacked extension. The API refuses anything it could not load, so
+    a fictional path like /opt/ext/ublock no longer round-trips - and the fact
+    that it used to is what let a Web Store URL through in the first place."""
+    d = tmp_path / "ublock"
+    d.mkdir()
+    (d / "manifest.json").write_text(
+        '{"manifest_version": 3, "name": "u", "version": "1.0"}', encoding="utf-8")
+    return str(d)
+
+
+def test_config_round_trips_the_new_settings(tmp_path, monkeypatch, unpacked):
     c = client(tmp_path, token=None, monkeypatch=monkeypatch)
-    body = c.put("/api/config", json={"default_extensions": ["/opt/ext/ublock"],
+    body = c.put("/api/config", json={"default_extensions": [unpacked],
                                       "headless_launch": True}).json()
-    assert body["default_extensions"] == ["/opt/ext/ublock"]
+    assert body["default_extensions"] == [unpacked]
     assert body["headless_launch"] is True
     # Persisted, not just echoed back.
-    assert ProfileStore(str(tmp_path)).get_default_extensions() == ["/opt/ext/ublock"]
+    assert ProfileStore(str(tmp_path)).get_default_extensions() == [unpacked]
 
 
 # ---- the default extension set ------------------------------------------
 
-def test_created_profiles_inherit_default_extensions(tmp_path, monkeypatch):
+def test_created_profiles_inherit_default_extensions(tmp_path, monkeypatch, unpacked):
     c = client(tmp_path, token=None, monkeypatch=monkeypatch)
-    c.put("/api/config", json={"default_extensions": ["/opt/ext/ublock"]})
+    c.put("/api/config", json={"default_extensions": [unpacked]})
     made = c.post("/api/profiles", json={"name": "inherits", "os": "Windows"}).json()
-    assert made["extensions"] == "/opt/ext/ublock"
+    assert made["extensions"] == unpacked
 
 
-def test_an_explicit_extension_choice_wins(tmp_path, monkeypatch):
+def test_an_explicit_extension_choice_wins(tmp_path, monkeypatch, unpacked):
     c = client(tmp_path, token=None, monkeypatch=monkeypatch)
-    c.put("/api/config", json={"default_extensions": ["/opt/ext/ublock"]})
+    c.put("/api/config", json={"default_extensions": [unpacked]})
     made = c.post("/api/profiles", json={"name": "explicit", "os": "Windows",
                                          "extensions": "/opt/ext/other"}).json()
     assert made["extensions"] == "/opt/ext/other"

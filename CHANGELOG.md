@@ -6,6 +6,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **The Extensions page accepted things that could never load.** A Chrome Web Store URL, a mistyped
+  path or a folder without a `manifest.json` were all stored and reported as saved; the launcher
+  then silently dropped them (`_extension_args` keeps only real directories) and nothing loaded,
+  with no error anywhere. The API refuses them now, with a message that says what to do instead,
+  and rejects the whole write rather than saving part of a list. Verified end to end in a real
+  browser: a genuine unpacked extension goes page -> engine -> Chromium and its content script
+  runs.
+- **API errors lost the server's explanation.** `api.js` threw `PUT /api/config → 400` and
+  discarded FastAPI's `detail`, so the dashboard could only ever show a status code. It shows the
+  reason now.
+
+
 - **The Canvas, Audio, Fonts, Geolocation and Do-Not-Track pickers did nothing** (B14). All five
   were rendered by the dashboard and never read by `to_engine_profile()`, so choosing "Real" or
   "Off" changed no browser behaviour at all - the same class as the WebRTC bug fixed in 0.3.0.
