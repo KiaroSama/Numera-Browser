@@ -1118,6 +1118,44 @@ def cmd_import_from(args, store: ProfileStore) -> int:
                              for p, iss in results]})
 
 
+def cmd_folder(args, store: ProfileStore) -> int:
+    """Folders were GUI-only until now (B18). The rules live in numera.folders so
+    this and the HTTP API cannot disagree about what a rename does to the
+    profiles inside a folder."""
+    from . import folders
+
+    root = store.root
+    try:
+        if args.folder_command == "list":
+            names = folders.listing(root)
+            for n in names:
+                say(f"  {n}")
+            if not names:
+                say("No folders yet.")
+            return emit({"folders": names})
+
+        if args.folder_command == "create":
+            names = folders.create(root, args.name)
+            say(_c(f"Created folder '{args.name}'.", C.GRN))
+            return emit({"folders": names, "created": args.name})
+
+        if args.folder_command == "rename":
+            names = folders.rename(root, args.old, args.new)
+            say(_c(f"Renamed '{args.old}' to '{args.new}'; its profiles moved with it.", C.GRN))
+            return emit({"folders": names, "from": args.old, "to": args.new})
+
+        if args.folder_command == "delete":
+            target = args.reassign_to or folders.UNFILED
+            names = folders.delete(root, args.name, target)
+            say(_c(f"Deleted '{args.name}'. Its profiles moved to '{target}'.", C.GRN))
+            return emit({"folders": names, "deleted": args.name, "reassignedTo": target})
+    except ValueError as e:
+        say(_c(str(e), C.RED))
+        return emit({"error": str(e)}, 1)
+
+    return 1
+
+
 def cmd_serve(args, store: ProfileStore) -> int:
     from .server import serve
     serve(host=args.host, port=args.port, data_dir=args.data_dir,
@@ -1494,6 +1532,22 @@ def build_parser() -> argparse.ArgumentParser:
                   help="Show whether the vault is on, locked or unlocked").set_defaults(func=cmd_vault)
     vt.add_parser("enable", parents=[_AGENT],
                   help="Turn on encryption and encrypt existing secrets").set_defaults(func=cmd_vault)
+
+    c = add("folder", help="Folders: list, create, rename, delete")
+    fs = c.add_subparsers(dest="folder_command", required=True)
+    fs.add_parser("list", parents=[_AGENT], help="List every folder")
+    f = fs.add_parser("create", parents=[_AGENT], help="Create a folder")
+    f.add_argument("name")
+    f = fs.add_parser("rename", parents=[_AGENT],
+                      help="Rename a folder and move its profiles with it")
+    f.add_argument("old")
+    f.add_argument("new")
+    f = fs.add_parser("delete", parents=[_AGENT],
+                      help="Delete a folder; its profiles are reassigned, not deleted")
+    f.add_argument("name")
+    f.add_argument("--reassign-to", default=None,
+                   help="Where its profiles go (default: Unfiled)")
+    c.set_defaults(func=cmd_folder)
 
     c = add("mcp", help="Speak MCP on stdin/stdout, exposing every command as a tool")
     c.set_defaults(func=cmd_mcp)
