@@ -51,13 +51,14 @@ what makes Numera distinctive.
 | **Patched-binary stealth engine** | ✅ Camoufox / Cloak\* | ✅ | ⚠️ | ✅ |
 | **Proxy pool + leak/DNS/TLS tests** | ✅ | partial | partial | partial |
 | **CLI + Python API** | ✅ | ❌ | limited | limited |
+| **Headless parity, tested** | ✅ 34/37 | ❌ | ❌ | ❌ |
 | **Cloud team sync** | ❌ *(local-first by design)* | ✅ | ✅ | ✅ |
 
 <sub>Pricing and feature comparison are approximate and based on each vendor's public plans at the time of writing — check their sites for current details. Numera doesn't do hosted team sync on purpose (see the roadmap); everything else is local and free.</sub>
 
 ## What's in the box
 
-Numera is a monorepo with two parts that work together:
+Numera is a monorepo whose parts work together:
 
 ```
 Numera/
@@ -96,6 +97,7 @@ Numera/
 | 🔗 **Startup URLs** | Each profile opens the pages you want, in its own tabs |
 | 🖱️ **One-click launcher** | `start.bat` installs, builds and starts Numera on Windows — one process, one port |
 | ⌨️ **CLI + Python API** | Script it or drive it by hand |
+| 🤖 **Built for agents** | `--json` on every command an agent would drive, `--detach` for long jobs with pollable handles, and an MCP surface. A parity test asserts the GUI has no capability the CLI lacks — see [docs/agents.md](docs/agents.md) |
 
 ## What Numera adds
 
@@ -107,7 +109,7 @@ The gaps that show up running an anti-detect manager unattended on a server:
 | 🌍 **Global extension set** | An **Extensions** page in the sidebar manages the default set, and every profile created afterwards starts with it — from the CLI, the dashboard or `bulk-create`. **Apply to all** pushes it onto profiles that already exist, merging so each keeps whatever it already carried. CLI equivalents: `numera ext default-add <folder>` and `numera apply --all --extension <folder>`. |
 | 🖥️ **Headless launching** | `numera launch --headless` now keeps the session up instead of closing the moment it opens, and `POST /api/profiles/{id}/launch` takes `{"headless": true}` — so the dashboard's ▶ button works on a box with no display. |
 | 🔐 **Optional API auth** | Set `NUMERA_API_TOKEN` and every request needs `Authorization: Bearer …`. Off by default, so a localhost setup is unchanged. |
-| ⚠️ **Honest proxy warnings** | Chromium only authenticates HTTP(S) proxies. A SOCKS proxy carrying a username/password is now flagged at launch and in the pool health check instead of silently failing to connect. |
+| 🔐 **Any proxy authenticates** | Chromium refuses SOCKS authentication outright and fingerprint-chromium has no password support on `--proxy-server` at all. Numera puts a small loopback relay in front, which terminates the authentication and forwards upstream — so every engine can use a credentialed proxy of any type. |
 | 🛡️ **WebRTC no longer leaks the real IP** | Chromium's `--force-webrtc-ip-handling-policy` does not reliably stop ICE from offering a public address that isn't the proxy's — verified: exit IP `95.x` while WebRTC handed out a different public IP. The dashboard's WebRTC picker was cosmetic (the engine had no such field), so the choice never reached the browser. Now it does: **Altered** drops public candidates from both the ICE events and the SDP while leaving private/mDNS ones alone, **Disabled** removes `RTCPeerConnection`, **Real** leaves it untouched. |
 | 🗺️ **Italian and Belgian locales** | `it-IT` and `nl-BE`, with timezones, languages and coordinates — proxies exiting in Italy or Belgium previously had no locale to align to and always failed the timezone check. |
 | 🔁 **Sticky-session proxy import** | The pool used to dedupe on `host:port`, which collapsed a 16-line sticky-session list — one gateway, credentials picking the exit node — into a single proxy. Credentials are part of the identity now. |
