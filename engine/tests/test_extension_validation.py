@@ -37,14 +37,18 @@ def _put(client, paths):
     return client.put("/api/config", json={"default_extensions": [str(p) for p in paths]})
 
 
-def test_a_web_store_url_is_refused_with_a_usable_explanation(client):
-    """The exact input that was silently accepted before."""
+def test_a_web_store_url_in_the_folder_list_points_at_the_installer(client):
+    """A URL is still not a folder - but the answer changed.
+
+    It used to be "download and unpack the crx yourself", which was true and
+    useless. `POST /api/extensions/install` now does exactly that, so the message
+    has to point there instead. The assertion that matters is unchanged: refusing
+    without saying what to do only moves the confusion."""
     r = _put(client, ["https://chromewebstore.google.com/detail/x/abcdefg?hl=en"])
     assert r.status_code == 400
     detail = r.json()["detail"]
     assert "URL" in detail
-    # The message has to say what to do instead, or it just moves the confusion.
-    assert "manifest.json" in detail
+    assert "ext install" in detail and "Extensions page" in detail
 
 
 def test_a_path_that_does_not_exist_is_refused(client, tmp_path):

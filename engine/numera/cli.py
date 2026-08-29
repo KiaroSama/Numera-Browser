@@ -961,7 +961,48 @@ def _cmd_ext_default(args, store: ProfileStore) -> int:
     return emit({"ok": True, "extensions": current, "changed": True})
 
 
+def _cmd_ext_store(args, store: ProfileStore) -> int:
+    """Web Store extensions: download, unpack, list, remove.
+
+    Chromium refuses to install from the store under automation, so the crx is
+    fetched from Google's update endpoint and unpacked into the data directory -
+    where it travels with a portable install rather than pointing at one machine."""
+    from . import webstore
+
+    if args.ext_command == "installed":
+        items = webstore.installed(store.root)
+        for e in items:
+            say(f"  {e['id']}  {e['name']}")
+        if not items:
+            say(_c("No extensions installed from the Web Store yet.", C.DIM))
+        return emit({"extensions": items})
+
+    try:
+        if args.ext_command == "uninstall":
+            ok = webstore.uninstall(args.url, store.root)
+            say(_c("Removed." if ok else "Not installed.", C.GRN if ok else C.DIM))
+            return emit({"removed": ok})
+
+        result = webstore.install(args.url, store.root, force=getattr(args, "force", False))
+    except webstore.WebStoreError as e:
+        say(_c(str(e), C.RED))
+        return emit({"error": str(e)}, 1)
+
+    verb = "Already installed" if result["reused"] else "Installed"
+    say(_c(f"{verb}: {result['name']}  ({result['id']})", C.GRN))
+    say(_c(f"  {result['path']}", C.DIM))
+
+    if not getattr(args, "no_default", False):
+        current = store.get_default_extensions()
+        if result["path"] not in current:
+            store.set_default_extensions([*current, result["path"]])
+            say(_c("  Added to the set every new profile starts with.", C.DIM))
+    return emit(result)
+
+
 def cmd_ext(args, store: ProfileStore) -> int:
+    if args.ext_command in ("install", "installed", "uninstall"):
+        return _cmd_ext_store(args, store)
     if args.ext_command.startswith("default"):
         return _cmd_ext_default(args, store)
     prof = _resolve_or_fail(args, store)
@@ -1497,6 +1538,21 @@ def build_parser() -> argparse.ArgumentParser:
         s = ex.add_parser(verb, parents=[_AGENT], help=helptext)
         s.add_argument("ref"); s.add_argument("path")
         s.set_defaults(func=cmd_ext)
+    s = ex.add_parser("install", parents=[_AGENT],
+                      help="Install from a Chrome Web Store URL (downloads and unpacks it)")
+    s.add_argument("url", help="Web Store URL, or the 32-character extension id")
+    s.add_argument("--force", action="store_true", help="Re-download even if installed")
+    s.add_argument("--no-default", action="store_true",
+                   help="Do not add it to the set new profiles start with")
+    s.set_defaults(func=cmd_ext)
+    s = ex.add_parser("installed", parents=[_AGENT],
+                      help="List extensions installed from the Web Store")
+    s.set_defaults(func=cmd_ext)
+    s = ex.add_parser("uninstall", parents=[_AGENT],
+                      help="Delete an extension installed from the Web Store")
+    s.add_argument("url", help="Web Store URL or extension id")
+    s.set_defaults(func=cmd_ext)
+
     s = ex.add_parser("default-list", parents=[_AGENT],
                       help="Show the extensions every NEW profile starts with")
     s.set_defaults(func=cmd_ext)

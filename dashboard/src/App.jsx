@@ -828,6 +828,7 @@ function ExtensionsView({ config, live, onSaved, profiles, refresh }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [applied, setApplied] = useState(null);   // {changed, skipped} after a run
+  const [installed, setInstalled] = useState(""); // result of a Web Store install
 
   // Re-sync when the engine hands us a config later than our first render.
   useEffect(() => { setItems(config?.default_extensions || []); }, [config]);
@@ -845,12 +846,31 @@ function ExtensionsView({ config, live, onSaved, profiles, refresh }) {
     } finally { setBusy(false); }
   };
 
-  const add = () => {
-    const path = draft.trim();
-    if (!path) return;
-    if (items.includes(path)) { setErr("That folder is already in the list."); return; }
+  const add = async () => {
+    const entry = draft.trim();
+    if (!entry) return;
+
+    // A Web Store link is not a path. The engine downloads and unpacks it, and
+    // the resulting folder joins the list — Chromium cannot install from the
+    // store itself once automation is enabled, which is why this round-trips.
+    if (/^https?:\/\//i.test(entry)) {
+      if (!live) { setErr("Installing from a link needs the engine running."); return; }
+      setErr(""); setInstalled(""); setBusy(true);
+      try {
+        const r = await api.installExtension(entry);
+        setItems(r.default_extensions || items);
+        setDraft("");
+        setInstalled(`${r.reused ? "Already installed" : "Installed"}: ${r.name}`);
+        onSaved?.();
+      } catch (e) {
+        setErr(String(e?.message || e));
+      } finally { setBusy(false); }
+      return;
+    }
+
+    if (items.includes(entry)) { setErr("That folder is already in the list."); return; }
     setDraft("");
-    save([...items, path]);
+    save([...items, entry]);
   };
 
   // Push the default set onto every existing profile, merging into whatever
@@ -897,17 +917,20 @@ function ExtensionsView({ config, live, onSaved, profiles, refresh }) {
       <div className="ps-ext-add">
         <input
           className="ps-in"
-          placeholder="C:\path\to\unpacked-extension"
+          placeholder="Chrome Web Store link, or C:\path\to\unpacked-extension"
           value={draft}
           onChange={e => { setDraft(e.target.value); setErr(""); }}
           onKeyDown={e => { if (e.key === "Enter") add(); }}
-          aria-label="Extension folder path"
+          aria-label="Chrome Web Store link or unpacked extension folder"
         />
         <button className="ps-btn primary" onClick={add} disabled={busy || !draft.trim()}>
-          <Plus size={14} /> Add
+          {busy ? <><RefreshCw size={14} /> Working…</>
+                : /^https?:\/\//i.test(draft.trim()) ? <><Download size={14} /> Install</>
+                : <><Plus size={14} /> Add</>}
         </button>
       </div>
       {err && <div className="ps-ext-err"><ShieldAlert size={13} /> {err}</div>}
+      {installed && <div className="ps-ext-done"><Check size={13} /> {installed}</div>}
 
       {items.length === 0 ? (
         <div className="ps-empty">

@@ -131,6 +131,8 @@ Folders are shared with the dashboard: the same list, the same file. Add
 ### Extensions, warm-up, automation
 
 ```bash
+numera ext install https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh
+numera ext installed                   # what's been fetched from the store
 numera ext add acct-01 ./ublock        # unpacked folder (the one with manifest.json)
 numera ext list acct-01
 numera ext default-add ./ublock        # every NEW profile starts with it
@@ -313,6 +315,8 @@ in place of the bearer header.
 | PUT | `/api/schedules/{id}` | Change interval / preset / enabled |
 | DELETE | `/api/schedules/{id}` | Remove a schedule |
 | POST | `/api/fingerprint/validate` | Coherence check a fingerprint |
+| POST | `/api/extensions/install` | Fetch and unpack a Chrome Web Store extension (`{"url": "..."}` — a link or a bare 32-character id) |
+| GET | `/api/extensions/installed` | Extensions fetched from the store into this data directory |
 | GET | `/api/config` | Default engine, default extensions, headless-launch flag, folders, data dir |
 | PUT | `/api/config` | Change any of them (`default_engine`, `default_extensions`, `headless_launch`) |
 
