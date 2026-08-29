@@ -45,3 +45,4 @@ node_modules/
 # The portable data root: profiles, browser sessions, the proxy pool and logs.
 # Created beside the app by design - never tracked.
 /data/
+/dist-server/

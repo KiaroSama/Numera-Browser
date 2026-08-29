@@ -65,8 +65,7 @@ Numera/
 ├── engine/        Python core — fingerprints, storage, launcher, CLI, HTTP API
 ├── dashboard/     React console — served by the engine itself, not a separate server
 ├── desktop/       Tauri shell — the standalone windowed app
-├── scripts/       build-desktop.ps1, which assembles the portable folder
-└── start.bat      Windows one-click launcher (installs, builds, starts)
+└── scripts/       build-desktop.ps1 (portable app) and build-server.ps1 (wheel)
 ```
 
 | | |
@@ -95,7 +94,7 @@ Numera/
 | 🖥️ **Real browser** | Launches a real browser, per-profile isolation |
 | 🔌 **Pluggable engines** | Swap the stealth backend: CloakBrowser, Camoufox, Patchright, Playwright |
 | 🔗 **Startup URLs** | Each profile opens the pages you want, in its own tabs |
-| 🖱️ **One-click launcher** | `start.bat` installs, builds and starts Numera on Windows — one process, one port |
+| 🖱️ **Portable desktop app** | A ~33 MB folder you copy and double-click. No Python, no Node, no installer — the engine is frozen inside the window |
 | ⌨️ **CLI + Python API** | Script it or drive it by hand |
 | 🤖 **Built for agents** | `--json` on every command an agent would drive, `--detach` for long jobs with pollable handles, and an MCP surface. A parity test asserts the GUI has no capability the CLI lacks — see [docs/agents.md](docs/agents.md) |
 
@@ -127,23 +126,44 @@ git clone https://github.com/KiaroSama/Numera.git
 cd Numera
 ```
 
-### Easiest (Windows): one-click launcher
+### Build it
 
-Double-click **`start.bat`** in the project folder. On first run it installs
-everything, builds the dashboard, and lets you pick the default browser engine.
-The menu offers CloakBrowser first, but it needs a paid subscription — pick
-**Camoufox** if you want a free, open engine of comparable strength.
+Two artifacts, two scripts. Pick the one that matches how you will run it.
 
-It then starts **one process on one port**: the engine serves the dashboard
-itself at `http://localhost:8787`, so there is no separate dev server and only
-one window to close. To re-run setup, delete `.numera_setup_done`.
+**Desktop app — a portable folder you double-click.**
 
-The engine you pick "wins": it becomes the default for every new profile you
-create afterwards, from the batch menu, the CLI, or the dashboard. Change it any
-time with `numera default-engine camoufox`.
+```powershell
+pwsh -File scripts/build-desktop.ps1
+```
 
-Prefer to do it by hand, or on macOS/Linux? Follow the manual steps below —
-the two parts are independent, so you can run the engine, the dashboard, or both.
+Produces `desktop/dist/Numera/` (~33 MB): a native window, the engine frozen
+inside it, and the dashboard. Copy that folder anywhere — another drive, a flash
+drive, another machine — and run `numera.exe`. **No Python, no Node, no
+installer**; Windows 11 already has the only dependency (WebView2). It picks a
+free port at runtime and shuts the engine down with the window.
+
+Windows only for now. Tauri cannot be cross-compiled, so macOS and Linux desktop
+builds need their own host — the CI workflow for the Linux one is in
+`.github/workflows/`.
+
+**Server / CLI — headless, any OS.**
+
+```powershell
+pwsh -File scripts/build-server.ps1
+```
+
+Produces a **platform-independent** wheel (`py3-none-any`) in `dist-server/`.
+The same file installs on Linux, macOS or Windows:
+
+```bash
+python -m pip install numera_engine-0.3.0-py3-none-any.whl[api,launch]
+numera serve --host 0.0.0.0 --port 8787
+```
+
+No desktop shell, no bundled browser — browser engines stay opt-in, and a server
+that only drives an already-running browser over CDP needs none of them.
+
+Prefer to work from source? Follow the manual steps below.
 
 ### 1. Engine (backend)
 
@@ -293,7 +313,7 @@ stays the same manager over all of them.
 - [x] Web dashboard: profile grid, fingerprint editor, coherence meter, bulk create, proxies
 - [x] HTTP API (`numera serve`) connecting the dashboard to the engine — launch real browsers from the UI
 - [x] Pluggable launch engines (CloakBrowser, Camoufox, Patchright, Playwright)
-- [x] Persisted default engine + one-click Windows launcher (`start.bat`)
+- [x] Persisted default engine + a portable desktop app (Tauri shell, frozen engine)
 - [x] Per-profile startup URLs
 - [x] Cookie import/export (CLI, API, dashboard) — Cookie-Editor JSON,
       Playwright storage state, Netscape `cookies.txt`

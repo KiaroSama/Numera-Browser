@@ -58,6 +58,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **A server / CLI build.** `scripts/build-server.ps1` produces a **platform-independent** wheel
+  (`py3-none-any`), so the same file installs on Linux, macOS or Windows. No desktop shell, no
+  bundled browser. Verified by installing it into a clean venv and confirming it serves both the
+  API and the dashboard.
+- **A Linux CI workflow** (`.github/workflows/build-linux.yml`) that builds both the server wheel
+  and the Linux desktop app. The desktop half exists because a Tauri binary links against the
+  host's WebKitGTK and cannot be cross-compiled from Windows — a Linux runner is the only way this
+  project produces one at all.
+
 - **GoLogin-level fingerprint surface.** Twelve more fields carried through *both* conversion
   directions and proven in a live browser: ClientRects and WebGL-image noise as separate switches
   from the vendor/renderer strings, a media-devices mode with speaker count, OS version, Android
@@ -135,6 +144,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- **React 18 -> 19, react-dom 18 -> 19, lucide-react 0.383 -> 1.34.** Verified locally, since CI
+  cannot run: the app builds, every page opens, the theme toggles, all 63 icons render non-empty
+  and the console is clean. The two React packages were upgraded *together* — Dependabot proposed
+  them as separate PRs, and taking one without the other leaves a broken pairing.
+- **GitHub Actions bumped** to `checkout@v7`, `setup-python@v7`, `setup-node@v7`.
+  `dependency-review-action` was left at v4: the proposed `@v5` tag does not exist upstream (only
+  `v5.0.0` does), so merging it would have failed the workflow with "action not found".
+
 - **One process, one port.** The engine now serves the built dashboard itself, so
   `numera serve` is the whole application at `http://localhost:8787` - no second dev server, no
   CORS, and one window instead of two. The SPA fallback explicitly refuses `/api/*`: without that
@@ -177,6 +194,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   refuses 3.9 with a clear message; the CI matrix is 3.10/3.12/3.13.
 
 ### Removed
+
+- **`start.bat`.** The portable desktop app replaces it: `scripts/build-desktop.ps1` produces a
+  folder you copy and double-click, with the engine frozen inside and no Python or Node needed on
+  the target machine.
+
 
 - `CODE_OF_CONDUCT.md` and `CONTRIBUTING.md`.
 - `docs/launch.md` - a launch kit for a public open-source release (Show HN, r/selfhosted,
