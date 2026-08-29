@@ -58,6 +58,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **A headless parity test.** It reads the API calls `dashboard/src/api.js` actually makes and the
+  commands the CLI actually registers, then asserts every GUI capability has a non-GUI path.
+  **34 of 37 do.** The three that do not — creating, renaming and deleting folders — are frozen in
+  `KNOWN_GAPS` with the reason (folders exist only in the dashboard's profile shape;
+  `to_engine_profile()` drops the field, so the engine store has nothing to hang one on. Tags are
+  the CLI's equivalent). Closing a gap fails the test too, which is the point: the set cannot drift
+  in either direction unnoticed. A separate assertion guards the readers themselves, since a regex
+  that quietly matched nothing would make every other assertion pass while proving the opposite.
+- **`--json` on the commands an agent would drive**, emitting only machine-readable output on
+  stdout with the human text kept off it. The existing human output stays the default.
+- **Detached jobs.** `--detach` on a long operation returns a handle immediately;
+  `numera jobs list|show|stop|prune` polls and controls them. Verified end to end: spawn, poll a
+  running job, stop it, and confirm the OS process is gone.
+- **An MCP surface** (`engine/numera/mcp.py`) over the same operations, plus `docs/agents.md`.
+
 - **An Extensions page.** The default set of unpacked Chromium extensions is now managed from the
   sidebar instead of only from the CLI. Adding a folder seeds every profile created afterwards;
   **Apply to all** pushes the set onto profiles that already exist, *merging* rather than replacing
