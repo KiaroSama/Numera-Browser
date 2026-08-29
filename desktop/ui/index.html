@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Numera</title>
+<style>
+  /* ShardX dark tokens (see .ai/UI_THEME.md). Dark only: this page is on
+     screen for a second or two before the real dashboard takes over. */
+  :root { color-scheme: dark; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #0a0c11; color: #ecedf3;
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Arial, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-user-select: none; user-select: none;
+  }
+  .box { text-align: center; max-width: 34rem; padding: 2rem; }
+  .mark {
+    font-size: 2.6rem; font-weight: 650; letter-spacing: -0.02em; margin: 0 0 1.4rem;
+    background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .bar { width: 13rem; height: 3px; margin: 0 auto 1.1rem; border-radius: 999px; background: #232734; overflow: hidden; }
+  .bar i { display: block; width: 40%; height: 100%; border-radius: 999px;
+           background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%); animation: slide 1.1s ease-in-out infinite; }
+  @keyframes slide { 0% { transform: translateX(-110%) } 100% { transform: translateX(360%) } }
+  @media (prefers-reduced-motion: reduce) { .bar i { animation: none; width: 100% } }
+  #msg { color: #a6acbc; margin: 0; }
+  #err { display: none; margin: 1.2rem 0 0; padding: 0.9rem 1rem; text-align: left;
+         background: #181c26; border: 1px solid #3b4256; border-left: 3px solid #fb7185;
+         border-radius: 8px; color: #ecedf3; white-space: pre-wrap;
+         font: 12px/1.6 ui-monospace, "Cascadia Mono", Consolas, monospace;
+         -webkit-user-select: text; user-select: text; }
+  body.failed .bar { display: none; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <p class="mark">Numera</p>
+    <div class="bar"><i></i></div>
+    <p id="msg">Starting the engine&hellip;</p>
+    <pre id="err"></pre>
+  </div>
+  <script>
+    // Called from Rust via webview eval when the sidecar never becomes healthy.
+    window.numeraError = function (text) {
+      document.body.classList.add('failed');
+      document.getElementById('msg').textContent = 'The Numera engine did not start.';
+      var e = document.getElementById('err');
+      e.textContent = text;
+      e.style.display = 'block';
+    };
+  </script>
+</body>
+</html>

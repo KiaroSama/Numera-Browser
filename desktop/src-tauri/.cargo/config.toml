@@ -1,0 +1,6 @@
+# Link the MSVC runtime statically. Without this the shell imports
+# VCRUNTIME140.dll / VCRUNTIME140_1.dll and will not start on a machine that has
+# no Visual C++ redistributable -- which defeats "copy the folder and run it".
+# Verified with dumpbin /DEPENDENTS: those two imports disappear.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

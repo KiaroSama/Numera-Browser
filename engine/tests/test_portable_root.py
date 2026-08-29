@@ -163,6 +163,32 @@ def test_redaction_is_applied_by_the_handler_not_the_call_site(tmp_path, fresh_l
     assert "[REDACTED]" in text
 
 
+def test_redaction_does_not_break_numeric_format_args(tmp_path, fresh_logger):
+    """Regression: the filter used to stringify every arg, so a %d then raised
+    TypeError and logging dropped the whole record. A redaction filter that
+    silently deletes log lines is worse than the leak it exists to prevent."""
+    path = logs.setup(tmp_path)
+    assert path is not None
+    logs.get("firstrun").info("imported from %s - %d profile(s), %.1f MB",
+                              "/old/place", 3, 1.5)
+    for h in logs.get().handlers:
+        h.flush()
+    text = path.read_text(encoding="utf-8")
+    assert "3 profile(s)" in text, "the record was dropped instead of formatted"
+    assert "1.5 MB" in text
+
+
+def test_redaction_still_scrubs_string_args(tmp_path, fresh_logger):
+    """The type fix must not have opened a hole: strings are still scrubbed."""
+    path = logs.setup(tmp_path)
+    logs.get("proxy").warning("upstream %s failed", "http://bob:hunter2@gw:3128")
+    for h in logs.get().handlers:
+        h.flush()
+    text = path.read_text(encoding="utf-8")
+    assert "hunter2" not in text
+    assert "[REDACTED]" in text
+
+
 def test_setup_reports_failure_instead_of_claiming_a_file(tmp_path, monkeypatch, capsys,
                                                           fresh_logger):
     """Never print a log path that does not exist."""
