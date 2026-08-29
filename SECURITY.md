@@ -22,5 +22,18 @@ supply the password at use time through `NUMERA_PASSWORD` or `--password`, so it
 never touches disk. The rest of each profile stays readable. There is no password
 recovery — losing it means losing the encrypted secrets.
 
+**The proxy-authentication relay:** a profile whose proxy needs a username and
+password is launched through a small local relay, because no browser engine can
+authenticate every proxy type itself (Chromium refuses SOCKS authentication
+outright). The relay listens on `127.0.0.1` on an ephemeral port, accepts no
+authentication of its own, and holds the upstream credentials in memory for the
+lifetime of that browser session.
+
+That means any other process on the same machine that finds the port can use
+your proxy while a profile is open. It cannot read the credentials, and the
+port is never reachable from another machine, but on a shared or untrusted
+machine this is worth knowing. The relay is started only when the proxy
+actually carries credentials, and is torn down when the browser closes.
+
 Not yet covered: the dashboard's own profile store, cookies (Chromium keeps those
 in its own OS-encrypted store), and full-profile encryption.
