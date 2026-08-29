@@ -78,7 +78,9 @@ export const api = {
   updateSchedule: (id, patch) => req("PUT", `/api/schedules/${id}`, patch),
   deleteSchedule: (id) => req("DELETE", `/api/schedules/${id}`),
   // Health overview: coherence, proxy, cached trust grade and schedule per profile.
-  health: () => req("GET", "/api/profiles/health"),
+  // Distinct from health() above — that one probes whether the engine is up at
+  // all and must never throw; this one fetches per-profile data and does.
+  profileHealth: () => req("GET", "/api/profiles/health"),
   // Fingerprint collisions: which profiles look like the same device.
   collisions: () => req("GET", "/api/profiles/collisions"),
 };
