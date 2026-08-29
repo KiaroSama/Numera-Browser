@@ -156,37 +156,41 @@ which the standard library already speaks.
 
 ---
 
-## Known gaps
+## Known gaps and closed ones
 
 These are asserted, not aspirational: the parity test fails if the list changes
 in either direction.
 
-### Folders have no CLI
+### Folders and the shared store — both closed
 
-`createFolder` / `renameFolder` / `deleteFolder` exist only in the dashboard.
-The engine's `Profile` has no folder field and `to_engine_profile()` drops the
-dashboard's, so there is nothing on the engine side to put one on. Tags are the
-CLI's equivalent and they *do* round-trip.
+Two gaps used to live here. Both are fixed, and how they were fixed is worth
+knowing because it decides where you look when something goes wrong.
 
-### The CLI and the dashboard keep separate profiles
+**Folders** now have `numera folder list|create|rename|delete`, with `--json`.
+The rules — a rename moves the folder's profiles with it, a delete reassigns
+them to `Unfiled` rather than destroying them — live in `numera/folders.py`, and
+both the HTTP routes and the CLI call it. That is deliberate: two copies of
+behaviour this subtle would drift, and the drift would be silent, with the GUI
+and the CLI simply disagreeing about where a profile lives. Folders are stored
+in `<data-dir>/dashboard-config.json`, the same file the dashboard already used,
+so nothing had to be migrated.
 
-The most important one, and it is a data-layer gap rather than a missing
-command:
+**The two stores are reconciled.** `DashboardStore` mirrors every write into the
+engine store, and `GET /api/profiles` adopts anything the CLI created. So:
 
-| | writes | reads |
+| | writes | visible to |
 |---|---|---|
-| `numera create` | `<data-dir>/profiles/<id>.json` | the same |
-| `POST /api/profiles` | `<data-dir>/dashboard/<id>.json` | the same |
+| `numera create` | `<data-dir>/profiles/<id>.json` | both, adopted on the next list |
+| `POST /api/profiles` | `<data-dir>/dashboard/<id>.json` **and** the engine store | both, immediately |
 
-Nothing writes both. A profile created headlessly does not appear in the
-dashboard, and a profile created in the dashboard is invisible to `numera list`
-until something launches it — the API materialises an engine profile at that
-point (`engine_store.save(to_engine_profile(d))`) and not before.
+The mirroring is in the store rather than in each of the five API write paths,
+so a sixth write path cannot forget it. The conversion is best-effort: a profile
+shape the dashboard can hold but `to_engine_profile()` cannot convert still
+saves, because refusing the edit would fail for a reason the user cannot see.
 
-So the two front doors are each individually complete and they do not share a
-fleet. Pick one per deployment until this is reconciled.
-`test_a_cli_created_profile_is_visible_to_the_dashboard` is a strict xfail that
-reproduces it in four lines and will start failing the day it is fixed.
+`test_a_cli_created_profile_is_visible_to_the_dashboard` was a strict xfail while
+this was open; it passes outright now, and the strictness is what announced the
+fix rather than letting it go unnoticed.
 
 ### `numera health` reports no trust grade
 

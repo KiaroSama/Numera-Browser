@@ -115,6 +115,19 @@ reports where it came out, then asks WebRTC whether it would give away an
 address the proxy was meant to hide. It works without a proxy too — that's your
 baseline.
 
+### Folders
+
+```bash
+numera folder list                              # every folder, including ones only a profile references
+numera folder create "Facebook Ads"
+numera folder rename Amazon "Amazon EU"         # its profiles move with it
+numera folder delete "Amazon EU"                # profiles are reassigned to Unfiled, never deleted
+numera folder delete Old --reassign-to Archive  # ...or somewhere you choose
+```
+
+Folders are shared with the dashboard: the same list, the same file. Add
+`--json` to any of these for machine-readable output.
+
 ### Extensions, warm-up, automation
 
 ```bash
