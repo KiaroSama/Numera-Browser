@@ -1102,7 +1102,55 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
         def _stop_scheduler():
             stop.set()
 
+    _mount_dashboard(app)   # must be last: its catch-all would shadow /api/*
     return app
+
+
+def dashboard_dir() -> Optional[Path]:
+    """The built dashboard, or None when it hasn't been built.
+
+    Two layouts to find: a source checkout, where the build lands in
+    ``dashboard/dist``, and a packaged app, where it sits beside this module."""
+    here = Path(__file__).resolve()
+    for candidate in (here.parent / "web", here.parents[2] / "dashboard" / "dist"):
+        if (candidate / "index.html").is_file():
+            return candidate
+    return None
+
+
+def _mount_dashboard(app) -> None:
+    """Serve the dashboard from the API itself, so one process on one port is
+    the whole application - no second dev server, no CORS, nothing for a user to
+    start by hand.
+
+    The SPA needs any unknown path to return index.html so client-side routing
+    works on a refresh. That catch-all must never swallow the API, so it is
+    registered last and explicitly refuses /api/*: without that, a typo'd
+    endpoint would return the HTML page with status 200 and the dashboard would
+    try to JSON.parse it."""
+    root = dashboard_dir()
+    if root is None:
+        return
+
+    # Imported here, not at module scope: fastapi is an optional extra, and the
+    # engine must stay importable without it.
+    from fastapi import HTTPException
+    from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/assets", StaticFiles(directory=str(root / "assets")), name="assets")
+
+    index = root / "index.html"
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def _spa(path: str):
+        if path.startswith("api/"):
+            raise HTTPException(404, "no such API endpoint")
+        # A real file (favicon, icon, manifest) wins over the SPA fallback.
+        candidate = (root / path).resolve()
+        if path and candidate.is_file() and candidate.is_relative_to(root):
+            return FileResponse(candidate)
+        return FileResponse(index)
 
 
 def serve(host: str = "127.0.0.1", port: int = 8787, data_dir: Optional[str] = None):
