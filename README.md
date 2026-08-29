@@ -61,8 +61,10 @@ Numera is a monorepo with two parts that work together:
 
 ```
 Numera/
-├── engine/        Python core — fingerprints, storage, launcher, CLI
-├── dashboard/     React web console — the visual profile manager
+├── engine/        Python core — fingerprints, storage, launcher, CLI, HTTP API
+├── dashboard/     React console — served by the engine itself, not a separate server
+├── desktop/       Tauri shell — the standalone windowed app
+├── scripts/       build-desktop.ps1, which assembles the portable folder
 └── start.bat      Windows one-click launcher (installs, builds, starts)
 ```
 
@@ -102,7 +104,7 @@ The gaps that show up running an anti-detect manager unattended on a server:
 | | |
 |---|---|
 | 🧩 **Extensions work headless** | Playwright's default headless binary is the *headless shell*, which cannot load extensions at all and announces itself as `HeadlessChrome` over CDP. Numera now launches the full Chromium in `--headless=new`, so extensions load and the browser stops advertising that it is headless. |
-| 🌍 **Global extension set** | `numera ext default-add <folder>` — every profile created afterwards starts with it, from the CLI, the dashboard or `bulk-create`. `numera apply --all --extension <folder>` pushes it onto profiles that already exist. |
+| 🌍 **Global extension set** | An **Extensions** page in the sidebar manages the default set, and every profile created afterwards starts with it — from the CLI, the dashboard or `bulk-create`. **Apply to all** pushes it onto profiles that already exist, merging so each keeps whatever it already carried. CLI equivalents: `numera ext default-add <folder>` and `numera apply --all --extension <folder>`. |
 | 🖥️ **Headless launching** | `numera launch --headless` now keeps the session up instead of closing the moment it opens, and `POST /api/profiles/{id}/launch` takes `{"headless": true}` — so the dashboard's ▶ button works on a box with no display. |
 | 🔐 **Optional API auth** | Set `NUMERA_API_TOKEN` and every request needs `Authorization: Bearer …`. Off by default, so a localhost setup is unchanged. |
 | ⚠️ **Honest proxy warnings** | Chromium only authenticates HTTP(S) proxies. A SOCKS proxy carrying a username/password is now flagged at launch and in the pool health check instead of silently failing to connect. |
