@@ -25,7 +25,18 @@ async function req(method, path, body) {
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) throw new Error(`${method} ${path} → ${res.status}`);
+  if (!res.ok) {
+    // Use the server's own explanation when it sent one. FastAPI puts it in
+    // `detail`, and it is the only thing that tells the user *why* — dropping it
+    // left the UI showing "PUT /api/config → 400", which is a status code, not a
+    // reason someone can act on.
+    let detail = "";
+    try {
+      const body = await res.json();
+      detail = typeof body?.detail === "string" ? body.detail : "";
+    } catch { /* not JSON, or empty — fall back to the status line */ }
+    throw new Error(detail || `${method} ${path} → ${res.status}`);
+  }
   return res.status === 204 ? null : res.json();
 }
 

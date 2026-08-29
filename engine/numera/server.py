@@ -559,6 +559,35 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
             "version": __version__,
         }
 
+    def _unloadable_extensions(paths) -> list[str]:
+        """Reject entries the launcher would silently drop.
+
+        `_extension_args` filters out anything that is not a directory, so a
+        Web Store URL or a mistyped path was accepted here, shown as saved, and
+        then did nothing at launch - with no error anywhere. Chromium can only
+        load an *unpacked* extension: a folder containing manifest.json.
+        """
+        problems = []
+        for raw in paths:
+            entry = str(raw).strip()
+            if not entry:
+                continue
+            if "://" in entry:
+                problems.append(
+                    f"{entry!r} is a URL. Numera loads unpacked extensions from disk, and "
+                    "Chromium cannot install from the Web Store with automation enabled. "
+                    "Download the extension, unpack the .crx (it is a zip), and give the "
+                    "folder that contains manifest.json.")
+                continue
+            path = Path(entry).expanduser()
+            if not path.is_dir():
+                problems.append(f"{entry!r} is not a folder on this machine.")
+            elif not (path / "manifest.json").is_file():
+                problems.append(
+                    f"{entry!r} has no manifest.json, so Chromium will refuse it. "
+                    "Point at the folder that contains the manifest, not its parent.")
+        return problems
+
     @app.put("/api/config")
     def set_config(cfg: dict):
         from . import drivers
@@ -573,6 +602,8 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
                 exts = _parse_lines(exts)
             if not isinstance(exts, list):
                 raise HTTPException(400, "default_extensions must be a list of folder paths")
+            for bad in _unloadable_extensions(exts):
+                raise HTTPException(400, bad)
             engine_store.set_default_extensions(exts)
         if cfg.get("headless_launch") is not None:
             engine_store.set_headless_launch(bool(cfg["headless_launch"]))
