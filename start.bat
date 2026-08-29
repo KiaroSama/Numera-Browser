@@ -58,11 +58,18 @@ if not exist "%~dp0.numera_setup_done" (
   popd
   echo(
 
-  echo   [3/3] Installing the dashboard ^(Node^)...
+  echo   [3/3] Building the dashboard ^(Node^)...
   pushd "%~dp0dashboard"
   call npm install
   if errorlevel 1 (
     echo   [X] Dashboard install failed. See the messages above.
+    popd & pause & exit /b 1
+  )
+  REM The engine serves dashboard\dist directly, so the build has to exist -
+  REM there is no dev server to fall back on any more.
+  call npm run build
+  if errorlevel 1 (
+    echo   [X] Dashboard build failed. See the messages above.
     popd & pause & exit /b 1
   )
   popd
@@ -106,30 +113,20 @@ if defined ENGINE (
 )
 echo(
 
-REM ---- 4. Start the engine API in its own window --------------
-echo   Starting the engine API on http://localhost:8787 ...
-start "Numera Engine API" cmd /k "cd /d "%~dp0engine" && %PY% -m numera serve"
-
-REM ---- 5. Start the dashboard in its own window ---------------
-echo   Starting the dashboard on http://localhost:5173 ...
-start "Numera Dashboard" cmd /k "cd /d "%~dp0dashboard" && npm run dev"
-
-REM ---- 6. Give the dashboard a moment, then open the browser --
-echo(
-echo   Waiting for the dashboard to come up...
-timeout /t 6 /nobreak >nul
-start "" "http://localhost:5173"
-
+REM ---- 4. Start the app (one process serves the UI and the API) ----
+echo   Starting Numera on http://localhost:8787 ...
 echo(
 echo   ====================================================
-echo      Numera is running.
-echo      Dashboard : http://localhost:5173
-echo      Engine API: http://localhost:8787
-echo(
-echo      Two terminal windows opened (engine + dashboard).
-echo      To stop everything, just close those two windows.
+echo      Numera is running in THIS window.
+echo      Close it, or press Ctrl+C, to stop.
 echo   ====================================================
 echo(
-echo   You can close THIS window.
-timeout /t 8 /nobreak >nul
+
+REM Poll for the port instead of sleeping a guessed number of seconds: on a slow
+REM machine the old blind wait opened the browser before the server answered.
+start "" cmd /c "for /l %%i in (1,1,60) do (curl -s -o nul http://127.0.0.1:8787/api/health && (start "" http://localhost:8787 & exit) || timeout /t 1 /nobreak >nul)"
+
+pushd "%~dp0engine"
+%PY% -m numera serve
+popd
 exit /b 0
