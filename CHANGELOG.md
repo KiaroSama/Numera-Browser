@@ -23,6 +23,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   not a choice.
 - **The API stored profile shapes the dashboard could not render** (B10). `POST`/`PUT` now reject
   a bad shape instead of persisting it and taking the UI down on the next load.
+- **One malformed profile blanked the whole app** (B9). There was no error boundary, so a single
+  render throw took the React tree down to a white page with no way back. Bad data now degrades to
+  a readable panel: per-view (switching tabs clears it), around the profile editor, and once at the
+  root as a last resort.
+- **An unhandled promise rejection on every engine-offline load** (B11). `api` declared the key
+  `health` twice - a safe `async health()` probe that returns false when the engine is down, and
+  later `health: () => req(...)` for per-profile data. The second silently shadowed the first, so
+  the call that was written to never throw was in fact the throwing one. Renamed to
+  `profileHealth`; the probe is a probe again.
+- **The profile editor could not use the proxy pool** (B12). Attaching a saved proxy meant retyping
+  host, port, user and password by hand. There is a picker now, and manual entry still works.
 - **Proxy import collapsed same-country entries** (B13). A label like `IT 1` was reduced to `IT`,
   making four Italian proxies indistinguishable. The country code still aligns the fingerprint; the
   rest is kept as the label.

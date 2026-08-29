@@ -252,6 +252,46 @@ function Toaster() {
   );
 }
 
+/* ---- error boundary ---------------------------------------------- *
+ * Without one, a single malformed profile that throws while rendering takes the
+ * whole React tree down — a white page with no way back. React only catches
+ * render errors in a class component, hence the class. Wrap the parts that draw
+ * profile data so a bad one degrades to a readable panel and the rest keeps
+ * working. `resetKey` clears the error when you navigate somewhere else.       */
+export class ErrorBoundary extends React.Component {
+  state = { error: null };
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) { console.error("Numera UI error:", error, info?.componentStack); }
+  componentDidUpdate(prev) {
+    if (this.state.error && prev.resetKey !== this.props.resetKey) this.setState({ error: null });
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    const { title, onReset, overlay } = this.props;
+    // Colour is inline because at the root the app's <style> may never have
+    // mounted — the panel has to be readable without the stylesheet.
+    const panel = (
+      <div className="ps-empty" style={{ padding: 40, color: T.muted, fontSize: 13 }}>
+        <div className="ps-empty-ic"><ShieldAlert size={26} color={T.amber} /></div>
+        <div style={{ fontSize: 15, fontWeight: 600, fontFamily: FONT.display, color: T.text }}>
+          {title || "This view couldn't be drawn"}
+        </div>
+        <div style={{ maxWidth: 400, textAlign: "center", lineHeight: 1.6 }}>
+          Usually one malformed profile. Try again, or reload if it keeps happening.
+        </div>
+        <code className="ps-mono" style={{ fontSize: 11, color: T.dim, textAlign: "center" }}>
+          {String(this.state.error?.message || this.state.error)}
+        </code>
+        <button className="ps-btn ghost sm" onClick={() => (onReset ? onReset() : this.setState({ error: null }))}>
+          {onReset ? <><X size={14} /> Close</> : <><RefreshCw size={14} /> Try again</>}
+        </button>
+      </div>
+    );
+    if (!overlay) return panel;
+    return <div className="ps-overlay center"><div className="ps-modal ps-pop">{panel}</div></div>;
+  }
+}
+
 /* ================================================================== */
 export default function App() {
   const [profiles, setProfiles] = useState(seed);
@@ -265,7 +305,10 @@ export default function App() {
   const [filters, setFilters] = useState({ status: "", engine: "", os: "", proxy: "", tag: "" });
   const [mode, setMode] = useState("connecting");   // connecting | live | demo
   const [engines, setEngines] = useState(null);      // {name: installed} from API
-  const [defaultEngine, setDefaultEngine] = useState(ENGINE_ORDER[0]); // new-profile default
+  // New-profile default. null = not known yet (or no engine to ask): profiles are
+  // then created without an engine so the server applies its own stored default,
+  // instead of us guessing one and having it persisted back as "last engine wins".
+  const [defaultEngine, setDefaultEngine] = useState(null);
   const [config, setConfig] = useState(null);        // {root, version, ...} from API
   const [folders, setFolders] = useState(() => FOLDERS.filter(f => f !== "All profiles"));
   const [palette, setPalette] = useState(() => {     // "dark" | "light"
@@ -518,8 +561,11 @@ export default function App() {
             </button>
           </div>
 
+          {/* Keyed on the view so switching tabs clears a failed one. The sidebar
+              and toolbar live outside, so navigation survives a bad profile. */}
+          <ErrorBoundary resetKey={view}>
           {view === "profiles" && (
-            <ProfilesView {...{ filtered, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, remove, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh }} />
+            <ProfilesView {...{ filtered, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, remove, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }} />
           )}
           {view === "health" && <HealthView profiles={profiles} live={live} refresh={refresh} setEditor={setEditor} />}
           {view === "engines" && <EnginesView engines={engines} live={live} />}
@@ -537,10 +583,15 @@ export default function App() {
               counts={{ profiles: profiles.length, folders: folderList.length, proxies: proxyCount }} />
           )}
           {!["profiles", "health", "engines", "proxies", "automation", "folders", "settings"].includes(view) && <Placeholder view={view} />}
+          </ErrorBoundary>
         </main>
       </div>
 
-      {editor && <Editor profile={editor} live={live} folders={folderList} onClose={() => setEditor(null)} onSave={(p) => { save(p); setEditor(null); }} />}
+      {editor && (
+        <ErrorBoundary overlay title="This profile couldn't be opened" onReset={() => setEditor(null)}>
+          <Editor profile={editor} live={live} folders={folderList} onClose={() => setEditor(null)} onSave={(p) => { save(p); setEditor(null); }} />
+        </ErrorBoundary>
+      )}
       {sync && <SyncModal ids={[...sel]} folders={folderList} onClose={() => setSync(false)} onApply={async (patch) => {
         const ids = [...sel];
         if (live) {
@@ -581,7 +632,7 @@ export default function App() {
 }
 
 /* ---- Profiles view ----------------------------------------------- */
-function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, remove, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh }) {
+function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, remove, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }) {
   const [filterOpen, setFilterOpen] = useState(false);
   const activeFilters = Object.values(filters).filter(Boolean).length;
   const setFilter = (key, value) => setFilters(f => ({ ...f, [key]: f[key] === value ? "" : value }));
@@ -691,7 +742,7 @@ function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSe
           <div className="ps-empty">
             <Layers size={28} color={T.dim} />
             <div>No profiles here yet.</div>
-            <button className="ps-btn primary sm" onClick={() => setEditor(newProfile(folder))}><Plus size={14} /> Create one</button>
+            <button className="ps-btn primary sm" onClick={() => setEditor(newProfile(folder, defaultEngine))}><Plus size={14} /> Create one</button>
           </div>
           )
         ) : (
@@ -878,11 +929,13 @@ function Stat({ icon, label, value, accent, pulse }) {
   );
 }
 
-function newProfile(folder, defaultEngine = ENGINE_ORDER[0]) {
+// `engine` is null when we have no default from the server: a null engine lets
+// the server apply its own stored default instead of us guessing one (B7).
+function newProfile(folder, defaultEngine) {
   const os = "Windows";
   return {
     id: nid(), name: "", folder: folder === "All profiles" ? "Facebook Ads" : folder,
-    status: "stopped", os, tags: [], engine: defaultEngine, browser: "Chrome", browserVersion: "128.0.0.0",
+    status: "stopped", os, tags: [], engine: defaultEngine || null, browser: "Chrome", browserVersion: "128.0.0.0",
     userAgent: uaFor(os), screen: SCREENS[os][0], cores: CORES[os][1], memory: RAM[os][1],
     webglVendor: "Google Inc. (NVIDIA)", webglRenderer: GPUS[os][0],
     canvas: "Noise", webrtc: "Altered", audio: "Noise", fonts: "Masked",
@@ -968,6 +1021,13 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
   const changeOS = (os) => set({ os, userAgent: uaFor(os), screen: SCREENS[os][0], cores: CORES[os][1], memory: RAM[os][1], webglRenderer: GPUS[os][0] });
   const changeLocale = (locale) => set({ locale, timezone: LOCALES[locale] });
   const setProxy = (patch) => set({ proxy: { ...(p.proxy || { type: "HTTP", host: "", port: "", user: "", pass: "", country: "" }), ...patch } });
+
+  // The saved proxy pool (live only), so attaching one doesn't mean retyping
+  // host/port/user/pass by hand. Matched back by host:port so reopening the
+  // editor still shows which pool entry is attached.
+  const [pool, setPool] = useState([]);
+  useEffect(() => { if (live) api.listProxies().then(setPool).catch(() => { /* offline */ }); }, [live]);
+  const poolPick = pool.find(x => x.host === p.proxy?.host && String(x.port) === String(p.proxy?.port));
 
   const iss = coherence(p);
   const score = Math.max(0, 100 - iss.length * 22);
@@ -1102,7 +1162,10 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
               </Row>
               <Field label="Notes"><textarea className="ps-in" rows={3} value={p.notes} onChange={e => set({ notes: e.target.value })} placeholder="Anything worth remembering about this account…" /></Field>
               <Field label="Launch engine">
-                <select className="ps-in" value={p.engine || "playwright"} onChange={e => set({ engine: e.target.value })}>
+                <select className="ps-in" value={p.engine || ""} onChange={e => set({ engine: e.target.value })}>
+                  {/* Only offered while unset — we don't know the server's default,
+                      so let it decide rather than naming an engine we're guessing. */}
+                  {!p.engine && <option value="">— engine default —</option>}
                   {ENGINE_ORDER.map(en => <option key={en} value={en}>{ENGINE_META[en].label}{ENGINE_META[en].recommended ? "  ★ recommended" : ""}</option>)}
                 </select>
               </Field>
@@ -1189,6 +1252,21 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
               </div>
               {p.proxy ? (
                 <>
+                  {pool.length > 0 && (
+                    <Field label="Saved proxy">
+                      <select className="ps-in" value={poolPick?.id || ""} onChange={e => {
+                        const x = pool.find(q => q.id === e.target.value);
+                        if (x) setProxy({ type: x.type || "HTTP", host: x.host, port: String(x.port), user: x.user || "", pass: x.pass || "", country: x.country || "" });
+                      }}>
+                        <option value="">— manual entry —</option>
+                        {pool.map(x => (
+                          <option key={x.id} value={x.id}>
+                            {x.host}:{x.port}{x.country ? ` · ${x.country}` : ""}{x.status === "ok" ? " · live" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  )}
                   <Row>
                     <Field label="Type"><select className="ps-in" value={p.proxy.type} onChange={e => setProxy({ type: e.target.value })}>{["HTTP", "HTTPS", "SOCKS5"].map(t => <option key={t}>{t}</option>)}</select></Field>
                     <Field label="Country"><select className="ps-in" value={p.proxy.country} onChange={e => setProxy({ country: e.target.value })}>{Object.keys(COUNTRY_LOCALE).map(c => <option key={c}>{c}</option>)}</select></Field>
@@ -1395,7 +1473,7 @@ function BulkModal({ onClose, onCreate, folder, defaultEngine }) {
   const [oses, setOses] = useState(["Windows"]);
   const [countries, setCountries] = useState(["US"]);
   const [browsers, setBrowsers] = useState([...CHROME_VERSIONS]);
-  const [engine, setEngine] = useState(defaultEngine || ENGINE_ORDER[0]);
+  const [engine, setEngine] = useState(defaultEngine || "");   // "" → the server's own default
   const [randomize, setRandomize] = useState(true);
   const [prefix, setPrefix] = useState("Batch");
   const [start, setStart] = useState(1);
@@ -1421,7 +1499,9 @@ function BulkModal({ onClose, onCreate, folder, defaultEngine }) {
       list[i] = {
         name: `${prefix}-${String(start + i).padStart(pad, "0")}`,
         folder: folder === "All profiles" ? "Facebook Ads" : folder,
-        status: "stopped", os, tags, engine, browser: "Chrome", browserVersion: chrome,
+        // null, not "", when unset: the server rejects an engine it doesn't know
+        // but treats a null one as "you decide".
+        status: "stopped", os, tags, engine: engine || null, browser: "Chrome", browserVersion: chrome,
         userAgent: uaFor(os, chrome), screen: pick(SCREENS[os]),
         cores: pick(CORES[os], CORES[os][1]), memory: pick(RAM[os], RAM[os][1]),
         webglVendor: vendorFor(gpu), webglRenderer: gpu,
@@ -1455,6 +1535,7 @@ function BulkModal({ onClose, onCreate, folder, defaultEngine }) {
             </Field>
             <Field label="Launch engine">
               <select className="ps-in" value={engine} onChange={e => setEngine(e.target.value)}>
+                {!engine && <option value="">— engine default —</option>}
                 {ENGINE_ORDER.map(en => <option key={en} value={en}>{ENGINE_META[en].label}{ENGINE_META[en].recommended ? "  ★" : ""}</option>)}
               </select>
             </Field>
@@ -1507,7 +1588,7 @@ function GradeBadge({ grade }) {
 function HealthView({ profiles, live, refresh, setEditor }) {
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState({});           // id -> action label
-  const load = async () => { try { setData(await api.health()); } catch { /* offline */ } };
+  const load = async () => { try { setData(await api.profileHealth()); } catch { /* offline */ } };
   useEffect(() => { if (live) load(); }, [live]);
 
   // Demo mode: no engine to grade against, so derive coherence/proxy from the
