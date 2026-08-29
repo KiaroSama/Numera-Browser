@@ -63,7 +63,7 @@ Numera is a monorepo with two parts that work together:
 Numera/
 ├── engine/        Python core — fingerprints, storage, launcher, CLI
 ├── dashboard/     React web console — the visual profile manager
-└── start.bat      Windows one-click launcher (installs + starts both)
+└── start.bat      Windows one-click launcher (installs, builds, starts)
 ```
 
 | | |
@@ -92,7 +92,7 @@ Numera/
 | 🖥️ **Real browser** | Launches a real browser, per-profile isolation |
 | 🔌 **Pluggable engines** | Swap the stealth backend: CloakBrowser, Camoufox, Patchright, Playwright |
 | 🔗 **Startup URLs** | Each profile opens the pages you want, in its own tabs |
-| 🖱️ **One-click launcher** | `start.bat` installs everything and starts both halves on Windows |
+| 🖱️ **One-click launcher** | `start.bat` installs, builds and starts Numera on Windows — one process, one port |
 | ⌨️ **CLI + Python API** | Script it or drive it by hand |
 
 ## What Numera adds
@@ -126,12 +126,13 @@ cd Numera
 ### Easiest (Windows): one-click launcher
 
 Double-click **`start.bat`** in the project folder. On first run it installs
-everything, lets you pick the default browser engine, then starts the engine API
-+ dashboard and opens the console in your browser. The menu offers CloakBrowser
-first, but it needs a paid subscription — pick **Camoufox** if you want a free,
-open engine of comparable strength. Two
-terminal windows stay open while it runs — close them to stop. To re-run setup,
-delete `.numera_setup_done`.
+everything, builds the dashboard, and lets you pick the default browser engine.
+The menu offers CloakBrowser first, but it needs a paid subscription — pick
+**Camoufox** if you want a free, open engine of comparable strength.
+
+It then starts **one process on one port**: the engine serves the dashboard
+itself at `http://localhost:8787`, so there is no separate dev server and only
+one window to close. To re-run setup, delete `.numera_setup_done`.
 
 The engine you pick "wins": it becomes the default for every new profile you
 create afterwards, from the batch menu, the CLI, or the dashboard. Change it any

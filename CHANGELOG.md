@@ -38,6 +38,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   making four Italian proxies indistinguishable. The country code still aligns the fingerprint; the
   rest is kept as the label.
 
+### Changed
+
+- **One process, one port.** The engine now serves the built dashboard itself, so
+  `numera serve` is the whole application at `http://localhost:8787` - no second dev server, no
+  CORS, and one window instead of two. The SPA fallback explicitly refuses `/api/*`: without that
+  guard a mistyped endpoint would answer 200 with the HTML page and the dashboard would try to
+  parse it as JSON. `start.bat` also stopped guessing - it polls for the port instead of sleeping
+  a fixed six seconds and hoping.
+- A server or CLI-only install with no `dashboard/dist` still starts normally; the UI routes are
+  simply absent.
+
 ### Changed - BREAKING
 
 - **The project is now `Numera`.** It was `persona-studio` under MIT. Every user-facing name
