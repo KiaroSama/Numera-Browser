@@ -1,7 +1,9 @@
 # Architecture
 
-Numera has two parts: a Python **engine** that does the real work, and a React
-**dashboard** that drives it. This doc explains how they fit together.
+Numera has three parts: a Python **engine** that does the real work, a React
+**dashboard** that drives it — served by the engine, not separately — and a
+Tauri **desktop shell** that wraps both into a standalone window. This doc
+explains how they fit together.
 
 ## The coherence principle
 
@@ -41,7 +43,11 @@ pick OS ──▶ archetype (devices.py) ──▶ Fingerprint ──▶ validat
 | `devices.py` | Curated OS/GPU/screen/hardware/locale building blocks |
 | `fingerprint.py` | `generate()` assembles a coherent fingerprint; `validate()` checks it; `sec_ch_ua()` builds Client-Hints |
 | `models.py` | `Fingerprint`, `Proxy`, `Profile` dataclasses + (de)serialization |
-| `store.py` | `ProfileStore` — one JSON file per profile under `~/.numera` (falling back to a pre-rename `~/.persona` if that is the only one present), plus a `user-data/<id>` dir per profile for the browser session |
+| `store.py` | `ProfileStore` — one JSON file per profile, plus a `user-data/<id>` dir per profile for the browser session. Where that lives is decided by `paths.py`, not here |
+| `paths.py` | The one place that decides the data directory. Order: explicit argument, `NUMERA_DATA_DIR`, a **writable** `data/` beside the app, `~/.numera`, then the pre-rename `~/.persona` |
+| `firstrun.py` | Copies an older install's profiles, pool, config and browser sessions into a new root once. Copy, never move; never overwrites |
+| `logs.py` | Per-run log file, UTC. Credentials are redacted by a filter on the *handler*, so a library logging under its own name cannot bypass it |
+| `relay.py` | Loopback proxy that terminates upstream authentication, so engines that cannot authenticate a proxy still use one |
 | `stealth.py` | Builds the per-fingerprint JS patch injected via `add_init_script` |
 | `launcher.py` | Thin dispatcher — resolves `profile.engine` and hands off to a driver |
 | `drivers.py` | Pluggable launch backends (playwright / patchright / camoufox) |
@@ -75,8 +81,18 @@ and the launcher makes sure both levels describe the *same* device.
 
 ## Storage layout
 
+Resolved by `paths.py`. A **portable** install keeps this beside the executable
+so the folder can be copied to another machine; an installed one falls back to
+the home directory. The writability check matters: unpacked under Program Files
+a data directory beside the binary is read-only, and without the check every
+later write would fail far from the cause.
+
 ```
-~/.numera/
+<data root>/            # data/ beside the app, or ~/.numera
+├── logs/
+│   └── numera_<UTC>.log
+├── config.json
+├── proxies.json
 ├── profiles/
 │   ├── <id>.json          # profile metadata + fingerprint + proxy
 │   └── …
@@ -93,6 +109,29 @@ back up or sync.
 This is implemented. `engine/numera/server.py` exposes the engine over HTTP
 (`numera serve`, default `http://127.0.0.1:8787`), and the dashboard talks to it
 through `dashboard/src/api.js`.
+
+**One process, one port.** The engine also *serves the built dashboard itself*,
+so `numera serve` is the whole application — there is no second dev server and
+nothing for a user to start by hand. Two consequences follow, and both have
+already caused bugs:
+
+- `api.js` uses a **same-origin** base URL. A hardcoded `http://localhost:8787`
+  is a compile-time constant that is wrong whenever the port is chosen at
+  runtime, and it failed quietly — the app rendered and fell back to demo data.
+- The SPA catch-all route must refuse `/api/*`. Without that guard a mistyped
+  endpoint returns the HTML page with status 200 and the dashboard tries to
+  parse it as JSON.
+
+Three surfaces, one engine:
+
+    numera serve            the API, and the dashboard mounted on it
+    desktop/                a Tauri window that starts the engine as a sidecar
+                            on a port it picks at runtime
+    numera <command>        the CLI, for headless and scripted use
+
+The dashboard's own files split by responsibility: `theme.js` holds the
+palettes, the CSS custom properties and the stylesheet; `App.jsx` holds state
+and views; `api.js` is the only place that knows about HTTP.
 
 ```
  Dashboard (React)                     Engine API (FastAPI)              Engine core
