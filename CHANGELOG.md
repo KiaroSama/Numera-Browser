@@ -58,6 +58,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **An Extensions page.** The default set of unpacked Chromium extensions is now managed from the
+  sidebar instead of only from the CLI. Adding a folder seeds every profile created afterwards;
+  **Apply to all** pushes the set onto profiles that already exist, *merging* rather than replacing
+  so a profile keeps whatever it already carried. The page states the limit that surprises people:
+  Firefox-family engines cannot load Chromium extensions at all.
+
 - **A portable desktop app.** `scripts/build-desktop.ps1` produces a 32.6 MB folder containing a
   Tauri shell and a frozen engine. Copy it anywhere and double-click: no Python, no Rust, no
   VC++ redistributable, no installer. Only WebView2 is required, which ships with Windows 11.
@@ -75,6 +81,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   browser session. HTTP `CONNECT` and SOCKS5 upstreams are both supported.
 
 ### Fixed
+
+- **The light theme left a dark page behind it.** `index.html` hardcoded the page background, so
+  switching to light repainted the app but not the document beneath it. Both the boot background
+  and the app root are tokens now, and follow the theme.
 
 - **A credentialed SOCKS proxy could not be used at all.** Chromium's own refusal
   (`Browser does not support socks5 proxy authentication`) is real; the relay steps around it.
