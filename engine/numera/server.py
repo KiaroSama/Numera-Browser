@@ -1153,10 +1153,34 @@ def _mount_dashboard(app) -> None:
         return FileResponse(index)
 
 
-def serve(host: str = "127.0.0.1", port: int = 8787, data_dir: Optional[str] = None):
+def serve(host: str = "127.0.0.1", port: int = 8787, data_dir: Optional[str] = None,
+          verbose: bool = False):
     """Start the API server (blocking)."""
     _require_fastapi()
     import uvicorn
-    app = create_app(data_dir)
-    print(f"Numera API on http://{host}:{port}  (data dir: {ProfileStore(data_dir).root})")
-    uvicorn.run(app, host=host, port=port, log_level="info")
+
+    from . import firstrun, logs
+    from .paths import resolve_data_dir
+
+    root = resolve_data_dir(data_dir)
+    log_path = logs.setup(root, verbose=verbose)
+    log = logs.get("serve")
+
+    # Before anything opens the store: carry an older install's profiles across.
+    imported = firstrun.run_if_needed(root)
+    if imported:
+        log.info("first run: imported from %s - copied %s, skipped %s, %d profile(s)",
+                 imported["source"], imported["copied"] or "nothing",
+                 imported["skipped"] or "nothing", imported["profiles"])
+        for problem in imported["failed"]:
+            log.warning("first-run import problem: %s", problem)
+        if imported["copied"]:
+            print(f"  Imported {imported['profiles']} profile(s) from {imported['source']}")
+
+    app = create_app(str(root))
+    where = "the dashboard and API" if dashboard_dir() else "the API"
+    print(f"Numera: {where} on http://{host}:{port}  (data: {root})")
+    if log_path:
+        print(f"  log: {log_path}")
+    log.info("listening on %s:%s", host, port)
+    uvicorn.run(app, host=host, port=port, log_level="debug" if verbose else "info")
