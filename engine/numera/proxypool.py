@@ -25,6 +25,10 @@ from typing import Optional
 _SCHEME_TYPE = {"http": "HTTP", "https": "HTTPS", "socks5": "SOCKS5",
                 "socks5h": "SOCKS5", "socks4": "SOCKS4", "socks": "SOCKS5"}
 _CC = re.compile(r"^[A-Za-z]{2}$")
+# A country code with anything after it -- "IT 1", "IT-2", "US_east". The code
+# aligns the fingerprint; the rest is what tells four proxies in the same
+# country apart, so it is kept as the label instead of being thrown away.
+_CC_LABEL = re.compile(r"^([A-Za-z]{2})[\s._-]+(\S.*)$")
 
 # A tiny IP-echo used for the liveness check; tried in order.
 _ECHO = ["https://ipapi.co/json/", "https://ipwho.is/", "https://api.ipify.org/?format=json"]
@@ -56,21 +60,32 @@ def parse_line(line: str) -> Optional[dict]:
     if not host:
         return None
 
-    country = None
+    country = label = None
+
+    def _country_and_label(tok: str):
+        """A bare 'IT' is just a country; 'IT 1' is a country plus a label."""
+        tok = (tok or "").strip()
+        if _CC.match(tok):
+            return tok.upper(), None
+        m = _CC_LABEL.match(tok)
+        if m:
+            return m.group(1).upper(), tok
+        return None, None
+
     # host:port:user:pass[:CC]  (creds after the port, colon-separated)
     if user is None and len(parts) >= 4:
         user, pw = parts[2] or None, parts[3] or None
-        if len(parts) >= 5 and _CC.match(parts[4]):
-            country = parts[4].upper()
+        if len(parts) >= 5:
+            country, label = _country_and_label(parts[4])
     # host:port:CC  or  user:pass@host:port:CC
-    elif len(parts) >= 3 and _CC.match(parts[-1]):
-        country = parts[-1].upper()
+    elif len(parts) >= 3:
+        country, label = _country_and_label(parts[-1])
 
     return {
         "type": _SCHEME_TYPE.get(scheme, "HTTP"),
         "host": host, "port": port,
         "user": user or None, "pass": pw or None,
-        "country": country,
+        "country": country, "label": label,
     }
 
 

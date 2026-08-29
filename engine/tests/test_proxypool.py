@@ -14,7 +14,21 @@ from numera.models import Profile, Proxy
 def test_parse_host_port():
     assert parse_line("1.2.3.4:8080") == {
         "type": "HTTP", "host": "1.2.3.4", "port": "8080",
-        "user": None, "pass": None, "country": None}
+        "user": None, "pass": None, "country": None, "label": None}
+
+
+def test_parse_keeps_the_label_beside_the_country_code():
+    """'IT 1'..'IT 4' are four distinct proxies, not four copies of 'IT'.
+
+    The country code aligns the fingerprint; the suffix is the only thing that
+    tells same-country entries apart in the picker, so it must survive import."""
+    one = parse_line("gw.example:3128:user:pass:IT 1")
+    two = parse_line("gw.example:3128:user:pass:IT 2")
+    assert (one["country"], one["label"]) == ("IT", "IT 1")
+    assert (two["country"], two["label"]) == ("IT", "IT 2")
+    assert one["label"] != two["label"]
+    # A bare code is still just a country, with no label to show.
+    assert parse_line("gw.example:3128:IT")["label"] is None
 
 
 def test_parse_host_port_user_pass():

@@ -45,8 +45,12 @@ class ProfileStore:
         self._password = password or os.environ.get("NUMERA_PASSWORD") or None
 
     # ---- config (small key/value settings) -------------------------------
-    # CloakBrowser is the top-priority default: it's the strongest engine.
-    DEFAULT_ENGINE = "cloak"
+    # Preference order for a fresh install, strongest first. `cloak` is NOT in
+    # it: CloakBrowser needs a paid subscription and cannot be bundled, so
+    # defaulting to it meant the very first launch click failed on every new
+    # install. An explicit user choice still wins over this list.
+    ENGINE_PREFERENCE = ("camoufox", "patchright", "playwright")
+    DEFAULT_ENGINE = "playwright"
 
     def get_config(self) -> dict:
         if not self.config_path.exists():
@@ -61,8 +65,21 @@ class ProfileStore:
         return cfg
 
     def get_default_engine(self) -> str:
-        """The engine used for new profiles when none is given (persisted)."""
-        return self.get_config().get("default_engine") or self.DEFAULT_ENGINE
+        """The engine used for new profiles when none is given (persisted).
+
+        An explicitly configured engine is returned as-is even when its package
+        is missing - silently substituting another one would be the same class
+        of bug as a UI control that does nothing, and the launcher already
+        raises a clear "needs the 'x' package" error. The preference order only
+        decides what a *fresh* install gets."""
+        configured = self.get_config().get("default_engine")
+        if configured:
+            return configured
+        from . import drivers  # local: keeps store importable without a driver stack
+        for name in self.ENGINE_PREFERENCE:
+            if drivers.is_installed(name):
+                return name
+        return self.DEFAULT_ENGINE
 
     def set_default_engine(self, name: str) -> str:
         cfg = self.get_config()
