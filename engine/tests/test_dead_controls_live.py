@@ -125,20 +125,40 @@ def test_audio_real_differs_from_noise(tmp_path):
 
 
 def test_font_mode_real_stops_the_masking(tmp_path):
-    """Masked answers come from the archetype's font list; 'real' must not."""
-    probe = """() => document.fonts.check('12px "Nonexistent Numera Font"')"""
-    masked = _read(tmp_path, "f-masked", probe, font_mode="masked")
-    assert masked is False, "a font not in the archetype list should read as absent"
-    # In 'real' mode the patch is gone, so the answer is whatever the OS says -
-    # assert the patch is absent rather than guessing the host's font set.
+    """Masked answers come from the archetype's font list; 'real' must not.
+
+    The oracle has to be a font the *host* has and the profile's list does not.
+    An earlier version asked whether ``document.fonts.check.toString()`` still
+    mentioned the patch, which reads False in both modes — ``asNative`` masks
+    the patched function's source, so the stealth feature defeated the test and
+    the assertion could never fail for the defect it named.
+    """
+    probe = """(f) => document.fonts.check('12px "' + f + '"')"""
+    # Ask the unpatched browser first, then assert against what it actually has.
     page, close = _page(tmp_path, "f-real", font_mode="real")
     try:
         page.goto("about:blank")
-        patched = page.evaluate(
-            """() => document.fonts.check.toString().includes('installed')""")
+        host = {f: page.evaluate(probe, f)
+                for f in ("Segoe UI", "Arial", "DejaVu Sans", "Helvetica Neue")}
     finally:
         close()
-    assert patched is False, "font masking still installed in 'real' mode"
+    present = next((f for f, ok in host.items() if ok), None)
+    if present is None:
+        pytest.skip(f"host reports none of the probe fonts installed: {host}")
+
+    # Same font, a profile whose list excludes it: masking must now deny it.
+    page, close = _page(tmp_path, "f-masked", font_mode="masked",
+                        fonts=["Numera Probe Font"])
+    try:
+        page.goto("about:blank")
+        masked = page.evaluate(probe, present)
+        absent = page.evaluate(probe, "Nonexistent Numera Font")
+    finally:
+        close()
+    assert masked is False, (
+        f"'{present}' is installed on the host and absent from the profile's "
+        "list, so masking should deny it - the font list is not reaching the page")
+    assert absent is False, "a font in no list at all should read as absent"
 
 
 def test_do_not_track_reaches_the_page_and_the_header(tmp_path):

@@ -12,6 +12,8 @@ Chrome/Safari versions periodically to stay current.
 
 from __future__ import annotations
 
+import random
+
 # Recent stable Chrome major versions. Keep the newest 3-4 to look up-to-date.
 CHROME_VERSIONS = ["125.0.0.0", "126.0.0.0", "127.0.0.0", "128.0.0.0"]
 
@@ -44,14 +46,24 @@ WEBGL = {
         ("Google Inc. (Qualcomm)", "ANGLE (Qualcomm, Adreno (TM) 660, OpenGL ES 3.2)"),
         ("Google Inc. (ARM)", "ANGLE (ARM, Mali-G78, OpenGL ES 3.2)"),
     ],
+    # iOS reports the plain unprefixed strings — no ANGLE wrapper, because
+    # WebKit renders WebGL straight onto Metal. Every iPhone answers the same
+    # two values, which is itself the correct signal: an iPhone that claimed a
+    # distinctive GPU would be the anomaly.
+    "ios": [
+        ("Apple Inc.", "Apple GPU"),
+    ],
 }
 
-# Common desktop screen resolutions (width, height) per OS.
+# Screen resolutions (width, height) per OS. Mobile entries are CSS pixels,
+# which is what `screen.width` reports in a mobile browser — the physical panel
+# is that number times the device pixel ratio below.
 SCREENS = {
     "windows": [(1920, 1080), (1366, 768), (2560, 1440), (1536, 864), (1600, 900)],
     "macos": [(2560, 1600), (1440, 900), (1728, 1117), (1512, 982)],
     "linux": [(1920, 1080), (1366, 768), (2560, 1440)],
     "android": [(360, 800), (393, 873), (412, 915), (384, 854)],
+    "ios": [(390, 844), (393, 852), (430, 932), (375, 812), (428, 926)],
 }
 
 # Plausible hardware for each platform: CPU threads and RAM (GB).
@@ -60,14 +72,24 @@ HARDWARE = {
     "macos": {"cores": [8, 10, 12], "memory": [8, 16, 32]},
     "linux": {"cores": [4, 8, 16], "memory": [8, 16]},
     "android": {"cores": [6, 8], "memory": [4, 6, 8]},
+    # WebKit implements neither navigator.deviceMemory nor a truthful
+    # hardwareConcurrency spread; iOS Safari reports a flat 4 threads and no
+    # deviceMemory at all. memory 0 is the marker for "this OS does not expose
+    # it" and stealth.py deletes the property rather than answering with a
+    # number no real iPhone would give.
+    "ios": {"cores": [4], "memory": [0]},
 }
 
-# OS token that appears in the User-Agent string.
+# OS token that appears in the User-Agent string. ``{v}`` is filled from the
+# profile's OS version; the desktop tokens are frozen by Chrome (it reports
+# "Windows NT 10.0" and "10_15_7" on every modern release) so only the mobile
+# ones actually vary.
 OS_UA_TOKEN = {
     "windows": "Windows NT 10.0; Win64; x64",
     "macos": "Macintosh; Intel Mac OS X 10_15_7",
     "linux": "X11; Linux x86_64",
-    "android": "Linux; Android 13; Pixel 7",
+    "android": "Linux; Android {v}; {model}",
+    "ios": "iPhone; CPU iPhone OS {v_} like Mac OS X",
 }
 
 # navigator.platform value per OS.
@@ -76,14 +98,55 @@ NAV_PLATFORM = {
     "macos": "MacIntel",
     "linux": "Linux x86_64",
     "android": "Linux armv8l",
+    "ios": "iPhone",
 }
 
-# sec-ch-ua-platform header value per OS.
+# sec-ch-ua-platform header value per OS. iOS has no entry that a real device
+# would send: WebKit ships no Client Hints at all, so an iOS profile suppresses
+# the whole UA-CH surface instead (see stealth.py).
 CH_PLATFORM = {
     "windows": '"Windows"',
     "macos": '"macOS"',
     "linux": '"Linux"',
     "android": '"Android"',
+    "ios": '""',
+}
+
+# OS releases in circulation, and the value each one puts in the UA-CH
+# ``platformVersion`` high-entropy hint. Windows is the odd one: the UA string
+# says "Windows NT 10.0" for both 10 and 11, and only platformVersion tells
+# them apart (>= 13.0.0 means Windows 11).
+OS_VERSIONS = {
+    "windows": [("11", "15.0.0"), ("10", "10.0.0")],
+    "macos": [("15.5", "15.5.0"), ("14.7", "14.7.0"), ("13.7", "13.7.0")],
+    "linux": [("", "")],
+    "android": [("15", "15.0.0"), ("14", "14.0.0"), ("13", "13.0.0")],
+    "ios": [("18.5", "18.5.0"), ("17.6", "17.6.0"), ("16.7", "16.7.0")],
+}
+
+# Handset models that appear in the Android UA string.
+ANDROID_MODELS = ["SM-S918B", "SM-A546B", "Pixel 8", "Pixel 7", "2201116SG"]
+
+# Touch points a device reports. Real desktops are overwhelmingly 0, but
+# convertibles and touch monitors exist and report Windows' cap of 10; phones
+# report 5. A fleet where every desktop is 0 is as uniform as one where every
+# desktop is 10.
+TOUCH_POINTS = {
+    "windows": [0, 10],
+    "macos": [0],
+    "linux": [0],
+    "android": [5],
+    "ios": [5],
+}
+
+# window.devicePixelRatio. Windows carries the OS display-scaling spread
+# (100% / 125% / 150%), Retina Macs are a flat 2, and phones are 2.6-3.
+PIXEL_RATIOS = {
+    "windows": [1.0, 1.25, 1.5],
+    "macos": [2.0],
+    "linux": [1.0],
+    "android": [2.625, 3.0],
+    "ios": [3.0, 2.0],
 }
 
 # Locale -> (timezone, accept-language list). Used to keep language, timezone
@@ -166,8 +229,121 @@ FONTS = {
         "Droid Sans Mono", "Noto Color Emoji", "Noto Sans", "Noto Serif",
         "Roboto", "Roboto Condensed", "Roboto Mono",
     ],
+    # iOS ships a fixed set and no user-installable fonts, so the list does not
+    # vary between handsets — see the note on `sample_fonts`.
+    "ios": [
+        "Academy Engraved LET", "American Typewriter", "Arial", "Arial Rounded MT Bold",
+        "Avenir", "Avenir Next", "Baskerville", "Bodoni 72", "Bradley Hand",
+        "Chalkboard SE", "Cochin", "Copperplate", "Courier New", "Damascus",
+        "Didot", "Futura", "Georgia", "Gill Sans", "Helvetica", "Helvetica Neue",
+        "Hoefler Text", "Kailasa", "Marker Felt", "Menlo", "Noteworthy", "Optima",
+        "Palatino", "Papyrus", "Party LET", "Savoye LET", "Snell Roundhand",
+        "Times New Roman", "Trebuchet MS", "Verdana", "Zapfino",
+    ],
 }
 
-# The four desktop-capable operating systems we generate by default.
 DESKTOP_OS = ["windows", "macos", "linux"]
-ALL_OS = ["windows", "macos", "linux", "android"]
+MOBILE_OS = ["android", "ios"]
+ALL_OS = DESKTOP_OS + MOBILE_OS
+
+
+# --------------------------------------------------------------------------
+# Realistic distributions
+#
+# Drawing every value uniformly makes a *fleet* implausible even when each
+# profile is individually fine: a hundred profiles split evenly between an
+# RTX 3060 and a UHD 630 is not what a hundred real visitors look like, and a
+# rare GPU on every third profile is a signal in itself. These weights are
+# index-aligned with the pools above and are approximate real-world shares
+# (StatCounter for OS/screen, Steam hardware survey re-weighted towards
+# integrated graphics for a general population, Chrome UX telemetry for the
+# rest). Treat them as the right *shape*, not exact figures — the point is that
+# the common case stays common.
+# --------------------------------------------------------------------------
+WEIGHTS: dict[str, dict] = {
+    "os": {"windows": 72, "macos": 21, "linux": 7},
+    "chrome": [8, 17, 30, 45],          # newest majors carry most of the share
+    "screens": {
+        "windows": [34, 20, 8, 20, 9],
+        "macos": [30, 34, 20, 16],
+        "linux": [55, 25, 20],
+        "android": [30, 26, 28, 16],
+        "ios": [26, 30, 20, 14, 10],
+    },
+    "webgl": {
+        # Integrated Intel is the single most common desktop GPU by a wide
+        # margin once you leave the gaming population.
+        "windows": [12, 8, 58, 22],
+        "macos": [40, 38, 22],
+        "linux": [25, 75],
+        "android": [55, 45],
+        "ios": [100],
+    },
+    "cores": {
+        "windows": [24, 17, 31, 15, 13],
+        "macos": [52, 28, 20],
+        "linux": [30, 50, 20],
+        "android": [45, 55],
+        "ios": [100],
+    },
+    "memory": {
+        "windows": [10, 40, 38, 12],
+        "macos": [30, 45, 25],
+        "linux": [55, 45],
+        "android": [35, 35, 30],
+        "ios": [100],
+    },
+    "os_versions": {
+        "windows": [62, 38],
+        "macos": [45, 35, 20],
+        "linux": [100],
+        "android": [25, 45, 30],
+        "ios": [50, 33, 17],
+    },
+    "android_models": [30, 18, 20, 17, 15],
+    "touch": {
+        "windows": [88, 12],
+        "macos": [100],
+        "linux": [100],
+        "android": [100],
+        "ios": [100],
+    },
+    "pixel_ratios": {
+        "windows": [58, 27, 15],
+        "macos": [100],
+        "linux": [100],
+        "android": [55, 45],
+        "ios": [65, 35],
+    },
+}
+
+
+def weighted(rng: random.Random, pool: list, weights=None):
+    """Draw one item from ``pool`` following ``weights``.
+
+    Falls back to a uniform draw when the weights are missing or have drifted
+    out of alignment with the pool, so adding a device to a list can never
+    raise — it just loses its weighting until the table is updated. The paired
+    test asserts every pool and weight list are the same length, which is what
+    actually catches the drift.
+    """
+    if weights and len(weights) == len(pool):
+        return rng.choices(pool, weights=weights)[0]
+    return rng.choice(pool)
+
+
+def sample_fonts(rng: random.Random, os_key: str) -> list[str]:
+    """A believable installed-font list for ``os_key``.
+
+    Desktops accumulate and lose fonts (an Office install, a design tool, a
+    trimmed OEM image), so we drop a few at random. Phones do not: iOS and
+    Android ship a sealed set with no user-installable fonts, so a handset whose
+    font list is missing six entries is the anomaly. Same reasoning as the GPU
+    pools — the realistic distribution for a phone is *no* variance.
+    """
+    pool = FONTS.get(os_key, [])
+    if not pool:
+        return []
+    if os_key in MOBILE_OS:
+        return sorted(pool)
+    return sorted(rng.sample(pool, k=max(6, len(pool) - rng.randint(0, 6))))

@@ -20,8 +20,24 @@ from . import devices
 from .models import Fingerprint, Proxy
 
 
-def _build_user_agent(os_key: str, chrome: str) -> str:
-    token = devices.OS_UA_TOKEN[os_key]
+def _build_user_agent(os_key: str, chrome: str, os_version: str = "",
+                      model: str = "") -> str:
+    token = devices.OS_UA_TOKEN[os_key].format(
+        v=os_version or "14",
+        v_=(os_version or "18.5").replace(".", "_"),
+        model=model or devices.ANDROID_MODELS[0],
+    )
+    if os_key == "ios":
+        # Chrome on iOS is Blink-in-name-only: Apple forbids third-party engines
+        # on the App Store, so every iOS browser is WebKit wearing a badge, and
+        # its UA says so — WebKit's build number and a CriOS token, never
+        # "Chrome/". Numera emulates this shape on a real Blink browser, so the
+        # string is honest about what iOS Chrome reports and dishonest about
+        # what is actually rendering it. See the limits note in stealth.py.
+        return (
+            f"Mozilla/5.0 ({token}) AppleWebKit/605.1.15 (KHTML, like Gecko) "
+            f"CriOS/{chrome} Mobile/15E148 Safari/604.1"
+        )
     if os_key == "android":
         return (
             f"Mozilla/5.0 ({token}) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -31,6 +47,20 @@ def _build_user_agent(os_key: str, chrome: str) -> str:
         f"Mozilla/5.0 ({token}) AppleWebKit/537.36 (KHTML, like Gecko) "
         f"Chrome/{chrome} Safari/537.36"
     )
+
+
+def platform_version(os_key: str, os_version: str) -> str:
+    """The UA-CH ``platformVersion`` hint that goes with an OS release.
+
+    Windows is the case that matters: the UA string reads "Windows NT 10.0" on
+    both 10 and 11, so this hint is the only thing that distinguishes them, and
+    a profile claiming Windows 11 whose hint says 10.0.0 is contradicting
+    itself in a way sites actively check.
+    """
+    for name, hint in devices.OS_VERSIONS.get(os_key, []):
+        if name == os_version:
+            return hint
+    return os_version
 
 
 def _pick_locale(rng: random.Random, locale: Optional[str],
@@ -65,52 +95,62 @@ def generate(
     if seed is None:
         seed = random.randint(1, 2**31 - 1)
     rng = random.Random(seed)
+    w = devices.WEIGHTS
 
     # 1. Pick the operating system (the archetype root).
     if os:
         os_key = os.lower()
     elif mobile:
-        os_key = "android"
+        os_key = devices.weighted(rng, devices.MOBILE_OS, [70, 30])
     else:
-        os_key = rng.choice(devices.DESKTOP_OS)
-    is_mobile = os_key == "android"
+        os_key = devices.weighted(
+            rng, devices.DESKTOP_OS, [w["os"][k] for k in devices.DESKTOP_OS])
+    is_mobile = os_key in devices.MOBILE_OS
 
-    # 2. Browser version.
-    chrome = rng.choice(devices.CHROME_VERSIONS)
+    # 2. Browser and OS version.
+    chrome = devices.weighted(rng, devices.CHROME_VERSIONS, w["chrome"])
+    os_version, _hint = devices.weighted(
+        rng, devices.OS_VERSIONS[os_key], w["os_versions"].get(os_key))
+    model = (devices.weighted(rng, devices.ANDROID_MODELS, w["android_models"])
+             if os_key == "android" else "")
 
     # 3. Screen + viewport. Viewport is the screen minus realistic chrome/taskbar.
-    sw, sh = rng.choice(devices.SCREENS[os_key])
+    sw, sh = devices.weighted(rng, devices.SCREENS[os_key], w["screens"].get(os_key))
     if is_mobile:
-        vw, vh = sw, sh - rng.choice([0, 80, 120])
+        # The bar a mobile browser keeps on screen: iOS Safari/Chrome reserve
+        # more of the viewport than Android does.
+        vw, vh = sw, sh - rng.choice([113, 140] if os_key == "ios" else [0, 80, 120])
     else:
         vw = sw - rng.choice([0, 16])
         vh = sh - rng.choice([74, 88, 104, 120])  # browser UI + OS bar
 
     # 4. Hardware consistent with the OS.
-    cores = rng.choice(devices.HARDWARE[os_key]["cores"])
-    memory = rng.choice(devices.HARDWARE[os_key]["memory"])
+    cores = devices.weighted(rng, devices.HARDWARE[os_key]["cores"], w["cores"].get(os_key))
+    memory = devices.weighted(rng, devices.HARDWARE[os_key]["memory"], w["memory"].get(os_key))
+    touch = devices.weighted(rng, devices.TOUCH_POINTS[os_key], w["touch"].get(os_key))
+    dpr = devices.weighted(rng, devices.PIXEL_RATIOS[os_key], w["pixel_ratios"].get(os_key))
 
     # 5. GPU that actually exists on this OS.
-    webgl_vendor, webgl_renderer = rng.choice(devices.WEBGL[os_key])
+    webgl_vendor, webgl_renderer = devices.weighted(
+        rng, devices.WEBGL[os_key], w["webgl"].get(os_key))
 
     # 6. Locale -> timezone + languages (optionally steered by the proxy).
     loc = _pick_locale(rng, locale, proxy)
     timezone, languages = devices.LOCALES[loc]
 
-    # 7. Secondary signals. Fonts come from the OS's real set (minus a few, since
-    #    no two machines have an identical list); media devices match the form
-    #    factor — phones always have both, desktops sometimes have neither.
-    pool = devices.FONTS[os_key]
-    fonts = sorted(rng.sample(pool, k=max(6, len(pool) - rng.randint(0, 6))))
+    # 7. Secondary signals. Media devices match the form factor — phones always
+    #    have both, desktops sometimes have neither.
+    fonts = devices.sample_fonts(rng, os_key)
     if is_mobile:
-        cameras, microphones = 2, 1
+        cameras, microphones, speakers = 2, 1, 1
     else:
         cameras = rng.choice([0, 1, 1, 1, 2])
         microphones = rng.choice([0, 1, 1, 1, 2]) if cameras else rng.choice([0, 1])
+        speakers = rng.choice([1, 1, 2]) if microphones else rng.choice([0, 1])
 
     return Fingerprint(
         os=os_key,
-        user_agent=_build_user_agent(os_key, chrome),
+        user_agent=_build_user_agent(os_key, chrome, os_version, model),
         platform=devices.NAV_PLATFORM[os_key],
         ch_platform=devices.CH_PLATFORM[os_key],
         chrome_version=chrome,
@@ -130,21 +170,45 @@ def generate(
         fonts=fonts,
         cameras=cameras,
         microphones=microphones,
+        speakers=speakers,
+        os_version=os_version,
+        device_model=model,
+        max_touch_points=touch,
+        device_pixel_ratio=dpr,
     )
+
+
+def ua_brands(fp: Fingerprint) -> list[dict]:
+    """The UA-CH brand list for this fingerprint.
+
+    Single source of truth for both the ``sec-ch-ua`` *header* and the in-page
+    ``navigator.userAgentData.brands``. They are the same claim made twice, and
+    a site that reads both will compare them — an unpatched Chromium answers
+    "Chromium/151" in JS while the header says "Google Chrome/128", which is the
+    kind of contradiction this project exists to avoid.
+    """
+    major = fp.chrome_version.split(".")[0]
+    return [
+        {"brand": "Chromium", "version": major},
+        {"brand": "Google Chrome", "version": major},
+        {"brand": "Not-A.Brand", "version": "99"},
+    ]
 
 
 def sec_ch_ua(fp: Fingerprint) -> str:
     """Build a Client Hints ``sec-ch-ua`` header matching the Chrome version."""
-    major = fp.chrome_version.split(".")[0]
-    return (
-        f'"Chromium";v="{major}", "Google Chrome";v="{major}", '
-        f'"Not-A.Brand";v="99"'
-    )
+    return ", ".join(f'"{b["brand"]}";v="{b["version"]}"' for b in ua_brands(fp))
 
 
-def build_user_agent(os_key: str, chrome: str) -> str:
-    """Public wrapper so callers (e.g. the aligner) can rebuild a UA for an OS."""
-    return _build_user_agent(os_key, chrome)
+def build_user_agent(os_key: str, chrome: str, os_version: str = "",
+                     model: str = "") -> str:
+    """Public wrapper so callers (e.g. the aligner) can rebuild a UA for an OS.
+
+    ``os_version``/``model`` only appear in the mobile strings; desktop Chrome
+    freezes its OS token, so a caller that has no version to offer still gets a
+    correct desktop UA.
+    """
+    return _build_user_agent(os_key, chrome, os_version, model)
 
 
 def webgl_plausible(os_key: str, vendor: str, renderer: str) -> bool:
@@ -173,6 +237,10 @@ def webgl_plausible(os_key: str, vendor: str, renderer: str) -> bool:
         return is_gl and not is_d3d
     if os_key == "android":
         return "opengl es" in r or "adreno" in r or "mali" in r
+    if os_key == "ios":
+        # WebKit hands back "Apple GPU" and nothing else; anything more specific
+        # is a value no iPhone has ever reported.
+        return "apple" in r
     return False
 
 
@@ -217,8 +285,23 @@ def validate(fp: Fingerprint) -> list[str]:
     else:
         issues.append(f"unknown locale '{fp.locale}'")
 
-    if fp.is_mobile != (fp.os == "android"):
+    if fp.is_mobile != (fp.os in devices.MOBILE_OS):
         issues.append("is_mobile flag inconsistent with os")
+
+    # A phone that reports no touch, or a machine claiming more contact points
+    # than any real digitiser, contradicts its own form factor.
+    if fp.is_mobile and fp.max_touch_points < 1:
+        issues.append("a phone with no touch points is implausible")
+    if fp.max_touch_points < 0 or fp.max_touch_points > 20:
+        issues.append("maxTouchPoints outside the range real devices report")
+
+    if not 0.5 <= fp.device_pixel_ratio <= 4:
+        issues.append("devicePixelRatio outside the range real displays report")
+
+    # deviceMemory is the one value iOS has no answer for: WebKit does not
+    # implement it, so 0 (meaning "not exposed") is the only coherent setting.
+    if fp.os == "ios" and fp.device_memory:
+        issues.append("iOS does not expose navigator.deviceMemory")
 
     # A font that doesn't ship with this OS is as loud a tell as the wrong GPU.
     if fp.fonts:

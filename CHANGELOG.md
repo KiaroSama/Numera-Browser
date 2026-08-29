@@ -58,6 +58,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **GoLogin-level fingerprint surface.** Twelve more fields carried through *both* conversion
+  directions and proven in a live browser: ClientRects and WebGL-image noise as separate switches
+  from the vendor/renderer strings, a media-devices mode with speaker count, OS version, Android
+  device model, `maxTouchPoints` and `devicePixelRatio`.
+- **Android and iOS profile targets**, emulated at the CDP layer — mobile user agent, touch points,
+  device pixel ratio, mobile viewport. This is what AdsPower does too, so it is parity rather than
+  a shortfall, but the honest limit is recorded in the code: an iOS profile is not running WebKit.
+
 - **A headless parity test.** It reads the API calls `dashboard/src/api.js` actually makes and the
   commands the CLI actually registers, then asserts every GUI capability has a non-GUI path.
   **34 of 37 do.** The three that do not — creating, renaming and deleting folders — are frozen in
@@ -96,6 +104,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   browser session. HTTP `CONNECT` and SOCKS5 upstreams are both supported.
 
 ### Fixed
+
+- **`device_scale_factor` ignored the profile and `has_touch` was never set.** The launcher
+  hardcoded a 2-or-1 scale factor, so CSS resolution queries disagreed with
+  `window.devicePixelRatio`; and without `has_touch`, `(pointer: coarse)` reported desktop while
+  `maxTouchPoints` reported a phone. Two contradictions a site can simply read. Both now come from
+  the profile.
 
 - **The light theme left a dark page behind it.** `index.html` hardcoded the page background, so
   switching to light repainted the app but not the document beneath it. Both the boot background
