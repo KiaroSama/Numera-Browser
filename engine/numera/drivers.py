@@ -247,7 +247,13 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
         "viewport": {"width": fp.viewport_width, "height": fp.viewport_height},
         "screen": {"width": fp.screen_width, "height": fp.screen_height},
         "is_mobile": fp.is_mobile,
-        "device_scale_factor": 2 if fp.is_mobile else 1,
+        # Both come from the profile now. `device_scale_factor` used to be
+        # hardcoded to 2-or-1, which ignored the profile's own value and left
+        # CSS resolution queries disagreeing with window.devicePixelRatio;
+        # without `has_touch`, `(pointer: coarse)` said desktop while
+        # maxTouchPoints said phone. Two contradictions a site can just read.
+        "device_scale_factor": fp.device_pixel_ratio or (2 if fp.is_mobile else 1),
+        "has_touch": fp.max_touch_points > 0,
         "extra_http_headers": {
             "sec-ch-ua": fp_mod.sec_ch_ua(fp),
             "sec-ch-ua-platform": fp.ch_platform,

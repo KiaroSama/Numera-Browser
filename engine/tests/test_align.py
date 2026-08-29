@@ -42,7 +42,10 @@ def _windows_host_seen(profile):
         "userAgent": fp.user_agent,               # the (mac) UA the engine was fed
         "platform": "Win32",
         "languages": ["en-US"],
-        "cores": 8, "memory": 8,
+        # 16 threads is a real Windows figure and appears in no macOS pool, so
+        # the "cores changed" assertion below tests the reconciliation itself
+        # rather than whichever core count this seed happened to draw.
+        "cores": 16, "memory": 8,
         "screenW": 1920, "screenH": 1080,
         "timezone": fp.timezone,
         "toStringNative": True, "permissionsAgree": True,
@@ -68,7 +71,7 @@ def test_align_reconciles_mac_profile_to_windows_host(tmp_path, monkeypatch):
     assert res["os"] == "windows"
     assert prof.fingerprint.os == "windows"
     assert prof.fingerprint.platform == "Win32"
-    assert prof.fingerprint.hardware_concurrency == 8
+    assert prof.fingerprint.hardware_concurrency == 16
     assert prof.fingerprint.device_memory == 8
     assert "RTX 3050 Ti" in prof.fingerprint.webgl_renderer
     assert prof.fingerprint.user_agent.startswith("Mozilla/5.0 (Windows NT")
