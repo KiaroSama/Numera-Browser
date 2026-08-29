@@ -44,6 +44,7 @@ from typing import Callable, Optional
 from . import devices as fp_mod_devices
 from . import fingerprint as fp_mod
 from .models import Profile
+from .relay import ProxyRelay
 from .stealth import build_init_script
 
 _DRIVERS: dict[str, dict] = {}
@@ -85,6 +86,24 @@ def _webrtc_arg(profile: Profile) -> list[str]:
     if profile.proxy:
         return ["--force-webrtc-ip-handling-policy=disable_non_proxied_udp"]
     return ["--force-webrtc-ip-handling-policy=default_public_interface_only"]
+
+
+def _browser_proxy(profile: Profile):
+    """The proxy config to hand the browser, and the relay behind it (or ``None``).
+
+    A proxy with credentials is forwarded through a local unauthenticated relay
+    rather than given to the browser directly. Every engine can point at
+    ``http://127.0.0.1:<port>`` with nothing to authenticate, which is the only
+    thing they all agree on: fingerprint-chromium has no password support on
+    ``--proxy-server``, Firefox cannot do authenticated SOCKS, and Chromium
+    refuses SOCKS authentication outright (BUGS.md B4). See relay.py.
+    """
+    if not profile.proxy:
+        return None, None
+    if not (profile.proxy.username or profile.proxy.password):
+        return profile.proxy.to_playwright(), None
+    relay = ProxyRelay(profile.proxy).start()
+    return {"server": relay.url}, relay
 
 
 def _extension_args(profile: Profile) -> list[str]:
@@ -174,9 +193,25 @@ def session(profile: Profile, store, engine: Optional[str] = None,
     if name == "camoufox":
         # Camoufox's driver is launch-and-wait only, so open it directly.
         from camoufox.sync_api import Camoufox
-        with Camoufox(headless=headless, persistent_context=True,
-                      user_data_dir=str(store.user_data_path(profile.id))) as browser:
-            yield browser
+        # The proxy has to come too. This helper is what the leak test and the
+        # trust report run through, and without it they measured the host's own
+        # connection and then reported it clean - a check that passes by testing
+        # the wrong thing, which is worse than no check at all.
+        kwargs: dict = {
+            "headless": headless,
+            "persistent_context": True,
+            "user_data_dir": str(store.user_data_path(profile.id)),
+        }
+        proxy_cfg, relay = _browser_proxy(quiet)
+        if proxy_cfg:
+            kwargs["proxy"] = proxy_cfg
+            kwargs["geoip"] = True
+        try:
+            with Camoufox(**kwargs) as browser:
+                yield browser
+        finally:
+            if relay:
+                relay.close()
         return
 
     handles = get(name)(quiet, store, headless=headless, keep_open=True)
@@ -223,8 +258,9 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
             ),
         },
     }
-    if profile.proxy:
-        context_opts["proxy"] = profile.proxy.to_playwright()
+    proxy_cfg, relay = _browser_proxy(profile)
+    if proxy_cfg:
+        context_opts["proxy"] = proxy_cfg
     geo_mode = (fp.geolocation or "prompt").lower()
     if geo_mode == "block":
         # Deny outright: no coordinates, and the permission is explicitly refused
@@ -243,21 +279,30 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
         context_opts["extra_http_headers"]["dnt"] = "1"
 
     pw = sync_playwright().start()
-    context = pw.chromium.launch_persistent_context(
-        user_data_dir=str(store.user_data_path(profile.id)),
-        headless=headless,
-        # Headless defaults to the "headless shell" binary, which cannot load
-        # extensions at all and announces itself as HeadlessChrome over CDP.
-        # The chromium channel is the full browser in --headless=new mode: same
-        # download, extensions work, and the browser stops advertising that it
-        # is headless.
-        channel="chromium" if headless else None,
-        args=launch_args,
-        # Drop Playwright's automation switch so Chrome doesn't show the
-        # "controlled by automated test software" infobar.
-        ignore_default_args=["--enable-automation"],
-        **context_opts,
-    )
+    try:
+        context = pw.chromium.launch_persistent_context(
+            user_data_dir=str(store.user_data_path(profile.id)),
+            headless=headless,
+            # Headless defaults to the "headless shell" binary, which cannot load
+            # extensions at all and announces itself as HeadlessChrome over CDP.
+            # The chromium channel is the full browser in --headless=new mode: same
+            # download, extensions work, and the browser stops advertising that it
+            # is headless.
+            channel="chromium" if headless else None,
+            args=launch_args,
+            # Drop Playwright's automation switch so Chrome doesn't show the
+            # "controlled by automated test software" infobar.
+            ignore_default_args=["--enable-automation"],
+            **context_opts,
+        )
+    except BaseException:
+        if relay:
+            relay.close()   # the browser never opened; don't strand its port
+        raise
+    if relay:
+        # Tie the relay to the session: whoever closes the context — the user
+        # closing the window, `session()`, the API — frees the port with it.
+        context.on("close", lambda *_: relay.close())
     context.add_init_script(build_init_script(fp))
     page = context.pages[0] if context.pages else context.new_page()
     _open_startup_urls(context, page, profile)
@@ -305,15 +350,20 @@ def _driver_camoufox(profile, store, headless=False, keep_open=True, extra_args=
         "persistent_context": True,
         "user_data_dir": str(store.user_data_path(profile.id)),
     }
-    if profile.proxy:
-        kwargs["proxy"] = profile.proxy.to_playwright()
+    proxy_cfg, relay = _browser_proxy(profile)
+    if proxy_cfg:
+        kwargs["proxy"] = proxy_cfg
         kwargs["geoip"] = True  # align timezone/locale to the proxy exit IP
 
-    with Camoufox(**kwargs) as browser:
-        page = browser.pages[0] if getattr(browser, "pages", None) else browser.new_page()
-        _open_startup_urls(browser, page, profile)
-        if not headless:
-            page.wait_for_event("close", timeout=0)
+    try:
+        with Camoufox(**kwargs) as browser:
+            page = browser.pages[0] if getattr(browser, "pages", None) else browser.new_page()
+            _open_startup_urls(browser, page, profile)
+            if not headless:
+                page.wait_for_event("close", timeout=0)
+    finally:
+        if relay:
+            relay.close()
     return None
 
 
@@ -329,22 +379,30 @@ def _driver_cloak(profile, store, headless=False, keep_open=True, extra_args=Non
     import cloakbrowser
 
     fp = profile.fingerprint
-    context = cloakbrowser.launch_persistent_context(
-        user_data_dir=str(store.user_data_path(profile.id)),
-        headless=headless,
-        proxy=profile.proxy.to_playwright() if profile.proxy else None,
-        user_agent=fp.user_agent,
-        viewport={"width": fp.viewport_width, "height": fp.viewport_height},
-        locale=fp.locale,
-        timezone=fp.timezone,
-        geoip=bool(profile.proxy),   # align timezone/locale to the proxy exit IP
-        # CloakBrowser launches with --no-sandbox (its stealth args), which makes
-        # Chromium show a local "unsupported command-line flag" infobar. --test-type
-        # hides that purely-cosmetic bar; it isn't visible to websites (JS can't
-        # read command-line flags), so it doesn't affect the fingerprint.
-        args=["--test-type", "--no-first-run", "--no-default-browser-check",
-              *_webrtc_arg(profile), *_extension_args(profile), *(extra_args or [])],
-    )
+    proxy_cfg, relay = _browser_proxy(profile)
+    try:
+        context = cloakbrowser.launch_persistent_context(
+            user_data_dir=str(store.user_data_path(profile.id)),
+            headless=headless,
+            proxy=proxy_cfg,
+            user_agent=fp.user_agent,
+            viewport={"width": fp.viewport_width, "height": fp.viewport_height},
+            locale=fp.locale,
+            timezone=fp.timezone,
+            geoip=bool(profile.proxy),   # align timezone/locale to the proxy exit IP
+            # CloakBrowser launches with --no-sandbox (its stealth args), which makes
+            # Chromium show a local "unsupported command-line flag" infobar. --test-type
+            # hides that purely-cosmetic bar; it isn't visible to websites (JS can't
+            # read command-line flags), so it doesn't affect the fingerprint.
+            args=["--test-type", "--no-first-run", "--no-default-browser-check",
+                  *_webrtc_arg(profile), *_extension_args(profile), *(extra_args or [])],
+        )
+    except BaseException:
+        if relay:
+            relay.close()   # the browser never opened; don't strand its port
+        raise
+    if relay:
+        context.on("close", lambda *_: relay.close())
     page = context.pages[0] if context.pages else context.new_page()
     _open_startup_urls(context, page, profile)
 

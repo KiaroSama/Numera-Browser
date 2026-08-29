@@ -56,6 +56,28 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   cannot bypass it - verified against the real 16-password proxy pool with zero leaks. `numera
   serve --verbose` raises the detail without weakening redaction.
 
+### Added
+
+- **A local proxy-authentication relay.** A profile whose proxy carries credentials is now
+  launched through a small loopback relay that terminates the authentication and forwards
+  upstream, so the browser only ever sees an unauthenticated `http://127.0.0.1:<port>`. That is
+  the one thing every engine can do: fingerprint-chromium has no password support on
+  `--proxy-server`, Firefox cannot do authenticated SOCKS, and Chromium refuses SOCKS
+  authentication outright. Stdlib only, ephemeral port, bound to loopback, torn down with the
+  browser session. HTTP `CONNECT` and SOCKS5 upstreams are both supported.
+
+### Fixed
+
+- **A credentialed SOCKS proxy could not be used at all.** Chromium's own refusal
+  (`Browser does not support socks5 proxy authentication`) is real; the relay steps around it.
+  Confirmed by reproducing the refusal with the relay bypassed and the success with it in place.
+- **The proxy/leak test and trust report ran un-proxied for camoufox profiles.** The shared
+  `session()` helper opened camoufox with no proxy, so those checks measured the host's own
+  connection and then reported it clean - a check that passed by testing the wrong thing. It now
+  takes the same proxy path as every other launch.
+- `proxy_warnings()` no longer tells the user a SOCKS proxy's credentials are ignored; with the
+  relay in front, they are not.
+
 ### Changed
 
 - **One process, one port.** The engine now serves the built dashboard itself, so
