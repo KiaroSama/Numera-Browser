@@ -32,9 +32,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   end of `LICENSE`, since MIT requires that regardless of the licence wrapped around it; that
   section also records the licence of each browser engine that may be bundled.
 
+- **Python floor raised to 3.10** (was 3.9). patchright and camoufox both require 3.10, so the
+  declared floor never matched the engines the project actually launches. `pip install` now
+  refuses 3.9 with a clear message; the CI matrix is 3.10/3.12/3.13.
+
 ### Removed
 
 - `CODE_OF_CONDUCT.md` and `CONTRIBUTING.md`.
+- `docs/launch.md` - a launch kit for a public open-source release (Show HN, r/selfhosted,
+  awesome-lists, Product Hunt). Every channel in it depended on the repo being public, free and
+  open source, which it no longer is.
 
 ### Documentation
 

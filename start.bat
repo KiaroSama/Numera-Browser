@@ -20,7 +20,7 @@ where python  >nul 2>&1 && set "PY=python"
 if not defined PY where py >nul 2>&1 && set "PY=py"
 if not defined PY (
   echo   [X] Python was not found.
-  echo       Install Python 3.9+ from https://www.python.org/downloads/
+  echo       Install Python 3.10+ from https://www.python.org/downloads/
   echo       and tick "Add python.exe to PATH" during setup, then re-run this file.
   echo(
   pause
