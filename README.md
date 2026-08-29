@@ -51,7 +51,7 @@ what makes Numera distinctive.
 | **Patched-binary stealth engine** | ✅ Camoufox / Cloak\* | ✅ | ⚠️ | ✅ |
 | **Proxy pool + leak/DNS/TLS tests** | ✅ | partial | partial | partial |
 | **CLI + Python API** | ✅ | ❌ | limited | limited |
-| **Headless parity, tested** | ✅ 37/37 | ❌ | ❌ | ❌ |
+| **Headless parity, tested** | ✅ 38/38 | ❌ | ❌ | ❌ |
 | **Cloud team sync** | ❌ *(local-first by design)* | ✅ | ✅ | ✅ |
 
 <sub>Pricing and feature comparison are approximate and based on each vendor's public plans at the time of writing — check their sites for current details. Numera doesn't do hosted team sync on purpose (see the roadmap); everything else is local and free.</sub>
@@ -86,7 +86,7 @@ Numera/
 | 🔐 **TLS/JA3 check** | Reads the handshake fingerprint — the one layer JS injection can't reach |
 | ❤️ **Health overview** | One page: coherence, proxy, trust grade and warm-up schedule per profile |
 | 🔑 **Encrypted vault** | Proxy passwords encrypted at rest behind a master password |
-| 🧩 **Extensions** | Per-profile unpacked extensions, isolated from every other profile |
+| 🧩 **Extensions** | Paste a Chrome Web Store link and it's fetched, unpacked and loaded — per profile, isolated from every other one |
 | ✨ **Warm-up + schedule** | Human-paced browsing (per-vertical presets) so a fresh profile isn't obviously fresh — and a recurring schedule so it never goes cold |
 | 🤖 **Automation attach** | Drive a live profile from Selenium, Puppeteer or Playwright over CDP |
 | 🔁 **Bulk edit** | One change applied to hundreds of profiles, coherently |
@@ -98,7 +98,7 @@ Numera/
 | 🔗 **Startup URLs** | Each profile opens the pages you want, in its own tabs |
 | 🖱️ **Portable desktop app** | A ~33 MB folder you copy and double-click. No Python, no Node, no installer — the engine is frozen inside the window |
 | ⌨️ **CLI + Python API** | Script it or drive it by hand |
-| 🤖 **Built for agents** | `--json` on every command an agent would drive, `--detach` for long jobs with pollable handles, and an MCP surface. A parity test asserts the GUI has no capability the CLI lacks, and it currently passes at 37/37 — see [docs/agents.md](docs/agents.md) |
+| 🤖 **Built for agents** | `--json` on every command an agent would drive, `--detach` for long jobs with pollable handles, and an MCP surface. A parity test asserts the GUI has no capability the CLI lacks, and it currently passes at 38/38 — see [docs/agents.md](docs/agents.md) |
 
 ## What Numera adds
 
@@ -107,6 +107,7 @@ The gaps that show up running an anti-detect manager unattended on a server:
 | | |
 |---|---|
 | 🧩 **Extensions work headless** | Playwright's default headless binary is the *headless shell*, which cannot load extensions at all and announces itself as `HeadlessChrome` over CDP. Numera now launches the full Chromium in `--headless=new`, so extensions load and the browser stops advertising that it is headless. |
+| 🛒 **Web Store links** | Chromium refuses to install from the store once automation is on, and `--load-extension` only takes an unpacked folder — so pasting a store link fetches the `.crx` from Google's own update endpoint, unpacks it into the data directory and hands the browser the folder. `numera ext install <url>`, or the **Install** button on the Extensions page. A mistyped id is named as such (ids are exactly 32 letters, `a`–`p`) rather than reported as "not found". |
 | 🌍 **Global extension set** | An **Extensions** page in the sidebar manages the default set, and every profile created afterwards starts with it — from the CLI, the dashboard or `bulk-create`. **Apply to all** pushes it onto profiles that already exist, merging so each keeps whatever it already carried. CLI equivalents: `numera ext default-add <folder>` and `numera apply --all --extension <folder>`. |
 | 🖥️ **Headless launching** | `numera launch --headless` now keeps the session up instead of closing the moment it opens, and `POST /api/profiles/{id}/launch` takes `{"headless": true}` — so the dashboard's ▶ button works on a box with no display. |
 | 🔐 **Optional API auth** | Set `NUMERA_API_TOKEN` and every request needs `Authorization: Bearer …`. Off by default, so a localhost setup is unchanged. |

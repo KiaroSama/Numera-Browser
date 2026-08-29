@@ -52,12 +52,13 @@ PARITY: dict[str, tuple[str, tuple[tuple[str, ...], ...], str]] = {
     "setDefaultExtensions": (CLI, (("config",),), "`config --default-extension` replaces the "
                                                   "set, as the API call does; `ext default-add` "
                                                   "/ `default-remove` change it one at a time"),
-    "createFolder":    (GAP, (), "folders live only in the dashboard profile shape; "
-                                 "to_engine_profile() drops the field, so the engine "
-                                 "store has nothing to put one on. Tags are the CLI's "
-                                 "equivalent."),
-    "renameFolder":    (GAP, (), "see createFolder"),
-    "deleteFolder":    (GAP, (), "see createFolder"),
+    "installExtension": (CLI, (("ext", "install"),), "takes the same Web Store link the "
+                                                     "Extensions page takes; the crx is "
+                                                     "fetched and unpacked engine-side"),
+    "createFolder":    (CLI, (("folder", "create"),), ""),
+    "renameFolder":    (CLI, (("folder", "rename"),), "moves the folder's profiles with it"),
+    "deleteFolder":    (CLI, (("folder", "delete"),), "reassigns to Unfiled, does not delete "
+                                                      "the profiles"),
     "list":            (CLI, (("list",),), ""),
     "create":          (CLI, (("create",),), ""),
     "update":          (VIA, (("edit",), ("apply",), ("regen",), ("export",), ("import",)),
@@ -94,7 +95,13 @@ PARITY: dict[str, tuple[str, tuple[tuple[str, ...], ...], str]] = {
 
 # Frozen. Adding to this set is a decision, not a maintenance chore, so the test
 # fails when it changes in either direction.
-KNOWN_GAPS = {"createFolder", "renameFolder", "deleteFolder"}
+#
+# Empty since 2026-08-30: the folder commands closed the last three. Note the
+# hole that let this table go stale for a while - `test_every_mapped_cli_command_exists`
+# only checks entries marked CLI or VIA, so a GAP entry is never held against the
+# real parser. A capability that gains a CLI path keeps claiming to be a gap until
+# someone edits this file. Nothing here can detect that; only reading the parser can.
+KNOWN_GAPS: set[str] = set()
 
 
 # --------------------------------------------------------------------------
@@ -188,6 +195,34 @@ def test_known_gaps_have_not_drifted(capsys):
     assert gaps == KNOWN_GAPS, (
         f"the headless gap set changed: {sorted(gaps)} != {sorted(KNOWN_GAPS)}. "
         "Closing one is good news — update KNOWN_GAPS. Opening one is not.")
+
+
+def test_a_gap_is_really_a_gap():
+    """A capability declared a gap must not have an obvious CLI command sitting there.
+
+    Written after the folder commands shipped and PARITY kept calling them gaps for
+    days. Nothing caught it: `test_every_mapped_cli_command_exists` checks only the
+    entries marked CLI or VIA, so a GAP entry was never held against the parser.
+    The table was its own source of truth, and it was wrong.
+
+    The guess is deliberately crude - `createFolder` -> `folder create`. It cannot
+    find every path a gap might have, but it finds the one that matters: a gap
+    closed by a command named after it."""
+    commands = cli_commands()
+    words = re.compile(r"[A-Z][a-z]*|^[a-z]+")
+    contradicted = {}
+    for cap, (verdict, _, _) in PARITY.items():
+        if verdict != GAP:
+            continue
+        parts = [w.lower() for w in words.findall(cap)]
+        if len(parts) == 2:
+            verb, noun = parts
+            for guess in ((noun, verb), (noun.rstrip("s"), verb)):
+                if guess in commands:
+                    contradicted[cap] = " ".join(guess)
+    assert not contradicted, (
+        f"declared a gap, but the CLI has the command: {contradicted}. "
+        "Update PARITY and KNOWN_GAPS — the gap closed and nobody noticed.")
 
 
 def test_dashboard_routes_all_exist_on_the_api(tmp_path):

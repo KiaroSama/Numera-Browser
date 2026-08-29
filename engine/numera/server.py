@@ -573,11 +573,14 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
             if not entry:
                 continue
             if "://" in entry:
+                # Store URLs are handled by POST /api/extensions/install, which
+                # downloads and unpacks them. Reaching here means a URL was put
+                # straight into the list, where the launcher could not use it.
                 problems.append(
-                    f"{entry!r} is a URL. Numera loads unpacked extensions from disk, and "
-                    "Chromium cannot install from the Web Store with automation enabled. "
-                    "Download the extension, unpack the .crx (it is a zip), and give the "
-                    "folder that contains manifest.json.")
+                    f"{entry!r} is a URL. Install it first - paste it on the "
+                    "Extensions page, where the button reads Install for a link, "
+                    "or run `numera ext install <url>` - then the unpacked folder "
+                    "goes in this list.")
                 continue
             path = Path(entry).expanduser()
             if not path.is_dir():
@@ -587,6 +590,32 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
                     f"{entry!r} has no manifest.json, so Chromium will refuse it. "
                     "Point at the folder that contains the manifest, not its parent.")
         return problems
+
+    @app.post("/api/extensions/install")
+    def install_extension(body: dict):
+        """Download a Web Store extension and unpack it into the data directory.
+
+        Chromium cannot install from the store with automation enabled, so the
+        crx is fetched from Google's own update endpoint and unpacked - the same
+        thing every commercial anti-detect browser does behind a 'paste a link'
+        box."""
+        from . import webstore
+        try:
+            result = webstore.install(body.get("url") or body.get("id") or "",
+                                      engine_store.root, force=bool(body.get("force")))
+        except webstore.WebStoreError as e:
+            raise HTTPException(400, str(e))
+
+        if body.get("addToDefaults", True):
+            current = engine_store.get_default_extensions()
+            if result["path"] not in current:
+                engine_store.set_default_extensions([*current, result["path"]])
+        return {**result, "default_extensions": engine_store.get_default_extensions()}
+
+    @app.get("/api/extensions/installed")
+    def installed_extensions():
+        from . import webstore
+        return {"extensions": webstore.installed(engine_store.root)}
 
     @app.put("/api/config")
     def set_config(cfg: dict):
