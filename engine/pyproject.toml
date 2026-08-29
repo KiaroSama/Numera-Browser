@@ -7,7 +7,7 @@ name = "numera-engine"
 version = "0.3.0"
 description = "Coherent browser fingerprint & profile engine for Numera."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "LicenseRef-Proprietary" }
 authors = [{ name = "KiaroSama" }]
 keywords = [

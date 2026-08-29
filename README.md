@@ -10,7 +10,7 @@ and launch them from a clean web console or CLI.
 
 A self-hosted alternative to GoLogin, Multilogin and AdsPower.
 
-![python](https://img.shields.io/badge/python-3.9%2B-blue)
+![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![react](https://img.shields.io/badge/react-18-61DAFB)
 ![license](https://img.shields.io/badge/license-proprietary-lightgrey)
 ![tests](https://img.shields.io/badge/tests-passing-brightgreen)
@@ -114,7 +114,7 @@ Details for each are in [engine/README.md](engine/README.md).
 
 ## Quick start
 
-**Prerequisites:** [Python 3.9+](https://www.python.org/downloads/) and (for the
+**Prerequisites:** [Python 3.10+](https://www.python.org/downloads/) and (for the
 dashboard) [Node.js 18+](https://nodejs.org/). Check with `python --version` and
 `node --version`.
 
