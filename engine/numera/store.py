@@ -21,20 +21,16 @@ from typing import Optional
 
 from . import crypto
 from .models import Profile
-
-
-def _default_root() -> Path:
-    """``~/.numera``, falling back to the pre-rename ``~/.persona`` if only it exists."""
-    # ponytail: read in place, no migration -- the portable-root work moves this data anyway.
-    new = Path.home() / ".numera"
-    old = Path.home() / ".persona"
-    return old if not new.exists() and old.exists() else new
+from .paths import resolve_data_dir
 
 
 class ProfileStore:
     def __init__(self, root: Optional[str | Path] = None,
                  password: Optional[str] = None):
-        self.root = Path(root or _default_root()).expanduser()
+        # Where the data lives is one decision, made in paths.py - see the order
+        # it resolves. The stopgap that read ~/.persona in place is gone: the
+        # first run now imports it into the portable root instead (firstrun.py).
+        self.root = resolve_data_dir(root)
         self.profiles_dir = self.root / "profiles"
         self.userdata_dir = self.root / "user-data"
         self.config_path = self.root / "config.json"

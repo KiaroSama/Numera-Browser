@@ -38,6 +38,24 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   making four Italian proxies indistinguishable. The country code still aligns the fingerprint; the
   rest is kept as the label.
 
+### Added
+
+- **A portable data root.** Numera now keeps profiles beside the application in `data/`, so the
+  folder can be copied to another machine or a flash drive and the profiles travel with it.
+  Resolution order is one decision in one place (`paths.py`): explicit `--data-dir`, then
+  `NUMERA_DATA_DIR`, then a *writable* directory beside the app, then `~/.numera`, then the
+  pre-rename `~/.persona`. The writability check matters: unpacked under Program Files, a data
+  directory beside the binary is read-only, and without the check every later write would fail far
+  from the cause.
+- **First-run import.** An existing install's profiles, proxy pool, config and **browser sessions**
+  are copied into the new root the first time it is used. It copies rather than moves, never
+  overwrites anything already there, and marks itself done in the destination - so a fresh copy of
+  the portable folder imports again, which is what you want when moving machines.
+- **Run logging.** A new file per run under `<data-dir>/logs`, UTC to the second, oldest pruned.
+  Credentials are redacted by a filter on the *handler*, so a library logging under its own name
+  cannot bypass it - verified against the real 16-password proxy pool with zero leaks. `numera
+  serve --verbose` raises the detail without weakening redaction.
+
 ### Changed
 
 - **One process, one port.** The engine now serves the built dashboard itself, so

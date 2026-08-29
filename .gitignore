@@ -41,3 +41,7 @@ node_modules/
 !/.env.sample
 !/.env.template
 !/.env.dist
+
+# The portable data root: profiles, browser sessions, the proxy pool and logs.
+# Created beside the app by design - never tracked.
+/data/
