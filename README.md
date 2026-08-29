@@ -65,7 +65,9 @@ Numera/
 ├── engine/        Python core — fingerprints, storage, launcher, CLI, HTTP API
 ├── dashboard/     React console — served by the engine itself, not a separate server
 ├── desktop/       Tauri shell — the standalone windowed app
-└── scripts/       build-desktop.ps1 (portable app) and build-server.ps1 (wheel)
+├── scripts/       build-desktop.ps1 (portable app) and build-server.ps1 (wheel)
+└── build/         every artifact, one directory per platform — git-ignored,
+                   published through GitHub Releases, never edited by hand
 ```
 
 | | |
@@ -136,15 +138,16 @@ Two artifacts, two scripts. Pick the one that matches how you will run it.
 pwsh -File scripts/build-desktop.ps1
 ```
 
-Produces `desktop/dist/Numera/` (~33 MB): a native window, the engine frozen
+Produces `build/windows/Numera/` (~33 MB): a native window, the engine frozen
 inside it, and the dashboard. Copy that folder anywhere — another drive, a flash
 drive, another machine — and run `numera.exe`. **No Python, no Node, no
 installer**; Windows 11 already has the only dependency (WebView2). It picks a
 free port at runtime and shuts the engine down with the window.
 
-Windows only for now. Tauri cannot be cross-compiled, so macOS and Linux desktop
-builds need their own host — the CI workflow for the Linux one is in
-`.github/workflows/`.
+Windows only from a Windows machine: a Tauri binary links against the host's web
+view (WebKitGTK on Linux, WKWebView on macOS) and cannot be cross-compiled.
+**Linux and macOS builds run in CI** — `.github/workflows/build-desktop.yml`
+builds both and attaches every platform to the GitHub Release for a `v*` tag.
 
 **Server / CLI — headless, any OS.**
 
@@ -152,7 +155,7 @@ builds need their own host — the CI workflow for the Linux one is in
 pwsh -File scripts/build-server.ps1
 ```
 
-Produces a **platform-independent** wheel (`py3-none-any`) in `dist-server/`.
+Produces a **platform-independent** wheel (`py3-none-any`) in `build/server/`.
 The same file installs on Linux, macOS or Windows:
 
 ```bash
