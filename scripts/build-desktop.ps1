@@ -138,8 +138,23 @@ if ($ascii -match 'VCRUNTIME140') {
 # --- 3. assemble -------------------------------------------------------------
 
 Step "Assembling $stage"
+# The app is portable: run it from here and it writes profiles, sessions, proxies
+# and logs into <stage>\data. Wiping the whole folder to rebuild would therefore
+# destroy real user data - so `data` is carried across the rebuild rather than
+# recreated. Nothing else survives: everything outside `data` is build output.
+$dataDir = Join-Path $stage 'data'
+$dataKeep = $null
+if (Test-Path $dataDir) {
+    $dataKeep = Join-Path ([System.IO.Path]::GetTempPath()) ("numera-data-" + [guid]::NewGuid().ToString('N'))
+    Move-Item $dataDir $dataKeep
+    Step "Preserving existing data directory across the rebuild"
+}
 if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
+if ($dataKeep) {
+    Move-Item $dataKeep $dataDir
+    if (-not (Test-Path $dataDir)) { throw "failed to restore the data directory to $dataDir" }
+}
 Copy-Item $shell -Destination $stage
 Copy-Item $frozen -Destination (Join-Path $stage 'engine') -Recurse
 
