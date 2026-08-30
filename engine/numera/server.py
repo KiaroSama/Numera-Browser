@@ -614,8 +614,48 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
 
     @app.get("/api/extensions/installed")
     def installed_extensions():
+        """Every folder the UI has to draw a row for, named and with its icon.
+
+        Not only the ones fetched from the store: a folder the user unpacked by
+        hand has a manifest too, and a row showing a bare path tells them nothing
+        about which extension it is.
+        """
         from . import webstore
-        return {"extensions": webstore.installed(engine_store.root)}
+        seen, out = set(), []
+        for e in webstore.installed(engine_store.root):
+            seen.add(e["path"])
+            out.append(e)
+        for entry in engine_store.get_default_extensions():
+            path = Path(str(entry)).expanduser()
+            if str(path) in seen or "://" in str(entry):
+                continue
+            if (path / "manifest.json").is_file():
+                out.append({"id": path.name, **webstore.describe(path)})
+        return {"extensions": out}
+
+    @app.get("/api/extensions/icon")
+    def extension_icon(path: str):
+        """Serve one extension's own icon.
+
+        Reading an arbitrary path off the filesystem on request would be a hole,
+        so the folder has to be one the engine already knows: installed from the
+        store, or listed in the default set. Anything else is refused rather than
+        read.
+        """
+        from fastapi.responses import FileResponse
+
+        from . import webstore
+        wanted = Path(path).expanduser().resolve()
+        known = {Path(e["path"]).resolve() for e in webstore.installed(engine_store.root)}
+        known |= {Path(str(e)).expanduser().resolve()
+                  for e in engine_store.get_default_extensions() if "://" not in str(e)}
+        if wanted not in known:
+            raise HTTPException(404, "not an extension this engine knows about")
+
+        ico = webstore.icon(wanted)
+        if not ico:
+            raise HTTPException(404, "that extension declares no usable icon")
+        return FileResponse(ico)
 
     @app.put("/api/config")
     def set_config(cfg: dict):
