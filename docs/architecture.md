@@ -96,10 +96,17 @@ later write would fail far from the cause.
 ├── profiles/
 │   ├── <id>.json          # profile metadata + fingerprint + proxy
 │   └── …
+├── extensions/
+│   ├── <32-char id>/      # unpacked from the Web Store, not per profile
+│   └── …
 └── user-data/
     ├── <id>/              # Chromium user-data dir (cookies, localStorage)
     └── …
 ```
+
+`extensions/` sits under the data root rather than beside the repo so a store
+extension travels with a portable install; a profile then references the folder
+by path, the same way it references one you unpacked yourself.
 
 One JSON file per profile keeps things transparent, diff-friendly and easy to
 back up or sync.
