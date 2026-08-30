@@ -821,6 +821,33 @@ function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSe
  *
  * One limit is stated on the page rather than hidden: Firefox-family engines
  * cannot load unpacked Chromium extensions at all.                            */
+/* One row of the extension table: the extension's own logo, its name, its folder.
+ *
+ * The icon comes from the engine, which reads it out of the unpacked manifest -
+ * so it is the real thing the browser shows, not a stand-in. It can still be
+ * missing (no manifest yet, a folder that moved, an extension that declares no
+ * usable icon), and a broken image is worse than a glyph, so `bad` falls back. */
+function ExtensionRow({ path, meta, index, busy, onRemove }) {
+  const [bad, setBad] = useState(false);
+  const label = meta?.name || path;
+  return (
+    <div className="ps-ext-row ps-rise" style={{ animationDelay: `${index * 45}ms` }}>
+      <span className="ps-ext-ic">
+        {meta?.icon && !bad
+          ? <img className="ps-ext-logo" src={api.extensionIcon(path)} alt="" onError={() => setBad(true)} />
+          : <Puzzle size={15} color={T.violet} />}
+      </span>
+      <span className="ps-ext-named" title={path}>
+        <b>{label}</b>
+        {meta?.name && <code className="ps-mono ps-ext-sub">{path}</code>}
+      </span>
+      <button className="ps-iconbtn" title={`Remove ${label}`} disabled={busy} onClick={onRemove}>
+        <Trash2 size={14} />
+      </button>
+    </div>
+  );
+}
+
 function ExtensionsView({ config, live, onSaved, profiles, refresh }) {
   const [items, setItems] = useState(() => config?.default_extensions || []);
   const [draft, setDraft] = useState("");
@@ -833,16 +860,20 @@ function ExtensionsView({ config, live, onSaved, profiles, refresh }) {
   // Re-sync when the engine hands us a config later than our first render.
   useEffect(() => { setItems(config?.default_extensions || []); }, [config]);
 
-  // A store install lands in <data-dir>/extensions/<32-char id>, so the list
-  // would otherwise show an unreadable path and nothing about which extension it
-  // is. The engine already read each manifest; borrow the names from it.
+  // A store install lands in <data-dir>/extensions/<32-char id>, so a row would
+  // otherwise be an unreadable path and nothing else. The engine has already read
+  // every manifest; borrow the name and whether it has an icon worth drawing.
   const loadNames = async () => {
     if (!live) return;
     try {
       const r = await api.installedExtensions();
-      setNames(Object.fromEntries((r.extensions || []).map(e => [e.path, e.name])));
+      setNames(Object.fromEntries((r.extensions || []).map(e => [e.path, e])));
     } catch { /* the list still works without names */ }
   };
+  // Depend on `live`, never on `items`: `items` is an array whose identity
+  // changes on every render, so listing it here re-fires the effect in a loop
+  // that starves the fetch it is supposed to make. The list changes only through
+  // save() and add(), and both call loadNames() themselves.
   useEffect(() => { loadNames(); }, [live]);
 
   const save = async (next) => {
@@ -851,6 +882,7 @@ function ExtensionsView({ config, live, onSaved, profiles, refresh }) {
     setBusy(true);
     try {
       await api.setDefaultExtensions(next);
+      loadNames();          // a folder added by hand has a name and a logo too
       onSaved?.();
     } catch (e) {
       setErr(String(e?.message || e));
@@ -953,22 +985,10 @@ function ExtensionsView({ config, live, onSaved, profiles, refresh }) {
         </div>
       ) : (
         <div className="ps-ext-list">
+          <div className="ps-ext-head">Name</div>
           {items.map((path, i) => (
-            <div className="ps-ext-row ps-rise" key={path} style={{ animationDelay: `${i * 45}ms` }}>
-              <span className="ps-ext-ic"><Puzzle size={15} color={T.violet} /></span>
-              {names[path] ? (
-                <span className="ps-ext-named" title={path}>
-                  <b>{names[path]}</b>
-                  <code className="ps-mono ps-ext-sub">{path}</code>
-                </span>
-              ) : (
-                <code className="ps-mono ps-ext-path" title={path}>{path}</code>
-              )}
-              <button className="ps-iconbtn" title={`Remove ${names[path] || path}`} disabled={busy}
-                      onClick={() => save(items.filter(p => p !== path))}>
-                <Trash2 size={14} />
-              </button>
-            </div>
+            <ExtensionRow key={path} path={path} meta={names[path]} index={i} busy={busy}
+                          onRemove={() => save(items.filter(p => p !== path))} />
           ))}
         </div>
       )}

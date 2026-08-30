@@ -59,6 +59,9 @@ export const api = {
   // What has been fetched from the store, with each one's real name. A folder
   // path ending in a 32-character id says nothing about which extension it is.
   installedExtensions: () => req("GET", "/api/extensions/installed"),
+  // The extension's own icon, straight out of its manifest. A URL rather than a
+  // fetch: <img> handles the loading and the failure, and the browser caches it.
+  extensionIcon: (path) => `${BASE}/api/extensions/icon?path=${encodeURIComponent(path)}`,
   // Folders: a persisted list the sidebar and editor share. Rename/delete also
   // reassign the profiles that live in the folder.
   createFolder: (name) => req("POST", "/api/folders", { name }),

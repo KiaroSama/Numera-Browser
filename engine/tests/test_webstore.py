@@ -5,8 +5,10 @@ What is worth pinning offline is the part that has to be exactly right: the id
 rules, the CRX header arithmetic, and the refusal to write outside the folder.
 """
 import io
+import json
 import struct
 import zipfile
+from pathlib import Path
 
 import pytest
 
@@ -111,3 +113,65 @@ def test_uninstall_removes_the_folder(tmp_path):
     assert webstore.uninstall(ext_id, tmp_path) is True
     assert not d.exists()
     assert webstore.uninstall(ext_id, tmp_path) is False     # already gone
+
+
+def write_ext(folder: Path, manifest: dict, files: dict = None) -> Path:
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    for name, data in (files or {}).items():
+        f = folder / name
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_bytes(data if isinstance(data, bytes) else data.encode())
+    return folder
+
+
+def test_icon_picks_the_largest_declared_size(tmp_path):
+    ext = write_ext(tmp_path / "e",
+                    {"name": "X", "icons": {"16": "s.png", "128": "l.png", "48": "m.png"}},
+                    {"s.png": b"s", "m.png": b"m", "l.png": b"l"})
+    assert webstore.icon(ext).name == "l.png"
+
+
+def test_icon_skips_a_size_whose_file_is_missing(tmp_path):
+    # Manifests routinely name an icon that was not shipped. Returning that path
+    # would render a broken image; the next size down actually exists.
+    ext = write_ext(tmp_path / "e",
+                    {"name": "X", "icons": {"128": "gone.png", "48": "here.png"}},
+                    {"here.png": b"h"})
+    assert webstore.icon(ext).name == "here.png"
+
+
+def test_icon_falls_back_to_the_action_icon(tmp_path):
+    ext = write_ext(tmp_path / "e",
+                    {"name": "X", "action": {"default_icon": {"32": "a.png"}}},
+                    {"a.png": b"a"})
+    assert webstore.icon(ext).name == "a.png"
+
+
+def test_icon_accepts_a_plain_string_action_icon(tmp_path):
+    ext = write_ext(tmp_path / "e",
+                    {"name": "X", "browser_action": {"default_icon": "only.png"}},
+                    {"only.png": b"o"})
+    assert webstore.icon(ext).name == "only.png"
+
+
+def test_icon_refuses_a_path_that_escapes_the_folder(tmp_path):
+    # The manifest is third-party text. `../` in an icon path must not turn the
+    # icon endpoint into a file reader for the rest of the disk.
+    (tmp_path / "secret.png").write_bytes(b"nope")
+    ext = write_ext(tmp_path / "e", {"name": "X", "icons": {"128": "../secret.png"}})
+    assert webstore.icon(ext) is None
+
+
+def test_icon_is_none_when_nothing_is_declared(tmp_path):
+    ext = write_ext(tmp_path / "e", {"name": "X"})
+    assert webstore.icon(ext) is None
+
+
+def test_describe_carries_name_and_icon(tmp_path):
+    ext = write_ext(tmp_path / "e", {"name": "Real Name", "icons": {"48": "i.png"}},
+                    {"i.png": b"i"})
+    d = webstore.describe(ext)
+    assert d["name"] == "Real Name"
+    assert d["icon"].endswith("i.png")
+    assert d["path"] == str(ext)
