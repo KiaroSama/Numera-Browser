@@ -103,3 +103,47 @@ def test_the_launcher_would_have_dropped_exactly_what_we_now_refuse(tmp_path, un
     good = Profile(name="g", fingerprint=replace(fp), extensions=[str(unpacked)])
     args = _extension_args(good)
     assert any("--load-extension=" in a for a in args)
+
+
+def test_the_icon_endpoint_serves_the_extension_own_icon(client, tmp_path):
+    """The row's logo is the real file the browser would show, not a stand-in."""
+    d = tmp_path / "withicon"
+    d.mkdir()
+    (d / "manifest.json").write_text(
+        '{"manifest_version": 3, "name": "Has Icon", "version": "1",'
+        ' "icons": {"48": "logo.png"}}', encoding="utf-8")
+    (d / "logo.png").write_bytes(b"\x89PNG\r\n\x1a\n-pretend")
+    assert _put(client, [d]).status_code == 200
+
+    listed = client.get("/api/extensions/installed").json()["extensions"]
+    assert [e["name"] for e in listed] == ["Has Icon"]
+    assert listed[0]["icon"].endswith("logo.png")
+
+    r = client.get("/api/extensions/icon", params={"path": str(d)})
+    assert r.status_code == 200
+    assert r.content == b"\x89PNG\r\n\x1a\n-pretend"
+
+
+def test_the_icon_endpoint_refuses_a_folder_it_was_never_told_about(client, tmp_path):
+    """Otherwise it is a file reader for anything on disk with a manifest beside it."""
+    stranger = tmp_path / "elsewhere"
+    stranger.mkdir()
+    (stranger / "manifest.json").write_text('{"name": "X", "icons": {"48": "i.png"}}',
+                                            encoding="utf-8")
+    (stranger / "i.png").write_bytes(b"secret")
+    assert client.get("/api/extensions/icon", params={"path": str(stranger)}).status_code == 404
+
+
+def test_an_extension_with_no_icon_404s_rather_than_serving_something_else(client, unpacked):
+    assert _put(client, [unpacked]).status_code == 200
+    r = client.get("/api/extensions/icon", params={"path": str(unpacked)})
+    assert r.status_code == 404
+    assert "icon" in r.json()["detail"]
+
+
+def test_a_hand_unpacked_folder_is_named_too(client, unpacked):
+    """Not only store installs - the list has to name whatever is in it."""
+    assert _put(client, [unpacked]).status_code == 200
+    listed = client.get("/api/extensions/installed").json()["extensions"]
+    assert [e["name"] for e in listed] == ["probe"]
+    assert listed[0]["icon"] is None

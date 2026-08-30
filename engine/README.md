@@ -316,7 +316,8 @@ in place of the bearer header.
 | DELETE | `/api/schedules/{id}` | Remove a schedule |
 | POST | `/api/fingerprint/validate` | Coherence check a fingerprint |
 | POST | `/api/extensions/install` | Fetch and unpack a Chrome Web Store extension (`{"url": "..."}` — a link or a bare 32-character id) |
-| GET | `/api/extensions/installed` | Extensions fetched from the store into this data directory |
+| GET | `/api/extensions/installed` | Every extension in the default set, with the name and icon read from its manifest — store installs and hand-unpacked folders alike |
+| GET | `/api/extensions/icon` | That extension's own icon file (`?path=<folder>`). Only folders the engine already knows are served; anything else 404s |
 | GET | `/api/config` | Default engine, default extensions, headless-launch flag, folders, data dir |
 | PUT | `/api/config` | Change any of them (`default_engine`, `default_extensions`, `headless_launch`) |
 

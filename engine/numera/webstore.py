@@ -186,6 +186,57 @@ def _name(folder: Path) -> str:
     return name or folder.name
 
 
+def icon(folder: Path) -> Optional[Path]:
+    """The extension's own icon file, largest size available.
+
+    Chrome puts it in `icons` keyed by pixel size; MV2 extensions sometimes only
+    declare one under `browser_action`/`page_action`. Returns None rather than a
+    guess when the manifest names a file that is not actually there - a broken
+    <img> is worse than a fallback glyph.
+    """
+    import json
+    folder = Path(folder)
+    try:
+        manifest = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    icons = manifest.get("icons")
+    if not isinstance(icons, dict):
+        icons = {}
+    for action in ("action", "browser_action", "page_action"):
+        default = (manifest.get(action) or {}).get("default_icon") if isinstance(manifest.get(action), dict) else None
+        if isinstance(default, dict):
+            icons = {**default, **icons}       # `icons` wins; the action is the fallback
+        elif isinstance(default, str):
+            icons.setdefault("0", default)
+
+    def size(key: str) -> int:
+        try:
+            return int(key)
+        except ValueError:
+            return 0
+
+    for key in sorted(icons, key=size, reverse=True):
+        rel = icons[key]
+        if not isinstance(rel, str) or not rel:
+            continue
+        # The manifest is third-party text; a member like ../../secret.png must
+        # not resolve outside the extension folder.
+        candidate = (folder / rel.lstrip("/")).resolve()
+        if candidate.is_file() and str(candidate).startswith(str(folder.resolve())):
+            return candidate
+    return None
+
+
+def describe(folder: Path) -> dict:
+    """Name and icon for one unpacked extension folder, for the UI to render."""
+    folder = Path(folder)
+    ico = icon(folder)
+    return {"path": str(folder), "name": _name(folder),
+            "icon": str(ico) if ico else None}
+
+
 def installed(data_dir: Path) -> list[dict]:
     """Every extension installed from the store into this data directory."""
     root = Path(data_dir) / "extensions"
@@ -194,7 +245,7 @@ def installed(data_dir: Path) -> list[dict]:
     out = []
     for d in sorted(root.iterdir()):
         if (d / "manifest.json").is_file():
-            out.append({"id": d.name, "path": str(d), "name": _name(d)})
+            out.append({"id": d.name, **describe(d)})
     return out
 
 

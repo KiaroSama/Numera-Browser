@@ -57,6 +57,9 @@ PARITY: dict[str, tuple[str, tuple[tuple[str, ...], ...], str]] = {
                                                      "fetched and unpacked engine-side"),
     "installedExtensions": (CLI, (("ext", "installed"),), "id, folder and name of each one "
                                                           "fetched from the store"),
+    "extensionIcon":   (NA, (), "builds a URL for an <img>; the icon is a thing to "
+                                "look at, not an action to perform. `ext installed` "
+                                "reports the icon's path for anything that needs it"),
     "createFolder":    (CLI, (("folder", "create"),), ""),
     "renameFolder":    (CLI, (("folder", "rename"),), "moves the folder's profiles with it"),
     "deleteFolder":    (CLI, (("folder", "delete"),), "reassigns to Unfiled, does not delete "
@@ -127,6 +130,21 @@ def dashboard_calls() -> dict[str, tuple[str, str]]:
     return calls
 
 
+def dashboard_members() -> set[str]:
+    """Every member of the `api` object, however it is written.
+
+    `dashboard_calls()` only sees members whose body is a `req(...)` call. A
+    member that builds a URL instead - `extensionIcon` is one - is invisible to
+    it, so a future capability written that way would slip past the parity guard
+    without anyone noticing. This reader is deliberately dumber and wider: it
+    takes every top-level key, and the test below demands a verdict for each.
+    """
+    src = API_JS.read_text(encoding="utf-8")
+    body = src[src.index("export const api = {"):]
+    # Top-level keys only: two spaces of indent inside the object literal.
+    return set(re.findall(r"^  (?:async\s+)?(\w+)\s*[:(]", body, re.MULTILINE))
+
+
 def cli_commands() -> set[tuple[str, ...]]:
     """Every command path the parser accepts, e.g. ``("cookies", "export")``."""
     found: set[tuple[str, ...]] = set()
@@ -168,8 +186,24 @@ def test_no_unmapped_dashboard_capabilities():
     assert not unmapped, (
         f"the dashboard gained capabilities with no headless verdict: {sorted(unmapped)} "
         "— add them to PARITY in this file")
-    stale = set(PARITY) - calls
+    # Compare against every member, not only the `req(...)` ones: PARITY may
+    # legitimately name a member that builds a URL instead of calling req.
+    stale = set(PARITY) - dashboard_members()
     assert not stale, f"PARITY names calls api.js no longer has: {sorted(stale)}"
+
+
+def test_no_api_member_escapes_a_verdict():
+    """Every key on the `api` object needs a verdict, not only the `req(...)` ones.
+
+    Written after `extensionIcon` shipped and the guard did not see it: it builds
+    a URL rather than calling `req`, and `dashboard_calls()` only reads `req`
+    calls. It is genuinely not a capability - but nothing established that, and
+    the next member written the same way could be one.
+    """
+    unaccounted = dashboard_members() - set(PARITY)
+    assert not unaccounted, (
+        f"api.js members with no PARITY verdict: {sorted(unaccounted)}. "
+        "Give each one a verdict — NA if it is transport rather than a capability.")
 
 
 def test_every_mapped_cli_command_exists():

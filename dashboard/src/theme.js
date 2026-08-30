@@ -187,9 +187,12 @@ a { color: inherit; }
 .ps-ext-add .ps-in { flex: 1; }
 .ps-ext-err { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--state-error); margin-bottom: 10px; }
 .ps-ext-list { display: flex; flex-direction: column; gap: 6px; }
+.ps-ext-head { display: flex; gap: 10px; padding: 0 11px 6px; font-size: 11px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; color: var(--text-tertiary); }
 .ps-ext-row { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface-panel); transition: background .16s, border-color .16s; }
 .ps-ext-row:hover { background: var(--bg-hover); border-color: var(--bd-2); }
-.ps-ext-ic { display: flex; width: 26px; height: 26px; align-items: center; justify-content: center; border-radius: 7px; background: var(--violetDim); flex-shrink: 0; }
+.ps-ext-ic { display: flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 8px; background: var(--violetDim); flex-shrink: 0; overflow: hidden; }
+.ps-ext-ic:has(.ps-ext-logo) { background: transparent; }
+.ps-ext-logo { width: 26px; height: 26px; object-fit: contain; display: block; }
 .ps-ext-apply { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 14px; padding: 12px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface-panel); }
 .ps-ext-apply-t { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
 .ps-ext-done { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--state-ok); }
