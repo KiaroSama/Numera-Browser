@@ -4,7 +4,28 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **Install an extension from a Chrome Web Store link.** Paste the store URL on the Extensions page
+  and the button reads **Install**; `numera ext install <url>` does the same headlessly, with
+  `ext installed` and `ext uninstall` beside it. Chromium refuses to install from the store once
+  automation is enabled and `--load-extension` only accepts an unpacked directory, so the `.crx` is
+  fetched from Google's own update endpoint and unpacked into `<data-dir>/extensions/<id>/` — which
+  means it travels with a portable install instead of pointing at one machine. Extension ids are
+  exactly 32 letters from `a`–`p`, and a near-miss is diagnosed rather than reported as missing: the
+  error names the offending letter, or the actual length, because a truncated copy-paste is the
+  common case and "not found" sends you to the wrong place.
+- The default-extension list shows each store extension's **name**, read from its manifest, above
+  the folder path. A row that reads only a 32-character id says nothing about what is installed.
+
 ### Fixed
+
+- **`build-desktop.ps1` deleted the data of the app it was replacing.** The assemble step wiped
+  `build/windows/Numera` outright, and the app is *portable* — run it from there and it keeps
+  profiles, browser sessions, proxies and logs in `data/` beside the executable. A rebuild therefore
+  destroyed real profiles. `data/` is now carried across the rebuild and everything else is
+  replaced. `test_build_preserves_data.py` extracts that block from the real script and runs it, so
+  a future edit that drops the guard fails a test instead of a user's profiles.
 
 - **The Extensions page accepted things that could never load.** A Chrome Web Store URL, a mistyped
   path or a folder without a `manifest.json` were all stored and reported as saved; the launcher
@@ -82,7 +103,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   the GUI had and the CLI did not (B18), which made "headless parity" not quite true. The rules
   live in a shared `folders.py` that both the API routes and the CLI call — a rename moves the
   folder's profiles, a delete reassigns rather than destroys them — so the two surfaces cannot
-  drift on behaviour subtle enough that the drift would be silent. Parity is now **37/37**.
+  drift on behaviour subtle enough that the drift would be silent. Parity is now **39/39**.
 
 - **A server / CLI build.** `scripts/build-server.ps1` produces a **platform-independent** wheel
   (`py3-none-any`), so the same file installs on Linux, macOS or Windows. No desktop shell, no
