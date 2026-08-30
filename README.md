@@ -51,7 +51,7 @@ what makes Numera distinctive.
 | **Patched-binary stealth engine** | ✅ Camoufox / Cloak\* | ✅ | ⚠️ | ✅ |
 | **Proxy pool + leak/DNS/TLS tests** | ✅ | partial | partial | partial |
 | **CLI + Python API** | ✅ | ❌ | limited | limited |
-| **Headless parity, tested** | ✅ 38/38 | ❌ | ❌ | ❌ |
+| **Headless parity, tested** | ✅ 39/39 | ❌ | ❌ | ❌ |
 | **Cloud team sync** | ❌ *(local-first by design)* | ✅ | ✅ | ✅ |
 
 <sub>Pricing and feature comparison are approximate and based on each vendor's public plans at the time of writing — check their sites for current details. Numera doesn't do hosted team sync on purpose (see the roadmap); everything else is local and free.</sub>
@@ -98,7 +98,7 @@ Numera/
 | 🔗 **Startup URLs** | Each profile opens the pages you want, in its own tabs |
 | 🖱️ **Portable desktop app** | A ~33 MB folder you copy and double-click. No Python, no Node, no installer — the engine is frozen inside the window |
 | ⌨️ **CLI + Python API** | Script it or drive it by hand |
-| 🤖 **Built for agents** | `--json` on every command an agent would drive, `--detach` for long jobs with pollable handles, and an MCP surface. A parity test asserts the GUI has no capability the CLI lacks, and it currently passes at 38/38 — see [docs/agents.md](docs/agents.md) |
+| 🤖 **Built for agents** | `--json` on every command an agent would drive, `--detach` for long jobs with pollable handles, and an MCP surface. A parity test asserts the GUI has no capability the CLI lacks, and it currently passes at 39/39 — see [docs/agents.md](docs/agents.md) |
 
 ## What Numera adds
 
@@ -144,6 +144,10 @@ inside it, and the dashboard. Copy that folder anywhere — another drive, a fla
 drive, another machine — and run `numera.exe`. **No Python, no Node, no
 installer**; Windows 11 already has the only dependency (WebView2). It picks a
 free port at runtime and shuts the engine down with the window.
+
+Because it is portable it keeps its profiles, sessions, proxies and logs in
+`data/` **beside the executable**. Rebuilding on top of an existing folder
+therefore preserves that directory and replaces everything else.
 
 Windows only from a Windows machine: a Tauri binary links against the host's web
 view (WebKitGTK on Linux, WKWebView on macOS) and cannot be cross-compiled.
