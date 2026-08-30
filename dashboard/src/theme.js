@@ -194,6 +194,9 @@ a { color: inherit; }
 .ps-ext-apply-t { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
 .ps-ext-done { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--state-ok); }
 .ps-ext-path { flex: 1; font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ps-ext-named { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ps-ext-named b { font-size: 13px; font-weight: 600; color: var(--text); }
+.ps-ext-sub { font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* sidebar */
 .ps-side { width: 244px; flex-shrink: 0; background: linear-gradient(180deg, var(--bg2), var(--bg)); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 18px 13px; position: sticky; top: 0; height: 100vh; }
@@ -206,7 +209,6 @@ a { color: inherit; }
 .ps-navitem { display: flex; align-items: center; gap: 11px; padding: 9px 11px; border-radius: 9px; border: none; background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; transition: .14s; text-align: left; position: relative; }
 .ps-navitem:hover { background: var(--surface); color: var(--text); }
 .ps-navitem.active { background: var(--surface2); color: var(--text); box-shadow: inset 2px 0 0 var(--violet); }
-.ps-nav-tag { position: absolute; right: 10px; font-size: 9px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--bg); background: var(--mint); padding: 1px 5px; border-radius: 5px; }
 .ps-folders { margin-top: 22px; flex: 1; overflow-y: auto; }
 .ps-folders-h { display: flex; align-items: center; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--dim); padding: 0 8px 8px; }
 .ps-folder { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 9px; border-radius: 8px; border: none; background: transparent; color: var(--muted); font-size: 12.5px; cursor: pointer; transition: .14s; }

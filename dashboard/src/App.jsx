@@ -494,7 +494,6 @@ export default function App() {
             ].map(([k, Ic, label]) => (
               <button key={k} onClick={() => setView(k)} className={"ps-navitem" + (view === k ? " active" : "")}>
                 <Ic size={16} /> <span>{label}</span>
-                {k === "engines" && <span className="ps-nav-tag">new</span>}
               </button>
             ))}
           </nav>
@@ -829,9 +828,22 @@ function ExtensionsView({ config, live, onSaved, profiles, refresh }) {
   const [err, setErr] = useState("");
   const [applied, setApplied] = useState(null);   // {changed, skipped} after a run
   const [installed, setInstalled] = useState(""); // result of a Web Store install
+  const [names, setNames] = useState({});         // folder path -> extension name
 
   // Re-sync when the engine hands us a config later than our first render.
   useEffect(() => { setItems(config?.default_extensions || []); }, [config]);
+
+  // A store install lands in <data-dir>/extensions/<32-char id>, so the list
+  // would otherwise show an unreadable path and nothing about which extension it
+  // is. The engine already read each manifest; borrow the names from it.
+  const loadNames = async () => {
+    if (!live) return;
+    try {
+      const r = await api.installedExtensions();
+      setNames(Object.fromEntries((r.extensions || []).map(e => [e.path, e.name])));
+    } catch { /* the list still works without names */ }
+  };
+  useEffect(() => { loadNames(); }, [live]);
 
   const save = async (next) => {
     setErr(""); setItems(next);          // optimistic: the list is the source of truth on screen
@@ -861,6 +873,7 @@ function ExtensionsView({ config, live, onSaved, profiles, refresh }) {
         setItems(r.default_extensions || items);
         setDraft("");
         setInstalled(`${r.reused ? "Already installed" : "Installed"}: ${r.name}`);
+        loadNames();          // so the new row shows its name, not just the id
         onSaved?.();
       } catch (e) {
         setErr(String(e?.message || e));
@@ -943,8 +956,15 @@ function ExtensionsView({ config, live, onSaved, profiles, refresh }) {
           {items.map((path, i) => (
             <div className="ps-ext-row ps-rise" key={path} style={{ animationDelay: `${i * 45}ms` }}>
               <span className="ps-ext-ic"><Puzzle size={15} color={T.violet} /></span>
-              <code className="ps-mono ps-ext-path" title={path}>{path}</code>
-              <button className="ps-iconbtn" title={`Remove ${path}`} disabled={busy}
+              {names[path] ? (
+                <span className="ps-ext-named" title={path}>
+                  <b>{names[path]}</b>
+                  <code className="ps-mono ps-ext-sub">{path}</code>
+                </span>
+              ) : (
+                <code className="ps-mono ps-ext-path" title={path}>{path}</code>
+              )}
+              <button className="ps-iconbtn" title={`Remove ${names[path] || path}`} disabled={busy}
                       onClick={() => save(items.filter(p => p !== path))}>
                 <Trash2 size={14} />
               </button>
