@@ -55,6 +55,8 @@ PARITY: dict[str, tuple[str, tuple[tuple[str, ...], ...], str]] = {
     "installExtension": (CLI, (("ext", "install"),), "takes the same Web Store link the "
                                                      "Extensions page takes; the crx is "
                                                      "fetched and unpacked engine-side"),
+    "installedExtensions": (CLI, (("ext", "installed"),), "id, folder and name of each one "
+                                                          "fetched from the store"),
     "createFolder":    (CLI, (("folder", "create"),), ""),
     "renameFolder":    (CLI, (("folder", "rename"),), "moves the folder's profiles with it"),
     "deleteFolder":    (CLI, (("folder", "delete"),), "reassigns to Unfiled, does not delete "
