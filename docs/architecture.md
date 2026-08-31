@@ -1,6 +1,6 @@
 # Architecture
 
-Numera has three parts: a Python **engine** that does the real work, a React
+Numera Browser has three parts: a Python **engine** that does the real work, a React
 **dashboard** that drives it — served by the engine, not separately — and a
 Tauri **desktop shell** that wraps both into a standalone window. This doc
 explains how they fit together.
@@ -56,7 +56,7 @@ pick OS ──▶ archetype (devices.py) ──▶ Fingerprint ──▶ validat
 
 ### Pluggable launch engines
 
-Numera is the *manager*; a **driver** renders an identity in a real browser.
+Numera Browser is the *manager*; a **driver** renders an identity in a real browser.
 `launcher.launch()` looks up `profile.engine` in the `drivers.py` registry and
 delegates. Built-ins:
 

@@ -49,3 +49,9 @@ node_modules/
 # Build outputs. Source and builds are kept apart on purpose: everything under
 # build/ is produced by scripts/, never edited, and published through Releases.
 /build/
+
+# Icon sizes derived from docs/brand/Logo.png by scripts/make-icons.py.
+# The source, the 1024 master and the size the README embeds are tracked; these
+# are intermediates that nothing references and that regenerate in a second.
+/docs/brand/logo-512.png
+/docs/brand/logo-128.png

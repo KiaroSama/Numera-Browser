@@ -1,6 +1,6 @@
 # Numera Browser - Engine
 
-The Python core of [Numera](../README.md): coherent fingerprint generation,
+The Python core of [Numera Browser](../README.md): coherent fingerprint generation,
 profile storage, and a Playwright-based launcher, with a full CLI.
 
 > This is the backend. For the visual dashboard see [`../dashboard`](../dashboard).
@@ -60,7 +60,7 @@ numera import-from their-export.json
 
 Point it at a profile export (a single object or a list) from GoLogin, AdsPower
 or Multilogin. The mapping is tolerant — those tools rename fields between
-releases, so Numera looks for each value under any of the names it's known by,
+releases, so Numera Browser looks for each value under any of the names it's known by,
 fills gaps from a coherent generated base, and runs `validate()` on the result.
 Anything that didn't line up is flagged for review; run `numera check <name>`
 to see the details. Treat an import as a reviewed starting point, not a
@@ -87,7 +87,7 @@ test`.) Needs internet.
 `align` is the fix for a low trust score. The checker fails whenever the
 *declared* identity and the *presented* one disagree — which is unavoidable with
 an engine that renders the host's real hardware (CloakBrowser patches at the C++
-level, so it shows this machine's GPU/CPU, not Numera's). `align` opens the
+level, so it shows this machine's GPU/CPU, not Numera Browser's). `align` opens the
 profile, reads back platform, CPU, memory, GPU, screen, fonts, media and
 languages, and rewrites the fingerprint to those values — regenerating the OS
 identity (user-agent, platform) if the machine is a different OS than the profile
@@ -187,13 +187,13 @@ predate the set, so `apply --extension` is what pushes it onto them; passing
 `--extension ""` clears the list.
 
 Extensions load in headless mode too. Playwright's default headless binary is
-the *headless shell*, which cannot load extensions at all — Numera launches the
+the *headless shell*, which cannot load extensions at all — Numera Browser launches the
 full Chromium in `--headless=new` instead, which also stops the browser
 advertising itself as `HeadlessChrome` over CDP.
 
 `attach` launches the profile with the DevTools protocol listening and prints
 ready-to-paste snippets. Your automation drives *that* browser, so the identity,
-proxy and session stay exactly as Numera set them up — a browser started by
+proxy and session stay exactly as Numera Browser set them up — a browser started by
 Selenium itself would have none of them.
 
 `warmup --preset` browses a per-vertical site set (`ads`, `ecommerce`, `crypto`,
@@ -288,7 +288,7 @@ Import understands whatever you have on hand: Cookie-Editor / EditThisCookie
 JSON, Playwright storage state, and Netscape `cookies.txt`. Export picks the
 format from the file extension (`.txt` → Netscape) unless you pass `--format`.
 
-Two things the browser decides, not Numera: **session cookies aren't stored** (
+Two things the browser decides, not Numera Browser: **session cookies aren't stored** (
 Chromium keeps them in memory only, so they don't survive an export), and
 Chromium **caps cookie lifetime at ~400 days**, so far-future expiry dates come
 back shortened. Close the profile before moving cookies — a session can't be
@@ -398,7 +398,7 @@ store.save(profile)
 
 ## Launch engines (pluggable)
 
-Numera *manages* identities; a **driver** actually opens the browser. Pick one
+Numera Browser *manages* identities; a **driver** actually opens the browser. Pick one
 per profile with `--engine` (or in the dashboard), and see which are installed
 with `numera engines`.
 
@@ -407,7 +407,7 @@ with `numera engines`.
 | `cloak` | **Recommended.** CloakBrowser — a patched Chromium binary (C++-level fingerprint/TLS/CDP patches). Beats Cloudflare/DataDome-grade detection. | `pip install cloakbrowser` |
 | `camoufox` | **Recommended.** Patched Firefox with C++-level fingerprint spoofing and its own coherent fingerprint. | `pip install "camoufox[geoip]" && camoufox fetch` |
 | `patchright` | Drop-in **patched** Playwright — fixes `webdriver`/CDP leaks at runtime. | `pip install patchright && patchright install chromium` |
-| `playwright` | Stock Chromium + Numera's injected stealth script. Built-in, always available. | included in `[launch]` |
+| `playwright` | Stock Chromium + Numera Browser's injected stealth script. Built-in, always available. | included in `[launch]` |
 
 ```bash
 numera engines                              # list engines + install status

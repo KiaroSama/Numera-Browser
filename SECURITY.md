@@ -11,7 +11,7 @@ timeline after triage.
 
 ## Scope
 
-Numera stores profile data locally as JSON under `~/.numera` (installs that
+Numera Browser stores profile data locally as JSON under `~/.numera` (installs that
 predate the rename keep using `~/.persona`, which is read in place). Treat that
 directory as sensitive.
 
