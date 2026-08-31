@@ -26,7 +26,7 @@ def archive(path, members, profile=None):
     """A backup-shaped zip, including whatever hostile members are asked for."""
     with zipfile.ZipFile(path, "w") as z:
         z.writestr("profile.json", json.dumps(
-            (profile or Profile(name="restored", fingerprint=generate("windows"))).to_dict()))
+            (profile or Profile(name="restored", fingerprint=generate(os="windows"))).to_dict()))
         for name, data in members.items():
             z.writestr(name, data)
     return path
@@ -36,7 +36,7 @@ def archive(path, members, profile=None):
 
 def test_a_normal_backup_still_round_trips(tmp_path):
     store = ProfileStore(tmp_path / "data")
-    p = Profile(name="alpha", fingerprint=generate("windows"))
+    p = Profile(name="alpha", fingerprint=generate(os="windows"))
     store.save(p)
     (store.user_data_path(p.id) / "Default").mkdir(parents=True, exist_ok=True)
     (store.user_data_path(p.id) / "Default" / "Cookies").write_text("jar", encoding="utf-8")
@@ -112,7 +112,7 @@ def test_restore_replaces_the_session_rather_than_merging_into_it(tmp_path):
     """Merging leaves files from the session being replaced - a cookie jar that
     is half one identity and half another is worse than either."""
     store = ProfileStore(tmp_path / "data")
-    p = Profile(name="alpha", fingerprint=generate("windows"))
+    p = Profile(name="alpha", fingerprint=generate(os="windows"))
     store.save(p)
     ud = store.user_data_path(p.id)
     ud.mkdir(parents=True, exist_ok=True)
