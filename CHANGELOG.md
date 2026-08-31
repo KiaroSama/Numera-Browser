@@ -4,6 +4,39 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-31
+
+### Fixed
+
+- **Client Hints described the host, not the profile.** Chrome adds the high-entropy hints after a
+  site sends `Accept-CH`, and it fills them in from the machine it is really running on - so a
+  Windows 11 profile started reporting `platform-version "10.0.0"` the moment a site asked. All of
+  them now come from the profile, and the wire agrees with `navigator.userAgentData` on the same
+  encoding. A two-request live test against a local `Accept-CH` server holds it.
+  *Ceiling, measured and recorded:* Chromium cannot be stopped from sending Client Hints at all, so
+  an iOS profile still sends them where real Safari sends none. Neither `route.continue_` nor any
+  `--disable-features` combination changes it. The values are at least coherent, and
+  `navigator.userAgentData` is absent as it should be.
+- **Two of the three canvas read paths were unprotected.** `getImageData` and `toBlob` returned the
+  real pixels while `toDataURL` returned noised ones - both a bypass and a contradiction, since the
+  same drawing hashed differently depending on which call was used. One noise source now backs all
+  three, without double-noising; two reads of one canvas still match, and different seeds differ.
+- **Font masking only covered the polite question.** It patched `document.fonts.check`, which nobody
+  serious uses; the standard probe compares `offsetWidth` against a generic fallback - which is what
+  this project's own `probe.py` does, so our own tool could disprove our own control. Width and
+  `measureText` probing now see the profile's list.
+- **Camoufox inspection wore a different identity from a launch.** `session()` built a shorter
+  option set - no `os`, no `locale` - so the trust report, the leak test and the TLS check graded a
+  browser that was not the profile, then reported the result as the profile's. Both paths share one
+  builder. `geoip` also stopped being unconditional: it moves timezone, locale and geolocation
+  together, so forcing it on overrode a profile that had asked for none of that.
+- **Imports dropped identity the export was carrying.** The Chrome version in the imported user
+  agent was discarded, leaving the UA and `chrome_version` - which builds `sec-ch-ua` - contradicting
+  each other. Vendor-specific WebGL paths (`webgl.*`, `graphic.*`, `unmaskedRenderer`) were missed,
+  replacing a real GPU string with a local default, and a mobile import got 88px of desktop browser
+  chrome subtracted from its viewport.
+
+
 ### Fixed
 
 - **A public IPv6 ICE candidate was never scrubbed.** The WebRTC filter pulled an IPv4 address out

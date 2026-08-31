@@ -372,6 +372,43 @@ def get(name: str) -> Callable:
     return _DRIVERS[name]["fn"]
 
 
+# Camoufox resolves timezone, locale and geolocation from the proxy's exit IP as
+# one switch - it has no per-signal control. A profile that asked for only
+# `timezone` would silently get all three moved, which is not what the editor
+# said. Named here so the limitation is visible rather than buried in a kwarg.
+CAMOUFOX_GEOIP_IS_ALL_OR_NOTHING = True
+
+
+def _camoufox_kwargs(profile: Profile, store, headless: bool) -> tuple:
+    """The options Camoufox is opened with, for *both* launching and inspecting.
+
+    `session()` used to build its own shorter set - no `os`, no `locale` - so the
+    trust report, the leak test and the TLS check all graded a browser that was
+    not wearing the profile's identity, and reported the result as the profile's.
+    Two call sites, one builder, no room to drift.
+    """
+    fp = profile.fingerprint
+    kwargs: dict = {
+        "headless": headless,
+        # Camoufox is Firefox: it models the three desktop platforms. A mobile
+        # profile has no Camoufox equivalent, so it is opened as Windows rather
+        # than as a silently wrong Android.
+        "os": {"windows": "windows", "macos": "macos", "linux": "linux"}.get(fp.os, "windows"),
+        "locale": fp.locale,
+        "persistent_context": True,
+        "user_data_dir": str(store.user_data_path(profile.id)),
+    }
+    proxy_cfg, relay = _browser_proxy(profile)
+    if proxy_cfg:
+        kwargs["proxy"] = proxy_cfg
+        # Only when the profile actually asked for it. This was unconditional,
+        # so a profile with every signal set to "manual" still had its timezone
+        # and locale rewritten from the exit IP - the opposite of what it said.
+        if getattr(profile, "ip_based", None):
+            kwargs["geoip"] = True
+    return kwargs, relay
+
+
 @contextmanager
 def session(profile: Profile, store, engine: Optional[str] = None,
             headless: bool = True):
@@ -389,19 +426,12 @@ def session(profile: Profile, store, engine: Optional[str] = None,
     if name == "camoufox":
         # Camoufox's driver is launch-and-wait only, so open it directly.
         from camoufox.sync_api import Camoufox
-        # The proxy has to come too. This helper is what the leak test and the
-        # trust report run through, and without it they measured the host's own
-        # connection and then reported it clean - a check that passes by testing
-        # the wrong thing, which is worse than no check at all.
-        kwargs: dict = {
-            "headless": headless,
-            "persistent_context": True,
-            "user_data_dir": str(store.user_data_path(profile.id)),
-        }
-        proxy_cfg, relay = _browser_proxy(quiet)
-        if proxy_cfg:
-            kwargs["proxy"] = proxy_cfg
-            kwargs["geoip"] = True
+        # Exactly the options a real launch uses. The proxy matters most - without
+        # it the leak test and the trust report measured the host's own
+        # connection and called it clean, which is worse than no check - but so
+        # do the OS and locale, or the report grades an identity the profile
+        # does not have.
+        kwargs, relay = _camoufox_kwargs(quiet, store, headless)
         try:
             with Camoufox(**kwargs) as browser:
                 yield browser
@@ -441,6 +471,7 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
         *(profile.launch_args or []),
         *(extra_args or []),
     ]
+    hints = fp_mod.client_hint_headers(fp)
     geolocation = _geolocation_for(profile)
     context_opts: dict = {
         "user_agent": fp.user_agent,
@@ -457,9 +488,18 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
         "device_scale_factor": fp.device_pixel_ratio or (2 if fp.is_mobile else 1),
         "has_touch": fp.max_touch_points > 0,
         "extra_http_headers": {
-            "sec-ch-ua": fp_mod.sec_ch_ua(fp),
-            "sec-ch-ua-platform": fp.ch_platform,
-            "sec-ch-ua-mobile": "?1" if fp.is_mobile else "?0",
+            # Both sets, always. Chromium fills the high-entropy hints in from
+            # the machine it is really running on the moment a site sends
+            # `Accept-CH`, and that is the leak worth closing: a Windows 11
+            # profile on this host started reporting platform-version "10.0".
+            # `extra_http_headers` is the only lever that actually overrides
+            # them - a route handler and every --disable-features combination
+            # were measured and changed nothing. The cost is that the
+            # high-entropy hints are present a request earlier than Chrome would
+            # send them, which is unusual but not self-contradictory; leaking the
+            # host's real OS build is both.
+            **hints["low"],
+            **hints["high"],
             "accept-language": ",".join(
                 f"{l};q={1.0 - i*0.1:.1f}" if i else l
                 for i, l in enumerate(fp.languages)
@@ -549,19 +589,7 @@ def _driver_camoufox(profile, store, headless=False, keep_open=True, extra_args=
         )
     from camoufox.sync_api import Camoufox
 
-    fp = profile.fingerprint
-    os_hint = {"windows": "windows", "macos": "macos", "linux": "linux"}.get(fp.os, "windows")
-    kwargs: dict = {
-        "headless": headless,
-        "os": os_hint,
-        "locale": fp.locale,
-        "persistent_context": True,
-        "user_data_dir": str(store.user_data_path(profile.id)),
-    }
-    proxy_cfg, relay = _browser_proxy(profile)
-    if proxy_cfg:
-        kwargs["proxy"] = proxy_cfg
-        kwargs["geoip"] = True  # align timezone/locale to the proxy exit IP
+    kwargs, relay = _camoufox_kwargs(profile, store, headless)
 
     try:
         with Camoufox(**kwargs) as browser:

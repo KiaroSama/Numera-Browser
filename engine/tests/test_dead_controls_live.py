@@ -166,3 +166,174 @@ def test_do_not_track_reaches_the_page_and_the_header(tmp_path):
     on = _read(tmp_path, "d-on", "() => navigator.doNotTrack", do_not_track=True)
     assert off in (None, "0"), f"DNT should be unset when off, got {off!r}"
     assert on == "1", f"navigator.doNotTrack should be '1' when on, got {on!r}"
+
+
+# --- all three canvas read paths -------------------------------------------
+
+THREE_READS = """async () => {
+  const c = document.createElement('canvas');
+  c.width = 220; c.height = 60;
+  const x = c.getContext('2d');
+  x.textBaseline = 'top';
+  x.font = '14px "Arial"';
+  x.fillStyle = '#f60'; x.fillRect(8, 4, 90, 32);
+  x.fillStyle = '#069'; x.fillText('numera-three-paths', 10, 12);
+  const h = (s) => { let v = 5381;
+    for (let i = 0; i < s.length; i++) v = ((v * 33) ^ s.charCodeAt(i)) >>> 0;
+    return v; };
+  const url = c.toDataURL();
+  const px = Array.from(x.getImageData(0, 0, c.width, c.height).data).join(',');
+  const blob = await new Promise(r => c.toBlob(b => {
+    const fr = new FileReader();
+    fr.onload = () => r(fr.result);
+    fr.readAsDataURL(b);
+  }));
+  return { url: h(url), pixels: h(px), blob: h(blob), urlAgain: h(c.toDataURL()) };
+}"""
+
+
+def read_canvas(tmp_path, seed):
+    from dataclasses import replace as _replace
+
+    from numera import generate
+    from numera.models import Profile
+    from numera.store import ProfileStore
+    from numera import drivers
+
+    store = ProfileStore(tmp_path / str(seed))
+    fp = _replace(generate(os="windows"), seed=seed, canvas="noise")
+    p = Profile(name=f"c{seed}", fingerprint=fp)
+    store.save(p)
+    with drivers.session(p, store, headless=True) as ctx:
+        page = ctx.pages[0]
+        page.goto("about:blank")
+        return page.evaluate(THREE_READS)
+
+
+@pytest.mark.slow
+def test_reading_the_same_canvas_twice_gives_the_same_bytes(tmp_path):
+    """Noise that changes between two reads of one canvas is itself the signal -
+    a real machine returns identical bytes, and CreepJS checks exactly this."""
+    r = read_canvas(tmp_path, 12345)
+    assert r["url"] == r["urlAgain"], "two reads of one canvas disagreed"
+
+
+@pytest.mark.slow
+def test_a_different_seed_gives_different_pixels(tmp_path):
+    """Otherwise the noise is decoration: every profile would share a hash."""
+    a = read_canvas(tmp_path, 111)
+    b = read_canvas(tmp_path, 222)
+    assert a["url"] != b["url"]
+    assert a["pixels"] != b["pixels"], "getImageData is identical across profiles"
+    assert a["blob"] != b["blob"], "toBlob is identical across profiles"
+
+
+@pytest.mark.slow
+def test_the_three_read_paths_are_not_a_way_around_each_other(tmp_path):
+    """`getImageData` and `toBlob` used to return the *real* canvas while
+    `toDataURL` returned a noised one - both a bypass and a contradiction, since
+    the same drawing hashed differently depending on the call used."""
+    a = read_canvas(tmp_path, 777)
+    b = read_canvas(tmp_path, 888)
+    # Each path has to move with the seed. A path that does not is unpatched.
+    for path in ("url", "pixels", "blob"):
+        assert a[path] != b[path], f"{path} does not follow the profile seed"
+
+
+# --- font masking must cover the technique that is actually used ------------
+
+# The same method probe.py uses: set an inline family on a span and compare
+# offsetWidth against the generic fallback. If the width moves, the font is
+# installed.
+WIDTH_PROBE = """(fonts) => {
+  const span = document.createElement('span');
+  span.style.position = 'absolute';
+  span.style.left = '-9999px';
+  span.style.fontSize = '72px';
+  span.textContent = 'mmmmmmmmmmlli';
+  document.body.appendChild(span);
+  const bases = {};
+  for (const g of ['monospace', 'serif', 'sans-serif']) {
+    span.style.fontFamily = g;
+    bases[g] = span.offsetWidth;
+  }
+  const found = [];
+  for (const f of fonts) {
+    for (const g of ['monospace', 'serif', 'sans-serif']) {
+      span.style.fontFamily = `'${f}',${g}`;
+      if (span.offsetWidth !== bases[g]) { found.push(f); break; }
+    }
+  }
+  span.remove();
+  return found;
+}"""
+
+CANVAS_PROBE = """(fonts) => {
+  const c = document.createElement('canvas').getContext('2d');
+  const base = {};
+  for (const g of ['monospace', 'serif', 'sans-serif']) {
+    c.font = `72px ${g}`;
+    base[g] = c.measureText('mmmmmmmmmmlli').width;
+  }
+  const found = [];
+  for (const f of fonts) {
+    for (const g of ['monospace', 'serif', 'sans-serif']) {
+      c.font = `72px '${f}',${g}`;
+      if (c.measureText('mmmmmmmmmmlli').width !== base[g]) { found.push(f); break; }
+    }
+  }
+  return found;
+}"""
+
+
+def probe_fonts(tmp_path, font_mode, script, candidates):
+    from dataclasses import replace as _replace
+
+    from numera import generate
+    from numera.models import Profile
+    from numera.store import ProfileStore
+    from numera import drivers
+
+    store = ProfileStore(tmp_path / font_mode)
+    fp = _replace(generate(os="windows"), font_mode=font_mode)
+    p = Profile(name="f", fingerprint=fp)
+    store.save(p)
+    with drivers.session(p, store, headless=True) as ctx:
+        page = ctx.pages[0]
+        page.goto("about:blank")
+        return set(page.evaluate(script, candidates)), fp
+
+
+@pytest.mark.slow
+def test_width_probing_sees_only_the_masked_font_list(tmp_path):
+    """`Fonts: Masked` patched `document.fonts.check` and nothing else, while
+    every real fingerprinter - including this project's own probe.py - measures
+    offsetWidth. The control reported a protection it did not provide."""
+    candidates = ["Segoe UI", "Arial", "Comic Sans MS", "Zapfino",
+                  "Hiragino Sans", "Papyrus", "Menlo"]
+    found, fp = probe_fonts(tmp_path, "masked", WIDTH_PROBE, candidates)
+    allowed = {f.lower() for f in fp.fonts}
+    leaked = {f for f in found if f.lower() not in allowed}
+    assert not leaked, f"width probing found fonts not in the profile's list: {leaked}"
+
+
+@pytest.mark.slow
+def test_canvas_measure_text_agrees_with_the_same_list(tmp_path):
+    """Two probes of the same question must not disagree."""
+    candidates = ["Segoe UI", "Zapfino", "Hiragino Sans", "Papyrus"]
+    found, fp = probe_fonts(tmp_path, "masked", CANVAS_PROBE, candidates)
+    allowed = {f.lower() for f in fp.fonts}
+    leaked = {f for f in found if f.lower() not in allowed}
+    assert not leaked, f"measureText found fonts not in the profile's list: {leaked}"
+
+
+@pytest.mark.slow
+def test_a_font_the_profile_does_claim_is_still_measurable(tmp_path):
+    """Masking that hides everything is its own signal: a machine with no fonts
+    at all does not exist."""
+    from numera import generate
+
+    fp = generate(os="windows")
+    have = [f for f in fp.fonts[:6]]
+    found, _ = probe_fonts(tmp_path, "masked", WIDTH_PROBE, have)
+    assert found, f"none of the profile's own fonts could be detected: {have}"

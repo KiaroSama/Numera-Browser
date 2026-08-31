@@ -143,3 +143,83 @@ def test_headless_uses_the_full_chromium_channel():
 
 def test_headed_leaves_the_channel_alone():
     assert _launch_kwargs(headless=False)["channel"] is None
+
+
+# --- camoufox: inspection must wear the same identity as a launch -----------
+
+def test_camoufox_launch_and_session_build_the_same_options(tmp_path):
+    """`session()` used to build a shorter set - no `os`, no `locale` - so the
+    trust report, the leak test and the TLS check graded a browser that was not
+    wearing the profile's identity, then reported it as the profile's."""
+    from dataclasses import replace
+
+    from numera import drivers, generate
+    from numera.models import Profile, Proxy
+    from numera.store import ProfileStore
+
+    store = ProfileStore(tmp_path)
+    fp = replace(generate(os="macos"), locale="de-DE")
+    p = Profile(name="c", fingerprint=fp,
+                proxy=Proxy(server="http://1.2.3.4:8080"))
+    store.save(p)
+
+    kwargs, relay = drivers._camoufox_kwargs(p, store, headless=True)
+    if relay:
+        relay.close()
+    assert kwargs["os"] == "macos"
+    assert kwargs["locale"] == "de-DE"
+    assert kwargs["persistent_context"] is True
+    assert "proxy" in kwargs
+
+
+def test_camoufox_geoip_follows_the_profiles_own_choice(tmp_path):
+    """`geoip=True` was unconditional, so a profile with every signal set to
+    manual still had its timezone and locale rewritten from the exit IP - the
+    opposite of what the editor said."""
+    from numera import drivers, generate
+    from numera.models import Profile, Proxy
+    from numera.store import ProfileStore
+
+    store = ProfileStore(tmp_path)
+    fp = generate(os="windows")
+
+    manual = Profile(name="m", fingerprint=fp, proxy=Proxy(server="http://1.2.3.4:8080"))
+    store.save(manual)
+    kwargs, relay = drivers._camoufox_kwargs(manual, store, headless=True)
+    if relay:
+        relay.close()
+    assert "geoip" not in kwargs, "geoip was forced on a manual profile"
+
+    by_ip = Profile(name="i", fingerprint=fp, proxy=Proxy(server="http://1.2.3.4:8080"),
+                    ip_based=["timezone"])
+    store.save(by_ip)
+    kwargs, relay = drivers._camoufox_kwargs(by_ip, store, headless=True)
+    if relay:
+        relay.close()
+    assert kwargs.get("geoip") is True
+
+
+def test_the_all_or_nothing_limitation_is_stated(tmp_path):
+    """Camoufox moves timezone, locale and geolocation together - it has no
+    per-signal control - so a profile asking for only one gets all three. That
+    is a capability gap worth naming rather than burying."""
+    from numera import drivers
+
+    assert drivers.CAMOUFOX_GEOIP_IS_ALL_OR_NOTHING is True
+
+
+def test_a_mobile_profile_does_not_become_a_silently_wrong_desktop(tmp_path):
+    """Camoufox is Firefox and models three desktop platforms. An Android
+    profile has no equivalent, so it opens as Windows deliberately rather than
+    claiming Android and rendering something else."""
+    from numera import drivers, generate
+    from numera.models import Profile
+    from numera.store import ProfileStore
+
+    store = ProfileStore(tmp_path)
+    p = Profile(name="a", fingerprint=generate(os="android"))
+    store.save(p)
+    kwargs, relay = drivers._camoufox_kwargs(p, store, headless=True)
+    if relay:
+        relay.close()
+    assert kwargs["os"] == "windows"
