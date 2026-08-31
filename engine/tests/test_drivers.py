@@ -81,17 +81,37 @@ def test_webrtc_hides_local_ip_without_proxy():
 # "chromium" channel is the same download in --headless=new mode.
 
 
+class _FakeCdpSession:
+    def __init__(self, sink):
+        self.sink = sink
+
+    def send(self, method, params=None):
+        self.sink.append((method, params or {}))
+
+
 class _FakeContext:
     def __init__(self):
         self.pages = []
         self.closed = False
+        self.cdp = []          # every (method, params) the launcher sent
+        self._handlers = {}
 
     def add_init_script(self, script):
         pass
 
+    def on(self, event, handler):
+        self._handlers.setdefault(event, []).append(handler)
+
+    def new_cdp_session(self, page):
+        return _FakeCdpSession(self.cdp)
+
     def new_page(self):
         page = _FakePage()
         self.pages.append(page)
+        # Playwright emits this, and the launcher relies on it to reach pages
+        # that did not exist when the context was built.
+        for handler in self._handlers.get("page", []):
+            handler(page)
         return page
 
     def close(self):
@@ -124,17 +144,56 @@ class _FakePlaywright:
         pass
 
 
-def _launch_kwargs(headless):
+def _launch(headless=True, prof=None):
+    """Run the real launch path against the fakes; return (kwargs, context)."""
     from numera.drivers import _launch_playwright_like
     from numera.store import ProfileStore
     import tempfile
 
     seen = {}
     with tempfile.TemporaryDirectory() as tmp:
-        prof = Profile(name="k", fingerprint=generate(seed=3))
-        _launch_playwright_like(lambda: _FakePlaywright(seen), prof,
-                                ProfileStore(tmp), headless, keep_open=True)
-    return seen
+        prof = prof or Profile(name="k", fingerprint=generate(seed=3))
+        _, ctx, _page = _launch_playwright_like(
+            lambda: _FakePlaywright(seen), prof, ProfileStore(tmp),
+            headless, keep_open=True)
+    return seen, ctx
+
+
+def _launch_kwargs(headless):
+    return _launch(headless)[0]
+
+
+# --- Client Hints reach the browser, and only the trio rides as a header ----
+
+def _ua_override(ctx):
+    for method, params in ctx.cdp:
+        if method == "Emulation.setUserAgentOverride":
+            return params
+    return None
+
+
+def test_the_launcher_hands_chromium_the_ua_metadata():
+    """Without this the browser derives the hints from the host: a Windows 11
+    profile on a Windows 10 machine reported platform-version "10.0"."""
+    from numera.fingerprint import ua_metadata
+
+    fp = generate(seed=3)
+    _, ctx = _launch(prof=Profile(name="k", fingerprint=fp))
+    sent = _ua_override(ctx)
+    assert sent, f"no setUserAgentOverride was sent: {ctx.cdp}"
+    assert sent["userAgentMetadata"] == ua_metadata(fp)
+    assert sent["userAgent"] == fp.user_agent
+
+
+def test_the_high_entropy_hints_are_not_pinned_as_headers():
+    """A header goes on every request; Chrome sends these only after a site asks
+    with `Accept-CH`. Pinning them announced the OS build to sites that never
+    asked - the whole reason the CDP override exists."""
+    headers = {k.lower() for k in _launch_kwargs(True)["extra_http_headers"]}
+    assert "sec-ch-ua" in headers, "the low-entropy trio must still be pinned"
+    assert not (headers & {"sec-ch-ua-platform-version", "sec-ch-ua-arch",
+                           "sec-ch-ua-model", "sec-ch-ua-bitness",
+                           "sec-ch-ua-full-version-list", "sec-ch-ua-wow64"})
 
 
 def test_headless_uses_the_full_chromium_channel():

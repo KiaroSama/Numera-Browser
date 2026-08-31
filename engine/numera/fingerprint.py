@@ -318,51 +318,76 @@ def validate(fp: Fingerprint) -> list[str]:
     return issues
 
 
-def client_hint_headers(fp: Fingerprint) -> dict:
-    """Every Sec-CH-UA header this profile may ever send, with its value.
-
-    Split into what Chrome always sends and what it only sends after a site
-    opts in with ``Accept-CH``. The caller sends the first set on every request
-    and uses the second to *overwrite* whatever Chromium adds for the host once
-    a site has asked - which is where the real machine used to leak: the browser
-    answers `sec-ch-ua-platform-version` from the OS it is actually running on,
-    not from the profile.
-
-    Empty for iOS. Safari implements no Client Hints at all, so a profile
-    claiming to be an iPhone while sending `sec-ch-ua` is not a weak signal -
-    it is a contradiction no real device produces. The in-page
-    `navigator.userAgentData` is already deleted for iOS; this is the other half.
-    """
-    # Real Safari sends no Client Hints at all, and an iPhone profile that sends
-    # them is a contradiction. It cannot be fixed here: Chromium adds the
-    # low-entropy trio to every request itself, and neither `route.continue_`
-    # nor `--disable-features=UserAgentClientHint` removes them - both were
-    # measured against a local server. So the best available answer is values
-    # that at least agree with the rest of the identity, and the residual tell
-    # is written down in docs/architecture.md rather than papered over.
+def _full_version(fp: Fingerprint) -> str:
+    """The four-part Chrome version the full-version hints report."""
     major = fp.chrome_version.split(".")[0]
-    full = fp.chrome_version if fp.chrome_version.count(".") == 3 else f"{major}.0.0.0"
-    full_list = ", ".join(f'"{b["brand"]}";v="{full if b["brand"] != "Not-A.Brand" else "99.0.0.0"}"'
-                          for b in ua_brands(fp))
+    return fp.chrome_version if fp.chrome_version.count(".") == 3 else f"{major}.0.0.0"
+
+
+def ua_metadata(fp: Fingerprint) -> dict:
+    """The profile as a CDP ``Emulation.setUserAgentOverride`` metadata block.
+
+    Chromium builds the Sec-CH-UA headers *and* answers
+    ``navigator.userAgentData`` from this structure, so handing it over is what
+    lets the browser keep its own ``Accept-CH`` logic - low-entropy hints on
+    every request, high-entropy ones only once a site has asked - while
+    reporting the profile's values instead of the host's.
+    """
+    full = _full_version(fp)
+    brands = ua_brands(fp)
     # Apple Silicon and Android are arm; everything else this project models is
     # x86. Reporting x86 for an M-series Mac contradicts the GPU string.
     arm = fp.os in ("android", "ios") or (
         fp.os == "macos" and "Apple" in (fp.webgl_renderer or ""))
-    platform = fp.ch_platform if fp.ch_platform.strip('"') else (
-        '"iOS"' if fp.os == "ios" else '"Unknown"')
+    return {
+        "brands": [{"brand": b["brand"], "version": b["version"]} for b in brands],
+        "fullVersionList": [
+            {"brand": b["brand"],
+             "version": "99.0.0.0" if b["brand"] == "Not-A.Brand" else full}
+            for b in brands],
+        "platform": fp.ch_platform.strip('"') or ("iOS" if fp.os == "ios" else "Unknown"),
+        "platformVersion": platform_version(fp.os, fp.os_version),
+        "architecture": "arm" if arm else "x86",
+        "model": fp.device_model or "",
+        "mobile": fp.is_mobile,
+        "bitness": "64",
+        "wow64": False,
+    }
+
+
+def client_hint_headers(fp: Fingerprint) -> dict:
+    """The same values as :func:`ua_metadata`, formatted as headers.
+
+    Split into what Chrome always sends and what it only sends after a site
+    opts in with ``Accept-CH``. The launcher pins the low set as a header - the
+    values are identical to the ones Chromium derives, so it costs nothing and
+    keeps the trio right if the CDP override never lands - and leaves the high
+    set to Chromium, which is the only way to get the *timing* right.
+
+    Not empty for iOS, though real Safari implements no Client Hints at all.
+    Chromium adds the low-entropy trio to every request itself and nothing
+    removes it - `route.continue_`, `--disable-features=UserAgentClientHint`
+    and `--blink-settings=clientHintsEnabled=false` were all measured against a
+    local server and changed nothing. So an iPhone profile sends hints a real
+    iPhone would not; the best available answer is values that at least agree
+    with the rest of the identity, and the residual tell is written down in
+    docs/architecture.md rather than papered over.
+    """
+    m = ua_metadata(fp)
     return {
         "low": {
             "sec-ch-ua": sec_ch_ua(fp),
-            "sec-ch-ua-mobile": "?1" if fp.is_mobile else "?0",
-            "sec-ch-ua-platform": platform,
+            "sec-ch-ua-mobile": "?1" if m["mobile"] else "?0",
+            "sec-ch-ua-platform": f'"{m["platform"]}"',
         },
         "high": {
-            "sec-ch-ua-platform-version": f'"{platform_version(fp.os, fp.os_version)}"',
-            "sec-ch-ua-arch": '"arm"' if arm else '"x86"',
-            "sec-ch-ua-bitness": '"64"',
-            "sec-ch-ua-model": f'"{fp.device_model or ""}"',
-            "sec-ch-ua-full-version": f'"{full}"',
-            "sec-ch-ua-full-version-list": full_list,
+            "sec-ch-ua-platform-version": f'"{m["platformVersion"]}"',
+            "sec-ch-ua-arch": f'"{m["architecture"]}"',
+            "sec-ch-ua-bitness": f'"{m["bitness"]}"',
+            "sec-ch-ua-model": f'"{m["model"]}"',
+            "sec-ch-ua-full-version": f'"{_full_version(fp)}"',
+            "sec-ch-ua-full-version-list": ", ".join(
+                f'"{b["brand"]}";v="{b["version"]}"' for b in m["fullVersionList"]),
             "sec-ch-ua-wow64": "?0",
         },
     }
