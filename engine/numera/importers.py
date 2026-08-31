@@ -101,6 +101,24 @@ def _parse_proxy(d: dict) -> Optional[Proxy]:
     )
 
 
+def _as_int(value, fallback: int) -> int:
+    """An int from whatever a vendor export happened to put there.
+
+    A bare `int()` raised on `"8 cores"` or `"N/A"`, and the import route saves
+    as it goes - so one odd value aborted the request with a 500 and left the
+    profiles before it already written. The module's contract is to be tolerant
+    (see the header) and `_parse_resolution` already is; this is the same rule
+    for the numeric fields.
+    """
+    try:
+        return int(str(value).strip())
+    except (TypeError, ValueError):
+        try:
+            return int(float(str(value).strip()))
+        except (TypeError, ValueError):
+            return fallback
+
+
 def profile_from_export(d: dict) -> tuple[Profile, list[str]]:
     """Map one exported profile dict to a Numera :class:`Profile`.
 
@@ -134,10 +152,13 @@ def profile_from_export(d: dict) -> tuple[Profile, list[str]]:
         viewport_width=sw,
         viewport_height=max(1, sh - (113 if os_key == "ios" else
                                      80 if os_key == "android" else 88)),
-        hardware_concurrency=int(_first(d, "navigator.hardwareConcurrency",
-                                         "hardware_concurrency", "cores", default=base.hardware_concurrency)),
-        device_memory=int(_first(d, "navigator.deviceMemory", "device_memory",
-                                 "memory", default=base.device_memory)),
+        hardware_concurrency=_as_int(_first(d, "navigator.hardwareConcurrency",
+                                            "hardware_concurrency", "cores",
+                                            default=base.hardware_concurrency),
+                                     base.hardware_concurrency),
+        device_memory=_as_int(_first(d, "navigator.deviceMemory", "device_memory",
+                                     "memory", default=base.device_memory),
+                              base.device_memory),
         webgl_vendor=_first(d, "webGLMetadata.vendor", "webgl.vendor",
                             "webGL.vendor", "graphic.vendor", "webgl_vendor",
                             "unmaskedVendor", "fingerprint.webgl_vendor",

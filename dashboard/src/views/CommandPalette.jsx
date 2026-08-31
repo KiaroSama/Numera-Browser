@@ -1,9 +1,8 @@
 /* Ctrl-K: jump to a view or act on a profile by name. */
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Blocks, FolderTree, Globe, Layers, Pencil, Play, Plus, Search, Settings, Square, Sun, Zap } from "lucide-react";
 import { T } from "../theme";
-import { newProfile } from "../ui";
 
 function CommandPalette({ onClose, profiles, setView, setEditor, toggleRun, toggleTheme, newProfile }) {
   const [q, setQ] = useState("");

@@ -1,6 +1,6 @@
 /* Folder management: create, rename, delete, reassign. */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { ArrowRight, Circle, FolderPlus, FolderTree, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { T } from "../theme";
 import { coherence } from "../deviceData";

@@ -101,7 +101,7 @@ Numera/
 | 🖥️ **Real browser** | Launches a real browser, per-profile isolation |
 | 🔌 **Pluggable engines** | Swap the stealth backend: CloakBrowser, Camoufox, Patchright, Playwright |
 | 🔗 **Startup URLs** | Each profile opens the pages you want, in its own tabs |
-| 🖱️ **Portable desktop app** | A ~33 MB folder you copy and double-click. No Python, no Node, no installer — the engine is frozen inside the window |
+| 🖱️ **Portable desktop app** | A ~590 MB folder you copy and double-click. No Python, no Node, no installer, no browser download - the engine and its Chromium are both inside the window |
 | ⌨️ **CLI + Python API** | Script it or drive it by hand |
 | 🤖 **Built for agents** | `--json` on every command an agent would drive, `--detach` for long jobs with pollable handles, and an MCP surface. A parity test asserts the GUI has no capability the CLI lacks, and it currently passes at 44/44 — see [docs/agents.md](docs/agents.md) |
 
@@ -144,11 +144,14 @@ Two artifacts, two scripts. Pick the one that matches how you will run it.
 pwsh -File scripts/build-desktop.ps1
 ```
 
-Produces `build/windows/Numera/` (~33 MB): a native window, the engine frozen
-inside it, and the dashboard. Copy that folder anywhere — another drive, a flash
-drive, another machine — and run `numera.exe`. **No Python, no Node, no
-installer**; Windows 11 already has the only dependency (WebView2). It picks a
-free port at runtime and shuts the engine down with the window.
+Produces `build/windows/Numera/` (~590 MB): a native window, the engine frozen
+inside it, the dashboard, and a Chromium build. Nearly all of that size is the
+browser - it is bundled so the folder can launch a profile on a machine that has
+never run Playwright, which is the whole point of a portable build. Copy that
+folder anywhere — another drive, a flash drive, another machine — and run
+`numera.exe`. **No Python, no Node, no installer, no browser download**;
+Windows 11 already has the only dependency (WebView2). It picks a free port at
+runtime and shuts the engine down with the window.
 
 Because it is portable it keeps its profiles, sessions, proxies and logs in
 `data/` **beside the executable**. Rebuilding on top of an existing folder
@@ -169,7 +172,7 @@ Produces a **platform-independent** wheel (`py3-none-any`) in `build/server/`.
 The same file installs on Linux, macOS or Windows:
 
 ```bash
-python -m pip install numera_engine-0.3.0-py3-none-any.whl[api,launch]
+python -m pip install numera_engine-<version>-py3-none-any.whl[api,launch]
 numera serve --host 0.0.0.0 --port 8787
 ```
 

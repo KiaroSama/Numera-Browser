@@ -37,7 +37,14 @@ def cmd_pool(args, store: ProfileStore) -> int:
 
     if sub == "add":
         text = sys.stdin.read() if args.source == "-" else Path(args.source).read_text(encoding="utf-8")
-        parsed = pp.parse_many(text)
+        # Through the same validator the API uses. `parse_many` alone accepts
+        # shapes `normalize` would refuse, so the CLI could store a proxy the
+        # dashboard would not.
+        try:
+            parsed = pp.normalize_many(pp.parse_many(text))
+        except ValueError as e:
+            say(_c(str(e), C.RED))
+            return emit({"ok": False, "error": str(e)}, 1)
         if not parsed:
             say(_c("No proxies could be parsed from that input.", C.RED))
             return emit({"ok": False, "error": "no proxies could be parsed from that input"}, 1)
@@ -158,6 +165,7 @@ def cmd_pool(args, store: ProfileStore) -> int:
     # locale/timezone to its proxy's country — the same rule as POST /api/proxies/assign,
     # applied to the profiles the CLI owns.
     from .. import devices
+    from .. import proxypool as pp
     from ..bulk import select
 
     proxies = [pool.get(i) for i in args.proxy_id] if args.proxy_id else pool.list()
@@ -170,13 +178,16 @@ def cmd_pool(args, store: ProfileStore) -> int:
         say(_c("Nothing matched. Pass profile names/ids, --tag TAG, or --all.", C.RED))
         return emit({"ok": False, "error": "no profiles matched"}, 1)
 
-    scheme_of = {"HTTP": "http", "HTTPS": "http", "SOCKS5": "socks5", "SOCKS4": "socks4"}
+    # `server_url()` is the canonical conversion. The local map this replaced
+    # sent HTTPS to "http" - silently downgrading the scheme the profile claims -
+    # and did not bracket an IPv6 host, so a CLI assignment produced a different
+    # `Proxy.server` than every other path for the same pool entry.
     assigned = []
     for i, prof in enumerate(targets):
         pr = proxies[i % len(proxies)]
-        scheme = scheme_of.get(str(pr.get("type", "HTTP")).upper(), "http")
         cc = (pr.get("country") or "").upper()
-        prof.proxy = Proxy(server=f"{scheme}://{pr['host']}:{pr['port']}",
+        prof.proxy = Proxy(server=pp.server_url(pr.get("type", "HTTP"),
+                                                pr["host"], pr.get("port", "")),
                            username=pr.get("user") or None,
                            password=pr.get("pass") or None,
                            country=cc or None)

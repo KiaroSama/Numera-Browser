@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+from functools import lru_cache
 import importlib.util
 import os
 from typing import Optional
@@ -54,11 +55,29 @@ def new_salt() -> str:
     return base64.b64encode(os.urandom(16)).decode("ascii")
 
 
+@lru_cache(maxsize=8)
+def _derive_key(password: str, salt_b64: str) -> bytes:
+    """The Fernet key for this password and salt.
+
+    Cached because it is a pure function of its two arguments and costs 200,000
+    rounds of PBKDF2 - and a vault has exactly one salt, fixed when it was
+    created. Without the cache every single encrypt and decrypt re-derived the
+    same key: listing profiles decrypts every profile, listing the pool decrypts
+    every proxy, and saving a pool re-encrypts every entry, so one "test all"
+    sweep across N proxies paid it on the order of N-squared times.
+
+    Caching the derived key adds no exposure the process does not already have -
+    the master password itself is held in memory as `ProfileStore._password` for
+    exactly as long. Bounded so a long-lived server cannot grow it without limit.
+    """
+    salt = base64.b64decode(salt_b64)
+    return base64.urlsafe_b64encode(
+        hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PBKDF2_ROUNDS))
+
+
 def _fernet(password: str, salt_b64: str):
     from cryptography.fernet import Fernet
-    salt = base64.b64decode(salt_b64)
-    key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PBKDF2_ROUNDS)
-    return Fernet(base64.urlsafe_b64encode(key))
+    return Fernet(_derive_key(password, salt_b64))
 
 
 def is_encrypted(value) -> bool:

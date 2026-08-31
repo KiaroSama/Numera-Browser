@@ -97,7 +97,13 @@ class Proxy:
 
     @classmethod
     def from_dict(cls, d: dict) -> "Proxy":
-        return cls(**d)
+        # Filter to known fields, exactly as `Fingerprint.from_dict` does. This
+        # was the asymmetric one: an extra key - from a newer version, a hand
+        # edit, or a foreign backup - reached the constructor and raised
+        # TypeError inside `ProfileStore.get()`, turning one odd record into a
+        # 500 for the whole request.
+        known = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in d.items() if k in known})
 
 
 @dataclass

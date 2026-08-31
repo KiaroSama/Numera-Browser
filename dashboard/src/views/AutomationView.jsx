@@ -1,7 +1,7 @@
 /* Attach a live profile to Selenium / Puppeteer / Playwright over CDP. */
 
 import React, { useState } from "react";
-import { Activity, Circle, Clipboard, Copy, RefreshCw, Server, Square, Zap } from "lucide-react";
+import { Activity, Circle, Clipboard, RefreshCw, Server, Square, Zap } from "lucide-react";
 import { api } from "../api";
 import { T } from "../theme";
 import { ENGINE_META } from "../deviceData";

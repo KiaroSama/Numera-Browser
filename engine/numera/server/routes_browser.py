@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Optional
 from .. import cookies as cookies_mod
 from .convert import OS_TO_DASH, to_engine_profile
+from ..paths import child_env
 
 
 def register(app, ctx):
@@ -51,7 +52,7 @@ def register(app, ctx):
                "launch", pid]
         if headless:
             cli.append("--headless")
-        proc = subprocess.Popen(cli)
+        proc = subprocess.Popen(cli, env=child_env(engine_store._password))
         running[pid] = proc
         return decorate(d)
 
@@ -74,6 +75,11 @@ def register(app, ctx):
         proc = subprocess.run(
             [sys.executable, "-m", "numera", "--data-dir", str(engine_store.root), *cli_args],
             capture_output=True, text=True,
+            # The unlock reaches the child by environment, never argv: a
+            # password on a command line is readable by every local process.
+            # Without this a server unlocked with --password spawned locked
+            # children, so probes and cookie exports silently lost the proxy.
+            env=child_env(engine_store._password),
         )
         if proc.returncode != 0 and not (allow_fail and proc.stdout.strip()):
             raise HTTPException(500, (proc.stdout + proc.stderr).strip() or "command failed")
@@ -178,7 +184,7 @@ def register(app, ctx):
                "attach", pid, "--port", str(port)]
         if (body or {}).get("headless"):
             cli.append("--headless")
-        running[pid] = subprocess.Popen(cli)
+        running[pid] = subprocess.Popen(cli, env=child_env(engine_store._password))
         try:
             info = cdp_info(port)            # waits for DevTools to answer
         except RuntimeError as e:
@@ -202,7 +208,7 @@ def register(app, ctx):
             cli += ["--preset", str(body["preset"])]
         # Warm-up runs for minutes, so it goes in the background exactly like a
         # launch — the profile shows as running and "stop" ends it.
-        running[pid] = subprocess.Popen(cli)
+        running[pid] = subprocess.Popen(cli, env=child_env(engine_store._password))
         return decorate(d)
 
     @app.post("/api/profiles/{pid}/align")

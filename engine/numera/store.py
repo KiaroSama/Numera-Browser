@@ -199,7 +199,20 @@ class ProfileStore:
                     # this value straight to the browser, and authenticating with
                     # an encrypted blob is worse than not authenticating at all.
                     # `save()` is where the stored value is protected.
-                    node[b] = crypto.decrypt(pw, v["salt"], val) if (pw and self.unlocked()) else None
+                    if pw and self.unlocked():
+                        try:
+                            node[b] = crypto.decrypt(pw, v["salt"], val)
+                        except Exception:               # noqa: BLE001
+                            # Encrypted under a *different* key - a backup from
+                            # another machine, or a rotated vault. `unlocked()`
+                            # only says the current verifier matches, not that
+                            # this record does. Degrade to None like
+                            # `vault.decrypt_for_read` already does; raising
+                            # here took the entire profile list down over one
+                            # unreadable row.
+                            node[b] = None
+                    else:
+                        node[b] = None
         return data
 
     # ---- paths -----------------------------------------------------------
@@ -286,8 +299,11 @@ class ProfileStore:
             try:
                 data = self._apply_secrets(json.loads(f.read_text(encoding="utf-8")), "dec")
                 out.append(Profile.from_dict(data))
-            except (json.JSONDecodeError, KeyError):
-                continue  # skip corrupt files rather than crash
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+                # One unreadable record is skipped; it must never end the
+                # listing. TypeError/ValueError cover a stored shape a newer
+                # version wrote that this one cannot model.
+                continue
         return sorted(out, key=lambda p: p.created_at)
 
     def delete(self, profile_id: str) -> bool:
@@ -312,14 +328,58 @@ class ProfileStore:
             ud = self.userdata_dir / safe_id(profile_id)
         except ValueError:
             return
-        if ud.exists():
-            shutil.rmtree(ud, ignore_errors=True)
+        if not ud.exists():
+            return
+        # Rename first, delete second. `rmtree(..., ignore_errors=True)` hid a
+        # failure completely: on Windows a running Chromium holds its files, so
+        # the delete quietly did nothing and the caller reported the session
+        # gone while the whole browsing profile was still on disk. A rename
+        # fails loudly when the directory is held, which is what we want to
+        # know, and once it succeeds the data is already detached from the id.
+        tomb = ud.with_name(f"{ud.name}.deleting-{uuid.uuid4().hex[:8]}")
+        ud.rename(tomb)
+        shutil.rmtree(tomb, ignore_errors=True)
+        if tomb.exists():
+            # Detached but not yet reclaimed. The profile is correctly gone; say
+            # so rather than pretending the bytes are.
+            raise OSError(
+                f"the session for {profile_id} was detached to {tomb.name} but "
+                f"could not be deleted - remove it by hand once nothing holds it")
 
     # ---- import / export -------------------------------------------------
+    def secret_withheld(self, profile_id: str) -> bool:
+        """Does this profile hold a secret the current lock state hides?
+
+        Reads the stored bytes rather than a decrypted view: the decrypted view
+        is exactly the one that cannot tell "locked" from "no password".
+        """
+        try:
+            path = self._path(profile_id)
+        except ValueError:
+            return False
+        if not path.exists():
+            return False
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return False
+        for a, b in self.SECRET_PATHS:
+            node = raw.get(a)
+            value = node.get(b) if isinstance(node, dict) else None
+            if vault.is_withheld(self, value):
+                return True
+        return False
+
     def export(self, profile_id: str, dest: str | Path) -> Optional[Path]:
         prof = self.get(profile_id)
         if not prof:
             return None
+        # An export of a profile whose password we cannot read would omit it
+        # silently, and the file gives no hint that anything is missing.
+        if self.secret_withheld(profile_id):
+            raise crypto.VaultLocked(
+                f"exporting '{prof.name}' would drop its proxy password: "
+                + vault.LOCKED_MESSAGE)
         dest = Path(dest)
         dest.write_text(json.dumps(prof.to_dict(), indent=2), encoding="utf-8")
         return dest
@@ -344,6 +404,14 @@ class ProfileStore:
         prof = self.get(profile_id)
         if not prof:
             return None
+        # The docstring above promises the archive carries the proxy password.
+        # While locked it would not, and nothing in the file would say so - the
+        # restore would come back a working-looking profile that cannot reach
+        # its proxy.
+        if self.secret_withheld(profile_id):
+            raise crypto.VaultLocked(
+                f"backing up '{prof.name}' would drop its proxy password: "
+                + vault.LOCKED_MESSAGE)
         dest = Path(dest)
         with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
             z.writestr("profile.json", json.dumps(prof.to_dict(), indent=2))

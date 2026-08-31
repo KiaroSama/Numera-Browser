@@ -17,6 +17,10 @@ from numera import generate
 from numera.models import Profile
 from numera.store import ProfileStore
 
+# Live: opens a real browser. `-m slow` must select every one of these, or a
+# local run silently skips what only CI's glob was catching.
+pytestmark = pytest.mark.slow
+
 pytest.importorskip("playwright")
 
 IPV4 = re.compile(r"\b(\d{1,3}(?:\.\d{1,3}){3})\b")

@@ -1,7 +1,7 @@
 /* One row per profile: coherence, proxy, cached trust grade, schedule, and
  * which profiles share a fingerprint. */
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Activity, Check, Clock, Link2, RefreshCw, ShieldAlert, ShieldCheck, Sparkles } from "lucide-react";
 import { api } from "../api";
 import { T } from "../theme";

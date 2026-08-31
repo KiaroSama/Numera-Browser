@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "numera-engine"
-version = "0.12.0"
+version = "0.13.0"
 description = "Coherent browser fingerprint & profile engine for Numera Browser."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -49,3 +49,9 @@ numera = ["web/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The whole workflow hangs off one marker: offline runs use `-m "not slow"` and
+# the live suite uses `-m slow`. Unregistered, pytest warned on every run and -
+# worse - accepted a typo like `slwo` as a brand new marker, which would sort a
+# live browser test into the offline suite with nothing to say so.
+markers = ["slow: needs a real browser; excluded from the offline run"]
+addopts = "--strict-markers"

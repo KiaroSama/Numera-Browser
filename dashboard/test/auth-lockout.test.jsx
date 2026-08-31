@@ -7,7 +7,6 @@
  * poller's `refresh().catch(() => {})` - leaving the app visibly "Engine
  * online" while every request it made came back 401. */
 
-import React from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import App from "../src/App.jsx";

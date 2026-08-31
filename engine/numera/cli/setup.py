@@ -426,12 +426,15 @@ def cmd_schedule(args, store: ProfileStore) -> int:
 
 def cmd_serve(args, store: ProfileStore) -> int:
     from ..server import serve
+    # `store` is already unlocked if the caller passed --password. Handing the
+    # password on means the server's own store is unlocked too; without it the
+    # flag silently did nothing for the one surface that runs longest.
     serve(host=args.host, port=args.port, data_dir=args.data_dir,
-          verbose=getattr(args, "verbose", False))
+          verbose=getattr(args, "verbose", False), password=store._password)
     return 0
 
 
 def cmd_mcp(args, store: ProfileStore) -> int:
     """Speak MCP on stdin/stdout. Every command below is a tool; see mcp.py."""
     from .. import mcp
-    return mcp.serve(data_dir=str(store.root))
+    return mcp.serve(data_dir=str(store.root), password=store._password)

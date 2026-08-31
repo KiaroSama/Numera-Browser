@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .paths import write_batch, write_json
+from .paths import _lock_for, write_batch, write_json
 from typing import Optional
 
 UNFILED = "Unfiled"
@@ -74,6 +74,19 @@ def listing(root: Path) -> list[str]:
     return list(dict.fromkeys([*meta.get("folders", []), *used]))
 
 
+def _folder_lock(root: Path):
+    """The lock every folder change takes, keyed on the file they all rewrite.
+
+    `create`, `rename` and `delete` each read the folder list, change it, and
+    write it back - and `rename`/`delete` rewrite every profile in the folder as
+    well. None of that was locked, so two concurrent folder operations each read
+    the same list and the second write silently dropped the first one's change.
+
+    One lock for the whole read-modify-write, not just the final write.
+    """
+    return _lock_for(_meta_path(root))
+
+
 def _persist(root: Path, names: list[str]) -> list[str]:
     meta = _read_meta(root)
     meta["folders"] = list(dict.fromkeys(n for n in names if n))
@@ -82,37 +95,40 @@ def _persist(root: Path, names: list[str]) -> list[str]:
 
 
 def create(root: Path, name: str) -> list[str]:
-    name = (name or "").strip()
-    if not name:
-        raise ValueError("folder name required")
-    return _persist(root, [*listing(root), name])
+    with _folder_lock(root):
+        name = (name or "").strip()
+        if not name:
+            raise ValueError("folder name required")
+        return _persist(root, [*listing(root), name])
 
 
 def rename(root: Path, src: str, dst: str) -> list[str]:
-    src, dst = (src or "").strip(), (dst or "").strip()
-    if not src or not dst:
-        raise ValueError("both a source and a destination name are required")
-    # Every profile in the folder, or none of them. `write_text` straight into
-    # each file meant a failure part-way left some profiles moved and the rest
-    # behind, under a folder list that had already been updated - a state no
-    # screen shows correctly and no retry fixes.
-    with write_batch() as batch:
-        for f, p in _profiles(root):
-            if p.get("folder") == src:
-                p["folder"] = dst
-                batch.write(f, p)
-        return _persist(root, [dst if x == src else x for x in listing(root)])
+    with _folder_lock(root):
+        src, dst = (src or "").strip(), (dst or "").strip()
+        if not src or not dst:
+            raise ValueError("both a source and a destination name are required")
+        # Every profile in the folder, or none of them. `write_text` straight into
+        # each file meant a failure part-way left some profiles moved and the rest
+        # behind, under a folder list that had already been updated - a state no
+        # screen shows correctly and no retry fixes.
+        with write_batch() as batch:
+            for f, p in _profiles(root):
+                if p.get("folder") == src:
+                    p["folder"] = dst
+                    batch.write(f, p)
+            return _persist(root, [dst if x == src else x for x in listing(root)])
 
 
 def delete(root: Path, name: str, reassign_to: Optional[str] = None) -> list[str]:
     """Remove a folder. Its profiles are moved, never deleted."""
-    name = (name or "").strip()
-    if not name:
-        raise ValueError("folder name required")
-    target = (reassign_to or UNFILED).strip() or UNFILED
-    with write_batch() as batch:
-        for f, p in _profiles(root):
-            if p.get("folder") == name:
-                p["folder"] = target
-                batch.write(f, p)
-        return _persist(root, [x for x in listing(root) if x != name])
+    with _folder_lock(root):
+        name = (name or "").strip()
+        if not name:
+            raise ValueError("folder name required")
+        target = (reassign_to or UNFILED).strip() or UNFILED
+        with write_batch() as batch:
+            for f, p in _profiles(root):
+                if p.get("folder") == name:
+                    p["folder"] = target
+                    batch.write(f, p)
+            return _persist(root, [x for x in listing(root) if x != name])

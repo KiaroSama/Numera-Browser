@@ -7,7 +7,7 @@
  *
  * Everything destructive asks first, and says what it is about to destroy. */
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Archive, ArchiveRestore, ArrowRight, Check, Circle, Copy, Download, Eye, EyeOff,
   Globe, Pencil, Plus, Repeat,

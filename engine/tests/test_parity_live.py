@@ -24,6 +24,10 @@ from numera import generate
 from numera.models import Profile
 from numera.store import ProfileStore
 
+# Live: opens a real browser. `-m slow` must select every one of these, or a
+# local run silently skips what only CI's glob was catching.
+pytestmark = pytest.mark.slow
+
 pytest.importorskip("playwright")
 
 PAGE = "https://numera.test/"
