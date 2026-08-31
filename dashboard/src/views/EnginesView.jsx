@@ -1,7 +1,7 @@
 /* The pluggable stealth backends and their install state. */
 
-import React, { useState } from "react";
-import { ArrowRight, Blocks, Check, Clipboard, Copy, Fingerprint, MonitorSmartphone, Sparkles, Star } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, Blocks, Check, Clipboard, Fingerprint, MonitorSmartphone, Sparkles, Star } from "lucide-react";
 import { T } from "../theme";
 import { ENGINE_META, ENGINE_ORDER } from "../deviceData";
 import { SectionHead } from "../ui";
@@ -26,7 +26,7 @@ function StrengthMeter({ value }) {
   );
 }
 
-function EngineCard({ id, status, live, delay, featured }) {
+function EngineCard({ id, status, delay, featured }) {
   const m = ENGINE_META[id];
   const [copied, setCopied] = useState(false);
   const copy = () => { navigator.clipboard?.writeText(m.install); setCopied(true); setTimeout(() => setCopied(false), 1400); };

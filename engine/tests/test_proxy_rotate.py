@@ -15,6 +15,23 @@ import pytest
 from numera import proxypool as pp
 
 
+@pytest.fixture(autouse=True)
+def allow_the_local_stub(monkeypatch):
+    """Let these tests aim `rotate` at their own loopback endpoint.
+
+    `rotate` refuses private destinations, because it is the one place the
+    engine fetches a caller-supplied address from its own network position - see
+    `test_resilient_and_guarded.py`, which owns that guard's tests. These tests
+    are about the rotate *logic* (cooldown, did the IP move, how a dead endpoint
+    is reported), and their provider stand-in is necessarily on 127.0.0.1. So
+    the destination check is stubbed here rather than the guard weakened for
+    everyone.
+    """
+    monkeypatch.setattr(pp, "_public_destination",
+                        lambda url: None if url.lower().startswith(("http://", "https://"))
+                        else f"the change-IP URL must be http(s), got {url[:60]!r}")
+
+
 class Endpoint:
     """A stand-in for the provider's change-IP URL, counting what it was sent."""
 
@@ -115,18 +132,28 @@ def test_the_endpoint_is_fetched_directly_not_through_the_proxy(monkeypatch):
     proxy being rotated is how the response gets lost mid-flight - and a dead
     proxy would then make every rotate fail for the wrong reason.
 
-    `check` is the only part that should build a proxy opener, so with it stubbed
-    out nothing may reach `build_opener` at all.
+    This used to assert `build_opener` was never called at all. That premise
+    expired: `rotate` now builds an opener on purpose, to install the redirect
+    guard that re-checks every hop against a private destination. So the
+    assertion is the invariant it always meant - no proxy handler is installed -
+    rather than the proxy for it.
     """
-    built = []
+    import urllib.request as _ur
+
+    handlers = []
+    real_build = _ur.build_opener
     monkeypatch.setattr(pp, "check", lambda *a, **k: {"ok": True, "ip": "9.9.9.9"})
     monkeypatch.setattr(pp.urllib.request, "build_opener",
-                        lambda *a, **k: built.append(a) or (_ for _ in ()).throw(
-                            AssertionError("rotate routed its own request through a proxy")))
+                        lambda *a, **k: (handlers.extend(a), real_build(*a, **k))[1])
     with Endpoint() as ep:
         res = pp.rotate(proxy(rotateUrl=ep.url))
     assert ep.hits == 1 and res["rotated"] is True
-    assert not built
+
+    def is_proxy_handler(h):
+        cls = h if isinstance(h, type) else type(h)
+        return issubclass(cls, _ur.ProxyHandler)
+
+    assert not any(is_proxy_handler(h) for h in handlers),         f"rotate routed its own request through a proxy: {handlers}"
 
 
 # --- one canonical proxy identity ------------------------------------------

@@ -1,7 +1,7 @@
 /* Operations across many profiles at once: apply one change to a selection,
  * or generate a whole batch. */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Boxes, Check, Copy, Globe, Plus, RefreshCw, X } from "lucide-react";
 import { T } from "../theme";
 import { CHROME_VERSIONS, CORES, COUNTRY_LOCALE, ENGINE_META, ENGINE_ORDER, GPUS, LOCALES, OS_LIST, RAM, SCREENS, uaFor, vendorFor } from "../deviceData";

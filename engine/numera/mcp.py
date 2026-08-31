@@ -25,6 +25,7 @@ import sys
 from typing import Any, Iterator, Optional
 
 from . import __version__, cli
+from .paths import child_env
 
 # Bounded, because a tool call that never returns is indistinguishable from a
 # hung server. Anything slower than this is what `detach` is for.
@@ -150,7 +151,8 @@ def _argv(path: tuple[str, ...], parser: argparse.ArgumentParser,
     return [*path, *positional, *flags, "--json"]
 
 
-def call(name: str, arguments: dict, data_dir: Optional[str] = None) -> dict:
+def call(name: str, arguments: dict, data_dir: Optional[str] = None,
+         password: Optional[str] = None) -> dict:
     """Run one tool. Returns an MCP tool result."""
     commands = {"_".join(p).replace("-", "_"): (p, parser)
                 for p, parser, _ in _walk(cli.build_parser(), (), {})
@@ -165,7 +167,10 @@ def call(name: str, arguments: dict, data_dir: Optional[str] = None) -> dict:
         cmd += ["--data-dir", str(data_dir)]
     cmd += _argv(path, parser, arguments or {})
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=CALL_TIMEOUT)
+        # The unlock travels by environment, never argv - a password on a
+        # command line is readable by every process on the machine.
+        proc = subprocess.run(cmd, capture_output=True, text=True,
+                              timeout=CALL_TIMEOUT, env=child_env(password))
     except subprocess.TimeoutExpired:
         return _result({"error": f"`numera {' '.join(path)}` did not finish within "
                                  f"{CALL_TIMEOUT:.0f}s — call it again with detach: true"},
@@ -190,7 +195,8 @@ def _result(payload: Any, is_error: bool = False, exit_code: int = 0) -> dict:
     return body
 
 
-def handle(message: dict, data_dir: Optional[str] = None) -> Optional[dict]:
+def handle(message: dict, data_dir: Optional[str] = None,
+           password: Optional[str] = None) -> Optional[dict]:
     """One JSON-RPC message in, at most one response out (None for a notification)."""
     method = message.get("method")
     mid = message.get("id")
@@ -207,7 +213,8 @@ def handle(message: dict, data_dir: Optional[str] = None) -> Optional[dict]:
     if method == "tools/list":
         return _ok(mid, {"tools": tools()})
     if method == "tools/call":
-        return _ok(mid, call(params.get("name", ""), params.get("arguments") or {}, data_dir))
+        return _ok(mid, call(params.get("name", ""), params.get("arguments") or {},
+                             data_dir, password))
     if method == "ping":
         return _ok(mid, {})
     if mid is None:
@@ -220,7 +227,8 @@ def _ok(mid, result) -> dict:
     return {"jsonrpc": "2.0", "id": mid, "result": result}
 
 
-def serve(stdin=None, stdout=None, data_dir: Optional[str] = None) -> int:
+def serve(stdin=None, stdout=None, data_dir: Optional[str] = None,
+          password: Optional[str] = None) -> int:
     """The stdio loop: newline-delimited JSON-RPC, until stdin closes."""
     stdin = stdin or sys.stdin
     stdout = stdout or sys.stdout
@@ -234,7 +242,7 @@ def serve(stdin=None, stdout=None, data_dir: Optional[str] = None) -> int:
             # No id to answer with, so there is nobody to tell. Skip it rather
             # than kill a session over one malformed frame.
             continue
-        response = handle(message, data_dir)
+        response = handle(message, data_dir, password)
         if response is not None:
             stdout.write(json.dumps(response) + "\n")
             stdout.flush()

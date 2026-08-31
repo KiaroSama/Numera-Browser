@@ -1,8 +1,8 @@
 /* Engine default, theme, and what the engine reports. */
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Blocks, Check, Copy, HardDrive, Info, KeyRound, Moon, Palette, Plus,
-         Settings, Sun, Trash2 } from "lucide-react";
+         Sun, Trash2 } from "lucide-react";
 import { api, auth } from "../api";
 import { toast } from "../toast";
 import { ConfirmModal } from "../ui";

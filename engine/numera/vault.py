@@ -166,6 +166,30 @@ def decrypt_for_read(engine, value):
         return None                 # wrong password, or a corrupted record
 
 
+def is_withheld(engine, stored_value) -> bool:
+    """True when `stored_value` is a secret this process cannot currently read.
+
+    A locked read yields ``None`` by design - handing the ciphertext onwards
+    would be worse. But ``None`` is indistinguishable from "this proxy has no
+    password", and several operations believed the second reading: a backup
+    claimed to contain a credential it did not have, a health check tested a
+    blank password and recorded a real failure, and pool assignment wrote
+    ``None`` over a working profile.
+
+    Callers use this to refuse rather than produce a confidently wrong artifact.
+    Reads and non-secret edits stay available while locked; only work that
+    *needs* the credential is blocked.
+    """
+    if not stored_value or not crypto.is_encrypted(stored_value):
+        return False
+    return not (engine and engine.unlocked() and engine._password)
+
+
+LOCKED_MESSAGE = ("the vault is locked, so this needs the master password - "
+                  "unlock with `numera vault unlock`, set NUMERA_PASSWORD, or "
+                  "pass --password")
+
+
 def encrypt_for_write(engine, value, stored=None):
     """What to store for `value`, given what is already on disk.
 

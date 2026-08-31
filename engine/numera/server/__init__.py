@@ -95,18 +95,30 @@ OS_TO_ENGINE = {"Windows": "windows", "macOS": "macos", "Linux": "linux",
 OS_TO_DASH = {v: k for k, v in OS_TO_ENGINE.items()}
 
 
-def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
+def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
+               password: Optional[str] = None):
+    """Build the app.
+
+    `password` is the master password the caller already unlocked with. Without
+    it the server built its own locked store and every browser it launched went
+    out with no proxy password - `numera --password X serve` unlocked a store
+    that was then thrown away.
+    """
     _require_fastapi()
     from fastapi import FastAPI, HTTPException
     from fastapi.middleware.cors import CORSMiddleware
 
     from ..scheduler import ScheduleStore, due_schedules, next_run_at
 
-    engine_store = ProfileStore(data_dir)
+    engine_store = ProfileStore(data_dir, password=password)
     dash = DashboardStore(engine_store.root, engine_store)
     pool = ProxyPool(engine_store.root, engine_store)
     tokens = TokenStore(engine_store.root)
     sched = ScheduleStore(engine_store.root)
+    # Reachable for tests and introspection: whether this app's store is
+    # unlocked is otherwise invisible from outside, and that is exactly the
+    # thing that was silently wrong.
+    app_state_stores = {"engine_store": engine_store, "dash": dash, "pool": pool}
     running: dict[str, subprocess.Popen] = {}
     attached: dict[str, dict] = {}   # pid -> CDP connection info while attached
 
@@ -257,11 +269,16 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
     routes_schedules.register(app, ctx)
 
     _mount_dashboard(app)   # must be last: its catch-all would shadow /api/*
+    for _name, _store in app_state_stores.items():
+        setattr(app.state, _name, _store)
     return app
 
 
 
-LOOPBACK = {"127.0.0.1", "localhost", "::1", "0:0:0:0:0:0:0:1", ""}
+# `""` is deliberately NOT here. An empty host binds every interface - the exact
+# case this guard exists to refuse - and listing it as loopback waved
+# `--host ""` through as if it were localhost.
+LOOPBACK = {"127.0.0.1", "localhost", "::1", "0:0:0:0:0:0:0:1"}
 
 
 def _refuse_insecure_bind(host: str, root) -> "Optional[str]":
@@ -301,8 +318,12 @@ def _refuse_insecure_bind(host: str, root) -> "Optional[str]":
 
 
 def serve(host: str = "127.0.0.1", port: int = 8787, data_dir: Optional[str] = None,
-          verbose: bool = False):
-    """Start the API server (blocking)."""
+          verbose: bool = False, password: Optional[str] = None):
+    """Start the API server (blocking).
+
+    `password` carries the caller's already-unlocked vault into the app; see
+    `create_app`.
+    """
     _require_fastapi()
     import uvicorn
 
@@ -310,6 +331,9 @@ def serve(host: str = "127.0.0.1", port: int = 8787, data_dir: Optional[str] = N
     from ..paths import resolve_data_dir
 
     root = resolve_data_dir(data_dir)
+    # Normalise before the guard so an explicitly empty host is judged as what
+    # it actually does - bind everything - rather than skipped as loopback.
+    host = (host or "").strip() or "127.0.0.1"
     refusal = _refuse_insecure_bind(host, root)
     if refusal:
         raise SystemExit(refusal)
@@ -327,7 +351,7 @@ def serve(host: str = "127.0.0.1", port: int = 8787, data_dir: Optional[str] = N
         if imported["copied"]:
             print(f"  Imported {imported['profiles']} profile(s) from {imported['source']}")
 
-    app = create_app(str(root))
+    app = create_app(str(root), password=password)
     where = "the dashboard and API" if dashboard_dir() else "the API"
     print(f"Numera: {where} on http://{host}:{port}  (data: {root})")
     if log_path:

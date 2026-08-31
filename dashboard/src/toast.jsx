@@ -4,7 +4,7 @@
  * catch block outside the tree — can call `toast.error(msg)` without the app
  * threading a context through every component that might need it. */
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Activity, Check, ShieldAlert } from "lucide-react";
 
 let _toastId = 0;

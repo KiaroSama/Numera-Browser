@@ -1,4 +1,3 @@
-import { Plus, X } from "lucide-react";
 /* Device archetypes and the coherence check, mirroring the Python engine.
  *
  * Every value here has a counterpart in `numera/devices.py`,

@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import re
 import time
+import urllib.error
 import urllib.request
 from typing import Optional
 
@@ -95,7 +96,12 @@ def parse_line(line: str) -> Optional[dict]:
         country, label = _country_and_label(parts[-1])
 
     return {
-        "type": _SCHEME_TYPE.get(scheme, "HTTP"),
+        # Keep what was actually written. Defaulting an unrecognised scheme to
+        # HTTP meant `normalize()` downstream saw a valid-looking entry and
+        # could never reject the input - the user got an HTTP proxy they never
+        # asked for. A line with no scheme at all is still HTTP by convention,
+        # which `_SCHEME_TYPE` covers via the "http" default set in the parser.
+        "type": _SCHEME_TYPE.get(scheme, scheme.upper()),
         "host": host, "port": port,
         "user": user or None, "pass": pw or None,
         "country": country, "label": label,
@@ -336,6 +342,58 @@ def exit_country(proxy, timeout: float = 10) -> Optional[str]:
 ROTATE_COOLDOWN = 20.0
 
 
+def _public_destination(url: str) -> "Optional[str]":
+    """Why this URL must not be fetched from the engine process, or None.
+
+    The rotate endpoint is the one place the engine fetches a caller-supplied
+    address, deliberately *not* through the proxy - so it runs with the
+    server's own network position. Only the scheme was checked, which let an
+    authenticated caller aim it at loopback, the LAN, or a cloud metadata
+    address and read the outcome through the reflected error.
+
+    Every hop is checked, not just the first: `urlopen` follows redirects by
+    default, so validating only the original host would be bypassable with a
+    single 3xx.
+    """
+    import ipaddress
+    import socket
+    from urllib.parse import urlsplit
+
+    parts = urlsplit(url)
+    if parts.scheme.lower() not in ("http", "https"):
+        return f"the change-IP URL must be http(s), got {parts.scheme!r}"
+    host = parts.hostname
+    if not host:
+        return "the change-IP URL has no host"
+    try:
+        infos = socket.getaddrinfo(host, parts.port or
+                                   (443 if parts.scheme == "https" else 80),
+                                   proto=socket.IPPROTO_TCP)
+    except socket.gaierror as e:
+        return f"{host} does not resolve ({e})"
+    for info in infos:
+        try:
+            ip = ipaddress.ip_address(info[4][0])
+        except ValueError:
+            continue
+        if (ip.is_private or ip.is_loopback or ip.is_link_local
+                or ip.is_multicast or ip.is_reserved or ip.is_unspecified):
+            return (f"{host} resolves to {ip}, which is not a public address - "
+                    f"a change-IP URL points at your provider, not at this "
+                    f"machine or your network")
+    return None
+
+
+class _GuardedRedirects(urllib.request.HTTPRedirectHandler):
+    """Re-check every hop. A redirect is the obvious way around a host check."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        problem = _public_destination(newurl)
+        if problem:
+            raise urllib.error.URLError(f"refused to follow a redirect: {problem}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def rotate(proxy: dict, timeout: float = 20) -> dict:
     """Ask a rotating proxy for a new exit IP, then prove it changed.
 
@@ -348,9 +406,9 @@ def rotate(proxy: dict, timeout: float = 20) -> dict:
     if not url:
         return {"ok": None, "rotated": False,
                 "error": "no change-IP URL is set for this proxy"}
-    if not url.lower().startswith(("http://", "https://")):
-        return {"ok": None, "rotated": False,
-                "error": f"the change-IP URL must be http(s), got {url[:60]!r}"}
+    problem = _public_destination(url)
+    if problem:
+        return {"ok": None, "rotated": False, "error": problem}
 
     last = max(float(proxy.get("rotateTriedAt") or 0),
                float(proxy.get("rotatedAt") or 0))
@@ -367,7 +425,8 @@ def rotate(proxy: dict, timeout: float = 20) -> dict:
         # provider's control plane, and routing it through the very proxy being
         # rotated is how you lose the response mid-flight.
         req = urllib.request.Request(url, headers={"User-Agent": "numera-proxy-rotate/1.0"})
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        opener = urllib.request.build_opener(_GuardedRedirects)
+        with opener.open(req, timeout=timeout) as r:
             body = r.read(500).decode("utf-8", "replace").strip()
     except Exception as e:  # noqa: BLE001 - the provider's endpoint is theirs to fail
         # Reached far enough to spend the provider's quota, even though it failed.
