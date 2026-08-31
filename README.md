@@ -11,7 +11,7 @@ and launch them from a clean web console or CLI.
 A self-hosted alternative to GoLogin, Multilogin and AdsPower.
 
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
-![react](https://img.shields.io/badge/react-18-61DAFB)
+![react](https://img.shields.io/badge/react-19-61DAFB)
 ![license](https://img.shields.io/badge/license-proprietary-lightgrey)
 ![tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![status](https://img.shields.io/badge/status-beta-orange)

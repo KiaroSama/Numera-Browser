@@ -60,5 +60,25 @@ client lives in [`src/api.js`](src/api.js).
 
 ## Tech
 
-Plain React 18 + Vite. Icons from `lucide-react`. Styling is a single scoped
+Plain React 19 + Vite. Icons from `lucide-react`. Styling is a single scoped
 `<style>` block — no CSS framework dependency.
+
+The source splits by responsibility, and the dependencies point one way —
+`App` → views → primitives → leaf, with no cycles:
+
+| | |
+|---|---|
+| `App.jsx` | state, routing and the error boundary. Nothing else. |
+| `views/` | one file per view, plus the bulk modals and the command palette |
+| `ui.jsx` | primitives more than one view needs |
+| `deviceData.js` | device archetypes and the coherence check — the mirror of `numera/devices.py` and `numera/fingerprint.py` |
+| `demoData.js` | sample rows for demo mode. Only `App.jsx` may import it, so a view cannot render a fabricated profile by accident |
+| `toast.jsx` | the toast store and its renderer |
+| `theme.js` | palettes, CSS custom properties, the stylesheet |
+| `api.js` | the only place that knows about HTTP |
+
+A component used by exactly one view lives in that view's file; `ui.jsx` is for
+the genuinely shared ones. `engine/tests/test_dashboard_imports.py` enforces the
+boundaries — and catches the import mistakes Vite builds without complaint, since
+esbuild resolves module specifiers but not free variables: a JSX tag with no
+import compiles cleanly and throws at render.
