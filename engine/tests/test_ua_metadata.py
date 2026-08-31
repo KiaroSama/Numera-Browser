@@ -8,12 +8,24 @@ another from the hint Chromium built. Cheap to keep honest, so keep it honest.
 import pytest
 
 from numera import generate
-from numera.fingerprint import client_hint_headers, platform_version, ua_metadata
+from numera.fingerprint import (client_hint_headers, platform_version,
+                                sends_client_hints, ua_metadata)
 
 EVERY_OS = ["windows", "macos", "linux", "android", "ios"]
 
 
-@pytest.mark.parametrize("os_name", EVERY_OS)
+def test_a_profile_whose_browser_has_no_client_hints_sends_none():
+    """Safari implements none, so the header view is empty - the launcher also
+    strips them off the wire, since Chromium adds them regardless."""
+    fp = generate(os="ios")
+    assert sends_client_hints(fp) is False
+    assert client_hint_headers(fp) == {"low": {}, "high": {}}
+    # The metadata is still built: it keeps the values coherent if the strip
+    # ever fails, and it costs nothing.
+    assert ua_metadata(fp)["platform"] == "iOS"
+
+
+@pytest.mark.parametrize("os_name", [o for o in EVERY_OS if o != "ios"])
 def test_the_header_view_is_the_metadata_view(os_name):
     fp = generate(os=os_name)
     m, h = ua_metadata(fp), client_hint_headers(fp)

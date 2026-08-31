@@ -4,6 +4,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-31
+
+### Fixed
+
+- **An iOS profile sent Client Hints, which real Safari never sends.** Chromium adds them itself,
+  and 0.9.0 recorded this as a ceiling because nothing removed them. Everything tried sat at one
+  layer - `route.continue_(headers=...)`, `--disable-features=UserAgentClientHint,AcceptCHFrame,
+  CriticalClientHint` and `--blink-settings=clientHintsEnabled=false` all try to suppress headers
+  Chromium has already decided to send, and Playwright's route API rebuilds the set from
+  `request.headers()`. Raw CDP `Fetch.continueRequest` replaces the set instead, so a name left out
+  never reaches the network. Measured: the server receives no `sec-ch-ua` at all, before or after
+  `Accept-CH`. Enabled only for profiles that need it, at the request stage only, so proxy auth is
+  untouched and no response body is buffered.
+- `fingerprint.sends_client_hints()` now decides this in one place - the headers, the stripping and
+  the in-page `navigator.userAgentData` deletion all read it, so the wire and the page cannot
+  disagree.
+
+### Removed
+
+- The iOS Client Hints limitation from `docs/architecture.md`. It is no longer true.
+
 ## [0.9.0] - 2026-08-31
 
 ### Fixed
