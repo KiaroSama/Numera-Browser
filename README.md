@@ -74,6 +74,7 @@ Numera/
 |---|---|
 | 🧬 **Coherent fingerprints** | OS, UA, GPU, screen, hardware, timezone & language always agree |
 | 🛡️ **Live coherence meter** | Real-time consistency score as you edit — nobody else shows this |
+| 👤 **Per-profile avatar** | A shape derived from the profile id — fifty rows stay scannable without reading every name |
 | 🌐 **Proxy-aware** | Locale/timezone follow the proxy's country — or its real exit IP, resolved at launch |
 | 🎛️ **Rich editor** | Canvas, WebRTC, audio, fonts, client rects, WebGL image, geolocation, media devices, DNT, bookmarks, extra Chromium flags |
 | 💾 **Persistent sessions** | Cookies & localStorage survive between launches — and each store can be told not to |

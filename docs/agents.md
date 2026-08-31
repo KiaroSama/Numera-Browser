@@ -219,6 +219,12 @@ why the page caches it in the first place.
 excluded, the methods are right, nothing is missing. What it does not have is
 any *content*:
 
+* **A profile body may be as small as `{"name": "alpha"}`.** Anything you leave
+  out is filled from the engine's own defaults, so the profile the dashboard
+  draws is the identity the browser will actually wear — a coherent Windows
+  archetype, with a real user agent. Send only what you mean to control.
+  (This is not visible in the schema either; it used to store the sparse object
+  verbatim, which took the dashboard's profile list down on the next load.)
 * **Every request body is `{"type": "object", "additionalProperties": true}`.**
   The routes take `body: dict`, so the schema cannot name a single field. From
   the schema alone there is no way to know that `POST /api/profiles/{pid}/launch`
