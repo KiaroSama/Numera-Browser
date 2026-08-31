@@ -123,7 +123,7 @@ jobs:
           plat=$([ "$RUNNER_OS" = "macOS" ] && echo macos || echo linux)
           echo "PLAT=$plat" >> "$GITHUB_ENV"
           mkdir -p "build/$plat/Numera"
-          cp desktop/src-tauri/target/release/numera-desktop "build/$plat/Numera/numera"
+          cp desktop/src-tauri/target/release/numera "build/$plat/Numera/numera"
           cp -r desktop/dist/.build/numera-engine "build/$plat/Numera/engine"
           du -sh "build/$plat/Numera"
 
