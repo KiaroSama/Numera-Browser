@@ -2,7 +2,7 @@
  * results (proxy test and trust grade) that come back from a real browser. */
 
 import React, { useEffect, useState } from "react";
-import { ArrowRight, Blocks, Bookmark, Camera, Type, Volume2, Check, Clock, Cookie, Cpu, Download, Fingerprint, Globe, MapPin, Mic, MonitorSmartphone, RefreshCw, ShieldAlert, ShieldCheck, Sparkles, Terminal, Upload, Wifi, X } from "lucide-react";
+import { ArrowRight, Blocks, Bookmark, Camera, Database, Type, Volume2, Check, Clock, Cookie, Cpu, Download, Fingerprint, Globe, MapPin, Mic, MonitorSmartphone, RefreshCw, ShieldAlert, ShieldCheck, Sparkles, Terminal, Upload, Wifi, X } from "lucide-react";
 import { api } from "../api";
 import { T } from "../theme";
 import { CORES, COUNTRY_LOCALE, ENGINE_META, ENGINE_ORDER, GPUS, LOCALES, MODES, OS_LIST, RAM, SCREENS, WARMUP_PRESETS, coherence, uaFor } from "../deviceData";
@@ -28,6 +28,20 @@ const DOH = [
   { v: "8.8.8.8", label: "Google — 8.8.8.8" },
   { v: "9.9.9.9", label: "Quad9 — 9.9.9.9" },
   { v: "94.140.14.14", label: "AdGuard — 94.140.14.14" },
+];
+
+// What a profile can be told not to carry between launches. The stored value is
+// the *exceptions* list, so an existing profile - which has none - keeps today's
+// full persistence and nothing had to be migrated.
+const KEEPABLE = [
+  ["cookies", "Cookies", "Logins. Turning this off makes every launch a fresh visitor."],
+  ["localStorage", "Local storage", "Site preferences and app state."],
+  ["indexedDb", "IndexedDB", "Larger client-side databases."],
+  ["sessions", "Open tabs", "Which tabs were open when the window closed."],
+  ["history", "History", "Visited pages and the top-sites tiles."],
+  ["passwords", "Saved passwords", "Chromium's own password store."],
+  ["extensionData", "Extension data", "Wallet state and per-extension settings."],
+  ["bookmarks", "Bookmarks", "Reseeded from the Bookmarks tab on the next launch."],
 ];
 
 const IP_SIGNALS = ["timezone", "geolocation", "languages"];
@@ -82,6 +96,7 @@ function ProfileSummary({ p, issues, score }) {
     ["Launch args", lines(p.launchArgs) || "none"],
     ["DNS", p.dns || "system default"],
     ["Follows exit IP", (p.ipBased || []).join(", ") || "nothing"],
+    ["Cleared each launch", (p.clearOnStart || []).join(", ") || "nothing"],
   ];
   return (
     <aside className="ps-summary">
@@ -600,6 +615,26 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
                 </Row>
               )}
               <div className="ps-hint"><Sparkles size={12} /> A profile created minutes ago with no history is a signal in itself. Warm-up browses that vertical's sites at human pace so the session arrives with a plausible past. Scheduling reruns it unattended (the engine must be running) so the session never goes cold. {cookiesReady ? "" : "Save the profile and start the engine to enable it."}</div>
+
+              <SectionLabel icon={<Database size={13} />} text="What carries over between launches" />
+              <div className="ps-keep">
+                {KEEPABLE.map(([key, label, why]) => {
+                  const keeps = !(p.clearOnStart || []).includes(key);
+                  return (
+                    <button key={key} type="button" className={"ps-keep-item" + (keeps ? " on" : "")}
+                      title={why}
+                      onClick={() => set({ clearOnStart: keeps
+                        ? [...(p.clearOnStart || []), key]
+                        : (p.clearOnStart || []).filter(k => k !== key) })}>
+                      <span className="ps-keep-box">{keeps && <Check size={11} />}</span>
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="ps-hint"><Database size={12} /> Unticked stores are wiped just before the
+                browser opens, not after it closes — so a session that ends in a crash still starts clean.
+                Everything ticked is the default and the behaviour every existing profile already has.</div>
 
               <SectionLabel icon={<Cookie size={13} />} text="Session cookies" />
               {cookiesReady ? (
