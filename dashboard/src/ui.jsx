@@ -6,6 +6,7 @@
 
 import React from "react";
 import { Boxes, RefreshCw, Users, X } from "lucide-react";
+import { toSvg } from "jdenticon";
 import { FONT, T } from "./theme";
 
 import { CORES, GPUS, RAM, SCREENS, nid, uaFor } from "./deviceData";
@@ -73,10 +74,37 @@ function newProfile(folder, defaultEngine) {
     canvas: "Noise", webrtc: "Altered", audio: "Noise", fonts: "Masked",
     locale: "en-US", timezone: "America/New_York", geo: "Prompt",
     mediaVideo: 1, mediaAudio: 1, dnt: false, proxy: null, notes: "", startupUrls: "", extensions: "",
-    bookmarks: "", launchArgs: "", dns: "", ipBased: [],
+    bookmarks: "", launchArgs: "", dns: "", ipBased: [], clearOnStart: [], switchedOff: [],
     lastActive: "never", _new: true,
   };
 }
+
+/* A deterministic avatar per profile.
+ *
+ * A list of fifty profiles is read by name, one row at a time. A shape is
+ * recognised at a glance, so the same row is found without reading anything.
+ * Derived from the profile id - which never changes - so a profile always looks
+ * the same, nothing is stored, and no network is involved.
+ *
+ * Jdenticon's defaults are full-saturation rainbow, which fights this palette.
+ * Hue stays unconstrained because that is what makes two profiles tell apart;
+ * only saturation and lightness are pulled toward the surrounding UI.
+ */
+const IDENTICON = {
+  padding: 0.06,
+  backColor: "#00000000",
+  saturation: { color: 0.46, grayscale: 0.12 },
+  lightness: {
+    color: [0.44, 0.74],
+    grayscale: [0.32, 0.62],
+  },
+};
+
+const Identicon = ({ id, size = 30 }) => (
+  <span className="ps-identicon" style={{ width: size, height: size }}
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{ __html: toSvg(String(id || "?"), size, IDENTICON) }} />
+);
 
 /* A confirmation before something irreversible, saying what is about to
  * happen rather than "Are you sure?". Shared, because a second copy of a
@@ -101,4 +129,4 @@ function ConfirmModal({ title, body, confirmLabel, danger, busy, onCancel, onCon
   );
 }
 
-export { ConfirmModal, Field, Row, SectionLabel, SectionHead, Pick, Stat, Placeholder, newProfile };
+export { ConfirmModal, Field, Identicon, Row, SectionLabel, SectionHead, Pick, Stat, Placeholder, newProfile };

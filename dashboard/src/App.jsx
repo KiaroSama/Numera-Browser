@@ -317,7 +317,7 @@ export default function App() {
           <div className={"ps-side-foot " + mode} title={live ? "Connected to the engine — launching opens a real browser." : "Engine API not found — sample data only. Start it with: numera serve"}>
             <span className="ps-foot-dot" />
             <span>{mode === "connecting" ? "Connecting…" : live ? "Engine online" : "Demo mode"}</span>
-            <span className="ps-foot-ver">v0.1.0</span>
+            {config?.version && <span className="ps-foot-ver">v{config.version}</span>}
           </div>
         </aside>
 

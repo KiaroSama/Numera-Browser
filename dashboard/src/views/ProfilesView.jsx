@@ -6,7 +6,59 @@ import { api } from "../api";
 import { T } from "../theme";
 import { ENGINE_META, ENGINE_ORDER, OS_LIST, coherence } from "../deviceData";
 import { toast } from "../toast";
-import { ConfirmModal, newProfile } from "../ui";
+import { ConfirmModal, Identicon, newProfile } from "../ui";
+
+/* Click the name to rename in place.
+ *
+ * Renaming used to mean opening the whole editor and saving it back, which is a
+ * lot of ceremony for one word - and the editor writes every field, so a rename
+ * re-saved the entire profile. This sends only the new name.
+ *
+ * Enter or blur commits, Escape abandons. An empty name is refused rather than
+ * stored, because the list has nothing else to show for that row.
+ */
+function ProfileName({ p, live, setProfiles }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(p.name);
+  const [busy, setBusy] = useState(false);
+
+  const commit = async () => {
+    const name = draft.trim();
+    setEditing(false);
+    if (!name || name === p.name) { setDraft(p.name); return; }
+    setBusy(true);
+    // Optimistic: the row updates immediately and rolls back if the write fails,
+    // so a rename never looks like it did nothing while the request is in flight.
+    setProfiles(ps => ps.map(x => x.id === p.id ? { ...x, name } : x));
+    try {
+      if (live) await api.update({ ...p, name });
+    } catch (e) {
+      setProfiles(ps => ps.map(x => x.id === p.id ? { ...x, name: p.name } : x));
+      setDraft(p.name);
+      toast.error(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <div className={"ps-pname editable" + (busy ? " busy" : "")} title="Click to rename"
+           onClick={() => { setDraft(p.name); setEditing(true); }}>
+        {p.name}<Pencil size={11} className="ps-pname-pen" />
+      </div>
+    );
+  }
+  return (
+    <input className="ps-pname-in" value={draft} autoFocus
+      onChange={e => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={e => {
+        if (e.key === "Enter") e.currentTarget.blur();
+        if (e.key === "Escape") { setDraft(p.name); setEditing(false); }
+      }} />
+  );
+}
 
 function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, remove, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }) {
   const [filterOpen, setFilterOpen] = useState(false);
@@ -179,8 +231,9 @@ function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSe
                     <td>
                       <div className="ps-name">
                         <span className={"ps-status " + p.status} />
+                        <Identicon id={p.id} />
                         <div>
-                          <div className="ps-pname">{p.name}</div>
+                          <ProfileName p={p} live={live} setProfiles={setProfiles} />
                           <div className="ps-tags">{p.tags.map(t => (
                             <span key={t} className={"ps-tag clickable" + (filters.tag === t ? " on" : "")}
                               title={filters.tag === t ? "Clear tag filter" : `Filter by "${t}"`}

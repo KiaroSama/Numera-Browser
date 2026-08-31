@@ -44,6 +44,16 @@ const KEEPABLE = [
   ["bookmarks", "Bookmarks", "Reseeded from the Bookmarks tab on the next launch."],
 ];
 
+// Chromium subsystems worth a named switch. Both are reachable by typing a flag
+// into the box above; they are here because "stop Chrome phoning Google" is a
+// thing people want, not a flag people remember.
+const SWITCHABLE = [
+  ["googleServices", "Google services",
+   "Sync, Safe Browsing updates, field trials and usage pings - traffic to Google from the proxy's IP that has nothing to do with this profile."],
+  ["systemExtensions", "Built-in Chromium extensions",
+   "The Web Store connector, Media Router and Cloud Print. They run in the background whether or not anything uses them."],
+];
+
 const IP_SIGNALS = ["timezone", "geolocation", "languages"];
 
 function IpSwitch({ p, set, signal }) {
@@ -97,6 +107,7 @@ function ProfileSummary({ p, issues, score }) {
     ["DNS", p.dns || "system default"],
     ["Follows exit IP", (p.ipBased || []).join(", ") || "nothing"],
     ["Cleared each launch", (p.clearOnStart || []).join(", ") || "nothing"],
+    ["Switched off", (p.switchedOff || []).join(", ") || "nothing"],
   ];
   return (
     <aside className="ps-summary">
@@ -553,6 +564,25 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
               <div className="ps-hint"><Terminal size={12} /> Appended to the flags Numera already sets.
                 They land on the real command line, so a bad one stops the browser starting — which is the
                 honest outcome, since the alternative is a flag you believe is active and isn't.</div>
+
+              <div className="ps-keep" style={{ marginTop: 4 }}>
+                {SWITCHABLE.map(([key, label, why]) => {
+                  const on = !(p.switchedOff || []).includes(key);
+                  return (
+                    <button key={key} type="button" className={"ps-keep-item" + (on ? " on" : "")}
+                      title={why}
+                      onClick={() => set({ switchedOff: on
+                        ? [...(p.switchedOff || []), key]
+                        : (p.switchedOff || []).filter(k => k !== key) })}>
+                      <span className="ps-keep-box">{on && <Check size={11} />}</span>
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="ps-hint"><Terminal size={12} /> Ticked is Chromium's own default. Unticked
+                adds the flags that switch it off, so a profile makes less background noise of its own -
+                the same thing you could type above, without having to remember which flag it was.</div>
 
               <Field label={<span><Wifi size={11} /> DNS resolver</span>}>
                 <select className="ps-in" value={DOH.some(d => d.v === (p.dns || "")) ? (p.dns || "") : "custom"}

@@ -63,3 +63,16 @@ def test_a_profile_with_no_extras_still_launches(tmp_path):
     p, store = make(tmp_path)
     with drivers.session(p, store, headless=True) as ctx:
         assert ctx.pages[0].evaluate("() => 1 + 1") == 2
+
+
+def test_a_profile_with_both_subsystems_off_still_works(tmp_path):
+    """Chromium ignores a flag it does not recognise, so "it launched" proves
+    little on its own - but a *malformed* switch can break startup, and these
+    disable real subsystems the browser might depend on."""
+    p, store = make(tmp_path, switched_off=["googleServices", "systemExtensions"],
+                    dns="1.1.1.1")
+    with drivers.session(p, store, headless=True) as ctx:
+        page = ctx.pages[0]
+        page.goto("about:blank")
+        assert page.evaluate("() => navigator.userAgent") == p.fingerprint.user_agent
+        assert page.evaluate("() => 1 + 1") == 2
