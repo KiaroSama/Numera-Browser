@@ -748,7 +748,13 @@ def align_to_reality(profile: Profile, store: ProfileStore,
     fp.chrome_version = chrome
     apply("platform", _devices.NAV_PLATFORM.get(os_key, seen.get("platform")), "platform")
     fp.ch_platform = _devices.CH_PLATFORM.get(os_key, fp.ch_platform)
-    apply("user_agent", _build_ua(os_key, chrome), "userAgent")
+    if os_key != fp.os or not fp.os_version:
+        # A changed OS invalidates the version and handset the old one carried.
+        fp.os_version = _devices.OS_VERSIONS[os_key][0][0]
+        if os_key != "android":
+            fp.device_model = ""
+    apply("user_agent",
+          _build_ua(os_key, chrome, fp.os_version, fp.device_model), "userAgent")
 
     # 2. Hardware, straight from the machine.
     apply("hardware_concurrency", seen.get("cores"), "cores")

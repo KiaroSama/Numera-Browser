@@ -150,3 +150,28 @@ def test_generate_profiles_reproducible_with_seed():
 def test_generate_profiles_tags_and_engine():
     ps = generate_profiles(3, engine="cloak", tags=["bulk", "q3"])
     assert all(p.engine == "cloak" and p.tags == ["bulk", "q3"] for p in ps)
+
+
+def test_a_version_override_keeps_the_android_ua_coherent():
+    """Rebuilding the UA from (os, chrome) alone dropped the OS version and the
+    handset, so the string said Android 14 / SM-A546B - the builder's defaults -
+    while the profile's own fields said something else. A site reads both."""
+    from numera.bulk import generate_profiles
+
+    for p in generate_profiles(count=5, oses=["android"],
+                               chrome_versions=["131.0.0.0"]):
+        fp = p.fingerprint
+        assert fp.os_version and fp.device_model
+        assert f"Android {fp.os_version}; {fp.device_model}" in fp.user_agent, fp.user_agent
+        assert "131.0.0.0" in fp.user_agent
+
+
+def test_a_version_override_leaves_a_desktop_ua_alone():
+    from numera.bulk import generate_profiles
+
+    for p in generate_profiles(count=3, oses=["windows"],
+                               chrome_versions=["131.0.0.0"]):
+        fp = p.fingerprint
+        assert "Windows NT" in fp.user_agent
+        assert "131.0.0.0" in fp.user_agent
+        assert "Android" not in fp.user_agent

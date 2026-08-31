@@ -17,7 +17,7 @@ from numera.models import Profile, Proxy
 
 
 def profile(**kw) -> Profile:
-    return Profile(name="t", fingerprint=generate("windows"), **kw)
+    return Profile(name="t", fingerprint=generate(os="windows"), **kw)
 
 
 # --- DNS -------------------------------------------------------------------
