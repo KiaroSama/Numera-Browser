@@ -34,6 +34,19 @@ def assemble_block() -> str:
     return m.group(0)
 
 
+def runner(stage) -> str:
+    """The real block, run verbatim with `$stage` bound from outside.
+
+    Substituting the text of `$stage` would also rewrite it inside the script's
+    own strings, so the block has to receive it as a variable. `Step` is the
+    script's logging helper and is not defined out of context.
+    """
+    literal = str(stage).replace("\\", "\\\\")
+    return ("function Step($m) { }\n"
+            f'$stage = "{literal}"\n'
+            + assemble_block())
+
+
 def test_a_rebuild_keeps_the_data_directory(tmp_path):
     stage = tmp_path / "Numera"
     (stage / "data" / "profiles").mkdir(parents=True)
@@ -41,10 +54,7 @@ def test_a_rebuild_keeps_the_data_directory(tmp_path):
     (stage / "data" / "config.json").write_text("{}", encoding="utf-8")
     (stage / "numera.exe").write_text("previous build", encoding="utf-8")
 
-    block = assemble_block().replace("$stage", '"' + str(stage).replace("\\", "\\\\") + '"')
-    # `Step` is the script's own logging helper and is not defined out of context.
-    script = "function Step($m) { }\n" + block
-    r = subprocess.run([pwsh, "-NoProfile", "-NonInteractive", "-Command", script],
+    r = subprocess.run([pwsh, "-NoProfile", "-NonInteractive", "-Command", runner(stage)],
                        capture_output=True, text=True, timeout=120)
     assert r.returncode == 0, r.stderr
 
@@ -59,9 +69,49 @@ def test_a_rebuild_keeps_the_data_directory(tmp_path):
 def test_a_first_build_needs_no_data_directory(tmp_path):
     """The guard must not require the folder it preserves."""
     stage = tmp_path / "Numera"
-    block = assemble_block().replace("$stage", '"' + str(stage).replace("\\", "\\\\") + '"')
-    r = subprocess.run([pwsh, "-NoProfile", "-NonInteractive", "-Command",
-                        "function Step($m) { }\n" + block],
+    r = subprocess.run([pwsh, "-NoProfile", "-NonInteractive", "-Command", runner(stage)],
                        capture_output=True, text=True, timeout=120)
     assert r.returncode == 0, r.stderr
     assert stage.is_dir()
+
+
+@pytest.mark.skipif(not hasattr(__import__("os"), "O_BINARY"),
+                    reason="exclusive file locking is a Windows behaviour")
+def test_a_locked_stage_stops_the_build_instead_of_shipping_the_old_one(tmp_path):
+    """`Remove-Item` on a file another process holds is a *non-terminating*
+    error. The script used to carry on: Copy-Item overwrote what it could, every
+    later Test-Path still passed because the old files were there, and the build
+    reported success while shipping the previous version. Running the app from
+    the stage folder is enough to cause it.
+    """
+    import msvcrt
+    import os
+
+    stage = tmp_path / "Numera"
+    (stage / "data" / "profiles").mkdir(parents=True)
+    (stage / "data" / "profiles" / "real.json").write_text('{"name": "mine"}', encoding="utf-8")
+    (stage / "numera.exe").write_text("previous build", encoding="utf-8")
+    locked = stage / "engine" / "held.pyd"
+    locked.parent.mkdir()
+    locked.write_text("in use", encoding="utf-8")
+
+    fd = os.open(locked, os.O_RDWR | os.O_BINARY)
+    try:
+        msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)          # exclusive, like a loaded DLL
+        r = subprocess.run([pwsh, "-NoProfile", "-NonInteractive", "-Command", runner(stage)],
+                           capture_output=True, text=True, timeout=120)
+    finally:
+        msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+        os.close(fd)
+
+    assert r.returncode != 0, (
+        "the build reported success after failing to clear the stage folder, so it "
+        "would have shipped the previous version")
+    assert "close Numera" in (r.stderr + r.stdout), \
+        "the failure does not say what to do about it"
+    # The data directory is moved to a temp folder before the wipe. Giving up
+    # without putting it back would be worse than the wipe this guard prevents:
+    # the next build would start empty and the profiles would look deleted.
+    profile = stage / "data" / "profiles" / "real.json"
+    assert profile.is_file(), "the abandoned build left the user's data in a temp folder"
+    assert profile.read_text(encoding="utf-8") == '{"name": "mine"}'
