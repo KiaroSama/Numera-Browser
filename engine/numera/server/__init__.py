@@ -118,8 +118,23 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
     # and narrows CORS at the same time, since "*" plus a token is a token any
     # web page could spend.
     api_token = (os.environ.get("NUMERA_API_TOKEN") or "").strip()
+
+    def auth_required() -> bool:
+        """Read the current state, do not remember it.
+
+        This used to be decided once, here, at startup - so minting the first
+        named token protected nothing until the process restarted, while the UI
+        said the API now required one. The token store is a small JSON file; a
+        read per request is cheaper than being wrong about this.
+        """
+        return bool(api_token) or bool(tokens.list())
+
+    # `*` plus a bearer token is a token any web page can spend, so a server
+    # that can ever be locked does not advertise a wildcard. `tokens.list()` is
+    # checked here as well as the env var, because a named-token-only setup is
+    # exactly as credential-bearing as an env-token one.
     allow_origins = _parse_lines(os.environ.get("NUMERA_ALLOWED_ORIGINS") or "") or (
-        [] if api_token else ["*"]
+        [] if auth_required() else ["*"]
     )
     app.add_middleware(
         CORSMiddleware,
@@ -128,29 +143,31 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
         allow_headers=["*"],
     )
 
-    # Auth is on when the env var is set OR the user has minted a named token.
-    # The env var stays valid either way: it is the bootstrap credential the
-    # dashboard and any existing script already use, and pulling it out from
-    # under them the moment a named token is created would be a trap.
-    if api_token or tokens.list():
-        @app.middleware("http")
-        async def _require_token(request, call_next):
-            # Preflight carries no Authorization header by design.
-            if request.method == "OPTIONS":
-                return await call_next(request)
-            sent = request.headers.get("authorization", "")
-            if sent.lower().startswith("bearer "):
-                sent = sent[7:]
-            else:
-                sent = request.headers.get("x-numera-token", "")
-            sent = sent.strip()
-            ok = bool(api_token) and secrets.compare_digest(sent, api_token)
-            if not ok:
-                ok = tokens.verify(sent) is not None
-            if not ok:
-                from fastapi.responses import JSONResponse
-                return JSONResponse({"detail": "invalid or missing API token"}, status_code=401)
+    # Only `/api/*` is protected. Gating the SPA too would leave no page on
+    # which to enter a token, and the shell itself carries nothing secret.
+    @app.middleware("http")
+    async def _require_token(request, call_next):
+        # Preflight carries no Authorization header by design.
+        if request.method == "OPTIONS" or not request.url.path.startswith("/api/"):
             return await call_next(request)
+        if not auth_required():
+            return await call_next(request)
+        sent = request.headers.get("authorization", "")
+        if sent.lower().startswith("bearer "):
+            sent = sent[7:]
+        else:
+            sent = request.headers.get("x-numera-token", "")
+        sent = sent.strip()
+        # The env var stays valid alongside named tokens: it is the credential
+        # the dashboard and any existing script already use, and pulling it out
+        # from under them the moment a named token is created would be a trap.
+        ok = bool(api_token) and secrets.compare_digest(sent, api_token)
+        if not ok:
+            ok = tokens.verify(sent) is not None
+        if not ok:
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"detail": "invalid or missing API token"}, status_code=401)
+        return await call_next(request)
 
     def is_running(pid: str) -> bool:
         proc = running.get(pid)
@@ -205,6 +222,45 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
 
 
 
+LOOPBACK = {"127.0.0.1", "localhost", "::1", "0:0:0:0:0:0:0:1", ""}
+
+
+def _refuse_insecure_bind(host: str, root) -> "Optional[str]":
+    """Why this bind must not happen, or None if it may.
+
+    The API creates profiles, launches browsers and exports cookies. It is only
+    safe unauthenticated because nothing outside the machine can reach it, so
+    the moment it stops being loopback it needs a credential. Returns the
+    message rather than raising, so the CLI and the tests can use the same rule.
+    """
+    import os as _os
+
+    from .stores import TokenStore as _TokenStore
+
+    if str(host).strip().lower() in LOOPBACK:
+        return None
+    if (_os.environ.get("NUMERA_API_TOKEN") or "").strip():
+        return None
+    try:
+        if _TokenStore(root).list():
+            return None
+    except Exception:  # noqa: BLE001 - an unreadable store is not a credential
+        pass
+    if (_os.environ.get("NUMERA_ALLOW_INSECURE_BIND") or "").strip():
+        return None
+    return (
+        f"Refusing to serve on {host} without authentication.\n"
+        f"  This API can create profiles, launch browsers and export cookies, and\n"
+        f"  on a non-loopback address anything that can reach the port can use it.\n"
+        f"  Fix it with either:\n"
+        f"    numera token create \"<what it is for>\"   (recommended)\n"
+        f"    set NUMERA_API_TOKEN=<secret>\n"
+        f"  Then set NUMERA_ALLOWED_ORIGINS if a browser page will call it.\n"
+        f"  To bind anyway - only when something else in front already\n"
+        f"  authenticates - set NUMERA_ALLOW_INSECURE_BIND=1."
+    )
+
+
 def serve(host: str = "127.0.0.1", port: int = 8787, data_dir: Optional[str] = None,
           verbose: bool = False):
     """Start the API server (blocking)."""
@@ -215,6 +271,9 @@ def serve(host: str = "127.0.0.1", port: int = 8787, data_dir: Optional[str] = N
     from ..paths import resolve_data_dir
 
     root = resolve_data_dir(data_dir)
+    refusal = _refuse_insecure_bind(host, root)
+    if refusal:
+        raise SystemExit(refusal)
     log_path = logs.setup(root, verbose=verbose)
     log = logs.get("serve")
 

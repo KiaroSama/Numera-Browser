@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Activity, Blocks, Boxes, Command, Download, Fingerprint, FolderTree, Globe, Layers, Moon, Plus, Puzzle, RefreshCw, Server, Settings, ShieldAlert, ShieldCheck, Sun, Users, X, Zap } from "lucide-react";
-import { api } from "./api";
+import { Activity, Blocks, Boxes, Command, Download, Fingerprint, FolderTree, Globe, KeyRound, Layers, Moon, Plus, Puzzle, RefreshCw, Server, Settings, ShieldAlert, ShieldCheck, Sun, Users, X, Zap } from "lucide-react";
+import { api, auth } from "./api";
 import { DARK, FONT, LIGHT, T, makeCss } from "./theme";
 import { FOLDERS, seed } from "./demoData";
 import { ENGINE_META, LOCALES, coherence, nid } from "./deviceData";
@@ -68,6 +68,56 @@ export class ErrorBoundary extends React.Component {
 }
 
 /* ================================================================== */
+/* Shown when the engine answers 401.
+ *
+ * This exists because the alternative was worse than an error: a locked engine
+ * looked exactly like no engine, and the app filled the screen with sample
+ * profiles that were not the user's. Someone could have acted on them. */
+function LockedScreen({ detail, onUnlock }) {
+  const [value, setValue] = React.useState(auth.get());
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState(detail || "");
+
+  const submit = async (e) => {
+    e?.preventDefault?.();
+    setBusy(true);
+    setError("");
+    auth.set(value);
+    const state = await api.health();
+    setBusy(false);
+    if (state === "ok") return onUnlock();
+    setError(state === "locked"
+      ? "That token was not accepted."
+      : "The engine stopped answering. Is it still running?");
+  };
+
+  return (
+    <div className="ps-root">
+      <style>{makeCss()}</style>
+      <div className="ps-locked">
+        <form className="ps-locked-card" onSubmit={submit}>
+          <div className="ps-locked-ic"><KeyRound size={22} /></div>
+          <h1>This engine needs a token</h1>
+          <p>
+            It is running and reachable — it just will not answer without one.
+            Create a token with <code>numera token create "dashboard"</code>, or
+            use the value of <code>NUMERA_API_TOKEN</code>.
+          </p>
+          <input className="ps-in mono" autoFocus type="password" value={value}
+            placeholder="nmr_…" onChange={ev => setValue(ev.target.value)} />
+          {error && <div className="ps-locked-err"><ShieldAlert size={13} /> {error}</div>}
+          <button className="ps-btn primary" type="submit" disabled={busy || !value.trim()}>
+            {busy ? <><RefreshCw size={15} className="ps-spin" /> Checking…</> : "Unlock"}
+          </button>
+          <div className="ps-locked-note">
+            Stored in this browser only. It is never sent anywhere but this engine.
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [profiles, setProfiles] = useState(seed);
   const [view, setView] = useState("profiles");
@@ -78,7 +128,10 @@ export default function App() {
   const [bulk, setBulk] = useState(false);
   const [sync, setSync] = useState(false);   // "edit all selected" modal
   const [filters, setFilters] = useState({ status: "", engine: "", os: "", proxy: "", tag: "" });
-  const [mode, setMode] = useState("connecting");   // connecting | live | demo
+  // connecting | live | locked | demo. "locked" is a healthy engine asking for
+  // a token; it must never collapse into "demo", which shows sample data.
+  const [mode, setMode] = useState("connecting");
+  const [authError, setAuthError] = useState("");
   const [engines, setEngines] = useState(null);      // {name: installed} from API
   // New-profile default. null = not known yet (or no engine to ask): profiles are
   // then created without an engine so the server applies its own stored default,
@@ -121,19 +174,24 @@ export default function App() {
     (async () => {
       const up = await api.health();
       if (cancelled) return;
-      if (up) {
+      if (up === "locked") { setMode("locked"); return; }
+      if (up !== "ok") { setMode("demo"); return; }
+      try {
+        await refresh();
+        try { setEngines(await api.engines()); } catch { /* optional */ }
         try {
-          await refresh();
-          try { setEngines(await api.engines()); } catch { /* optional */ }
-          try {
-            const cfg = await api.getConfig();
-            setConfig(cfg);
-            if (cfg?.default_engine) setDefaultEngine(cfg.default_engine);
-            if (Array.isArray(cfg?.folders) && cfg.folders.length) setFolders(cfg.folders);
-          } catch { /* optional */ }
-          setMode("live");
-        } catch { setMode("demo"); }
-      } else { setMode("demo"); }
+          const cfg = await api.getConfig();
+          setConfig(cfg);
+          if (cfg?.default_engine) setDefaultEngine(cfg.default_engine);
+          if (Array.isArray(cfg?.folders) && cfg.folders.length) setFolders(cfg.folders);
+        } catch { /* optional */ }
+        setMode("live");
+      } catch (e) {
+        // A token that was accepted a moment ago can be revoked mid-session.
+        // That is still not demo mode.
+        if (e?.name === "AuthError") { setAuthError(e.message); setMode("locked"); }
+        else setMode("demo");
+      }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -267,6 +325,10 @@ export default function App() {
   // .ps-root is styled from tokens rather than T: the app root is the one
   // surface that must follow a theme switch even if a re-render is skipped,
   // because everything else is painted on top of it.
+  if (mode === "locked") {
+    return <LockedScreen detail={authError} onUnlock={() => window.location.reload()} />;
+  }
+
   return (
     <div className="ps-root">
       <style>{makeCss()}</style>

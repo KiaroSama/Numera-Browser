@@ -19,10 +19,54 @@
 
 const BASE = import.meta.env.VITE_API_URL || "";
 
+/* The bearer token, when the engine is locked.
+ *
+ * Kept in localStorage because it belongs to this browser profile, not to the
+ * document: a page reload must not throw the user back to a login they cannot
+ * complete. It is scoped to the engine's own origin, which is where the token
+ * is spendable anyway.
+ *
+ * Note this is a *credential in a browser*. It is only as safe as the machine,
+ * which is the same trust boundary the whole app already sits inside. */
+const TOKEN_KEY = "numera.token";
+
+let token = "";
+try { token = localStorage.getItem(TOKEN_KEY) || ""; } catch { /* private mode */ }
+
+export const auth = {
+  get: () => token,
+  set(value) {
+    token = (value || "").trim();
+    try {
+      if (token) localStorage.setItem(TOKEN_KEY, token);
+      else localStorage.removeItem(TOKEN_KEY);
+    } catch { /* private mode: it still works for this session */ }
+  },
+  clear() { this.set(""); },
+};
+
+/* Thrown for a 401 so callers can tell "you need a token" apart from "the
+ * engine is not there". Conflating the two is what put fabricated demo
+ * profiles on screen in front of a perfectly healthy locked engine. */
+export class AuthError extends Error {
+  constructor(detail) {
+    super(detail || "This engine requires an API token.");
+    this.name = "AuthError";
+    this.status = 401;
+  }
+}
+
+function headers(body) {
+  const h = {};
+  if (body) h["Content-Type"] = "application/json";
+  if (token) h["Authorization"] = `Bearer ${token}`;
+  return Object.keys(h).length ? h : undefined;
+}
+
 async function req(method, path, body) {
   const res = await fetch(BASE + path, {
     method,
-    headers: body ? { "Content-Type": "application/json" } : undefined,
+    headers: headers(body),
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
@@ -35,18 +79,25 @@ async function req(method, path, body) {
       const body = await res.json();
       detail = typeof body?.detail === "string" ? body.detail : "";
     } catch { /* not JSON, or empty — fall back to the status line */ }
+    if (res.status === 401) throw new AuthError(detail);
     throw new Error(detail || `${method} ${path} → ${res.status}`);
   }
   return res.status === 204 ? null : res.json();
 }
 
 export const api = {
+  /* Three outcomes, not two.
+   *
+   * "locked" is an engine that is running perfectly and wants a token. It used
+   * to return false here, indistinguishable from no engine at all, and the app
+   * answered by showing sample data as though it were the user's own. */
   async health() {
     try {
-      const res = await fetch(BASE + "/api/health");
-      return res.ok;
+      const res = await fetch(BASE + "/api/health", { headers: headers(null) });
+      if (res.ok) return "ok";
+      return res.status === 401 ? "locked" : "off";
     } catch {
-      return false;
+      return "off";
     }
   },
   engines: () => req("GET", "/api/engines"),

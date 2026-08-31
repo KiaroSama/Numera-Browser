@@ -78,3 +78,29 @@ def resolve_data_dir(explicit: Optional[str | Path] = None) -> Path:
 def legacy_dirs() -> list[Path]:
     """Pre-portable locations worth importing from, newest naming first."""
     return [Path.home() / HOME_DIR, Path.home() / LEGACY_HOME_DIR]
+
+
+def safe_join(base: Path, member: str) -> Path:
+    """Resolve ``member`` under ``base``, or raise if it would escape.
+
+    One helper for every place that writes a path taken from untrusted input:
+    a backup archive, a `.crx`, an extension manifest. Each of those used to
+    carry its own check and two of them were wrong in the same way -
+    ``str(target).startswith(str(base))`` passes for a *sibling* whose name
+    merely begins with the base, so `<ext>-evil/x` was accepted beside `<ext>/`.
+
+    Comparing resolved paths as paths, not as strings, is the fix. `..`,
+    absolute members and Windows drive letters are all rejected by the same
+    test, because `Path("a") / "C:/x"` is `C:/x` - the join throws the base away.
+    """
+    base = Path(base).resolve()
+    # A member is always archive-relative. Normalising separators first means a
+    # zip written on Windows is read the same way as one written anywhere else.
+    rel = str(member).replace("\\", "/").strip("/")
+    if not rel or rel in (".", ".."):
+        raise ValueError(f"refusing empty or dot archive member: {member!r}")
+    target = (base / rel).resolve()
+    if target != base and base not in target.parents:
+        raise ValueError(
+            f"refusing archive member that escapes its folder: {member!r}")
+    return target
