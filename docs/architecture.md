@@ -51,7 +51,7 @@ pick OS ──▶ archetype (devices.py) ──▶ Fingerprint ──▶ validat
 | `stealth.py` | Builds the per-fingerprint JS patch injected via `add_init_script` |
 | `launcher.py` | Thin dispatcher — resolves `profile.engine` and hands off to a driver |
 | `drivers.py` | Pluggable launch backends (playwright / patchright / camoufox) |
-| `cli.py` | Command-line interface over the store + launcher |
+| `cli/` | Command-line interface over the store + launcher. A package, split by responsibility: `out.py` (terminal output and `--json` mode), `profiles.py` (store-only commands), `browser.py` (anything that opens a real browser), `pool.py` (the proxy pool), `setup.py` (config, extensions, folders, vault, schedules, servers) and `parser.py` (the argparse tree). `__init__.py` re-exports `main` and `build_parser`, so `numera.cli` is imported exactly as before |
 
 ### Pluggable launch engines
 

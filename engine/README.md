@@ -394,7 +394,7 @@ store.save(profile)
 | `launcher.py` | Thin dispatcher: picks the profile's engine and hands off |
 | `drivers.py` | Pluggable launch backends (cloak / camoufox / patchright / playwright) |
 | `server.py` | FastAPI HTTP API the dashboard drives (`numera serve`) |
-| `cli.py` | Command-line interface |
+| `cli/` | Command-line interface: one module per command group, plus `parser.py` for the argparse tree and `out.py` for terminal output. `numera.cli` still exports `main` and `build_parser` |
 
 ## Launch engines (pluggable)
 
