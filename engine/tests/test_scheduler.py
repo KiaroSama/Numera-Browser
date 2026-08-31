@@ -58,3 +58,127 @@ def test_mark_run_moves_next_due(tmp_path):
     st.mark_run(e["id"], 1000)
     assert due_schedules(st.list(), now=1000) == []        # not due again yet
     assert due_schedules(st.list(), now=1000 + 6 * HOUR) == st.list()
+
+# --- audit findings --------------------------------------------------------
+
+import pytest as _pytest
+
+_pytest.importorskip("fastapi")
+
+
+@_pytest.fixture
+def app_and_client(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from numera.server import create_app
+
+    monkeypatch.delenv("NUMERA_API_TOKEN", raising=False)
+    app = create_app(data_dir=str(tmp_path), start_scheduler=False)
+    return app, TestClient(app)
+
+
+class FakeProc:
+    """A warm-up process that is still running unless told otherwise."""
+
+    def __init__(self, code=None):
+        self.returncode = code
+        self.terminated = False
+
+    def poll(self):
+        return self.returncode
+
+    def terminate(self):
+        self.terminated = True
+        self.returncode = -15
+
+    def wait(self, timeout=None):
+        return self.returncode
+
+    def kill(self):
+        self.returncode = -9
+
+
+def schedule_for(c, name):
+    pid = c.post("/api/profiles", json={"name": name}).json()["id"]
+    c.post("/api/schedules", json={"profileId": pid, "everyHours": 0.0001,
+                                   "minutes": 1, "preset": "general"})
+    return pid
+
+
+def test_one_unusable_schedule_does_not_stop_the_others(app_and_client, monkeypatch):
+    """The try/except wrapped the whole loop, so an exception on the first row
+    silently skipped every row after it - and the only symptom was warm-ups
+    that quietly stopped happening."""
+    from numera.server import routes_schedules as rs
+
+    app, c = app_and_client
+    bad = schedule_for(c, "bad")
+    good = schedule_for(c, "good")
+
+    real = rs.to_engine_profile
+    monkeypatch.setattr(rs, "to_engine_profile",
+                        lambda d: (_ for _ in ()).throw(ValueError("unconvertible"))
+                        if d.get("id") == bad else real(d))
+    started = []
+    monkeypatch.setattr(rs.subprocess, "Popen",
+                        lambda *a, **k: started.append(a[0][6]) or FakeProc())
+
+    app.state.scheduler_tick()
+
+    assert good in started, "the row after the bad one never ran"
+    rows = {s["profileId"]: s for s in c.get("/api/schedules").json()}
+    assert rows[bad]["lastOutcome"] == "failed"
+    assert rows[bad]["lastError"]
+
+
+def test_a_warm_up_that_dies_immediately_is_not_recorded_as_run(app_and_client, monkeypatch):
+    """`Popen` returning means a process started, not that it worked. Marking
+    the schedule as run here hid the failure until the profile went cold."""
+    from numera.server import routes_schedules as rs
+
+    app, c = app_and_client
+    pid = schedule_for(c, "dies")
+    monkeypatch.setattr(rs.subprocess, "Popen", lambda *a, **k: FakeProc(code=1))
+
+    app.state.scheduler_tick()
+    row = c.get("/api/schedules").json()[0]
+    assert row["lastOutcome"] == "failed"
+    assert row["lastRun"] is None, "a warm-up that never ran was marked as run"
+
+
+def test_the_exit_code_of_a_finished_warm_up_is_recorded(app_and_client, monkeypatch):
+    from numera.server import routes_schedules as rs
+
+    app, c = app_and_client
+    pid = schedule_for(c, "finishes")
+    proc = FakeProc()
+    monkeypatch.setattr(rs.subprocess, "Popen", lambda *a, **k: proc)
+
+    app.state.scheduler_tick()
+    assert c.get("/api/schedules").json()[0]["lastOutcome"] == "started"
+
+    proc.returncode = 3                      # it crashed after a while
+    app.state.reap_warmups()
+    row = c.get("/api/schedules").json()[0]
+    assert row["lastOutcome"] == "failed"
+    assert "3" in (row["lastError"] or "")
+
+
+def test_shutdown_terminates_the_children_it_started(app_and_client, monkeypatch):
+    """Each one holds a lock on a profile's user-data directory. Left behind,
+    the next launch of that profile fails with a directory-in-use error that
+    names nothing the user can act on."""
+    from fastapi.testclient import TestClient
+
+    from numera.server import create_app, routes_schedules as rs
+
+    app, c = app_and_client
+    proc = FakeProc()
+    monkeypatch.setattr(rs.subprocess, "Popen", lambda *a, **k: proc)
+    schedule_for(c, "child")
+    app.state.scheduler_tick()
+
+    with TestClient(app):
+        pass                                  # entering and leaving fires shutdown
+    assert proc.terminated or proc.returncode is not None, \
+        "a live child survived shutdown"
