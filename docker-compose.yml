@@ -1,0 +1,35 @@
+# Numera Browser
+#
+#   1. generate a token:  openssl rand -base64 32
+#   2. put it in .env as  NUMERA_API_TOKEN=...
+#   3. docker compose up -d
+#
+# The port is published to 127.0.0.1 on purpose. `8787:8787` would bind every
+# interface on the host, and this API creates profiles, launches browsers and
+# exports cookies - a token is a second lock, not a reason to expose it.
+
+services:
+  numera:
+    build: .
+    image: numera-browser:latest
+    container_name: numera-browser
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8787:8787"
+    environment:
+      # Required. The engine refuses a non-loopback bind without it, and inside
+      # a container 0.0.0.0 is the only address that is reachable at all.
+      NUMERA_API_TOKEN: ${NUMERA_API_TOKEN:?set NUMERA_API_TOKEN in .env - see the README}
+      # Only the origins a browser page will call this from. A wildcard plus a
+      # bearer token is a token any web page can spend.
+      NUMERA_ALLOWED_ORIGINS: ${NUMERA_ALLOWED_ORIGINS:-http://127.0.0.1:8787}
+    volumes:
+      # Profiles, browser sessions, the proxy pool and tokens. Losing this is
+      # losing every logged-in session.
+      - numera-data:/data
+    # Chromium needs more than the 64 MB default, and a headless browser in a
+    # container without it dies with an opaque crash rather than an error.
+    shm_size: 1gb
+
+volumes:
+  numera-data:

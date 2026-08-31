@@ -1,0 +1,30 @@
+# Everything the image builds for itself, plus everything that must never be
+# copied into a layer. A .dockerignore miss is not just a slow build: the build
+# context is sent to the daemon and baked into the image's history.
+.git
+.github
+.ai
+.claude
+.kiro
+.codex
+.cursor
+.ignoreme
+**/.ignoreme
+secrets.md
+explain-AI.md
+graphify-out
+build
+dist
+desktop
+scripts
+docs
+**/__pycache__
+**/*.pyc
+**/node_modules
+dashboard/dist
+.venv
+venv
+*.egg-info
+engine/build
+.pytest_cache
+.pytest-audit-temp

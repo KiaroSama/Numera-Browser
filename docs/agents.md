@@ -1,6 +1,6 @@
-# Driving Numera without a GUI
+# Driving Numera Browser without a GUI
 
-Numera has two front doors and they are not the same size.
+Numera Browser has two front doors and they are not the same size.
 
 * The **HTTP API** (`numera serve`) is what the dashboard talks to. Anything the
   GUI can do, an HTTP client can do, because the GUI has no other way of doing

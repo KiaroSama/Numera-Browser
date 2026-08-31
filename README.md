@@ -20,31 +20,31 @@ A self-hosted alternative to GoLogin, Multilogin and AdsPower.
 
 <br>
 
-![Numera dashboard](docs/screenshot-dashboard.png)
+![Numera Browser dashboard](docs/screenshot-dashboard.png)
 
 </div>
 
 ---
 
-## Why Numera?
+## Why Numera Browser?
 
 Most fingerprint tools randomise each value on its own — and that's exactly what
 gets them caught. Anti-bot systems don't read values in isolation; they
 **cross-check** them. A macOS user-agent with an NVIDIA GPU, or a 4-core phone
 claiming a 1440p screen, is an instant tell.
 
-Numera's core idea is **coherence**. It picks a realistic device archetype
+Numera Browser's core idea is **coherence**. It picks a realistic device archetype
 first, then draws *every* value (OS, user-agent, GPU, screen, CPU, RAM, timezone,
 language) from that archetype's real-world pool. The result is an identity whose
 parts all agree — and a live coherence check that proves it, both in the engine
 (`validate()`) and in the dashboard's real-time meter.
 
 That coherence-first design is the thing commercial tools don't surface, and it's
-what makes Numera distinctive.
+what makes Numera Browser distinctive.
 
-## Numera vs the commercial tools
+## Numera Browser vs the commercial tools
 
-|  | **Numera** | Multilogin | GoLogin | AdsPower |
+|  | **Numera Browser** | Multilogin | GoLogin | AdsPower |
 |---|:---:|:---:|:---:|:---:|
 | **Price** | **Free** | from ~$99/mo | from ~$49/mo | free tier + paid |
 | **Self-hosted** — data never leaves your machine | ✅ | ❌ cloud | ❌ cloud | ❌ cloud |
@@ -56,11 +56,11 @@ what makes Numera distinctive.
 | **Headless parity, tested** | ✅ 44/44 | ❌ | ❌ | ❌ |
 | **Cloud team sync** | ❌ *(local-first by design)* | ✅ | ✅ | ✅ |
 
-<sub>Pricing and feature comparison are approximate and based on each vendor's public plans at the time of writing — check their sites for current details. Numera doesn't do hosted team sync on purpose (see the roadmap); everything else is local and free.</sub>
+<sub>Pricing and feature comparison are approximate and based on each vendor's public plans at the time of writing — check their sites for current details. Numera Browser doesn't do hosted team sync on purpose (see the roadmap); everything else is local and free.</sub>
 
 ## What's in the box
 
-Numera is a monorepo whose parts work together:
+Numera Browser is a monorepo whose parts work together:
 
 ```
 Numera/
@@ -85,8 +85,9 @@ Numera/
 | ✨ **Auto-adjust** | One click aligns a profile to what its browser actually presents — grade jumps to A |
 | 📡 **Proxy & leak test** | Exit IP, country and timezone match + WebRTC leak detection |
 | 🌐 **DNS leak check** | Confirms name lookups exit through the proxy, not your real ISP's resolver |
+| 🐳 **Runs in Docker** | One `docker compose up`, on Playwright's own browser image so Chromium's system libraries are already there. Data lives in a named volume; the port is published to loopback, not to every interface |
 | 🌐 **Proxy pool** | Import, edit, health-check, export and assign proxies round-robin across profiles. Multi-select for bulk test, rotate, archive and delete; split into **All / Errors / Archive** so a dead proxy is not sitting between two live ones while you assign. **SOCKS5 is health-checked through the same loopback relay the browser uses**, so the result is the real exit IP rather than a shrug |
-| 🔁 **Rotating proxies** | Store a provider's change-IP URL and rotate from the row or in bulk. Numera fetches it, **re-tests, and compares the exit IP** - a provider that answers 200 and does nothing is reported as not moved, because the alternative is a button that lies |
+| 🔁 **Rotating proxies** | Store a provider's change-IP URL and rotate from the row or in bulk. Numera Browser fetches it, **re-tests, and compares the exit IP** - a provider that answers 200 and does nothing is reported as not moved, because the alternative is a button that lies |
 | 🔐 **TLS/JA3 check** | Reads the handshake fingerprint — the one layer JS injection can't reach |
 | ❤️ **Health overview** | One page: coherence, proxy, trust grade and warm-up schedule per profile |
 | 🔑 **Encrypted vault** | Proxy passwords encrypted at rest behind a master password |
@@ -104,18 +105,18 @@ Numera/
 | ⌨️ **CLI + Python API** | Script it or drive it by hand |
 | 🤖 **Built for agents** | `--json` on every command an agent would drive, `--detach` for long jobs with pollable handles, and an MCP surface. A parity test asserts the GUI has no capability the CLI lacks, and it currently passes at 44/44 — see [docs/agents.md](docs/agents.md) |
 
-## What Numera adds
+## What Numera Browser adds
 
 The gaps that show up running an anti-detect manager unattended on a server:
 
 | | |
 |---|---|
-| 🧩 **Extensions work headless** | Playwright's default headless binary is the *headless shell*, which cannot load extensions at all and announces itself as `HeadlessChrome` over CDP. Numera now launches the full Chromium in `--headless=new`, so extensions load and the browser stops advertising that it is headless. |
+| 🧩 **Extensions work headless** | Playwright's default headless binary is the *headless shell*, which cannot load extensions at all and announces itself as `HeadlessChrome` over CDP. Numera Browser now launches the full Chromium in `--headless=new`, so extensions load and the browser stops advertising that it is headless. |
 | 🛒 **Web Store links** | Chromium refuses to install from the store once automation is on, and `--load-extension` only takes an unpacked folder — so pasting a store link fetches the `.crx` from Google's own update endpoint, unpacks it into the data directory and hands the browser the folder. `numera ext install <url>`, or the **Install** button on the Extensions page. A mistyped id is named as such (ids are exactly 32 letters, `a`–`p`) rather than reported as "not found". The Extensions page then lists each one by **its own name and logo**, read straight out of the unpacked manifest — not the 32-character folder id. |
 | 🌍 **Global extension set** | An **Extensions** page in the sidebar manages the default set, and every profile created afterwards starts with it — from the CLI, the dashboard or `bulk-create`. **Apply to all** pushes it onto profiles that already exist, merging so each keeps whatever it already carried. CLI equivalents: `numera ext default-add <folder>` and `numera apply --all --extension <folder>`. |
 | 🖥️ **Headless launching** | `numera launch --headless` now keeps the session up instead of closing the moment it opens, and `POST /api/profiles/{id}/launch` takes `{"headless": true}` — so the dashboard's ▶ button works on a box with no display. |
 | 🔐 **Optional API auth** | Set `NUMERA_API_TOKEN`, or mint named tokens (`numera token create "CI runner"`, or the Settings page) that can be revoked one at a time. Only the hash is stored. Off by default, so a localhost setup is unchanged. |
-| 🔐 **Any proxy authenticates** | Chromium refuses SOCKS authentication outright and fingerprint-chromium has no password support on `--proxy-server` at all. Numera puts a small loopback relay in front, which terminates the authentication and forwards upstream — so every engine can use a credentialed proxy of any type. |
+| 🔐 **Any proxy authenticates** | Chromium refuses SOCKS authentication outright and fingerprint-chromium has no password support on `--proxy-server` at all. Numera Browser puts a small loopback relay in front, which terminates the authentication and forwards upstream — so every engine can use a credentialed proxy of any type. |
 | 🛡️ **WebRTC no longer leaks the real IP** | Chromium's `--force-webrtc-ip-handling-policy` does not reliably stop ICE from offering a public address that isn't the proxy's — verified: exit IP `95.x` while WebRTC handed out a different public IP. The dashboard's WebRTC picker was cosmetic (the engine had no such field), so the choice never reached the browser. Now it does: **Altered** drops public candidates from both the ICE events and the SDP while leaving private/mDNS ones alone, **Disabled** removes `RTCPeerConnection`, **Real** leaves it untouched. |
 | 🗺️ **Italian and Belgian locales** | `it-IT` and `nl-BE`, with timezones, languages and coordinates — proxies exiting in Italy or Belgium previously had no locale to align to and always failed the timezone check. |
 | 🔁 **Sticky-session proxy import** | The pool used to dedupe on `host:port`, which collapsed a 16-line sticky-session list — one gateway, credentials picking the exit node — into a single proxy. Credentials are part of the identity now. |
@@ -130,7 +131,7 @@ dashboard) [Node.js 18+](https://nodejs.org/). Check with `python --version` and
 
 ```bash
 git clone https://github.com/KiaroSama/Numera-Browser.git
-cd Numera
+cd Numera-Browser
 ```
 
 ### Build it
@@ -225,6 +226,42 @@ terminal. That's it — clicking ▶ launches the profile for real.
 Full details live in each part's README:
 [engine/README.md](engine/README.md) · [dashboard/README.md](dashboard/README.md).
 
+### With Docker
+
+Chromium needs about ninety system libraries, and assembling them onto a plain
+Python image is the part that breaks on every base-image bump. The image builds
+on Playwright's own, which already carries the browser matched to the client.
+
+```bash
+# 1. a token. The engine refuses a non-loopback bind without one, and inside a
+#    container 0.0.0.0 is the only address that is reachable at all.
+echo "NUMERA_API_TOKEN=$(openssl rand -base64 32)" > .env
+
+# 2. build and start
+docker compose up -d --build
+```
+
+The dashboard is then on <http://127.0.0.1:8787> and asks for that token once.
+
+Worth knowing before you run it:
+
+* **The port is published to `127.0.0.1`, not to every interface.** `8787:8787`
+  would expose an API that creates profiles, launches browsers and exports
+  cookies. Reach a remote host over an SSH tunnel or a reverse proxy you
+  control.
+* **`/data` is the whole product.** Profiles, browser sessions, the proxy pool
+  and tokens live in the `numera-data` volume. Losing it is losing every
+  logged-in session; back it up like a database.
+* **`shm_size: 1gb` is not optional.** Chromium in a container with the default
+  64 MB `/dev/shm` dies with an opaque crash rather than an error.
+* Launches are headless by definition here — there is no display. Turn that on
+  once with the `PUT /api/config` call shown below.
+
+```bash
+docker compose logs -f          # what the engine is doing
+docker compose exec numera numera list --json
+```
+
 ### On a headless Linux server
 
 No display, so every launch has to be headless and the API is the interface:
@@ -285,13 +322,13 @@ including how to connect the dashboard to the engine.
 
 ## Manager + pluggable engines
 
-Numera's job is to be the **manager** — coherent identities, proxies, sessions,
+Numera Browser's job is to be the **manager** — coherent identities, proxies, sessions,
 folders, and a dashboard. The actual stealth browser is a **pluggable engine** you
 choose per profile:
 
 | Engine | Strength | Notes |
 |---|---|---|
-| `cloak` | Patched Chromium binary | CloakBrowser — C++-level fingerprint/TLS/CDP patches; reaches Cloudflare/DataDome/reCAPTCHA-v3-grade evasion. **Requires a paid CloakBrowser subscription** and its licence forbids redistribution, so Numera cannot bundle it — you install it yourself. |
+| `cloak` | Patched Chromium binary | CloakBrowser — C++-level fingerprint/TLS/CDP patches; reaches Cloudflare/DataDome/reCAPTCHA-v3-grade evasion. **Requires a paid CloakBrowser subscription** and its licence forbids redistribution, so Numera Browser cannot bundle it — you install it yourself. |
 | `camoufox` ⭐ | Patched Firefox (C++-level) | **Recommended** — the strongest engine that is actually free and open. Brings its own coherent fingerprint. |
 | `patchright` | Runtime-patched Playwright | Drop-in; fixes `webdriver`/CDP leaks the stock engine can't. |
 | `playwright` | Built-in, always available | Stock Chromium + injected stealth script. Passes basic bot tests (BrowserScan, sannysoft); can't beat TLS/CDP-level detection. |
@@ -311,7 +348,7 @@ you choose anywhere becomes the default for the next profile you create.
 
 Being honest about limits: pure JavaScript injection (the `playwright` engine)
 has a ceiling — for Cloudflare / DataDome / reCAPTCHA-v3-grade evasion, pair a
-runtime-patched engine with a residential proxy and a warmed-up session. Numera
+runtime-patched engine with a residential proxy and a warmed-up session. Numera Browser
 stays the same manager over all of them.
 
 ## Roadmap
@@ -374,13 +411,13 @@ stays the same manager over all of them.
 **Next**
 
 - [ ] Cloud sync + team roles — deliberately unbuilt: it needs a hosted backend,
-      accounts and a threat model of its own. Numera stays local-first until
+      accounts and a threat model of its own. Numera Browser stays local-first
       that's designed properly rather than bolted on.
 
 
 ## Legitimate use & responsibility
 
-Numera is a tool for **legitimate multi-account management**: marketing agencies
+Numera Browser is a tool for **legitimate multi-account management**: marketing agencies
 handling many client ad accounts, QA and ad-verification testing, web-automation
 development, and privacy research — the same use cases served openly by
 commercial anti-detect browsers.

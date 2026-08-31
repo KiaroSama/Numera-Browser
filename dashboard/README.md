@@ -1,6 +1,6 @@
 # Numera Browser - Dashboard
 
-The web front-end for [Numera](../README.md) — an operations console for
+The web front-end for [Numera Browser](../README.md) — an operations console for
 managing browser profiles, styled after commercial anti-detect browsers but
 self-hosted.
 
@@ -30,7 +30,7 @@ npm run preview
   screen, CPU/RAM, WebGL, and the spoofing modes for canvas, WebRTC, audio and
   fonts, plus timezone, locale, geolocation and media devices.
 - **Launch engine selector** — pick the stealth backend per profile
-  (`playwright` / `patchright` / `camoufox`); Numera manages, the engine renders.
+  (`playwright` / `patchright` / `camoufox`); Numera Browser manages, the engine renders.
 - **Live coherence meter** — the signature feature. As you edit a fingerprint it
   re-checks consistency in real time (mirroring the engine's `validate()`), so a
   Windows profile wearing an Apple GPU is flagged instantly.

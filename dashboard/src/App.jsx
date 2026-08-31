@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Activity, Blocks, Boxes, Command, Download, Fingerprint, FolderTree, Globe, KeyRound, Layers, Moon, Plus, Puzzle, RefreshCw, Server, Settings, ShieldAlert, ShieldCheck, Sun, Users, X, Zap } from "lucide-react";
+import { Activity, Blocks, Boxes, Command, Download, FolderTree, Globe, KeyRound, Layers, Moon, Plus, Puzzle, RefreshCw, Server, Settings, ShieldAlert, ShieldCheck, Sun, Users, X, Zap } from "lucide-react";
 import { api, auth } from "./api";
 import { DARK, FONT, LIGHT, T, makeCss } from "./theme";
 import { FOLDERS, seed } from "./demoData";
@@ -336,7 +336,7 @@ export default function App() {
         {/* ---- Sidebar ---- */}
         <aside className="ps-side">
           <div className="ps-brand">
-            <div className="ps-logo"><span className="ps-logo-glow" /><Fingerprint size={19} color="#fff" strokeWidth={2.2} /></div>
+            <div className="ps-logo"><img src="/logo-512.png" alt="" width="36" height="36" /></div>
             <div>
               <div className="ps-brand-name">Numera</div>
               <div className="ps-brand-sub">Browser</div>
