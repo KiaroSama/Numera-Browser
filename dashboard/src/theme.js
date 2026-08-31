@@ -14,12 +14,12 @@
 
 /* ---- design tokens: "ink violet" identity console ---------------- */
 export const DARK = {
-  bg: "#0B0B10", bg2: "#101017", surface: "#15151F", surface2: "#1C1C2A",
-  line: "#282840", lineSoft: "#1E1E2E",
-  text: "#ECEDF5", muted: "#989BB6", dim: "#5B5E7A",
+  bg: "#191d24", bg2: "#1f242c", surface: "#252b35", surface2: "#2c323e",
+  line: "#39404e", lineSoft: "#2e343f",
+  text: "#ECEDF5", muted: "#A2A7BC", dim: "#6E7488",
   violet: "#8B7CFF", violetDeep: "#6D5CE8", violetDim: "#2C265221",
-  lilac: "#B7ADFF", mint: "#4FE0B0", mintDim: "#123A31",
-  amber: "#F2B84B", amberDim: "rgba(240,180,80,.14)", red: "#FF6B7A", grey: "#6B6E88",
+  lilac: "#B7ADFF", mint: "#4FE0B0", mintDim: "#1B4A3E",
+  amber: "#F2B84B", amberDim: "rgba(240,180,80,.14)", red: "#FF6B7A", grey: "#7C8296",
 };
 export const LIGHT = {
   bg: "#F5F5FB", bg2: "#FFFFFF", surface: "#FFFFFF", surface2: "#F0F0F8",
@@ -47,10 +47,10 @@ export const T = { ...DARK };
  * page, panel, card and raised surfaces without inventing one-off colours. */
 const RAMPS = {
   dark: {
-    "bg-0": "#0a0c11", "bg-1": "#11141c", "bg-2": "#181c26", "bg-3": "#1f242f",
-    "bg-hover": "#1d2230",
-    "bd-1": "#232734", "bd-2": "#2d3242", "bd-3": "#3b4256",
-    "tx-1": "#ecedf3", "tx-2": "#a6acbc", "tx-3": "#767c8e", "tx-4": "#4f5566",
+    "bg-0": "#191d24", "bg-1": "#1f242c", "bg-2": "#252b35", "bg-3": "#2c323e",
+    "bg-hover": "#2a303b",
+    "bd-1": "#2e343f", "bd-2": "#39404e", "bd-3": "#495264",
+    "tx-1": "#eceef3", "tx-2": "#a8aebd", "tx-3": "#7d8494", "tx-4": "#727a8c",
   },
   light: {
     "bg-0": "#eef0f4", "bg-1": "#ffffff", "bg-2": "#f6f7fa", "bg-3": "#e9ebf1",
