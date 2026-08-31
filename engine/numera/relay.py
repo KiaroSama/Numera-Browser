@@ -274,6 +274,11 @@ class _Handler(socketserver.BaseRequestHandler):
             try:
                 upstream = relay._open_upstream(host, port)
             except (OSError, ProxyRelayError) as e:
+                # Remember why. A client speaking HTTP sees only "502 Bad
+                # Gateway" - urllib does not surface a CONNECT response body -
+                # so the pool health check would otherwise report a dead
+                # upstream and a wrong password identically.
+                relay.last_error = str(e).splitlines()[0][:180]
                 _reply(client, 502, f"relay could not reach the upstream proxy: {e}")
                 return
             relay._track(upstream)
@@ -336,6 +341,9 @@ class ProxyRelay:
                 f"upstream proxy address needs a host and a port: {proxy.server!r}")
 
         self.is_socks = scheme in _SOCKS_SCHEMES
+        # Why the last upstream connection failed, for callers whose transport
+        # cannot see the relay's 502 body (see the handler).
+        self.last_error: Optional[str] = None
         self._host, self._port = host, port
         self._user, self._password = proxy.username, proxy.password
         self._auth = None

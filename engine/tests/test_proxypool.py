@@ -5,7 +5,9 @@ has to read every layout a vendor might hand you) and the reverse mapping that
 turns an imported engine profile back into the dashboard shape.
 """
 
-from numera.proxypool import parse_line, parse_many
+import pytest
+
+from numera.proxypool import parse_line, parse_many, to_line
 from numera.server import ProxyPool, to_dashboard_profile, to_engine_profile
 from numera import generate
 from numera.models import Profile, Proxy
@@ -108,3 +110,50 @@ def test_sticky_session_proxies_are_not_collapsed(tmp_path):
     # Re-importing the same list is still a no-op.
     assert pool.add_many(parse_many(lines)) == []
     assert len(pool.list()) == 16
+
+
+# --------------------------------------------------------------------------
+# Export
+# --------------------------------------------------------------------------
+@pytest.mark.parametrize("line", [
+    "1.2.3.4:8080",
+    "http://1.2.3.4:8080",
+    "socks5://1.2.3.4:1080",
+    "user:pass@1.2.3.4:8080",
+    "socks5://user:pass@1.2.3.4:1080",
+    "1.2.3.4:8080:user:pass",
+    "1.2.3.4:8080:US",
+    "socks5://user:pass@1.2.3.4:1080:IT 1",
+    "1.2.3.4:8080:user:pass:DE",
+])
+def test_export_re_imports_to_the_same_proxy(line):
+    """`to_line` is the parser's inverse, and export is only useful if it is.
+
+    A pool leaves this machine through export - into a teammate's Numera, a
+    vendor's dashboard, a backup. If a round trip loses the credentials or the
+    country, the file looks fine and the restored pool is wrong.
+    """
+    first = parse_line(line)
+    assert first, f"the fixture itself does not parse: {line}"
+    again = parse_line(to_line(first))
+    assert again, f"exported line did not parse back: {to_line(first)}"
+    for key in ("type", "host", "port", "user", "pass", "country"):
+        assert again[key] == first[key], (
+            f"{key} changed on the round trip: {first[key]!r} -> {again[key]!r} "
+            f"via {to_line(first)!r}")
+
+
+def test_export_keeps_a_password_containing_a_colon():
+    """The colon-separated form is ambiguous for such a password; the URL form is not."""
+    p = {"type": "SOCKS5", "host": "1.2.3.4", "port": "1080",
+         "user": "u", "pass": "a:b:c", "country": None, "label": None}
+    back = parse_line(to_line(p))
+    assert back["pass"] == "a:b:c", to_line(p)
+
+
+def test_export_does_not_repeat_the_country_when_a_label_carries_it():
+    """`label` already begins with the code - emitting both would grow each round trip."""
+    p = parse_line("socks5://1.2.3.4:1080:IT 1")
+    line = to_line(p)
+    assert line.count("IT") == 1, line
+    assert parse_line(line)["label"] == "IT 1"

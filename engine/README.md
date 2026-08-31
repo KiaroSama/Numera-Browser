@@ -115,6 +115,39 @@ reports where it came out, then asks WebRTC whether it would give away an
 address the proxy was meant to hide. It works without a proxy too — that's your
 baseline.
 
+### The proxy pool
+
+```bash
+numera pool add proxies.txt        # or - to read stdin
+numera pool list
+numera pool test <id> <id>         # several at once, or --all for the whole pool
+numera pool edit <id> --host 1.2.3.4 --port 1080 --label "IT 1"
+numera pool remove <id> <id>       # several at once
+numera pool export --file out.txt  # importable lines; omit --file for stdout
+numera pool assign --all           # round-robin across profiles, aligning locale to country
+```
+
+The same `<data-dir>/proxies.json` the dashboard's Proxies page uses, so a change
+from either side is visible to both.
+
+**SOCKS proxies are health-checked for real.** urllib has no SOCKS transport, so
+`pool test` used to answer "test it via a profile's proxy test" for anything
+SOCKS — which, for a pool that is mostly SOCKS, made the check look broken. It
+now borrows the same loopback relay the browser uses (`relay.py` speaks SOCKS5,
+which is how credentialed SOCKS reaches Chromium at all), so the result is the
+real exit IP. A wrong password and an unreachable host are reported differently,
+because they need different fixes. Only SOCKS4 is declined, and it says why: the
+protocol has no authentication to test.
+
+`pool export` is the exact inverse of the import parser — a round-trip test holds
+the two together, so an exported file re-imports to the same proxies, credentials
+and country codes included. Treat the file as sensitive: it holds passwords in
+plaintext.
+
+Editing a proxy's address resets its health status. The stored verdict described
+the old address, and reporting "OK" about somewhere that was never tested is the
+same class of lie as a control that reports instead of acting.
+
 ### Folders
 
 ```bash
@@ -305,10 +338,14 @@ in place of the bearer header.
 | POST | `/api/profiles/bulk` | Apply one `patch` to many `ids` |
 | POST | `/api/profiles/batch` | Save many generated `profiles` at once (bulk create) |
 | POST | `/api/profiles/import` | Import GoLogin/AdsPower/Multilogin export `text` |
-| GET | `/api/proxies` | List the proxy pool |
+| GET | `/api/proxies` | List the proxy pool, each entry with how many profiles use it |
 | POST | `/api/proxies` | Import proxies from `text` (or a `proxies` list) |
+| PUT | `/api/proxies/{id}` | Change one in place. A changed address resets its health status - the old verdict describes somewhere else |
 | DELETE | `/api/proxies/{id}` | Remove a proxy from the pool |
+| POST | `/api/proxies/delete` | Remove several (`{"ids": [...]}`) |
 | POST | `/api/proxies/{id}/test` | Health-check one proxy (exit IP/country) |
+| POST | `/api/proxies/test` | Health-check several, concurrently. Omit `ids` for the whole pool |
+| POST | `/api/proxies/export` | Render proxies back to importable lines |
 | POST | `/api/proxies/assign` | Assign the pool round-robin across profiles |
 | GET | `/api/schedules` | List warm-up schedules + when each next runs |
 | POST | `/api/schedules` | Schedule a recurring warm-up for a profile |
