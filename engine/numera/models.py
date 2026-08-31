@@ -122,6 +122,8 @@ class Profile:
     # Stores this profile does NOT carry between launches; see drivers.CLEARABLE.
     # Empty means full persistence, which is what every existing profile has.
     clear_on_start: list[str] = field(default_factory=list)
+    # Chromium subsystems switched off at launch; see drivers.SWITCHABLE.
+    switched_off: list[str] = field(default_factory=list)
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
@@ -140,6 +142,7 @@ class Profile:
             "dns": self.dns,
             "ip_based": self.ip_based,
             "clear_on_start": self.clear_on_start,
+            "switched_off": self.switched_off,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "fingerprint": self.fingerprint.to_dict(),
@@ -161,6 +164,7 @@ class Profile:
             dns=d.get("dns", ""),
             ip_based=d.get("ip_based", []),
             clear_on_start=d.get("clear_on_start", []),
+            switched_off=d.get("switched_off", []),
             created_at=d.get("created_at", time.time()),
             updated_at=d.get("updated_at", time.time()),
             fingerprint=Fingerprint.from_dict(d["fingerprint"]),

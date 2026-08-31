@@ -124,6 +124,32 @@ DOH_TEMPLATES = {
 }
 
 
+# Chromium subsystems a profile can switch off, and the flags that do it.
+#
+# Both are reachable by typing into the launch-arguments box; they are named
+# switches because "stop Chrome phoning Google" is a thing people want, not a
+# flag people remember. Deliberately no `--disable-features=` here: Chromium
+# keeps only the *last* occurrence of that switch, so adding one would silently
+# cancel the DNS-over-HTTPS flag.
+SWITCHABLE = {
+    # Sync, Safe Browsing updates, field trials, the extension updater and the
+    # usage pings - all traffic to Google from the proxy's IP that has nothing to
+    # do with what the profile is being used for.
+    "googleServices": ["--disable-sync", "--disable-background-networking",
+                       "--disable-client-side-phishing-detection", "--no-pings",
+                       "--disable-domain-reliability"],
+    # Chromium's own hidden extensions (the Web Store connector, Media Router,
+    # Cloud Print). They run in the background whether or not anything uses them.
+    "systemExtensions": ["--disable-component-extensions-with-background-pages",
+                         "--disable-component-update"],
+}
+
+
+def _switched_off_args(profile: Profile) -> list[str]:
+    return [flag for key in (getattr(profile, "switched_off", None) or [])
+            for flag in SWITCHABLE.get(key, ())]
+
+
 def _dns_args(profile: Profile) -> list[str]:
     """Force this session's DNS through the profile's resolver.
 
@@ -411,6 +437,7 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
         *_webrtc_arg(profile),
         *_extension_args(profile),
         *_dns_args(profile),
+        *_switched_off_args(profile),
         *(profile.launch_args or []),
         *(extra_args or []),
     ]
@@ -580,7 +607,8 @@ def _driver_cloak(profile, store, headless=False, keep_open=True, extra_args=Non
             # read command-line flags), so it doesn't affect the fingerprint.
             args=["--test-type", "--no-first-run", "--no-default-browser-check",
                   *_webrtc_arg(profile), *_extension_args(profile),
-                  *_dns_args(profile), *(profile.launch_args or []),
+                  *_dns_args(profile), *_switched_off_args(profile),
+                  *(profile.launch_args or []),
                   *(extra_args or [])],
         )
     except BaseException:

@@ -262,7 +262,23 @@ a { color: inherit; }
 .ps-table tbody tr:hover td { background: var(--bg2); }
 .ps-table tr.sel td { background: var(--violetDim); }
 .ps-name { display: flex; align-items: center; gap: 12px; }
+/* The avatar is decoration that carries identity, so it sits quietly: a soft
+   surface behind it keeps a sparse pattern from floating on the row. */
+.ps-identicon { display: block; flex: none; border-radius: 8px; overflow: hidden;
+  background: var(--bg); border: 1px solid var(--line); line-height: 0; }
+.ps-identicon svg { display: block; }
 .ps-pname { font-weight: 600; font-size: 13px; }
+/* The pencil only appears on hover: a permanent one on every row is noise, and
+   the name is the obvious thing to click anyway. */
+.ps-pname.editable { display: inline-flex; align-items: center; gap: 5px; cursor: text;
+  border-radius: 5px; padding: 1px 5px; margin-left: -5px; transition: background .12s; }
+.ps-pname.editable:hover { background: var(--bg); }
+.ps-pname.busy { opacity: .55; }
+.ps-pname-pen { opacity: 0; color: var(--muted); transition: opacity .12s; }
+.ps-pname.editable:hover .ps-pname-pen { opacity: 1; }
+.ps-pname-in { font: 600 13px/1.2 inherit; font-family: inherit; color: var(--text);
+  background: var(--bg); border: 1px solid var(--violetDim); border-radius: 5px;
+  padding: 1px 5px; margin-left: -5px; width: 100%; max-width: 220px; outline: none; }
 .ps-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .ps-status.running { background: var(--mint); animation: pulsering 2.4s infinite; }
 .ps-status.stopped { background: var(--grey); }

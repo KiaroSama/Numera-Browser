@@ -82,3 +82,44 @@ def test_the_summary_panel_stays_in_step_with_the_editor():
     }
     unknown = sorted(shown - known)
     assert not unknown, f"the summary reads fields nothing sets: {unknown}"
+
+
+def test_a_minimal_post_cannot_blank_the_profile_list():
+    """`{"name": "alpha"}` is a reasonable API call. It used to be stored with no
+    `tags`, and the list view calls `p.tags.map(...)` - so one such profile took
+    the whole page down on the next load. The write path fills what the view
+    dereferences instead of refusing the request.
+    """
+    import re as _re
+    from numera.server import routes_profiles as rp
+
+    view = (SRC / "views" / "ProfilesView.jsx").read_text(encoding="utf-8")
+    dereferenced = set(_re.findall(r"p\.([a-zA-Z]+)\.(?:map|join|split)\b", view))
+    filled = set(rp.LIST_FIELDS) | set(rp.TEXT_FIELDS)
+    # `name` is required by the API in its own right and checked separately.
+    missing = sorted(dereferenced - filled - {"name"})
+    assert not missing, (
+        f"the profile list calls a method on {missing}, but a POST that omits "
+        "them is still stored - one such profile blanks the page")
+
+
+def test_a_profile_created_without_a_user_agent_still_gets_a_real_one():
+    """Every other field in the converter falls back to something coherent; the
+    user agent alone fell back to "". The dashboard always sends one, so only the
+    API path could hit it - and a profile presenting an empty UA is a worse tell
+    than any fingerprint mismatch.
+    """
+    from numera.server.convert import to_engine_profile
+
+    for os_name, marker in [("Windows", "Windows NT"), ("macOS", "Mac OS X"),
+                            ("Linux", "X11; Linux"), ("Android", "Android")]:
+        ua = to_engine_profile({"name": "x", "os": os_name}).fingerprint.user_agent
+        assert marker in ua, f"{os_name} produced {ua!r}"
+        assert "Chrome/" in ua
+
+
+def test_an_explicit_user_agent_is_never_overwritten():
+    from numera.server.convert import to_engine_profile
+
+    mine = "Mozilla/5.0 (something deliberate)"
+    assert to_engine_profile({"name": "x", "userAgent": mine}).fingerprint.user_agent == mine

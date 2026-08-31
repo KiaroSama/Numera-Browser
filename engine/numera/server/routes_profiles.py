@@ -11,6 +11,18 @@ from ..models import Fingerprint
 from .convert import _rel_time, dashboard_coherence, to_dashboard_profile, to_engine_profile
 
 
+# What the dashboard dereferences rather than merely displays. Missing means a
+# blank page, not a blank cell. The main fill comes from the engine's own
+# defaults (round-tripping through `to_engine_profile`), so the row the dashboard
+# draws is the identity the browser will actually wear; this list is the fallback
+# for a shape too odd to convert.
+LIST_FIELDS = ("tags", "ipBased", "clearOnStart", "switchedOff")
+TEXT_FIELDS = {"startupUrls": "", "extensions": "", "bookmarks": "",
+               "launchArgs": "", "dns": "", "notes": "",
+               # `browserVersion` is split on "." in the profile list.
+               "browserVersion": "128.0.0.0"}
+
+
 def register(app, ctx):
     """Attach these routes to `app`.
 
@@ -45,6 +57,28 @@ def register(app, ctx):
         px = profile.get("proxy")
         if px is not None and not isinstance(px, dict):
             raise HTTPException(422, "'proxy' must be an object or null")
+
+        # Type checks alone did not deliver what the docstring promises. A body
+        # like {"name": "alpha"} passed every check above and was stored with no
+        # `tags` at all; the list view calls `p.tags.map(...)` and the whole page
+        # went blank on the next load - the exact failure this function exists to
+        # stop. A minimal POST is a reasonable request, so the missing fields are
+        # filled rather than refused.
+        try:
+            complete = to_dashboard_profile(to_engine_profile(profile))
+        except Exception:  # noqa: BLE001 - a shape too odd to convert keeps the
+            complete = {}  # explicit list below; never refuse the write for this
+        for key, value in complete.items():
+            if profile.get(key) is None:
+                profile[key] = value
+        # Belt and braces for the handful the view calls a method on, in case the
+        # conversion above could not run at all.
+        for key in LIST_FIELDS:
+            if not isinstance(profile.get(key), list):
+                profile[key] = []
+        for key, default in TEXT_FIELDS.items():
+            if not isinstance(profile.get(key), str):
+                profile[key] = default
         return profile
 
     def _remember_engine(profile: dict):
