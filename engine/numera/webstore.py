@@ -97,6 +97,48 @@ def _download(ext_id: str, timeout: int = 60) -> bytes:
     return data
 
 
+def _extract_safely(z: zipfile.ZipFile, dest: Path) -> None:
+    """Extract every member, refusing any that would land outside `dest`.
+
+    The previous guard compared strings, so `<dest>-evil/x` passed for starting
+    with `<dest>`. `extractall` is not used: it would resolve members itself and
+    the check would no longer describe what actually gets written.
+    """
+    from .paths import safe_join
+
+    members = [i for i in z.infolist() if not i.is_dir()]
+    try:
+        targets = [(i, safe_join(dest, i.filename)) for i in members]   # raises first
+    except ValueError as e:
+        raise WebStoreError(f"refusing archive member outside the folder: {e}") from e
+    for info, target in targets:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with z.open(info) as fh:
+            target.write_bytes(fh.read())
+
+
+def _unpack_zip(data: bytes, dest: Path) -> None:
+    """The plain-zip half of `_unpack`, so the containment rule is testable."""
+    import io as _io
+
+    try:
+        with zipfile.ZipFile(_io.BytesIO(data)) as z:
+            _extract_safely(z, dest)
+    except zipfile.BadZipFile as e:
+        raise WebStoreError(f"the downloaded file is not a valid extension package: {e}") from e
+
+
+def _icon_path(folder: Path, rel: str) -> "Optional[Path]":
+    """An icon path from a third-party manifest, or None if it is not usable."""
+    from .paths import safe_join
+
+    try:
+        candidate = safe_join(folder, rel)
+    except ValueError:
+        return None
+    return candidate if candidate.is_file() else None
+
+
 def _unpack(crx: bytes, dest: Path) -> None:
     """Strip the CRX header and extract the zip behind it.
 
@@ -119,11 +161,7 @@ def _unpack(crx: bytes, dest: Path) -> None:
             # Refuse path traversal before writing anything: the archive is
             # third-party content, and a member named ../../x would otherwise
             # escape the destination.
-            for name in z.namelist():
-                target = (dest / name).resolve()
-                if not str(target).startswith(str(dest.resolve())):
-                    raise WebStoreError(f"refusing archive member outside the folder: {name}")
-            z.extractall(dest)
+            _extract_safely(z, dest)
     except zipfile.BadZipFile as e:
         raise WebStoreError(f"the downloaded file is not a valid extension package: {e}") from e
 
@@ -223,8 +261,8 @@ def icon(folder: Path) -> Optional[Path]:
             continue
         # The manifest is third-party text; a member like ../../secret.png must
         # not resolve outside the extension folder.
-        candidate = (folder / rel.lstrip("/")).resolve()
-        if candidate.is_file() and str(candidate).startswith(str(folder.resolve())):
+        candidate = _icon_path(folder, rel)
+        if candidate:
             return candidate
     return None
 
