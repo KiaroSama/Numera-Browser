@@ -411,7 +411,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [0.2.0] - fork
 
-First release of the [KiaroSama](https://github.com/KiaroSama/Numera)
+First release of the [KiaroSama](https://github.com/KiaroSama/Numera-Browser)
 fork of [TechQaiser/persona-studio](https://github.com/TechQaiser/persona-studio).
 Everything below is on top of upstream `0.1.0`.
 

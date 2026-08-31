@@ -7,7 +7,7 @@ import App, { ErrorBoundary } from "./App.jsx";
 // than a white page.
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <ErrorBoundary title="Numera couldn't start">
+    <ErrorBoundary title="Numera Browser couldn't start">
       <App />
     </ErrorBoundary>
   </React.StrictMode>

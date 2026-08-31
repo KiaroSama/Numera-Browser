@@ -1,6 +1,8 @@
 <div align="center">
 
-# Numera
+<img src="docs/brand/logo-256.png" alt="Numera Browser" width="128" height="128">
+
+# Numera Browser
 
 ### Self-hosted anti-detect browser & profile manager
 
@@ -127,7 +129,7 @@ dashboard) [Node.js 18+](https://nodejs.org/). Check with `python --version` and
 `node --version`.
 
 ```bash
-git clone https://github.com/KiaroSama/Numera.git
+git clone https://github.com/KiaroSama/Numera-Browser.git
 cd Numera
 ```
 

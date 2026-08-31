@@ -1,4 +1,4 @@
-# Numera Engine
+# Numera Browser - Engine
 
 The Python core of [Numera](../README.md): coherent fingerprint generation,
 profile storage, and a Playwright-based launcher, with a full CLI.
