@@ -27,6 +27,7 @@ Build for production, and run the tests:
 npm run build      # outputs to dist/
 npm run preview
 npm test           # vitest, in test/
+npm run lint       # eslint
 ```
 
 ## What's inside
