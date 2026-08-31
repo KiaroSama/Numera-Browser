@@ -56,6 +56,18 @@ export class AuthError extends Error {
   }
 }
 
+/* Every 401 the app ever sees is reported through here.
+ *
+ * One handler instead of a catch at each call site, because the call sites are
+ * exactly where this went wrong: the status poller's `refresh().catch(() => {})`
+ * and the token list's own catch both swallowed a 401, so minting the first
+ * named token - which locks this very server from the next request onwards -
+ * left the dashboard looking connected while everything it asked for was being
+ * rejected. Revoking the token in use did the same. `req` is the one place a 401
+ * can be seen, so it is the one place that reports one. */
+let onAuthLost = null;
+export function setAuthLostHandler(fn) { onAuthLost = fn; }
+
 function headers(body) {
   const h = {};
   if (body) h["Content-Type"] = "application/json";
@@ -79,7 +91,11 @@ async function req(method, path, body) {
       const body = await res.json();
       detail = typeof body?.detail === "string" ? body.detail : "";
     } catch { /* not JSON, or empty — fall back to the status line */ }
-    if (res.status === 401) throw new AuthError(detail);
+    if (res.status === 401) {
+      const lost = new AuthError(detail);
+      onAuthLost?.(lost);
+      throw lost;
+    }
     throw new Error(detail || `${method} ${path} → ${res.status}`);
   }
   return res.status === 204 ? null : res.json();

@@ -73,7 +73,9 @@ jobs:
   desktop:
     name: Desktop app (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 40
+    # Same ceiling as the Windows job below, because it now does the same work:
+    # a Chromium download and a real browser launch on top of the Rust build.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -127,31 +129,55 @@ jobs:
           cp -r desktop/dist/.build/numera-engine "build/$plat/Numera/engine"
           du -sh "build/$plat/Numera"
 
+      # `pip install playwright` installs the package, not the browser: that is a
+      # separate download into a per-user cache. A release artifact lands on
+      # machines that have never run Playwright, so without this the app starts,
+      # serves the dashboard and fails at the first launch with "Executable
+      # doesn't exist". Installed straight into the folder that gets uploaded,
+      # which saves a copy: paths.use_bundled_browsers() looks for `browsers/`
+      # beside the engine directory as well as inside it.
+      - name: Bundle the Playwright browser
+        run: |
+          dest="$PWD/build/$PLAT/Numera/browsers"
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            # Chromium wants system libraries the WebKitGTK set above does not
+            # cover, and that list changes with the runner image. --with-deps is
+            # the only version of it anyone maintains; it is Debian/Ubuntu-only,
+            # which is what the branch is for.
+            PLAYWRIGHT_BROWSERS_PATH="$dest" python -m playwright install --with-deps chromium
+          else
+            PLAYWRIGHT_BROWSERS_PATH="$dest" python -m playwright install chromium
+          fi
+          # `playwright install chromium` also fetches `chromium_headless_shell`,
+          # a few hundred MB this app never runs: drivers.py passes
+          # channel="chromium" for headless precisely to avoid it, because the
+          # shell cannot load extensions and announces itself as HeadlessChrome
+          # over CDP. Same exclusion as the Windows build.
+          rm -rf "$dest"/chromium_headless_shell-*
+          du -sh "$dest"
+
       # Proof the binary is for the runner it was built on. A silently
       # mis-targeted artifact would upload happily and fail on a user's machine.
       - name: Check the binary matches the platform
         run: file "build/$PLAT/Numera/numera"
 
-      # A file listing is not a working app. The frozen engine has to start on
-      # the runner, with no source checkout on its path.
-      - name: Smoke the assembled engine
-        run: |
-          set -euo pipefail
-          engine="build/$PLAT/Numera/engine/numera-engine"
-          data="$(mktemp -d)"
-          "$engine" --data-dir "$data" --version
-          "$engine" --data-dir "$data" create --name smoke
-          "$engine" --data-dir "$data" list | grep -q smoke
-          rm -rf "$data"
+      # A file listing is not a working app. The gate that matters: the
+      # assembled folder has to start, create a profile, launch the *bundled*
+      # Chromium and still have the profile after a restart. Freezing an engine
+      # that cannot open a browser is the exact failure this catches, and it
+      # looks like a successful build without it.
+      - name: Smoke the assembled artifact
+        run: bash scripts/smoke-portable.sh "build/$PLAT/Numera"
 
       - uses: actions/upload-artifact@v4
         with:
           name: numera-desktop-${{ runner.os }}
           path: build/${{ env.PLAT }}/Numera
 
-  # Windows has its own script: it bundles the Playwright browser and proves the
-  # static CRT took, neither of which the POSIX steps above do. Bolting it into
-  # that matrix would mean reimplementing both in bash.
+  # Windows has its own script: it proves the static CRT took, which the POSIX
+  # steps above have no equivalent of, and it is the same script a maintainer
+  # runs locally. Bolting it into that matrix would mean reimplementing it in
+  # bash. The browser bundle is the same on both, just expressed twice.
   desktop-windows:
     name: Desktop app (windows-latest)
     runs-on: windows-latest

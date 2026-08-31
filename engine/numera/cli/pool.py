@@ -19,7 +19,7 @@ def cmd_pool(args, store: ProfileStore) -> int:
     from .. import proxypool as pp
     from ..server import ProxyPool          # a plain JSON store; needs no FastAPI
 
-    pool = ProxyPool(store.root)
+    pool = ProxyPool(store.root, store)
     sub = args.pool_command
 
     if sub == "list":

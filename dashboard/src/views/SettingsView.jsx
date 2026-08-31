@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Blocks, Check, Copy, HardDrive, Info, KeyRound, Moon, Palette, Plus,
          Settings, Sun, Trash2 } from "lucide-react";
-import { api } from "../api";
+import { api, auth } from "../api";
 import { toast } from "../toast";
 import { ConfirmModal } from "../ui";
 import { T } from "../theme";
@@ -26,15 +26,25 @@ function ApiTokens({ live }) {
   const [confirm, setConfirm] = useState(null);
 
   const load = async () => {
-    try { setState(await api.listTokens()); } catch { /* offline or locked out */ }
+    try { setState(await api.listTokens()); } catch { /* offline; a 401 routes to the locked screen */ }
   };
   useEffect(() => { if (live) load(); }, [live]);
 
   const create = async () => {
     if (!name.trim()) return toast.error("Give the token a name — an unnamed token is one nobody can safely revoke later.");
+    // Read before the request that may change the answer.
+    const wasOpen = !state?.tokens?.length && !state?.envToken;
     setBusy(true);
     try {
       const made = await api.createToken(name.trim());
+      // If the API was open, this call is what locked it - on the same running
+      // server, from the next request onwards. Adopt the value we were just
+      // handed or `load()` below comes back 401, which now sends the whole app
+      // to the locked screen and takes the one-time token value off the page
+      // with it. When tokens already existed the session is holding a working
+      // credential; silently swapping it for one minted for a CI runner would
+      // mean revoking the CI runner locks the dashboard out.
+      if (wasOpen) auth.set(made.token);
       setMinted(made);
       setName("");
       setCopied(false);

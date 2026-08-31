@@ -15,11 +15,18 @@ npm install
 npm run dev        # opens http://localhost:5173
 ```
 
-Build for production:
+Start `numera serve` in another terminal and the two connect: the dev server
+forwards `/api` to `127.0.0.1:8787`, because Vite serves this app on 5173 while
+the engine listens on 8787. That forwarding is development-only - in production
+the engine serves the built bundle itself, so the client asks its own origin and
+needs no proxy.
+
+Build for production, and run the tests:
 
 ```bash
 npm run build      # outputs to dist/
 npm run preview
+npm test           # vitest, in test/
 ```
 
 ## What's inside
@@ -55,8 +62,10 @@ playwright install chromium
 numera serve
 ```
 
-Point the dashboard at a different API URL with a `VITE_API_URL` env var. The API
-client lives in [`src/api.js`](src/api.js).
+If the engine is on another port or host, either change the proxy target in
+[`vite.config.js`](vite.config.js) or set a `VITE_API_URL` env var, which the
+client uses directly and so bypasses the proxy. The API client lives in
+[`src/api.js`](src/api.js).
 
 ## Tech
 

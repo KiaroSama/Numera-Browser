@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+
+from .paths import write_batch, write_json
 from typing import Optional
 
 UNFILED = "Unfiled"
@@ -46,7 +48,7 @@ def _read_meta(root: Path) -> dict:
 
 
 def _write_meta(root: Path, meta: dict) -> None:
-    _meta_path(root).write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    write_json(_meta_path(root), meta)
 
 
 def _profiles(root: Path) -> list[tuple[Path, dict]]:
@@ -90,11 +92,16 @@ def rename(root: Path, src: str, dst: str) -> list[str]:
     src, dst = (src or "").strip(), (dst or "").strip()
     if not src or not dst:
         raise ValueError("both a source and a destination name are required")
-    for f, p in _profiles(root):
-        if p.get("folder") == src:
-            p["folder"] = dst
-            f.write_text(json.dumps(p, indent=2), encoding="utf-8")
-    return _persist(root, [dst if x == src else x for x in listing(root)])
+    # Every profile in the folder, or none of them. `write_text` straight into
+    # each file meant a failure part-way left some profiles moved and the rest
+    # behind, under a folder list that had already been updated - a state no
+    # screen shows correctly and no retry fixes.
+    with write_batch() as batch:
+        for f, p in _profiles(root):
+            if p.get("folder") == src:
+                p["folder"] = dst
+                batch.write(f, p)
+        return _persist(root, [dst if x == src else x for x in listing(root)])
 
 
 def delete(root: Path, name: str, reassign_to: Optional[str] = None) -> list[str]:
@@ -103,8 +110,9 @@ def delete(root: Path, name: str, reassign_to: Optional[str] = None) -> list[str
     if not name:
         raise ValueError("folder name required")
     target = (reassign_to or UNFILED).strip() or UNFILED
-    for f, p in _profiles(root):
-        if p.get("folder") == name:
-            p["folder"] = target
-            f.write_text(json.dumps(p, indent=2), encoding="utf-8")
-    return _persist(root, [x for x in listing(root) if x != name])
+    with write_batch() as batch:
+        for f, p in _profiles(root):
+            if p.get("folder") == name:
+                p["folder"] = target
+                batch.write(f, p)
+        return _persist(root, [x for x in listing(root) if x != name])

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Activity, Blocks, Boxes, Command, Download, FolderTree, Globe, KeyRound, Layers, Moon, Plus, Puzzle, RefreshCw, Server, Settings, ShieldAlert, ShieldCheck, Sun, Users, X, Zap } from "lucide-react";
-import { api, auth } from "./api";
+import { api, auth, setAuthLostHandler } from "./api";
 import { DARK, FONT, LIGHT, T, makeCss } from "./theme";
 import { FOLDERS, seed } from "./demoData";
 import { ENGINE_META, LOCALES, coherence, nid } from "./deviceData";
@@ -169,6 +169,16 @@ export default function App() {
   const live = mode === "live";
 
   const refresh = async () => setProfiles(await api.list());
+
+  // A 401 can arrive at any moment, not just on the first request: creating the
+  // first named token locks the running engine, and the token this session is
+  // using can be revoked from the Settings tab. Every one of them lands here, so
+  // the app can never sit in live mode issuing requests that are all rejected.
+  useEffect(() => {
+    setAuthLostHandler(e => { setAuthError(e.message); setMode("locked"); });
+    return () => setAuthLostHandler(null);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -187,10 +197,9 @@ export default function App() {
         } catch { /* optional */ }
         setMode("live");
       } catch (e) {
-        // A token that was accepted a moment ago can be revoked mid-session.
-        // That is still not demo mode.
-        if (e?.name === "AuthError") { setAuthError(e.message); setMode("locked"); }
-        else setMode("demo");
+        // A 401 is already on its way to the locked screen via the handler
+        // above; calling it demo mode here would paint sample data over it.
+        if (e?.name !== "AuthError") setMode("demo");
       }
     })();
     return () => { cancelled = true; };
