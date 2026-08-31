@@ -44,7 +44,7 @@ from dataclasses import dataclass
 from typing import Callable
 # Re-exported so `numera.server` keeps its whole surface: `cli/`, `mcp.py`
 # and the test suite import these by name.
-from .stores import DashboardStore, ProxyPool
+from .stores import DashboardStore, ProxyPool, TokenStore
 from .convert import (_parse_lines, _rel_time, _parse_startup_urls, _stable_seed,
                       dashboard_coherence, to_dashboard_profile,
                       to_engine_profile)
@@ -65,6 +65,7 @@ class _Ctx:
     engine_store: object
     dash: object
     pool: object
+    tokens: object
     sched: object
     running: dict
     attached: dict
@@ -103,6 +104,7 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
     engine_store = ProfileStore(data_dir)
     dash = DashboardStore(engine_store.root, engine_store)
     pool = ProxyPool(engine_store.root)
+    tokens = TokenStore(engine_store.root)
     sched = ScheduleStore(engine_store.root)
     running: dict[str, subprocess.Popen] = {}
     attached: dict[str, dict] = {}   # pid -> CDP connection info while attached
@@ -126,7 +128,11 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
         allow_headers=["*"],
     )
 
-    if api_token:
+    # Auth is on when the env var is set OR the user has minted a named token.
+    # The env var stays valid either way: it is the bootstrap credential the
+    # dashboard and any existing script already use, and pulling it out from
+    # under them the moment a named token is created would be a trap.
+    if api_token or tokens.list():
         @app.middleware("http")
         async def _require_token(request, call_next):
             # Preflight carries no Authorization header by design.
@@ -137,7 +143,11 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
                 sent = sent[7:]
             else:
                 sent = request.headers.get("x-numera-token", "")
-            if not secrets.compare_digest(sent.strip(), api_token):
+            sent = sent.strip()
+            ok = bool(api_token) and secrets.compare_digest(sent, api_token)
+            if not ok:
+                ok = tokens.verify(sent) is not None
+            if not ok:
                 from fastapi.responses import JSONResponse
                 return JSONResponse({"detail": "invalid or missing API token"}, status_code=401)
             return await call_next(request)
@@ -181,7 +191,7 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
         d["lastActive"] = "now" if running_now else _rel_time(d.get("_last_active"))
         return d
 
-    ctx = _Ctx(engine_store=engine_store, dash=dash, pool=pool, sched=sched,
+    ctx = _Ctx(engine_store=engine_store, dash=dash, pool=pool, tokens=tokens, sched=sched,
                running=running, attached=attached, start_scheduler=start_scheduler,
                is_running=is_running, stop_session=stop_session, decorate=decorate)
     routes_config.register(app, ctx)

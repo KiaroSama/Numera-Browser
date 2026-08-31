@@ -454,6 +454,23 @@ select.ps-in { cursor: pointer; }
 .ps-secline { flex: 1; height: 1px; background: var(--lineSoft); }
 /* The "based on IP" pill that rides in a field's own label. Deliberately quiet
    when off: it is a modifier on the field beside it, not a control of its own. */
+/* The count beside a tab label. Comes from the same filter that builds the
+   list, so it can never disagree with the rows underneath it. */
+/* A token is shown once. The block that shows it is deliberately loud, because
+   scrolling past it means minting another one. */
+.ps-token-new { border: 1px solid var(--violetDim); background: var(--bg); border-radius: 10px;
+  padding: 12px; margin-bottom: 14px; }
+.ps-token-value { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.ps-token-value code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap;
+  font-size: 12px; color: var(--lilac); background: var(--panel); border-radius: 6px; padding: 7px 9px; }
+.ps-token-table { margin-bottom: 12px; }
+.ps-token-table td, .ps-token-table th { padding: 7px 8px; font-size: 12px; }
+.ps-token-add { display: flex; gap: 8px; align-items: center; }
+.ps-token-add .ps-in { flex: 1; min-width: 0; }
+.ps-tab-n { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 999px;
+  background: var(--bg); color: var(--muted); font-size: 10px; font-weight: 700;
+  font-family: var(--mono, monospace); }
+.ps-tab.active .ps-tab-n { background: var(--violetDim); color: var(--lilac); }
 .ps-keep { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 6px; margin-bottom: 12px; }
 .ps-keep-item { display: flex; align-items: center; gap: 8px; text-align: left; padding: 8px 10px;
   border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--muted);

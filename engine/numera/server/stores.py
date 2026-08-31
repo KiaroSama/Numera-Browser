@@ -7,7 +7,9 @@ read."""
 
 from __future__ import annotations
 
+import hashlib
 import json
+import secrets
 import time
 import uuid
 from pathlib import Path
@@ -167,3 +169,74 @@ class ProxyPool:
             return False
         self._save(kept)
         return True
+
+
+class TokenStore:
+    """Named API tokens, stored as hashes.
+
+    `NUMERA_API_TOKEN` is one shared secret: rotating it locks out every client
+    at once and nothing records what a token was for. A table of named tokens
+    lets one integration be revoked without disturbing the rest.
+
+    Only the hash is kept. A token that can be read back out of a file is a
+    token the file has to be guarded like the secret itself, and there is no
+    reason to store it - verification only needs the digest.
+    """
+
+    def __init__(self, root: Path):
+        self.path = root / "tokens.json"
+
+    def list(self) -> list[dict]:
+        if not self.path.exists():
+            return []
+        try:
+            items = json.loads(self.path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return []
+        return items if isinstance(items, list) else []
+
+    def _save(self, items: list[dict]):
+        self.path.write_text(json.dumps(items, indent=2), encoding="utf-8")
+        # The digests are not secrets, but the file names every integration that
+        # can reach this machine. Keep it owner-only where the OS supports it.
+        try:
+            self.path.chmod(0o600)
+        except OSError:
+            pass
+
+    @staticmethod
+    def hash(token: str) -> str:
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    def create(self, name: str) -> dict:
+        """Mint a token. The value is returned once and never stored."""
+        token = "nmr_" + secrets.token_urlsafe(32)
+        entry = {"id": uuid.uuid4().hex[:12], "name": (name or "").strip() or "unnamed",
+                 "hash": self.hash(token), "created": time.time(), "lastUsed": None}
+        items = self.list()
+        items.append(entry)
+        self._save(items)
+        return {**entry, "token": token}
+
+    def revoke(self, tid: str) -> bool:
+        items = self.list()
+        keep = [t for t in items if t.get("id") != tid]
+        if len(keep) == len(items):
+            return False
+        self._save(keep)
+        return True
+
+    def verify(self, token: str) -> Optional[dict]:
+        """The matching entry, with its last-used stamp refreshed."""
+        if not token:
+            return None
+        digest = self.hash(token)
+        items = self.list()
+        for t in items:
+            # compare_digest on the hashes: the stored value is not secret, but
+            # the comparison still should not leak timing about a near-miss.
+            if secrets.compare_digest(str(t.get("hash", "")), digest):
+                t["lastUsed"] = time.time()
+                self._save(items)
+                return t
+        return None

@@ -50,7 +50,8 @@ def register(app, ctx):
         """
         if not pool.get(pid):
             raise HTTPException(404, "proxy not found")
-        allowed = {"label", "type", "host", "port", "user", "pass", "country"}
+        allowed = {"label", "type", "host", "port", "user", "pass", "country",
+                   "rotateUrl", "archived"}
         patch = {k: v for k, v in body.items() if k in allowed}
         if not patch:
             raise HTTPException(400, f"nothing to change - editable fields are {sorted(allowed)}")
@@ -148,14 +149,74 @@ def register(app, ctx):
         pool.update(pid, {"status": status, "lastCheck": res, "checkedAt": time.time()})
         return {**res, "status": status}
 
+    @app.post("/api/proxies/{pid}/rotate")
+    def rotate_proxy(pid: str):
+        """Ask a rotating proxy for a new exit IP and record what came back."""
+        from .. import proxypool as pp
+        proxy = pool.get(pid)
+        if not proxy:
+            raise HTTPException(404, "proxy not found")
+        res = pp.rotate(proxy)
+        patch = {"rotatedAt": time.time()} if res.get("rotated") else {}
+        if res.get("ok") is not None:
+            # A rotate carries a fresh health check with it; storing it means the
+            # row stops showing the address it used to have.
+            patch.update({"status": "ok" if res.get("ok") else "failed",
+                          "lastCheck": res, "checkedAt": time.time()})
+        if patch:
+            pool.update(pid, patch)
+        return res
+
+    @app.post("/api/proxies/rotate")
+    def rotate_proxies(body: dict):
+        """Rotate several. Serial on purpose: these hit one provider's control
+        plane, and firing eight at once is how a pool gets rate-limited."""
+        from .. import proxypool as pp
+        ids = body.get("ids") or []
+        targets = [p for p in (pool.get(i) for i in ids) if p]
+        if not targets:
+            raise HTTPException(400, "no proxies to rotate")
+        results = []
+        for proxy in targets:
+            res = pp.rotate(proxy)
+            patch = {"rotatedAt": time.time()} if res.get("rotated") else {}
+            if res.get("ok") is not None:
+                patch.update({"status": "ok" if res.get("ok") else "failed",
+                              "lastCheck": res, "checkedAt": time.time()})
+            if patch:
+                pool.update(proxy["id"], patch)
+            results.append({"id": proxy["id"], **res})
+        return {"rotated": sum(1 for r in results if r.get("rotated")),
+                "tried": len(results), "results": results}
+
+    @app.post("/api/proxies/archive")
+    def archive_proxies(body: dict):
+        """Retire proxies without deleting them.
+
+        Delete loses which profiles used a proxy and why it was dropped; archive
+        keeps the row and its last check, and only takes it out of assignment.
+        """
+        ids = body.get("ids") or []
+        if not isinstance(ids, list) or not ids:
+            raise HTTPException(400, "give a list of proxy ids to archive")
+        archived = bool(body.get("archived", True))
+        changed = [pool.update(i, {"archived": archived}) for i in ids if pool.get(i)]
+        return {"archived" if archived else "restored": len(changed),
+                "ids": [c["id"] for c in changed if c]}
+
     @app.post("/api/proxies/assign")
     def assign_proxies(body: dict):
         """Assign pool proxies across profiles, round-robin, aligning each
         profile's locale/timezone to its proxy country."""
         proxies = [pool.get(i) for i in body.get("proxyIds", [])] if body.get("proxyIds") else pool.list()
-        proxies = [p for p in proxies if p]
+        # An archived proxy is one the user retired. Handing it out again would
+        # make archiving a label rather than a decision - and an explicit id list
+        # is an explicit choice, so only the "whole pool" path filters.
+        proxies = [p for p in proxies if p and (body.get("proxyIds") or not p.get("archived"))]
         if not proxies:
-            raise HTTPException(400, "the proxy pool is empty")
+            raise HTTPException(400, "the proxy pool is empty"
+                                     if not pool.list() else
+                                     "every proxy in the pool is archived")
         ids = body.get("profileIds")
         targets = [dash.get(i) for i in ids] if ids else dash.list()
         targets = [t for t in targets if t]
