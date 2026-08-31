@@ -233,4 +233,4 @@ any *content*:
   generated client will not send the header.
 
 Treat the schema as a route index, not a contract. Fixing it means adding
-Pydantic models and `response_model=` in `server.py`.
+Pydantic models and `response_model=` in the `server/` route modules.

@@ -51,6 +51,7 @@ pick OS ──▶ archetype (devices.py) ──▶ Fingerprint ──▶ validat
 | `stealth.py` | Builds the per-fingerprint JS patch injected via `add_init_script` |
 | `launcher.py` | Thin dispatcher — resolves `profile.engine` and hands off to a driver |
 | `drivers.py` | Pluggable launch backends (playwright / patchright / camoufox) |
+| `server/` | The HTTP API, a package: `stores.py` (the two JSON stores), `convert.py` (dashboard shape <-> engine `Profile`), `spa.py` (serving the built dashboard), and one `routes_*.py` per group. Every route used to be a closure over `create_app`'s locals; each module now takes a `_Ctx` carrying them, so the bodies moved unchanged |
 | `cli/` | Command-line interface over the store + launcher. A package, split by responsibility: `out.py` (terminal output and `--json` mode), `profiles.py` (store-only commands), `browser.py` (anything that opens a real browser), `pool.py` (the proxy pool), `setup.py` (config, extensions, folders, vault, schedules, servers) and `parser.py` (the argparse tree). `__init__.py` re-exports `main` and `build_parser`, so `numera.cli` is imported exactly as before |
 
 ### Pluggable launch engines
@@ -113,7 +114,7 @@ back up or sync.
 
 ## Connecting the dashboard to the engine
 
-This is implemented. `engine/numera/server.py` exposes the engine over HTTP
+This is implemented. `engine/numera/server/` exposes the engine over HTTP
 (`numera serve`, default `http://127.0.0.1:8787`), and the dashboard talks to it
 through `dashboard/src/api.js`.
 
