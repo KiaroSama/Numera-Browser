@@ -134,17 +134,17 @@ def test_an_android_profile_reports_arm_and_its_handset(tmp_path):
     assert js["model"] == fp.device_model
 
 
-def test_an_ios_profile_has_no_userAgentData_and_coherent_hints(tmp_path):
-    """Real Safari sends no Client Hints, and Chromium under Playwright cannot
-    be made to stop.
+def test_an_ios_profile_sends_no_client_hints_at_all(tmp_path):
+    """Real Safari implements no Client Hints, so an iPhone that sends them is a
+    contradiction no real device produces.
 
-    `route.continue_(headers=...)` and every `--disable-features` combination
-    were measured against this server and changed nothing - Chromium appends the
-    trio after both. So the achievable goal is the in-page object being absent
-    (which is enforceable) and the headers agreeing with the rest of the
-    identity rather than contradicting it. The residual tell - an "iPhone" that
-    sends Client Hints at all - is a ceiling of the engine, recorded in
-    docs/architecture.md.
+    This used to assert the opposite - that the hints were present but at least
+    coherent - because nothing seemed able to remove them. Everything tried sat
+    at the same layer: `route.continue_(headers=...)`, `--disable-features=...`
+    and `--blink-settings=clientHintsEnabled=false` all try to suppress headers
+    Chromium has already decided to send, and Playwright's route API rebuilds
+    the set from `request.headers()`. Raw CDP `Fetch.continueRequest` replaces
+    the set instead, so a name left out never reaches the network.
     """
     fp = generate(os="ios")
     with Site() as site:
@@ -152,13 +152,20 @@ def test_an_ios_profile_has_no_userAgentData_and_coherent_hints(tmp_path):
         first, second = site.hints("/"), site.hints("/second")
 
     assert js["present"] is False, "navigator.userAgentData exists on an iOS profile"
-    assert first.get("sec-ch-ua-platform") == '"iOS"', first
-    assert first.get("sec-ch-ua-mobile") == "?1", first
-    # The OS version is a high-entropy hint, so it belongs on the opted-in
-    # request, not the first one. This used to assert it on `/` because every
-    # hint was pinned as a header and rode on every request.
-    assert second.get("sec-ch-ua-platform-version", '""').strip('"') == \
-        platform_version(fp.os, fp.os_version)
+    assert first == {}, f"an iPhone sent Client Hints: {first}"
+    # The second request is the one that matters most: the site has sent
+    # Accept-CH by then, which is when Chromium adds the high-entropy set.
+    assert second == {}, f"an iPhone sent Client Hints after Accept-CH: {second}"
+
+
+def test_stripping_the_hints_does_not_break_the_page(tmp_path):
+    """`Fetch.enable` pauses every request; one that is never continued hangs
+    the page forever. The subresource fetch proves requests still complete."""
+    fp = generate(os="ios")
+    with Site() as site:
+        visit(tmp_path, fp, site.url)
+        paths = [p for p, _ in site.seen]
+    assert "/" in paths and "/second" in paths, f"a request never completed: {paths}"
 
 
 def test_the_low_entropy_trio_is_always_present_for_chrome(tmp_path):
@@ -226,3 +233,14 @@ def test_an_apple_silicon_mac_reports_arm_in_the_page_and_on_the_wire(tmp_path):
 
     assert second["sec-ch-ua-arch"] == '"arm"', second["sec-ch-ua-arch"]
     assert js["architecture"] == "arm", "the page and the wire disagree on the CPU"
+
+
+def test_a_chrome_profile_still_sends_them(tmp_path):
+    """The strip is scoped to profiles whose browser has no Client Hints.
+    Removing them from a Chrome profile would be its own tell - every real
+    Chrome sends the trio unprompted."""
+    fp = generate(os="windows")
+    with Site() as site:
+        visit(tmp_path, fp, site.url)
+        first = site.hints("/")
+    assert set(first) == {"sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform"}, first

@@ -41,7 +41,7 @@ from __future__ import annotations
 
 import json
 
-from .fingerprint import ua_metadata, platform_version, ua_brands
+from .fingerprint import sends_client_hints, ua_metadata, platform_version, ua_brands
 from .models import Fingerprint
 
 
@@ -71,7 +71,7 @@ def build_init_script(fp: Fingerprint) -> str:
         "architecture": ua_metadata(fp)["architecture"],
         # WebKit ships no Client Hints at all, so an iOS profile has to have no
         # navigator.userAgentData rather than a plausible-looking one.
-        "hasUaData": fp.os != "ios",
+        "hasUaData": sends_client_hints(fp),
         "deviceModel": fp.device_model,
         "hardwareConcurrency": fp.hardware_concurrency,
         # 0 means "this platform does not expose deviceMemory" (iOS), which is a

@@ -103,15 +103,27 @@ pinned as a header as well - the values are identical, and it keeps the trio
 right if the CDP call ever fails. `_apply_ua_metadata` treats a failure on an
 existing page as fatal for exactly that reason.
 
-**The residual tell, and it is a real one:** an iOS profile still sends the
-low-entropy trio, and real Safari implements no Client Hints at all. Chromium
-adds them itself and nothing removes them - `route.continue_(headers=...)`,
+**Safari has no Client Hints at all**, so an iOS profile must send none - a
+header a real iPhone never sends is a contradiction, not a weak signal. Nothing
+declarative removes them: `route.continue_(headers=...)`,
 `--disable-features=UserAgentClientHint,AcceptCHFrame,CriticalClientHint` and
-`--blink-settings=clientHintsEnabled=false` were all measured against a local
-server and changed nothing. So an iPhone profile is detectable as not-Safari by
-that alone. `navigator.userAgentData` is deleted for iOS, which is enforceable,
-and the header values at least agree with the rest of the identity. Use the
-Camoufox engine when a profile must not look like Chromium at all.
+`--blink-settings=clientHintsEnabled=false` were each measured against a local
+server and changed nothing, and Playwright's route API rebuilds the header set
+from `request.headers()`, so it cannot drop what Chromium appends further down
+the stack.
+
+Raw CDP can. `Fetch.continueRequest` *replaces* the header set outright, so a
+name simply left out never reaches the network - measured, with the server
+receiving no `sec-ch-ua` before or after it sends `Accept-CH`. `navigator.
+userAgentData` is deleted in the page by the same rule, so the wire and the
+page agree. `fingerprint.sends_client_hints()` is that rule, in one place.
+
+The cost is a CDP round trip per request, so the stripping is only switched on
+for a profile that needs it. `Fetch` is enabled for the request stage alone:
+auth challenges are left alone so proxy credentials keep working, and no
+response body is buffered through it. Every code path reaches
+`continueRequest`, including the error path - with `Fetch` enabled, a request
+that is never continued hangs the page for good.
 
 ## Storage layout
 

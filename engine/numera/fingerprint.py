@@ -318,6 +318,17 @@ def validate(fp: Fingerprint) -> list[str]:
     return issues
 
 
+def sends_client_hints(fp: Fingerprint) -> bool:
+    """Whether the browser this profile claims to be implements Client Hints.
+
+    Safari does not - not on iOS and not anywhere else - so an iPhone profile
+    that sends `Sec-CH-UA` is a contradiction no real device produces. Every
+    place that has to agree about this reads it here: the headers, the launcher's
+    header stripping, and `navigator.userAgentData` in the page.
+    """
+    return fp.os != "ios"
+
+
 def _full_version(fp: Fingerprint) -> str:
     """The four-part Chrome version the full-version hints report."""
     major = fp.chrome_version.split(".")[0]
@@ -358,21 +369,18 @@ def ua_metadata(fp: Fingerprint) -> dict:
 def client_hint_headers(fp: Fingerprint) -> dict:
     """The same values as :func:`ua_metadata`, formatted as headers.
 
-    Split into what Chrome always sends and what it only sends after a site
-    opts in with ``Accept-CH``. The launcher pins the low set as a header - the
-    values are identical to the ones Chromium derives, so it costs nothing and
-    keeps the trio right if the CDP override never lands - and leaves the high
-    set to Chromium, which is the only way to get the *timing* right.
+    Split into what Chrome always sends and what it only sends after a site opts
+    in with ``Accept-CH``. The launcher pins the low set as a header - the values
+    are identical to the ones Chromium derives, so it costs nothing and keeps
+    the trio right if the CDP override never lands - and leaves the high set to
+    Chromium, which is the only way to get the *timing* right.
 
-    Not empty for iOS, though real Safari implements no Client Hints at all.
-    Chromium adds the low-entropy trio to every request itself and nothing
-    removes it - `route.continue_`, `--disable-features=UserAgentClientHint`
-    and `--blink-settings=clientHintsEnabled=false` were all measured against a
-    local server and changed nothing. So an iPhone profile sends hints a real
-    iPhone would not; the best available answer is values that at least agree
-    with the rest of the identity, and the residual tell is written down in
-    docs/architecture.md rather than papered over.
+    Empty for a profile whose browser implements no Client Hints. The launcher
+    also strips them off the wire, since Chromium adds them itself; see
+    ``_strip_client_hints``.
     """
+    if not sends_client_hints(fp):
+        return {"low": {}, "high": {}}
     m = ua_metadata(fp)
     return {
         "low": {
