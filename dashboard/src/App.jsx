@@ -36,7 +36,7 @@ import { CommandPalette } from "./views/CommandPalette";
 export class ErrorBoundary extends React.Component {
   state = { error: null };
   static getDerivedStateFromError(error) { return { error }; }
-  componentDidCatch(error, info) { console.error("Numera UI error:", error, info?.componentStack); }
+  componentDidCatch(error, info) { console.error("Numera Browser UI error:", error, info?.componentStack); }
   componentDidUpdate(prev) {
     if (this.state.error && prev.resetKey !== this.props.resetKey) this.setState({ error: null });
   }
@@ -339,7 +339,7 @@ export default function App() {
             <div className="ps-logo"><span className="ps-logo-glow" /><Fingerprint size={19} color="#fff" strokeWidth={2.2} /></div>
             <div>
               <div className="ps-brand-name">Numera</div>
-              <div className="ps-brand-sub">Studio</div>
+              <div className="ps-brand-sub">Browser</div>
             </div>
           </div>
 

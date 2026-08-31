@@ -1,4 +1,4 @@
-# Numera Dashboard
+# Numera Browser - Dashboard
 
 The web front-end for [Numera](../README.md) — an operations console for
 managing browser profiles, styled after commercial anti-detect browsers but

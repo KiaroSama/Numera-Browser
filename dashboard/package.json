@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.5.0",
   "type": "module",
-  "description": "Web dashboard for the Numera anti-detect browser profile manager.",
+  "description": "Web dashboard for Numera Browser, a self-hosted anti-detect browser profile manager.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "numera-engine"
 version = "0.5.0"
-description = "Coherent browser fingerprint & profile engine for Numera."
+description = "Coherent browser fingerprint & profile engine for Numera Browser."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "LicenseRef-Proprietary" }
@@ -24,9 +24,9 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/KiaroSama/Numera"
-Source = "https://github.com/KiaroSama/Numera"
-Issues = "https://github.com/KiaroSama/Numera/issues"
+Homepage = "https://github.com/KiaroSama/Numera-Browser"
+Source = "https://github.com/KiaroSama/Numera-Browser"
+Issues = "https://github.com/KiaroSama/Numera-Browser/issues"
 
 [project.optional-dependencies]
 launch = ["playwright>=1.40"]

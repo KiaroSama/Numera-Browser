@@ -1,4 +1,4 @@
-// Numera desktop shell.
+// Numera Browser desktop shell.
 //
 // The whole job of this binary: pick a free port, start the Python engine on it
 // with no console window, wait until it really answers /api/health, then point
@@ -60,7 +60,7 @@ fn main() {
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("failed to build the Numera window")
+        .expect("failed to build the Numera Browser window")
         .run(|handle, event| {
             if matches!(event, RunEvent::Exit) {
                 if let Some(engine) = handle.try_state::<Engine>() {
