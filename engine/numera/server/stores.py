@@ -103,10 +103,62 @@ class DashboardStore:
         f = self._path(pid)
         return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
 
+    # The vault encrypts the proxy password in the engine's own profile file.
+    # This store writes a second copy of the same profile, and it was writing
+    # that password in plaintext - so turning the vault on protected one file
+    # and left the secret readable in the one beside it.
+    SECRET = ("proxy", "pass")
+
+    def _guard_secrets(self, prof: dict) -> dict:
+        """Return a copy that never carries a plaintext secret past the vault.
+
+        Three cases, and the middle one is the bug the audit found:
+
+        * no vault - unchanged; there is nothing to protect it from.
+        * vault locked - the password cannot be encrypted, so a *new* one is
+          refused rather than written in the clear, and an *unchanged* one keeps
+          whatever is already on disk. Editing the profile name used to blank
+          the stored password, because the dashboard sends back the redacted
+          value it was given.
+        * vault unlocked - store the ciphertext the engine store would store.
+        """
+        engine = self._engine
+        if engine is None or not getattr(engine, "vault_enabled", lambda: False)():
+            return prof
+
+        a, b = self.SECRET
+        node = prof.get(a)
+        secret = node.get(b) if isinstance(node, dict) else None
+        existing = (self.get(prof["id"]) or {}).get(a) or {}
+        stored = existing.get(b) if isinstance(existing, dict) else None
+
+        if not secret:
+            return prof
+        from .. import crypto
+
+        if crypto.is_encrypted(secret):
+            return prof                     # already ciphertext; nothing to do
+
+        if not engine.unlocked():
+            if stored and secret == "\u2022" * len(str(secret)):
+                pass                        # a redaction placeholder, not a change
+            if stored:
+                # Keep what is on disk rather than overwriting it with something
+                # we cannot encrypt.
+                out = {**prof, a: {**node, b: stored}}
+                return out
+            raise PermissionError(
+                "the vault is locked, so this proxy password cannot be stored "
+                "safely - unlock it with `numera vault unlock` first")
+
+        v = engine.vault()
+        return {**prof, a: {**node, b: crypto.encrypt(engine._password, v["salt"], secret)}}
+
     def save(self, prof: dict) -> dict:
         if not prof.get("id"):
             prof["id"] = uuid.uuid4().hex[:12]
         prof.setdefault("_created", time.time())
+        prof = self._guard_secrets(prof)
         self._path(prof["id"]).write_text(json.dumps(prof, indent=2), encoding="utf-8")
         self._mirror(prof)
         return prof
