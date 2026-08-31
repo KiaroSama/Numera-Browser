@@ -26,6 +26,7 @@ from __future__ import annotations
 import time
 from typing import Optional
 
+from .devices import same_timezone as _same_timezone
 from .drivers import session
 from .models import Profile
 from .store import ProfileStore
@@ -172,7 +173,8 @@ def check_proxy(profile: Profile, store: ProfileStore,
 
     if info.get("timezone"):
         checks.append(_check(
-            "Timezone matches the exit location", info["timezone"] == fp.timezone,
+            "Timezone matches the exit location",
+            _same_timezone(info["timezone"], fp.timezone),
             f"profile says {fp.timezone}, the IP looks like {info['timezone']}"))
 
     checks += leaks["checks"]
@@ -608,7 +610,11 @@ def _grade(fp, seen: dict, engine_name: str) -> dict:
                f"expected {fp.hardware_concurrency}, got {seen['cores']}"),
         _check("Device memory matches", seen["memory"] == fp.device_memory,
                f"expected {fp.device_memory}, got {seen['memory']}"),
-        _check("Timezone matches the locale", seen["timezone"] == fp.timezone,
+        # Alias-aware: the browser answers from CLDR, which still calls
+        # `Asia/Kolkata` by its old name, so a string compare failed a profile
+        # that was in fact coherent.
+        _check("Timezone matches the locale",
+               _same_timezone(seen["timezone"], fp.timezone),
                f"expected {fp.timezone}, got {seen['timezone']}"),
         _check("Patched functions still look native", seen["toStringNative"],
                "toString() on a patched function must read '[native code]'"),

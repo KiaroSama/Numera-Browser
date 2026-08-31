@@ -4,6 +4,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-09-01
+
+### Fixed
+
+- **The trust report failed a coherent profile over a renamed timezone.** A profile set to
+  `Asia/Kolkata` is reported by the browser as `Asia/Calcutta` - CLDR, which is what Chromium
+  answers `Intl.DateTimeFormat().resolvedOptions().timeZone` from, kept the old id. Comparing the
+  strings called one zone under two names a contradiction, so every Indian-locale profile lost a
+  point it should not have. Both timezone checks (the in-page one and the exit-location one) now
+  use `devices.same_timezone()`, which knows the tz-database links. It is not an offset comparison:
+  two genuinely different zones can share an offset all year, and treating those as equal would
+  hide a real contradiction.
+
 ## [0.11.0] - 2026-08-31
 
 ### Fixed
