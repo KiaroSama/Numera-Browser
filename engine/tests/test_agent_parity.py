@@ -94,6 +94,12 @@ PARITY: dict[str, tuple[str, tuple[tuple[str, ...], ...], str]] = {
     "exportProxies":   (CLI, (("pool", "export"),), "the dashboard builds the file in the "
                                                     "browser; `pool export` writes the same "
                                                     "lines, and both re-import"),
+    "rotateProxy":     (CLI, (("pool", "rotate"),), ""),
+    "rotateProxies":   (CLI, (("pool", "rotate"),), "takes several ids"),
+    "archiveProxies":  (CLI, (("pool", "archive"),), "`--restore` puts them back"),
+    "listTokens":      (CLI, (("token", "list"),), ""),
+    "createToken":     (CLI, (("token", "create"),), "the value is printed once, then only hashed"),
+    "revokeToken":     (CLI, (("token", "revoke"),), ""),
     "assignProxies":   (CLI, (("pool", "assign"),), ""),
     "listSchedules":   (CLI, (("schedule", "list"),), ""),
     "addSchedule":     (CLI, (("schedule", "add"),), ""),
@@ -277,12 +283,17 @@ def test_dashboard_routes_all_exist_on_the_api(tmp_path):
     app = create_app(str(tmp_path), start_scheduler=False)
     served = {(m, getattr(r, "path", "")) for r in app.routes
               for m in (getattr(r, "methods", None) or ())}
+    # api.js writes `${id}` where FastAPI writes `{pid}` / `{sid}` / `{tid}`, and
+    # the names never have to agree. Comparing shapes rather than spellings means
+    # a route with a new parameter name needs no hand-written alias here - the
+    # previous version carried one for schedules and would have needed another
+    # for every route added since.
+    def shape(path):
+        return re.sub(r"(\$\{[^}]+\}|\{[^}]+\})", "{}", path)
+
     for name, (method, path) in dashboard_calls().items():
-        # api.js writes template literals where FastAPI writes a path parameter.
-        route = re.sub(r"\$\{[^}]+\}", "{pid}", path)
-        route = route.replace("/api/schedules/{pid}", "/api/schedules/{sid}")
-        assert (method, route) in served, \
-            f"api.{name} calls {method} {route}, which no route serves"
+        assert (method, shape(path)) in {(m, shape(r)) for m, r in served}, \
+            f"api.{name} calls {method} {shape(path)}, which no route serves"
 
 
 # --------------------------------------------------------------------------

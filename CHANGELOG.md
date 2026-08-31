@@ -4,8 +4,24 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-31
+
 ### Added
 
+- **Rotating proxies.** Store a provider's change-IP URL and rotate from the row, in bulk, or with
+  `numera pool rotate`. Numera fetches the endpoint, **re-tests the proxy and compares the exit
+  IP**: a provider that answers 200 and does nothing is reported as *not moved*, because the
+  alternative is a button that lies. A rotate within 20 seconds of the last one is refused, since
+  every provider rate-limits this and would hand back the address you already had.
+- **All / Errors / Archive on the proxy page.** Archiving retires a proxy without deleting it, so
+  which profiles used it and why it was dropped are not lost, and `assign` skips it. The tab counts
+  come from the same filter that builds the list, so the number can never disagree with the rows.
+  `numera pool archive [--restore]` does the same headlessly.
+- **Named API tokens.** `NUMERA_API_TOKEN` is one shared secret: rotating it locks out every client
+  at once and nothing records what a token was for. Named tokens are created in Settings or with
+  `numera token create <name>`, shown **once**, and stored only as a SHA-256 - there is no file that
+  leaking would expose. Revoking one leaves the rest working. The env var stays valid alongside
+  them, because it is what the dashboard and any existing script already use.
 - **A deterministic avatar per profile.** A list of fifty is read by name, one row
   at a time; a shape is recognised at a glance. Derived from the profile id, so it
   never changes, nothing is stored and no network is involved.
@@ -20,6 +36,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Settings said "0 proxies" beside a pool of 27.** The only number the dashboard had was how
+  many *profiles were using* a proxy, which is a different question from what is on disk. The
+  config endpoint reports the stored count now.
 - **The version in the sidebar was a literal `v0.1.0`.** It is the number a user
   actually looks at, and it never read the real one - which is why the app appeared
   stuck at 0.1.0 through three releases. The Settings page had the same fault as a

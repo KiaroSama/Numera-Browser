@@ -108,6 +108,62 @@ def cmd_vault(args, store: ProfileStore) -> int:
     return emit({"ok": False, "error": f"unknown vault command '{args.vault_command}'"}, 1)
 
 
+def cmd_token(args, store: ProfileStore) -> int:
+    """Named API tokens for the HTTP surface.
+
+    `NUMERA_API_TOKEN` is one shared secret: rotating it locks out every client
+    at once. A named token can be revoked on its own, and the table records what
+    each one was for and when it was last seen.
+    """
+    import os
+    import time as _t
+
+    from ..server import TokenStore   # a plain JSON store; needs no FastAPI
+
+    tokens = TokenStore(store.root)
+    sub = args.token_command
+
+    if sub == "list":
+        items = tokens.list()
+        env = bool((os.environ.get("NUMERA_API_TOKEN") or "").strip())
+        if not items:
+            say(_c("No named tokens." + (" NUMERA_API_TOKEN is set, so the API "
+                   "still requires it." if env else " The API is open on this machine."),
+                   C.DIM))
+        else:
+            say(_c(f"{'ID':<14}{'NAME':<24}{'CREATED':<22}LAST USED", C.B))
+            for t in items:
+                stamp = _t.strftime("%Y-%m-%d %H:%M", _t.localtime(t.get("created", 0)))
+                used = (_t.strftime("%Y-%m-%d %H:%M", _t.localtime(t["lastUsed"]))
+                        if t.get("lastUsed") else "never")
+                say(f"{t['id']:<14}{t['name'][:23]:<24}{stamp:<22}{used}")
+        return emit({"tokens": [{k: v for k, v in t.items() if k != "hash"} for t in items],
+                     "envToken": env})
+
+    if sub == "create":
+        name = (args.name or "").strip()
+        if any(t.get("name") == name for t in tokens.list()):
+            say(_c(f"A token called {name!r} already exists.", C.RED))
+            return emit({"ok": False, "error": f"a token called {name!r} already exists"}, 1)
+        made = tokens.create(name)
+        # Printed once, deliberately: only the hash is stored, so there is no
+        # second chance to read it and no file to leak it from.
+        say(_c(f"{made['token']}", C.GRN))
+        say(_c("Copy it now - only its hash is stored, so this is the only time "
+               "it can be shown.", C.DIM))
+        return emit(made)
+
+    if sub == "revoke":
+        if not tokens.revoke(args.id):
+            say(_c("No token with that id.", C.RED))
+            return emit({"ok": False, "error": "no token with that id"}, 1)
+        say(_c("Revoked.", C.GRN))
+        return emit({"ok": True, "remaining": len(tokens.list())})
+
+    say(_c(f"Unknown token command: {sub}", C.RED))
+    return emit({"ok": False, "error": f"unknown token command: {sub}"}, 1)
+
+
 def cmd_folder(args, store: ProfileStore) -> int:
     """Folders were GUI-only until now (B18). The rules live in numera.folders so
     this and the HTTP API cannot disagree about what a rename does to the

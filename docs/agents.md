@@ -110,9 +110,21 @@ curl -s localhost:8787/api/profiles | jq
 ```
 
 Set `NUMERA_API_TOKEN` before serving to require `Authorization: Bearer <token>`
-on every request; it also narrows CORS, which is the point of it — a wildcard
+on every request; it also narrows CORS, which is the point of it - a wildcard
 origin plus a token is a token any web page can spend. `NUMERA_ALLOWED_ORIGINS`
 sets the list explicitly.
+
+**Named tokens** are the better option once more than one thing calls the API.
+`numera token create "CI runner"` mints one, prints it **once**, and stores only
+its SHA-256 - so there is no file that leaking would expose and no way to read it
+back. `numera token list` shows what exists and when each was last seen;
+`numera token revoke <id>` closes one door without touching the others. The
+Settings page has the same table.
+
+Minting the first named token turns auth on by itself, exactly as the env var
+does. The env var keeps working alongside them: it is the credential the
+dashboard and any existing script already use, and revoking every named token
+does not reopen a server that still has it set.
 
 FastAPI publishes a schema at `/openapi.json` and a browsable form at `/docs`.
 Read [the caveats below](#what-the-openapi-schema-does-not-tell-you) before
@@ -234,9 +246,9 @@ any *content*:
 * **The failure modes are undocumented.** The `409` from launching a profile
   whose session is in use, the `404`s, the `400` from an unparseable proxy list —
   none appear. Only the automatic `422` does.
-* **Bearer auth is invisible.** `NUMERA_API_TOKEN` adds a middleware that
-  answers `401`; no security scheme or `401` response is declared, so a
-  generated client will not send the header.
+* **Bearer auth is invisible.** `NUMERA_API_TOKEN` - or any named token - adds a
+  middleware that answers `401`; no security scheme or `401` response is
+  declared, so a generated client will not send the header.
 
 Treat the schema as a route index, not a contract. Fixing it means adding
 Pydantic models and `response_model=` in the `server/` route modules.

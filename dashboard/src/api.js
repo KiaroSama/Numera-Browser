@@ -107,6 +107,16 @@ export const api = {
   updateProxy: (id, patch) => req("PUT", `/api/proxies/${id}`, patch),
   testProxy: (id) => req("POST", `/api/proxies/${id}/test`),
   assignProxies: (profileIds, proxyIds) => req("POST", "/api/proxies/assign", { profileIds, proxyIds }),
+  // Rotating proxies: ask the provider's change-IP endpoint for a new exit IP.
+  // The engine re-checks afterwards, so `rotated` means the address really moved.
+  rotateProxy: (id) => req("POST", `/api/proxies/${id}/rotate`),
+  rotateProxies: (ids) => req("POST", "/api/proxies/rotate", { ids }),
+  // Archive retires a proxy without losing it or which profiles used it.
+  archiveProxies: (ids, archived = true) => req("POST", "/api/proxies/archive", { ids, archived }),
+  // Named API tokens. The value comes back from create() once and never again.
+  listTokens: () => req("GET", "/api/tokens"),
+  createToken: (name) => req("POST", "/api/tokens", { name }),
+  revokeToken: (id) => req("DELETE", `/api/tokens/${id}`),
   // Scheduled warm-up: recurring, unattended aging of a profile's session.
   listSchedules: () => req("GET", "/api/schedules"),
   addSchedule: (s) => req("POST", "/api/schedules", s),
