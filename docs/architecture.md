@@ -136,9 +136,24 @@ Three surfaces, one engine:
                             on a port it picks at runtime
     numera <command>        the CLI, for headless and scripted use
 
-The dashboard's own files split by responsibility: `theme.js` holds the
-palettes, the CSS custom properties and the stylesheet; `App.jsx` holds state
-and views; `api.js` is the only place that knows about HTTP.
+The dashboard's own files split by responsibility, and the dependencies point
+one way — `App` → views → primitives → leaf, with no cycles:
+
+    App.jsx         state, routing, and the error boundary. Nothing else.
+    views/          one file per view (Profiles, Extensions, Engines, Editor,
+                    Health, Proxies, Automation, Folders, Settings, plus the
+                    bulk modals and the command palette)
+    ui.jsx          primitives more than one view needs
+    deviceData.js   device archetypes and the coherence check — the mirror of
+                    numera/devices.py and numera/fingerprint.py
+    demoData.js     sample profiles for demo mode, kept away from the real
+                    tables so fabricated rows cannot reach live mode
+    toast.jsx       the toast store and its renderer
+    theme.js        palettes, CSS custom properties, the stylesheet
+    api.js          the only place that knows about HTTP
+
+A component used by exactly one view lives in that view's file; `ui.jsx` is for
+the genuinely shared ones.
 
 ```
  Dashboard (React)                     Engine API (FastAPI)              Engine core

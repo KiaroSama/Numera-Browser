@@ -2,9 +2,9 @@
  *  Numera — theme
  *
  *  Everything that decides how the app looks: the palettes, the CSS custom
- *  properties they are emitted as, and the stylesheet itself. Split out of
- *  App.jsx because it is a single responsibility and was most of the file's
- *  bulk — App.jsx is views and state, this is appearance.
+ *  properties they are emitted as, and the stylesheet itself. The first module
+ *  to come out of App.jsx, and the cleanest cut — appearance depends on nothing
+ *  else here, so it imports nothing local. The views followed later.
  *
  *  `T` is exported as a live mutable object on purpose. The remaining inline
  *  styles in JSX read it directly, and switching theme mutates it in place
