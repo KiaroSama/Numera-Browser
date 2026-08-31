@@ -352,6 +352,7 @@ in place of the bearer header.
 | GET | `/api/profiles/collisions` | Groups of profiles that share a fingerprint |
 | POST | `/api/profiles/bulk` | Apply one `patch` to many `ids` |
 | POST | `/api/profiles/batch` | Save many generated `profiles` at once (bulk create) |
+| POST | `/api/profiles/delete` | Delete many `ids` in one call; reports `removed`, `missing`, `failed` |
 | POST | `/api/profiles/import` | Import GoLogin/AdsPower/Multilogin export `text` |
 | GET | `/api/proxies` | List the proxy pool, each entry with how many profiles use it |
 | POST | `/api/proxies` | Import proxies from `text` (or a `proxies` list) |
