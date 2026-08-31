@@ -149,7 +149,24 @@ if (Test-Path $dataDir) {
     Move-Item $dataDir $dataKeep
     Step "Preserving existing data directory across the rebuild"
 }
-if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+$clearFailed = $null
+if (Test-Path $stage) {
+    try { Remove-Item $stage -Recurse -Force -ErrorAction Stop }
+    catch { $clearFailed = $_ }
+    if (-not $clearFailed -and (Test-Path $stage)) { $clearFailed = "the folder is still there" }
+}
+if ($clearFailed) {
+    # Put the data back before giving up. It was moved to a temp folder a few
+    # lines up, and abandoning it there would be worse than the wipe this guard
+    # exists to prevent: the next build would start from an empty data dir and
+    # the profiles would look deleted.
+    if ($dataKeep -and (Test-Path $dataKeep)) {
+        New-Item -ItemType Directory -Force -Path $stage | Out-Null
+        Move-Item $dataKeep $dataDir
+    }
+    throw ("could not clear $stage - close Numera if it is running from there, then " +
+           "build again. Continuing would ship the previous build. ($clearFailed)")
+}
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 if ($dataKeep) {
     Move-Item $dataKeep $dataDir
