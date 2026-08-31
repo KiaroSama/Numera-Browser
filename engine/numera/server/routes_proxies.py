@@ -131,11 +131,16 @@ def register(app, ctx):
         def run(proxy):
             res = pp.check(proxy)
             status = "ok" if res.get("ok") else ("skipped" if res.get("ok") is None else "failed")
-            pool.update(proxy["id"], {"status": status, "lastCheck": res, "checkedAt": time.time()})
             return {"id": proxy["id"], "status": status, **res}
 
         with ThreadPoolExecutor(max_workers=min(8, len(targets))) as ex:
             results = list(ex.map(run, targets))
+        # One write for the whole sweep. Updating per proxy meant N locked
+        # read-modify-write cycles over the entire pool file for one button.
+        pool.update_many({r["id"]: {"status": r["status"],
+                                    "lastCheck": {k: v for k, v in r.items()
+                                                  if k not in ("id", "status")},
+                                    "checkedAt": time.time()} for r in results})
         for p in withheld:
             results.append({"id": p["id"], "status": "skipped",
                             "error": "password locked; unlock to test this proxy"})

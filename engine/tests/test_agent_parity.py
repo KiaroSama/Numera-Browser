@@ -70,6 +70,7 @@ PARITY: dict[str, tuple[str, tuple[tuple[str, ...], ...], str]] = {
                         "edit/apply/regen cover the fields they name; export -> edit the "
                         "JSON -> import is the full-fidelity path for everything else"),
     "remove":          (CLI, (("delete",),), ""),
+    "removeMany":      (CLI, (("delete",),), "`delete` takes several refs"),
     "launch":          (CLI, (("launch",),), "add --detach for a job handle"),
     "stop":            (CLI, (("stop",),), "ends the jobs started with --detach"),
     "exportCookies":   (CLI, (("cookies", "export"),), ""),
