@@ -65,7 +65,7 @@ function SettingsView({ live, config, engines, defaultEngine, onChangeEngine, pa
           <div className="ps-set-h"><Info size={15} color={T.violet} /> About</div>
           <div className="ps-set-row">
             <div className="ps-set-label">Numera</div>
-            <span className="ps-pill" style={{ background: T.violetDim, color: T.lilac }}>v{config?.version || "0.1.0"}</span>
+            <span className="ps-pill" style={{ background: T.violetDim, color: T.lilac }}>{config?.version ? "v" + config.version : "version unknown"}</span>
           </div>
           <div className="ps-set-note" style={{ marginTop: 6 }}>Self-hosted anti-detect browser &amp; profile manager. {live ? "Engine connected." : "Running in demo mode — start numera serve to go live."}</div>
         </div>

@@ -4,6 +4,56 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-31
+
+### Added
+
+- **The profile editor is a full page, not a 580px drawer**, with a two-column body and a
+  **profile summary** panel listing every resolved value while you edit - so a contradiction is
+  visible at the moment you create it rather than at the next trust check.
+- **Six fields the engine had always read but the editor never offered**: client rects, WebGL
+  image, media devices, WebGL vendor, speaker count and an editable font list. Every profile had
+  been silently taking the default. `test_editor_covers_the_engine.py` now compares what
+  `to_engine_profile` consumes against what the dashboard writes, so a field cannot again be
+  readable by the engine and unreachable in the UI.
+- **Bookmarks.** `Name | URL` per line, written into the profile's own Chromium bookmark file just
+  before launch and **merged** - anything bookmarked inside the browser survives, and relaunching
+  does not duplicate. An account with an empty bookmark bar reads as new.
+- **Extra Chromium arguments**, appended to the flags Numera already sets. They land on the real
+  command line; a live test asserts a flag changes what the running page reports.
+- **DNS over HTTPS.** Chromium has no plain-nameserver flag, so a well-known resolver address is
+  mapped to its DoH endpoint and a custom endpoint can be typed. An address that cannot be honoured
+  is **refused at launch** rather than ignored - a leak you believe is closed is worse than a
+  failure you can see.
+- **Timezone, geolocation and languages can follow the proxy's real exit IP**, resolved at launch
+  because the exit country is not knowable before then. A stored timezone is a guess made when the
+  profile was created; a clock that disagrees with the IP is the cheapest tell there is.
+- **What carries over between launches** is now per-profile: cookies, local storage, IndexedDB,
+  open tabs, history, saved passwords, extension data and bookmarks. Unticked stores are cleared on
+  the way *in*, so a session that ends in a crash still starts clean. The default is full
+  persistence, which is what every existing profile already had.
+- **The proxy pool page got the operations it was missing**: multi-select with select-all, bulk
+  test, bulk export, bulk delete, an edit dialog, and a masked password with reveal and copy.
+  Deleting asks first, and says how many profiles use the proxy.
+
+### Fixed
+
+- **The proxy Test button did nothing for SOCKS proxies** - most of a real pool. `urllib` has no
+  SOCKS transport, so the check reported "test it via a profile" instead of testing. It borrows
+  `relay.py`, which already speaks SOCKS5, and reports the exit IP and country like any other. A
+  credentials failure is now distinguishable from a refused connection.
+- **The dashboard 404'd from a source checkout** after `server.py` became a package: the path that
+  finds `dist/` was still counting parents from the old depth. Every test passed and every page was
+  missing.
+
+### Changed
+
+- `App.jsx` (2463 lines), `cli.py` (1725) and `server.py` (1466) are each now a package of focused
+  modules, largest 414. No behaviour change: verified by declaration inventory, bundle size, and a
+  before/after screenshot diff inside the same-build noise floor.
+- **One version number.** The engine had reached 0.3.0 while the desktop app and the dashboard sat
+  at 0.1.0 from the first commit. All five manifests now agree, and a test fails if they drift.
+
 ### Added
 
 - **Install an extension from a Chrome Web Store link.** Paste the store URL on the Extensions page
