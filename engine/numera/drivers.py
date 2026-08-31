@@ -145,6 +145,51 @@ def _dns_args(profile: Profile) -> list[str]:
             "--dns-over-https-mode=secure"]
 
 
+# What each "don't carry this over" switch has to remove. Paths are relative to
+# the profile directory Chromium actually uses; the journal/companion files come
+# too, because leaving one behind gets the store rebuilt from it.
+CLEARABLE = {
+    "history": ["Default/History", "Default/History-journal",
+                "Default/Top Sites", "Default/Top Sites-journal",
+                "Default/Visited Links"],
+    "passwords": ["Default/Login Data", "Default/Login Data-journal",
+                  "Default/Login Data For Account",
+                  "Default/Login Data For Account-journal"],
+    "cookies": ["Default/Network/Cookies", "Default/Network/Cookies-journal"],
+    "localStorage": ["Default/Local Storage"],
+    "indexedDb": ["Default/IndexedDB"],
+    "sessions": ["Default/Sessions", "Default/Current Session",
+                 "Default/Current Tabs", "Default/Last Session",
+                 "Default/Last Tabs"],
+    "extensionData": ["Default/Local Extension Settings",
+                      "Default/Extension State", "Default/Sync Extension Settings"],
+    "bookmarks": ["Default/Bookmarks", "Default/Bookmarks.bak"],
+}
+
+
+def _clear_unkept(profile: Profile, user_data_dir) -> None:
+    """Drop the stores this profile is set not to carry between launches.
+
+    Cleared on the way *in* rather than on the way out: there is exactly one
+    place to do it, and a session that ends by crashing still starts clean next
+    time. Chromium recreates each of these on demand, so removing them is a
+    reset, not damage.
+    """
+    import shutil
+
+    root = Path(user_data_dir)
+    for key in (getattr(profile, "clear_on_start", None) or []):
+        for rel in CLEARABLE.get(key, ()):
+            target = root / rel
+            if target.is_dir():
+                shutil.rmtree(target, ignore_errors=True)
+            elif target.exists():
+                try:
+                    target.unlink()
+                except OSError:
+                    pass  # locked by a session still shutting down; next launch gets it
+
+
 def _seed_bookmarks(profile: Profile, user_data_dir) -> None:
     """Merge the profile's bookmarks into Chromium's bookmark bar.
 
@@ -355,6 +400,7 @@ def session(profile: Profile, store, engine: Optional[str] = None,
 def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: bool,
                             keep_open: bool, extra_args=None):
     profile = _resolve_ip_based(profile)
+    _clear_unkept(profile, store.user_data_path(profile.id))
     _seed_bookmarks(profile, store.user_data_path(profile.id))
     fp = profile.fingerprint
     launch_args = [
@@ -514,6 +560,7 @@ def _driver_cloak(profile, store, headless=False, keep_open=True, extra_args=Non
     import cloakbrowser
 
     profile = _resolve_ip_based(profile)
+    _clear_unkept(profile, store.user_data_path(profile.id))
     _seed_bookmarks(profile, store.user_data_path(profile.id))
     fp = profile.fingerprint
     proxy_cfg, relay = _browser_proxy(profile)

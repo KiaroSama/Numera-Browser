@@ -438,6 +438,15 @@ select.ps-in { cursor: pointer; }
 .ps-secline { flex: 1; height: 1px; background: var(--lineSoft); }
 /* The "based on IP" pill that rides in a field's own label. Deliberately quiet
    when off: it is a modifier on the field beside it, not a control of its own. */
+.ps-keep { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 6px; margin-bottom: 12px; }
+.ps-keep-item { display: flex; align-items: center; gap: 8px; text-align: left; padding: 8px 10px;
+  border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--muted);
+  font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer; transition: .14s; }
+.ps-keep-item:hover { border-color: var(--muted); }
+.ps-keep-item.on { color: var(--text); border-color: var(--violetDim); }
+.ps-keep-box { display: grid; place-items: center; width: 15px; height: 15px; flex: none;
+  border: 1px solid var(--line); border-radius: 4px; color: var(--lilac); }
+.ps-keep-item.on .ps-keep-box { background: var(--violetDim); border-color: transparent; }
 .ps-ipsw { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; vertical-align: middle;
   border: 1px solid var(--line); background: var(--bg); color: var(--muted);
   font-size: 9.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;

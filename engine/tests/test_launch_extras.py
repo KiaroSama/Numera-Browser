@@ -221,3 +221,63 @@ def test_a_profile_saved_before_these_fields_existed_still_loads():
         d.pop(key)
     back = Profile.from_dict(d)
     assert (back.launch_args, back.bookmarks, back.dns, back.ip_based) == ([], [], "", [])
+
+
+# --- what carries over between launches ------------------------------------
+
+def seed(root: Path, *rels):
+    for rel in rels:
+        f = root / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text("x", encoding="utf-8")
+
+
+def test_an_unticked_store_is_gone_before_the_browser_opens(tmp_path):
+    seed(tmp_path, "Default/History", "Default/History-journal",
+         "Default/Login Data", "Default/Network/Cookies")
+    drivers._clear_unkept(profile(clear_on_start=["history"]), tmp_path)
+    assert not (tmp_path / "Default" / "History").exists()
+    assert not (tmp_path / "Default" / "History-journal").exists(), \
+        "the journal rebuilds the store it was supposed to replace"
+    assert (tmp_path / "Default" / "Login Data").exists(), "cleared more than asked"
+    assert (tmp_path / "Default" / "Network" / "Cookies").exists()
+
+
+def test_a_cleared_directory_goes_with_its_contents(tmp_path):
+    seed(tmp_path, "Default/Local Storage/leveldb/000003.log")
+    drivers._clear_unkept(profile(clear_on_start=["localStorage"]), tmp_path)
+    assert not (tmp_path / "Default" / "Local Storage").exists()
+
+
+def test_the_default_profile_carries_everything(tmp_path):
+    """Every profile that existed before this feature has an empty list, so the
+    default has to be full persistence or upgrading would wipe live sessions."""
+    files = ["Default/History", "Default/Login Data", "Default/Network/Cookies"]
+    seed(tmp_path, *files)
+    drivers._clear_unkept(profile(), tmp_path)
+    assert all((tmp_path / f).exists() for f in files)
+
+
+def test_an_unknown_key_cannot_delete_anything(tmp_path):
+    seed(tmp_path, "Default/History")
+    drivers._clear_unkept(profile(clear_on_start=["../../etc", "everything"]), tmp_path)
+    assert (tmp_path / "Default" / "History").exists()
+
+
+def test_clearing_bookmarks_still_reseeds_the_configured_ones(tmp_path):
+    """Order matters: clear, then seed. The other way round leaves an empty bar."""
+    p = profile(clear_on_start=["bookmarks"],
+                bookmarks=[{"name": "A", "url": "https://a.test"}])
+    drivers._seed_bookmarks(p, tmp_path)          # a previous launch's file
+    seed(tmp_path, "Default/Bookmarks.bak")
+    drivers._clear_unkept(p, tmp_path)
+    assert not (tmp_path / "Default" / "Bookmarks").exists()
+    drivers._seed_bookmarks(p, tmp_path)
+    assert [b["url"] for b in read_bar(tmp_path)] == ["https://a.test"]
+
+
+def test_the_dashboard_and_the_engine_agree_on_the_key_names():
+    """A key the dashboard offers but the engine does not know is a dead
+    control; one the engine knows but the dashboard hides is unreachable."""
+    from numera.server.convert import CLEARABLE_KEYS
+    assert set(CLEARABLE_KEYS) == set(drivers.CLEARABLE)
