@@ -4,6 +4,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **A desktop build that could not clear its own folder reported success anyway.** `Remove-Item` on
+  a file another process holds is a *non-terminating* error, so the script carried on: the copy
+  overwrote what it could, every later check still passed because the old files were there, and the
+  build said done while shipping the previous version - which is also why the folder had grown from
+  32.8 MB to 58.7 MB. Running the app from the build folder is enough to cause it. It now stops,
+  says to close Numera first, and **puts the data directory back** before giving up, since that had
+  already been moved to a temp folder by then.
+
 ## [0.4.0] - 2026-08-31
 
 ### Added
