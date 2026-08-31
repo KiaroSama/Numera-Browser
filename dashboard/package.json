@@ -1,14 +1,15 @@
 {
   "name": "numera-dashboard",
   "private": true,
-  "version": "0.12.0",
+  "version": "0.13.0",
   "type": "module",
   "description": "Web dashboard for Numera Browser, a self-hosted anti-detect browser profile manager.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint ."
   },
   "dependencies": {
     "jdenticon": "^3.3.0",
@@ -17,9 +18,13 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",
     "@vitejs/plugin-react": "^6.1.1",
+    "eslint": "^10.9.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.11.0",
     "jsdom": "^30.0.1",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"

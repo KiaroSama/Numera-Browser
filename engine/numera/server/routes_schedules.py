@@ -8,6 +8,7 @@ import threading
 import time
 from typing import Optional
 from .convert import to_engine_profile
+from ..paths import child_env
 
 
 def register(app, ctx):
@@ -30,7 +31,7 @@ def register(app, ctx):
                "warmup", pid, "--minutes", str(minutes), "--headless"]
         if preset:
             cli += ["--preset", str(preset)]
-        proc = subprocess.Popen(cli)
+        proc = subprocess.Popen(cli, env=child_env(engine_store._password))
         running[pid] = proc
         return proc
 

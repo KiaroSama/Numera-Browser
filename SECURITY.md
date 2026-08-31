@@ -37,5 +37,6 @@ port is never reachable from another machine, but on a shared or untrusted
 machine this is worth knowing. The relay is started only when the proxy
 actually carries credentials, and is torn down when the browser closes.
 
-Not yet covered: the dashboard's own profile store, cookies (Chromium keeps those
-in its own OS-encrypted store), and full-profile encryption.
+Not yet covered: cookies (Chromium keeps those in its own OS-encrypted store)
+and full-profile encryption - the vault protects the secrets inside a profile,
+not the file as a whole.

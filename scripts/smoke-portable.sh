@@ -12,7 +12,9 @@
 #   3. it launches the *bundled* Chromium and scores the profile
 #      (`trust` opens a real browser; nothing else here proves the bundle)
 #   4. `serve` comes up and `/api/ready` answers
-#   5. after a restart the profile and its session are still there
+#   5. `/` returns the real dashboard, and an asset that page references is
+#      served (the API alone is not the product)
+#   6. after a restart the profile and its session are still there
 #
 # Every wait is bounded and polls for a condition. Nothing sleeps blindly.
 #
@@ -94,17 +96,17 @@ run_engine() {
     allow_failure=0
 }
 
-step '1/5 the engine runs at all'
+step '1/6 the engine runs at all'
 run_engine 30 --version
 [ -n "$output" ] || fail '--version printed nothing'
 printf '    %s\n' "$output"
 
-step '2/5 it creates a profile'
+step '2/6 it creates a profile'
 run_engine 60 create smoke
 run_engine 60 list
 grep -q smoke <<<"$output" || fail "the profile is not in \`list\`: $output"
 
-step '3/5 it launches the bundled browser'
+step '3/6 it launches the bundled browser'
 # `trust` opens a real browser and reads back what the page shows. Nothing short
 # of launching proves the bundle resolves.
 # A non-zero exit here means the *profile* scored imperfectly, which is not what
@@ -118,7 +120,7 @@ grep -q '\[PASS\]' <<<"$output" \
     || fail "\`trust\` reported no passing check - the page was never inspected: $output"
 grep -m1 -i 'trust score' <<<"$output"
 
-step '4/5 serve comes up and answers /api/ready'
+step '4/6 serve comes up and answers /api/ready'
 # Ask the kernel for a free port rather than hoping a fixed one is idle: two
 # jobs on one runner would otherwise collide and read as a flaky build.
 port="$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')"
@@ -137,7 +139,26 @@ done
 grep -q '"ok": *true' <<<"$ready" || fail "/api/ready answered but not ok: $ready"
 printf '    %s\n' "$ready"
 
-step '5/5 the profile and its session survive a restart'
+step '5/6 the dashboard is served, not just the API'
+# `/api/ready` says nothing about the UI. The engine serves the dashboard out of
+# `numera/web`, and a freeze that collects the Python modules but forgets that
+# directory answers every API route while `/` 404s - an artifact that passes a
+# file listing, uploads happily, and opens to nothing. That was the state of the
+# Linux and macOS builds until --add-data was added to the freeze.
+#
+# The asset is the second half of the check. index.html is one file and can
+# arrive on its own; the hashed bundle it points at only resolves if the whole
+# directory came across, and without that bundle the page is a blank <div>.
+html="$(curl -sf --max-time 5 "http://127.0.0.1:$port/" || true)"
+grep -q '<div id="root">' <<<"$html" \
+    || fail "/ did not return the dashboard: ${html:-<no response>}"
+asset="$(grep -o '/assets/[^"]*' <<<"$html" | head -n 1 || true)"
+[ -n "$asset" ] || fail "the dashboard page references no /assets/ file: $html"
+curl -sf --max-time 5 -o /dev/null "http://127.0.0.1:$port$asset" \
+    || fail "the page references $asset and the build does not serve it"
+printf '    dashboard served, %s resolves\n' "$asset"
+
+step '6/6 the profile and its session survive a restart'
 kill "$serve_pid" 2>/dev/null || true
 for _ in $(seq 1 40); do
     kill -0 "$serve_pid" 2>/dev/null || break

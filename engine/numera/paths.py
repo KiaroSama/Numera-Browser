@@ -235,6 +235,25 @@ def _replace(tmp: Path, path: Path) -> None:
             time.sleep(_REPLACE_BACKOFF * (attempt + 1))
 
 
+def child_env(password=None, base=None) -> dict:
+    """The environment a child `numera` process needs to inherit the unlock.
+
+    By environment, never argv. A password on a command line is readable by any
+    process on the machine - `ps` on POSIX, the process table on Windows - so it
+    would leak the vault to every local user the moment the server launched a
+    browser.
+
+    Exists because `--password` unlocked only the parent: the API spawns
+    browsers, probes and cookie exports as child processes, and every one of
+    them started locked. The profile then browsed with no proxy password, which
+    looks exactly like success.
+    """
+    env = dict(os.environ if base is None else base)
+    if password:
+        env["NUMERA_PASSWORD"] = password
+    return env
+
+
 def mutate_json(path, change, default=None):
     """Read, change and write one JSON file inside a single lock.
 

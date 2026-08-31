@@ -1,6 +1,6 @@
 /* The profile list: search, filter, select, run, edit. */
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Copy, Download, Filter, Flame, FolderTree, Layers, Pencil, Play, Plus, Search, ShieldAlert, ShieldCheck, Square, Trash2, Wifi, WifiOff, X } from "lucide-react";
 import { api } from "../api";
 import { T } from "../theme";
@@ -60,7 +60,28 @@ function ProfileName({ p, live, setProfiles }) {
   );
 }
 
-function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, remove, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }) {
+/* One labelled row of filter chips.
+ *
+ * Module scope, not the render body. Declared inside ProfilesView it was a new
+ * component type on every render, so React unmounted and remounted all five
+ * rows on each keystroke in the search box - the filter popover lost focus and
+ * any pressed state mid-typing. It closes over nothing, so moving it out is the
+ * whole fix. */
+function FilterRow({ label, options, value, onPick }) {
+  return (
+    <div className="ps-filter-row">
+      <span className="ps-filter-label">{label}</span>
+      <div className="ps-filter-opts">
+        {options.map(([val, text]) => (
+          <button key={val} className={"ps-chip" + (value === val ? " on" : "")}
+            onClick={() => onPick(val)}>{text}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }) {
   const [filterOpen, setFilterOpen] = useState(false);
   // Deleting a profile destroys its browser session too, so it asks first -
   // it used to go the moment the bin was clicked, with no way back.
@@ -131,18 +152,6 @@ function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSe
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE));
   const cur = Math.min(page, pageCount - 1);
   const rows = filtered.slice(cur * PAGE, cur * PAGE + PAGE);
-
-  const FilterRow = ({ label, options, value, onPick }) => (
-    <div className="ps-filter-row">
-      <span className="ps-filter-label">{label}</span>
-      <div className="ps-filter-opts">
-        {options.map(([val, text]) => (
-          <button key={val} className={"ps-chip" + (value === val ? " on" : "")}
-            onClick={() => onPick(val)}>{text}</button>
-        ))}
-      </div>
-    </div>
-  );
 
   return (
     <>

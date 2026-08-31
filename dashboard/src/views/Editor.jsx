@@ -1,11 +1,11 @@
 /* The fingerprint editor - every field of one profile, plus the live probe
  * results (proxy test and trust grade) that come back from a real browser. */
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Blocks, Bookmark, Camera, Database, Type, Volume2, Check, Clock, Cookie, Cpu, Download, Fingerprint, Globe, MapPin, Mic, MonitorSmartphone, RefreshCw, ShieldAlert, ShieldCheck, Sparkles, Terminal, Upload, Wifi, X } from "lucide-react";
 import { api } from "../api";
 import { T } from "../theme";
-import { CORES, COUNTRY_LOCALE, ENGINE_META, ENGINE_ORDER, GPUS, LOCALES, MODES, OS_LIST, RAM, SCREENS, WARMUP_PRESETS, coherence, uaFor } from "../deviceData";
+import { CORES, COUNTRY_LOCALE, ENGINE_META, ENGINE_ORDER, GPUS, LOCALES, MODES, OS_LIST, RAM, SCREENS, WARMUP_PRESETS, coherence, uaFor, vendorFor } from "../deviceData";
 import { Field, Pick, Row, SectionLabel } from "../ui";
 
 /* Every resolved value of the profile, in one column beside the form.
@@ -53,8 +53,6 @@ const SWITCHABLE = [
   ["systemExtensions", "Built-in Chromium extensions",
    "The Web Store connector, Media Router and Cloud Print. They run in the background whether or not anything uses them."],
 ];
-
-const IP_SIGNALS = ["timezone", "geolocation", "languages"];
 
 function IpSwitch({ p, set, signal }) {
   const on = (p.ipBased || []).includes(signal);
@@ -205,7 +203,18 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
   const [p, setP] = useState(profile);
   const [tab, setTab] = useState("general");
   const set = (patch) => setP(x => ({ ...x, ...patch }));
-  const changeOS = (os) => set({ os, userAgent: uaFor(os), screen: SCREENS[os][0], cores: CORES[os][1], memory: RAM[os][1], webglRenderer: GPUS[os][0] });
+  /* Switching the OS rewrites the whole device, not just the label.
+   *
+   * The vendor is in here because it used to be the one field left behind. The
+   * server only fills a vendor in when the dashboard sends a blank one
+   * (`vendor or _vendor_for(renderer)` in server/convert.py), and the dashboard
+   * never sends a blank one - a new profile is seeded "Google Inc. (NVIDIA)".
+   * So a Windows profile switched to macOS kept reporting an NVIDIA vendor
+   * under an Apple M1 renderer, which is a contradiction no real machine can
+   * produce. `coherence()` does not score the vendor, so nothing said a word.
+   * bulk.jsx already paired the two through vendorFor; this is the editor
+   * catching up. */
+  const changeOS = (os) => set({ os, userAgent: uaFor(os), screen: SCREENS[os][0], cores: CORES[os][1], memory: RAM[os][1], webglRenderer: GPUS[os][0], webglVendor: vendorFor(GPUS[os][0]) });
   const changeLocale = (locale) => set({ locale, timezone: LOCALES[locale] });
   const setProxy = (patch) => set({ proxy: { ...(p.proxy || { type: "HTTP", host: "", port: "", user: "", pass: "", country: "" }), ...patch } });
 

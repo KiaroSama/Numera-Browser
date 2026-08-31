@@ -106,13 +106,19 @@ jobs:
         working-directory: dashboard
         run: npm ci && npm run build
 
+      # --add-data is what puts the dashboard in the bundle. --collect-submodules
+      # collects Python modules and nothing else, so with it alone the frozen
+      # engine served every API route and answered `/` with a 404 - a build that
+      # passes a file listing, uploads happily, and opens to an empty window.
+      # Mirrors scripts/build-desktop.ps1, which has always had it; the source
+      # and destination are separated by `:` here and `;` there.
       - name: Freeze the engine
         run: |
           python -m pip install --quiet pyinstaller ".[api,launch]" --prefix /tmp/eng || true
           python -m pip install --quiet pyinstaller
           python -m pip install --quiet ./engine[api,launch]
-          cp -r dashboard/dist engine/numera/web
           pyinstaller --noconfirm --name numera-engine --distpath desktop/dist/.build \
+                      --add-data "dashboard/dist:numera/web" \
                       --collect-all uvicorn --collect-submodules numera \
                       engine/numera/__main__.py
 

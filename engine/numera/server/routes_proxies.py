@@ -56,15 +56,22 @@ def register(app, ctx):
         allowed = {"label", "type", "host", "port", "user", "pass", "country",
                    "rotateUrl", "archived"}
         patch = {k: v for k, v in body.items() if k in allowed}
+        # Edit went straight to the store while create was validated, so an
+        # unsupported type, a port of 70000 or a malformed country could be
+        # persisted through this route and only fail later at launch. Validate
+        # the merged record, the same way `POST /api/proxies` does.
+        if patch:
+            from .. import proxypool as pp
+            merged = {**pool.get(pid), **patch}
+            try:
+                clean = pp.normalize(merged)
+            except ValueError as e:
+                raise HTTPException(400, str(e)) from None
+            for field in ("type", "host", "port", "user", "pass", "country"):
+                if field in patch:
+                    patch[field] = clean[field]
         if not patch:
             raise HTTPException(400, f"nothing to change - editable fields are {sorted(allowed)}")
-        if "port" in patch:
-            try:
-                patch["port"] = int(patch["port"])
-            except (TypeError, ValueError):
-                raise HTTPException(400, f"port must be a number, got {patch['port']!r}")
-        if "host" in patch and not str(patch["host"]).strip():
-            raise HTTPException(400, "host cannot be empty")
         # A changed address invalidates the last health check; saying "OK" about
         # an address that was never tested is the same class of lie as a control
         # that reports instead of acting.
@@ -110,8 +117,15 @@ def register(app, ctx):
 
         from .. import proxypool as pp
         ids = body.get("ids") or [p["id"] for p in pool.list()]
-        targets = [p for p in (pool.get(i) for i in ids) if p]
-        if not targets:
+        # One snapshot, not one full read per id: `pool.get()` re-reads and
+        # re-decrypts the whole file every call (plan 011).
+        by_id = {p["id"]: p for p in pool.list()}
+        targets = [by_id[i] for i in ids if i in by_id]
+        # A proxy whose password cannot be read is reported as skipped, not
+        # tested against a blank credential and recorded as broken.
+        withheld = [p for p in targets if pool.secret_withheld(p["id"])]
+        targets = [p for p in targets if not pool.secret_withheld(p["id"])]
+        if not targets and not withheld:
             raise HTTPException(400, "no proxies to test")
 
         def run(proxy):
@@ -122,8 +136,11 @@ def register(app, ctx):
 
         with ThreadPoolExecutor(max_workers=min(8, len(targets))) as ex:
             results = list(ex.map(run, targets))
+        for p in withheld:
+            results.append({"id": p["id"], "status": "skipped",
+                            "error": "password locked; unlock to test this proxy"})
         return {"tested": len(results), "ok": sum(1 for r in results if r["status"] == "ok"),
-                "results": results}
+                "skipped": len(withheld), "results": results}
 
     @app.post("/api/proxies")
     def add_proxies(body: dict):
@@ -151,9 +168,15 @@ def register(app, ctx):
     @app.post("/api/proxies/{pid}/test")
     def test_proxy(pid: str):
         from .. import proxypool as pp
+        from ..vault import LOCKED_MESSAGE
         proxy = pool.get(pid)
         if not proxy:
             raise HTTPException(404, "proxy not found")
+        # A locked read gives `pass=None`, so the check would authenticate with
+        # nothing and record a real "failed" against a proxy that is fine.
+        if pool.secret_withheld(pid):
+            raise HTTPException(409, "this proxy has a password that cannot be read: "
+                                     + LOCKED_MESSAGE)
         res = pp.check(proxy)
         status = "ok" if res.get("ok") else ("skipped" if res.get("ok") is None else "failed")
         pool.update(pid, {"status": status, "lastCheck": res, "checkedAt": time.time()})
@@ -163,9 +186,16 @@ def register(app, ctx):
     def rotate_proxy(pid: str):
         """Ask a rotating proxy for a new exit IP and record what came back."""
         from .. import proxypool as pp
+        from ..vault import LOCKED_MESSAGE
         proxy = pool.get(pid)
         if not proxy:
             raise HTTPException(404, "proxy not found")
+        # Rotating verifies the new exit IP through the proxy, which needs the
+        # credential; without it the check after the rotate reports a failure
+        # that says nothing about the provider.
+        if pool.secret_withheld(pid):
+            raise HTTPException(409, "this proxy has a password that cannot be read: "
+                                     + LOCKED_MESSAGE)
         res = pp.rotate(proxy)
         patch = {}
         if res.get("attempted"):
@@ -231,6 +261,15 @@ def register(app, ctx):
         # make archiving a label rather than a decision - and an explicit id list
         # is an explicit choice, so only the "whole pool" path filters.
         proxies = [p for p in proxies if p and (body.get("proxyIds") or not p.get("archived"))]
+        # Assigning a proxy whose password is unreadable would write `pass=None`
+        # onto the profile - and on a profile that already has one, the save
+        # path preserves the *old* ciphertext while the host and user change,
+        # producing a credential pair that belongs to no proxy at all.
+        from ..vault import LOCKED_MESSAGE
+        locked = [p["id"] for p in proxies if pool.secret_withheld(p["id"])]
+        if locked:
+            raise HTTPException(409, f"{len(locked)} of the selected proxies have a "
+                                     f"password that cannot be read: " + LOCKED_MESSAGE)
         if not proxies:
             raise HTTPException(400, "the proxy pool is empty"
                                      if not pool.list() else

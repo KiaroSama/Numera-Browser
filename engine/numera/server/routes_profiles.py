@@ -227,10 +227,20 @@ def register(app, ctx):
 
     @app.put("/api/profiles/{pid}")
     def update_profile(pid: str, profile: dict):
-        if not dash.get(pid):
+        existing = dash.get(pid)
+        if not existing:
             raise HTTPException(404, "profile not found")
+        # Read explicitness *before* normalisation: `_validate_profile` fills a
+        # missing engine in from the current default, so asking afterwards can
+        # never tell what the caller actually sent.
+        #
+        # This used to remember on every PUT, so renaming a `playwright`
+        # profile silently switched the global default away from whatever the
+        # user had chosen - and nothing in the UI said so.
+        asked = profile.get("engine")
         _validate_profile(profile, pid=pid)
-        _remember_engine(profile)
+        if asked and asked != existing.get("engine"):
+            _remember_engine(profile)
         return decorate(dash.save(profile))
 
     @app.delete("/api/profiles/{pid}")
@@ -274,16 +284,20 @@ def register(app, ctx):
         # `_validate_profile` also mints the id first, which is what the noise
         # seed is derived from, so two minimal entries get different identities
         # instead of sharing one.
+        # Which entries named an engine, before any auto-fill overwrites the
+        # answer. `last_engine` used to be read after the fill, so in a mixed
+        # batch an entry that named nothing could override an explicit choice
+        # made earlier in the same request.
+        chosen = [p.get("engine") for p in incoming if p.get("engine")]
         for p in incoming:
             _validate_profile(p)
             _apply_default_extensions(p)
             if not p.get("engine"):
                 p["engine"] = engine_store.get_default_engine()
-        ids = []
-        last_engine = None
-        for p in incoming:
-            last_engine = p.get("engine")
-            ids.append(dash.save(p)["id"])
+        last_engine = chosen[-1] if chosen else None
+        # One transaction. A sequential loop left the profiles written before a
+        # failing one on disk while the request reported failure.
+        ids = [p["id"] for p in dash.save_many(incoming)]
         if last_engine:
             engine_store.set_default_engine(last_engine)
         return {"created": len(ids), "ids": ids}
@@ -324,7 +338,11 @@ def register(app, ctx):
                     d["timezone"] = devices.LOCALES.get(value, (d.get("timezone"), None))[0]
                 else:
                     d[key] = value
-            _remember_engine(d)
+            # Only when this patch names an engine. It used to fire for every
+            # touched profile, so a tag-only bulk edit set the default to
+            # whatever the last profile in the selection happened to use.
+            if patch.get("engine"):
+                _remember_engine(d)
             updated.append(decorate(dash.save(d)))
         return updated
 

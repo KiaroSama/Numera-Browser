@@ -15,6 +15,7 @@ import uuid
 from pathlib import Path
 from typing import Optional
 from .. import vault
+from ..proxypool import identity as vault_identity
 from ..paths import _lock_for, id_path, write_json
 from .convert import to_engine_profile
 
@@ -136,6 +137,39 @@ class DashboardStore:
                 raise
         return prof
 
+    def save_many(self, profiles: list) -> list:
+        """Save a batch as one transaction: all of them, or none.
+
+        Validation was already all-or-nothing, but the writes were a plain loop,
+        so a storage failure part-way (disk full, a permission error, a failing
+        mirror) left the earlier profiles on disk while the request reported
+        failure - and the obvious retry then produced duplicates.
+
+        Both copies of every profile are registered with one `write_batch`, so a
+        failure anywhere unwinds the dashboard files and the engine twins
+        together.
+        """
+        from ..paths import write_batch
+
+        saved = []
+        with write_batch() as batch:
+            for prof in profiles:
+                if not prof.get("id"):
+                    prof["id"] = uuid.uuid4().hex[:12]
+                prof.setdefault("_created", time.time())
+                prof = self._guard_secrets(prof)
+                batch.write(self._path(prof["id"]), prof)
+                if self._engine is not None:
+                    try:
+                        twin = to_engine_profile(prof)
+                    except Exception:       # pragma: no cover - see `_mirror`
+                        twin = None
+                    if twin is not None:
+                        batch.write(self._engine._path(twin.id),
+                                    self._engine._apply_secrets(twin.to_dict(), "enc"))
+                saved.append(prof)
+        return saved
+
     def _mirror(self, prof: dict) -> None:
         """Write the engine-shaped twin.
 
@@ -248,6 +282,17 @@ class ProxyPool:
         """
         return [self._decrypted(p) for p in self._stored()]
 
+    def secret_withheld(self, pid: str) -> bool:
+        """Does this pool entry have a password the lock state hides?
+
+        Reads the stored bytes: `list()` hands out `None` for a locked secret,
+        which is exactly what a caller cannot tell apart from "no password".
+        """
+        for entry in self._stored():
+            if entry.get("id") == pid:
+                return vault.is_withheld(self._engine, entry.get("pass"))
+        return False
+
     def _decrypted(self, entry: dict) -> dict:
         if not entry.get("pass"):
             return entry
@@ -276,22 +321,19 @@ class ProxyPool:
     def _lock(self):
         return _lock_for(self.path)
 
-    @staticmethod
-    def _key(p: dict) -> tuple:
-        # Sticky-session vendors hand out one host:port for the whole pool and
-        # select the exit node from the credentials — some vary the username,
-        # others vary only the password. Credentials are part of a proxy's
-        # identity, so deduping on host:port alone collapses a whole vendor
-        # list into a single entry.
-        return (p["host"], str(p["port"]), p.get("user") or "", p.get("pass") or "")
+    # Identity lives in `proxypool.identity()`, and only there. This class used
+    # to carry its own copy that left the protocol out, so an HTTP and a SOCKS5
+    # entry with the same host, port and credentials were one proxy to the
+    # deduper and two to the "used by N profiles" count - an import could drop
+    # one silently.
 
     def add_many(self, proxies: list[dict]) -> list[dict]:
       with self._lock:
         items = self.list()
-        seen = {self._key(p) for p in items}
+        seen = {vault_identity(p) for p in items}
         added = []
         for pr in proxies:
-            key = self._key(pr)
+            key = vault_identity(pr)
             if key in seen:
                 continue
             entry = {**pr, "id": uuid.uuid4().hex[:12], "status": "untested"}

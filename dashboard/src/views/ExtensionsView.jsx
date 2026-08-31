@@ -14,7 +14,7 @@
  * One limit is stated on the page rather than hidden: Firefox-family engines
  * cannot load unpacked Chromium extensions at all.                            */
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Download, Info, Plus, Puzzle, RefreshCw, ShieldAlert, Trash2, Upload, WifiOff } from "lucide-react";
 import { api } from "../api";
 import { T } from "../theme";

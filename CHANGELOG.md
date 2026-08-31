@@ -4,6 +4,77 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-09-01
+
+Two audits worked through together: a full-project advisory pass and a follow-up
+brief on the same commit. Plans for every item are in `plans/`.
+
+### Fixed
+
+- **`--password` did nothing for the two surfaces that run longest.** `numera --password X serve`
+  unlocked a store and threw it away - `create_app` built its own locked one - so every browser the
+  server launched went out with no proxy password. The profile still browsed, just without its
+  proxy, which for an anti-detect tool is the worst way to fail. The unlock now reaches the app and
+  every child process by **environment, never argv**: a password on a command line is readable by
+  any local process. `numera mcp` and its tool subprocesses too.
+- **Locked secret-dependent work produced confidently wrong artifacts.** A locked read yields `None`
+  by design, and several callers read that as "there is no password": a backup claimed to contain
+  the proxy credential and did not, a health check tested a blank password and recorded a real
+  failure against a working proxy, and pool assignment wrote `pass=None` over a profile.
+  `vault.is_withheld()` tells the two apart, and export, backup, proxy test, rotate and assign now
+  refuse rather than emit. Non-secret listing and edits still work while locked.
+- **One unreadable record took down the whole listing.** A profile encrypted under a different vault
+  key - a restore from another machine, a rotated vault - made `GET /api/profiles` a 500, because
+  `unlocked()` only says the current verifier matches, not that this record does. It degrades to
+  `None` now, as `vault.decrypt_for_read` already did. `Proxy.from_dict` filters unknown keys like
+  `Fingerprint.from_dict`, and the importer tolerates a non-numeric core count instead of aborting a
+  half-written import.
+- **The vault re-derived its key on every single secret.** 200,000 PBKDF2 rounds for a key that is
+  identical every time; listing the pool decrypts every entry and saving it re-encrypts every entry,
+  so one "test all" sweep paid it on the order of N-squared. Derived once per password and salt now.
+- **SSRF through the proxy change-IP URL.** The one place the engine fetches a caller-supplied
+  address from its own network position, checked only for scheme. Private, loopback, link-local and
+  metadata destinations are refused, and every redirect hop is re-checked.
+- **`--host ""` bound every interface while the guard called it loopback** - exactly the case that
+  guard exists to refuse.
+- **Unrelated edits changed the global default engine.** A rename, a tag edit, or a bulk note change
+  moved it, and in a mixed batch an auto-filled entry overrode an explicit choice. Only an engine
+  this request actually named, and actually changed, counts now.
+- **Batch create was all-or-nothing on validation but not on storage.** A failing write left the
+  earlier profiles on disk while the request reported failure, so the obvious retry made duplicates.
+  Both copies of every profile go through one transaction.
+- **A deleted session could survive while the API reported it gone.** `rmtree(ignore_errors=True)`
+  hid the failure completely; on Windows a running Chromium holds its files. The directory is
+  detached by rename first - which fails loudly - and never reported removed when it was not.
+- **Folder edits had no lock**, so two concurrent changes each read the same list and the second
+  silently dropped the first.
+- **Proxy handling had five entry points that disagreed.** Dedupe ignored the protocol while the
+  usage count included it; edit bypassed the validator entirely, so a port of `70000` persisted; an
+  unsupported text scheme was silently rewritten to HTTP before anything could reject it; and the
+  CLI's own scheme map downgraded HTTPS to HTTP. All of them use `normalize()`, `identity()` and
+  `server_url()` now - and edit no longer stored the port as an int where create stored a string.
+- **Linux and macOS artifacts shipped no dashboard at all.** `--collect-submodules` collects Python
+  modules, not `numera/web` package data, so those builds served an API and a blank page. Windows
+  was already correct. The POSIX freeze passes `--add-data`, and the smoke test now asserts `/`
+  returns the real dashboard and that an asset it references is fetchable.
+- **CI never ran the dashboard tests**, so the regressions guarding the auth-lockout and dev-proxy
+  fixes could not gate anything.
+- **`@pytest.mark.slow` was unregistered** and only three of seven `*_live.py` files carried it - so
+  a local `-m slow` run silently missed four, and a typo'd marker would have been accepted as a new
+  one. Registered, `--strict-markers` on, and all seven marked: the live suite is 47 tests, not 19.
+- Stale vault documentation in `SECURITY.md` and `engine/README.md` that still said the dashboard
+  profile store was unencrypted, and a `README.md` install line pinning a wheel version that no
+  longer exists.
+
+### Added
+
+- `plans/` - twelve executor-ready implementation plans from the audit, with an index, dependency
+  notes, and the findings considered and rejected.
+- `numera/vault.py`: `is_withheld()`. `numera/paths.py`: `child_env()`.
+  `DashboardStore.save_many()`, `ProfileStore.secret_withheld()`, `ProxyPool.secret_withheld()`.
+- Dashboard tests for the Editor's fingerprint-coherence derivations and the bulk generator, and
+  ESLint with a `lint` script (17 dashboard tests, up from 5).
+
 ## [0.12.0] - 2026-09-01
 
 ### Fixed

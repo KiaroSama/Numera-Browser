@@ -4,7 +4,6 @@
  * A component used by exactly one view belongs in that view's file instead -
  * this is for the genuinely shared ones. */
 
-import React from "react";
 import { Boxes, RefreshCw, Users, X } from "lucide-react";
 import { toSvg } from "jdenticon";
 import { FONT, T } from "./theme";
