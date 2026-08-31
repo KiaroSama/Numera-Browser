@@ -380,6 +380,31 @@ input[type=checkbox] { accent-color: var(--violet); width: 15px; height: 15px; c
 /* overlay + drawer */
 .ps-overlay { position: fixed; inset: 0; background: #05060acc; backdrop-filter: blur(4px); display: flex; justify-content: flex-end; z-index: 50; animation: rise .18s ease; }
 .ps-overlay.center { justify-content: center; align-items: center; }
+/* The profile editor is a page, not a drawer. Its fields describe one device
+   and several only mean anything read against each other, so they get room and
+   a summary column instead of a 580px strip. NOTE: no backticks in this block -
+   it lives inside a JS template literal. */
+.ps-overlay.ps-page { align-items: stretch; justify-content: center; padding: 0; }
+.ps-editor { width: 100%; max-width: 1500px; height: 100%; background: var(--bg2); border-left: 1px solid var(--line); border-right: 1px solid var(--line); display: flex; flex-direction: column; animation: slidein .22s cubic-bezier(.2,.7,.3,1); }
+.ps-editor-h { display: flex; align-items: center; gap: 14px; padding: 16px 22px; border-bottom: 1px solid var(--line); }
+.ps-editor-id { display: flex; flex-direction: column; gap: 3px; }
+.ps-editor-name { font-family: ${FONT.display}; font-size: 19px; font-weight: 600; border: none; background: transparent; padding: 0; min-width: 260px; }
+.ps-editor-name:focus { outline: none; }
+.ps-editor-folder { max-width: 200px; }
+.ps-editor-main { flex: 1; display: flex; min-height: 0; }
+.ps-editor-body { flex: 1; overflow-y: auto; padding: 20px 22px 28px; }
+/* Two columns of fields once there is room; one on a narrow window. */
+@media (min-width: 1100px) {
+  .ps-editor-body { column-count: 2; column-gap: 30px; }
+  .ps-editor-body > * { break-inside: avoid; }
+}
+.ps-summary { width: 300px; flex-shrink: 0; border-left: 1px solid var(--line); background: var(--bg); overflow-y: auto; padding: 16px 18px; }
+.ps-summary-h { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 12px; }
+.ps-summary-list { margin: 0; }
+.ps-summary-row { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--lineSoft); font-size: 11.5px; }
+.ps-summary-row dt { flex: 0 0 108px; color: var(--text-tertiary); }
+.ps-summary-row dd { margin: 0; flex: 1; min-width: 0; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ${FONT.mono}; font-size: 11px; }
+.ps-summary-iss { margin-top: 14px; font-size: 11.5px; line-height: 1.7; color: var(--amber); }
 .ps-drawer { width: 580px; max-width: 96vw; height: 100%; background: var(--bg2); border-left: 1px solid var(--line); display: flex; flex-direction: column; animation: slidein .24s cubic-bezier(.2,.7,.3,1); }
 .ps-modal { width: 520px; max-width: 94vw; background: var(--bg2); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
 .ps-pop { animation: pop .2s cubic-bezier(.2,.7,.3,1); }
@@ -411,6 +436,16 @@ select.ps-in { cursor: pointer; }
 .ps-seclabel { display: flex; align-items: center; gap: 9px; margin: 20px 0 13px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
 .ps-seclabel svg { color: var(--violet); }
 .ps-secline { flex: 1; height: 1px; background: var(--lineSoft); }
+/* The "based on IP" pill that rides in a field's own label. Deliberately quiet
+   when off: it is a modifier on the field beside it, not a control of its own. */
+.ps-ipsw { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; vertical-align: middle;
+  border: 1px solid var(--line); background: var(--bg); color: var(--muted);
+  font-size: 9.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  padding: 1px 6px; border-radius: 999px; cursor: pointer; font-family: inherit; transition: .14s; }
+.ps-ipsw:hover:not(:disabled) { color: var(--text); border-color: var(--muted); }
+.ps-ipsw.on { background: var(--violetDim); border-color: transparent; color: var(--lilac); }
+.ps-ipsw:disabled { opacity: .45; cursor: not-allowed; }
+.ps-in:disabled, .ps-in[disabled] { opacity: .5; cursor: not-allowed; }
 .ps-seg { display: flex; background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 2px; }
 .ps-seg button { flex: 1; border: none; background: transparent; color: var(--muted); font-size: 11.5px; font-weight: 600; padding: 6px; border-radius: 7px; cursor: pointer; transition: .14s; font-family: inherit; }
 .ps-seg button.on { background: var(--violetDim); color: var(--lilac); }

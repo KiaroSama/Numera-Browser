@@ -2,11 +2,110 @@
  * results (proxy test and trust grade) that come back from a real browser. */
 
 import React, { useEffect, useState } from "react";
-import { ArrowRight, Blocks, Camera, Check, Clock, Cookie, Cpu, Download, Fingerprint, Globe, MapPin, Mic, MonitorSmartphone, RefreshCw, ShieldAlert, ShieldCheck, Sparkles, Upload, Wifi, X } from "lucide-react";
+import { ArrowRight, Blocks, Bookmark, Camera, Type, Volume2, Check, Clock, Cookie, Cpu, Download, Fingerprint, Globe, MapPin, Mic, MonitorSmartphone, RefreshCw, ShieldAlert, ShieldCheck, Sparkles, Terminal, Upload, Wifi, X } from "lucide-react";
 import { api } from "../api";
 import { T } from "../theme";
 import { CORES, COUNTRY_LOCALE, ENGINE_META, ENGINE_ORDER, GPUS, LOCALES, MODES, OS_LIST, RAM, SCREENS, WARMUP_PRESETS, coherence, uaFor } from "../deviceData";
 import { Field, Pick, Row, SectionLabel } from "../ui";
+
+/* Every resolved value of the profile, in one column beside the form.
+ *
+ * The point is cross-checking: this app's whole argument is that a fingerprint
+ * fails on *contradictions*, not on unusual values. A summary you can read
+ * top-to-bottom while editing is how you notice the macOS platform under a
+ * Windows user-agent - which the coherence meter scores, but does not show. */
+/* GoLogin-style "based on IP" switch.
+   A stored timezone is a guess made when the profile was created; the proxy it
+   ends up using may exit somewhere else, and a clock that disagrees with the IP
+   is the cheapest tell there is. Flipping this makes the driver read the real
+   exit country at launch - it can't be resolved earlier, because the profile
+   may not have a proxy yet. */
+// Resolvers Chromium can be pointed at. The value is what the engine stores;
+// a bare IP is mapped to the matching DoH endpoint on the way to the flag.
+const DOH = [
+  { v: "", label: "System default" },
+  { v: "1.1.1.1", label: "Cloudflare — 1.1.1.1" },
+  { v: "8.8.8.8", label: "Google — 8.8.8.8" },
+  { v: "9.9.9.9", label: "Quad9 — 9.9.9.9" },
+  { v: "94.140.14.14", label: "AdGuard — 94.140.14.14" },
+];
+
+const IP_SIGNALS = ["timezone", "geolocation", "languages"];
+
+function IpSwitch({ p, set, signal }) {
+  const on = (p.ipBased || []).includes(signal);
+  const has = !!p.proxy;
+  return (
+    <button type="button" className={"ps-ipsw" + (on ? " on" : "")}
+      title={!has ? "Assign a proxy first - there is no exit IP to read"
+        : on ? "Resolved from the proxy's exit IP each time this profile launches"
+             : "Uses the value set here"}
+      disabled={!has}
+      onClick={() => set({ ipBased: on ? (p.ipBased || []).filter(k => k !== signal)
+                                       : [...(p.ipBased || []), signal] })}>
+      <Globe size={9} /> {on ? "IP" : "Manual"}
+    </button>
+  );
+}
+
+const lines = v => Array.isArray(v) ? v.length
+  : String(v || "").split(/\r?\n/).filter(l => l.trim()).length;
+
+function ProfileSummary({ p, issues, score }) {
+  const rows = [
+    ["Profile name", p.name || "Untitled profile"],
+    ["Folder", p.folder || "None"],
+    ["Engine", ENGINE_META[p.engine]?.label || p.engine || "default"],
+    ["Proxy", p.proxy ? `${p.proxy.type} ${p.proxy.host}:${p.proxy.port}` : "Direct"],
+    ["OS", p.os],
+    ["Browser", `Chrome ${p.browserVersion || ""}`.trim()],
+    ["User-Agent", p.userAgent],
+    ["Resolution", p.screen],
+    ["Languages", p.locale],
+    ["Timezone", p.timezone],
+    ["Geolocation", p.geo],
+    ["WebRTC", p.webrtc],
+    ["Canvas", p.canvas],
+    ["Client Rects", p.clientRects || "noise"],
+    ["WebGL Image", p.webglImage || "noise"],
+    ["WebGL Vendor", p.webglVendor],
+    ["Audio Context", p.audio],
+    ["Fonts", p.fonts === "Real" || p.fonts === "real" ? "real"
+      : `masked (${String(p.fontList || "").split(/\r?\n/).filter(Boolean).length || "default"})`],
+    ["Media devices", p.mediaDevices === "real" ? "real"
+      : `${p.mediaVideo ?? 1}/${p.mediaAudio ?? 1}/${p.mediaSpeakers ?? 1}`],
+    ["CPU / RAM", `${p.cores} threads · ${p.memory} GB`],
+    ["Do Not Track", p.dnt ? "on" : "off"],
+    ["Extensions", lines(p.extensions) || "none"],
+    ["Startup URLs", lines(p.startupUrls) || "none"],
+    ["Bookmarks", lines(p.bookmarks) || "none"],
+    ["Launch args", lines(p.launchArgs) || "none"],
+    ["DNS", p.dns || "system default"],
+    ["Follows exit IP", (p.ipBased || []).join(", ") || "nothing"],
+  ];
+  return (
+    <aside className="ps-summary">
+      <div className="ps-summary-h">
+        <span>Profile summary</span>
+        <span style={{ color: issues.length ? T.amber : T.mint, fontWeight: 700 }}>{score}%</span>
+      </div>
+      <dl className="ps-summary-list">
+        {rows.map(([k, v]) => (
+          <div key={k} className="ps-summary-row">
+            <dt>{k}</dt>
+            <dd title={String(v ?? "")}>{v === "" || v == null ? "—" : String(v)}</dd>
+          </div>
+        ))}
+      </dl>
+      {issues.length > 0 && (
+        <div className="ps-summary-iss">
+          <ShieldAlert size={13} /> {issues.length} contradiction{issues.length === 1 ? "" : "s"}
+          {issues.map((i, k) => <div key={k}>· {i}</div>)}
+        </div>
+      )}
+    </aside>
+  );
+}
 
 /* ---- Probe result panel (proxy test / trust check) ---------------- */
 function ProbePanel({ probe, kind }) {
@@ -178,13 +277,26 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
   };
 
   return (
-    <div className="ps-overlay" onClick={onClose}>
-      <div className="ps-drawer" onClick={e => e.stopPropagation()}>
-        <div className="ps-drawer-h">
-          <div>
+    // A full page, not a 580px drawer. Every field here describes one device and
+    // several of them only make sense read together (UA against platform, screen
+    // against the GPU, locale against the proxy's country) - squeezing that into
+    // a side panel on a wide screen was the wrong shape for the job.
+    <div className="ps-overlay ps-page" onClick={onClose}>
+      <div className="ps-editor" onClick={e => e.stopPropagation()}>
+        <div className="ps-editor-h">
+          <div className="ps-editor-id">
             <div className="ps-eyebrow">{p._new ? "New profile" : "Edit profile"}</div>
-            <div className="ps-drawer-title">{p.name || "Untitled profile"}</div>
+            <input className="ps-in ps-editor-name" value={p.name}
+                   onChange={e => set({ name: e.target.value })}
+                   placeholder="Untitled profile" aria-label="Profile name" />
           </div>
+          <select className="ps-in ps-editor-folder" value={p.folder || ""}
+                  onChange={e => set({ folder: e.target.value })} aria-label="Folder">
+            <option value="">No folder</option>
+            {[...new Set([p.folder, ...folders].filter(f => f && f !== "All profiles"))]
+              .map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+          <div style={{ flex: 1 }} />
           <button className="ps-x" onClick={onClose}><X size={18} /></button>
         </div>
 
@@ -203,25 +315,20 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
         </div>
 
         <div className="ps-tabs">
-          {["general", "fingerprint", "proxy", "advanced"].map(t => (
+          {["general", "fingerprint", "proxy", "bookmarks", "advanced"].map(t => (
             <button key={t} className={"ps-tab" + (tab === t ? " active" : "")} onClick={() => setTab(t)}>{t}</button>
           ))}
         </div>
 
-        <div className="ps-drawer-body">
+        <div className="ps-editor-main">
+          <div className="ps-editor-body">
           {tab === "general" && (
             <>
-              <Field label="Profile name"><input className="ps-in" value={p.name} onChange={e => set({ name: e.target.value })} placeholder="e.g. FB-Ads-03" /></Field>
-              <Row>
-                <Field label="Folder">
-                  <select className="ps-in" value={p.folder} onChange={e => set({ folder: e.target.value })}>
-                    {[...new Set([p.folder, ...folders].filter(f => f && f !== "All profiles"))].map(f => <option key={f}>{f}</option>)}
-                  </select>
-                </Field>
-                <Field label="Tags (comma separated)">
-                  <input className="ps-in" value={p.tags.join(", ")} onChange={e => set({ tags: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })} placeholder="client-a, priority" />
-                </Field>
-              </Row>
+              {/* Name and folder are in the page header - they identify the
+                  profile, so they stay visible whichever tab is open. */}
+              <Field label="Tags (comma separated)">
+                <input className="ps-in" value={p.tags.join(", ")} onChange={e => set({ tags: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })} placeholder="client-a, priority" />
+              </Field>
               <Field label="Notes"><textarea className="ps-in" rows={3} value={p.notes} onChange={e => set({ notes: e.target.value })} placeholder="Anything worth remembering about this account…" /></Field>
               <Field label="Launch engine">
                 <select className="ps-in" value={p.engine || ""} onChange={e => set({ engine: e.target.value })}>
@@ -239,9 +346,7 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
             <>
               <SectionLabel icon={<MonitorSmartphone size={13} />} text="Operating system & browser" />
               <Row>
-                <Field label="Operating system">
-                  <select className="ps-in" value={p.os} onChange={e => changeOS(e.target.value)}>{OS_LIST.map(o => <option key={o}>{o}</option>)}</select>
-                </Field>
+                <Pick label="Operating system" opts={OS_LIST} val={p.os} on={changeOS} />
                 <Field label="Browser version"><input className="ps-in" value={p.browserVersion} onChange={e => set({ browserVersion: e.target.value })} /></Field>
               </Row>
               <Field label="User-Agent"><textarea className="ps-in mono" rows={2} value={p.userAgent} onChange={e => set({ userAgent: e.target.value })} /></Field>
@@ -261,20 +366,59 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
               <Field label="WebGL renderer (GPU)">
                 <select className="ps-in mono" value={p.webglRenderer} onChange={e => set({ webglRenderer: e.target.value })}>{[...new Set([p.webglRenderer, ...GPUS[p.os]])].map(g => <option key={g}>{g}</option>)}</select>
               </Field>
+              {/* The vendor string is derived from the renderer on save, but a
+                  driver can report a pairing the table does not know, so it is
+                  editable rather than inferred-only. */}
+              <Field label="WebGL vendor">
+                <input className="ps-in mono" value={p.webglVendor || ""}
+                       onChange={e => set({ webglVendor: e.target.value })}
+                       placeholder="Google Inc. (NVIDIA)" />
+              </Field>
 
               <SectionLabel icon={<Fingerprint size={13} />} text="Spoofing modes" />
               <Row><Pick label="Canvas" opts={MODES.canvas} val={p.canvas} on={v => set({ canvas: v })} /><Pick label="WebRTC" opts={MODES.webrtc} val={p.webrtc} on={v => set({ webrtc: v })} /></Row>
               <Row><Pick label="Audio context" opts={MODES.audio} val={p.audio} on={v => set({ audio: v })} /><Pick label="Fonts" opts={MODES.fonts} val={p.fonts} on={v => set({ fonts: v })} /></Row>
+              {/* `to_engine_profile` has always mapped these three; the editor
+                  simply never offered them, so every profile silently took the
+                  default. Reading a value the user cannot set is the same class
+                  of gap as a control that does nothing. */}
+              <Row>
+                <Pick label="Client rects" opts={MODES.clientRects} val={p.clientRects || "Noise"} on={v => set({ clientRects: v })} />
+                <Pick label="WebGL image" opts={MODES.webglImage} val={p.webglImage || "Noise"} on={v => set({ webglImage: v })} />
+                <Pick label="Media devices" opts={MODES.mediaDevices} val={p.mediaDevices || "Masked"} on={v => set({ mediaDevices: v })} />
+              </Row>
+
+              {p.fonts !== "Real" && p.fonts !== "real" && (
+                <Field label="Font list (one per line)">
+                  <textarea className="ps-in mono" rows={5}
+                    value={p.fontList || ""}
+                    onChange={e => set({ fontList: e.target.value })}
+                    placeholder="Leave empty to use the OS default set" />
+                  <div className="ps-hint"><Type size={12} /> What a font-probing script is told
+                    the machine has. Empty means the archetype's own list for {p.os} — which is
+                    usually what you want, since an unusual set is itself a signal.</div>
+                </Field>
+              )}
 
               <SectionLabel icon={<Globe size={13} />} text="Geo & language" />
               <Row>
-                <Field label="Locale"><select className="ps-in" value={p.locale} onChange={e => changeLocale(e.target.value)}>{Object.keys(LOCALES).map(l => <option key={l}>{l}</option>)}</select></Field>
-                <Field label={<span><Clock size={11} /> Timezone</span>}><input className="ps-in mono" value={p.timezone} onChange={e => set({ timezone: e.target.value })} /></Field>
-                <Pick label="Geolocation" opts={MODES.geo} val={p.geo} on={v => set({ geo: v })} />
+                <Field label={<>Locale &amp; languages <IpSwitch p={p} set={set} signal="languages" /></>}>
+                  <select className="ps-in" value={p.locale} disabled={(p.ipBased || []).includes("languages")}
+                    onChange={e => changeLocale(e.target.value)}>{Object.keys(LOCALES).map(l => <option key={l}>{l}</option>)}</select>
+                </Field>
+                <Field label={<><Clock size={11} /> Timezone <IpSwitch p={p} set={set} signal="timezone" /></>}>
+                  <input className="ps-in mono" value={p.timezone} disabled={(p.ipBased || []).includes("timezone")}
+                    onChange={e => set({ timezone: e.target.value })} />
+                </Field>
+                <Field label={<>Geolocation <IpSwitch p={p} set={set} signal="geolocation" /></>}>
+                  <div className="ps-seg">{MODES.geo.map(o =>
+                    <button key={o} className={p.geo === o ? "on" : ""} onClick={() => set({ geo: o })}>{o}</button>)}</div>
+                </Field>
               </Row>
               <Row>
                 <Field label={<span><Camera size={11} /> Cameras</span>}><input type="number" className="ps-in" value={p.mediaVideo} onChange={e => set({ mediaVideo: Number(e.target.value) })} /></Field>
                 <Field label={<span><Mic size={11} /> Microphones</span>}><input type="number" className="ps-in" value={p.mediaAudio} onChange={e => set({ mediaAudio: Number(e.target.value) })} /></Field>
+                <Field label={<span><Volume2 size={11} /> Speakers</span>}><input type="number" className="ps-in" value={p.mediaSpeakers ?? 1} onChange={e => set({ mediaSpeakers: Number(e.target.value) })} /></Field>
                 <Field label="Do Not Track">
                   <button className={"ps-toggle" + (p.dnt ? " on" : "")} onClick={() => set({ dnt: !p.dnt })}><span className="knob" /> <em>{p.dnt ? "On" : "Off"}</em></button>
                 </Field>
@@ -364,9 +508,53 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
             </>
           )}
 
+          {tab === "bookmarks" && (
+            <>
+              <SectionLabel icon={<Bookmark size={13} />} text="Bookmarks bar" />
+              <Field label="One per line — “Name | https://url”, or just the URL">
+                <textarea className="ps-in mono" rows={10} value={p.bookmarks || ""}
+                  onChange={e => set({ bookmarks: e.target.value })}
+                  placeholder={"Gmail | https://mail.google.com\nhttps://github.com"} />
+              </Field>
+              <div className="ps-hint"><Bookmark size={12} /> Written into the profile's own Chromium
+                bookmark file just before it launches, and <b style={{ color: T.text }}>merged</b> — anything
+                bookmarked from inside the browser stays, and re-launching doesn't duplicate anything.
+                An account with an empty bookmark bar reads as new; a handful of plausible ones does not.</div>
+              <div className="ps-hint"><Blocks size={12} /> Chromium engines only. Camoufox is Firefox and
+                keeps its bookmarks in a database this doesn't write.</div>
+            </>
+          )}
+
           {tab === "advanced" && (
             <>
               <Field label="Startup URLs (one per line)"><textarea className="ps-in mono" rows={3} value={p.startupUrls} onChange={e => set({ startupUrls: e.target.value })} placeholder={"https://facebook.com\nhttps://business.facebook.com"} /></Field>
+
+              <SectionLabel icon={<Terminal size={13} />} text="Launch" />
+              <Field label="Extra Chromium arguments (one per line)">
+                <textarea className="ps-in mono" rows={3} value={p.launchArgs || ""}
+                  onChange={e => set({ launchArgs: e.target.value })}
+                  placeholder={"--mute-audio\n--disable-background-timer-throttling"} />
+              </Field>
+              <div className="ps-hint"><Terminal size={12} /> Appended to the flags Numera already sets.
+                They land on the real command line, so a bad one stops the browser starting — which is the
+                honest outcome, since the alternative is a flag you believe is active and isn't.</div>
+
+              <Field label={<span><Wifi size={11} /> DNS resolver</span>}>
+                <select className="ps-in" value={DOH.some(d => d.v === (p.dns || "")) ? (p.dns || "") : "custom"}
+                  onChange={e => set({ dns: e.target.value === "custom" ? "https://" : e.target.value })}>
+                  {DOH.map(d => <option key={d.v} value={d.v}>{d.label}</option>)}
+                  <option value="custom">Custom DoH endpoint…</option>
+                </select>
+              </Field>
+              {!DOH.some(d => d.v === (p.dns || "")) && (
+                <Field label="DoH endpoint URL">
+                  <input className="ps-in mono" value={p.dns || ""} onChange={e => set({ dns: e.target.value })}
+                    placeholder="https://doh.example.net/dns-query" />
+                </Field>
+              )}
+              <div className="ps-hint"><Wifi size={12} /> DNS-over-HTTPS, not a plain nameserver — Chromium
+                has no flag for one, and it's the stronger answer anyway: lookups leave over HTTPS instead of
+                in the clear beside the proxy, where they'd name every site the profile visits.</div>
               <Field label="WebGL vendor"><input className="ps-in mono" value={p.webglVendor} onChange={e => set({ webglVendor: e.target.value })} /></Field>
               <div className="ps-hint"><Fingerprint size={12} /> Seed & canvas noise are managed by the engine and stay stable across launches for this profile.</div>
 
@@ -374,7 +562,7 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
               <Field label="Unpacked extension folders (one per line)">
                 <textarea className="ps-in mono" rows={2} value={p.extensions || ""}
                   onChange={e => set({ extensions: e.target.value })}
-                  placeholder={"C:\\\\tools\\\\metamask\\n/home/me/ext/ublock"} />
+                  placeholder={"C:\\tools\\metamask\n/home/me/ext/ublock"} />
               </Field>
               <div className="ps-hint"><Blocks size={12} /> Point at the folder containing <code>manifest.json</code>. Only these extensions load, so nothing carries over between profiles.</div>
 
@@ -439,6 +627,8 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
               )}
             </>
           )}
+          </div>
+          <ProfileSummary p={p} issues={iss} score={score} />
         </div>
 
         <div className="ps-drawer-foot">

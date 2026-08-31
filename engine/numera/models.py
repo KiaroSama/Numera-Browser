@@ -112,6 +112,13 @@ class Profile:
     engine: str = "playwright"  # which launch backend to use (see drivers.py)
     startup_urls: list[str] = field(default_factory=list)  # opened on launch
     extensions: list[str] = field(default_factory=list)  # unpacked extension dirs
+    launch_args: list[str] = field(default_factory=list)  # extra Chromium flags
+    bookmarks: list[dict] = field(default_factory=list)   # {"name", "url"} pairs
+    dns: str = ""            # DNS-over-HTTPS resolver; see drivers._dns_args
+    # Which identity signals follow the proxy's real exit IP instead of the
+    # stored fingerprint. Any of "timezone", "geolocation", "languages".
+    # Resolved at launch, because an IP's country is not knowable before then.
+    ip_based: list[str] = field(default_factory=list)
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
@@ -125,6 +132,10 @@ class Profile:
             "engine": self.engine,
             "startup_urls": self.startup_urls,
             "extensions": self.extensions,
+            "launch_args": self.launch_args,
+            "bookmarks": self.bookmarks,
+            "dns": self.dns,
+            "ip_based": self.ip_based,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "fingerprint": self.fingerprint.to_dict(),
@@ -141,6 +152,10 @@ class Profile:
             engine=d.get("engine", "playwright"),
             startup_urls=d.get("startup_urls", []),
             extensions=d.get("extensions", []),
+            launch_args=d.get("launch_args", []),
+            bookmarks=d.get("bookmarks", []),
+            dns=d.get("dns", ""),
+            ip_based=d.get("ip_based", []),
             created_at=d.get("created_at", time.time()),
             updated_at=d.get("updated_at", time.time()),
             fingerprint=Fingerprint.from_dict(d["fingerprint"]),

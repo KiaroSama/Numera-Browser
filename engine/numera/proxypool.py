@@ -225,3 +225,22 @@ def check(proxy: dict, timeout: float = 12) -> dict:
     opener = urllib.request.build_opener(handler)
     opener.addheaders = [("User-Agent", "numera-proxy-check/1.0")]
     return _ask_echo(opener, timeout, started)
+
+
+def exit_country(proxy, timeout: float = 10) -> Optional[str]:
+    """ISO country of a ``Proxy`` model's exit IP, or None if it can't be read.
+
+    The pool stores proxies as flat dicts and `check` speaks that shape; a
+    launched profile carries a `Proxy` model. Rather than a second echo client,
+    this adapts one to the other.
+    """
+    from urllib.parse import urlsplit
+
+    server = proxy.server if "://" in proxy.server else "http://" + proxy.server
+    u = urlsplit(server)
+    res = check({"type": _SCHEME_TYPE.get((u.scheme or "http").lower(), "HTTP"),
+                 "host": u.hostname or "", "port": u.port or 0,
+                 "user": proxy.username or "", "pass": proxy.password or ""},
+                timeout=timeout)
+    country = (res or {}).get("country")
+    return country.upper()[:2] if isinstance(country, str) and country else None

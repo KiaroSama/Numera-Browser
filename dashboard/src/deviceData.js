@@ -64,6 +64,10 @@ const COUNTRY_LOCALE = { US: "en-US", GB: "en-GB", UK: "en-GB", PK: "en-PK", IN:
 const MODES = {
   canvas: ["Noise", "Block", "Real"], webrtc: ["Altered", "Disabled", "Real"],
   audio: ["Noise", "Real"], fonts: ["Masked", "Real"], geo: ["Prompt", "Allow", "Block"],
+  // Surfaces the engine has always read from the profile - `to_engine_profile`
+  // maps every one of these - but which the editor never offered.
+  clientRects: ["Noise", "Real"], webglImage: ["Noise", "Real"],
+  mediaDevices: ["Masked", "Real"],
 };
 
 /* ---- launch engines (mirrors numera/drivers.py) ----------------- */

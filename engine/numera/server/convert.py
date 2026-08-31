@@ -58,6 +58,22 @@ def _parse_lines(raw) -> list[str]:
     return [p.strip() for p in parts if p.strip()]
 
 
+def _parse_bookmarks(raw) -> list[dict]:
+    """One bookmark per line, as ``Name | https://url`` or a bare URL.
+
+    A textarea rather than a row editor because the list is usually pasted, and
+    the separator is a pipe because a title may contain a comma but rarely one
+    of these.
+    """
+    out = []
+    for line in _parse_lines(raw):
+        name, sep, url = line.rpartition("|")
+        url = (url if sep else line).strip()
+        if url:
+            out.append({"name": name.strip() or url, "url": url})
+    return out
+
+
 def _parse_startup_urls(raw) -> list[str]:
     """Accept a newline/comma/space-separated string (or list) of URLs and
     return a clean list, adding a scheme where one is missing."""
@@ -170,6 +186,11 @@ def to_engine_profile(d: dict) -> Profile:
         engine=d.get("engine", "playwright"),
         startup_urls=_parse_startup_urls(d.get("startupUrls")),
         extensions=_parse_lines(d.get("extensions")),
+        launch_args=_parse_lines(d.get("launchArgs")),
+        bookmarks=_parse_bookmarks(d.get("bookmarks")),
+        dns=str(d.get("dns") or "").strip(),
+        ip_based=[k for k in ("timezone", "geolocation", "languages")
+                  if k in (d.get("ipBased") or [])],
     )
 
 
@@ -232,6 +253,12 @@ def to_dashboard_profile(prof: Profile) -> dict:
         "tags": list(prof.tags),
         "startupUrls": "\n".join(prof.startup_urls or []),
         "extensions": "\n".join(prof.extensions or []),
+        "launchArgs": "\n".join(prof.launch_args or []),
+        "bookmarks": "\n".join(
+            f"{b['name']} | {b['url']}" if b.get("name") not in (None, "", b["url"]) else b["url"]
+            for b in (prof.bookmarks or []) if b.get("url")),
+        "dns": prof.dns or "",
+        "ipBased": list(prof.ip_based or []),
         "lastActive": "never",
     }
 
