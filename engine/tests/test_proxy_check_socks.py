@@ -170,11 +170,15 @@ def test_a_dead_socks_port_fails_rather_than_hanging():
     assert "502" not in res["error"], res["error"]
 
 
-def test_socks4_is_declined_with_a_reason_not_a_shrug():
-    """SOCKS4 genuinely cannot be checked; the message has to say why."""
+def test_a_dead_socks4_proxy_fails_rather_than_shrugging():
+    """This used to assert `ok is None` with "SOCKS4 genuinely cannot be
+    checked". It can: a health check needs a connection and an exit IP, neither
+    of which involves authentication. The real gap was that the relay spoke only
+    SOCKS5, and it speaks SOCKS4a now - so a SOCKS4 row that is down has to read
+    as down, not as untestable."""
     res = proxypool.check({"type": "SOCKS4", "host": "127.0.0.1", "port": 1}, timeout=5)
-    assert res["ok"] is None
-    assert "SOCKS4" in res["error"]
+    assert res["ok"] is False, res
+    assert res["error"]
 
 
 @pytest.mark.parametrize("require_auth", [False, True])

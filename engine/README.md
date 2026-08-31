@@ -133,11 +133,16 @@ from either side is visible to both.
 **SOCKS proxies are health-checked for real.** urllib has no SOCKS transport, so
 `pool test` used to answer "test it via a profile's proxy test" for anything
 SOCKS — which, for a pool that is mostly SOCKS, made the check look broken. It
-now borrows the same loopback relay the browser uses (`relay.py` speaks SOCKS5,
-which is how credentialed SOCKS reaches Chromium at all), so the result is the
-real exit IP. A wrong password and an unreachable host are reported differently,
-because they need different fixes. Only SOCKS4 is declined, and it says why: the
-protocol has no authentication to test.
+now borrows the same loopback relay the browser uses, so the result is the real
+exit IP. A wrong password and an unreachable host are reported differently,
+because they need different fixes.
+
+SOCKS4 included. It used to be declined with "the protocol has no authentication
+to test", which was the wrong reason for the wrong thing - a health check needs a
+connection and an exit IP, and neither involves authentication. The real gap was
+that the relay spoke only SOCKS5; it speaks SOCKS4a now. What SOCKS4 genuinely
+cannot do is carry a *password*: the protocol has a user-id field and no password
+field, so a SOCKS4 proxy given one is refused with that reason instead.
 
 `pool export` is the exact inverse of the import parser — a round-trip test holds
 the two together, so an exported file re-imports to the same proxies, credentials

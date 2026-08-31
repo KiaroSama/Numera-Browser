@@ -116,20 +116,40 @@ class DashboardStore:
             prof["id"] = uuid.uuid4().hex[:12]
         prof.setdefault("_created", time.time())
         prof = self._guard_secrets(prof)
-        self._path(prof["id"]).write_text(json.dumps(prof, indent=2), encoding="utf-8")
-        self._mirror(prof)
+        path = self._path(prof["id"])
+        with _lock_for(path):
+            previous = path.read_bytes() if path.exists() else None
+            write_json(path, prof)
+            try:
+                self._mirror(prof)
+            except Exception:
+                # Both copies or neither. This half was written first and the
+                # mirror's failure was swallowed, so a locked vault produced a
+                # dashboard that said "saved" over an engine copy still holding
+                # the old proxy - and nothing anywhere said the two had parted.
+                if previous is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.write_bytes(previous)
+                raise
         return prof
 
     def _mirror(self, prof: dict) -> None:
-        """Write the engine-shaped twin. Never fatal: a profile the dashboard
-        can hold but the engine cannot convert must still save, or the UI would
-        start refusing edits for a reason the user cannot see."""
+        """Write the engine-shaped twin.
+
+        A profile the dashboard can hold but the engine cannot *model* still
+        saves - refusing would take the UI down for a reason the user cannot
+        see. A failure to *write* one it modelled fine is a different thing and
+        is raised: that is the store telling us it could not store, and
+        continuing would leave the two copies describing different profiles.
+        """
         if self._engine is None:
             return
         try:
-            self._engine.save(to_engine_profile(prof))
+            twin = to_engine_profile(prof)
         except Exception:       # pragma: no cover - conversion is best-effort
-            pass
+            return
+        self._engine.save(twin)
 
     def delete(self, pid: str) -> bool:
         f = self._path(pid)
@@ -161,7 +181,9 @@ class DashboardStore:
             return {}
 
     def set_meta(self, meta: dict) -> dict:
-        self._meta_path().write_text(json.dumps(meta, indent=2), encoding="utf-8")
+        path = self._meta_path()
+        with _lock_for(path):
+            write_json(path, meta)
         return meta
 
 

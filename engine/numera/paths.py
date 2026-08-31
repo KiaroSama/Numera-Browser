@@ -26,6 +26,7 @@ from __future__ import annotations
 import os
 import sys
 import tempfile
+import time
 import re
 import threading
 import json
@@ -46,6 +47,40 @@ def app_dir() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parents[2]
+
+
+def bundled_browsers() -> "Optional[Path]":
+    """The Playwright browser bundle shipped beside the app, if there is one.
+
+    Checked next to the frozen engine and one level up, because the portable
+    layout puts the engine in `<app>/engine/` and the browsers in
+    `<app>/browsers/` - a sibling, not a child, so a rebuild of the engine does
+    not have to re-download 150MB.
+    """
+    for base in (app_dir(), app_dir().parent):
+        candidate = base / "browsers"
+        if candidate.is_dir() and any(candidate.iterdir()):
+            return candidate
+    return None
+
+
+def use_bundled_browsers() -> "Optional[Path]":
+    """Point Playwright at the bundled browsers, unless the caller chose one.
+
+    `pip install playwright` installs the *package*; the browser is a separate
+    download into a per-user cache. A portable build has no such cache on a
+    machine that has never run Playwright, so the app started, served the
+    dashboard, and failed at the first launch with "Executable doesn't exist".
+
+    An explicit `PLAYWRIGHT_BROWSERS_PATH` always wins: someone who set it means
+    it.
+    """
+    if os.environ.get("PLAYWRIGHT_BROWSERS_PATH"):
+        return None
+    found = bundled_browsers()
+    if found is not None:
+        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(found)
+    return found
 
 
 def _is_writable(directory: Path) -> bool:
@@ -114,6 +149,16 @@ def safe_join(base: Path, member: str) -> Path:
 # a path fragment, so nothing that looks like one is allowed near a filename.
 _SAFE_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
+# Reserved on Windows in every directory, case-insensitively, with or without an
+# extension. Checked on every platform so a store written on Linux stays
+# portable.
+_WINDOWS_DEVICES = frozenset(
+    ["CON", "PRN", "AUX", "NUL"]
+    + [f"COM{i}" for i in range(1, 10)] + [f"LPT{i}" for i in range(1, 10)]
+    # COM¹/COM²/COM³ superscripts are reserved too, and so are the 0 forms on
+    # current Windows builds.
+    + ["COM0", "LPT0"])
+
 
 def safe_id(value, *, what: str = "id") -> str:
     """The id, or a ValueError explaining why it cannot be used as a filename.
@@ -129,6 +174,16 @@ def safe_id(value, *, what: str = "id") -> str:
         raise ValueError(
             f"{what} {text!r} is not a valid profile id: expected 1-64 characters "
             "from A-Z, a-z, 0-9, '_' or '-'")
+    # `CON`, `NUL`, `COM1` and friends are device names on Windows, not files -
+    # with any extension and in any case, so `nul.json` is the device too. The
+    # character class above lets them through because they contain nothing
+    # unusual. Opening one succeeds and reads or writes the device instead of a
+    # profile. Server-minted ids never look like this, but an import, a restore
+    # or the CLI can carry one in.
+    if text.split(".")[0].upper() in _WINDOWS_DEVICES:
+        raise ValueError(
+            f"{what} {text!r} is not a valid profile id: {text.split('.')[0].upper()} "
+            "is a reserved device name on Windows")
     return text
 
 
@@ -157,6 +212,28 @@ def _lock_for(path) -> threading.RLock:
         return lock
 
 
+# Windows hands out ERROR_ACCESS_DENIED for a rename whose source or destination
+# another process has open for a moment - an antivirus scanner or the search
+# indexer looking at the file we just wrote. It clears on its own in
+# milliseconds, and the write is already serialised by the caller's lock, so the
+# only thing to do about it is wait and try again. Bounded: five attempts over
+# about a quarter of a second, then the error is the caller's.
+_REPLACE_ATTEMPTS = 5
+_REPLACE_BACKOFF = 0.05
+
+
+def _replace(tmp: Path, path: Path) -> None:
+    """`os.replace`, retried past a transient Windows lock on the file."""
+    for attempt in range(_REPLACE_ATTEMPTS):
+        try:
+            os.replace(tmp, path)              # atomic on POSIX and Windows
+            return
+        except PermissionError:
+            if attempt == _REPLACE_ATTEMPTS - 1:
+                raise
+            time.sleep(_REPLACE_BACKOFF * (attempt + 1))
+
+
 def write_json(path, data) -> None:
     """Serialise first, then replace in one step.
 
@@ -175,7 +252,7 @@ def write_json(path, data) -> None:
     tmp = path.with_name(f"{path.name}.tmp-{os.getpid()}-{threading.get_ident():x}")
     try:
         tmp.write_text(blob, encoding="utf-8")
-        os.replace(tmp, path)                  # atomic on POSIX and Windows
+        _replace(tmp, path)
     finally:
         if tmp.exists():
             try:

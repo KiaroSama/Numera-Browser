@@ -20,11 +20,17 @@ from __future__ import annotations
 import json
 import uuid
 from pathlib import Path
+
+from .paths import _lock_for, write_json
 from typing import Optional
 
 # A schedule can't fire more often than this, whatever interval is asked for —
 # a runaway "every 0 hours" would just launch browsers back to back.
 MIN_INTERVAL_HOURS = 0.25
+
+# Written by the scheduler as it runs, never by a client: patching `lastRun`
+# moves the next run, and patching an outcome forges a result nobody produced.
+SCHEDULER_OWNED = ("lastRun", "lastOutcome", "lastError", "lastFailedAt")
 
 
 class ScheduleStore:
@@ -42,7 +48,11 @@ class ScheduleStore:
             return []
 
     def _save(self, items: list[dict]) -> None:
-        self.path.write_text(json.dumps(items, indent=2), encoding="utf-8")
+        write_json(self.path, items)
+
+    @property
+    def _lock(self):
+        return _lock_for(self.path)
 
     def get(self, sid: str) -> Optional[dict]:
         return next((s for s in self.list() if s.get("id") == sid), None)
@@ -60,32 +70,59 @@ class ScheduleStore:
             "lastRun": None,
             "createdAt": now,
         }
-        items = self.list()
-        items.append(entry)
-        self._save(items)
+        with self._lock:
+            items = self.list()
+            items.append(entry)
+            self._save(items)
         return entry
 
     def update(self, sid: str, patch: dict) -> Optional[dict]:
-        items = self.list()
-        out = None
-        for s in items:
-            if s.get("id") == sid:
-                s.update(patch)
-                out = s
-        if out:
-            self._save(items)
-        return out
+        """Apply a *user* patch, normalised.
+
+        Validation used to live only in the HTTP route, so `everyHours: "soon"`
+        went straight to disk from the CLI or any other internal caller and
+        surfaced later as a `next_run_at()` that could not compute. The store is
+        the boundary every writer crosses, so the rule belongs here.
+        """
+        return self._apply(sid, validate_schedule(patch, partial=True))
+
+    def record(self, sid: str, **outcome) -> Optional[dict]:
+        """Write the fields the scheduler owns: what ran, when, and how it went.
+
+        Separate from `update()` because `validate_schedule` refuses these by
+        design - a client must not be able to move the next run or forge a
+        result - while the scheduler itself has to write them every tick.
+        """
+        unknown = sorted(set(outcome) - set(SCHEDULER_OWNED))
+        if unknown:
+            raise ValueError(f"not a scheduler-owned field: {', '.join(unknown)}")
+        return self._apply(sid, outcome)
+
+    def _apply(self, sid: str, patch: dict) -> Optional[dict]:
+        # Re-read inside the lock: a background tick and an HTTP edit hold
+        # different snapshots, and writing a stale one back drops the other.
+        with self._lock:
+            items = self.list()
+            out = None
+            for s in items:
+                if s.get("id") == sid:
+                    s.update(patch)
+                    out = s
+            if out:
+                self._save(items)
+            return out
 
     def delete(self, sid: str) -> bool:
-        items = self.list()
-        kept = [s for s in items if s.get("id") != sid]
-        if len(kept) == len(items):
-            return False
-        self._save(kept)
-        return True
+        with self._lock:
+            items = self.list()
+            kept = [s for s in items if s.get("id") != sid]
+            if len(kept) == len(items):
+                return False
+            self._save(kept)
+            return True
 
     def mark_run(self, sid: str, when: float) -> Optional[dict]:
-        return self.update(sid, {"lastRun": when})
+        return self.record(sid, lastRun=when)
 
 
 MAX_INTERVAL_HOURS = 24 * 30
@@ -141,7 +178,7 @@ def validate_schedule(patch: dict, *, partial: bool = False) -> dict:
 
     # Fields the scheduler owns. A client writing lastRun would move the next
     # run; writing lastOutcome would forge a result nobody produced.
-    for key in ("lastRun", "lastOutcome", "lastError", "lastFailedAt", "id", "profileId"):
+    for key in (*SCHEDULER_OWNED, "id", "profileId"):
         if key in patch and partial:
             raise ValueError(f"'{key}' is set by the scheduler and cannot be patched")
     return out
