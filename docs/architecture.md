@@ -50,7 +50,7 @@ pick OS ──▶ archetype (devices.py) ──▶ Fingerprint ──▶ validat
 | `relay.py` | Loopback proxy that terminates upstream authentication, so engines that cannot authenticate a proxy still use one |
 | `stealth.py` | Builds the per-fingerprint JS patch injected via `add_init_script` |
 | `launcher.py` | Thin dispatcher — resolves `profile.engine` and hands off to a driver |
-| `drivers.py` | Pluggable launch backends (playwright / patchright / camoufox) |
+| `drivers.py` | Pluggable launch backends (playwright / patchright / camoufox / cloak), plus what has to happen to the profile *directory* before Chromium opens: clearing the stores the profile does not carry over, seeding its bookmarks, resolving the signals marked "based on IP", and assembling the command line |
 | `server/` | The HTTP API, a package: `stores.py` (the two JSON stores), `convert.py` (dashboard shape <-> engine `Profile`), `spa.py` (serving the built dashboard), and one `routes_*.py` per group. Every route used to be a closure over `create_app`'s locals; each module now takes a `_Ctx` carrying them, so the bodies moved unchanged |
 | `cli/` | Command-line interface over the store + launcher. A package, split by responsibility: `out.py` (terminal output and `--json` mode), `profiles.py` (store-only commands), `browser.py` (anything that opens a real browser), `pool.py` (the proxy pool), `setup.py` (config, extensions, folders, vault, schedules, servers) and `parser.py` (the argparse tree). `__init__.py` re-exports `main` and `build_parser`, so `numera.cli` is imported exactly as before |
 

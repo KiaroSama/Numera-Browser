@@ -74,9 +74,9 @@ Numera/
 |---|---|
 | 🧬 **Coherent fingerprints** | OS, UA, GPU, screen, hardware, timezone & language always agree |
 | 🛡️ **Live coherence meter** | Real-time consistency score as you edit — nobody else shows this |
-| 🌐 **Proxy-aware** | Set a proxy's country and locale/timezone auto-align to it |
-| 🎛️ **Rich editor** | Canvas, WebRTC, audio, fonts, geolocation, media devices, DNT |
-| 💾 **Persistent sessions** | Cookies & localStorage survive between launches |
+| 🌐 **Proxy-aware** | Locale/timezone follow the proxy's country — or its real exit IP, resolved at launch |
+| 🎛️ **Rich editor** | Canvas, WebRTC, audio, fonts, client rects, WebGL image, geolocation, media devices, DNT, bookmarks, extra Chromium flags |
+| 💾 **Persistent sessions** | Cookies & localStorage survive between launches — and each store can be told not to |
 | 🍪 **Cookie import/export** | Move a logged-in session in or out — Cookie-Editor JSON, Playwright state, or `cookies.txt` |
 | 🔎 **Trust checker** | Grades the *real* browser against the checks a fingerprinter runs |
 | ✨ **Auto-adjust** | One click aligns a profile to what its browser actually presents — grade jumps to A |
