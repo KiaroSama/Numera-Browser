@@ -235,11 +235,17 @@ def register(app, ctx):
 
     @app.delete("/api/profiles/{pid}")
     def delete_profile(pid: str):
+        # Check before destroying anything. This used to delete the engine
+        # record first and *then* discover the dashboard had no such profile,
+        # so a 404 could arrive after an engine-only profile had already been
+        # erased - the one response that promises nothing happened.
+        if not dash.get(pid) and not engine_store.get(pid):
+            raise HTTPException(404, "profile not found")
         if is_running(pid):
             stop_session(pid)
-        engine_store.delete(pid)
-        if not dash.delete(pid):
-            raise HTTPException(404, "profile not found")
+        # One owner. The route deleted the engine copy and the dashboard store
+        # deleted it again, each half-aware of the other.
+        dash.delete(pid)
         return {"ok": True}
 
     @app.post("/api/profiles/batch")
@@ -261,12 +267,21 @@ def register(app, ctx):
             problems += check_fields(item, where=f"profiles[{i}]")
         if problems:
             raise HTTPException(400, "; ".join(problems[:8]))
-        ids = []
-        last_engine = None
+        # Through the same normalisation a single create uses. Batch only
+        # type-checked the fields that were present and then saved, so
+        # `{"name": "one"}` landed with no `tags` at all - and the profile list
+        # calls `p.tags.some(...)`, which takes the page down on the next load.
+        # `_validate_profile` also mints the id first, which is what the noise
+        # seed is derived from, so two minimal entries get different identities
+        # instead of sharing one.
         for p in incoming:
+            _validate_profile(p)
             _apply_default_extensions(p)
             if not p.get("engine"):
                 p["engine"] = engine_store.get_default_engine()
+        ids = []
+        last_engine = None
+        for p in incoming:
             last_engine = p.get("engine")
             ids.append(dash.save(p)["id"])
         if last_engine:

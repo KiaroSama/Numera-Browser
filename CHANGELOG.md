@@ -4,6 +4,67 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-09-01
+
+### Fixed
+
+- **The vault left proxy passwords readable in two of the three places it stores them.** It
+  encrypted `profiles/*.json` and stopped there, so `numera vault enable` reported success while
+  `dashboard/*.json` and `proxies.json` still held the same passwords in the clear - contradicting
+  the product's own claim. `vault.SITES` now lists every secret-bearing file under the data root and
+  the migration is all-or-nothing: any failure restores every touched file and leaves the vault off.
+  The proxy pool and the dashboard store decrypt on read and encrypt on write like the engine store
+  already did, so nothing is encrypted twice and a locked edit keeps the stored value.
+  `vault.plaintext_secrets()` exists so the guarantee can be checked rather than asserted.
+- **`POST /api/profiles/batch` stored profiles the dashboard cannot render.** It type-checked the
+  fields that were present and then saved, so `{"name": "one"}` landed with no `tags` at all while
+  the list calls `p.tags.some(...)`. Batch entries go through the same normalisation as a single
+  create, which also mints the id before the noise seed is derived from it - two minimal entries
+  used to be able to share a fingerprint.
+- **Deleting a profile was done twice and rolled back never.** The route deleted the engine record
+  and only then found the dashboard had none, so a 404 could arrive after an engine-only profile was
+  erased; and the dashboard store swallowed a failed engine delete, leaving the twin behind while
+  reporting success. Existence is checked before anything is destroyed, one owner performs both
+  deletes with rollback, and the session directory - the only irreversible part - goes last.
+- **Settings saved at the same time overwrote each other.** `set_default_engine`,
+  `set_default_extensions` and `set_headless_launch` read `config.json` outside the lock and locked
+  only the write, so each wrote its own copy of the whole document back. They share one locked
+  read-modify-write now (`paths.mutate_json`).
+- **A folder rename or delete could stop half way**, leaving some profiles moved and the rest behind
+  under a folder list that had already changed. `folders` writes through `paths.write_batch()`,
+  which puts every file back if any of them fails, and no longer bypasses the atomic writer.
+- **Structured proxy input reached the store unvalidated.** `body.proxies` went straight to the
+  pool, so `{"nope": 1}` was a 500, a non-numeric port was stored and only failed at launch, and an
+  unsupported type was silently treated as HTTP. Text and structured input share one normaliser
+  (`proxypool.normalize`); IPv6, credentials and all four types still round-trip.
+- **Minting the first named token locked the dashboard out of its own engine.** Creating it turns
+  auth on immediately, and `SettingsView` did not adopt the token before its next request; the 401
+  was swallowed, as were the polling loop's and several views'. Every 401 now reports through one
+  handler in `api.js` and moves the app to the locked screen, and a token minted while the API was
+  open is adopted for the session.
+- **`npm run dev` never reached the engine.** `api.js` defaults to same-origin, correct for
+  production, but `vite.config.js` had no `/api` proxy - so the documented two-terminal workflow
+  called port 5173 and the dashboard came up in demo mode over a healthy engine. The dev server
+  proxies `/api` to `127.0.0.1:8787`; the build output and the CORS default are untouched.
+- **Linux and macOS release artifacts shipped no browser**, the same defect the Windows build had.
+  Both now bundle Chromium (minus the headless shell) and their smoke step launches it through
+  `scripts/smoke-portable.sh` instead of only running `--version`, create and list.
+
+### Added
+
+- `numera/vault.py` - the secret-site table, the all-or-nothing migration, and the one
+  read/write rule the three stores share.
+- `paths.mutate_json()` and `paths.write_batch()` - locked read-modify-write for one file, and
+  many-file writes that undo themselves.
+- Dashboard tests (vitest + jsdom), and `npm test`.
+
+### Changed
+
+- A locked-vault write raises `crypto.VaultLocked` everywhere. The dashboard store raised
+  `PermissionError` for the same condition; nothing caught either, and one type is now used.
+- `numera vault enable` reports the number of secrets converted, not profiles - it covers three
+  stores now.
+
 ## [0.11.1] - 2026-09-01
 
 ### Fixed

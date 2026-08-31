@@ -133,6 +133,67 @@ def to_line(proxy: dict) -> str:
     return f"{line}:{tail}" if tail else line
 
 
+def normalize(entry) -> dict:
+    """One proxy in the canonical shape, or a ValueError saying what is wrong.
+
+    Text input went through `parse_line`, which validates as it parses.
+    Structured input from `POST /api/proxies` went straight to the pool, whose
+    identity code indexes `host` and `port` - so `{"nope": 1}` raised a KeyError
+    as a 500, a non-numeric port was stored and only failed at launch, and an
+    unsupported type was accepted and silently treated as HTTP. Both paths come
+    through here now, so a malformed proxy is a 4xx naming the field rather than
+    a stack trace or a broken record.
+    """
+    if not isinstance(entry, dict):
+        raise ValueError(f"a proxy must be an object, got {type(entry).__name__}")
+
+    kind = str(entry.get("type") or "HTTP").upper()
+    if kind not in _TYPE_SCHEME:
+        raise ValueError(f"unsupported proxy type {kind!r}; "
+                         f"expected one of {', '.join(sorted(_TYPE_SCHEME))}")
+
+    host = str(entry.get("host") or "").strip().strip("[]")
+    if not host:
+        raise ValueError("a proxy needs a host")
+    if any(c.isspace() for c in host):
+        raise ValueError(f"{host!r} is not a valid host")
+
+    raw_port = entry.get("port")
+    try:
+        port = int(str(raw_port).strip())
+    except (TypeError, ValueError):
+        raise ValueError(f"{raw_port!r} is not a valid port") from None
+    if not 1 <= port <= 65535:
+        raise ValueError(f"port {port} is outside 1-65535")
+
+    def text(key):
+        value = entry.get(key)
+        return str(value) if value not in (None, "") else None
+
+    country = (text("country") or "").strip().upper() or None
+    if country and not _CC.match(country):
+        raise ValueError(f"{country!r} is not a two-letter country code")
+
+    return {"type": kind, "host": host, "port": str(port),
+            "user": text("user"), "pass": text("pass"),
+            "country": country, "label": text("label")}
+
+
+def normalize_many(entries) -> list[dict]:
+    """Normalize a list, reporting every bad entry rather than only the first."""
+    if not isinstance(entries, list):
+        raise ValueError(f"'proxies' must be a list, got {type(entries).__name__}")
+    out, problems = [], []
+    for i, entry in enumerate(entries):
+        try:
+            out.append(normalize(entry))
+        except ValueError as exc:
+            problems.append(f"proxies[{i}]: {exc}")
+    if problems:
+        raise ValueError("; ".join(problems[:8]))
+    return out
+
+
 def parse_many(text: str) -> list[dict]:
     """Parse a whole pasted list / file, skipping blank and unparseable lines."""
     out = []
