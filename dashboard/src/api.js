@@ -98,6 +98,13 @@ export const api = {
   listProxies: () => req("GET", "/api/proxies"),
   addProxies: (text) => req("POST", "/api/proxies", { text }),
   deleteProxy: (id) => req("DELETE", `/api/proxies/${id}`),
+  // Bulk forms so a 40-proxy sweep is one request, not forty in a row.
+  deleteProxies: (ids) => req("POST", "/api/proxies/delete", { ids }),
+  // Rendered engine-side: the line format is the parser's inverse, and a second
+  // copy of it here would drift until an export stopped importing.
+  exportProxies: (ids) => req("POST", "/api/proxies/export", { ids }),
+  testProxies: (ids) => req("POST", "/api/proxies/test", { ids }),
+  updateProxy: (id, patch) => req("PUT", `/api/proxies/${id}`, patch),
   testProxy: (id) => req("POST", `/api/proxies/${id}/test`),
   assignProxies: (profileIds, proxyIds) => req("POST", "/api/proxies/assign", { profileIds, proxyIds }),
   // Scheduled warm-up: recurring, unattended aging of a profile's session.

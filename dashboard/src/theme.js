@@ -469,7 +469,13 @@ select.ps-in { cursor: pointer; }
 @keyframes ps-pop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 .ps-cookie-actions .ps-btn.disabled { opacity: .5; cursor: progress; }
 .ps-hint code { font-family: ${FONT.mono}; font-size: 11px; color: var(--text); }
-.ps-hint { display: flex; align-items: flex-start; gap: 8px; font-size: 11.5px; color: var(--muted); margin-top: 12px; line-height: 1.55; background: var(--bg); border: 1px solid var(--lineSoft); padding: 11px 13px; border-radius: 10px; }
+/* Block, not flex. A hint is a sentence with an icon in front of it, and
+   under display:flex every inline <b> or <code> inside becomes its own
+   flex item - the sentence renders as a row of narrow columns instead of
+   a line of text. Taking the icon out of the flow with position keeps the
+   prose as prose, however much markup it contains. */
+.ps-hint > svg:first-child { position: absolute; left: 13px; top: 12px; }
+.ps-hint { display: block; position: relative; font-size: 11.5px; color: var(--muted); margin-top: 12px; line-height: 1.55; background: var(--bg); border: 1px solid var(--lineSoft); padding: 11px 13px 11px 33px; border-radius: 10px; }
 .ps-hint svg { flex-shrink: 0; margin-top: 1px; color: var(--violet); }
 .ps-drawer-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 17px 22px; border-top: 1px solid var(--line); }
 
@@ -481,6 +487,12 @@ select.ps-in { cursor: pointer; }
 .ps-btn.danger { background: color-mix(in srgb, var(--red) 12%, transparent); border-color: color-mix(in srgb, var(--red) 40%, transparent); color: var(--red); }
 .ps-btn.danger:hover { background: color-mix(in srgb, var(--red) 18%, transparent); }
 .ps-iconbtn.sm { width: 30px; height: 30px; border-radius: 8px; }
+/* A credential cell: masked by default, revealed on demand. This table is the
+   kind of thing people screen-share, so a password should take one deliberate
+   click to show rather than being on display by default. */
+.ps-iconbtn.xs { width: 22px; height: 22px; border-radius: 6px; border-color: transparent; background: transparent; }
+.ps-secret { display: inline-flex; align-items: center; gap: 4px; }
+.ps-secret code { letter-spacing: .5px; }
 .ps-iconbtn.sm.danger:hover { color: var(--red); border-color: var(--red); }
 .ps-seg.wrap { flex-wrap: wrap; }
 .ps-seg.wrap button { flex: 0 0 auto; padding: 7px 12px; }

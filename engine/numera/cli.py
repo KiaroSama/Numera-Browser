@@ -765,12 +765,57 @@ def cmd_pool(args, store: ProfileStore) -> int:
                      "total": len(pool.list()), "proxies": added})
 
     if sub == "remove":
-        ok = pool.delete(args.id)
-        say(_c("Removed.", C.GRN) if ok else _c("No proxy with that id.", C.RED))
-        return emit({"ok": ok, "id": args.id}, 0 if ok else 1)
+        # Several ids at once: the dashboard's bulk delete needs a headless
+        # equivalent, and removing 20 dead proxies one command at a time is not one.
+        ids = args.id if isinstance(args.id, list) else [args.id]
+        removed = [i for i in ids if pool.delete(i)]
+        missing = [i for i in ids if i not in removed]
+        if removed:
+            say(_c(f"Removed {len(removed)} proxy/proxies.", C.GRN))
+        for i in missing:
+            say(_c(f"No proxy with id {i}.", C.RED))
+        return emit({"removed": len(removed), "ids": removed, "missing": missing,
+                     "total": len(pool.list())}, 0 if removed else 1)
+
+    if sub == "edit":
+        pr = pool.get(args.id)
+        if not pr:
+            say(_c("No proxy with that id.", C.RED))
+            return emit({"ok": False, "error": "no proxy with that id"}, 1)
+        patch = {k: v for k, v in (
+            ("label", args.label), ("type", args.type), ("host", args.host),
+            ("port", args.port), ("user", args.user), ("pass", args.password),
+            ("country", args.country)) if v is not None}
+        if not patch:
+            say(_c("Nothing to change. Pass --host, --port, --user, --pass, "
+                   "--type, --country or --label.", C.RED))
+            return emit({"ok": False, "error": "nothing to change"}, 1)
+        # A changed address means the stored verdict describes somewhere else.
+        if {"host", "port", "user", "pass", "type"} & set(patch):
+            patch.update({"status": "untested", "lastCheck": None, "checkedAt": None})
+        out = pool.update(args.id, patch)
+        say(_c(f"Updated {out['host']}:{out['port']}.", C.GRN))
+        return emit({"ok": True, "proxy": out})
+
+    if sub == "export":
+        items = pool.list()
+        if args.id:
+            keep = set(args.id)
+            items = [p for p in items if p["id"] in keep]
+        lines = [pp.to_line(p) for p in items]
+        text = "\n".join(lines) + ("\n" if lines else "")
+        if args.file:
+            Path(args.file).write_text(text, encoding="utf-8")
+            say(_c(f"Wrote {len(lines)} proxy/proxies to {args.file}.", C.GRN))
+        else:
+            # No file: the list goes to stdout so it can be piped. Under --json
+            # `emit` owns stdout, so the plain print is suppressed there.
+            say(text.rstrip("\n"))
+        return emit({"exported": len(lines), "file": args.file, "text": text})
 
     if sub == "test":
-        targets = pool.list() if args.all else [p for p in [pool.get(args.id)] if p]
+        ids = args.id if isinstance(args.id, list) else ([args.id] if args.id else [])
+        targets = pool.list() if args.all else [p for p in (pool.get(i) for i in ids) if p]
         if not targets:
             say(_c("No proxy with that id." if not args.all else "The proxy pool is empty.", C.RED))
             return emit({"ok": False, "error": "nothing to test"}, 1)
@@ -1429,11 +1474,26 @@ def build_parser() -> argparse.ArgumentParser:
     s = pl.add_parser("add", parents=[_AGENT], help="Import a proxy list")
     s.add_argument("source", help="A file of proxy lines, or - to read stdin")
     s.set_defaults(func=cmd_pool)
-    s = pl.add_parser("remove", parents=[_AGENT], help="Drop one proxy from the pool")
+    s = pl.add_parser("remove", parents=[_AGENT], help="Drop proxies from the pool")
+    s.add_argument("id", nargs="+", help="One or more proxy ids")
+    s.set_defaults(func=cmd_pool)
+    s = pl.add_parser("edit", parents=[_AGENT], help="Change one proxy in place")
     s.add_argument("id")
+    s.add_argument("--host")
+    s.add_argument("--port")
+    s.add_argument("--user")
+    s.add_argument("--pass", dest="password")
+    s.add_argument("--type", choices=["HTTP", "HTTPS", "SOCKS5", "SOCKS4"])
+    s.add_argument("--country", help="ISO code; aligns locale/timezone on assign")
+    s.add_argument("--label", help="Free text to tell same-country proxies apart")
+    s.set_defaults(func=cmd_pool)
+    s = pl.add_parser("export", parents=[_AGENT],
+                      help="Write the pool back out as importable lines")
+    s.add_argument("id", nargs="*", help="Only these ids (default: the whole pool)")
+    s.add_argument("--file", help="Write here instead of stdout")
     s.set_defaults(func=cmd_pool)
     s = pl.add_parser("test", parents=[_AGENT], help="Route a real request through a proxy")
-    s.add_argument("id", nargs="?", help="Proxy id (omit with --all)")
+    s.add_argument("id", nargs="*", help="Proxy ids (omit with --all)")
     s.add_argument("--all", action="store_true", help="Test the whole pool")
     s.set_defaults(func=cmd_pool)
     s = pl.add_parser("assign", parents=[_AGENT],

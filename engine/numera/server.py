@@ -1076,9 +1076,107 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
         return {"imported": len(results), "results": results}
 
     # ---- Proxy pool ------------------------------------------------------
+    def _proxy_usage() -> dict:
+        """How many profiles each pooled proxy is assigned to, keyed by host:port.
+
+        The table shows it so a bulk delete is an informed decision rather than a
+        surprise: removing a proxy three profiles are using is a different act
+        from removing an unused one.
+        """
+        used: dict = {}
+        for p in dash.list():
+            pr = (p or {}).get("proxy") or {}
+            host, port = pr.get("host"), pr.get("port")
+            if host and port:
+                used[f"{host}:{port}"] = used.get(f"{host}:{port}", 0) + 1
+        return used
+
     @app.get("/api/proxies")
     def list_proxies():
-        return pool.list()
+        used = _proxy_usage()
+        return [{**p, "profiles": used.get(f"{p.get('host')}:{p.get('port')}", 0)}
+                for p in pool.list()]
+
+    @app.put("/api/proxies/{pid}")
+    def edit_proxy(pid: str, body: dict):
+        """Change one proxy in place.
+
+        Editing rather than delete-and-reimport matters because the id is what
+        profiles and the status history hang off; recreating it would lose the
+        last check result and orphan nothing visibly.
+        """
+        if not pool.get(pid):
+            raise HTTPException(404, "proxy not found")
+        allowed = {"label", "type", "host", "port", "user", "pass", "country"}
+        patch = {k: v for k, v in body.items() if k in allowed}
+        if not patch:
+            raise HTTPException(400, f"nothing to change - editable fields are {sorted(allowed)}")
+        if "port" in patch:
+            try:
+                patch["port"] = int(patch["port"])
+            except (TypeError, ValueError):
+                raise HTTPException(400, f"port must be a number, got {patch['port']!r}")
+        if "host" in patch and not str(patch["host"]).strip():
+            raise HTTPException(400, "host cannot be empty")
+        # A changed address invalidates the last health check; saying "OK" about
+        # an address that was never tested is the same class of lie as a control
+        # that reports instead of acting.
+        if {"host", "port", "user", "pass", "type"} & set(patch):
+            patch.update({"status": "untested", "lastCheck": None, "checkedAt": None})
+        return pool.update(pid, patch)
+
+    @app.post("/api/proxies/export")
+    def export_proxies(body: dict):
+        """Render proxies back to importable lines.
+
+        Server-side on purpose. The line format is the parser's exact inverse and
+        there is a round-trip test holding the two together; a second
+        implementation in the browser would drift from it silently, and the first
+        sign would be an export that no longer imports.
+        """
+        from . import proxypool as pp
+        ids = body.get("ids")
+        items = pool.list()
+        if ids:
+            keep = set(ids)
+            items = [p for p in items if p.get("id") in keep]
+        lines = [pp.to_line(p) for p in items]
+        return {"count": len(lines), "text": "\n".join(lines) + ("\n" if lines else "")}
+
+    @app.post("/api/proxies/delete")
+    def delete_proxies(body: dict):
+        """Delete several at once. Ids that are already gone are not an error."""
+        ids = body.get("ids") or []
+        if not isinstance(ids, list) or not ids:
+            raise HTTPException(400, "give a list of proxy ids to delete")
+        removed = [i for i in ids if pool.delete(i)]
+        return {"deleted": len(removed), "ids": removed, "total": len(pool.list())}
+
+    @app.post("/api/proxies/test")
+    def test_proxies(body: dict):
+        """Health-check several proxies in one call.
+
+        Concurrently: a serial sweep of a 40-proxy pool at ~1s each is a minute
+        of staring at a spinner, and these are independent network calls.
+        """
+        from concurrent.futures import ThreadPoolExecutor
+
+        from . import proxypool as pp
+        ids = body.get("ids") or [p["id"] for p in pool.list()]
+        targets = [p for p in (pool.get(i) for i in ids) if p]
+        if not targets:
+            raise HTTPException(400, "no proxies to test")
+
+        def run(proxy):
+            res = pp.check(proxy)
+            status = "ok" if res.get("ok") else ("skipped" if res.get("ok") is None else "failed")
+            pool.update(proxy["id"], {"status": status, "lastCheck": res, "checkedAt": time.time()})
+            return {"id": proxy["id"], "status": status, **res}
+
+        with ThreadPoolExecutor(max_workers=min(8, len(targets))) as ex:
+            results = list(ex.map(run, targets))
+        return {"tested": len(results), "ok": sum(1 for r in results if r["status"] == "ok"),
+                "results": results}
 
     @app.post("/api/proxies")
     def add_proxies(body: dict):

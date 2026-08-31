@@ -89,6 +89,31 @@ def parse_line(line: str) -> Optional[dict]:
     }
 
 
+_TYPE_SCHEME = {"HTTP": "http", "HTTPS": "https", "SOCKS5": "socks5", "SOCKS4": "socks4"}
+
+
+def to_line(proxy: dict) -> str:
+    """Render one pooled proxy back to a line `parse_line` can read again.
+
+    Export exists so a pool can leave this machine - into a teammate's Numera, a
+    vendor's dashboard, a backup. That is only true if the output parses back to
+    the same proxy, so this is written as the exact inverse of the parser and a
+    round-trip test holds the two together.
+
+    The scheme://user:pass@host:port form is chosen over the colon-separated one
+    because it is unambiguous when a password itself contains a colon.
+    """
+    scheme = _TYPE_SCHEME.get(str(proxy.get("type", "HTTP")).upper(), "http")
+    auth = ""
+    if proxy.get("user"):
+        auth = f"{proxy['user']}:{proxy.get('pass') or ''}@"
+    line = f"{scheme}://{auth}{proxy['host']}:{proxy['port']}"
+    # The label already starts with the country code when there is one (that is
+    # how the parser built it), so appending both would repeat it.
+    tail = proxy.get("label") or proxy.get("country")
+    return f"{line}:{tail}" if tail else line
+
+
 def parse_many(text: str) -> list[dict]:
     """Parse a whole pasted list / file, skipping blank and unparseable lines."""
     out = []
@@ -128,22 +153,9 @@ def _proxy_url(proxy: dict) -> str:
     return f"http://{auth}{proxy['host']}:{proxy['port']}"
 
 
-def check(proxy: dict, timeout: float = 12) -> dict:
-    """Route a real request through the proxy and report the exit IP/country.
-
-    Uses urllib directly (no browser), which keeps a pool health-check fast.
-    SOCKS proxies need a SOCKS-aware transport we don't want to hard-depend on,
-    so those are reported as 'needs the profile proxy test' rather than failed.
-    """
-    if str(proxy.get("type", "HTTP")).upper().startswith("SOCKS"):
-        if proxy.get("user") or proxy.get("pass"):
-            return {"ok": False, "error": SOCKS_AUTH_NOTE}
-        return {"ok": None, "error": "SOCKS — test it via a profile's proxy test"}
-
-    handler = urllib.request.ProxyHandler({"http": _proxy_url(proxy), "https": _proxy_url(proxy)})
-    opener = urllib.request.build_opener(handler)
-    opener.addheaders = [("User-Agent", "numera-proxy-check/1.0")]
-    started = time.time()
+def _ask_echo(opener, timeout: float, started: float) -> Optional[dict]:
+    """Ask each IP echo service in turn until one answers with an address."""
+    last = None
     for url in _ECHO:
         try:
             with opener.open(url, timeout=timeout) as r:
@@ -163,4 +175,53 @@ def check(proxy: dict, timeout: float = 12) -> dict:
             }
         except Exception as e:  # noqa: BLE001 - report, try the next echo
             last = str(e).splitlines()[0][:140]
-    return {"ok": False, "error": locals().get("last", "no IP service answered")}
+    return {"ok": False, "error": last or "no IP service answered"}
+
+
+def check(proxy: dict, timeout: float = 12) -> dict:
+    """Route a real request through the proxy and report the exit IP/country.
+
+    urllib has no SOCKS transport, so a SOCKS proxy used to come back as
+    "test it via a profile's proxy test" - which for a pool that is mostly SOCKS
+    means the Test button appears to do nothing. It is not a missing capability:
+    `relay.py` already speaks SOCKS5 (that is how credentialed SOCKS works in the
+    browser at all), so the check borrows it. The relay is an HTTP proxy on
+    loopback, which urllib does understand.
+    """
+    started = time.time()
+    is_socks = str(proxy.get("type", "HTTP")).upper().startswith("SOCKS")
+
+    if is_socks:
+        from .models import Proxy
+        from .relay import ProxyRelay, ProxyRelayError
+
+        scheme = str(proxy.get("type", "socks5")).lower()
+        if scheme == "socks4":
+            # SOCKS4 has no username/password authentication in the protocol,
+            # and the relay says so plainly rather than failing obscurely.
+            return {"ok": None, "error": "SOCKS4 cannot be health-checked: the "
+                                         "protocol has no authentication to test."}
+        upstream = Proxy(server=f"socks5://{proxy['host']}:{proxy['port']}",
+                         username=proxy.get("user") or None,
+                         password=proxy.get("pass") or None)
+        try:
+            with ProxyRelay(upstream).start() as relay:
+                handler = urllib.request.ProxyHandler({"http": relay.url, "https": relay.url})
+                opener = urllib.request.build_opener(handler)
+                opener.addheaders = [("User-Agent", "numera-proxy-check/1.0")]
+                res = _ask_echo(opener, timeout, started)
+                # "Tunnel connection failed: 502 Bad Gateway" is what urllib
+                # reports for every upstream problem alike. The relay knows
+                # which one it was; prefer its account.
+                if not res.get("ok") and relay.last_error:
+                    res["error"] = relay.last_error
+                return res
+        except ProxyRelayError as e:
+            return {"ok": False, "error": str(e).splitlines()[0][:180]}
+        except Exception as e:  # noqa: BLE001 - a dead upstream is a failed check
+            return {"ok": False, "error": str(e).splitlines()[0][:180]}
+
+    handler = urllib.request.ProxyHandler({"http": _proxy_url(proxy), "https": _proxy_url(proxy)})
+    opener = urllib.request.build_opener(handler)
+    opener.addheaders = [("User-Agent", "numera-proxy-check/1.0")]
+    return _ask_echo(opener, timeout, started)
