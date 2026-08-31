@@ -86,7 +86,7 @@ def test_import_never_overwrites_the_destination(tmp_path, legacy):
     (dst / "profiles").mkdir(parents=True)
     (dst / "profiles" / "a.json").write_text('{"id": "MINE"}', encoding="utf-8")
     result = firstrun.import_from(legacy, dst)
-    assert "profiles" in result["skipped"]
+    assert any(e.startswith("profiles") for e in result["skipped"]), result["skipped"]
     assert json.loads((dst / "profiles" / "a.json").read_text(encoding="utf-8"))["id"] == "MINE"
 
 
@@ -196,3 +196,75 @@ def test_setup_reports_failure_instead_of_claiming_a_file(tmp_path, monkeypatch,
                         lambda *a, **k: (_ for _ in ()).throw(OSError("denied")))
     assert logs.setup(tmp_path / "nope") is None
     assert "could not create" in capsys.readouterr().out
+
+
+# --- audit findings --------------------------------------------------------
+
+def test_a_partly_failed_import_is_retried_on_the_next_run(tmp_path, monkeypatch):
+    """The marker used to be written unconditionally, so one unreadable file
+    meant the rest was never retried and nobody was asked to do anything."""
+    from numera import firstrun
+
+    src = tmp_path / "old"
+    (src / "profiles").mkdir(parents=True)
+    (src / "profiles" / "a.json").write_text("{}", encoding="utf-8")
+    dst = tmp_path / "new"
+
+    monkeypatch.setattr(firstrun, "find_legacy", lambda d: src)
+    real = firstrun.shutil.copytree
+
+    def fail_once(*a, **k):
+        raise OSError("locked by another process")
+
+    monkeypatch.setattr(firstrun.shutil, "copy2", fail_once)
+    first = firstrun.run_if_needed(dst)
+    assert first and first["failed"], first
+    assert not firstrun.already_imported(dst), "the marker closed the door on a failure"
+
+    monkeypatch.undo()
+    monkeypatch.setattr(firstrun, "find_legacy", lambda d: src)
+    second = firstrun.run_if_needed(dst)
+    assert second and not second["failed"]
+    assert (dst / "profiles" / "a.json").is_file()
+    assert firstrun.already_imported(dst)
+
+
+def test_an_existing_directory_is_merged_not_skipped(tmp_path, monkeypatch):
+    """One profile in the destination used to hide twenty in the source."""
+    from numera import firstrun
+
+    src = tmp_path / "old"
+    (src / "profiles").mkdir(parents=True)
+    for i in range(3):
+        (src / "profiles" / f"old{i}.json").write_text("{}", encoding="utf-8")
+    dst = tmp_path / "new"
+    (dst / "profiles").mkdir(parents=True)
+    (dst / "profiles" / "mine.json").write_text('{"keep": true}', encoding="utf-8")
+
+    monkeypatch.setattr(firstrun, "find_legacy", lambda d: src)
+    firstrun.run_if_needed(dst)
+
+    names = sorted(p.name for p in (dst / "profiles").glob("*.json"))
+    assert names == ["mine.json", "old0.json", "old1.json", "old2.json"], names
+    assert (dst / "profiles" / "mine.json").read_text(encoding="utf-8") == '{"keep": true}'
+
+
+def test_the_import_covers_everything_the_product_stores(tmp_path, monkeypatch):
+    """Folders, tokens and schedules were added after the list was written and
+    were being left behind - an import that drops them is not an import."""
+    from numera import firstrun
+
+    src = tmp_path / "old"
+    src.mkdir()
+    for name in ("dashboard-config.json", "tokens.json", "schedules.json"):
+        (src / name).write_text("{}", encoding="utf-8")
+    (src / "extensions").mkdir()
+    (src / "extensions" / "abc").mkdir()
+    (src / "profiles").mkdir()
+    dst = tmp_path / "new"
+
+    monkeypatch.setattr(firstrun, "find_legacy", lambda d: src)
+    firstrun.run_if_needed(dst)
+    for name in ("dashboard-config.json", "tokens.json", "schedules.json"):
+        assert (dst / name).is_file(), f"{name} was left behind"
+    assert (dst / "extensions" / "abc").is_dir()
