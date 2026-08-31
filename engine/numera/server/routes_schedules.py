@@ -18,7 +18,7 @@ def register(app, ctx):
     """
     from fastapi import HTTPException
 
-    from ..scheduler import due_schedules, next_run_at
+    from ..scheduler import due_schedules, next_run_at, validate_schedule
 
     engine_store, dash, sched, running, is_running, start_scheduler = ctx.engine_store, ctx.dash, ctx.sched, ctx.running, ctx.is_running, ctx.start_scheduler
 
@@ -49,16 +49,25 @@ def register(app, ctx):
         pid = body.get("profileId")
         if not pid or not dash.get(pid):
             raise HTTPException(404, "profile not found")
-        entry = sched.add(profile_id=pid, every_hours=float(body.get("everyHours", 12)),
-                          minutes=float(body.get("minutes", 5)),
-                          preset=body.get("preset", "general"),
+        try:
+            clean = validate_schedule(body)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        entry = sched.add(profile_id=pid, every_hours=clean["everyHours"],
+                          minutes=clean["minutes"],
+                          preset=clean.get("preset") or body.get("preset", "general"),
                           enabled=bool(body.get("enabled", True)), now=time.time())
         return _decorate_schedule(entry)
 
     @app.put("/api/schedules/{sid}")
     def update_schedule(sid: str, body: dict):
-        patch = {k: body[k] for k in ("everyHours", "minutes", "preset", "enabled")
-                 if k in body}
+        try:
+            patch = validate_schedule(body, partial=True)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        if not patch:
+            raise HTTPException(400, "nothing to change - send everyHours, "
+                                     "minutes, preset or enabled")
         out = sched.update(sid, patch)
         if not out:
             raise HTTPException(404, "schedule not found")

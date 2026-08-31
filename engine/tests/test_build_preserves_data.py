@@ -115,3 +115,13 @@ def test_a_locked_stage_stops_the_build_instead_of_shipping_the_old_one(tmp_path
     profile = stage / "data" / "profiles" / "real.json"
     assert profile.is_file(), "the abandoned build left the user's data in a temp folder"
     assert profile.read_text(encoding="utf-8") == '{"name": "mine"}'
+
+
+def test_the_frozen_engine_includes_the_launch_extra():
+    """`engine[api]` freezes an engine that cannot open a browser: `playwright`
+    lives in the `launch` extra and is the default engine, so a portable build
+    made this way starts, serves the dashboard, and fails at the first launch."""
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "engine[api,launch]" in text, \
+        "the desktop build does not install the launch dependency"
+    assert "engine[api]\"" not in text

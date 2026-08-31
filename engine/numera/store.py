@@ -23,7 +23,7 @@ from typing import Optional
 
 from . import crypto
 from .models import Profile
-from .paths import resolve_data_dir, safe_join
+from .paths import id_path, resolve_data_dir, safe_join, write_json
 
 
 class ProfileStore:
@@ -178,15 +178,19 @@ class ProfileStore:
                     node[b] = crypto.encrypt(pw, v["salt"], val)
             else:  # dec
                 if crypto.is_encrypted(val):
+                    # Locked reads yield None, not ciphertext: the launcher takes
+                    # this value straight to the browser, and authenticating with
+                    # an encrypted blob is worse than not authenticating at all.
+                    # `save()` is where the stored value is protected.
                     node[b] = crypto.decrypt(pw, v["salt"], val) if (pw and self.unlocked()) else None
         return data
 
     # ---- paths -----------------------------------------------------------
     def _path(self, profile_id: str) -> Path:
-        return self.profiles_dir / f"{profile_id}.json"
+        return id_path(self.profiles_dir, profile_id, ".json")
 
     def user_data_path(self, profile_id: str) -> Path:
-        p = self.userdata_dir / profile_id
+        p = id_path(self.userdata_dir, profile_id)
         p.mkdir(parents=True, exist_ok=True)
         return p
 
@@ -200,11 +204,43 @@ class ProfileStore:
                 "the vault is locked — unlock with the master password before saving "
                 "a profile that has a proxy password")
         data = self._apply_secrets(profile.to_dict(), "enc")
-        self._path(profile.id).write_text(json.dumps(data, indent=2), encoding="utf-8")
+        # A locked read hands back None for the secret, so an ordinary edit -
+        # rename the profile, change its notes - came back here carrying None and
+        # wrote it straight over the ciphertext. The password was gone and
+        # nothing said so. Carry the stored value across instead.
+        if self.vault_enabled() and not self.unlocked():
+            data = self._keep_stored_secrets(profile.id, data)
+        write_json(self._path(profile.id), data)
         return profile
 
-    def get(self, profile_id: str) -> Optional[Profile]:
+    def _keep_stored_secrets(self, profile_id: str, data: dict) -> dict:
+        """Put back any secret this save has no value for.
+
+        Only ever restores; it cannot introduce a value the caller did not have,
+        because the only source is the record already on disk.
+        """
         path = self._path(profile_id)
+        if not path.exists():
+            return data
+        try:
+            stored = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return data
+        for a, b in self.SECRET_PATHS:
+            node = data.get(a)
+            if not isinstance(node, dict) or node.get(b):
+                continue                      # the caller supplied something
+            old = stored.get(a)
+            previous = old.get(b) if isinstance(old, dict) else None
+            if previous:
+                node[b] = previous
+        return data
+
+    def get(self, profile_id: str) -> Optional[Profile]:
+        try:
+            path = self._path(profile_id)
+        except ValueError:
+            return None
         if not path.exists():
             return None
         data = self._apply_secrets(json.loads(path.read_text(encoding="utf-8")), "dec")

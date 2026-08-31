@@ -26,6 +26,9 @@ from __future__ import annotations
 import os
 import sys
 import tempfile
+import re
+import threading
+import json
 from pathlib import Path
 from typing import Optional
 
@@ -65,7 +68,7 @@ def resolve_data_dir(explicit: Optional[str | Path] = None) -> Path:
         return Path(env).expanduser()
 
     portable = app_dir() / APP_DIR_NAME
-    if portable.exists() or _is_writable(portable):
+    if _is_writable(portable):
         return portable
 
     home = Path.home() / HOME_DIR
@@ -104,3 +107,78 @@ def safe_join(base: Path, member: str) -> Path:
         raise ValueError(
             f"refusing archive member that escapes its folder: {member!r}")
     return target
+
+
+# A profile id is an opaque token the app mints - `uuid4().hex[:12]` on the
+# engine side, a base-36 counter plus randomness in the dashboard. It is never
+# a path fragment, so nothing that looks like one is allowed near a filename.
+_SAFE_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def safe_id(value, *, what: str = "id") -> str:
+    """The id, or a ValueError explaining why it cannot be used as a filename.
+
+    `POST /api/profiles` accepted a client-supplied `id` and both stores joined
+    it straight onto their directory, so `"../../escaped"` wrote two levels up.
+    Validating in the route alone would leave every other caller - import,
+    restore, the CLI - relying on someone else having checked, so the check
+    lives at the point the value becomes a path.
+    """
+    text = str(value or "")
+    if not _SAFE_ID.match(text):
+        raise ValueError(
+            f"{what} {text!r} is not a valid profile id: expected 1-64 characters "
+            "from A-Z, a-z, 0-9, '_' or '-'")
+    return text
+
+
+def id_path(base: Path, value, suffix: str = "") -> Path:
+    """`<base>/<id><suffix>`, refusing anything that would leave `base`."""
+    return Path(base) / f"{safe_id(value)}{suffix}"
+
+
+# One lock per file, shared by every store instance that points at it.
+#
+# `/api/proxies/test` runs eight health checks in a thread pool and each did a
+# read-modify-write of the same JSON file, so a check finishing second wrote
+# back a snapshot taken before the first one landed and silently dropped it.
+# Keyed by resolved path, because the stores are constructed per request - a
+# lock on the instance would protect nothing.
+_FILE_LOCKS: dict = {}
+_LOCKS_GUARD = threading.Lock()
+
+
+def _lock_for(path) -> threading.RLock:
+    key = str(Path(path).resolve())
+    with _LOCKS_GUARD:
+        lock = _FILE_LOCKS.get(key)
+        if lock is None:
+            lock = _FILE_LOCKS[key] = threading.RLock()
+        return lock
+
+
+def write_json(path, data) -> None:
+    """Serialise first, then replace in one step.
+
+    Writing straight into the destination leaves a truncated file if anything
+    fails halfway, and an unreadable proxies.json reads as an empty pool - which
+    looks exactly like losing every proxy. Serialising before the file is opened
+    means a failure loses the change rather than the data.
+
+    ponytail: in-process locking only. The engine is one process; two
+    `numera serve` instances over one data directory would need an OS-level
+    lock, which is a bigger change than this bug calls for.
+    """
+    path = Path(path)
+    blob = json.dumps(data, indent=2)          # may raise; nothing written yet
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.tmp-{os.getpid()}-{threading.get_ident():x}")
+    try:
+        tmp.write_text(blob, encoding="utf-8")
+        os.replace(tmp, path)                  # atomic on POSIX and Windows
+    finally:
+        if tmp.exists():
+            try:
+                tmp.unlink()
+            except OSError:
+                pass

@@ -88,6 +88,65 @@ class ScheduleStore:
         return self.update(sid, {"lastRun": when})
 
 
+MAX_INTERVAL_HOURS = 24 * 30
+
+
+def validate_schedule(patch: dict, *, partial: bool = False) -> dict:
+    """A normalised schedule patch, or ValueError saying what is wrong.
+
+    `update()` applied raw patches, so `everyHours: "soon"` or a negative value
+    was stored happily and only surfaced later as a broken `next_run_at()` or a
+    warm-up asked to browse for minus four minutes. One schema for create and
+    update, so the two cannot disagree.
+
+    A too-small interval is *clamped* to `MIN_INTERVAL_HOURS`, which is what
+    `add()` has always done - only values that are not finite numbers, or are
+    not positive at all, are refused.
+    """
+    out: dict = {}
+    if "everyHours" in patch or not partial:
+        raw = patch.get("everyHours", MIN_INTERVAL_HOURS)
+        try:
+            hours = float(raw)
+        except (TypeError, ValueError):
+            raise ValueError(f"'everyHours' must be a number, got {raw!r}") from None
+        if hours != hours or hours in (float("inf"), float("-inf")):
+            raise ValueError("'everyHours' must be a finite number")
+        if hours <= 0:
+            raise ValueError(f"'everyHours' must be greater than 0, got {hours}")
+        if hours > MAX_INTERVAL_HOURS:
+            raise ValueError(f"'everyHours' must be at most {MAX_INTERVAL_HOURS}")
+        out["everyHours"] = max(MIN_INTERVAL_HOURS, hours)
+
+    if "minutes" in patch or not partial:
+        raw = patch.get("minutes", 5)
+        try:
+            minutes = float(raw)
+        except (TypeError, ValueError):
+            raise ValueError(f"'minutes' must be a number, got {raw!r}") from None
+        if minutes != minutes or not (0 < minutes <= 24 * 60):
+            raise ValueError("'minutes' must be greater than 0 and at most 1440")
+        out["minutes"] = minutes
+
+    if "preset" in patch:
+        preset = patch["preset"]
+        if preset is not None and not isinstance(preset, str):
+            raise ValueError(f"'preset' must be a string, got {type(preset).__name__}")
+        out["preset"] = preset
+
+    if "enabled" in patch:
+        if not isinstance(patch["enabled"], bool):
+            raise ValueError("'enabled' must be true or false")
+        out["enabled"] = patch["enabled"]
+
+    # Fields the scheduler owns. A client writing lastRun would move the next
+    # run; writing lastOutcome would forge a result nobody produced.
+    for key in ("lastRun", "lastOutcome", "lastError", "lastFailedAt", "id", "profileId"):
+        if key in patch and partial:
+            raise ValueError(f"'{key}' is set by the scheduler and cannot be patched")
+    return out
+
+
 def next_run_at(schedule: dict) -> float:
     """When this schedule is next due, as a unix timestamp.
 

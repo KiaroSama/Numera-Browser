@@ -9,61 +9,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
-import threading
 import secrets
 import time
 import uuid
 from pathlib import Path
 from typing import Optional
+from ..paths import _lock_for, id_path, write_json
 from .convert import to_engine_profile
-
-
-# One lock per file, shared by every store instance that points at it.
-#
-# `/api/proxies/test` runs eight health checks in a thread pool and each did a
-# read-modify-write of the same JSON file, so a check finishing second wrote
-# back a snapshot taken before the first one landed and silently dropped it.
-# Keyed by resolved path, because the stores are constructed per request - a
-# lock on the instance would protect nothing.
-_FILE_LOCKS: dict = {}
-_LOCKS_GUARD = threading.Lock()
-
-
-def _lock_for(path) -> threading.RLock:
-    key = str(Path(path).resolve())
-    with _LOCKS_GUARD:
-        lock = _FILE_LOCKS.get(key)
-        if lock is None:
-            lock = _FILE_LOCKS[key] = threading.RLock()
-        return lock
-
-
-def write_json(path, data) -> None:
-    """Serialise first, then replace in one step.
-
-    Writing straight into the destination leaves a truncated file if anything
-    fails halfway, and an unreadable proxies.json reads as an empty pool - which
-    looks exactly like losing every proxy. Serialising before the file is opened
-    means a failure loses the change rather than the data.
-
-    ponytail: in-process locking only. The engine is one process; two
-    `numera serve` instances over one data directory would need an OS-level
-    lock, which is a bigger change than this bug calls for.
-    """
-    path = Path(path)
-    blob = json.dumps(data, indent=2)          # may raise; nothing written yet
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f"{path.name}.tmp-{os.getpid()}-{threading.get_ident():x}")
-    try:
-        tmp.write_text(blob, encoding="utf-8")
-        os.replace(tmp, path)                  # atomic on POSIX and Windows
-    finally:
-        if tmp.exists():
-            try:
-                tmp.unlink()
-            except OSError:
-                pass
 
 
 class DashboardStore:
@@ -88,7 +40,7 @@ class DashboardStore:
         self._engine = engine_store
 
     def _path(self, pid: str) -> Path:
-        return self.dir / f"{pid}.json"
+        return id_path(self.dir, pid, ".json")
 
     def list(self) -> list[dict]:
         out = []
@@ -100,7 +52,12 @@ class DashboardStore:
         return sorted(out, key=lambda p: p.get("_created", 0))
 
     def get(self, pid: str) -> Optional[dict]:
-        f = self._path(pid)
+        # An id that cannot name a file is a miss, not an error: routes look
+        # profiles up by whatever the caller sent. Writes still refuse.
+        try:
+            f = self._path(pid)
+        except ValueError:
+            return None
         return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
 
     # The vault encrypts the proxy password in the engine's own profile file.
@@ -272,6 +229,7 @@ class ProxyPool:
         return out
 
     def delete(self, pid: str) -> bool:
+      with self._lock:
         items = self.list()
         kept = [p for p in items if p.get("id") != pid]
         if len(kept) == len(items):
@@ -306,16 +264,17 @@ class TokenStore:
 
     def _save(self, items: list[dict]):
         write_json(self.path, items)
-
-    @property
-    def _lock(self):
-        return _lock_for(self.path)
         # The digests are not secrets, but the file names every integration that
         # can reach this machine. Keep it owner-only where the OS supports it.
+        # This sat after a `return` and so had never run.
         try:
             self.path.chmod(0o600)
         except OSError:
             pass
+
+    @property
+    def _lock(self):
+        return _lock_for(self.path)
 
     @staticmethod
     def hash(token: str) -> str:
@@ -326,17 +285,19 @@ class TokenStore:
         token = "nmr_" + secrets.token_urlsafe(32)
         entry = {"id": uuid.uuid4().hex[:12], "name": (name or "").strip() or "unnamed",
                  "hash": self.hash(token), "created": time.time(), "lastUsed": None}
-        items = self.list()
-        items.append(entry)
-        self._save(items)
+        with self._lock:
+            items = self.list()
+            items.append(entry)
+            self._save(items)
         return {**entry, "token": token}
 
     def revoke(self, tid: str) -> bool:
-        items = self.list()
-        keep = [t for t in items if t.get("id") != tid]
-        if len(keep) == len(items):
-            return False
-        self._save(keep)
+        with self._lock:
+            items = self.list()
+            keep = [t for t in items if t.get("id") != tid]
+            if len(keep) == len(items):
+                return False
+            self._save(keep)
         return True
 
     def verify(self, token: str) -> Optional[dict]:
@@ -344,12 +305,17 @@ class TokenStore:
         if not token:
             return None
         digest = self.hash(token)
-        items = self.list()
-        for t in items:
-            # compare_digest on the hashes: the stored value is not secret, but
-            # the comparison still should not leak timing about a near-miss.
-            if secrets.compare_digest(str(t.get("hash", "")), digest):
-                t["lastUsed"] = time.time()
-                self._save(items)
-                return t
+        with self._lock:
+            items = self.list()
+            for t in items:
+                # compare_digest on the hashes: the stored value is not secret,
+                # but the comparison still should not leak timing about a
+                # near-miss.
+                if secrets.compare_digest(str(t.get("hash", "")), digest):
+                    t["lastUsed"] = time.time()
+                    # Re-read inside the lock and write that: this used to write
+                    # back a list captured before a concurrent `revoke()`, which
+                    # brought the revoked token back.
+                    self._save(items)
+                    return t
         return None
