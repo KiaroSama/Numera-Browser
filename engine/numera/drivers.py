@@ -36,6 +36,8 @@ returns launch handles (``keep_open=True``) or blocks until the window closes
 from __future__ import annotations
 
 import importlib.util
+import json
+import time
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
@@ -104,6 +106,129 @@ def _browser_proxy(profile: Profile):
         return profile.proxy.to_playwright(), None
     relay = ProxyRelay(profile.proxy).start()
     return {"server": relay.url}, relay
+
+
+# Well-known resolver addresses mapped to their DNS-over-HTTPS endpoint.
+# Chromium has no "use this nameserver" flag - the OS resolver owns that - but
+# it does speak DoH, which is the stronger answer anyway: it takes DNS off the
+# local network entirely, so the lookups can't leak beside the proxy.
+DOH_TEMPLATES = {
+    "1.1.1.1": "https://cloudflare-dns.com/dns-query",
+    "1.0.0.1": "https://cloudflare-dns.com/dns-query",
+    "8.8.8.8": "https://dns.google/dns-query",
+    "8.8.4.4": "https://dns.google/dns-query",
+    "9.9.9.9": "https://dns.quad9.net/dns-query",
+    "149.112.112.112": "https://dns.quad9.net/dns-query",
+    "94.140.14.14": "https://dns.adguard-dns.com/dns-query",
+    "208.67.222.222": "https://doh.opendns.com/dns-query",
+}
+
+
+def _dns_args(profile: Profile) -> list[str]:
+    """Force this session's DNS through the profile's resolver.
+
+    Raises rather than launching without it: a profile configured to resolve
+    through Cloudflare that quietly resolves through the ISP is a leak the user
+    believes they closed, which is worse than a failed launch they can see.
+    """
+    dns = (getattr(profile, "dns", "") or "").strip()
+    if not dns:
+        return []
+    template = dns if dns.startswith("https://") else DOH_TEMPLATES.get(dns)
+    if not template:
+        raise ValueError(
+            f"{dns!r} is not a DNS-over-HTTPS resolver. Chromium cannot be pointed "
+            f"at a plain nameserver; give a DoH URL (https://...) or one of: "
+            f"{', '.join(sorted(DOH_TEMPLATES))}.")
+    return ["--enable-features=DnsOverHttps",
+            f"--dns-over-https-templates={template}",
+            "--dns-over-https-mode=secure"]
+
+
+def _seed_bookmarks(profile: Profile, user_data_dir) -> None:
+    """Merge the profile's bookmarks into Chromium's bookmark bar.
+
+    Merge, not overwrite: anything the user bookmarked inside the browser stays,
+    and editing the list in Numera still takes effect. Matched by URL, so
+    re-launching doesn't stack duplicates.
+
+    Written before launch because Chromium reads this file at startup and
+    rewrites it on exit - touching it while the browser is open loses the edit.
+    """
+    wanted = [b for b in (getattr(profile, "bookmarks", None) or [])
+              if isinstance(b, dict) and b.get("url")]
+    if not wanted:
+        return
+    path = Path(user_data_dir) / "Default" / "Bookmarks"
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        bar = doc["roots"]["bookmark_bar"]
+        children = bar.setdefault("children", [])
+    except Exception:  # noqa: BLE001 - absent or unreadable: start a fresh file
+        children = []
+        bar = {"children": children, "date_added": "0", "id": "1",
+               "name": "Bookmarks bar", "type": "folder"}
+        doc = {"roots": {"bookmark_bar": bar,
+                         "other": {"children": [], "date_added": "0", "id": "2",
+                                   "name": "Other bookmarks", "type": "folder"},
+                         "synced": {"children": [], "date_added": "0", "id": "3",
+                                    "name": "Mobile bookmarks", "type": "folder"}},
+               "version": 1}
+
+    have = {c.get("url") for c in children if isinstance(c, dict)}
+    # Chromium timestamps are microseconds since 1601-01-01, not the Unix epoch.
+    stamp = str(int((time.time() + 11644473600) * 1_000_000))
+    next_id = max((int(c.get("id", 0)) for c in children if str(c.get("id", "")).isdigit()),
+                  default=int(bar.get("id", 1)))
+    for b in wanted:
+        if b["url"] in have:
+            continue
+        next_id += 1
+        children.append({"date_added": stamp, "id": str(next_id), "type": "url",
+                         "name": b.get("name") or b["url"], "url": b["url"]})
+    # No "checksum" key: Chromium recomputes a missing one, but rejects a wrong
+    # one and resets the file - which would silently drop the user's own marks.
+    doc.pop("checksum", None)
+    path.write_text(json.dumps(doc, indent=2), encoding="utf-8")
+
+
+def _resolve_ip_based(profile: Profile) -> Profile:
+    """Point the signals the user marked "based on IP" at the real exit country.
+
+    A stored timezone is a guess made when the profile was created; the proxy it
+    ends up using may exit somewhere else entirely, and a browser whose clock
+    disagrees with its IP is the cheapest possible tell. Costs one request
+    through the proxy at launch, and only when something is actually marked.
+    """
+    wanted = set(getattr(profile, "ip_based", None) or [])
+    if not wanted or not profile.proxy:
+        return profile
+    from . import proxypool
+
+    try:
+        country = proxypool.exit_country(profile.proxy)
+    except Exception:  # noqa: BLE001 - a launch must not fail on a lookup
+        country = None
+    if not country:
+        return profile
+
+    fp = profile.fingerprint
+    changes: dict = {}
+    locale = fp_mod_devices.COUNTRY_TO_LOCALE.get(country)
+    if locale and locale in fp_mod_devices.LOCALES:
+        tz, langs = fp_mod_devices.LOCALES[locale]
+        if "timezone" in wanted:
+            changes["timezone"] = tz
+        if "languages" in wanted:
+            changes["locale"] = locale
+            changes["languages"] = list(langs)
+    if "geolocation" in wanted and country in fp_mod_devices.COUNTRY_GEO:
+        # The coordinates themselves live on the proxy, which is what
+        # `_geolocation_for` already reads first.
+        profile = replace(profile, proxy=replace(profile.proxy, country=country))
+    return replace(profile, fingerprint=replace(fp, **changes)) if changes else profile
 
 
 def _extension_args(profile: Profile) -> list[str]:
@@ -229,6 +354,8 @@ def session(profile: Profile, store, engine: Optional[str] = None,
 # --------------------------------------------------------------------------
 def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: bool,
                             keep_open: bool, extra_args=None):
+    profile = _resolve_ip_based(profile)
+    _seed_bookmarks(profile, store.user_data_path(profile.id))
     fp = profile.fingerprint
     launch_args = [
         f"--window-size={fp.viewport_width},{fp.viewport_height}",
@@ -237,6 +364,8 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
         "--no-default-browser-check",
         *_webrtc_arg(profile),
         *_extension_args(profile),
+        *_dns_args(profile),
+        *(profile.launch_args or []),
         *(extra_args or []),
     ]
     geolocation = _geolocation_for(profile)
@@ -384,6 +513,8 @@ def _driver_cloak(profile, store, headless=False, keep_open=True, extra_args=Non
     """
     import cloakbrowser
 
+    profile = _resolve_ip_based(profile)
+    _seed_bookmarks(profile, store.user_data_path(profile.id))
     fp = profile.fingerprint
     proxy_cfg, relay = _browser_proxy(profile)
     try:
@@ -401,7 +532,9 @@ def _driver_cloak(profile, store, headless=False, keep_open=True, extra_args=Non
             # hides that purely-cosmetic bar; it isn't visible to websites (JS can't
             # read command-line flags), so it doesn't affect the fingerprint.
             args=["--test-type", "--no-first-run", "--no-default-browser-check",
-                  *_webrtc_arg(profile), *_extension_args(profile), *(extra_args or [])],
+                  *_webrtc_arg(profile), *_extension_args(profile),
+                  *_dns_args(profile), *(profile.launch_args or []),
+                  *(extra_args or [])],
         )
     except BaseException:
         if relay:

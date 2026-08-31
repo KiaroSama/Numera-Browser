@@ -73,6 +73,7 @@ function newProfile(folder, defaultEngine) {
     canvas: "Noise", webrtc: "Altered", audio: "Noise", fonts: "Masked",
     locale: "en-US", timezone: "America/New_York", geo: "Prompt",
     mediaVideo: 1, mediaAudio: 1, dnt: false, proxy: null, notes: "", startupUrls: "", extensions: "",
+    bookmarks: "", launchArgs: "", dns: "", ipBased: [],
     lastActive: "never", _new: true,
   };
 }
