@@ -4,6 +4,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-31
+
 ### Added
 
 - **Docker.** `docker compose up -d --build` after putting a token in `.env`. The image builds on
