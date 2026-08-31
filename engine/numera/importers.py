@@ -15,6 +15,8 @@ review, not a black box.
 
 from __future__ import annotations
 
+import re
+
 import json
 from pathlib import Path
 from typing import Optional
@@ -37,6 +39,25 @@ def _first(d: dict, *names, default=None):
         if node not in (None, "", [], {}):
             return node
     return default
+
+
+_CHROME_IN_UA = re.compile(r"Chrome/(\d+(?:\.\d+){0,3})")
+
+
+def _chrome_from_ua(ua: str) -> str:
+    """The Chrome version an imported user agent claims, or "" if it names none.
+
+    Kept because the rest of the fingerprint is built from it: `sec-ch-ua` and
+    `navigator.userAgentData.brands` both carry the major version, and a profile
+    whose UA says 120 while its brands say 128 is contradicting itself.
+    """
+    m = _CHROME_IN_UA.search(ua or "")
+    if not m:
+        return ""
+    parts = m.group(1).split(".")
+    while len(parts) < 4:
+        parts.append("0")
+    return ".".join(parts[:4])
 
 
 def _norm_os(value: Optional[str], ua: str = "") -> str:
@@ -86,8 +107,9 @@ def profile_from_export(d: dict) -> tuple[Profile, list[str]]:
     Returns the profile plus the list of coherence issues ``validate()`` found,
     so the caller can surface what needs a look.
     """
-    ua = _first(d, "navigator.userAgent", "user_agent", "ua", "useragent",
-                "fingerprint.ua", "fingerprint.userAgent", default="") or ""
+    ua = _first(d, "navigator.userAgent", "navigator.user_agent", "user_agent",
+                "ua", "useragent", "fingerprint.ua", "fingerprint.userAgent",
+                "browser.userAgent", "userAgent", default="") or ""
     os_key = _norm_os(_first(d, "os", "os_type", "osType", "navigator.platform"), ua)
 
     # Start from a coherent base for this OS, then overlay whatever the export
@@ -107,17 +129,23 @@ def profile_from_export(d: dict) -> tuple[Profile, list[str]]:
         user_agent=ua or base.user_agent,
         platform=devices.NAV_PLATFORM[os_key],
         ch_platform=devices.CH_PLATFORM[os_key],
-        chrome_version=base.chrome_version,
+        chrome_version=_chrome_from_ua(ua) or base.chrome_version,
         screen_width=sw, screen_height=sh,
-        viewport_width=sw, viewport_height=max(1, sh - 88),
+        viewport_width=sw,
+        viewport_height=max(1, sh - (113 if os_key == "ios" else
+                                     80 if os_key == "android" else 88)),
         hardware_concurrency=int(_first(d, "navigator.hardwareConcurrency",
                                          "hardware_concurrency", "cores", default=base.hardware_concurrency)),
         device_memory=int(_first(d, "navigator.deviceMemory", "device_memory",
                                  "memory", default=base.device_memory)),
-        webgl_vendor=_first(d, "webGLMetadata.vendor", "webgl_vendor",
-                            "fingerprint.webgl_vendor", default=base.webgl_vendor),
-        webgl_renderer=_first(d, "webGLMetadata.renderer", "webgl_renderer",
-                              "fingerprint.webgl_renderer", default=base.webgl_renderer),
+        webgl_vendor=_first(d, "webGLMetadata.vendor", "webgl.vendor",
+                            "webGL.vendor", "graphic.vendor", "webgl_vendor",
+                            "unmaskedVendor", "fingerprint.webgl_vendor",
+                            default=base.webgl_vendor),
+        webgl_renderer=_first(d, "webGLMetadata.renderer", "webgl.renderer",
+                              "webGL.renderer", "graphic.renderer", "webgl_renderer",
+                              "unmaskedRenderer", "fingerprint.webgl_renderer",
+                              default=base.webgl_renderer),
         locale=locale,
         timezone=tz,
         languages=devices.LOCALES[locale][1],
