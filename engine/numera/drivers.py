@@ -553,7 +553,7 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
         # closing the window, `session()`, the API — frees the port with it.
         context.on("close", lambda *_: relay.close())
     context.add_init_script(build_init_script(fp))
-    _apply_ua_metadata(context, fp)
+    _apply_client_hints(context, fp)
     page = context.pages[0] if context.pages else context.new_page()
     _open_startup_urls(context, page, profile)
 
@@ -567,7 +567,52 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
     return None
 
 
-def _apply_ua_metadata(context, fp) -> None:
+def _strip_client_hints(cdp) -> None:
+    """Remove every `sec-ch-ua*` header from this page's requests.
+
+    Safari implements no Client Hints, so an iPhone profile that sends them
+    contradicts itself. Chromium adds them on its own and nothing declarative
+    takes them off: `route.continue_(headers=...)`,
+    `--disable-features=UserAgentClientHint,AcceptCHFrame,CriticalClientHint`
+    and `--blink-settings=clientHintsEnabled=false` were each measured against a
+    local server and changed nothing. Playwright's route API rebuilds the header
+    set from `request.headers()`, which is why it cannot drop what Chromium
+    appends further down the stack.
+
+    Raw CDP can. `Fetch.continueRequest` *replaces* the header set outright, so
+    a name simply left out never reaches the network. Measured: the server sees
+    no `sec-ch-ua` at all, before or after it sends `Accept-CH`.
+
+    The cost is a round trip per request, so this is only switched on for a
+    profile that needs it. Every path has to reach `continueRequest` - with
+    `Fetch` enabled, a request that is never continued hangs the page for good.
+    """
+    def on_paused(params):
+        request_id = params.get("requestId")
+        if not request_id:
+            return
+        try:
+            headers = params.get("request", {}).get("headers") or {}
+            cdp.send("Fetch.continueRequest", {
+                "requestId": request_id,
+                "headers": [{"name": k, "value": v} for k, v in headers.items()
+                            if not k.lower().startswith("sec-ch-ua")],
+            })
+        except Exception:                                   # noqa: BLE001
+            # Better a request with the hints than a page that never loads.
+            try:
+                cdp.send("Fetch.continueRequest", {"requestId": request_id})
+            except Exception:                               # noqa: BLE001
+                pass
+
+    cdp.on("Fetch.requestPaused", on_paused)
+    # Request stage only: auth challenges stay untouched, so proxy credentials
+    # keep working, and response bodies are never buffered through here.
+    cdp.send("Fetch.enable",
+             {"patterns": [{"urlPattern": "*", "requestStage": "Request"}]})
+
+
+def _apply_client_hints(context, fp) -> None:
     """Hand Chromium the profile's UA-CH values and let it decide when to send.
 
     `Emulation.setUserAgentOverride` takes a structured metadata block, and
@@ -584,6 +629,7 @@ def _apply_ua_metadata(context, fp) -> None:
     which is the leak this exists to close. A page opened later may simply have
     closed before the handler ran, so that path only warns.
     """
+    sessions: list = []
     opts = {
         "userAgent": fp.user_agent,
         "acceptLanguage": ",".join(fp.languages),
@@ -592,7 +638,12 @@ def _apply_ua_metadata(context, fp) -> None:
     }
 
     def apply(page):
-        context.new_cdp_session(page).send("Emulation.setUserAgentOverride", opts)
+        cdp = context.new_cdp_session(page)
+        cdp.send("Emulation.setUserAgentOverride", opts)
+        if not fp_mod.sends_client_hints(fp):
+            _strip_client_hints(cdp)
+            # Held so the session is not collected while its handler is live.
+            sessions.append(cdp)
 
     def apply_later(page):
         try:
