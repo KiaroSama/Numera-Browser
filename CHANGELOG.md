@@ -4,6 +4,40 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-31
+
+### Fixed
+
+- **The high-entropy Client Hints went out on every request, including the first.** They were
+  pinned as `extra_http_headers` because that is the only header lever that overrides what Chromium
+  derives from the host - without it a Windows 11 profile reported the host's OS build. But a header
+  applies to every request, and a real Chrome sends those hints only to an origin that has asked
+  with `Accept-CH`, so the profile volunteered its architecture and OS build to sites that never
+  asked. The launcher now hands Chromium the values as structured metadata over CDP
+  (`Emulation.setUserAgentOverride` with `userAgentMetadata`) and lets Chromium's own opt-in logic
+  decide when to send them. Measured against a local server: the first request carries the
+  low-entropy trio and nothing else, the request after `Accept-CH` carries the profile's values.
+  The same metadata answers `navigator.userAgentData.getHighEntropyValues()`, so the page and the
+  wire now come from one source instead of two that can drift.
+- **The page and the wire disagreed about the CPU on an Apple Silicon Mac.** The in-page hook
+  derived architecture from `isMobile` alone and answered `x86` while the header said `arm` - one
+  `getHighEntropyValues()` call apart. Both now read the same value.
+- `desktop/src-tauri/Cargo.lock` still said `0.6.0`, three releases behind every other manifest.
+- A second `## [Unreleased]` heading, inherited from the fork, was presenting long-shipped features
+  as pending.
+
+### Changed
+
+- `fingerprint.ua_metadata()` is the single source for the UA-CH values; `client_hint_headers()`
+  is its formatted view, so the two cannot drift apart.
+
+### Known limitation
+
+- An iOS profile still sends the low-entropy trio, which real Safari never sends. Chromium adds it
+  and nothing removes it; route interception and the relevant `--disable-features` /
+  `--blink-settings` flags were all measured against a local server and changed nothing. Recorded
+  in `docs/architecture.md`.
+
 ## [0.8.0] - 2026-08-31
 
 ### Fixed
@@ -641,7 +675,9 @@ Everything below is on top of upstream `0.1.0`.
   lockfile, and a browser-backed job that proves an extension really loads
   headless. Added Dependabot (pip / npm / actions) and a dependency-review gate.
 
-## [Unreleased]
+## [Pre-fork] - inherited
+
+Upstream's unreleased section as it stood at fork time. All of it shipped; the heading is kept for provenance.
 
 ### Added
 - **Folders manager** (dashboard **Folders** tab): create, rename and delete
