@@ -38,6 +38,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import time
+import warnings
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
@@ -488,18 +489,18 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
         "device_scale_factor": fp.device_pixel_ratio or (2 if fp.is_mobile else 1),
         "has_touch": fp.max_touch_points > 0,
         "extra_http_headers": {
-            # Both sets, always. Chromium fills the high-entropy hints in from
-            # the machine it is really running on the moment a site sends
-            # `Accept-CH`, and that is the leak worth closing: a Windows 11
-            # profile on this host started reporting platform-version "10.0".
-            # `extra_http_headers` is the only lever that actually overrides
-            # them - a route handler and every --disable-features combination
-            # were measured and changed nothing. The cost is that the
-            # high-entropy hints are present a request earlier than Chrome would
-            # send them, which is unusual but not self-contradictory; leaking the
-            # host's real OS build is both.
+            # The low-entropy trio only. Chrome sends these on every request, so
+            # pinning them as headers matches real behaviour and keeps them
+            # right even if the CDP override below never lands.
+            #
+            # The high-entropy hints are deliberately *not* here. They used to
+            # be, because Chromium otherwise answers `sec-ch-ua-platform-version`
+            # from the machine it is really running on - a Windows 11 profile on
+            # this host reported "10.0". But a header applies to every request,
+            # including the first, and real Chrome sends those hints only after
+            # a site asks with `Accept-CH`. `_apply_ua_metadata` gets both:
+            # Chromium's own timing, the profile's values.
             **hints["low"],
-            **hints["high"],
             "accept-language": ",".join(
                 f"{l};q={1.0 - i*0.1:.1f}" if i else l
                 for i, l in enumerate(fp.languages)
@@ -552,6 +553,7 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
         # closing the window, `session()`, the API — frees the port with it.
         context.on("close", lambda *_: relay.close())
     context.add_init_script(build_init_script(fp))
+    _apply_ua_metadata(context, fp)
     page = context.pages[0] if context.pages else context.new_page()
     _open_startup_urls(context, page, profile)
 
@@ -563,6 +565,45 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
         context.close()
         pw.stop()
     return None
+
+
+def _apply_ua_metadata(context, fp) -> None:
+    """Hand Chromium the profile's UA-CH values and let it decide when to send.
+
+    `Emulation.setUserAgentOverride` takes a structured metadata block, and
+    Chromium then derives the Sec-CH-UA headers and answers
+    `navigator.userAgentData.getHighEntropyValues()` from it. Measured against a
+    local server: the first request carries the low-entropy trio only, and the
+    request after the site's `Accept-CH` carries the profile's platform version
+    rather than the host's. Putting the same values in `extra_http_headers` gets
+    the values right and the timing wrong - they ride on the first request too,
+    which no real Chrome does.
+
+    A failure on a page that already exists is fatal: continuing would launch a
+    browser that reports the host's OS build while claiming to be the profile,
+    which is the leak this exists to close. A page opened later may simply have
+    closed before the handler ran, so that path only warns.
+    """
+    opts = {
+        "userAgent": fp.user_agent,
+        "acceptLanguage": ",".join(fp.languages),
+        "platform": fp.platform,
+        "userAgentMetadata": fp_mod.ua_metadata(fp),
+    }
+
+    def apply(page):
+        context.new_cdp_session(page).send("Emulation.setUserAgentOverride", opts)
+
+    def apply_later(page):
+        try:
+            apply(page)
+        except Exception as exc:                            # noqa: BLE001
+            warnings.warn(f"client hints not applied to a new page: {exc}",
+                          RuntimeWarning, stacklevel=2)
+
+    context.on("page", apply_later)
+    for page in context.pages:
+        apply(page)
 
 
 @register("playwright", requires="playwright")

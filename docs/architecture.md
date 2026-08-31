@@ -80,6 +80,39 @@ must be patched there (navigator.platform, WebGL strings, hardwareConcurrency,
 the `webdriver` flag, canvas noise). The stealth script handles the second set,
 and the launcher makes sure both levels describe the *same* device.
 
+### User-Agent Client Hints: a third level
+
+Client Hints need their own mechanism, because neither of the other two gets
+them right. They are headers, so the page-level script cannot reach them; and
+Chromium generates them itself, from the machine it is really running on, so a
+Windows 11 profile on a Windows 10 host announced `Sec-CH-UA-Platform-Version:
+"10.0"` to every site that asked.
+
+Pinning them as `extra_http_headers` fixes the values and breaks the timing. A
+real Chrome sends three hints unprompted - `Sec-CH-UA`, `-Mobile`, `-Platform` -
+and the high-entropy rest only to an origin that has asked with `Accept-CH`. A
+header goes on every request, so the profile volunteered its architecture and OS
+build to sites that never asked: unusual enough to be worth detecting on its own.
+
+The launcher instead hands Chromium the values as structured metadata over CDP
+(`Emulation.setUserAgentOverride` with `userAgentMetadata`) and lets Chromium's
+own `Accept-CH` logic decide when to send them. The same block also answers
+`navigator.userAgentData.getHighEntropyValues()`, so the page and the wire come
+from one source rather than two that can drift. The low-entropy trio stays
+pinned as a header as well - the values are identical, and it keeps the trio
+right if the CDP call ever fails. `_apply_ua_metadata` treats a failure on an
+existing page as fatal for exactly that reason.
+
+**The residual tell, and it is a real one:** an iOS profile still sends the
+low-entropy trio, and real Safari implements no Client Hints at all. Chromium
+adds them itself and nothing removes them - `route.continue_(headers=...)`,
+`--disable-features=UserAgentClientHint,AcceptCHFrame,CriticalClientHint` and
+`--blink-settings=clientHintsEnabled=false` were all measured against a local
+server and changed nothing. So an iPhone profile is detectable as not-Safari by
+that alone. `navigator.userAgentData` is deleted for iOS, which is enforceable,
+and the header values at least agree with the rest of the identity. Use the
+Camoufox engine when a profile must not look like Chromium at all.
+
 ## Storage layout
 
 Resolved by `paths.py`. A **portable** install keeps this beside the executable

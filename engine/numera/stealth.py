@@ -41,7 +41,7 @@ from __future__ import annotations
 
 import json
 
-from .fingerprint import platform_version, ua_brands
+from .fingerprint import ua_metadata, platform_version, ua_brands
 from .models import Fingerprint
 
 
@@ -68,6 +68,7 @@ def build_init_script(fp: Fingerprint) -> str:
         "fullVersion": fp.chrome_version if fp.chrome_version.count(".") == 3
                        else fp.chrome_version.split(".")[0] + ".0.0.0",
         "isMobile": fp.is_mobile,
+        "architecture": ua_metadata(fp)["architecture"],
         # WebKit ships no Client Hints at all, so an iOS profile has to have no
         # navigator.userAgentData rather than a plausible-looking one.
         "hasUaData": fp.os != "ios",
@@ -192,7 +193,7 @@ def build_init_script(fp: Fingerprint) -> str:
         "            });\n"
         "            const want = Array.isArray(hints) ? hints : [];\n"
         "            if (want.includes('platformVersion')) out.platformVersion = cfg.platformVersion;\n"
-        "            if (want.includes('architecture')) out.architecture = cfg.isMobile ? 'arm' : 'x86';\n"
+        "            if (want.includes('architecture')) out.architecture = cfg.architecture;\n"
         "            if (want.includes('bitness')) out.bitness = '64';\n"
         "            if (want.includes('model')) out.model = cfg.deviceModel || '';\n"
         "            if (want.includes('uaFullVersion')) out.uaFullVersion = cfg.fullVersion;\n"

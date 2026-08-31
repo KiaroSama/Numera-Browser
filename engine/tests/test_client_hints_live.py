@@ -149,12 +149,16 @@ def test_an_ios_profile_has_no_userAgentData_and_coherent_hints(tmp_path):
     fp = generate(os="ios")
     with Site() as site:
         js = visit(tmp_path, fp, site.url)
-        first = site.hints("/")
+        first, second = site.hints("/"), site.hints("/second")
 
     assert js["present"] is False, "navigator.userAgentData exists on an iOS profile"
     assert first.get("sec-ch-ua-platform") == '"iOS"', first
     assert first.get("sec-ch-ua-mobile") == "?1", first
-    assert first.get("sec-ch-ua-platform-version", '""').strip('"') ==         platform_version(fp.os, fp.os_version)
+    # The OS version is a high-entropy hint, so it belongs on the opted-in
+    # request, not the first one. This used to assert it on `/` because every
+    # hint was pinned as a header and rode on every request.
+    assert second.get("sec-ch-ua-platform-version", '""').strip('"') == \
+        platform_version(fp.os, fp.os_version)
 
 
 def test_the_low_entropy_trio_is_always_present_for_chrome(tmp_path):
@@ -165,3 +169,60 @@ def test_the_low_entropy_trio_is_always_present_for_chrome(tmp_path):
         first = site.hints("/")
     assert set(first) >= {"sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform"}, first
     assert first["sec-ch-ua-platform"] == fp.ch_platform
+
+
+HIGH = ("sec-ch-ua-platform-version", "sec-ch-ua-arch", "sec-ch-ua-bitness",
+        "sec-ch-ua-model", "sec-ch-ua-full-version", "sec-ch-ua-full-version-list",
+        "sec-ch-ua-wow64")
+
+
+def test_the_first_request_carries_no_high_entropy_hints(tmp_path):
+    """Timing, not values. Chrome sends the high-entropy hints only after a site
+    has asked with `Accept-CH`; the first request to a new origin carries the
+    trio and nothing else.
+
+    These used to be pinned as `extra_http_headers`, which is the one lever that
+    overrides what Chromium derives from the host - and a header goes on *every*
+    request, so a profile announced its architecture and OS build to a site that
+    had never asked. Unusual on its own, and trivially detectable. Handing the
+    values to Chromium as UA-CH metadata instead leaves the timing to Chromium.
+    """
+    fp = generate(os="windows")
+    with Site() as site:
+        visit(tmp_path, fp, site.url)
+        first = site.hints("/")
+
+    assert first, "the first request never arrived"
+    leaked = sorted(k for k in HIGH if k in first)
+    assert not leaked, f"sent before the site asked for them: {leaked}"
+    assert set(first) == {"sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform"}, first
+
+
+def test_the_opt_in_still_produces_the_profile_values(tmp_path):
+    """The other half: giving Chromium the timing must not give it the host's
+    values back. Both requests in one visit, so the pair cannot drift apart."""
+    fp = generate(os="windows")
+    with Site() as site:
+        visit(tmp_path, fp, site.url)
+        first, second = site.hints("/"), site.hints("/second")
+
+    assert not [k for k in HIGH if k in first]
+    assert [k for k in HIGH if k in second], "the opt-in produced nothing"
+    assert second["sec-ch-ua-platform-version"].strip('"') == platform_version(
+        fp.os, fp.os_version)
+    # The trio is identical across both, as it is for a real browser.
+    for key in ("sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform"):
+        assert first[key] == second[key], key
+
+
+def test_an_apple_silicon_mac_reports_arm_in_the_page_and_on_the_wire(tmp_path):
+    """The page used to derive architecture from `isMobile` alone, so an M-series
+    Mac answered "x86" in JS while the header said "arm" - one call apart."""
+    fp = generate(os="macos")
+    fp.webgl_renderer = "ANGLE (Apple, Apple M2, OpenGL 4.1)"
+    with Site() as site:
+        js = visit(tmp_path, fp, site.url)
+        second = site.hints("/second")
+
+    assert second["sec-ch-ua-arch"] == '"arm"', second["sec-ch-ua-arch"]
+    assert js["architecture"] == "arm", "the page and the wire disagree on the CPU"
