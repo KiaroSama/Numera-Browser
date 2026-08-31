@@ -51,7 +51,7 @@ what makes Numera distinctive.
 | **Patched-binary stealth engine** | ✅ Camoufox / Cloak\* | ✅ | ⚠️ | ✅ |
 | **Proxy pool + leak/DNS/TLS tests** | ✅ | partial | partial | partial |
 | **CLI + Python API** | ✅ | ❌ | limited | limited |
-| **Headless parity, tested** | ✅ 39/39 | ❌ | ❌ | ❌ |
+| **Headless parity, tested** | ✅ 44/44 | ❌ | ❌ | ❌ |
 | **Cloud team sync** | ❌ *(local-first by design)* | ✅ | ✅ | ✅ |
 
 <sub>Pricing and feature comparison are approximate and based on each vendor's public plans at the time of writing — check their sites for current details. Numera doesn't do hosted team sync on purpose (see the roadmap); everything else is local and free.</sub>
@@ -82,7 +82,7 @@ Numera/
 | ✨ **Auto-adjust** | One click aligns a profile to what its browser actually presents — grade jumps to A |
 | 📡 **Proxy & leak test** | Exit IP, country and timezone match + WebRTC leak detection |
 | 🌐 **DNS leak check** | Confirms name lookups exit through the proxy, not your real ISP's resolver |
-| 🌐 **Proxy pool** | Import, health-check and assign proxies round-robin across profiles |
+| 🌐 **Proxy pool** | Import, edit, health-check, export and assign proxies round-robin across profiles. Multi-select for bulk test and delete; **SOCKS5 is health-checked through the same loopback relay the browser uses**, so the result is the real exit IP rather than a shrug |
 | 🔐 **TLS/JA3 check** | Reads the handshake fingerprint — the one layer JS injection can't reach |
 | ❤️ **Health overview** | One page: coherence, proxy, trust grade and warm-up schedule per profile |
 | 🔑 **Encrypted vault** | Proxy passwords encrypted at rest behind a master password |
@@ -98,7 +98,7 @@ Numera/
 | 🔗 **Startup URLs** | Each profile opens the pages you want, in its own tabs |
 | 🖱️ **Portable desktop app** | A ~33 MB folder you copy and double-click. No Python, no Node, no installer — the engine is frozen inside the window |
 | ⌨️ **CLI + Python API** | Script it or drive it by hand |
-| 🤖 **Built for agents** | `--json` on every command an agent would drive, `--detach` for long jobs with pollable handles, and an MCP surface. A parity test asserts the GUI has no capability the CLI lacks, and it currently passes at 39/39 — see [docs/agents.md](docs/agents.md) |
+| 🤖 **Built for agents** | `--json` on every command an agent would drive, `--detach` for long jobs with pollable handles, and an MCP surface. A parity test asserts the GUI has no capability the CLI lacks, and it currently passes at 44/44 — see [docs/agents.md](docs/agents.md) |
 
 ## What Numera adds
 

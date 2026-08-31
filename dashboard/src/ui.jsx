@@ -5,7 +5,7 @@
  * this is for the genuinely shared ones. */
 
 import React from "react";
-import { Boxes, Users } from "lucide-react";
+import { Boxes, RefreshCw, Users, X } from "lucide-react";
 import { FONT, T } from "./theme";
 
 import { CORES, GPUS, RAM, SCREENS, nid, uaFor } from "./deviceData";
@@ -77,4 +77,27 @@ function newProfile(folder, defaultEngine) {
   };
 }
 
-export { Field, Row, SectionLabel, SectionHead, Pick, Stat, Placeholder, newProfile };
+/* A confirmation before something irreversible, saying what is about to
+ * happen rather than "Are you sure?". Shared, because a second copy of a
+ * confirmation dialog is how one page ends up asking and another does not. */
+function ConfirmModal({ title, body, confirmLabel, danger, busy, onCancel, onConfirm }) {
+  return (
+    <div className="ps-overlay center" onClick={busy ? undefined : onCancel}>
+      <div className="ps-modal ps-pop" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
+        <div className="ps-drawer-h">
+          <div><div className="ps-eyebrow">Confirm</div><div className="ps-drawer-title">{title}</div></div>
+          <button className="ps-x" onClick={onCancel} disabled={busy}><X size={18} /></button>
+        </div>
+        <div style={{ padding: 20, fontSize: 13, color: T.muted, lineHeight: 1.65 }}>{body}</div>
+        <div className="ps-drawer-foot">
+          <button className="ps-btn ghost" onClick={onCancel} disabled={busy}>Cancel</button>
+          <button className={"ps-btn " + (danger ? "danger" : "primary")} onClick={onConfirm} disabled={busy}>
+            {busy ? <><RefreshCw size={15} className="ps-spin" /> Working…</> : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export { ConfirmModal, Field, Row, SectionLabel, SectionHead, Pick, Stat, Placeholder, newProfile };

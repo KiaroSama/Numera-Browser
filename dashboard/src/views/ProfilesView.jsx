@@ -6,13 +6,51 @@ import { api } from "../api";
 import { T } from "../theme";
 import { ENGINE_META, ENGINE_ORDER, OS_LIST, coherence } from "../deviceData";
 import { toast } from "../toast";
-import { newProfile } from "../ui";
+import { ConfirmModal, newProfile } from "../ui";
 
 function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, remove, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }) {
   const [filterOpen, setFilterOpen] = useState(false);
+  // Deleting a profile destroys its browser session too, so it asks first -
+  // it used to go the moment the bin was clicked, with no way back.
+  const [confirm, setConfirm] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const activeFilters = Object.values(filters).filter(Boolean).length;
   const setFilter = (key, value) => setFilters(f => ({ ...f, [key]: f[key] === value ? "" : value }));
   const clearFilters = () => setFilters({ status: "", engine: "", os: "", proxy: "", tag: "" });
+
+  const askDelete = (rows) => {
+    if (!rows.length) return;
+    const running = rows.filter(p => p.status === "running").length;
+    setConfirm({
+      title: rows.length === 1 ? "Delete this profile?" : `Delete ${rows.length} profiles?`,
+      body: (
+        <>
+          {rows.length === 1
+            ? <>Deleting <b style={{ color: T.text }}>{rows[0].name}</b>.</>
+            : <>Deleting <b style={{ color: T.text }}>{rows.length}</b> profiles.</>}
+          <div style={{ marginTop: 10 }}>
+            The browser session goes too - cookies, logins and local storage. There is no undo.
+          </div>
+          {running > 0 && (
+            <div style={{ marginTop: 10, color: T.amber }}>
+              <ShieldAlert size={13} style={{ verticalAlign: -2 }} /> {running} of them {running === 1 ? "is" : "are"} running right now.
+            </div>
+          )}
+        </>
+      ),
+      run: async () => {
+        const ids = rows.map(p => p.id);
+        setSel(new Set());
+        if (live) {
+          for (const id of ids) { try { await api.remove(id); } catch (e) { toast.error(e.message); } }
+          await refresh();
+        } else {
+          setProfiles(ps => ps.filter(p => !ids.includes(p.id)));
+        }
+        toast.success(`Deleted ${ids.length} profile${ids.length === 1 ? "" : "s"}.`);
+      },
+    });
+  };
 
   // Warm up every selected profile (live only — it opens real headless browsers).
   const warmSelected = async () => {
@@ -70,7 +108,7 @@ function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSe
             <button onClick={warmSelected}><Flame size={13} /> Warm up</button>
             <button onClick={() => setSync(true)}><Copy size={13} /> Edit all</button>
             <button onClick={exportSelected}><Download size={13} /> Export</button>
-            <button className="danger" onClick={async () => { const ids = [...sel]; setSel(new Set()); if (live) { for (const id of ids) { try { await api.remove(id); } catch {} } await refresh(); } else { setProfiles(ps => ps.filter(p => !ids.includes(p.id))); } }}><Trash2 size={13} /> Delete</button>
+            <button className="danger" onClick={() => askDelete([...sel].map(id => filtered.find(p => p.id === id)).filter(Boolean))}><Trash2 size={13} /> Delete</button>
           </div>
         )}
         <div className="ps-filter-wrap">
@@ -177,7 +215,7 @@ function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSe
                         </button>
                         <button title="Edit" onClick={() => setEditor({ ...p })}><Pencil size={13} /></button>
                         <button title="Clone" onClick={() => clone(p)}><Copy size={13} /></button>
-                        <button title="Delete" className="del" onClick={() => remove(p.id)}><Trash2 size={13} /></button>
+                        <button title="Delete" className="del" onClick={() => askDelete([p])}><Trash2 size={13} /></button>
                       </div>
                     </td>
                   </tr>
@@ -198,6 +236,14 @@ function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSe
           </div>
         )}
       </div>
+      {confirm && <ConfirmModal
+        title={confirm.title} body={confirm.body} danger busy={deleting}
+        confirmLabel={<><Trash2 size={15} /> Delete</>}
+        onCancel={() => setConfirm(null)}
+        onConfirm={async () => {
+          setDeleting(true);
+          try { await confirm.run(); setConfirm(null); } finally { setDeleting(false); }
+        }} />}
     </>
   );
 }

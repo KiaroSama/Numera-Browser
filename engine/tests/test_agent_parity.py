@@ -87,7 +87,13 @@ PARITY: dict[str, tuple[str, tuple[tuple[str, ...], ...], str]] = {
     "listProxies":     (CLI, (("pool", "list"),), ""),
     "addProxies":      (CLI, (("pool", "add"),), ""),
     "deleteProxy":     (CLI, (("pool", "remove"),), ""),
+    "deleteProxies":   (CLI, (("pool", "remove"),), "`pool remove` takes several ids"),
     "testProxy":       (CLI, (("pool", "test"),), ""),
+    "testProxies":     (CLI, (("pool", "test"),), "`pool test` takes several ids, or --all"),
+    "updateProxy":     (CLI, (("pool", "edit"),), "host/port/user/pass/type/country/label"),
+    "exportProxies":   (CLI, (("pool", "export"),), "the dashboard builds the file in the "
+                                                    "browser; `pool export` writes the same "
+                                                    "lines, and both re-import"),
     "assignProxies":   (CLI, (("pool", "assign"),), ""),
     "listSchedules":   (CLI, (("schedule", "list"),), ""),
     "addSchedule":     (CLI, (("schedule", "add"),), ""),
