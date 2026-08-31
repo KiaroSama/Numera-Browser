@@ -4,6 +4,66 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **Docker.** `docker compose up -d --build` after putting a token in `.env`. The image builds on
+  Playwright's own, which already carries Chromium and the ~90 system libraries assembling them onto
+  a plain Python image gets wrong on every base-image bump. The port publishes to `127.0.0.1`, not
+  every interface; `/data` is a named volume; `shm_size` is raised because Chromium with the default
+  64 MB `/dev/shm` dies with an opaque crash. `test_docker.py` holds the image definition against the
+  code it packages - a COPY source that stops existing, a browser image that drifts from the
+  Playwright client, or a compose file that starts publishing everywhere all fail a test.
+- **The product is Numera Browser**, with the real logo in the README, the sidebar, the browser tab
+  (there was no favicon at all) and the desktop window and installer. `scripts/make-icons.py`
+  regenerates every size from one source, so the intermediates are no longer tracked.
+
+### Fixed
+
+- **API authentication was decided once, at startup.** Minting the first named token protected
+  nothing until the process restarted - while the UI said the API now required one. It is read per
+  request now, so minting locks the running app and revoking the last one reopens it. The wildcard
+  CORS origin is withheld from a named-token-only server too, not just an env-token one: `*` plus a
+  bearer token is a token any web page can spend.
+- **A non-loopback bind without authentication is refused.** This API creates profiles, launches
+  browsers and exports cookies; on `0.0.0.0` anything that can reach the port can use it. The message
+  says how to fix it, and `NUMERA_ALLOW_INSECURE_BIND=1` exists for a deployment that already
+  authenticates in front.
+- **The dashboard turned a 401 into demo mode.** A healthy engine asking for a token was
+  indistinguishable from no engine at all, so the app filled the screen with sample profiles that
+  were not the user's - which someone could have acted on. It now attaches a bearer token to every
+  request, and a locked engine gets a screen that asks for one.
+- **Two path-traversal holes, one containment rule.** `ProfileStore.restore()` accepted any archive
+  member starting with `user-data/` and joined the rest onto the profile directory, so
+  `user-data/../../x` landed two levels up. The Web Store unpacker compared *strings*, so
+  `<ext>-evil/x` passed for starting with `<ext>` - the same bug in the icon path. All three go
+  through `paths.safe_join` now, which compares resolved paths as paths.
+- **A restore could leave a half-made profile.** It saved the profile first and wrote members as it
+  went. It stages and validates the whole archive first now, and *replaces* the session rather than
+  merging into it - a cookie jar half one identity and half another is worse than either.
+- **Every profile created without an explicit seed shared one.** The seed drives canvas, audio and
+  ClientRects noise and is derived from the profile id - but it was derived before the store assigned
+  one, so they all hashed the literal string `"unsaved"`.
+- **A minimal create rewrote the default engine.** Filling the engine in from the current default is
+  not a user choice, and persisting it as one let a client's blank field become everyone's default.
+- **Bulk and batch writes bypassed validation.** A patch could set `id` - which every profile file,
+  session directory and proxy assignment hangs off - or replace a list field with a string, which
+  takes the whole profile list down. All three write paths share one field contract now, and a batch
+  is validated entirely before any of it is written.
+- **Concurrent proxy health checks lost their results.** Eight checks ran in a thread pool, each
+  doing an unsynchronised read-modify-write of the same JSON file. Writes are atomic and serialised
+  per file now, and a failed write leaves the previous file intact instead of truncating it.
+- **A recycled PID could be killed.** Stored PIDs are handed to `taskkill /T /F`, which would take
+  down whatever tree now owns that number. A PID is recorded with its process start time, and both
+  the liveness check and the terminate refuse a pair that no longer matches.
+- **`cookies.write(clear=True, cookies=[])` did nothing.** "Replace this session with nothing"
+  returned 0 without opening the browser, leaving the old session in place.
+- **The Linux/macOS CI build copied a binary that is never produced** - `numera-desktop` is the
+  package name, `numera` is the `[[bin]]` name.
+- **The Windows build script only worked on one machine.** It hardcoded a `G:\` Rust install and set
+  `RUSTUP_HOME`/`CARGO_HOME` to paths that do not exist elsewhere, which makes rustup start
+  installing a toolchain rather than fail. Cargo is resolved from the environment or PATH.
+
+
 ### Changed
 
 - **The dark theme sits on a charcoal now, not near-black.** The floor was `#0a0c11`, which read as
@@ -18,7 +78,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - **Rotating proxies.** Store a provider's change-IP URL and rotate from the row, in bulk, or with
-  `numera pool rotate`. Numera fetches the endpoint, **re-tests the proxy and compares the exit
+  `numera pool rotate`. Numera Browser fetches the endpoint, **re-tests the proxy and compares the exit
   IP**: a provider that answers 200 and does nothing is reported as *not moved*, because the
   alternative is a button that lies. A rotate within 20 seconds of the last one is refused, since
   every provider rate-limits this and would hand back the address you already had.
@@ -69,7 +129,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   overwrote what it could, every later check still passed because the old files were there, and the
   build said done while shipping the previous version - which is also why the folder had grown from
   32.8 MB to 58.7 MB. Running the app from the build folder is enough to cause it. It now stops,
-  says to close Numera first, and **puts the data directory back** before giving up, since that had
+  says to close Numera Browser first, and **puts the data directory back** before giving up, since that had
   already been moved to a temp folder by then.
 
 ## [0.4.0] - 2026-08-31
@@ -87,7 +147,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Bookmarks.** `Name | URL` per line, written into the profile's own Chromium bookmark file just
   before launch and **merged** - anything bookmarked inside the browser survives, and relaunching
   does not duplicate. An account with an empty bookmark bar reads as new.
-- **Extra Chromium arguments**, appended to the flags Numera already sets. They land on the real
+- **Extra Chromium arguments**, appended to the flags Numera Browser already sets. They land on the real
   command line; a live test asserts a flag changes what the running page reports.
 - **DNS over HTTPS.** Chromium has no plain-nameserver flag, so a well-known resolver address is
   mapped to its DoH endpoint and a custom endpoint can be typed. An address that cannot be honoured
@@ -191,7 +251,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- **A portable data root.** Numera now keeps profiles beside the application in `data/`, so the
+- **A portable data root.** Numera Browser now keeps profiles beside the application in `data/`, so the
   folder can be copied to another machine or a flash drive and the profiles travel with it.
   Resolution order is one decision in one place (`paths.py`): explicit `--data-dir`, then
   `NUMERA_DATA_DIR`, then a *writable* directory beside the app, then `~/.numera`, then the
@@ -418,7 +478,7 @@ Everything below is on top of upstream `0.1.0`.
 ### Fixed
 - **Extensions now load in headless mode.** Playwright's default headless binary
   is `chromium_headless_shell`, which cannot load extensions at all, so
-  `--load-extension` was silently ignored for every headless launch. Numera now
+  `--load-extension` was silently ignored for every headless launch. Numera Browser now
   launches the full Chromium in `--headless=new` (`channel="chromium"`), which
   loads extensions *and* stops the browser reporting itself as `HeadlessChrome`
   over CDP — a free stealth win, since that string was readable by anything

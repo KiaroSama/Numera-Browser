@@ -204,7 +204,8 @@ a { color: inherit; }
 /* sidebar */
 .ps-side { width: 244px; flex-shrink: 0; background: linear-gradient(180deg, var(--bg2), var(--bg)); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 18px 13px; position: sticky; top: 0; height: 100vh; }
 .ps-brand { display: flex; align-items: center; gap: 12px; padding: 4px 6px 20px; }
-.ps-logo { position: relative; width: 36px; height: 36px; border-radius: 11px; background: linear-gradient(135deg, var(--violet), var(--violetDeep)); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 4px 18px color-mix(in srgb, var(--violet) 27%, transparent); }
+.ps-logo { position: relative; width: 36px; height: 36px; border-radius: 11px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.ps-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .ps-logo-glow { position: absolute; inset: -40%; background: conic-gradient(from 0deg, color-mix(in srgb, var(--mint) 0%, transparent), color-mix(in srgb, var(--mint) 53%, transparent), color-mix(in srgb, var(--mint) 0%, transparent) 40%); animation: haloshift 6s linear infinite; opacity: .5; }
 .ps-brand-name { font-family: ${FONT.display}; font-weight: 700; font-size: 16px; letter-spacing: -.2px; }
 .ps-brand-sub { font-size: 10px; color: var(--dim); letter-spacing: 3px; text-transform: uppercase; margin-top: 1px; }

@@ -6,6 +6,7 @@ on: pull_request
 
 permissions:
   contents: read
+  pull-requests: write   # comment-summary-in-pr needs it to post
 
 jobs:
   review:
