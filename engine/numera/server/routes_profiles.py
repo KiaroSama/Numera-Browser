@@ -3,6 +3,8 @@ overviews. Nothing here opens a browser."""
 
 from __future__ import annotations
 
+import uuid
+
 import json
 import os
 from .. import devices
@@ -21,6 +23,48 @@ TEXT_FIELDS = {"startupUrls": "", "extensions": "", "bookmarks": "",
                "launchArgs": "", "dns": "", "notes": "",
                # `browserVersion` is split on "." in the profile list.
                "browserVersion": "128.0.0.0"}
+
+
+# Fields a client may never set, whatever the route.
+#
+# `id` is what every profile file, session directory and proxy assignment hangs
+# off; a patch that rewrites it orphans all three. `_new` is a dashboard-only
+# form flag - persisted, the profile reloads as a create form and saves as a
+# duplicate. `_created`/`_last_active` are the store's own bookkeeping.
+CLIENT_MAY_NOT_SET = {"id", "_new", "_created", "_last_active"}
+
+# Types the dashboard dereferences. A string where a list belongs is not a
+# cosmetic problem: `p.tags.map(...)` takes the whole page down.
+FIELD_TYPES = {
+    "name": str, "notes": str, "folder": str, "engine": str, "os": str,
+    "userAgent": str, "screen": str, "locale": str, "timezone": str,
+    "browserVersion": str, "startupUrls": str, "extensions": str,
+    "bookmarks": str, "launchArgs": str, "dns": str,
+    "tags": list, "ipBased": list, "clearOnStart": list, "switchedOff": list,
+    "cores": (int, float), "memory": (int, float),
+    "mediaVideo": (int, float), "mediaAudio": (int, float), "seed": (int, float),
+    "dnt": bool, "proxy": dict,
+}
+
+
+def check_fields(patch: dict, *, where: str) -> "list[str]":
+    """Every reason this payload may not be written. Empty means it may."""
+    problems = []
+    if not isinstance(patch, dict):
+        return [f"{where} must be an object"]
+    for key in sorted(set(patch) & CLIENT_MAY_NOT_SET):
+        problems.append(f"{where}: {key!r} is assigned by the server and cannot be set")
+    for key, want in FIELD_TYPES.items():
+        if key not in patch or patch[key] is None:
+            continue
+        if want is bool and isinstance(patch[key], bool):
+            continue
+        if want is not bool and isinstance(patch[key], want) and not isinstance(patch[key], bool):
+            continue
+        names = getattr(want, "__name__", None) or " or ".join(t.__name__ for t in want)
+        problems.append(f"{where}: {key!r} must be {names}, got "
+                        f"{type(patch[key]).__name__}")
+    return problems
 
 
 def register(app, ctx):
@@ -42,9 +86,11 @@ def register(app, ctx):
         from .. import drivers  # local, matching the other call sites in this module
         if not isinstance(profile, dict):
             raise HTTPException(422, "profile must be an object")
-        name = profile.get("name")
-        if name is not None and not isinstance(name, str):
-            raise HTTPException(422, "'name' must be a string")
+        problems = check_fields(
+            {k: v for k, v in profile.items() if k not in ("id", "_new")},
+            where="profile")
+        if problems:
+            raise HTTPException(422, "; ".join(problems[:8]))
         eng = profile.get("engine")
         if eng is not None:
             if not isinstance(eng, str) or eng not in drivers.names():
@@ -64,6 +110,12 @@ def register(app, ctx):
         # went blank on the next load - the exact failure this function exists to
         # stop. A minimal POST is a reasonable request, so the missing fields are
         # filled rather than refused.
+        # Mint the id first. The seed that drives canvas, audio and ClientRects
+        # noise is derived from it, and this ran before the store assigned one -
+        # so every profile created without an explicit seed hashed the literal
+        # string "unsaved" and they all shared a fingerprint.
+        if not profile.get("id"):
+            profile["id"] = uuid.uuid4().hex[:12]
         try:
             complete = to_dashboard_profile(to_engine_profile(profile))
         except Exception:  # noqa: BLE001 - a shape too odd to convert keeps the
@@ -115,11 +167,12 @@ def register(app, ctx):
     @app.post("/api/profiles")
     def create_profile(profile: dict):
         profile.pop("_new", None)
+        chose_engine = bool(profile.get("engine"))
         _validate_profile(profile)
         _apply_default_extensions(profile)
-        if profile.get("engine"):
+        if chose_engine:
             _remember_engine(profile)          # an explicit choice, worth remembering
-        else:
+        elif not profile.get("engine"):
             profile["engine"] = engine_store.get_default_engine()
         saved = dash.save(profile)
         return decorate(saved)
@@ -150,6 +203,15 @@ def register(app, ctx):
         The dashboard generates coherent profiles client-side and posts them in
         chunks; this just persists them, assigning each a fresh unique id."""
         incoming = body.get("profiles") or []
+        # Validate the whole batch before writing any of it. Half a batch on
+        # disk is worse than none, because nothing tells the user which half.
+        problems = []
+        for i, item in enumerate(incoming):
+            problems += check_fields(
+                {k: v for k, v in (item or {}).items() if k not in ("id", "_new")},
+                where=f"profiles[{i}]")
+        if problems:
+            raise HTTPException(400, "; ".join(problems[:8]))
         ids = []
         last_engine = None
         for p in incoming:
@@ -169,6 +231,16 @@ def register(app, ctx):
         """Apply one patch to many profiles — the dashboard's multi-select edit."""
         ids = body.get("ids") or []
         patch = body.get("patch") or {}
+        # One patch, many profiles: a bad field would otherwise be written to
+        # every one of them before anything noticed.
+        problems = check_fields({k: v for k, v in patch.items()
+                                 if k not in ("addTags", "removeTags")},
+                                where="patch")
+        for key in ("addTags", "removeTags"):
+            if key in patch and not isinstance(patch[key], list):
+                problems.append(f"patch: {key!r} must be a list")
+        if problems:
+            raise HTTPException(400, "; ".join(problems))
         updated = []
         for pid in ids:
             d = dash.get(pid)
