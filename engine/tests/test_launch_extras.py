@@ -281,3 +281,48 @@ def test_the_dashboard_and_the_engine_agree_on_the_key_names():
     control; one the engine knows but the dashboard hides is unreachable."""
     from numera.server.convert import CLEARABLE_KEYS
     assert set(CLEARABLE_KEYS) == set(drivers.CLEARABLE)
+
+
+# --- switched-off Chromium subsystems ---------------------------------------
+
+def test_switching_off_google_services_adds_the_flags_that_do_it():
+    args = drivers._switched_off_args(profile(switched_off=["googleServices"]))
+    assert "--disable-sync" in args and "--disable-background-networking" in args
+
+
+def test_the_default_leaves_chromium_alone():
+    assert drivers._switched_off_args(profile()) == []
+
+
+def test_an_unknown_key_adds_no_flags():
+    assert drivers._switched_off_args(profile(switched_off=["whatever"])) == []
+
+
+def test_nothing_here_uses_disable_features():
+    """Chromium keeps only the *last* `--disable-features`/`--enable-features`
+    occurrence, so one added here would silently cancel the DoH flag."""
+    every = [f for flags in drivers.SWITCHABLE.values() for f in flags]
+    assert not [f for f in every if f.startswith(("--disable-features", "--enable-features"))]
+
+
+def test_the_dashboard_and_the_engine_agree_on_the_switch_names():
+    from numera.server.convert import SWITCHABLE_KEYS
+    assert set(SWITCHABLE_KEYS) == set(drivers.SWITCHABLE)
+
+
+def test_the_flags_and_the_dns_flag_survive_together(monkeypatch, tmp_path):
+    """The one interaction worth pinning: both write to the command line."""
+    p = profile(switched_off=["googleServices", "systemExtensions"], dns="1.1.1.1")
+    args = drivers._dns_args(p) + drivers._switched_off_args(p)
+    assert "--dns-over-https-templates=https://cloudflare-dns.com/dns-query" in args
+    assert "--disable-component-extensions-with-background-pages" in args
+    assert len([f for f in args if f.startswith("--disable-features")]) == 0
+
+
+def test_switched_off_survives_export_and_import():
+    p = profile(switched_off=["googleServices"])
+    back = Profile.from_dict(json.loads(json.dumps(p.to_dict())))
+    assert back.switched_off == ["googleServices"]
+    d = p.to_dict()
+    d.pop("switched_off")
+    assert Profile.from_dict(d).switched_off == []

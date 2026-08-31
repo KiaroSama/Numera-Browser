@@ -13,7 +13,7 @@ import os
 import time
 from typing import Optional
 from .. import devices
-from ..fingerprint import validate
+from ..fingerprint import _build_user_agent, validate
 from ..models import Fingerprint, Profile, Proxy
 
 
@@ -62,6 +62,7 @@ def _parse_lines(raw) -> list[str]:
 # from a client cannot reach the profile and silently do nothing.
 CLEARABLE_KEYS = ("history", "passwords", "cookies", "localStorage",
                   "indexedDb", "sessions", "extensionData", "bookmarks")
+SWITCHABLE_KEYS = ("googleServices", "systemExtensions")
 
 
 def _parse_bookmarks(raw) -> list[dict]:
@@ -130,7 +131,9 @@ def to_engine_profile(d: dict) -> Profile:
 
     fp = Fingerprint(
         os=os_key,
-        user_agent=d.get("userAgent") or "",
+        user_agent=(d.get("userAgent")
+                    or _build_user_agent(os_key, str(d.get("browserVersion", "128.0.0.0")),
+                                         os_version, str(d.get("deviceModel") or ""))),
         platform=devices.NAV_PLATFORM[os_key],
         ch_platform=devices.CH_PLATFORM[os_key],
         chrome_version=d.get("browserVersion", "128.0.0.0"),
@@ -198,6 +201,7 @@ def to_engine_profile(d: dict) -> Profile:
         ip_based=[k for k in ("timezone", "geolocation", "languages")
                   if k in (d.get("ipBased") or [])],
         clear_on_start=[k for k in CLEARABLE_KEYS if k in (d.get("clearOnStart") or [])],
+        switched_off=[k for k in SWITCHABLE_KEYS if k in (d.get("switchedOff") or [])],
     )
 
 
@@ -267,6 +271,7 @@ def to_dashboard_profile(prof: Profile) -> dict:
         "dns": prof.dns or "",
         "ipBased": list(prof.ip_based or []),
         "clearOnStart": list(prof.clear_on_start or []),
+        "switchedOff": list(prof.switched_off or []),
         "lastActive": "never",
     }
 

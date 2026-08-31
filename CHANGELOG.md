@@ -4,7 +4,37 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **A deterministic avatar per profile.** A list of fifty is read by name, one row
+  at a time; a shape is recognised at a glance. Derived from the profile id, so it
+  never changes, nothing is stored and no network is involved.
+- **Click a profile name to rename it in place.** Renaming used to mean opening the
+  editor and saving it back, which re-wrote every field for one word. Enter or blur
+  commits, Escape abandons, and the row rolls back if the write fails.
+- **Two named switches for Chromium subsystems**: Google services (sync, Safe
+  Browsing updates, field trials, usage pings) and the built-in Chromium extensions
+  (Web Store connector, Media Router, Cloud Print). Both were already reachable by
+  typing a flag; they are switches because "stop Chrome phoning Google" is a thing
+  people want, not a flag people remember.
+
 ### Fixed
+
+- **The version in the sidebar was a literal `v0.1.0`.** It is the number a user
+  actually looks at, and it never read the real one - which is why the app appeared
+  stuck at 0.1.0 through three releases. The Settings page had the same fault as a
+  fallback, showing a hardcoded version whenever config had not loaded yet.
+- **`POST /api/profiles` stored a shape the dashboard could not render.** A body as
+  ordinary as `{"name": "alpha"}` passed every check and was saved without `tags`;
+  the list calls `p.tags.map(...)`, so one such profile blanked the whole page on
+  the next load - exactly what the validator's docstring claimed to prevent, since
+  it only checked the types of fields that *were* present. Missing fields are now
+  filled from the engine's own defaults, so the row the dashboard draws is the
+  identity the browser will actually wear.
+- **A profile created through the API got an empty user agent.** Every other field
+  in the converter fell back to something coherent; `userAgent` alone fell back to
+  `""`. The dashboard always sends one, so only the API path could reach it - and a
+  profile presenting an empty UA is a worse tell than any fingerprint mismatch.
 
 - **A desktop build that could not clear its own folder reported success anyway.** `Remove-Item` on
   a file another process holds is a *non-terminating* error, so the script carried on: the copy
