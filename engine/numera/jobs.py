@@ -61,14 +61,72 @@ def _merge(path: Path, patch: dict) -> dict:
     return data
 
 
-def alive(pid: int) -> bool:
-    """Is this process still running?
+def started_at(pid: int) -> "Optional[int]":
+    """When this pid's process started, or None if it cannot be read.
 
-    ponytail: a pid the OS has recycled reads as alive. Storing the process
-    start time would close that; nothing here is destructive enough to need it.
+    A pid on its own is not an identity: the OS reuses them, and this module
+    hands stored pids to `taskkill /T /F`, which would take down whatever tree
+    now happens to own that number. The start time is what makes the pair
+    unique - two processes can share a pid, never at the same instant.
+
+    Standard library only: the engine declares no required dependencies, and
+    pulling in psutil for one field would end that.
+    """
+    if not pid:
+        return None
+    try:
+        if os.name == "nt":
+            import ctypes
+            import ctypes.wintypes as wt
+
+            PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+            k32 = ctypes.windll.kernel32
+            handle = k32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, int(pid))
+            if not handle:
+                return None
+            try:
+                created = wt.FILETIME()
+                other = (wt.FILETIME(), wt.FILETIME(), wt.FILETIME())
+                if not k32.GetProcessTimes(handle, ctypes.byref(created),
+                                           ctypes.byref(other[0]),
+                                           ctypes.byref(other[1]),
+                                           ctypes.byref(other[2])):
+                    return None
+                return (created.dwHighDateTime << 32) | created.dwLowDateTime
+            finally:
+                k32.CloseHandle(handle)
+
+        stat = Path(f"/proc/{int(pid)}/stat")
+        if stat.exists():
+            # Field 22 is starttime in clock ticks. The comm field can contain
+            # spaces and parentheses, so split after the last ")".
+            text = stat.read_text(encoding="utf-8", errors="replace")
+            return int(text[text.rindex(")") + 2:].split()[19])
+
+        out = subprocess.run(["ps", "-o", "lstart=", "-p", str(int(pid))],
+                             capture_output=True, text=True, timeout=5)
+        line = out.stdout.strip()
+        return hash(line) if line else None
+    except Exception:  # noqa: BLE001 - an unreadable start time is not an identity
+        return None
+
+
+def alive(pid: int, token=None) -> bool:
+    """Is this process still running - and still the one we started?
+
+    `token` is a `started_at` value captured when the pid was recorded. Without
+    it this answers the weaker question and says so; with it, a pid the OS has
+    handed to somebody else reads as dead, which is what stops this module
+    terminating an unrelated process tree.
     """
     if not pid:
         return False
+    if token is not None:
+        now = started_at(pid)
+        # None means the process is gone, or is one we may not query - either
+        # way it is not ours to kill.
+        if now is None or now != token:
+            return False
     if os.name == "nt":
         # os.kill(pid, 0) is NOT a liveness probe on Windows: CPython maps every
         # signal but CTRL_C/CTRL_BREAK to TerminateProcess, so the "harmless"
@@ -92,7 +150,7 @@ def alive(pid: int) -> bool:
     return True
 
 
-def _terminate_tree(pid: int) -> bool:
+def _terminate_tree(pid: int, token=None) -> bool:
     """End the job and everything it started.
 
     A detached ``numera launch`` owns a Chromium that outlives it, so signalling
@@ -100,6 +158,9 @@ def _terminate_tree(pid: int) -> bool:
     elsewhere the job was started in its own process group and the group gets
     the signal.
     """
+    # Refuse to touch a pid that is no longer the process we recorded.
+    if token is not None and started_at(pid) != token:
+        return False
     if os.name == "nt":
         return subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)],
                               capture_output=True).returncode == 0
@@ -155,6 +216,9 @@ def spawn(root: Path, argv: list[str], command: str = "",
         "command": command,
         "profile": profile,
         "pid": proc.pid,
+        # Recorded with the pid, not derived later: by the time anything asks,
+        # the process may be gone and the number handed to someone else.
+        "pidToken": started_at(proc.pid),
         "log": str(log),
         "started": time.time(),
     })
@@ -173,7 +237,7 @@ def _decorate(rec: dict) -> dict:
     """Add the live state a stored record cannot know on its own."""
     rec = dict(rec)
     if not rec.get("state"):
-        if alive(rec.get("pid") or 0):
+        if alive(rec.get("pid") or 0, rec.get("pidToken")):
             rec["state"] = "running"
         elif rec.get("pid") is None and time.time() - rec.get("started", 0) < _STARTUP_GRACE:
             rec["state"] = "starting"
@@ -220,7 +284,7 @@ def stop(root: Path, jid: str) -> Optional[dict]:
     if rec is None:
         return None
     if rec["running"] and rec.get("pid"):
-        _terminate_tree(rec["pid"])
+        _terminate_tree(rec["pid"], rec.get("pidToken"))
         # The signal is a hard terminate on both platforms, so the job never
         # reaches its own exit hook — this side has to record the outcome.
         _merge(_dir(root) / f"{jid}.json",

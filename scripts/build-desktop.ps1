@@ -54,12 +54,32 @@ if (-not (Test-Path $dash)) {
     throw "The dashboard is not built. Run:  npm --prefix `"$repo\dashboard`" run build"
 }
 
-# Rust lives on G: on this machine and rustup must not fall back to %USERPROFILE%,
-# which would start reinstalling a toolchain onto C:.
-if (-not $env:RUSTUP_HOME) { $env:RUSTUP_HOME = 'G:\Program Files\Rust\rustup' }
-if (-not $env:CARGO_HOME) { $env:CARGO_HOME = 'G:\Program Files\Rust\cargo' }
-$cargo = Join-Path $env:CARGO_HOME 'bin\cargo.exe'
-if (-not (Test-Path $cargo)) { throw "cargo not found at $cargo. Set CARGO_HOME." }
+# Resolve cargo from the environment or PATH. This used to hardcode one
+# machine's G:\ install, so the script only ever worked there - and worse, it
+# set RUSTUP_HOME/CARGO_HOME to paths that do not exist elsewhere, which makes
+# rustup start installing a toolchain rather than fail.
+$cargo = $null
+if ($env:CARGO_HOME) {
+    $candidate = Join-Path $env:CARGO_HOME 'bin\cargo.exe'
+    if (Test-Path $candidate) { $cargo = $candidate }
+}
+if (-not $cargo) {
+    $onPath = Get-Command cargo -ErrorAction SilentlyContinue
+    if ($onPath) { $cargo = $onPath.Source }
+}
+if (-not $cargo) {
+    throw @'
+cargo was not found.
+  Install Rust (https://rustup.rs) and make sure `cargo` is on PATH, or set
+  CARGO_HOME to the directory containing bin\cargo.exe.
+'@
+}
+# Only pin RUSTUP_HOME when CARGO_HOME was given and a sibling rustup exists;
+# guessing it is what caused the toolchain to be reinstalled somewhere else.
+if ($env:CARGO_HOME -and -not $env:RUSTUP_HOME) {
+    $maybe = Join-Path (Split-Path $env:CARGO_HOME -Parent) 'rustup'
+    if (Test-Path $maybe) { $env:RUSTUP_HOME = $maybe }
+}
 
 # --- 1. freeze the engine ----------------------------------------------------
 
