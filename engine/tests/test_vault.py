@@ -112,3 +112,56 @@ def test_enable_is_idempotent_guard(tmp_path):
     store.enable_vault("master")
     with pytest.raises(RuntimeError):
         store.enable_vault("master")
+
+
+def test_a_non_secret_edit_while_locked_keeps_the_password(tmp_path):
+    """The destruction path the audit found, asserted against `ProfileStore`
+    itself rather than through the dashboard store.
+
+    A locked `get()` hands back None for the secret - deliberately, so the
+    launcher never tries to authenticate with ciphertext. An ordinary edit then
+    came back through `save()` carrying that None and wrote it straight over the
+    encrypted value. The password was gone and nothing said so.
+    """
+    store = ProfileStore(tmp_path, password="master")
+    mk(store)
+    store.enable_vault("master")
+    ciphertext = json.loads(
+        (tmp_path / "profiles" / store.resolve("acct").id).with_suffix(".json")
+        .read_text(encoding="utf-8"))["proxy"]["password"]
+    assert crypto.is_encrypted(ciphertext)
+
+    locked = ProfileStore(tmp_path)
+    prof = locked.resolve("acct")
+    assert prof.proxy.password is None          # withheld, as it should be
+    prof.name = "renamed while locked"
+    locked.save(prof)                            # a perfectly ordinary edit
+
+    on_disk = json.loads(
+        (tmp_path / "profiles" / prof.id).with_suffix(".json").read_text(encoding="utf-8"))
+    assert on_disk["proxy"]["password"] == ciphertext, "the encrypted password was destroyed"
+    assert on_disk["name"] == "renamed while locked"
+
+    # And it is still the real password once unlocked.
+    unlocked = ProfileStore(tmp_path, password="master")
+    assert unlocked.resolve("renamed while locked").proxy.password == "s3cret"
+
+
+def test_an_interrupted_save_does_not_truncate_a_profile(tmp_path, monkeypatch):
+    """Profiles were written with a direct `write_text`, so a failure halfway
+    left an unreadable file where a profile used to be."""
+    store = ProfileStore(tmp_path)
+    prof = mk(store)
+    good = (tmp_path / "profiles" / prof.id).with_suffix(".json").read_text(encoding="utf-8")
+
+    import numera.paths as _paths
+    real = _paths.json.dumps
+    monkeypatch.setattr(_paths.json, "dumps",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("disk full")))
+    with pytest.raises(RuntimeError):
+        prof.notes = "this write fails"
+        store.save(prof)
+    monkeypatch.setattr(_paths.json, "dumps", real)
+
+    assert (tmp_path / "profiles" / prof.id).with_suffix(".json").read_text(
+        encoding="utf-8") == good

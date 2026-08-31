@@ -103,7 +103,7 @@ if ($SkipFreeze) {
         & $host_py -m venv $venv
         if ($LASTEXITCODE -ne 0) { throw 'could not create the build venv' }
     }
-    & $py -m pip install --quiet --upgrade pip pyinstaller "$repo\engine[api]"
+    & $py -m pip install --quiet --upgrade pip pyinstaller "$repo\engine[api,launch]"
     if ($LASTEXITCODE -ne 0) { throw 'could not install the build dependencies' }
 
     $entry = Join-Path $build 'engine_entry.py'

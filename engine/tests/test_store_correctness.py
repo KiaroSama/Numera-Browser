@@ -69,14 +69,99 @@ def test_new_is_stripped_on_update_too(c, tmp_path):
     assert "_new" not in stored(tmp_path, made["id"])
 
 
+EXPORT = {"name": "imported", "navigator": {
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                 "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "resolution": "1920x1080"}}
+
+
 def test_an_imported_profile_reloads_as_an_existing_one(c, tmp_path):
-    r = c.post("/api/profiles/import", json={"profiles": [
-        {"name": "imported", "os": "Windows", "_new": True}]})
-    if r.status_code == 404:
-        pytest.skip("this build has no import route")
+    """This test used to post `profiles=[...]` while the route reads `text`, so
+    nothing was ever imported and it passed against an empty list."""
+    r = c.post("/api/profiles/import", json={"text": json.dumps([EXPORT])})
+    assert r.status_code == 200, r.text
+    assert r.json()["imported"] == 1
+
     listed = c.get("/api/profiles").json()
-    assert all("_new" not in p for p in listed)
+    mine = [p for p in listed if p["name"] == "imported"]
+    assert len(mine) == 1, "the import did not land"
+    assert "_new" not in mine[0], "_new was persisted; it reloads as a create form"
+    assert "_new" not in stored(tmp_path, mine[0]["id"])
     assert len({p["id"] for p in listed}) == len(listed), "an import minted two ids"
+
+
+def test_an_import_does_not_change_the_default_engine(c):
+    """The importer fills the engine in from the current default when the export
+    names none. Persisting that as "last engine wins" let an import silently
+    change the default to something nobody picked."""
+    c.put("/api/config", json={"default_engine": "camoufox"})
+    c.post("/api/profiles/import", json={"text": json.dumps([EXPORT])})
+    assert c.get("/api/config").json()["default_engine"] == "camoufox"
+
+
+def test_a_non_string_import_body_is_a_4xx_not_a_500(c):
+    assert c.post("/api/profiles/import", json={"text": {"not": "a string"}}).status_code == 400
+
+
+# --- profile ids are never a path ------------------------------------------
+
+@pytest.mark.parametrize("evil", ["../../escaped", "..", "a/b", "C:/x", "", "x" * 65])
+def test_a_client_supplied_id_cannot_escape_the_data_directory(c, tmp_path, evil):
+    """`POST /api/profiles` accepted a client `id` and both stores joined it
+    straight onto their directory, so this wrote a file two levels up."""
+    before = set(tmp_path.parent.glob("*.json"))
+    r = c.post("/api/profiles", json={"name": "evil", "id": evil})
+    # Either refused outright or given a server-minted id - never the caller's.
+    if r.status_code == 200:
+        assert r.json()["id"] != evil
+    else:
+        assert r.status_code in (400, 422), r.status_code
+    assert set(tmp_path.parent.glob("*.json")) == before, "a file escaped the data dir"
+
+
+def test_the_store_itself_refuses_a_dangerous_id(tmp_path):
+    """Route validation alone would leave import, restore and the CLI relying on
+    someone else having checked, so the guard is at the filesystem boundary."""
+    from numera.server.stores import DashboardStore
+    from numera.store import ProfileStore
+
+    engine = ProfileStore(tmp_path)
+    for bad in ("../../escaped", "a/b", ".."):
+        with pytest.raises(ValueError):
+            engine._path(bad)
+        with pytest.raises(ValueError):
+            engine.user_data_path(bad)
+        with pytest.raises(ValueError):
+            DashboardStore(tmp_path, engine)._path(bad)
+
+
+# --- the request contract --------------------------------------------------
+
+def test_a_bulk_patch_cannot_write_private_metadata(c, tmp_path):
+    made = c.post("/api/profiles", json={"name": "a"}).json()
+    r = c.post("/api/profiles/bulk", json={"ids": [made["id"]],
+                                           "patch": {"_trust": {"grade": "A"}}})
+    assert r.status_code in (400, 422), r.status_code
+    assert "_trust" not in stored(tmp_path, made["id"])
+
+
+@pytest.mark.parametrize("body", [
+    {"ids": "not-a-list", "patch": {}},
+    {"ids": [1, 2], "patch": {}},
+    {"ids": [], "patch": "not-an-object"},
+    {"ids": [], "patch": 5},
+])
+def test_a_malformed_bulk_body_is_a_4xx_not_a_500(c, body):
+    assert c.post("/api/profiles/bulk", json=body).status_code in (400, 422), body
+
+
+@pytest.mark.parametrize("body", [
+    {"profiles": "not-a-list"},
+    {"profiles": [1, 2]},
+    {"profiles": [{"name": "ok"}, "not-an-object"]},
+])
+def test_a_malformed_batch_body_is_a_4xx_not_a_500(c, body):
+    assert c.post("/api/profiles/batch", json=body).status_code in (400, 422), body
 
 
 # --- the default engine ----------------------------------------------------

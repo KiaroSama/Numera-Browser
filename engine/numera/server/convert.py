@@ -177,9 +177,13 @@ def to_engine_profile(d: dict) -> Profile:
     proxy = None
     px = d.get("proxy")
     if px and px.get("host"):
-        scheme = {"HTTP": "http", "HTTPS": "http", "SOCKS5": "socks5"}.get(px.get("type", "HTTP"), "http")
+        # One mapping, and it refuses rather than guesses. The old dict had no
+        # SOCKS4 entry and fell back to "http", so a SOCKS4 profile launched a
+        # browser speaking a different protocol than the profile claimed.
+        from ..proxypool import server_url
+
         proxy = Proxy(
-            server=f"{scheme}://{px['host']}:{px.get('port', '')}".rstrip(":"),
+            server=server_url(px.get("type", "HTTP"), px["host"], px.get("port", "")),
             username=px.get("user") or None,
             password=px.get("pass") or None,
             country=px.get("country") or None,
@@ -209,12 +213,10 @@ def _proxy_to_dash(proxy) -> Optional[dict]:
     """Turn an engine Proxy into the dashboard's proxy dict."""
     if not proxy or not proxy.server:
         return None
-    server = proxy.server
-    scheme = "http"
-    if "://" in server:
-        scheme, server = server.split("://", 1)
-    host, _, port = server.partition(":")
-    kind = {"http": "HTTP", "https": "HTTPS", "socks5": "SOCKS5", "socks4": "SOCKS4"}.get(scheme.lower(), "HTTP")
+    from ..proxypool import _SCHEME_TYPE, split_server
+
+    scheme, host, port = split_server(proxy.server)
+    kind = _SCHEME_TYPE.get(scheme, "HTTP")
     return {"type": kind, "host": host, "port": port,
             "user": proxy.username or "", "pass": proxy.password or "",
             "country": proxy.country or ""}

@@ -100,7 +100,7 @@ class FakeProc:
 
 def schedule_for(c, name):
     pid = c.post("/api/profiles", json={"name": name}).json()["id"]
-    c.post("/api/schedules", json={"profileId": pid, "everyHours": 0.0001,
+    c.post("/api/schedules", json={"profileId": pid, "everyHours": 1,
                                    "minutes": 1, "preset": "general"})
     return pid
 
@@ -182,3 +182,78 @@ def test_shutdown_terminates_the_children_it_started(app_and_client, monkeypatch
         pass                                  # entering and leaving fires shutdown
     assert proc.terminated or proc.returncode is not None, \
         "a live child survived shutdown"
+
+
+# --- one schema for create and update --------------------------------------
+
+@_pytest.mark.parametrize("bad", [
+    {"everyHours": "soon"}, {"everyHours": -4}, {"everyHours": 0},
+    {"everyHours": 1e9}, {"minutes": -10}, {"minutes": 0},
+    {"minutes": "lots"}, {"enabled": "yes"}, {"preset": 5},
+])
+def test_a_malformed_schedule_is_refused_not_stored(app_and_client, bad):
+    """`update()` applied raw patches, so a negative or non-numeric value was
+    stored happily and surfaced later as a broken next-run time or a warm-up
+    asked to browse for minus four minutes."""
+    app, c = app_and_client
+    pid = c.post("/api/profiles", json={"name": "s"}).json()["id"]
+    made = c.post("/api/schedules", json={"profileId": pid, "everyHours": 12,
+                                          "minutes": 5, "preset": "general"})
+    assert made.status_code == 200, made.text
+    sid = made.json()["id"]
+
+    before = c.get("/api/schedules").json()[0]
+    r = c.put(f"/api/schedules/{sid}", json=bad)
+    assert r.status_code == 400, (bad, r.status_code)
+    assert c.get("/api/schedules").json()[0] == before, "a bad patch was stored"
+
+
+@_pytest.mark.parametrize("bad", [
+    {"everyHours": "soon"}, {"minutes": -1}, {"everyHours": 100000},
+])
+def test_a_malformed_create_is_a_4xx_not_a_500(app_and_client, bad):
+    app, c = app_and_client
+    pid = c.post("/api/profiles", json={"name": "s"}).json()["id"]
+    r = c.post("/api/schedules", json={"profileId": pid, **bad})
+    assert r.status_code == 400, (bad, r.status_code)
+
+
+def test_scheduler_owned_fields_cannot_be_patched(app_and_client):
+    """Writing `lastRun` moves the next run; writing `lastOutcome` forges a
+    result nobody produced."""
+    app, c = app_and_client
+    pid = c.post("/api/profiles", json={"name": "s"}).json()["id"]
+    sid = c.post("/api/schedules", json={"profileId": pid}).json()["id"]
+    for key in ("lastRun", "lastOutcome", "profileId"):
+        assert c.put(f"/api/schedules/{sid}", json={key: 1}).status_code == 400, key
+
+
+def test_a_valid_update_still_works(app_and_client):
+    app, c = app_and_client
+    pid = c.post("/api/profiles", json={"name": "s"}).json()["id"]
+    sid = c.post("/api/schedules", json={"profileId": pid}).json()["id"]
+    r = c.put(f"/api/schedules/{sid}", json={"everyHours": 6, "enabled": False})
+    assert r.status_code == 200, r.text
+    assert r.json()["everyHours"] == 6
+    assert r.json()["enabled"] is False
+
+
+def test_a_non_finite_interval_is_refused():
+    """`inf` cannot travel through JSON, so this is asserted against the
+    validator directly - a client library that allows it must still be caught."""
+    import pytest as _pt
+
+    from numera.scheduler import validate_schedule
+
+    for bad in (float("inf"), float("-inf"), float("nan")):
+        with _pt.raises(ValueError):
+            validate_schedule({"everyHours": bad}, partial=True)
+
+
+def test_a_tiny_interval_is_clamped_not_refused():
+    """`add()` has always clamped to the minimum; refusing instead would be a
+    behaviour change for anyone already sending a small number."""
+    from numera.scheduler import MIN_INTERVAL_HOURS, validate_schedule
+
+    assert validate_schedule({"everyHours": 0.0001},
+                             partial=True)["everyHours"] == MIN_INTERVAL_HOURS

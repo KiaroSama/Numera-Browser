@@ -258,8 +258,11 @@ fn healthy(port: u16) -> bool {
         return false;
     };
     let _ = sock.set_read_timeout(Some(Duration::from_millis(2000)));
+    // `/api/ready`, not `/api/health`: health is behind the token, so an engine
+    // with one configured answered 401 and the shell decided it had failed to
+    // start - leaving no way to reach the screen that asks for the token.
     let req = format!(
-        "GET /api/health HTTP/1.0\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n"
+        "GET /api/ready HTTP/1.0\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n"
     );
     if sock.write_all(req.as_bytes()).is_err() {
         return false;
@@ -271,7 +274,9 @@ fn healthy(port: u16) -> bool {
         .lines()
         .next()
         .is_some_and(|line| line.starts_with("HTTP/1.") && line.contains(" 200 "));
-    status_ok && text.contains("\"ok\":true")
+    // Identify the service too: something else answering 200 on this port is
+    // not our engine, and treating it as ready would point the window at it.
+    status_ok && text.contains("\"service\":\"numera-browser\"")
 }
 
 // --- window -----------------------------------------------------------------

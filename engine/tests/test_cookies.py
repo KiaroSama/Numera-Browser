@@ -104,3 +104,33 @@ def test_read_file(tmp_path):
 def test_write_nothing_is_a_noop():
     # No cookies means no browser launch at all — safe to call without an engine.
     assert ck.write(None, None, []) == 0
+
+
+# --- one malformed cookie must not lose the rest ---------------------------
+
+def test_a_malformed_expiry_does_not_abort_the_whole_import():
+    """`float("not a date")` raised out of a loop over the whole file, so one
+    bad cookie lost every good one with it - the opposite of what a tolerant
+    importer is for."""
+    from numera.cookies import parse
+
+    out = parse(json.dumps([
+        {"name": "good1", "value": "1", "domain": ".x.test", "path": "/",
+         "expires": 1789000000},
+        {"name": "bad", "value": "2", "domain": ".x.test", "path": "/",
+         "expires": "whenever"},
+        {"name": "good2", "value": "3", "domain": ".x.test", "path": "/",
+         "expirationDate": "2027-01-01T00:00:00Z"},
+    ]))
+    names = [c["name"] for c in out]
+    assert names == ["good1", "bad", "good2"], names
+    by = {c["name"]: c for c in out}
+    assert by["bad"]["expires"] == -1, "a malformed expiry should read as a session cookie"
+    assert by["good1"]["expires"] == 1789000000
+    assert by["good2"]["expires"] > 0, "an ISO date was not understood"
+
+
+def test_an_iso_expiry_is_understood():
+    from numera.cookies import _as_epoch
+
+    assert _as_epoch("2027-01-01T00:00:00Z") > 1_700_000_000

@@ -89,12 +89,75 @@ def test_a_locked_api_never_advertises_a_wildcard_origin(tmp_path, monkeypatch):
     assert "*" not in (origins[0].kwargs.get("allow_origins") or [])
 
 
-def test_an_open_api_still_allows_a_local_page(tmp_path, monkeypatch):
+def test_the_default_is_same_origin_not_a_wildcard(tmp_path, monkeypatch):
+    """The engine serves the dashboard itself, so the normal case needs no CORS
+    at all. The wildcard used to be chosen once at startup, which meant a server
+    that started open kept advertising it after the first token locked the API."""
     monkeypatch.delenv("NUMERA_API_TOKEN", raising=False)
     monkeypatch.delenv("NUMERA_ALLOWED_ORIGINS", raising=False)
     app = create_app(data_dir=str(tmp_path), start_scheduler=False)
     cors = [m for m in app.user_middleware if "CORS" in str(m)][0]
-    assert "*" in cors.kwargs.get("allow_origins")
+    assert cors.kwargs.get("allow_origins") == []
+
+
+def test_creating_the_first_token_cannot_leave_a_wildcard_behind(tmp_path, monkeypatch):
+    """The transition the audit named: open at startup, locked at runtime."""
+    monkeypatch.delenv("NUMERA_API_TOKEN", raising=False)
+    monkeypatch.delenv("NUMERA_ALLOWED_ORIGINS", raising=False)
+    app = create_app(data_dir=str(tmp_path), start_scheduler=False)
+    c = TestClient(app)
+    c.post("/api/tokens", json={"name": "CI"})
+    cors = [m for m in app.user_middleware if "CORS" in str(m)][0]
+    assert "*" not in (cors.kwargs.get("allow_origins") or [])
+
+
+def test_an_explicit_origin_is_honoured(tmp_path, monkeypatch):
+    monkeypatch.delenv("NUMERA_API_TOKEN", raising=False)
+    monkeypatch.setenv("NUMERA_ALLOWED_ORIGINS", "http://localhost:5173")
+    app = create_app(data_dir=str(tmp_path), start_scheduler=False)
+    cors = [m for m in app.user_middleware if "CORS" in str(m)][0]
+    assert cors.kwargs.get("allow_origins") == ["http://localhost:5173"]
+
+
+# --- readiness -------------------------------------------------------------
+
+def test_ready_answers_while_the_api_is_locked(tmp_path, monkeypatch):
+    """The desktop shell polls this. It used to poll `/api/health`, which is
+    behind the token - so an engine with one configured looked like it had
+    failed to start, and the screen that asks for a token was unreachable."""
+    monkeypatch.delenv("NUMERA_API_TOKEN", raising=False)
+    TokenStore(tmp_path).create("CI")
+    r = client(tmp_path).get("/api/ready")
+    assert r.status_code == 200, r.status_code
+    body = r.json()
+    assert body["service"] == "numera-browser"
+    assert body["authRequired"] is True
+    assert body["ok"] is True
+
+
+def test_ready_says_when_no_token_is_needed(tmp_path, monkeypatch):
+    monkeypatch.delenv("NUMERA_API_TOKEN", raising=False)
+    assert client(tmp_path).get("/api/ready").json()["authRequired"] is False
+
+
+def test_ready_answers_with_an_env_token_too(tmp_path, monkeypatch):
+    monkeypatch.setenv("NUMERA_API_TOKEN", "secret")
+    body = client(tmp_path).get("/api/ready").json()
+    assert body["authRequired"] is True and body["ok"] is True
+
+
+def test_ready_exposes_nothing_protected(tmp_path, monkeypatch):
+    """It is public, so it may only carry what a launcher needs."""
+    monkeypatch.delenv("NUMERA_API_TOKEN", raising=False)
+    TokenStore(tmp_path).create("CI")
+    body = client(tmp_path).get("/api/ready").json()
+    assert set(body) == {"ok", "service", "version", "authRequired"}
+
+
+def test_health_is_still_protected(tmp_path, monkeypatch):
+    monkeypatch.delenv("NUMERA_API_TOKEN", raising=False)
+    TokenStore(tmp_path).create("CI")
+    assert client(tmp_path).get("/api/health").status_code == 401
 
 
 # --- binding ---------------------------------------------------------------

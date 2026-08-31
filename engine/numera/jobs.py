@@ -22,6 +22,7 @@ matter.
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import signal
 import subprocess
@@ -105,8 +106,10 @@ def started_at(pid: int) -> "Optional[int]":
 
         out = subprocess.run(["ps", "-o", "lstart=", "-p", str(int(pid))],
                              capture_output=True, text=True, timeout=5)
-        line = out.stdout.strip()
-        return hash(line) if line else None
+        line = " ".join(out.stdout.split())      # normalise ps's padding
+        if not line:
+            return None
+        return int(hashlib.sha256(line.encode("utf-8")).hexdigest()[:12], 16)
     except Exception:  # noqa: BLE001 - an unreadable start time is not an identity
         return None
 

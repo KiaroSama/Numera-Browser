@@ -36,6 +36,26 @@ _SAME_SITE = {
 }
 
 
+def _as_epoch(value) -> float:
+    """A cookie expiry as a float, or -1 (session cookie) if it is unusable.
+
+    Exports carry dates written by half a dozen tools and some of them are
+    malformed. `float()` on one of those raised out of a loop over the whole
+    file, so a single bad cookie lost every good one with it - the opposite of
+    what a tolerant importer is for.
+    """
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        pass
+    try:                                     # ISO-8601, as several tools emit
+        from datetime import datetime
+
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp()
+    except (TypeError, ValueError):
+        return -1.0
+
+
 def normalize(raw: dict) -> Optional[dict]:
     """Map one cookie from any supported dialect to Playwright's shape.
 
@@ -60,7 +80,7 @@ def normalize(raw: dict) -> Optional[dict]:
         "value": str(raw.get("value", "")),
         "domain": str(domain),
         "path": str(raw.get("path") or "/"),
-        "expires": float(expires),
+        "expires": _as_epoch(expires),
         "httpOnly": bool(raw.get("httpOnly", False)),
         "secure": bool(raw.get("secure", False)),
         "sameSite": _SAME_SITE.get(str(raw.get("sameSite", "")).lower(), "Lax"),

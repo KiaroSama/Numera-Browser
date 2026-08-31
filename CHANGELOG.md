@@ -4,6 +4,62 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-31
+
+### Fixed
+
+- **A client could name its own profile id, and the id became a path.** `POST /api/profiles`
+  accepted an `id` and both stores joined it onto their directory, so `{"id": "../../escaped"}`
+  wrote a file two levels outside the data directory. Creates are always server-minted now, and
+  `paths.safe_id()` refuses separators, `..`, drive letters and over-long values at the point an id
+  becomes a filename - not only in the route, so import, restore and the CLI are covered by the same
+  guard. Lookups treat an unusable id as a miss; writes refuse it.
+- **Request bodies were still too permissive.** Bulk accepted arbitrary private fields such as
+  `_trust`; a non-object `patch`, a non-list `profiles`, or a non-string import `text` reached
+  `.items()`/`json.loads()` and produced a 500. Anything underscore-prefixed is server-owned and
+  refused, and malformed shapes are 4xx with nothing written.
+- **Import persisted `_new` and could change the default engine.** An imported profile reloaded as a
+  create form and saved as a duplicate; and because the importer fills the engine in from the
+  current default, `_remember_engine` recorded a choice nobody made. The regression test for this
+  posted the wrong body shape (`profiles` instead of `text`), so it passed without importing
+  anything - it now asserts the import actually landed.
+- **CORS was decided once at startup.** A server that started open kept `allow_origins=["*"]` after
+  the first token locked the API. The default is same-origin - the engine serves the dashboard
+  itself - with `NUMERA_ALLOWED_ORIGINS` for anything else.
+- **The desktop shell could never reach an authenticated engine.** It polled `/api/health`, which is
+  behind the token, so a configured token looked like a failed start and the screen that asks for
+  one was unreachable. A new public `GET /api/ready` names the service, the version and whether auth
+  is required, and nothing else.
+- **A locked vault destroyed the password it was protecting.** A locked read yields None for the
+  secret (deliberately - the launcher must never authenticate with ciphertext), and an ordinary edit
+  carried that None back through `save()` and wrote it over the encrypted value. The stored
+  ciphertext is now carried across any save that has no value for it.
+- **Persistence was only half atomic.** Profile writes used a direct `write_text`; `TokenStore`
+  exposed a lock its own methods never took, so a `verify()` that started before a `revoke()` wrote
+  its stale list back and resurrected the revoked token; `ProxyPool.delete()` was outside the pool
+  lock. The atomic writer and the per-file lock moved to `paths` and now cover all of them. The
+  token file's owner-only permission sat after a `return` and had never run.
+- **A read-only portable `data/` directory won on existence alone**, so every write then failed at
+  the point of use instead of at the choice.
+- **Detached jobs looked recycled on macOS.** The `ps` fallback identity used Python's `hash()`,
+  which is randomised per process, so a token recorded by one CLI invocation never matched the next
+  and `jobs stop` refused to touch a live job. It is a SHA-256 digest of the normalised line now.
+- **Schedules stored whatever they were sent.** `everyHours: "soon"` or a negative `minutes` was
+  accepted and surfaced later as a broken next-run time or a zero-work warm-up. One schema validates
+  create and update; a too-small interval is still clamped, as `add()` has always done, and
+  scheduler-owned fields cannot be patched.
+- **One malformed cookie aborted a whole import.** `float()` on a bad expiry raised out of the loop.
+  A value that cannot be read becomes a session cookie, and ISO-8601 dates are understood.
+- **Proxy protocol could change silently.** The dashboard-to-engine map had no SOCKS4 entry and fell
+  back to `http`, so a SOCKS4 profile launched a browser speaking a different protocol; `HTTPS` was
+  downgraded the same way. IPv6 broke in both directions (`partition(":")` one way, no brackets the
+  other). One canonical `split_server`/`server_url` pair is used by the pool, the dashboard and the
+  engine, and an unsupported type raises instead of guessing. Usage counts key on the full identity,
+  so credential variants sharing one endpoint no longer inherit each other's count.
+- **The portable build froze an engine that could not launch anything.** It installed `engine[api]`,
+  leaving out the `launch` extra that carries Playwright - the default engine.
+
+
 ## [0.7.0] - 2026-08-31
 
 ### Fixed
