@@ -285,7 +285,7 @@ curl -X PUT http://127.0.0.1:8787/api/config   -H "Authorization: Bearer $NUMERA
 **Keep the API on localhost.** It creates profiles, launches browsers and
 exports cookies; `NUMERA_API_TOKEN` is a second lock, not a licence to bind it
 to `0.0.0.0` on the open internet. Put it behind an SSH tunnel or a reverse
-proxy you control. `NUMERA_ALLOWED_ORIGINS` narrows CORS when a browser has to
+proxy you control. CORS is same-origin by default; `NUMERA_ALLOWED_ORIGINS` opens it when a browser has to
 reach it.
 
 To drive a profile from your own automation, attach instead of launching — the

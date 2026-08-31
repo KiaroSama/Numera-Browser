@@ -110,9 +110,15 @@ curl -s localhost:8787/api/profiles | jq
 ```
 
 Set `NUMERA_API_TOKEN` before serving to require `Authorization: Bearer <token>`
-on every request; it also narrows CORS, which is the point of it - a wildcard
-origin plus a token is a token any web page can spend. `NUMERA_ALLOWED_ORIGINS`
-sets the list explicitly.
+on every request.
+
+**CORS is same-origin by default**, whether or not a token is set: the engine
+serves the dashboard itself, so the normal case needs no cross-origin access at
+all. `NUMERA_ALLOWED_ORIGINS` sets the list explicitly - a dev server against
+this engine wants `http://localhost:5173`. This used to default to a wildcard
+when the server started unauthenticated, and the choice was made once at
+startup, so minting the first token locked the API while it went on telling
+every web page it could send credentials to it.
 
 **Named tokens** are the better option once more than one thing calls the API.
 `numera token create "CI runner"` mints one, prints it **once**, and stores only
@@ -129,6 +135,23 @@ does not reopen a server that still has it set.
 FastAPI publishes a schema at `/openapi.json` and a browsable form at `/docs`.
 Read [the caveats below](#what-the-openapi-schema-does-not-tell-you) before
 generating a client from it.
+
+## Readiness
+
+`GET /api/ready` is the one endpoint that answers while the API is locked:
+
+```console
+$ curl -s localhost:8787/api/ready
+{"ok": true, "service": "numera-browser", "version": "0.8.0", "authRequired": true}
+```
+
+It exists for launchers. The desktop shell polls it to know the engine is up,
+and it used to poll `/api/health` - which is behind the token, so an engine with
+one configured looked like it had failed to start and the screen that asks for a
+token was unreachable. Nothing about profiles, proxies or tokens is exposed
+here; `authRequired` tells a client whether to go looking for a credential.
+
+`/api/health` stays behind the token.
 
 ## MCP
 
@@ -227,7 +250,7 @@ why the page caches it in the first place.
 
 ## What the OpenAPI schema does not tell you
 
-`/openapi.json` lists all 30 API paths correctly — the SPA catch-all is
+`/openapi.json` lists every API path correctly — the SPA catch-all is
 excluded, the methods are right, nothing is missing. What it does not have is
 any *content*:
 
