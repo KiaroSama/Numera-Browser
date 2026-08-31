@@ -4,6 +4,9 @@ overviews. Nothing here opens a browser."""
 from __future__ import annotations
 
 import uuid
+from functools import lru_cache
+
+from ..paths import safe_id
 
 import json
 import os
@@ -35,14 +38,35 @@ CLIENT_MAY_NOT_SET = {"id", "_new", "_created", "_last_active", "_trust",
                       "_trustAt", "status", "lastActive", "profiles"}
 
 
-def _server_owned(patch: dict) -> list:
-    """Keys a client may not write, including anything private by convention.
+def strip_server_owned(patch: dict) -> list:
+    """Remove every key the server owns from `patch`; return what was removed.
 
     An explicit list misses the next `_field` somebody adds, so the underscore
     prefix is reserved wholesale: those are the store's own bookkeeping.
+
+    Dropped, not refused. `GET /api/profiles` returns `status` and `lastActive`
+    along with the store's `_`-prefixed fields, so a client that reads a
+    profile, changes one value and sends it back is sending exactly what it was
+    given. Refusing that made the API reject its own output: inline rename in
+    the dashboard posts `{...p, name}` straight from the list and got a 422.
+    The client's value still never reaches disk, which was the actual goal.
     """
-    return sorted(k for k in patch
-                  if k in CLIENT_MAY_NOT_SET or (k.startswith("_") and k != "_"))
+    dropped = sorted(k for k in patch
+                     if k in CLIENT_MAY_NOT_SET or (k.startswith("_") and k != "_"))
+    for key in dropped:
+        patch.pop(key, None)
+    return dropped
+
+
+@lru_cache(maxsize=1)
+def client_fields() -> frozenset:
+    """Every key a client may send on a profile.
+
+    Derived from the converter's own output instead of hand-listed, so adding a
+    field to the dashboard shape carries the contract with it and cannot leave a
+    real field being refused as unknown.
+    """
+    return frozenset(to_dashboard_profile(to_engine_profile({})))
 
 # Types the dashboard dereferences. A string where a list belongs is not a
 # cosmetic problem: `p.tags.map(...)` takes the whole page down.
@@ -58,13 +82,17 @@ FIELD_TYPES = {
 }
 
 
-def check_fields(patch: dict, *, where: str) -> "list[str]":
+def check_fields(patch: dict, *, where: str, extra=()) -> "list[str]":
     """Every reason this payload may not be written. Empty means it may."""
     problems = []
     if not isinstance(patch, dict):
         return [f"{where} must be an object"]
-    for key in _server_owned(patch):
-        problems.append(f"{where}: {key!r} is assigned by the server and cannot be set")
+    # Unknown keys are refused rather than stored. A typo used to persist as a
+    # field nothing reads and nothing shows - a dead control that looks saved,
+    # and the same shape of defect as a switch that reports instead of acting.
+    # Call `strip_server_owned` first; the keys it owns are not unknown.
+    for key in sorted(set(patch) - client_fields() - set(extra)):
+        problems.append(f"{where}: unknown field {key!r}")
     for key, want in FIELD_TYPES.items():
         if key not in patch or patch[key] is None:
             continue
@@ -88,7 +116,7 @@ def register(app, ctx):
 
     engine_store, dash, sched, running, is_running, decorate, stop_session = ctx.engine_store, ctx.dash, ctx.sched, ctx.running, ctx.is_running, ctx.decorate, ctx.stop_session
 
-    def _validate_profile(profile: dict) -> dict:
+    def _validate_profile(profile: dict, *, pid: "str | None" = None) -> dict:
         """Reject shapes the dashboard cannot render, before they reach disk.
 
         An unrenderable profile used to be stored happily and then take the
@@ -97,9 +125,8 @@ def register(app, ctx):
         from .. import drivers  # local, matching the other call sites in this module
         if not isinstance(profile, dict):
             raise HTTPException(422, "profile must be an object")
-        problems = check_fields(
-            {k: v for k, v in profile.items() if k not in ("id", "_new")},
-            where="profile")
+        strip_server_owned(profile)      # takes `id` and `_new` with it
+        problems = check_fields(profile, where="profile")
         if problems:
             raise HTTPException(422, "; ".join(problems[:8]))
         eng = profile.get("engine")
@@ -125,11 +152,19 @@ def register(app, ctx):
         # noise is derived from it, and this ran before the store assigned one -
         # so every profile created without an explicit seed hashed the literal
         # string "unsaved" and they all shared a fingerprint.
-        # Always server-minted on create. Accepting a client id let
-        # `"../../escaped"` reach the store's path builder; `safe_id` now
-        # refuses that at the filesystem boundary, but a caller naming its own
-        # profile ids is not something this API offers in the first place.
-        profile["id"] = uuid.uuid4().hex[:12]
+        # Create mints; update keeps the id from the path. Minting on both was
+        # a data-loss bug, not just a cosmetic one: `PUT /api/profiles/{pid}`
+        # set the id and then this line replaced it, so every edit wrote a
+        # *second* profile and left the original untouched. Accepting a client
+        # id is still not on offer - that is how `"../../escaped"` once reached
+        # the store's path builder.
+        if pid is None:
+            profile["id"] = uuid.uuid4().hex[:12]
+        else:
+            try:
+                profile["id"] = safe_id(pid)
+            except ValueError as exc:
+                raise HTTPException(422, str(exc)) from None
         try:
             complete = to_dashboard_profile(to_engine_profile(profile))
         except Exception:  # noqa: BLE001 - a shape too odd to convert keeps the
@@ -180,7 +215,6 @@ def register(app, ctx):
 
     @app.post("/api/profiles")
     def create_profile(profile: dict):
-        profile.pop("_new", None)
         chose_engine = bool(profile.get("engine"))
         _validate_profile(profile)
         _apply_default_extensions(profile)
@@ -195,9 +229,7 @@ def register(app, ctx):
     def update_profile(pid: str, profile: dict):
         if not dash.get(pid):
             raise HTTPException(404, "profile not found")
-        profile["id"] = pid
-        profile.pop("_new", None)
-        _validate_profile(profile)
+        _validate_profile(profile, pid=pid)
         _remember_engine(profile)
         return decorate(dash.save(profile))
 
@@ -225,16 +257,13 @@ def register(app, ctx):
         # disk is worse than none, because nothing tells the user which half.
         problems = []
         for i, item in enumerate(incoming):
-            problems += check_fields(
-                {k: v for k, v in (item or {}).items() if k not in ("id", "_new")},
-                where=f"profiles[{i}]")
+            strip_server_owned(item)     # `id` too: every entry is server-minted
+            problems += check_fields(item, where=f"profiles[{i}]")
         if problems:
             raise HTTPException(400, "; ".join(problems[:8]))
         ids = []
         last_engine = None
         for p in incoming:
-            p.pop("_new", None)
-            p.pop("id", None)           # always mint a server-side id
             _apply_default_extensions(p)
             if not p.get("engine"):
                 p["engine"] = engine_store.get_default_engine()
@@ -255,9 +284,9 @@ def register(app, ctx):
             raise HTTPException(400, f"'patch' must be an object, got {type(patch).__name__}")
         # One patch, many profiles: a bad field would otherwise be written to
         # every one of them before anything noticed.
-        problems = check_fields({k: v for k, v in patch.items()
-                                 if k not in ("addTags", "removeTags")},
-                                where="patch")
+        strip_server_owned(patch)
+        problems = check_fields(patch, where="patch",
+                                extra=("addTags", "removeTags"))
         for key in ("addTags", "removeTags"):
             if key in patch and not isinstance(patch[key], list):
                 problems.append(f"patch: {key!r} must be a list")

@@ -132,16 +132,67 @@ jobs:
       - name: Check the binary matches the platform
         run: file "build/$PLAT/Numera/numera"
 
+      # A file listing is not a working app. The frozen engine has to start on
+      # the runner, with no source checkout on its path.
+      - name: Smoke the assembled engine
+        run: |
+          set -euo pipefail
+          engine="build/$PLAT/Numera/engine/numera-engine"
+          data="$(mktemp -d)"
+          "$engine" --data-dir "$data" --version
+          "$engine" --data-dir "$data" create --name smoke
+          "$engine" --data-dir "$data" list | grep -q smoke
+          rm -rf "$data"
+
       - uses: actions/upload-artifact@v4
         with:
           name: numera-desktop-${{ runner.os }}
           path: build/${{ env.PLAT }}/Numera
 
+  # Windows has its own script: it bundles the Playwright browser and proves the
+  # static CRT took, neither of which the POSIX steps above do. Bolting it into
+  # that matrix would mean reimplementing both in bash.
+  desktop-windows:
+    name: Desktop app (windows-latest)
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Build the portable app
+        shell: pwsh
+        run: ./scripts/build-desktop.ps1
+
+      # The gate that matters: the assembled folder has to start, create a
+      # profile, launch the *bundled* Chromium and still have the profile after
+      # a restart. Freezing an engine that cannot open a browser is the exact
+      # failure this catches, and it looks like a successful build without it.
+      - name: Smoke the assembled artifact
+        shell: pwsh
+        run: ./scripts/smoke-portable.ps1 -Stage build/windows/Numera
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: numera-desktop-Windows
+          path: build/windows/Numera
+
   # Attach everything to the tag that triggered the run. This is how a build
   # reaches a user: the repository never carries one.
   release:
     name: Publish to the release
-    needs: [server, desktop]
+    needs: [server, desktop, desktop-windows]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:

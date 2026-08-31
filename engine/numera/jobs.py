@@ -30,6 +30,8 @@ import sys
 import time
 import uuid
 from pathlib import Path
+
+from .paths import write_json
 from typing import Optional
 
 # How long a record may sit with no pid and no outcome before it is called lost.
@@ -43,22 +45,49 @@ def _dir(root: Path) -> Path:
     return d
 
 
-def _merge(path: Path, patch: dict) -> dict:
-    """Fold ``patch`` into the record at ``path``, keeping what is already there.
+def _outcome_path(record: Path) -> Path:
+    """Where a job's own exit record lives.
 
-    ponytail: read-modify-write with no lock. The only two writers are the
-    parent at spawn and the child at exit, and their key sets are disjoint, so
-    the worst a collision can cost is one lost field. Add a lock if a third
-    writer ever appears.
+    Not ``.json``: `listing()` globs for those and would read this as a second
+    job. Deliberately a different *file* rather than a lock, because the two
+    writers are different processes - the parent recording the pid it spawned,
+    and the child recording how it ended. A read-modify-write cannot be made
+    safe between them with an in-process lock, and it was not safe: the parent
+    read the record before `Popen` returned, a fast child wrote its outcome, and
+    then the parent's write put back a record with no outcome in it. The job
+    showed as running until the startup grace expired and then as "lost", having
+    actually finished. Separate files, merged on read, and neither writer can
+    lose the other's fields.
     """
-    data: dict = {}
-    if path.exists():
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            data = {}
-    data.update(patch)
-    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    return record.with_suffix(".exit")
+
+
+def _read_record(path: Path) -> dict:
+    """The job's identity merged with its outcome, or ``{}``."""
+    data = _read_json(path)
+    if not data:
+        return {}
+    return {**data, **_read_json(_outcome_path(path))}
+
+
+def _read_json(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return loaded if isinstance(loaded, dict) else {}
+
+
+def _write(path: Path, patch: dict) -> dict:
+    """Fold ``patch`` into the file at ``path`` and write it atomically.
+
+    Safe as a read-modify-write only because each path here has a single
+    writing process; see `_outcome_path`.
+    """
+    data = {**_read_json(path), **patch}
+    write_json(path, data)
     return data
 
 
@@ -213,7 +242,7 @@ def spawn(root: Path, argv: list[str], command: str = "",
             stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
             env=env, start_new_session=True,   # POSIX only; ignored on Windows
         )
-    return _merge(rec_path, {
+    return _read_record_after(rec_path, {
         "id": jid,
         "argv": list(argv),
         "command": command,
@@ -227,9 +256,20 @@ def spawn(root: Path, argv: list[str], command: str = "",
     })
 
 
+def _read_record_after(rec_path: Path, identity: dict) -> dict:
+    """Write the spawning half of the record and return the merged view."""
+    _write(rec_path, identity)
+    return _read_record(rec_path)
+
+
 def record_exit(job_file: str, code: int) -> None:
-    """Called by the job itself as it exits, via ``NUMERA_JOB_FILE``."""
-    _merge(Path(job_file), {
+    """Called by the job itself as it exits, via ``NUMERA_JOB_FILE``.
+
+    Writes the sibling outcome file, never the record the parent owns - a job
+    that finishes before `spawn()` has written the pid used to have its outcome
+    overwritten by that write.
+    """
+    _write(_outcome_path(Path(job_file)), {
         "state": "done" if code == 0 else "failed",
         "exit": int(code),
         "finished": time.time(),
@@ -253,22 +293,16 @@ def _decorate(rec: dict) -> dict:
 
 
 def get(root: Path, jid: str) -> Optional[dict]:
-    path = _dir(root) / f"{jid}.json"
-    if not path.exists():
-        return None
-    try:
-        return _decorate(json.loads(path.read_text(encoding="utf-8")))
-    except json.JSONDecodeError:
-        return None
+    rec = _read_record(_dir(root) / f"{jid}.json")
+    return _decorate(rec) if rec else None
 
 
 def listing(root: Path) -> list[dict]:
     out = []
     for f in sorted(_dir(root).glob("*.json")):
-        try:
-            out.append(_decorate(json.loads(f.read_text(encoding="utf-8"))))
-        except json.JSONDecodeError:
-            continue
+        rec = _read_record(f)
+        if rec:
+            out.append(_decorate(rec))
     return sorted(out, key=lambda r: r.get("started", 0))
 
 
@@ -290,7 +324,9 @@ def stop(root: Path, jid: str) -> Optional[dict]:
         _terminate_tree(rec["pid"], rec.get("pidToken"))
         # The signal is a hard terminate on both platforms, so the job never
         # reaches its own exit hook — this side has to record the outcome.
-        _merge(_dir(root) / f"{jid}.json",
+        # The outcome file, like the job's own exit hook: this is an outcome,
+        # and the record file belongs to whoever spawned it.
+        _write(_outcome_path(_dir(root) / f"{jid}.json"),
                {"state": "stopped", "finished": time.time()})
     return get(root, jid)
 
@@ -310,7 +346,9 @@ def prune(root: Path) -> int:
     for rec in listing(root):
         if rec["running"]:
             continue
-        (d / f"{rec['id']}.json").unlink(missing_ok=True)
+        record = d / f"{rec['id']}.json"
+        record.unlink(missing_ok=True)
+        _outcome_path(record).unlink(missing_ok=True)
         log = rec.get("log")
         if log:
             Path(log).unlink(missing_ok=True)

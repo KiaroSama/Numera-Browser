@@ -125,6 +125,30 @@ response body is buffered through it. Every code path reaches
 `continueRequest`, including the error path - with `Fetch` enabled, a request
 that is never continued hangs the page for good.
 
+### What a portable build contains
+
+```
+Numera/
+  numera.exe      the Tauri shell
+  engine/         the frozen Python engine (PyInstaller onedir)
+  browsers/       Chromium, shipped with the app
+  data/           profiles, sessions, proxies, logs - written in place
+```
+
+`browsers/` is the one that is easy to forget. `pip install playwright`
+installs the *package*; the browser is a separate download into a per-user
+cache, which a machine that has never run Playwright does not have. Without it
+the app starts, serves the dashboard and fails at the first launch with
+"Executable doesn't exist". `paths.use_bundled_browsers()` points Playwright at
+this directory unless `PLAYWRIGHT_BROWSERS_PATH` is already set, and
+`scripts/smoke-portable.ps1` proves an assembled folder can actually open a
+browser rather than merely containing the files.
+
+The 272MB `chromium_headless_shell` is deliberately **not** shipped: the
+launcher passes `channel="chromium"` for headless runs precisely to avoid it,
+because the shell cannot load extensions and announces itself as
+HeadlessChrome over CDP.
+
 ## Storage layout
 
 Resolved by `paths.py`. A **portable** install keeps this beside the executable

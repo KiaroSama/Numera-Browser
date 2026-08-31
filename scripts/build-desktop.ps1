@@ -106,6 +106,26 @@ if ($SkipFreeze) {
     & $py -m pip install --quiet --upgrade pip pyinstaller "$repo\engine[api,launch]"
     if ($LASTEXITCODE -ne 0) { throw 'could not install the build dependencies' }
 
+    # `pip install playwright` installs the package, not the browser: that is a
+    # separate download into a per-user cache. A portable build has no such
+    # cache on a machine that has never run Playwright, so without this the app
+    # starts, serves the dashboard and fails at the first launch with
+    # "Executable doesn't exist". Cached in the build folder, so a rebuild does
+    # not re-download it.
+    Step 'Fetching the Playwright browser'
+    $browsers = Join-Path $build 'browsers'
+    $previousBrowsers = $env:PLAYWRIGHT_BROWSERS_PATH
+    $env:PLAYWRIGHT_BROWSERS_PATH = $browsers
+    try {
+        & $py -m playwright install chromium
+        if ($LASTEXITCODE -ne 0) { throw 'could not download the Playwright browser' }
+    } finally { $env:PLAYWRIGHT_BROWSERS_PATH = $previousBrowsers }
+    $chromium = Get-ChildItem -Path $browsers -Filter 'chromium-*' -Directory -ErrorAction SilentlyContinue
+    if (-not $chromium) { throw "playwright install reported success but $browsers has no chromium-* folder" }
+    $chromeExe = Get-ChildItem -Path $browsers -Filter 'chrome.exe' -Recurse -File -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    if (-not $chromeExe) { throw "the downloaded browser has no chrome.exe - the bundle would not launch" }
+
     $entry = Join-Path $build 'engine_entry.py'
     Set-Content -Path $entry -Encoding utf8 -Value @'
 """PyInstaller entry point: the numera CLI, nothing else."""
@@ -194,6 +214,33 @@ if ($dataKeep) {
 }
 Copy-Item $shell -Destination $stage
 Copy-Item $frozen -Destination (Join-Path $stage 'engine') -Recurse
+
+# A sibling of `engine`, not a child: `paths.use_bundled_browsers()` looks in
+# both, and keeping the 150MB out of the frozen folder means re-freezing the
+# engine does not mean re-copying the browser.
+$stageBrowsers = Join-Path $stage 'browsers'
+$cachedBrowsers = Join-Path $build 'browsers'
+# The cache survives -SkipFreeze, which is the point of caching it there.
+if (Test-Path $cachedBrowsers) {
+    New-Item -ItemType Directory -Force -Path $stageBrowsers | Out-Null
+    # Everything except the headless shell. `playwright install chromium` also
+    # fetches `chromium_headless_shell`, 272MB that this app never runs: the
+    # launcher passes channel="chromium" for headless precisely to avoid it -
+    # the shell cannot load extensions and announces itself as HeadlessChrome
+    # over CDP. Shipping it would be a third of the download for a binary the
+    # product refuses to use.
+    Get-ChildItem -Path $cachedBrowsers -Directory |
+        Where-Object { $_.Name -notlike 'chromium_headless_shell-*' } |
+        ForEach-Object { Copy-Item $_.FullName -Destination $stageBrowsers -Recurse }
+}
+if (-not (Test-Path $stageBrowsers)) {
+    throw ("$stageBrowsers is missing - the portable build cannot launch a browser. " +
+           "Build once without -SkipFreeze to download it.")
+}
+if (-not (Get-ChildItem -Path $stageBrowsers -Filter 'chrome.exe' -Recurse -File -ErrorAction SilentlyContinue |
+          Select-Object -First 1)) {
+    throw "$stageBrowsers has no chrome.exe - the portable build cannot launch a browser"
+}
 
 # The shell resolves <its own dir>/engine/numera-engine.exe. If that moved,
 # every build would silently fall back to a source checkout's .venv instead.

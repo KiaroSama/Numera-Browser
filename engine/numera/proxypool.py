@@ -217,13 +217,14 @@ def check(proxy: dict, timeout: float = 12) -> dict:
         from .models import Proxy
         from .relay import ProxyRelay, ProxyRelayError
 
-        scheme = str(proxy.get("type", "socks5")).lower()
-        if scheme == "socks4":
-            # SOCKS4 has no username/password authentication in the protocol,
-            # and the relay says so plainly rather than failing obscurely.
-            return {"ok": None, "error": "SOCKS4 cannot be health-checked: the "
-                                         "protocol has no authentication to test."}
-        upstream = Proxy(server=f"socks5://{proxy['host']}:{proxy['port']}",
+        # SOCKS4 used to come back `ok=None` with "the protocol has no
+        # authentication to test", which was the wrong reason for the wrong
+        # thing: a health check measures whether the proxy connects and what IP
+        # it exits from, and neither needs authentication. The real gap was that
+        # the relay only spoke SOCKS5. It speaks SOCKS4a now, so the Test button
+        # on a SOCKS4 row does what it says.
+        scheme = "socks4" if str(proxy.get("type", "")).upper() == "SOCKS4" else "socks5"
+        upstream = Proxy(server=f"{scheme}://{format_host(proxy['host'])}:{proxy['port']}",
                          username=proxy.get("user") or None,
                          password=proxy.get("pass") or None)
         try:

@@ -182,3 +182,42 @@ def test_an_icon_path_cannot_point_at_a_sibling_directory(tmp_path):
     evil.mkdir()
     (evil / "secret.png").write_bytes(b"x")
     assert webstore._icon_path(folder, "../ext-evil/secret.png") is None
+
+
+# --- Windows device names are not filenames ---------------------------------
+
+import pytest as _pytest
+
+from numera.paths import safe_id as _safe_id
+
+
+@_pytest.mark.parametrize("bad", [
+    "CON", "PRN", "AUX", "NUL", "COM1", "COM9", "LPT1", "LPT9", "con", "NuL",
+])
+def test_a_windows_device_name_is_not_a_usable_profile_id(bad):
+    """`CON`, `NUL`, `COM1` and friends are devices on Windows, in every
+    directory, in any case, with or without an extension. They contain nothing
+    unusual so the character class let them through, and opening one succeeds -
+    reading or writing the device instead of a profile. Server-minted ids never
+    look like this; an import, a restore or the CLI can carry one in."""
+    with _pytest.raises(ValueError, match="reserved device name"):
+        _safe_id(bad)
+
+
+@_pytest.mark.parametrize("bad", ["nul.json", "COM1.backup", "aux.tar.gz", "CON.txt"])
+def test_a_device_name_with_an_extension_is_refused_too(bad):
+    """Windows treats `nul.json` as the device as well. These are already
+    refused a step earlier - the character class has no `.` - but the device
+    check tests the stem too, so it stays correct if that class ever widens."""
+    with _pytest.raises(ValueError):
+        _safe_id(bad)
+
+
+@_pytest.mark.parametrize("ok", [
+    "CONS", "console", "COM", "COM10", "LPT10", "NULL", "auxiliary",
+    "ab12cd34ef56", "a-b_c",
+])
+def test_names_that_merely_look_like_devices_are_fine(ok):
+    """The rule is exact-stem, not substring: refusing `console` would reject
+    real ids for no reason."""
+    assert _safe_id(ok) == ok

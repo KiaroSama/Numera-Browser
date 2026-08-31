@@ -125,3 +125,106 @@ def test_the_frozen_engine_includes_the_launch_extra():
     assert "engine[api,launch]" in text, \
         "the desktop build does not install the launch dependency"
     assert "engine[api]\"" not in text
+
+
+@pytest.fixture
+def no_browsers_path():
+    """Snapshot `PLAYWRIGHT_BROWSERS_PATH` and put it back.
+
+    `use_bundled_browsers()` writes `os.environ` itself, and `monkeypatch` only
+    undoes what monkeypatch did - so a test that lets it write leaks the value
+    into every test that follows. One pointing at a `tmp_path` that no longer
+    exists made 34 live browser tests skip with "Executable doesn't exist",
+    which reads as a green run with fewer tests in it.
+    """
+    import os
+
+    before = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
+    os.environ.pop("PLAYWRIGHT_BROWSERS_PATH", None)
+    try:
+        yield
+    finally:
+        if before is None:
+            os.environ.pop("PLAYWRIGHT_BROWSERS_PATH", None)
+        else:
+            os.environ["PLAYWRIGHT_BROWSERS_PATH"] = before
+
+
+# --- the portable build ships a browser -------------------------------------
+
+def test_the_build_downloads_the_playwright_browser():
+    """`pip install playwright` installs the package, not the browser: that is a
+    separate download into a per-user cache. A portable build has no such cache
+    on a clean machine, so without this the app starts, serves the dashboard and
+    fails at the first launch with "Executable doesn't exist"."""
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "playwright install chromium" in text, \
+        "the build never downloads a browser"
+    assert "PLAYWRIGHT_BROWSERS_PATH" in text, \
+        "the download is not directed into the build folder"
+
+
+def test_the_build_ships_the_browser_and_checks_it_is_there():
+    """Downloading it into the build cache is not shipping it."""
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "$stageBrowsers" in text
+    assert "chrome.exe" in text, "nothing verifies the bundle can actually launch"
+
+
+def test_the_engine_finds_a_bundled_browser(tmp_path, monkeypatch, no_browsers_path):
+    """The other half: shipping it is no use if the frozen engine looks in the
+    developer cache instead."""
+    from numera import paths
+
+    app = tmp_path / "Numera" / "engine"
+    app.mkdir(parents=True)
+    bundle = tmp_path / "Numera" / "browsers" / "chromium-1234"
+    bundle.mkdir(parents=True)
+    (bundle / "marker").write_text("x", encoding="utf-8")
+    monkeypatch.setattr(paths, "app_dir", lambda: app)
+
+    found = paths.use_bundled_browsers()
+    assert found == tmp_path / "Numera" / "browsers", found
+    import os
+    assert os.environ["PLAYWRIGHT_BROWSERS_PATH"] == str(found)
+
+
+def test_an_explicit_browsers_path_is_not_overridden(tmp_path, monkeypatch, no_browsers_path):
+    """Someone who set it means it."""
+    from numera import paths
+
+    import os
+
+    os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "/somewhere/chosen"
+    app = tmp_path / "Numera" / "engine"
+    app.mkdir(parents=True)
+    (tmp_path / "Numera" / "browsers" / "chromium-1").mkdir(parents=True)
+    monkeypatch.setattr(paths, "app_dir", lambda: app)
+
+    assert paths.use_bundled_browsers() is None
+    import os
+    assert os.environ["PLAYWRIGHT_BROWSERS_PATH"] == "/somewhere/chosen"
+
+
+def test_no_bundle_is_not_an_error(tmp_path, monkeypatch, no_browsers_path):
+    """A source checkout uses the developer cache, as it always has."""
+    from numera import paths
+
+    app = tmp_path / "nothing-here"
+    app.mkdir()
+    monkeypatch.setattr(paths, "app_dir", lambda: app)
+    assert paths.use_bundled_browsers() is None
+    import os
+    assert "PLAYWRIGHT_BROWSERS_PATH" not in os.environ
+
+
+def test_an_empty_bundle_directory_is_ignored(tmp_path, monkeypatch, no_browsers_path):
+    """An interrupted download leaves the folder without a browser in it;
+    pointing Playwright at that is worse than leaving it alone."""
+    from numera import paths
+
+    app = tmp_path / "Numera" / "engine"
+    app.mkdir(parents=True)
+    (tmp_path / "Numera" / "browsers").mkdir(parents=True)
+    monkeypatch.setattr(paths, "app_dir", lambda: app)
+    assert paths.use_bundled_browsers() is None
