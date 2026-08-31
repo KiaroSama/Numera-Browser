@@ -24,7 +24,7 @@ pytestmark = pytest.mark.slow
 
 def make(tmp_path, **kw):
     store = ProfileStore(tmp_path)
-    p = Profile(name="extras", fingerprint=generate("windows"), **kw)
+    p = Profile(name="extras", fingerprint=generate(os="windows"), **kw)
     store.save(p)
     return p, store
 

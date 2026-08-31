@@ -130,7 +130,8 @@ def generate_profiles(
         # Restrict browser versions to the caller's subset if one was given.
         if chrome_versions:
             fp.chrome_version = rng.choice(chrome_versions)
-            fp.user_agent = build_user_agent(fp.os, fp.chrome_version)
+            fp.user_agent = build_user_agent(fp.os, fp.chrome_version,
+                                            fp.os_version, fp.device_model)
         name = f"{name_prefix}-{str(start_index + i).zfill(pad)}"
         out.append(Profile(name=name, fingerprint=fp, engine=engine,
                            tags=list(tags or [])))

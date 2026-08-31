@@ -4,6 +4,39 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **A public IPv6 ICE candidate was never scrubbed.** The WebRTC filter pulled an IPv4 address out
+  of a candidate line and treated "no IPv4 here" as safe, so on a v6-capable network the real global
+  address was still offered while the v4 one was being stripped. Both families are parsed now, and
+  only loopback, link-local, unique-local and mDNS survive.
+- **The vault covered one of the two files a profile lives in.** `DashboardStore` wrote the same
+  proxy password in plaintext beside the encrypted copy. It now stores ciphertext when the vault is
+  unlocked, refuses a *new* secret when it is locked rather than writing it in the clear, and keeps
+  the stored value when a non-secret field is edited - which used to blank the password, because the
+  editor sends back the redaction it was shown.
+- **An IPv6 proxy could not be used at all.** Parsing split on `:`, so `[2001:db8::1]:1080` was
+  rejected outright. Bracketed hosts parse, round-trip through export, and are re-bracketed when a
+  URL is built for the relay.
+- **A failed rotate could be retried immediately.** The cooldown was stamped only on success, so the
+  attempt that spent the provider's quota did not count - which is the hammering the cooldown exists
+  to prevent.
+- **A first-run import gave up permanently on one bad file**, and skipped a whole directory because
+  the destination had one entry in it - so a single profile could hide twenty. It merges per entry,
+  retries after a failure instead of writing the "done" marker, and now carries the folder layout,
+  API tokens and schedules, which had been left behind since they were added.
+- **One bad schedule stopped every schedule after it**, silently. Each row is isolated, a warm-up
+  that dies on startup is no longer recorded as run, and the exit code of a finished one is stored -
+  `Popen` returning means a process started, not that it worked.
+- **Browsers survived server shutdown.** The cleanup was registered inside the `if scheduler` branch,
+  so a server started without the scheduler left every child running, each holding a lock on a
+  profile's user-data directory. It is a lifespan hook now, which also retires the last deprecated
+  `on_event` call.
+- **A bulk-created Android profile's user agent disagreed with its own fields.** Rebuilding it from
+  the OS and Chrome version alone dropped the OS version and handset, substituting the builder's
+  defaults. The same omission is fixed in `align`, where a changed OS now moves both with it.
+
+
 ## [0.6.0] - 2026-08-31
 
 ### Added
