@@ -58,6 +58,12 @@ def _parse_lines(raw) -> list[str]:
     return [p.strip() for p in parts if p.strip()]
 
 
+# Kept in step with drivers.CLEARABLE by test_launch_extras, so an unknown key
+# from a client cannot reach the profile and silently do nothing.
+CLEARABLE_KEYS = ("history", "passwords", "cookies", "localStorage",
+                  "indexedDb", "sessions", "extensionData", "bookmarks")
+
+
 def _parse_bookmarks(raw) -> list[dict]:
     """One bookmark per line, as ``Name | https://url`` or a bare URL.
 
@@ -191,6 +197,7 @@ def to_engine_profile(d: dict) -> Profile:
         dns=str(d.get("dns") or "").strip(),
         ip_based=[k for k in ("timezone", "geolocation", "languages")
                   if k in (d.get("ipBased") or [])],
+        clear_on_start=[k for k in CLEARABLE_KEYS if k in (d.get("clearOnStart") or [])],
     )
 
 
@@ -259,6 +266,7 @@ def to_dashboard_profile(prof: Profile) -> dict:
             for b in (prof.bookmarks or []) if b.get("url")),
         "dns": prof.dns or "",
         "ipBased": list(prof.ip_based or []),
+        "clearOnStart": list(prof.clear_on_start or []),
         "lastActive": "never",
     }
 

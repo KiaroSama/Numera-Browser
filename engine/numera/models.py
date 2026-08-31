@@ -119,6 +119,9 @@ class Profile:
     # stored fingerprint. Any of "timezone", "geolocation", "languages".
     # Resolved at launch, because an IP's country is not knowable before then.
     ip_based: list[str] = field(default_factory=list)
+    # Stores this profile does NOT carry between launches; see drivers.CLEARABLE.
+    # Empty means full persistence, which is what every existing profile has.
+    clear_on_start: list[str] = field(default_factory=list)
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
@@ -136,6 +139,7 @@ class Profile:
             "bookmarks": self.bookmarks,
             "dns": self.dns,
             "ip_based": self.ip_based,
+            "clear_on_start": self.clear_on_start,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "fingerprint": self.fingerprint.to_dict(),
@@ -156,6 +160,7 @@ class Profile:
             bookmarks=d.get("bookmarks", []),
             dns=d.get("dns", ""),
             ip_based=d.get("ip_based", []),
+            clear_on_start=d.get("clear_on_start", []),
             created_at=d.get("created_at", time.time()),
             updated_at=d.get("updated_at", time.time()),
             fingerprint=Fingerprint.from_dict(d["fingerprint"]),
