@@ -54,10 +54,10 @@ So nobody re-audits them:
   proxies and DevTools, and acknowledged in both module docstrings. By design.
 - **`webstore._download` has no response-size cap** — fixed, trusted upstream
   host; a size cap guards nothing an attacker controls.
-- **Raise PBKDF2 above 200k rounds toward current OWASP guidance** — real
-  hardening, but it needs a versioned KDF so existing vaults still open, and the
-  primary protection is master-password strength. Folded into plan 003's
-  maintenance notes as a deliberate follow-up rather than done blind.
+- ~~**Raise PBKDF2 above 200k rounds**~~ - **done in 0.14.0**, the proper way:
+  the KDF is versioned via the `enc:vN:` prefix, so `v1` tokens keep opening at
+  200,000 while new writes are `v2` at 600,000. Listed here because it was
+  initially deferred for needing that version field, not because it was rejected.
 - **`.ai/GOLOGIN_PARITY.md` is seven releases stale** and claims fixed items are
   still gaps. Worth reconciling, but it is local-only planning memory, not a
   shipped document, so it is not a repo finding.

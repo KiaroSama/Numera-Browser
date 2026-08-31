@@ -93,16 +93,45 @@ def cmd_regen(args, store: ProfileStore) -> int:
 
 
 def cmd_delete(args, store: ProfileStore) -> int:
-    prof = store.resolve(args.ref)
-    if not prof:
-        return _no_profile(args.ref)
-    if not args.yes and not _confirm(
-            f"Delete '{prof.name}' [{prof.id}]? This removes its session too. (y/N) "):
-        say("Aborted.")
-        return emit({"ok": False, "aborted": True})
-    store.delete(prof.id)
-    say(_c(f"Deleted '{prof.name}'.", C.GRN))
-    return emit({"ok": True, "id": prof.id, "name": prof.name})
+    """Delete one or more profiles, with their sessions.
+
+    Resolve everything first: confirming a list and then discovering halfway
+    through that one name was a typo leaves a partial deletion nobody asked for.
+    """
+    refs = args.ref if isinstance(args.ref, list) else [args.ref]
+    found, missing = [], []
+    for ref in refs:
+        prof = store.resolve(ref)
+        (found if prof else missing).append(prof if prof else ref)
+    if missing:
+        return _no_profile(", ".join(missing))
+    if not found:
+        return _no_profile(", ".join(refs))
+
+    if not args.yes:
+        what = (f"'{found[0].name}' [{found[0].id}]" if len(found) == 1
+                else f"{len(found)} profiles")
+        if not _confirm(f"Delete {what}? This removes "
+                        f"{'its session' if len(found) == 1 else 'their sessions'} too. (y/N) "):
+            say("Aborted.")
+            return emit({"ok": False, "aborted": True})
+
+    removed, failed = [], []
+    for prof in found:
+        try:
+            store.delete(prof.id)
+            removed.append({"id": prof.id, "name": prof.name})
+            say(_c(f"Deleted '{prof.name}'.", C.GRN))
+        except Exception as exc:                                # noqa: BLE001
+            # A session that could not be removed is reported, not swallowed -
+            # see `ProfileStore.delete_session`.
+            failed.append({"id": prof.id, "name": prof.name,
+                           "error": str(exc).splitlines()[0][:200]})
+            say(_c(f"Could not fully delete '{prof.name}': {exc}", C.RED))
+    if len(removed) == 1 and not failed:
+        return emit({"ok": True, **removed[0]})
+    return emit({"ok": not failed, "removed": removed, "failed": failed},
+                0 if not failed else 1)
 
 
 def cmd_export(args, store: ProfileStore) -> int:

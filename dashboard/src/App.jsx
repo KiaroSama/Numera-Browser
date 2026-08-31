@@ -93,7 +93,7 @@ function LockedScreen({ detail, onUnlock }) {
 
   return (
     <div className="ps-root">
-      <style>{makeCss()}</style>
+      <style>{CSS}</style>
       <div className="ps-locked">
         <form className="ps-locked-card" onSubmit={submit}>
           <div className="ps-locked-ic"><KeyRound size={22} /></div>
@@ -117,6 +117,11 @@ function LockedScreen({ detail, onUnlock }) {
     </div>
   );
 }
+
+// Built once.  takes no arguments and emits both themes as CSS
+// variables; the theme is switched by a  attribute, so the string
+// never changes - and this sits in a component that re-renders on every poll.
+const CSS = makeCss();
 
 export default function App() {
   const [profiles, setProfiles] = useState(seed);
@@ -340,7 +345,7 @@ export default function App() {
 
   return (
     <div className="ps-root">
-      <style>{makeCss()}</style>
+      <style>{CSS}</style>
       <div className="ps-shell">
         {/* ---- Sidebar ---- */}
         <aside className="ps-side">

@@ -4,6 +4,48 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-09-01
+
+Finishes the audit set: `plans/011` (deferred from 0.13.0 pending a measurement)
+plus the remaining advisory findings.
+
+### Fixed
+
+- **The vault re-read `config.json` twice for every single secret.** `vault()`
+  and `unlocked()` each read it, and `decrypt_for_read` calls both - so listing a
+  60-proxy pool did over 120 config reads on top of the pool file. This, not
+  PBKDF2, was the bulk of the pool's quadratic cost. The config is re-read only
+  when its size or mtime changes. Measured on a 60-profile, 60-proxy root with
+  the vault on: resolving 60 proxy ids went **7,260 file reads to 60** (1,433 ms
+  to 358 ms), updating 20 proxies **6,040 to 20** (1,446 ms to 506 ms), and
+  `GET /api/profiles` **240 to 120**. The offline suite dropped from 85 s to 76 s.
+- **A proxy pool write read the file twice** - once through `list()` for a
+  decrypted view and again to rebuild the map needed to re-encrypt. And a health
+  sweep updated each proxy separately, so testing N proxies did N locked
+  read-modify-write cycles over the whole file; `update_many()` does one.
+- **`GET /api/profiles` listed the store three times** per request, on an
+  endpoint the UI polls every three seconds, and `profiles_health` converted
+  every profile to engine shape twice per page load.
+- **Every authenticated request rewrote `tokens.json`** - an atomic temp write,
+  rename and chmod under the lock - to advance `lastUsed` by milliseconds. Only
+  written when the stamp actually moves; revocation is still immediate.
+- **The dashboard rebuilt its whole stylesheet on every render.** `makeCss()`
+  takes no arguments and the theme switches via a `data-theme` attribute, so the
+  output never changed.
+- **Deleting a selection was one request per profile.** `POST /api/profiles/delete`
+  takes a list, and `numera delete` now takes several refs like `pool remove`
+  already did - the parity guard caught that the dashboard had gained a
+  capability the headless surface could not match.
+
+### Changed
+
+- **The KDF is versioned, and new secrets use 600,000 PBKDF2 rounds** (current
+  OWASP guidance) instead of 200,000. The round count is part of what the key was
+  derived from, so raising it without a version would have made every existing
+  vault unreadable - `enc:v1:` tokens keep opening at 200,000 and only new writes
+  are `enc:v2:`. A secret from a future version now says so rather than reporting
+  a wrong master password.
+
 ## [0.13.0] - 2026-09-01
 
 Two audits worked through together: a full-project advisory pass and a follow-up

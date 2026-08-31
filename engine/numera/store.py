@@ -53,12 +53,37 @@ class ProfileStore:
     DEFAULT_ENGINE = "playwright"
 
     def get_config(self) -> dict:
-        if not self.config_path.exists():
-            return {}
+        """The stored config, re-read only when the file has actually changed.
+
+        `vault()` and `unlocked()` both call this, and `vault.decrypt_for_read`
+        calls both - so decrypting a single secret cost two full reads of
+        `config.json`. Listing a 60-proxy pool did over a hundred, which is
+        where a pool sweep's quadratic cost really came from; the PBKDF2 work
+        was only half of it.
+
+        Keyed on the file's size and modification time. Writes go through
+        `write_json`, which replaces the file atomically, so any change moves
+        one of those. A copy is returned because callers mutate what they get.
+        """
+        import copy
+
         try:
-            return json.loads(self.config_path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
+            stat = self.config_path.stat()
+        except OSError:
+            self._config_cache = None
             return {}
+        key = (stat.st_mtime_ns, stat.st_size)
+        cached = getattr(self, "_config_cache", None)
+        if cached is not None and cached[0] == key:
+            return copy.deepcopy(cached[1])
+        try:
+            data = json.loads(self.config_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+        if not isinstance(data, dict):
+            return {}
+        self._config_cache = (key, data)
+        return copy.deepcopy(data)
 
     def save_config(self, cfg: dict) -> dict:
         with _lock_for(self.config_path):

@@ -196,13 +196,18 @@ def register(app, ctx):
         # `to_dashboard_profile` is the existing reverse mapping; without this
         # the two stores only converge in one direction and a headless-created
         # profile stays invisible in the GUI forever (B17).
-        known = {p["id"] for p in dash.list()}
+        # One listing, not three. This read the dashboard store, read the
+        # engine store, and then read the dashboard store *again* for the
+        # response - on an endpoint the UI polls every three seconds, with the
+        # vault decrypting every record on each pass.
+        profiles = dash.list()
+        known = {p["id"] for p in profiles}
         for prof in engine_store.list():
             if prof.id not in known:
                 d = to_dashboard_profile(prof)
                 d["id"] = prof.id
-                dash.save(d)
-        return [decorate(p) for p in dash.list()]
+                profiles.append(dash.save(d))
+        return [decorate(p) for p in profiles]
 
     def _apply_default_extensions(profile: dict) -> dict:
         # The dashboard keeps extensions as newline-separated text. Only fill it
@@ -257,6 +262,37 @@ def register(app, ctx):
         # deleted it again, each half-aware of the other.
         dash.delete(pid)
         return {"ok": True}
+
+    @app.post("/api/profiles/delete")
+    def delete_profiles(body: dict):
+        """Delete many profiles in one call.
+
+        The dashboard looped `DELETE /api/profiles/{id}` per selection, so
+        removing 200 profiles was 200 round trips - the odd one out beside
+        `/batch` and `/bulk`, which are both batched.
+
+        Each delete keeps its own semantics: existence checked before anything
+        is destroyed, one owner for both copies, session directory last. A
+        profile that fails is reported rather than aborting the rest, because a
+        half-finished delete of an explicit selection is worse than a partial
+        one the caller can see and retry.
+        """
+        ids = body.get("ids")
+        if not isinstance(ids, list) or not all(isinstance(i, str) for i in ids):
+            raise HTTPException(400, "'ids' must be a list of profile ids")
+        removed, missing, failed = [], [], []
+        for pid in ids:
+            if not dash.get(pid) and not engine_store.get(pid):
+                missing.append(pid)
+                continue
+            if is_running(pid):
+                stop_session(pid)
+            try:
+                dash.delete(pid)
+                removed.append(pid)
+            except Exception as exc:                            # noqa: BLE001
+                failed.append({"id": pid, "error": str(exc).splitlines()[0][:200]})
+        return {"removed": removed, "missing": missing, "failed": failed}
 
     @app.post("/api/profiles/batch")
     def batch_create(body: dict):
@@ -432,7 +468,10 @@ def register(app, ctx):
         # Which profiles share a fingerprint with another? (a linkage risk)
         from ..collision import find_collisions
         colliding: set[str] = set()
-        for g in find_collisions([to_engine_profile(d) for d in profiles]):
+        # Convert once and reuse. `dashboard_coherence(d)` converts internally
+        # too, so every profile was mapped to engine shape twice per page load.
+        engine_shaped = {d["id"]: to_engine_profile(d) for d in profiles}
+        for g in find_collisions(list(engine_shaped.values())):
             colliding.update(m["id"] for m in g["members"])
 
         rows = []
@@ -440,7 +479,7 @@ def register(app, ctx):
                    "scheduled": 0, "graded": 0, "colliding": 0, "needsAttention": 0}
         for d in profiles:
             pid = d["id"]
-            issues = dashboard_coherence(d)
+            issues = validate(engine_shaped[pid].fingerprint)
             px = d.get("proxy") or {}
             has_proxy = bool(px.get("host"))
             trust = d.get("_trust")

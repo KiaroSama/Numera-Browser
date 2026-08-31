@@ -115,7 +115,15 @@ function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSe
         const ids = rows.map(p => p.id);
         setSel(new Set());
         if (live) {
-          for (const id of ids) { try { await api.remove(id); } catch (e) { toast.error(e.message); } }
+          // One request. This looped a DELETE per id, so removing a large
+          // selection was that many round trips - and a failure part-way left
+          // the toast claiming every one had gone.
+          try {
+            const res = await api.removeMany(ids);
+            if (res?.failed?.length) {
+              toast.error(`${res.failed.length} could not be deleted: ${res.failed[0].error}`);
+            }
+          } catch (e) { toast.error(e.message); }
           await refresh();
         } else {
           setProfiles(ps => ps.filter(p => !ids.includes(p.id)));

@@ -346,28 +346,65 @@ class ProxyPool:
     def get(self, pid: str) -> Optional[dict]:
         return next((p for p in self.list() if p.get("id") == pid), None)
 
+    def _read_for_write(self):
+        """`(decrypted view, {id: stored entry})` from a single file read.
+
+        `update`/`delete` used to read the file twice - once through `list()`
+        for a decrypted view, and again inside `_save_entries()` to rebuild the
+        map needed to re-encrypt. That doubled the cost of every single-field
+        edit on a pool of any size. Callers hold the lock around this.
+        """
+        stored = self._stored()
+        return [self._decrypted(e) for e in stored], {e.get("id"): e for e in stored}
+
     def update(self, pid: str, patch: dict) -> Optional[dict]:
       # Re-read inside the lock: the caller's snapshot may already be stale,
       # and writing it back is how a concurrent health check lost a status.
       with self._lock:
-        items = self.list()
+        items, stored = self._read_for_write()
         out = None
         for p in items:
             if p.get("id") == pid:
                 p.update(patch)
                 out = p
         if out:
-            self._save_entries(items)
+            self._save([self._encrypted(e, stored.get(e.get("id"))) for e in items])
         return out
+
+    def update_many(self, patches: dict) -> list:
+        """Apply `{id: patch}` in one read-modify-write.
+
+        A pool sweep updated each proxy separately, so testing N proxies did N
+        locked read-modify-write cycles over the whole file. One pass instead.
+        """
+        if not patches:
+            return []
+        with self._lock:
+            items, stored = self._read_for_write()
+            touched = []
+            for p in items:
+                patch = patches.get(p.get("id"))
+                if patch:
+                    p.update(patch)
+                    touched.append(p)
+            if touched:
+                self._save([self._encrypted(e, stored.get(e.get("id"))) for e in items])
+            return touched
 
     def delete(self, pid: str) -> bool:
       with self._lock:
-        items = self.list()
+        items, stored = self._read_for_write()
         kept = [p for p in items if p.get("id") != pid]
         if len(kept) == len(items):
             return False
-        self._save_entries(kept)
+        self._save([self._encrypted(e, stored.get(e.get("id"))) for e in kept])
         return True
+
+
+# How stale a token's `lastUsed` may be before it is worth a disk write. The
+# field exists so a user can spot a token nobody uses; it is never read at finer
+# resolution than "which day".
+LAST_USED_RESOLUTION = 60.0
 
 
 class TokenStore:
@@ -444,10 +481,18 @@ class TokenStore:
                 # but the comparison still should not leak timing about a
                 # near-miss.
                 if secrets.compare_digest(str(t.get("hash", "")), digest):
-                    t["lastUsed"] = time.time()
-                    # Re-read inside the lock and write that: this used to write
-                    # back a list captured before a concurrent `revoke()`, which
-                    # brought the revoked token back.
-                    self._save(items)
+                    now = time.time()
+                    # Only persist when the stamp actually moves. Every
+                    # authenticated request used to rewrite the whole token file
+                    # - an atomic temp write, rename and chmod under the lock -
+                    # to advance `lastUsed` by milliseconds, putting disk churn
+                    # and lock contention on the hot auth path. Minute
+                    # granularity is all this field is read at.
+                    if now - float(t.get("lastUsed") or 0) >= LAST_USED_RESOLUTION:
+                        t["lastUsed"] = now
+                        # Re-read inside the lock and write that: this used to
+                        # write back a list captured before a concurrent
+                        # `revoke()`, which brought the revoked token back.
+                        self._save(items)
                     return t
         return None
