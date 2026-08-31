@@ -100,7 +100,7 @@ def cmd_vault(args, store: ProfileStore) -> int:
         pw = store._password or _prompt_password(confirm=True)
         store._password = pw
         n = store.enable_vault(pw)
-        say(_c(f"Vault enabled — encrypted secrets in {n} profile(s).", C.GRN))
+        say(_c(f"Vault enabled — encrypted {n} secret(s) across the data directory.", C.GRN))
         say(_c("Keep this password safe: without it, encrypted proxy passwords can't be recovered.", C.YEL))
         say(_c("Set NUMERA_PASSWORD (or pass --password) when launching so profiles can use their proxy.", C.DIM))
         return emit({"ok": True, "enabled": True, "encrypted": n})

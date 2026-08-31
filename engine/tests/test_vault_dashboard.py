@@ -12,6 +12,7 @@ import pytest
 pytest.importorskip("cryptography")
 
 from numera.server.stores import DashboardStore  # noqa: E402
+from numera import crypto
 from numera.store import ProfileStore  # noqa: E402
 
 SECRET = "hunter2-the-proxy-password"
@@ -53,7 +54,10 @@ def test_a_locked_vault_refuses_a_new_secret_rather_than_writing_it(tmp_path):
     locked = ProfileStore(tmp_path)                 # no password: locked
     dash_locked = DashboardStore(tmp_path, locked)
     assert not locked.unlocked()
-    with pytest.raises(PermissionError) as e:
+    # `crypto.VaultLocked`, not `PermissionError`. The two stores used to raise
+    # different types for the same condition; they share one rule now
+    # (`vault.encrypt_for_write`) and the engine store's type won.
+    with pytest.raises(crypto.VaultLocked) as e:
         dash_locked.save(profile())
     assert "locked" in str(e.value)
 

@@ -16,7 +16,9 @@ predate the rename keep using `~/.persona`, which is read in place). Treat that
 directory as sensitive.
 
 **Encrypting secrets:** proxy passwords can be encrypted at rest with a master
-password — run `pip install -e ".[secure]"` then `numera vault enable`. Secrets
+password — run `pip install -e ".[secure]"` then `numera vault enable`. This
+covers every proxy password under the data directory: the engine's profiles, the
+dashboard's copy of each one, and the shared proxy pool. Secrets
 are stored as Fernet tokens (AES) with the key derived via PBKDF2-HMAC-SHA256;
 supply the password at use time through `NUMERA_PASSWORD` or `--password`, so it
 never touches disk. The rest of each profile stays readable. There is no password

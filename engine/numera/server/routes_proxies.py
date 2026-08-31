@@ -129,7 +129,14 @@ def register(app, ctx):
     def add_proxies(body: dict):
         from .. import proxypool as pp
         incoming = body.get("proxies")
-        parsed = incoming if incoming else pp.parse_many(body.get("text") or "")
+        # Both shapes through the same validator. Structured input used to go
+        # straight to the pool and only text was normalised, so a malformed
+        # object became a 500 or a stored record nothing could launch.
+        try:
+            parsed = (pp.normalize_many(incoming) if incoming is not None
+                      else pp.normalize_many(pp.parse_many(body.get("text") or "")))
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from None
         if not parsed:
             raise HTTPException(400, "no proxies could be parsed from that input")
         added = pool.add_many(parsed)

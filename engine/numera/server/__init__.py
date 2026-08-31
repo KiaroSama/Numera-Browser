@@ -104,7 +104,7 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
 
     engine_store = ProfileStore(data_dir)
     dash = DashboardStore(engine_store.root, engine_store)
-    pool = ProxyPool(engine_store.root)
+    pool = ProxyPool(engine_store.root, engine_store)
     tokens = TokenStore(engine_store.root)
     sched = ScheduleStore(engine_store.root)
     running: dict[str, subprocess.Popen] = {}

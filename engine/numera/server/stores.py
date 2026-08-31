@@ -14,6 +14,7 @@ import time
 import uuid
 from pathlib import Path
 from typing import Optional
+from .. import vault
 from ..paths import _lock_for, id_path, write_json
 from .convert import to_engine_profile
 
@@ -46,7 +47,7 @@ class DashboardStore:
         out = []
         for f in sorted(self.dir.glob("*.json")):
             try:
-                out.append(json.loads(f.read_text(encoding="utf-8")))
+                out.append(self._decrypted(json.loads(f.read_text(encoding="utf-8"))))
             except json.JSONDecodeError:
                 continue
         return sorted(out, key=lambda p: p.get("_created", 0))
@@ -58,7 +59,9 @@ class DashboardStore:
             f = self._path(pid)
         except ValueError:
             return None
-        return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
+        if not f.exists():
+            return None
+        return self._decrypted(json.loads(f.read_text(encoding="utf-8")))
 
     # The vault encrypts the proxy password in the engine's own profile file.
     # This store writes a second copy of the same profile, and it was writing
@@ -66,50 +69,49 @@ class DashboardStore:
     # and left the secret readable in the one beside it.
     SECRET = ("proxy", "pass")
 
+    def _raw(self, pid: str) -> dict:
+        """The stored record, undecrypted.
+
+        `get()` yields `None` for the secret while the vault is locked, which is
+        deliberate - handing the ciphertext to a caller would send it onwards as
+        if it were the password. But deciding what to *keep* on a locked save
+        needs the ciphertext itself, so that one caller reads the file directly.
+        """
+        try:
+            f = self._path(pid)
+        except ValueError:
+            return {}
+        if not f.exists():
+            return {}
+        try:
+            return json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+
     def _guard_secrets(self, prof: dict) -> dict:
         """Return a copy that never carries a plaintext secret past the vault.
 
-        Three cases, and the middle one is the bug the audit found:
-
-        * no vault - unchanged; there is nothing to protect it from.
-        * vault locked - the password cannot be encrypted, so a *new* one is
-          refused rather than written in the clear, and an *unchanged* one keeps
-          whatever is already on disk. Editing the profile name used to blank
-          the stored password, because the dashboard sends back the redacted
-          value it was given.
-        * vault unlocked - store the ciphertext the engine store would store.
+        The rule itself lives in `vault.encrypt_for_write` - the engine store
+        and the proxy pool need exactly the same one, and three copies of it
+        drifted apart once already.
         """
-        engine = self._engine
-        if engine is None or not getattr(engine, "vault_enabled", lambda: False)():
-            return prof
-
         a, b = self.SECRET
         node = prof.get(a)
-        secret = node.get(b) if isinstance(node, dict) else None
-        existing = (self.get(prof["id"]) or {}).get(a) or {}
-        stored = existing.get(b) if isinstance(existing, dict) else None
-
-        if not secret:
+        if not isinstance(node, dict):
             return prof
-        from .. import crypto
+        stored = (self._raw(prof.get("id", "")).get(a) or {}).get(b)
+        kept = vault.encrypt_for_write(self._engine, node.get(b), stored)
+        if kept == node.get(b):
+            return prof
+        return {**prof, a: {**node, b: kept}}
 
-        if crypto.is_encrypted(secret):
-            return prof                     # already ciphertext; nothing to do
-
-        if not engine.unlocked():
-            if stored and secret == "\u2022" * len(str(secret)):
-                pass                        # a redaction placeholder, not a change
-            if stored:
-                # Keep what is on disk rather than overwriting it with something
-                # we cannot encrypt.
-                out = {**prof, a: {**node, b: stored}}
-                return out
-            raise PermissionError(
-                "the vault is locked, so this proxy password cannot be stored "
-                "safely - unlock it with `numera vault unlock` first")
-
-        v = engine.vault()
-        return {**prof, a: {**node, b: crypto.encrypt(engine._password, v["salt"], secret)}}
+    def _decrypted(self, prof: dict) -> dict:
+        """The record as a caller should see it: the secret, or nothing."""
+        a, b = self.SECRET
+        node = prof.get(a)
+        if not isinstance(node, dict) or not node.get(b):
+            return prof
+        return {**prof, a: {**node, b: vault.decrypt_for_read(self._engine, node[b])}}
 
     def save(self, prof: dict) -> dict:
         if not prof.get("id"):
@@ -152,17 +154,43 @@ class DashboardStore:
         self._engine.save(twin)
 
     def delete(self, pid: str) -> bool:
-        f = self._path(pid)
-        if not f.exists():
+        """Remove both copies of a profile, and its session last.
+
+        The order is the point. Metadata deletion is recoverable - the bytes are
+        held and written back - so both metadata files go first and the session
+        directory, which cannot be brought back, only afterwards. And the engine
+        failure is no longer swallowed: it left the dashboard copy gone and the
+        twin behind, so the profile reappeared in `numera list` after the GUI
+        said it was deleted, and the call reported success.
+        """
+        try:
+            f = self._path(pid)
+        except ValueError:
             return False
-        f.unlink()
+        engine_record = None
         if self._engine is not None:
-            # Leaving the twin behind would resurrect the profile in `numera
-            # list` after the GUI said it was gone.
             try:
-                self._engine.delete(pid)
-            except Exception:   # pragma: no cover
-                pass
+                engine_record = self._engine._path(pid)
+            except ValueError:
+                engine_record = None
+        if not f.exists() and not (engine_record and engine_record.exists()):
+            return False
+
+        undo = []
+        try:
+            for path in (f, engine_record):
+                if path is not None and path.exists():
+                    undo.append((path, path.read_bytes()))
+                    path.unlink()
+        except OSError:
+            for path, original in reversed(undo):
+                path.write_bytes(original)
+            raise
+
+        # Past the point of no return: both records are gone, so the session
+        # they described is orphaned whatever happens next.
+        if self._engine is not None:
+            self._engine.delete_session(pid)
         return True
 
     # Dashboard-only settings (folder list, etc.) live in a sibling file rather
@@ -190,16 +218,56 @@ class DashboardStore:
 class ProxyPool:
     """A managed list of proxies the dashboard can import, test and assign."""
 
-    def __init__(self, root: Path):
+    # The pool holds the same kind of secret the profiles do, so it needs the
+    # same vault. `engine_store` is how it sees one; without it the pool keeps
+    # its old plaintext behaviour, which is right for a caller that has no data
+    # root of its own but wrong for the two that do - both pass it.
+    def __init__(self, root: Path, engine_store=None):
         self.path = root / "proxies.json"
+        self._engine = engine_store
 
-    def list(self) -> list[dict]:
+    def _stored(self) -> list[dict]:
+        """The file as written, secrets still encrypted."""
         if not self.path.exists():
             return []
         try:
-            return json.loads(self.path.read_text(encoding="utf-8"))
+            raw = json.loads(self.path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             return []
+        return raw if isinstance(raw, list) else []
+
+    def list(self) -> list[dict]:
+        """Every proxy, with its password readable - or `None` while locked.
+
+        Decrypting here rather than at each call site is what keeps the rest of
+        the pool working now that the vault covers `proxies.json`. Dedupe, the
+        "used by N profiles" count and `identity()` all key on the credentials,
+        and encryption is randomised: the same password stored twice produces
+        two different ciphertexts, so comparing those would make every proxy
+        look unique and every usage count fall to zero.
+        """
+        return [self._decrypted(p) for p in self._stored()]
+
+    def _decrypted(self, entry: dict) -> dict:
+        if not entry.get("pass"):
+            return entry
+        return {**entry, "pass": vault.decrypt_for_read(self._engine, entry["pass"])}
+
+    def _encrypted(self, entry: dict, stored: dict) -> dict:
+        """What to write for `entry`, given what is already on disk for it."""
+        kept = vault.encrypt_for_write(self._engine, entry.get("pass"),
+                                       (stored or {}).get("pass"))
+        return entry if kept == entry.get("pass") else {**entry, "pass": kept}
+
+    def _save_entries(self, items: list[dict]) -> None:
+        """Write a decrypted view back, re-encrypting as it goes.
+
+        `list()` hands out plaintext, so every caller that reads-modifies-writes
+        would otherwise put the plaintext straight back and quietly undo the
+        vault.
+        """
+        by_id = {e.get("id"): e for e in self._stored()}
+        self._save([self._encrypted(e, by_id.get(e.get("id"))) for e in items])
 
     def _save(self, items: list[dict]):
         write_json(self.path, items)
@@ -230,7 +298,7 @@ class ProxyPool:
             items.append(entry)
             seen.add(key)
             added.append(entry)
-        self._save(items)
+        self._save_entries(items)
         return added
 
     def get(self, pid: str) -> Optional[dict]:
@@ -247,7 +315,7 @@ class ProxyPool:
                 p.update(patch)
                 out = p
         if out:
-            self._save(items)
+            self._save_entries(items)
         return out
 
     def delete(self, pid: str) -> bool:
@@ -256,7 +324,7 @@ class ProxyPool:
         kept = [p for p in items if p.get("id") != pid]
         if len(kept) == len(items):
             return False
-        self._save(kept)
+        self._save_entries(kept)
         return True
 
 

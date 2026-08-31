@@ -272,9 +272,19 @@ numera list                                # works without it — only the secre
 
 Names, OS, tags and the rest stay visible while locked, so you can still manage
 profiles; only the proxy password is withheld until you unlock. **Keep the
-password — there's no recovery.** This covers the engine store and CLI; the
-dashboard's own profile store isn't encrypted yet (that needs the password in
-the browser layer, which is a separate design).
+password — there's no recovery.**
+
+It covers **every** secret under the data directory, not just the engine's own
+profiles: the dashboard's copy of each profile and the shared proxy pool hold
+the same passwords and are migrated in the same step. That is what
+`vault.SITES` lists, and adding a store to the product means adding a line
+there. It used to cover `profiles/*.json` alone, so `vault enable` reported
+success while `dashboard/*.json` and `proxies.json` still held the passwords in
+the clear.
+
+The migration is all or nothing. If anything fails - encrypting, writing, or
+saving the config - every touched file is restored and the vault stays off,
+because a half-migrated store is the one state nothing can read.
 
 ### Cookies
 

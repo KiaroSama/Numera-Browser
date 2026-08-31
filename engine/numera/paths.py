@@ -30,6 +30,7 @@ import time
 import re
 import threading
 import json
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
 
@@ -232,6 +233,70 @@ def _replace(tmp: Path, path: Path) -> None:
             if attempt == _REPLACE_ATTEMPTS - 1:
                 raise
             time.sleep(_REPLACE_BACKOFF * (attempt + 1))
+
+
+def mutate_json(path, change, default=None):
+    """Read, change and write one JSON file inside a single lock.
+
+    The read has to be inside the lock too. Three settings writers each did
+    `get_config()` -> edit one key -> `save_config()`, with only the write
+    locked, so two of them running at once both read the old config and the
+    second one wrote its copy over the first. Changing the default engine and
+    the headless flag together lost one of them.
+
+    `change` is called with the loaded document and returns what to write.
+    """
+    path = Path(path)
+    with _lock_for(path):
+        current = default() if callable(default) else ({} if default is None else default)
+        if path.exists():
+            try:
+                current = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                pass                # a corrupt file is replaced, not merged into
+        updated = change(current)
+        write_json(path, updated)
+        return updated
+
+
+class _Batch:
+    """Files written as one change; `rollback()` puts every one back."""
+
+    def __init__(self):
+        self._undo: list = []
+
+    def write(self, path, data) -> None:
+        path = Path(path)
+        self._undo.append((path, path.read_bytes() if path.exists() else None))
+        write_json(path, data)
+
+    def rollback(self) -> None:
+        for path, original in reversed(self._undo):
+            try:
+                if original is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.write_bytes(original)
+            except OSError:                                     # pragma: no cover
+                pass                # nothing better to do; the raise stands
+        self._undo.clear()
+
+
+@contextmanager
+def write_batch():
+    """Write several files as one change, or leave them all as they were.
+
+    Renaming a folder rewrites every profile in it. Failing half way through
+    left some profiles moved and the rest behind, under a folder list that had
+    already been updated - a state no screen shows correctly and no retry
+    fixes.
+    """
+    batch = _Batch()
+    try:
+        yield batch
+    except BaseException:
+        batch.rollback()
+        raise
 
 
 def write_json(path, data) -> None:

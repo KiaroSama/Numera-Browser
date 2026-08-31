@@ -22,8 +22,10 @@ from pathlib import Path
 from typing import Optional
 
 from . import crypto
+from . import vault
 from .models import Profile
-from .paths import _lock_for, id_path, resolve_data_dir, safe_join, write_json
+from .paths import (_lock_for, id_path, mutate_json, resolve_data_dir, safe_id,
+                    safe_join, write_json)
 
 
 class ProfileStore:
@@ -81,9 +83,10 @@ class ProfileStore:
         return self.DEFAULT_ENGINE
 
     def set_default_engine(self, name: str) -> str:
-        cfg = self.get_config()
-        cfg["default_engine"] = name
-        self.save_config(cfg)
+        # Read and write inside one lock. Reading outside it meant two settings
+        # saved at once each wrote their own copy of the whole config, and the
+        # second one silently dropped the first one's change.
+        self._set_config("default_engine", name)
         return name
 
     def get_default_extensions(self) -> list:
@@ -96,10 +99,7 @@ class ProfileStore:
         return list(self.get_config().get("default_extensions") or [])
 
     def set_default_extensions(self, paths) -> list:
-        cfg = self.get_config()
-        cfg["default_extensions"] = [str(p) for p in paths]
-        self.save_config(cfg)
-        return cfg["default_extensions"]
+        return self._set_config("default_extensions", [str(p) for p in paths])
 
     def get_headless_launch(self) -> bool:
         """Whether the API launches profiles without a window.
@@ -110,10 +110,15 @@ class ProfileStore:
         return bool(self.get_config().get("headless_launch"))
 
     def set_headless_launch(self, on: bool) -> bool:
-        cfg = self.get_config()
-        cfg["headless_launch"] = bool(on)
-        self.save_config(cfg)
-        return cfg["headless_launch"]
+        return self._set_config("headless_launch", bool(on))
+
+    def _set_config(self, key: str, value):
+        """Change one config key without disturbing the others."""
+        def change(cfg):
+            cfg[key] = value
+            return cfg
+
+        return mutate_json(self.config_path, change)[key]
 
     # ---- vault (encrypt-at-rest for secrets) -----------------------------
     # The fields worth encrypting: anything that grants access if leaked. Cookies
@@ -137,47 +142,33 @@ class ProfileStore:
             self._password, v["salt"], v["verifier"])
 
     def enable_vault(self, password: str) -> int:
-        """Turn on the vault and encrypt every existing secret. Returns the count."""
+        """Turn on the vault and encrypt every secret under the data root.
+
+        Returns how many secrets were converted.
+
+        This used to walk `self.list()` - the engine's own profiles - and stop
+        there, so the dashboard's copy of each profile and the whole shared
+        proxy pool kept their passwords in the clear while the command reported
+        success. `vault.SITES` is the list of every file that holds one; adding
+        a store to the product means adding a line there.
+
+        All or nothing. The vault descriptor is written *last*, inside the same
+        block, so a failure anywhere - encrypting, writing, or saving the config
+        - restores every touched file and leaves the vault disabled. The other
+        order left it switched on over profiles it had not reached, which tells
+        the user they are protected while some of them are not.
+        """
         crypto._require()
         if self.vault_enabled():
             raise RuntimeError("A vault is already set up. Use `vault change` to rotate it.")
         salt = crypto.new_salt()
-        targets = [p for p in self.list() if any(self._secret_values(p))]
-
-        # Convert every profile first; make the vault visible last. The other
-        # order wrote the descriptor and then migrated, so a failure part-way
-        # left the vault switched on with plaintext secrets still sitting in the
-        # profiles it had not reached - the user is told they are protected
-        # while some of them are not, which is worse than not turning it on.
-        #
-        # Encrypting directly rather than through `save()` because `save()`
-        # reads the vault out of the config, and the config is exactly what is
-        # not written yet.
-        written: list = []
-        try:
-            for prof in targets:
-                path = self._path(prof.id)
-                written.append((path, path.read_bytes() if path.exists() else None))
-                data = prof.to_dict()
-                for a, b in self.SECRET_PATHS:
-                    node = data.get(a)
-                    if isinstance(node, dict) and node.get(b) and not crypto.is_encrypted(node[b]):
-                        node[b] = crypto.encrypt(password, salt, node[b])
-                write_json(path, data)
+        with vault.migration(self.root) as step:
+            converted = step.encrypt_all(password, salt)
             cfg = self.get_config()
             cfg["vault"] = {"salt": salt, "verifier": crypto.make_verifier(password, salt)}
             self.save_config(cfg)
-        except BaseException:
-            # Put every profile back exactly as it was. A half-migrated store is
-            # the one state nothing downstream knows how to read.
-            for path, original in reversed(written):
-                if original is None:
-                    path.unlink(missing_ok=True)
-                else:
-                    path.write_bytes(original)
-            raise
         self._password = password
-        return len(targets)
+        return converted
 
     def _secret_values(self, profile: Profile) -> list:
         vals = []
@@ -304,12 +295,25 @@ class ProfileStore:
         if not path.exists():
             return False
         path.unlink()
-        # best-effort cleanup of user-data
-        ud = self.userdata_dir / profile_id
-        if ud.exists():
-            import shutil
-            shutil.rmtree(ud, ignore_errors=True)
+        self.delete_session(profile_id)
         return True
+
+    def delete_session(self, profile_id: str) -> None:
+        """Remove a profile's browser session directory.
+
+        Separate from `delete()` because it is the only irreversible half: the
+        metadata can be written back from bytes held in memory, a wiped session
+        cannot. Callers that delete two records do this once, after both have
+        gone.
+        """
+        import shutil
+
+        try:
+            ud = self.userdata_dir / safe_id(profile_id)
+        except ValueError:
+            return
+        if ud.exists():
+            shutil.rmtree(ud, ignore_errors=True)
 
     # ---- import / export -------------------------------------------------
     def export(self, profile_id: str, dest: str | Path) -> Optional[Path]:
