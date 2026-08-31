@@ -325,3 +325,65 @@ def rotate(proxy: dict, timeout: float = 20) -> dict:
                         f"the provider may rotate on a timer, or the URL may be wrong."
                         + (f" It replied: {body[:120]}" if body else ""))
     return res
+
+
+def split_server(server: str) -> tuple:
+    """`(scheme, host, port)` from an engine `Proxy.server`.
+
+    `partition(":")` was used for this, which cuts an IPv6 literal at its first
+    group. Everything that takes a proxy apart goes through here so the pool,
+    the dashboard and the engine cannot disagree about what a proxy *is*.
+    """
+    text = str(server or "").strip()
+    scheme = "http"
+    if "://" in text:
+        scheme, text = text.split("://", 1)
+        scheme = scheme.lower()
+    host, port = text, ""
+    if text.startswith("["):                       # [2001:db8::1]:1080
+        end = text.find("]")
+        if end >= 0:
+            host = text[1:end]
+            rest = text[end + 1:]
+            port = rest[1:] if rest.startswith(":") else ""
+    elif text.count(":") == 1:                     # host:port
+        host, _, port = text.partition(":")
+    # More than one colon and no brackets: a bare IPv6 with no port.
+    return scheme, host, port
+
+
+def format_host(host: str) -> str:
+    """Bracket an IPv6 literal so a port can follow it unambiguously."""
+    text = str(host or "")
+    return f"[{text}]" if ":" in text and not text.startswith("[") else text
+
+
+def server_url(kind: str, host: str, port) -> str:
+    """The engine-side `Proxy.server` for a pool entry's type/host/port.
+
+    The scheme is preserved exactly. A missing mapping used to fall back to
+    `http`, so selecting SOCKS4 silently produced an HTTP proxy - the profile
+    said one protocol and the browser spoke another.
+    """
+    scheme = _TYPE_SCHEME.get(str(kind or "HTTP").upper())
+    if scheme is None:
+        raise ValueError(f"unsupported proxy type {kind!r}; "
+                         f"expected one of {sorted(_TYPE_SCHEME)}")
+    tail = f":{port}" if str(port or "").strip() else ""
+    return f"{scheme}://{format_host(host)}{tail}"
+
+
+def identity(entry: dict) -> tuple:
+    """What makes two pool entries the same proxy.
+
+    Credentials are part of it. Sticky-session vendors hand out one host:port
+    for a whole pool and select the exit node from the username or password, so
+    keying on host:port alone made every one of them look like the same proxy -
+    and the dashboard's "used by N profiles" counted them as one.
+    """
+    return (str(entry.get("type", "HTTP")).upper(),
+            str(entry.get("host", "")),
+            str(entry.get("port", "")),
+            entry.get("user") or "",
+            entry.get("pass") or "")
+

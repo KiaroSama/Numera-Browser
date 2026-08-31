@@ -31,7 +31,18 @@ TEXT_FIELDS = {"startupUrls": "", "extensions": "", "bookmarks": "",
 # off; a patch that rewrites it orphans all three. `_new` is a dashboard-only
 # form flag - persisted, the profile reloads as a create form and saves as a
 # duplicate. `_created`/`_last_active` are the store's own bookkeeping.
-CLIENT_MAY_NOT_SET = {"id", "_new", "_created", "_last_active"}
+CLIENT_MAY_NOT_SET = {"id", "_new", "_created", "_last_active", "_trust",
+                      "_trustAt", "status", "lastActive", "profiles"}
+
+
+def _server_owned(patch: dict) -> list:
+    """Keys a client may not write, including anything private by convention.
+
+    An explicit list misses the next `_field` somebody adds, so the underscore
+    prefix is reserved wholesale: those are the store's own bookkeeping.
+    """
+    return sorted(k for k in patch
+                  if k in CLIENT_MAY_NOT_SET or (k.startswith("_") and k != "_"))
 
 # Types the dashboard dereferences. A string where a list belongs is not a
 # cosmetic problem: `p.tags.map(...)` takes the whole page down.
@@ -52,7 +63,7 @@ def check_fields(patch: dict, *, where: str) -> "list[str]":
     problems = []
     if not isinstance(patch, dict):
         return [f"{where} must be an object"]
-    for key in sorted(set(patch) & CLIENT_MAY_NOT_SET):
+    for key in _server_owned(patch):
         problems.append(f"{where}: {key!r} is assigned by the server and cannot be set")
     for key, want in FIELD_TYPES.items():
         if key not in patch or patch[key] is None:
@@ -114,8 +125,11 @@ def register(app, ctx):
         # noise is derived from it, and this ran before the store assigned one -
         # so every profile created without an explicit seed hashed the literal
         # string "unsaved" and they all shared a fingerprint.
-        if not profile.get("id"):
-            profile["id"] = uuid.uuid4().hex[:12]
+        # Always server-minted on create. Accepting a client id let
+        # `"../../escaped"` reach the store's path builder; `safe_id` now
+        # refuses that at the filesystem boundary, but a caller naming its own
+        # profile ids is not something this API offers in the first place.
+        profile["id"] = uuid.uuid4().hex[:12]
         try:
             complete = to_dashboard_profile(to_engine_profile(profile))
         except Exception:  # noqa: BLE001 - a shape too odd to convert keeps the
@@ -203,6 +217,10 @@ def register(app, ctx):
         The dashboard generates coherent profiles client-side and posts them in
         chunks; this just persists them, assigning each a fresh unique id."""
         incoming = body.get("profiles") or []
+        if not isinstance(incoming, list):
+            raise HTTPException(400, f"'profiles' must be a list, got {type(incoming).__name__}")
+        if not all(isinstance(i, dict) for i in incoming):
+            raise HTTPException(400, "every entry in 'profiles' must be an object")
         # Validate the whole batch before writing any of it. Half a batch on
         # disk is worse than none, because nothing tells the user which half.
         problems = []
@@ -231,6 +249,10 @@ def register(app, ctx):
         """Apply one patch to many profiles — the dashboard's multi-select edit."""
         ids = body.get("ids") or []
         patch = body.get("patch") or {}
+        if not isinstance(ids, list) or not all(isinstance(i, str) for i in ids):
+            raise HTTPException(400, "'ids' must be a list of profile ids")
+        if not isinstance(patch, dict):
+            raise HTTPException(400, f"'patch' must be an object, got {type(patch).__name__}")
         # One patch, many profiles: a bad field would otherwise be written to
         # every one of them before anything noticed.
         problems = check_fields({k: v for k, v in patch.items()
@@ -266,6 +288,23 @@ def register(app, ctx):
     def validate_fingerprint(profile: dict):
         return {"issues": dashboard_coherence(profile)}
 
+    def _export_named_an_engine(exp: dict) -> bool:
+        """Did the imported file actually specify a launch engine?
+
+        A vendor export names a browser, not one of our engines, so this is
+        almost always False - which is the point: the importer's fallback is a
+        default, not a choice, and must not be persisted as one.
+        """
+        from .. import drivers
+
+        if not isinstance(exp, dict):
+            return False
+        for key in ("engine", "launcher", "browserEngine"):
+            value = exp.get(key)
+            if isinstance(value, str) and value.strip().lower() in set(drivers.names()):
+                return True
+        return False
+
     @app.post("/api/profiles/import")
     def import_profiles(body: dict):
         """Import profiles exported from GoLogin / AdsPower / Multilogin.
@@ -274,6 +313,8 @@ def register(app, ctx):
         dashboard shape and saves it, flagging any coherence issues for review."""
         from .. import importers
         text = body.get("text") or ""
+        if not isinstance(text, str):
+            raise HTTPException(400, f"'text' must be a string, got {type(text).__name__}")
         try:
             raw = json.loads(text)
         except json.JSONDecodeError:
@@ -285,8 +326,17 @@ def register(app, ctx):
         for exp in exports:
             prof, issues = importers.profile_from_export(exp)
             d = to_dashboard_profile(prof)
-            d["_new"] = True
-            _remember_engine(d)
+            # `_new` is a dashboard form flag. Persisted, the imported profile
+            # reloads as a create form and saves as a duplicate instead of an
+            # update, with its cookie actions disabled.
+            d.pop("_new", None)
+            d.pop("id", None)                  # server-minted, like any create
+            # The importer fills the engine in from the current default when the
+            # export named none. Remembering that as "last engine wins" lets an
+            # import silently change the user's default to something nobody
+            # picked, so only an engine the export actually specified counts.
+            if _export_named_an_engine(exp):
+                _remember_engine(d)
             dash.save(d)
             results.append({"name": prof.name, "issues": issues})
         return {"imported": len(results), "results": results}

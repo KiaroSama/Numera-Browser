@@ -42,3 +42,32 @@ def test_a_job_record_stores_the_identity_beside_the_pid(tmp_path):
 
     src = inspect.getsource(jobs.start) if hasattr(jobs, "start") else inspect.getsource(jobs)
     assert '"pidToken"' in src, "the pid is stored without its start time"
+
+
+def test_the_fallback_identity_is_stable_across_processes():
+    """It used Python's `hash()` on a string, which is randomised per process
+    (PYTHONHASHSEED). A token recorded by one CLI invocation therefore never
+    matched the next one: on macOS every live job looked recycled and
+    `jobs stop` refused to touch it."""
+    import subprocess
+    import sys
+
+    code = (
+        "import sys; sys.path.insert(0, r'engine');"
+        "import hashlib;"
+        "line = 'Mon Aug 31 12:00:00 2026';"
+        "print(int(hashlib.sha256(line.encode('utf-8')).hexdigest()[:12], 16))"
+    )
+    seen = set()
+    for _ in range(3):
+        out = subprocess.run([sys.executable, "-c", code], capture_output=True,
+                             text=True, timeout=60)
+        seen.add(out.stdout.strip())
+    assert len(seen) == 1, f"the identity differed between processes: {seen}"
+
+    from numera import jobs
+    import inspect
+
+    src = inspect.getsource(jobs.started_at)
+    assert "hash(line)" not in src, "the randomised hash() is back"
+    assert "sha256" in src

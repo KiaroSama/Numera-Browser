@@ -147,13 +147,17 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
         """
         return bool(api_token) or bool(tokens.list())
 
-    # `*` plus a bearer token is a token any web page can spend, so a server
-    # that can ever be locked does not advertise a wildcard. `tokens.list()` is
-    # checked here as well as the env var, because a named-token-only setup is
-    # exactly as credential-bearing as an env-token one.
-    allow_origins = _parse_lines(os.environ.get("NUMERA_ALLOWED_ORIGINS") or "") or (
-        [] if auth_required() else ["*"]
-    )
+    # Same-origin by default, and no wildcard unless someone asks for one.
+    #
+    # The previous version picked the list once, here: a server that started
+    # open kept `allow_origins=["*"]` for its whole life, so minting the first
+    # token locked the API while still telling every web page it could send
+    # credentials to it. Deciding per request is possible but pointless - the
+    # engine serves the dashboard itself, so the normal case needs no CORS at
+    # all. A dev server against this engine sets NUMERA_ALLOWED_ORIGINS
+    # explicitly (`http://localhost:5173`), and `*` remains available for
+    # someone who genuinely wants it and has read what it means.
+    allow_origins = _parse_lines(os.environ.get("NUMERA_ALLOWED_ORIGINS") or "")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allow_origins,
@@ -167,6 +171,11 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
     async def _require_token(request, call_next):
         # Preflight carries no Authorization header by design.
         if request.method == "OPTIONS" or not request.url.path.startswith("/api/"):
+            return await call_next(request)
+        # One public endpoint, deliberately. The desktop shell polls it to know
+        # the engine is up, and a 401 there meant an authenticated engine could
+        # never be reached - not even to show the screen that asks for a token.
+        if request.url.path.rstrip("/") == "/api/ready":
             return await call_next(request)
         if not auth_required():
             return await call_next(request)
@@ -229,6 +238,18 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
     ctx = _Ctx(engine_store=engine_store, dash=dash, pool=pool, tokens=tokens, sched=sched,
                running=running, attached=attached, start_scheduler=start_scheduler,
                is_running=is_running, stop_session=stop_session, decorate=decorate)
+    @app.get("/api/ready")
+    def ready():
+        """Is the engine up, and does it want a token? Public by design.
+
+        It names the product and the version and says whether auth is on. That
+        is what a launcher needs and it is not worth protecting: anything that
+        can reach this port can already see a socket answering on it. Nothing
+        about the user's profiles, proxies or tokens is here.
+        """
+        return {"ok": True, "service": "numera-browser", "version": __version__,
+                "authRequired": auth_required()}
+
     routes_config.register(app, ctx)
     routes_profiles.register(app, ctx)
     routes_browser.register(app, ctx)

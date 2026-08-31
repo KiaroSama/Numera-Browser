@@ -26,19 +26,22 @@ def register(app, ctx):
         surprise: removing a proxy three profiles are using is a different act
         from removing an unused one.
         """
+        from .. import proxypool as pp
+
         used: dict = {}
         for p in dash.list():
             pr = (p or {}).get("proxy") or {}
-            host, port = pr.get("host"), pr.get("port")
-            if host and port:
-                used[f"{host}:{port}"] = used.get(f"{host}:{port}", 0) + 1
+            if pr.get("host") and pr.get("port"):
+                key = pp.identity(pr)
+                used[key] = used.get(key, 0) + 1
         return used
 
     @app.get("/api/proxies")
     def list_proxies():
+        from .. import proxypool as pp
+
         used = _proxy_usage()
-        return [{**p, "profiles": used.get(f"{p.get('host')}:{p.get('port')}", 0)}
-                for p in pool.list()]
+        return [{**p, "profiles": used.get(pp.identity(p), 0)} for p in pool.list()]
 
     @app.put("/api/proxies/{pid}")
     def edit_proxy(pid: str, body: dict):

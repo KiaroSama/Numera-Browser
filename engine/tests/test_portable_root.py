@@ -268,3 +268,20 @@ def test_the_import_covers_everything_the_product_stores(tmp_path, monkeypatch):
     for name in ("dashboard-config.json", "tokens.json", "schedules.json"):
         assert (dst / name).is_file(), f"{name} was left behind"
     assert (dst / "extensions" / "abc").is_dir()
+
+
+def test_an_existing_but_unwritable_portable_dir_does_not_win(tmp_path, monkeypatch):
+    """`if portable.exists() or _is_writable(portable)` let a read-only `data/`
+    win on existence alone, so every write then failed at the point of use
+    instead of here. The old test only covered a directory that did not exist."""
+    from numera import paths
+
+    app = tmp_path / "app"
+    (app / "data").mkdir(parents=True)          # it exists...
+    monkeypatch.setattr(paths, "app_dir", lambda: app)
+    monkeypatch.setattr(paths, "_is_writable", lambda d: False)   # ...but is read-only
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path / "home"))
+
+    chosen = paths.resolve_data_dir()
+    assert chosen != app / "data", "a read-only portable directory was chosen"
