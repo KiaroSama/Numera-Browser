@@ -244,3 +244,58 @@ def exit_country(proxy, timeout: float = 10) -> Optional[str]:
                 timeout=timeout)
     country = (res or {}).get("country")
     return country.upper()[:2] if isinstance(country, str) and country else None
+
+
+# A rotating proxy's change-IP endpoint is rate-limited by every provider that
+# offers one, and hitting it too soon returns the *same* address - which reads
+# as a broken button. Refusing early is honest; pretending is not.
+ROTATE_COOLDOWN = 20.0
+
+
+def rotate(proxy: dict, timeout: float = 20) -> dict:
+    """Ask a rotating proxy for a new exit IP, then prove it changed.
+
+    Returns the usual check payload plus `rotated`, which is True only when the
+    exit IP actually moved. Fetching the endpoint and reporting success without
+    re-checking would be the dead-control pattern this project keeps hitting:
+    providers return 200 for a request they then ignore.
+    """
+    url = (proxy.get("rotateUrl") or "").strip()
+    if not url:
+        return {"ok": None, "rotated": False,
+                "error": "no change-IP URL is set for this proxy"}
+    if not url.lower().startswith(("http://", "https://")):
+        return {"ok": None, "rotated": False,
+                "error": f"the change-IP URL must be http(s), got {url[:60]!r}"}
+
+    since = time.time() - float(proxy.get("rotatedAt") or 0)
+    if since < ROTATE_COOLDOWN:
+        return {"ok": None, "rotated": False,
+                "error": f"rotated {int(since)}s ago; most providers rate-limit this "
+                         f"and would hand back the same IP. Wait "
+                         f"{int(ROTATE_COOLDOWN - since)}s."}
+
+    before = (proxy.get("lastCheck") or {}).get("ip")
+    try:
+        # Deliberately direct, not through the proxy: the endpoint belongs to the
+        # provider's control plane, and routing it through the very proxy being
+        # rotated is how you lose the response mid-flight.
+        req = urllib.request.Request(url, headers={"User-Agent": "numera-proxy-rotate/1.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            body = r.read(500).decode("utf-8", "replace").strip()
+    except Exception as e:  # noqa: BLE001 - the provider's endpoint is theirs to fail
+        return {"ok": False, "rotated": False,
+                "error": str(e).splitlines()[0][:180]}
+
+    res = check(proxy, timeout=timeout)
+    after = res.get("ip")
+    res["rotated"] = bool(after and before and after != before) or (
+        bool(after) and not before)
+    res["previousIp"] = before
+    if not res["rotated"] and after and before == after:
+        # The request succeeded and the address did not move. Say so plainly
+        # rather than reporting the green check underneath it.
+        res["error"] = (f"the endpoint answered but the exit IP is still {after} - "
+                        f"the provider may rotate on a timer, or the URL may be wrong."
+                        + (f" It replied: {body[:120]}" if body else ""))
+    return res

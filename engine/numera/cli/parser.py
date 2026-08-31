@@ -16,7 +16,8 @@ from ..models import Profile, Proxy
 from .browser import cmd_align, cmd_attach, cmd_cookies_export, cmd_cookies_import, cmd_cookies_list, cmd_dns, cmd_jobs, cmd_launch, cmd_proxy_test, cmd_stop, cmd_tls, cmd_trust, cmd_warmup
 from .pool import cmd_pool
 from .profiles import cmd_apply, cmd_backup, cmd_bulk_create, cmd_check, cmd_collisions, cmd_create, cmd_delete, cmd_edit, cmd_export, cmd_health, cmd_import, cmd_import_from, cmd_list, cmd_regen, cmd_restore, cmd_show
-from .setup import cmd_config, cmd_default_engine, cmd_engines, cmd_ext, cmd_folder, cmd_mcp, cmd_schedule, cmd_serve, cmd_vault
+from .setup import (cmd_config, cmd_default_engine, cmd_engines, cmd_ext, cmd_folder,
+                    cmd_mcp, cmd_schedule, cmd_serve, cmd_token, cmd_vault)
 
 
 # ---- parser --------------------------------------------------------------
@@ -212,6 +213,17 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--type", choices=["HTTP", "HTTPS", "SOCKS5", "SOCKS4"])
     s.add_argument("--country", help="ISO code; aligns locale/timezone on assign")
     s.add_argument("--label", help="Free text to tell same-country proxies apart")
+    s.add_argument("--rotate-url", dest="rotate_url",
+                   help="A rotating proxy's change-IP endpoint; see `pool rotate`")
+    s.set_defaults(func=cmd_pool)
+    s = pl.add_parser("rotate", parents=[_AGENT],
+                      help="Ask a rotating proxy for a new exit IP and prove it moved")
+    s.add_argument("id", nargs="+", help="One or more proxy ids")
+    s.set_defaults(func=cmd_pool)
+    s = pl.add_parser("archive", parents=[_AGENT],
+                      help="Retire proxies without deleting them (kept out of assign)")
+    s.add_argument("id", nargs="+", help="One or more proxy ids")
+    s.add_argument("--restore", action="store_true", help="Put them back in rotation")
     s.set_defaults(func=cmd_pool)
     s = pl.add_parser("export", parents=[_AGENT],
                       help="Write the pool back out as importable lines")
@@ -230,6 +242,17 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--proxy-id", action="append",
                    help="Use only these pool entries (repeatable; default: the whole pool)")
     s.set_defaults(func=cmd_pool)
+
+    c = add("token", help="Named API tokens for the HTTP surface")
+    tk = c.add_subparsers(dest="token_command", required=True)
+    t = tk.add_parser("list", parents=[_AGENT], help="Every named token (never the value)")
+    t.set_defaults(func=cmd_token)
+    t = tk.add_parser("create", parents=[_AGENT], help="Mint one; shown once, then only hashed")
+    t.add_argument("name", help="What this token is for, so it can be revoked knowingly")
+    t.set_defaults(func=cmd_token)
+    t = tk.add_parser("revoke", parents=[_AGENT], help="Revoke one without touching the rest")
+    t.add_argument("id")
+    t.set_defaults(func=cmd_token)
 
     c = add("tls", help="Show the profile's TLS/JA3 handshake fingerprint")
     c.add_argument("ref")

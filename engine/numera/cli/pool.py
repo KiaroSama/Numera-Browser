@@ -6,6 +6,7 @@ writes, so a change from either side is visible to both."""
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 from ..models import Proxy
 from ..store import ProfileStore
@@ -59,6 +60,44 @@ def cmd_pool(args, store: ProfileStore) -> int:
         return emit({"removed": len(removed), "ids": removed, "missing": missing,
                      "total": len(pool.list())}, 0 if removed else 1)
 
+    if sub == "rotate":
+        ids = args.id if isinstance(args.id, list) else [args.id]
+        targets = [p for p in (pool.get(i) for i in ids) if p]
+        if not targets:
+            say(_c("No proxy with that id.", C.RED))
+            return emit({"ok": False, "error": "no proxy with that id"}, 1)
+        results, moved = [], 0
+        for pr in targets:
+            # Serial: these hit one provider's control plane and firing several
+            # at once is how a pool gets rate-limited.
+            res = pp.rotate(pr)
+            patch = {"rotatedAt": time.time()} if res.get("rotated") else {}
+            if res.get("ok") is not None:
+                patch.update({"status": "ok" if res.get("ok") else "failed",
+                              "lastCheck": res, "checkedAt": time.time()})
+            if patch:
+                pool.update(pr["id"], patch)
+            if res.get("rotated"):
+                moved += 1
+                say(_c(f"{pr['host']}:{pr['port']}  {res.get('previousIp') or '?'} "
+                       f"-> {res.get('ip')}", C.GRN))
+            else:
+                say(_c(f"{pr['host']}:{pr['port']}  {res.get('error') or 'did not move'}", C.RED))
+            results.append({"id": pr["id"], **res})
+        return emit({"rotated": moved, "tried": len(results), "results": results},
+                    0 if moved else 1)
+
+    if sub == "archive":
+        ids = args.id if isinstance(args.id, list) else [args.id]
+        archived = not args.restore
+        changed = [pool.update(i, {"archived": archived}) for i in ids if pool.get(i)]
+        changed = [c for c in changed if c]
+        word = "Archived" if archived else "Restored"
+        say(_c(f"{word} {len(changed)} proxy/proxies.", C.GRN) if changed
+            else _c("No proxy with that id.", C.RED))
+        return emit({"archived" if archived else "restored": len(changed),
+                     "ids": [c["id"] for c in changed]}, 0 if changed else 1)
+
     if sub == "edit":
         pr = pool.get(args.id)
         if not pr:
@@ -67,10 +106,10 @@ def cmd_pool(args, store: ProfileStore) -> int:
         patch = {k: v for k, v in (
             ("label", args.label), ("type", args.type), ("host", args.host),
             ("port", args.port), ("user", args.user), ("pass", args.password),
-            ("country", args.country)) if v is not None}
+            ("country", args.country), ("rotateUrl", args.rotate_url)) if v is not None}
         if not patch:
             say(_c("Nothing to change. Pass --host, --port, --user, --pass, "
-                   "--type, --country or --label.", C.RED))
+                   "--type, --country, --label or --rotate-url.", C.RED))
             return emit({"ok": False, "error": "nothing to change"}, 1)
         # A changed address means the stored verdict describes somewhere else.
         if {"host", "port", "user", "pass", "type"} & set(patch):

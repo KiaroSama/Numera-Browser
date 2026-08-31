@@ -9,7 +9,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ArrowRight, Check, Circle, Copy, Download, Eye, EyeOff, Globe, Pencil, Plus,
+  Archive, ArchiveRestore, ArrowRight, Check, Circle, Copy, Download, Eye, EyeOff,
+  Globe, Pencil, Plus, Repeat,
   RefreshCw, Server, ShieldAlert, Trash2, Upload, Wifi, X,
 } from "lucide-react";
 import { api } from "../api";
@@ -62,6 +63,7 @@ function EditProxyModal({ proxy, onClose, onSave }) {
       await onSave({
         label: p.label || null, type: p.type, host: p.host.trim(), port: p.port,
         user: p.user || null, pass: p.pass || null, country: (p.country || "").toUpperCase() || null,
+        rotateUrl: (p.rotateUrl || "").trim() || null,
       });
       onClose();
     } catch (e) { toast.error("Could not save: " + e.message); setBusy(false); }
@@ -98,6 +100,17 @@ function EditProxyModal({ proxy, onClose, onSave }) {
             <Field label="Password"><input className="ps-in mono" value={p.pass || ""}
               onChange={e => set({ pass: e.target.value })} /></Field>
           </Row>
+          <Field label="Change-IP URL (rotating proxies)">
+            <input className="ps-in mono" value={p.rotateUrl || ""}
+              placeholder="https://provider.example/api/rotate?key=…"
+              onChange={e => set({ rotateUrl: e.target.value })} />
+          </Field>
+          <div className="ps-hint"><Repeat size={12} /> Set this and the row grows a
+            <b style={{ color: T.text }}> rotate</b> button. Numera fetches it, then re-tests the
+            proxy and compares the exit IP — a provider that answers 200 and does nothing is
+            reported as not moved, because the alternative is a button that lies. Most providers
+            rate-limit the endpoint, so a rotate within 20 seconds of the last one is refused.</div>
+
           {moved && (
             <div className="ps-hint"><Wifi size={12} /> The address changed, so the stored health
               result no longer describes this proxy — it goes back to <b style={{ color: T.text }}>untested</b>.</div>
@@ -161,6 +174,10 @@ function ProxiesView({ profiles, live, refresh }) {
   const [sel, setSel] = useState(new Set());
   const [testing, setTesting] = useState(new Set());
   const [busy, setBusy] = useState("");
+  // All / Errors / Archive. A dead proxy sitting between two live ones while
+  // you assign is the workflow problem this splits up.
+  const [tab, setTab] = useState("all");
+  const [rotating, setRotating] = useState(new Set());
 
   const load = async () => {
     try {
@@ -173,6 +190,16 @@ function ProxiesView({ profiles, live, refresh }) {
   useEffect(() => { if (live) load(); }, [live]);
 
   const selected = useMemo(() => pool.filter(p => sel.has(p.id)), [pool, sel]);
+  const TABS = [
+    ["all", "All", p => !p.archived],
+    ["errors", "Errors", p => !p.archived && p.status === "failed"],
+    ["archive", "Archive", p => p.archived],
+  ];
+  // One filter feeds both the list and the tab counts. Two would drift, and the
+  // number above a list that disagrees with the rows is worse than no number.
+  const view = useMemo(
+    () => pool.filter(TABS.find(t => t[0] === tab)[2]),
+    [pool, tab]);
 
   if (!live) {
     const derived = Object.values(profiles.filter(p => p.proxy).reduce((m, p) => {
@@ -197,8 +224,10 @@ function ProxiesView({ profiles, live, refresh }) {
   }
 
   const toggle = (id) => setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const allSel = pool.length > 0 && sel.size === pool.length;
-  const toggleAll = () => setSel(allSel ? new Set() : new Set(pool.map(p => p.id)));
+  // Scoped to the tab: "select all" on the Errors tab that silently grabbed the
+  // archived rows too would make the next bulk action a surprise.
+  const allSel = view.length > 0 && view.every(p => sel.has(p.id));
+  const toggleAll = () => setSel(allSel ? new Set() : new Set(view.map(p => p.id)));
 
   const testOne = async (id) => {
     setTesting(s => new Set(s).add(id));
@@ -218,6 +247,44 @@ function ProxiesView({ profiles, live, refresh }) {
     } catch (e) { toast.error("Test failed: " + e.message); }
     setTesting(new Set());
     setBusy("");
+  };
+
+  // The engine re-checks after hitting the endpoint, so `rotated` means the exit
+  // IP genuinely moved. Reporting the HTTP status instead would be the button
+  // that looks like it worked and did not.
+  const said = (r) => r.rotated
+    ? toast.success(`New exit IP: ${r.previousIp ? `${r.previousIp} → ` : ""}${r.ip}`)
+    : toast.error(r.error || "The exit IP did not change.");
+
+  const rotateOne = async (id) => {
+    setRotating(s => new Set(s).add(id));
+    try { said(await api.rotateProxy(id)); await load(); }
+    catch (e) { toast.error("Rotate failed: " + e.message); }
+    setRotating(s => { const n = new Set(s); n.delete(id); return n; });
+  };
+
+  const rotateMany = async (rows) => {
+    const ids = rows.filter(p => p.rotateUrl).map(p => p.id);
+    if (!ids.length) return toast.error("None of these have a change-IP URL set.");
+    setBusy("rotate");
+    setRotating(new Set(ids));
+    try {
+      const r = await api.rotateProxies(ids);
+      toast[r.rotated ? "success" : "error"](
+        `${r.rotated} of ${r.tried} moved to a new IP.`);
+      await load();
+    } catch (e) { toast.error("Rotate failed: " + e.message); }
+    setRotating(new Set());
+    setBusy("");
+  };
+
+  const archive = async (rows, archived) => {
+    try {
+      await api.archiveProxies(rows.map(p => p.id), archived);
+      toast.success(`${archived ? "Archived" : "Restored"} ${rows.length} prox${rows.length === 1 ? "y" : "ies"}.`);
+      setSel(new Set());
+      await load();
+    } catch (e) { toast.error(e.message); }
   };
 
   const askDelete = (rows) => {
@@ -299,6 +366,18 @@ function ProxiesView({ profiles, live, refresh }) {
         <button className="ps-btn primary sm" onClick={() => setImportOpen(true)}><Plus size={13} /> Import proxies</button>
       </div>
 
+      <div className="ps-tabs" style={{ marginBottom: 12 }}>
+        {TABS.map(([key, label, keep]) => {
+          const count = pool.filter(keep).length;
+          return (
+            <button key={key} className={"ps-tab" + (tab === key ? " active" : "")}
+              onClick={() => setTab(key)}>
+              {label}{count ? <span className="ps-tab-n">{count}</span> : null}
+            </button>
+          );
+        })}
+      </div>
+
       {n > 0 && (
         // The same bar the Profiles page uses, so a selection means the same
         // thing and looks the same wherever you make one.
@@ -307,13 +386,23 @@ function ProxiesView({ profiles, live, refresh }) {
           <button disabled={busy === "test"} onClick={() => testMany([...sel])}>
             {busy === "test" ? <><RefreshCw size={13} className="ps-spin" /> Testing…</> : <><Wifi size={13} /> Test</>}
           </button>
+          <button disabled={busy === "rotate" || !selected.some(p => p.rotateUrl)}
+            title={selected.some(p => p.rotateUrl) ? "" : "None of these have a change-IP URL"}
+            onClick={() => rotateMany(selected)}>
+            {busy === "rotate"
+              ? <><RefreshCw size={13} className="ps-spin" /> Rotating…</>
+              : <><Repeat size={13} /> Rotate</>}
+          </button>
           <button onClick={() => exportRows(selected)}><Download size={13} /> Export</button>
+          {tab === "archive"
+            ? <button onClick={() => archive(selected, false)}><ArchiveRestore size={13} /> Restore</button>
+            : <button onClick={() => archive(selected, true)}><Archive size={13} /> Archive</button>}
           <button className="danger" onClick={() => askDelete(selected)}><Trash2 size={13} /> Delete</button>
           <button onClick={() => setSel(new Set())}><X size={13} /> Clear</button>
         </div>
       )}
 
-      {pool.length === 0
+      {view.length === 0
         ? <div className="ps-empty"><Globe size={26} color={T.dim} /><div>No proxies yet.</div>
             <button className="ps-btn primary sm" onClick={() => setImportOpen(true)}><Plus size={14} /> Import proxies</button></div>
         : (
@@ -329,7 +418,7 @@ function ProxiesView({ profiles, live, refresh }) {
               </tr>
             </thead>
             <tbody>
-              {pool.map((x, i) => (
+              {view.map((x, i) => (
                 <tr key={x.id} className={"ps-rise" + (sel.has(x.id) ? " sel" : "")}
                     style={{ animationDelay: `${Math.min(i, 12) * 28}ms` }}>
                   <td><input type="checkbox" checked={sel.has(x.id)} onChange={() => toggle(x.id)}
@@ -349,6 +438,16 @@ function ProxiesView({ profiles, live, refresh }) {
                     <div className="ps-actions">
                       <button title="Test" className="run" disabled={testing.has(x.id)} onClick={() => testOne(x.id)}>
                         {testing.has(x.id) ? <RefreshCw size={13} className="ps-spin" /> : <Wifi size={13} />}
+                      </button>
+                      {x.rotateUrl && (
+                        <button title="New exit IP" disabled={rotating.has(x.id)}
+                          onClick={() => rotateOne(x.id)}>
+                          <Repeat size={13} className={rotating.has(x.id) ? "ps-spin" : ""} />
+                        </button>
+                      )}
+                      <button title={x.archived ? "Restore" : "Archive"}
+                        onClick={() => archive([x], !x.archived)}>
+                        {x.archived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
                       </button>
                       <button title="Edit" onClick={() => setEditing(x)}><Pencil size={13} /></button>
                       <button title="Delete" className="del" onClick={() => askDelete([x])}><Trash2 size={13} /></button>

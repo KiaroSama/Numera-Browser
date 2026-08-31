@@ -18,7 +18,7 @@ def register(app, ctx):
     """
     from fastapi import HTTPException
 
-    engine_store, dash = ctx.engine_store, ctx.dash
+    engine_store, dash, tokens, pool = ctx.engine_store, ctx.dash, ctx.tokens, ctx.pool
 
     @app.get("/api/health")
     def health():
@@ -51,6 +51,10 @@ def register(app, ctx):
             "folders": _folder_list(),
             "root": str(engine_store.root),
             "version": __version__,
+            # How many proxies are *stored*, which is not the same as how many
+            # profiles are using one. Settings said "0 proxies" beside a pool of
+            # 27 because the only number the dashboard had was the in-use count.
+            "proxyCount": len(pool.list()),
         }
 
     def _unloadable_extensions(paths) -> list[str]:
@@ -196,3 +200,34 @@ def register(app, ctx):
                                               body.get("reassignTo"))}
         except ValueError as e:
             raise HTTPException(400, str(e))
+
+    # ---- API tokens ------------------------------------------------------
+    @app.get("/api/tokens")
+    def list_tokens():
+        """Never the token itself - only what it is called and when it was used.
+
+        `envToken` says whether `NUMERA_API_TOKEN` is also in play, because a
+        user who revokes every named token and still gets 401s needs to know
+        the env var is the reason.
+        """
+        import os
+        return {"tokens": [{k: v for k, v in t.items() if k != "hash"}
+                           for t in tokens.list()],
+                "envToken": bool((os.environ.get("NUMERA_API_TOKEN") or "").strip())}
+
+    @app.post("/api/tokens")
+    def create_token(body: dict):
+        """Mint one. The value comes back here and is never retrievable again."""
+        name = str(body.get("name") or "").strip()
+        if not name:
+            raise HTTPException(400, "give the token a name - an unnamed token is "
+                                     "one nobody can safely revoke later")
+        if any(t.get("name") == name for t in tokens.list()):
+            raise HTTPException(409, f"a token called {name!r} already exists")
+        return tokens.create(name)
+
+    @app.delete("/api/tokens/{tid}")
+    def revoke_token(tid: str):
+        if not tokens.revoke(tid):
+            raise HTTPException(404, "token not found")
+        return {"ok": True, "remaining": len(tokens.list())}
