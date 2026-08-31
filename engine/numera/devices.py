@@ -347,3 +347,64 @@ def sample_fonts(rng: random.Random, os_key: str) -> list[str]:
     if os_key in MOBILE_OS:
         return sorted(pool)
     return sorted(rng.sample(pool, k=max(6, len(pool) - rng.randint(0, 6))))
+
+
+# --------------------------------------------------------------------------
+# Timezone identity
+# --------------------------------------------------------------------------
+# One zone, two names. The tz database keeps its old ids as links when a place
+# is renamed, and CLDR - which is what Chromium answers
+# `Intl.DateTimeFormat().resolvedOptions().timeZone` from - did not follow every
+# rename. So a profile set to `Asia/Kolkata` is reported by the browser as
+# `Asia/Calcutta`, and comparing the strings called that a contradiction. It is
+# the same zone: same offsets, same transitions, same abbreviations. A real
+# Chrome on a machine set to Kolkata says `Asia/Calcutta` too, so the profile
+# was coherent and the report was wrong.
+#
+# Pairs, not a canonical direction: either name may be the one stored and either
+# may be the one reported. Add a line when a new rename lands in tzdata.
+_TZ_ALIAS_PAIRS = [
+    ("Asia/Kolkata", "Asia/Calcutta"),
+    ("Asia/Ho_Chi_Minh", "Asia/Saigon"),
+    ("Asia/Kathmandu", "Asia/Katmandu"),
+    ("Asia/Yangon", "Asia/Rangoon"),
+    ("Asia/Ulaanbaatar", "Asia/Ulan_Bator"),
+    ("Asia/Chongqing", "Asia/Chungking"),
+    ("Asia/Macau", "Asia/Macao"),
+    ("Europe/Kyiv", "Europe/Kiev"),
+    ("America/Nuuk", "America/Godthab"),
+    ("America/Argentina/Buenos_Aires", "America/Buenos_Aires"),
+    ("America/Argentina/Cordoba", "America/Cordoba"),
+    ("America/Argentina/Mendoza", "America/Mendoza"),
+    ("America/Indiana/Indianapolis", "America/Indianapolis"),
+    ("America/Kentucky/Louisville", "America/Louisville"),
+    ("Atlantic/Faroe", "Atlantic/Faeroe"),
+    ("Pacific/Pohnpei", "Pacific/Ponape"),
+    ("Pacific/Chuuk", "Pacific/Truk"),
+    ("Pacific/Kanton", "Pacific/Enderbury"),
+    ("Europe/Istanbul", "Asia/Istanbul"),
+]
+
+# Both directions, lower-cased: the comparison should not care which name is
+# stored, nor about the case a browser happens to use.
+TZ_ALIASES = {}
+for _a, _b in _TZ_ALIAS_PAIRS:
+    TZ_ALIASES[_a.lower()] = _b
+    TZ_ALIASES[_b.lower()] = _a
+
+
+def same_timezone(a, b) -> bool:
+    """Do these two IANA names refer to the same zone?
+
+    String equality, plus the tz-database links a browser may substitute. Not
+    an offset comparison: two genuinely different zones can share an offset for
+    half the year, and calling those equal would hide a real contradiction.
+    """
+    left = str(a or "").strip()
+    right = str(b or "").strip()
+    if not left or not right:
+        return False
+    if left.lower() == right.lower():
+        return True
+    return TZ_ALIASES.get(left.lower(), "").lower() == right.lower()
+
