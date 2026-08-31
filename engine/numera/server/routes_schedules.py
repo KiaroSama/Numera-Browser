@@ -30,7 +30,9 @@ def register(app, ctx):
                "warmup", pid, "--minutes", str(minutes), "--headless"]
         if preset:
             cli += ["--preset", str(preset)]
-        running[pid] = subprocess.Popen(cli)
+        proc = subprocess.Popen(cli)
+        running[pid] = proc
+        return proc
 
     def _decorate_schedule(s: dict) -> dict:
         d = dash.get(s["profileId"])
@@ -71,26 +73,97 @@ def register(app, ctx):
     def _scheduler_tick() -> None:
         """Fire any warm-up that's due and whose profile is free right now."""
         try:
-            for s in due_schedules(sched.list(), time.time()):
+            rows = due_schedules(sched.list(), time.time())
+        except Exception:           # pragma: no cover - a corrupt store must not
+            return                  # kill the loop; the next tick re-reads it
+
+        for s in rows:
+            # Per row, not per tick. One unconvertible profile used to abort the
+            # whole loop, so every schedule after it silently never ran - and the
+            # only symptom was warm-ups that stopped happening.
+            try:
                 pid = s["profileId"]
                 d = dash.get(pid)
                 if not d or is_running(pid):
-                    continue        # gone, or busy — try again next tick
+                    continue        # gone, or busy - try again next tick
                 engine_store.save(to_engine_profile(d))
-                _spawn_warmup(pid, s.get("minutes", 5), s.get("preset"))
+                proc = _spawn_warmup(pid, s.get("minutes", 5), s.get("preset"))
+                # A process that is already dead never ran. Marking the schedule
+                # as run here would hide the failure until someone noticed the
+                # profile had gone cold.
+                if proc.poll() not in (None, 0):
+                    raise RuntimeError(f"warm-up exited immediately ({proc.returncode})")
                 sched.mark_run(s["id"], time.time())
-        except Exception:           # pragma: no cover - a bad tick must not kill the loop
-            pass
+                sched.update(s["id"], {"lastOutcome": "started", "lastError": None})
+            except Exception as e:  # noqa: BLE001 - one row's problem is its own
+                try:
+                    sched.update(s.get("id"), {
+                        "lastOutcome": "failed",
+                        "lastError": str(e).splitlines()[0][:200],
+                        "lastFailedAt": time.time(),
+                    })
+                except Exception:
+                    pass            # the store itself is unwell; the next tick retries
+
+    def _reap_warmups() -> None:
+        """Record how the warm-ups that have finished actually ended.
+
+        `Popen` returning is not success - it means a process started. Without
+        this, a warm-up that crashed on its first page looked identical to one
+        that browsed for thirty minutes.
+        """
+        for pid, proc in list(running.items()):
+            code = proc.poll()
+            if code is None:
+                continue
+            running.pop(pid, None)
+            for s in sched.list():
+                if s.get("profileId") != pid:
+                    continue
+                try:
+                    sched.update(s["id"], {
+                        "lastOutcome": "ok" if code == 0 else "failed",
+                        "lastError": None if code == 0 else f"warm-up exited {code}",
+                    })
+                except Exception:
+                    pass
+
+    # Exposed so the behaviours below can be exercised directly: a tick that
+    # skips rows, records a false success or leaks a child all fail silently,
+    # and none of it is reachable through an HTTP route.
+    app.state.scheduler_tick = _scheduler_tick
+    app.state.reap_warmups = _reap_warmups
 
     if start_scheduler:
         stop = threading.Event()
 
         def _loop():
             while not stop.wait(60):     # check once a minute
+                _reap_warmups()
                 _scheduler_tick()
 
         threading.Thread(target=_loop, daemon=True, name="numera-scheduler").start()
 
-        @app.on_event("shutdown")
-        def _stop_scheduler():
-            stop.set()
+        app.state.add_shutdown(stop.set)
+
+    def _stop_children():
+        """Terminate every warm-up and browser this process started.
+
+        Each holds a lock on a profile's user-data directory. Left behind, the
+        next launch of that profile fails with a directory-in-use error that
+        names nothing the user can act on - and the browser keeps running.
+        """
+        for pid, proc in list(running.items()):
+            if proc.poll() is not None:
+                continue
+            try:
+                proc.terminate()
+                proc.wait(timeout=5)
+            except Exception:       # noqa: BLE001 - it is going away either way
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+            running.pop(pid, None)
+
+    app.state.add_shutdown(_stop_children)

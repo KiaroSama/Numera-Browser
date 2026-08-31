@@ -40,6 +40,7 @@ from ..fingerprint import validate
 from ..models import Fingerprint, Proxy
 from .. import folders
 from ..store import ProfileStore
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Callable
 # Re-exported so `numera.server` keeps its whole surface: `cli/`, `mcp.py`
@@ -109,7 +110,24 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True):
     running: dict[str, subprocess.Popen] = {}
     attached: dict[str, dict] = {}   # pid -> CDP connection info while attached
 
-    app = FastAPI(title="Numera API", version=__version__)
+    # One place for "run this when the server stops". `on_event` is deprecated
+    # in FastAPI and each use of it warned; more to the point, the cleanup was
+    # registered from inside a route module, where it was easy to attach it to
+    # the wrong branch - and it had been, so a server started without the
+    # scheduler left its browsers running.
+    shutdown_hooks: list = []
+
+    @asynccontextmanager
+    async def lifespan(_app):
+        yield
+        for fn in shutdown_hooks:
+            try:
+                fn()
+            except Exception:   # noqa: BLE001 - one bad hook must not strand the rest
+                pass
+
+    app = FastAPI(title="Numera Browser API", version=__version__, lifespan=lifespan)
+    app.state.add_shutdown = shutdown_hooks.append
 
     # The API can create profiles, launch browsers and export cookies, so it is
     # only safe unauthenticated because it binds to localhost. Setting

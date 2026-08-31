@@ -53,7 +53,20 @@ def parse_line(line: str) -> Optional[dict]:
         else:
             user = creds or None
 
-    parts = s.split(":")
+    # An IPv6 literal is full of colons, so it has to come off the front before
+    # anything is split on one. `[2001:db8::1]:1080` is the only unambiguous way
+    # to write one with a port, and it is what every tool emits.
+    v6 = None
+    if s.startswith("["):
+        end = s.find("]")
+        if end < 0:
+            return None
+        v6, s = s[1:end], s[end + 1:]
+        if s.startswith(":"):
+            s = s[1:]
+        parts = [v6] + s.split(":")
+    else:
+        parts = s.split(":")
     if len(parts) < 2 or not parts[1].isdigit():
         return None
     host, port = parts[0].strip(), parts[1].strip()
@@ -107,7 +120,13 @@ def to_line(proxy: dict) -> str:
     auth = ""
     if proxy.get("user"):
         auth = f"{proxy['user']}:{proxy.get('pass') or ''}@"
-    line = f"{scheme}://{auth}{proxy['host']}:{proxy['port']}"
+    # Re-bracket an IPv6 host, or the port reads as another group of the address
+    # and the export no longer parses back - which is the one thing this function
+    # exists to guarantee.
+    host = str(proxy["host"])
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    line = f"{scheme}://{auth}{host}:{proxy['port']}"
     # The label already starts with the country code when there is one (that is
     # how the parser built it), so appending both would repeat it.
     tail = proxy.get("label") or proxy.get("country")
@@ -150,7 +169,10 @@ def _proxy_url(proxy: dict) -> str:
     auth = ""
     if proxy.get("user"):
         auth = f"{proxy['user']}:{proxy.get('pass') or ''}@"
-    return f"http://{auth}{proxy['host']}:{proxy['port']}"
+    host = str(proxy["host"])
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    return f"http://{auth}{host}:{proxy['port']}"
 
 
 def _ask_echo(opener, timeout: float, started: float) -> Optional[dict]:
@@ -268,7 +290,9 @@ def rotate(proxy: dict, timeout: float = 20) -> dict:
         return {"ok": None, "rotated": False,
                 "error": f"the change-IP URL must be http(s), got {url[:60]!r}"}
 
-    since = time.time() - float(proxy.get("rotatedAt") or 0)
+    last = max(float(proxy.get("rotateTriedAt") or 0),
+               float(proxy.get("rotatedAt") or 0))
+    since = time.time() - last
     if since < ROTATE_COOLDOWN:
         return {"ok": None, "rotated": False,
                 "error": f"rotated {int(since)}s ago; most providers rate-limit this "
@@ -284,10 +308,12 @@ def rotate(proxy: dict, timeout: float = 20) -> dict:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             body = r.read(500).decode("utf-8", "replace").strip()
     except Exception as e:  # noqa: BLE001 - the provider's endpoint is theirs to fail
-        return {"ok": False, "rotated": False,
+        # Reached far enough to spend the provider's quota, even though it failed.
+        return {"ok": False, "rotated": False, "attempted": True,
                 "error": str(e).splitlines()[0][:180]}
 
     res = check(proxy, timeout=timeout)
+    res["attempted"] = True
     after = res.get("ip")
     res["rotated"] = bool(after and before and after != before) or (
         bool(after) and not before)

@@ -33,8 +33,42 @@ MARKER = ".imported"
 # Everything a profile needs to keep working. `dashboard` is the dashboard's own
 # saved state, `proxies.json.bak` is the backup made when the pool was converted
 # from SOCKS to HTTP - both cheap to carry and annoying to lose.
-ITEMS = ("profiles", "user-data", "dashboard",
-         "config.json", "proxies.json", "proxies.json.bak")
+# Everything that is the user's, rather than something the app rebuilds.
+# `dashboard-config.json` (folders), `tokens.json` and `schedules.json` were
+# added to the product after this list was written and were being left behind -
+# an import that silently drops the folder layout and every API token is not an
+# import. `extensions/` travels too: the paths in config point into it.
+ITEMS = ("profiles", "user-data", "dashboard", "extensions",
+         "config.json", "dashboard-config.json", "proxies.json",
+         "proxies.json.bak", "tokens.json", "schedules.json")
+
+
+def _merge_dir(src: Path, dst: Path) -> tuple:
+    """Copy every entry under `src` that `dst` does not already have.
+
+    Returns (added, kept). The destination always wins per entry, so running
+    this twice is safe and a partially-imported directory finishes on the next
+    attempt instead of being skipped forever.
+    """
+    added = kept = 0
+    dst.mkdir(parents=True, exist_ok=True)
+    for item in src.iterdir():
+        target = dst / item.name
+        if target.exists():
+            if item.is_dir():
+                a, k = _merge_dir(item, target)
+                added += a
+                kept += k
+            else:
+                kept += 1
+            continue
+        if item.is_dir():
+            shutil.copytree(item, target)
+            added += 1
+        else:
+            shutil.copy2(item, target)
+            added += 1
+    return added, kept
 
 
 def find_legacy(destination: Path) -> Optional[Path]:
@@ -67,15 +101,21 @@ def import_from(source: Path, destination: Path) -> dict:
         dst = destination / name
         if not src.exists():
             continue
-        if dst.exists():
-            skipped.append(name)          # destination wins, always
-            continue
         try:
             if src.is_dir():
-                shutil.copytree(src, dst)
+                # Merge per entry. Skipping a whole directory because it exists
+                # meant one profile in the destination hid twenty in the source -
+                # the user saw an import that "worked" and lost almost everything.
+                added, kept = _merge_dir(src, dst)
+                if added:
+                    copied.append(f"{name} ({added})")
+                if kept:
+                    skipped.append(f"{name} ({kept} already here)")
+            elif dst.exists():
+                skipped.append(name)      # a single file: the destination wins
             else:
                 shutil.copy2(src, dst)
-            copied.append(name)
+                copied.append(name)
         except OSError as e:
             failed.append(f"{name}: {e}")
 
@@ -103,6 +143,11 @@ def run_if_needed(destination: Path) -> Optional[dict]:
     result = import_from(source, destination) if source else None
 
     destination.mkdir(parents=True, exist_ok=True)
+    # Do not close the door on an import that partly failed. The marker used to
+    # be written unconditionally, so one unreadable file meant the rest was
+    # never retried - and the user was never asked to do anything about it.
+    if result and result.get("failed"):
+        return result
     (destination / MARKER).write_text(
         f"imported from {source}\n" if source else "nothing to import\n",
         encoding="utf-8")

@@ -157,7 +157,11 @@ def register(app, ctx):
         if not proxy:
             raise HTTPException(404, "proxy not found")
         res = pp.rotate(proxy)
-        patch = {"rotatedAt": time.time()} if res.get("rotated") else {}
+        patch = {}
+        if res.get("attempted"):
+            patch["rotateTriedAt"] = time.time()
+        if res.get("rotated"):
+            patch["rotatedAt"] = time.time()
         if res.get("ok") is not None:
             # A rotate carries a fresh health check with it; storing it means the
             # row stops showing the address it used to have.
@@ -179,7 +183,11 @@ def register(app, ctx):
         results = []
         for proxy in targets:
             res = pp.rotate(proxy)
-            patch = {"rotatedAt": time.time()} if res.get("rotated") else {}
+            patch = {}
+            if res.get("attempted"):
+                patch["rotateTriedAt"] = time.time()
+            if res.get("rotated"):
+                patch["rotatedAt"] = time.time()
             if res.get("ok") is not None:
                 patch.update({"status": "ok" if res.get("ok") else "failed",
                               "lastCheck": res, "checkedAt": time.time()})
