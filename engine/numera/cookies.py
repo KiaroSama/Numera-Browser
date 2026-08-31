@@ -163,13 +163,17 @@ def write(profile: Profile, store: ProfileStore, cookies: list[dict],
     With ``clear=True`` the existing jar is emptied first, so the profile ends up
     with exactly the cookies you supplied.
     """
-    if not cookies:
+    # `clear=True` with an empty list is a request to empty the jar, and it used
+    # to return 0 without opening anything - so "replace the session with
+    # nothing" silently left the old session in place.
+    if not cookies and not clear:
         return 0
     from .drivers import session
     with session(profile, store, engine) as context:
         if clear:
             context.clear_cookies()
-        context.add_cookies(cookies)
+        if cookies:
+            context.add_cookies(cookies)
     return len(cookies)
 
 
