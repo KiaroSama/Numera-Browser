@@ -471,6 +471,16 @@ select.ps-in { cursor: pointer; }
   background: var(--bg); color: var(--muted); font-size: 10px; font-weight: 700;
   font-family: var(--mono, monospace); }
 .ps-tab.active .ps-tab-n { background: var(--violetDim); color: var(--lilac); }
+.ps-locked { min-height: 100vh; display: grid; place-items: center; background: var(--bg-0); padding: 24px; }
+.ps-locked-card { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 12px;
+  background: var(--bg-1); border: 1px solid var(--bd-1); border-radius: 14px; padding: 28px; }
+.ps-locked-ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--violetDim); color: var(--lilac); }
+.ps-locked-card h1 { margin: 4px 0 0; font-size: 18px; font-weight: 700; color: var(--text); }
+.ps-locked-card p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.ps-locked-card code { font-size: 12px; color: var(--lilac); }
+.ps-locked-err { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--red); }
+.ps-locked-note { font-size: 11.5px; color: var(--dim); }
 .ps-keep { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 6px; margin-bottom: 12px; }
 .ps-keep-item { display: flex; align-items: center; gap: 8px; text-align: left; padding: 8px 10px;
   border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--muted);

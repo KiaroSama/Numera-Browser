@@ -15,13 +15,15 @@ import json
 import os
 import time
 import uuid
+import shutil
+import tempfile
 import zipfile
 from pathlib import Path
 from typing import Optional
 
 from . import crypto
 from .models import Profile
-from .paths import resolve_data_dir
+from .paths import resolve_data_dir, safe_join
 
 
 class ProfileStore:
@@ -287,17 +289,54 @@ class ProfileStore:
         in as a fresh copy instead — useful for cloning a warmed-up session
         onto a second machine without the two fighting over one id."""
         src = Path(src)
-        with zipfile.ZipFile(src, "r") as z:
-            data = json.loads(z.read("profile.json").decode("utf-8"))
-            prof = Profile.from_dict(data)
+        # Everything in the archive is untrusted: it may have come from another
+        # machine, or from someone else entirely. Validate the whole thing and
+        # stage it before touching a single profile file - the previous version
+        # saved the profile first and wrote members as it went, so a hostile or
+        # merely truncated archive left a half-made profile behind.
+        try:
+            zf = zipfile.ZipFile(src, "r")
+        except zipfile.BadZipFile as e:
+            raise ValueError(f"{src.name} is not a readable archive: {e}") from e
+
+        with zf as z:
+            try:
+                data = json.loads(z.read("profile.json").decode("utf-8"))
+            except KeyError:
+                raise ValueError(f"{src.name} has no profile.json - not a Numera backup") from None
+            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                raise ValueError(f"{src.name} has an unreadable profile.json: {e}") from e
+            try:
+                prof = Profile.from_dict(data)
+            except (KeyError, TypeError, ValueError) as e:
+                raise ValueError(f"{src.name} does not contain a usable profile: {e}") from e
             if new_id:
                 prof.id = uuid.uuid4().hex[:12]
-            self.save(prof)
-            ud = self.user_data_path(prof.id)
-            for name in z.namelist():
-                if not name.startswith("user-data/") or name.endswith("/"):
-                    continue
-                target = ud / name[len("user-data/"):]
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(z.read(name))
+
+            staging = Path(tempfile.mkdtemp(prefix="numera-restore-", dir=self.root))
+            try:
+                for info in z.infolist():
+                    name = info.filename
+                    if not name.startswith("user-data/") or name.endswith("/"):
+                        continue
+                    if info.is_dir():
+                        continue
+                    # Raises before anything is written if the member escapes.
+                    target = safe_join(staging, name[len("user-data/"):])
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    with z.open(info) as fh:
+                        target.write_bytes(fh.read())
+
+                self.save(prof)
+                ud = self.user_data_path(prof.id)
+                # Replace, do not merge: a session that is half the old identity
+                # and half the restored one is worse than either.
+                if ud.exists():
+                    shutil.rmtree(ud, ignore_errors=True)
+                ud.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(staging), str(ud))
+                staging = None
+            finally:
+                if staging is not None:
+                    shutil.rmtree(staging, ignore_errors=True)
         return prof
