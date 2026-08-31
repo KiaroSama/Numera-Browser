@@ -125,8 +125,10 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--locale")
     c.set_defaults(func=cmd_regen)
 
-    c = add("delete", help="Delete a profile")
-    c.add_argument("ref")
+    c = add("delete", help="Delete one or more profiles")
+    # Several refs, matching `pool remove`. The dashboard deletes a whole
+    # selection in one call, and an agent driving the CLI had no equivalent.
+    c.add_argument("ref", nargs="+")
     c.add_argument("-y", "--yes", action="store_true", help="Skip confirmation")
     c.set_defaults(func=cmd_delete)
 

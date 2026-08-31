@@ -27,10 +27,21 @@ import importlib.util
 import os
 from typing import Optional
 
-PBKDF2_ROUNDS = 200_000
+# Current OWASP guidance for PBKDF2-HMAC-SHA256. New secrets are written at
+# this cost; `v1` tokens written at the old 200,000 keep opening at 200,000,
+# because the round count is part of what the key was derived from and there is
+# no way to re-derive an existing token without the password in hand.
+PBKDF2_ROUNDS = 600_000
+ROUNDS_BY_VERSION = {"v1": 200_000, "v2": PBKDF2_ROUNDS}
+CURRENT_VERSION = "v2"
+
 # Marks an encrypted string in the stored JSON, so decrypt knows what to touch
-# and a value is never double-encrypted.
+# and a value is never double-encrypted. The version travels in the prefix so a
+# stronger KDF can be adopted without a migration that needs every vault
+# unlocked at once - which is exactly why the count could not be raised before.
 ENC_PREFIX = "enc:v1:"
+ENC_PREFIXES = tuple(f"enc:{v}:" for v in ROUNDS_BY_VERSION)
+WRITE_PREFIX = f"enc:{CURRENT_VERSION}:"
 
 
 class VaultLocked(RuntimeError):
@@ -55,8 +66,8 @@ def new_salt() -> str:
     return base64.b64encode(os.urandom(16)).decode("ascii")
 
 
-@lru_cache(maxsize=8)
-def _derive_key(password: str, salt_b64: str) -> bytes:
+@lru_cache(maxsize=16)
+def _derive_key(password: str, salt_b64: str, rounds: int = PBKDF2_ROUNDS) -> bytes:
     """The Fernet key for this password and salt.
 
     Cached because it is a pure function of its two arguments and costs 200,000
@@ -72,30 +83,36 @@ def _derive_key(password: str, salt_b64: str) -> bytes:
     """
     salt = base64.b64decode(salt_b64)
     return base64.urlsafe_b64encode(
-        hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PBKDF2_ROUNDS))
+        hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, rounds))
 
 
-def _fernet(password: str, salt_b64: str):
+def _fernet(password: str, salt_b64: str, rounds: int = PBKDF2_ROUNDS):
     from cryptography.fernet import Fernet
-    return Fernet(_derive_key(password, salt_b64))
+    return Fernet(_derive_key(password, salt_b64, rounds))
 
 
 def is_encrypted(value) -> bool:
-    return isinstance(value, str) and value.startswith(ENC_PREFIX)
+    return isinstance(value, str) and value.startswith(ENC_PREFIXES)
 
 
 def encrypt(password: str, salt_b64: str, plaintext: str) -> str:
     _require()
     token = _fernet(password, salt_b64).encrypt(plaintext.encode("utf-8"))
-    return ENC_PREFIX + token.decode("ascii")
+    return WRITE_PREFIX + token.decode("ascii")
 
 
 def decrypt(password: str, salt_b64: str, value: str) -> str:
     _require()
     from cryptography.fernet import InvalidToken
+
+    version = value.split(":")[1] if value.count(":") >= 2 else CURRENT_VERSION
+    rounds = ROUNDS_BY_VERSION.get(version)
+    if rounds is None:
+        raise VaultLocked(f"this secret was written by a newer version "
+                          f"({version}) than this engine understands")
     try:
-        token = value[len(ENC_PREFIX):].encode("ascii")
-        return _fernet(password, salt_b64).decrypt(token).decode("utf-8")
+        token = value[len(f"enc:{version}:"):].encode("ascii")
+        return _fernet(password, salt_b64, rounds).decrypt(token).decode("utf-8")
     except InvalidToken as e:
         raise VaultLocked("wrong master password") from e
 

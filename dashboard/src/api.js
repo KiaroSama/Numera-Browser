@@ -138,6 +138,9 @@ export const api = {
   create: (p) => req("POST", "/api/profiles", p),
   update: (p) => req("PUT", `/api/profiles/${p.id}`, p),
   remove: (id) => req("DELETE", `/api/profiles/${id}`),
+  // One request for a selection. Deleting M profiles used to be M round trips,
+  // while creating and editing in bulk were both batched.
+  removeMany: (ids) => req("POST", "/api/profiles/delete", { ids }),
   launch: (id) => req("POST", `/api/profiles/${id}/launch`),
   stop: (id) => req("POST", `/api/profiles/${id}/stop`),
   // Cookies are read/written through the profile's real browser session, so
