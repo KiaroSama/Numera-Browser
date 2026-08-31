@@ -1,0 +1,455 @@
+/* The fingerprint editor - every field of one profile, plus the live probe
+ * results (proxy test and trust grade) that come back from a real browser. */
+
+import React, { useEffect, useState } from "react";
+import { ArrowRight, Blocks, Camera, Check, Clock, Cookie, Cpu, Download, Fingerprint, Globe, MapPin, Mic, MonitorSmartphone, RefreshCw, ShieldAlert, ShieldCheck, Sparkles, Upload, Wifi, X } from "lucide-react";
+import { api } from "../api";
+import { T } from "../theme";
+import { CORES, COUNTRY_LOCALE, ENGINE_META, ENGINE_ORDER, GPUS, LOCALES, MODES, OS_LIST, RAM, SCREENS, WARMUP_PRESETS, coherence, uaFor } from "../deviceData";
+import { Field, Pick, Row, SectionLabel } from "../ui";
+
+/* ---- Probe result panel (proxy test / trust check) ---------------- */
+function ProbePanel({ probe, kind }) {
+  if (!probe || probe.kind !== kind) return null;
+  if (probe.state === "running")
+    return <div className="ps-hint"><RefreshCw size={12} className="ps-spin" /> Opening the profile in the background — this takes a few seconds.</div>;
+  if (probe.state === "error")
+    return <div className="ps-hint"><ShieldAlert size={12} /> {probe.data}</div>;
+
+  const d = probe.data || {};
+  const checks = d.checks || [];
+  const gColor = (s) => (s >= 95 ? T.mint : s >= 70 ? T.amber : T.red);
+  return (
+    <div className="ps-probe">
+      {d.before && d.after && (
+        <div className="ps-probe-head">
+          <span className="ps-probe-score" style={{ color: gColor(d.before.score) }}>{d.before.grade} {d.before.score}%</span>
+          <ArrowRight size={14} color={T.dim} />
+          <span className="ps-probe-score" style={{ color: gColor(d.after.score) }}>{d.after.grade} {d.after.score}%</span>
+          <span>{d.after.passed}/{d.after.total} checks passed</span>
+        </div>
+      )}
+      {d.changed && (
+        <div className="ps-check ok">
+          <Sparkles size={12} />
+          <span>{d.changed.length
+            ? <>Aligned <em>{d.changed.join(", ")}</em> to the real browser{d.os ? ` · now reads as ${d.os}` : ""}.</>
+            : "Already matched the browser — nothing to change."}</span>
+        </div>
+      )}
+      {d.score !== undefined && (
+        <div className="ps-probe-head">
+          <span className="ps-probe-score" style={{ color: d.score >= 95 ? T.mint : d.score >= 70 ? T.amber : T.red }}>
+            {d.score}%
+          </span>
+          <span>grade {d.grade} · {d.passed}/{d.total} checks passed</span>
+        </div>
+      )}
+      {d.ip && (
+        <div className="ps-probe-head">
+          <span className="ps-probe-score" style={{ color: T.mint, fontSize: 15 }}>{d.ip}</span>
+          <span>{[d.city, d.country].filter(Boolean).join(", ")}{d.latencyMs ? ` · ${d.latencyMs} ms` : ""}</span>
+        </div>
+      )}
+      {(d.ja3Hash || d.ja4) && (
+        <div className="ps-probe-head" style={{ display: "block" }}>
+          {d.ja3Hash && <div className="ps-mono" style={{ fontSize: 11 }}>JA3 {d.ja3Hash}</div>}
+          {d.ja4 && <div className="ps-mono" style={{ fontSize: 11 }}>JA4 {d.ja4}</div>}
+        </div>
+      )}
+      {kind === "dns" && d.countries && (
+        <div className="ps-probe-head">
+          <span className="ps-probe-score" style={{ color: T.lilac, fontSize: 14 }}>
+            {d.resolvers?.length || 0} resolver{(d.resolvers?.length || 0) === 1 ? "" : "s"}
+          </span>
+          <span>{d.countries.join(", ") || "unknown"}</span>
+        </div>
+      )}
+      {d.error && <div className="ps-check">{d.error}</div>}
+      {checks.map((c, i) => (
+        <div key={i} className={"ps-check" + (c.ok ? " ok" : "")}>
+          {c.ok ? <Check size={12} /> : <X size={12} />}
+          <span>{c.name}{!c.ok && c.detail ? <em> — {c.detail}</em> : null}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Editor({ profile, live, folders = [], onClose, onSave }) {
+  const [p, setP] = useState(profile);
+  const [tab, setTab] = useState("general");
+  const set = (patch) => setP(x => ({ ...x, ...patch }));
+  const changeOS = (os) => set({ os, userAgent: uaFor(os), screen: SCREENS[os][0], cores: CORES[os][1], memory: RAM[os][1], webglRenderer: GPUS[os][0] });
+  const changeLocale = (locale) => set({ locale, timezone: LOCALES[locale] });
+  const setProxy = (patch) => set({ proxy: { ...(p.proxy || { type: "HTTP", host: "", port: "", user: "", pass: "", country: "" }), ...patch } });
+
+  // The saved proxy pool (live only), so attaching one doesn't mean retyping
+  // host/port/user/pass by hand. Matched back by host:port so reopening the
+  // editor still shows which pool entry is attached.
+  const [pool, setPool] = useState([]);
+  useEffect(() => { if (live) api.listProxies().then(setPool).catch(() => { /* offline */ }); }, [live]);
+  const poolPick = pool.find(x => x.host === p.proxy?.host && String(x.port) === String(p.proxy?.port));
+
+  const iss = coherence(p);
+  const score = Math.max(0, 100 - iss.length * 22);
+
+  // Cookies live in the profile's real browser session, so they can only be
+  // moved when the engine is running and the profile has been saved.
+  const cookiesReady = live && !p._new;
+  const [ckBusy, setCkBusy] = useState("");
+  const [ckMsg, setCkMsg] = useState("");
+  const [ckReplace, setCkReplace] = useState(false);
+
+  const exportCookies = async () => {
+    setCkBusy("export"); setCkMsg("");
+    try {
+      const { cookies } = await api.exportCookies(p.id);
+      const blob = new Blob([JSON.stringify({ cookies, origins: [] }, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${(p.name || "profile").replace(/[^\w.-]+/g, "-")}-cookies.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      setCkMsg(`Exported ${cookies.length} cookie${cookies.length === 1 ? "" : "s"}.`);
+    } catch (e) { setCkMsg("Export failed: " + e.message); }
+    setCkBusy("");
+  };
+
+  // Probes and warm-up all open the profile headlessly, so they share one
+  // "something is running" flag and one result panel per tab.
+  const [probe, setProbe] = useState(null);     // { kind, state, data }
+  const runProbe = async (kind, fn) => {
+    setProbe({ kind, state: "running" });
+    try { setProbe({ kind, state: "done", data: await fn() }); }
+    catch (e) { setProbe({ kind, state: "error", data: e.message }); }
+  };
+
+  // Auto-adjust: align the profile to what its browser really shows, then pull
+  // the rewritten values straight back into the editor so you see the change.
+  const autoAdjust = async () => {
+    setProbe({ kind: "align", state: "running" });
+    try {
+      const res = await api.align(p.id);
+      if (res.profile) setP(x => ({ ...x, ...res.profile }));
+      setProbe({ kind: "align", state: "done", data: res });
+    } catch (e) { setProbe({ kind: "align", state: "error", data: e.message }); }
+  };
+
+  // Warm-up: pick a per-vertical site set, run it now, or schedule it to
+  // recur unattended. The schedule for this profile (if any) is loaded live.
+  const [preset, setPreset] = useState("general");
+  const [sched, setSched] = useState(null);
+  const [schedBusy, setSchedBusy] = useState(false);
+  useEffect(() => {
+    if (!cookiesReady) return;
+    api.listSchedules().then(list => setSched(list.find(s => s.profileId === p.id) || null)).catch(() => {});
+  }, [cookiesReady, p.id]);
+
+  const warmNow = () =>
+    api.warmup(p.id, 5, preset)
+      .then(() => setCkMsg(`Warm-up started (${preset}) — runs in the background for ~5 minutes.`))
+      .catch(e => setCkMsg("Warm-up failed: " + e.message));
+
+  const toggleSchedule = async () => {
+    setSchedBusy(true);
+    try {
+      if (sched) { await api.deleteSchedule(sched.id); setSched(null); }
+      else { setSched(await api.addSchedule({ profileId: p.id, everyHours: 12, minutes: 5, preset })); }
+    } catch (e) { setCkMsg("Schedule failed: " + e.message); }
+    setSchedBusy(false);
+  };
+  const patchSchedule = async (patch) => {
+    if (!sched) return;
+    setSchedBusy(true);
+    try { setSched(await api.updateSchedule(sched.id, patch)); }
+    catch (e) { setCkMsg("Schedule failed: " + e.message); }
+    setSchedBusy(false);
+  };
+
+  const importCookies = async (file) => {
+    if (!file) return;
+    setCkBusy("import"); setCkMsg("");
+    try {
+      const res = await api.importCookies(p.id, await file.text(), ckReplace);
+      setCkMsg(`Imported ${res.imported} cookie${res.imported === 1 ? "" : "s"} from ${file.name}.`);
+    } catch (e) { setCkMsg("Import failed: " + e.message); }
+    setCkBusy("");
+  };
+
+  return (
+    <div className="ps-overlay" onClick={onClose}>
+      <div className="ps-drawer" onClick={e => e.stopPropagation()}>
+        <div className="ps-drawer-h">
+          <div>
+            <div className="ps-eyebrow">{p._new ? "New profile" : "Edit profile"}</div>
+            <div className="ps-drawer-title">{p.name || "Untitled profile"}</div>
+          </div>
+          <button className="ps-x" onClick={onClose}><X size={18} /></button>
+        </div>
+
+        <div className="ps-coh">
+          <div className="ps-coh-top">
+            <span className="ps-coh-h">
+              {iss.length === 0 ? <ShieldCheck size={14} color={T.mint} /> : <ShieldAlert size={14} color={T.amber} />}
+              Fingerprint coherence
+            </span>
+            <span className="ps-coh-score" style={{ color: iss.length ? T.amber : T.mint }}>{score}%</span>
+          </div>
+          <div className="ps-coh-bar"><div style={{ width: score + "%", background: iss.length ? T.amber : T.mint }} /></div>
+          {iss.length > 0
+            ? <div className="ps-coh-iss">{iss.map((i, k) => <div key={k}>· {i}</div>)}</div>
+            : <div className="ps-coh-ok">All signals agree — this identity reads like one real device.</div>}
+        </div>
+
+        <div className="ps-tabs">
+          {["general", "fingerprint", "proxy", "advanced"].map(t => (
+            <button key={t} className={"ps-tab" + (tab === t ? " active" : "")} onClick={() => setTab(t)}>{t}</button>
+          ))}
+        </div>
+
+        <div className="ps-drawer-body">
+          {tab === "general" && (
+            <>
+              <Field label="Profile name"><input className="ps-in" value={p.name} onChange={e => set({ name: e.target.value })} placeholder="e.g. FB-Ads-03" /></Field>
+              <Row>
+                <Field label="Folder">
+                  <select className="ps-in" value={p.folder} onChange={e => set({ folder: e.target.value })}>
+                    {[...new Set([p.folder, ...folders].filter(f => f && f !== "All profiles"))].map(f => <option key={f}>{f}</option>)}
+                  </select>
+                </Field>
+                <Field label="Tags (comma separated)">
+                  <input className="ps-in" value={p.tags.join(", ")} onChange={e => set({ tags: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })} placeholder="client-a, priority" />
+                </Field>
+              </Row>
+              <Field label="Notes"><textarea className="ps-in" rows={3} value={p.notes} onChange={e => set({ notes: e.target.value })} placeholder="Anything worth remembering about this account…" /></Field>
+              <Field label="Launch engine">
+                <select className="ps-in" value={p.engine || ""} onChange={e => set({ engine: e.target.value })}>
+                  {/* Only offered while unset — we don't know the server's default,
+                      so let it decide rather than naming an engine we're guessing. */}
+                  {!p.engine && <option value="">— engine default —</option>}
+                  {ENGINE_ORDER.map(en => <option key={en} value={en}>{ENGINE_META[en].label}{ENGINE_META[en].recommended ? "  ★ recommended" : ""}</option>)}
+                </select>
+              </Field>
+              <div className="ps-hint"><Blocks size={12} /> Numera manages this profile; the engine renders it. Manage engines in the <b style={{ color: T.text }}>Engines</b> tab.</div>
+            </>
+          )}
+
+          {tab === "fingerprint" && (
+            <>
+              <SectionLabel icon={<MonitorSmartphone size={13} />} text="Operating system & browser" />
+              <Row>
+                <Field label="Operating system">
+                  <select className="ps-in" value={p.os} onChange={e => changeOS(e.target.value)}>{OS_LIST.map(o => <option key={o}>{o}</option>)}</select>
+                </Field>
+                <Field label="Browser version"><input className="ps-in" value={p.browserVersion} onChange={e => set({ browserVersion: e.target.value })} /></Field>
+              </Row>
+              <Field label="User-Agent"><textarea className="ps-in mono" rows={2} value={p.userAgent} onChange={e => set({ userAgent: e.target.value })} /></Field>
+
+              <SectionLabel icon={<Cpu size={13} />} text="Hardware" />
+              <Row>
+                <Field label="Screen resolution">
+                  <select className="ps-in" value={p.screen} onChange={e => set({ screen: e.target.value })}>{[...new Set([p.screen, ...SCREENS[p.os]])].map(s => <option key={s}>{s}</option>)}</select>
+                </Field>
+                <Field label="CPU cores">
+                  <select className="ps-in" value={p.cores} onChange={e => set({ cores: Number(e.target.value) })}>{[...new Set([p.cores, ...CORES[p.os]])].map(c => <option key={c}>{c}</option>)}</select>
+                </Field>
+                <Field label="Memory (GB)">
+                  <select className="ps-in" value={p.memory} onChange={e => set({ memory: Number(e.target.value) })}>{[...new Set([p.memory, ...RAM[p.os]])].map(m => <option key={m}>{m}</option>)}</select>
+                </Field>
+              </Row>
+              <Field label="WebGL renderer (GPU)">
+                <select className="ps-in mono" value={p.webglRenderer} onChange={e => set({ webglRenderer: e.target.value })}>{[...new Set([p.webglRenderer, ...GPUS[p.os]])].map(g => <option key={g}>{g}</option>)}</select>
+              </Field>
+
+              <SectionLabel icon={<Fingerprint size={13} />} text="Spoofing modes" />
+              <Row><Pick label="Canvas" opts={MODES.canvas} val={p.canvas} on={v => set({ canvas: v })} /><Pick label="WebRTC" opts={MODES.webrtc} val={p.webrtc} on={v => set({ webrtc: v })} /></Row>
+              <Row><Pick label="Audio context" opts={MODES.audio} val={p.audio} on={v => set({ audio: v })} /><Pick label="Fonts" opts={MODES.fonts} val={p.fonts} on={v => set({ fonts: v })} /></Row>
+
+              <SectionLabel icon={<Globe size={13} />} text="Geo & language" />
+              <Row>
+                <Field label="Locale"><select className="ps-in" value={p.locale} onChange={e => changeLocale(e.target.value)}>{Object.keys(LOCALES).map(l => <option key={l}>{l}</option>)}</select></Field>
+                <Field label={<span><Clock size={11} /> Timezone</span>}><input className="ps-in mono" value={p.timezone} onChange={e => set({ timezone: e.target.value })} /></Field>
+                <Pick label="Geolocation" opts={MODES.geo} val={p.geo} on={v => set({ geo: v })} />
+              </Row>
+              <Row>
+                <Field label={<span><Camera size={11} /> Cameras</span>}><input type="number" className="ps-in" value={p.mediaVideo} onChange={e => set({ mediaVideo: Number(e.target.value) })} /></Field>
+                <Field label={<span><Mic size={11} /> Microphones</span>}><input type="number" className="ps-in" value={p.mediaAudio} onChange={e => set({ mediaAudio: Number(e.target.value) })} /></Field>
+                <Field label="Do Not Track">
+                  <button className={"ps-toggle" + (p.dnt ? " on" : "")} onClick={() => set({ dnt: !p.dnt })}><span className="knob" /> <em>{p.dnt ? "On" : "Off"}</em></button>
+                </Field>
+              </Row>
+
+              <SectionLabel icon={<ShieldCheck size={13} />} text="Trust check" />
+              <div className="ps-cookie-actions">
+                <button className="ps-btn ghost sm" disabled={!cookiesReady || probe?.state === "running"}
+                  onClick={() => runProbe("trust", () => api.trust(p.id))}>
+                  <ShieldCheck size={13} /> Run trust check
+                </button>
+                <button className="ps-btn ghost sm" disabled={!cookiesReady || probe?.state === "running"}
+                  onClick={() => runProbe("tls", () => api.tls(p.id))}>
+                  <Wifi size={13} /> Check TLS / JA3
+                </button>
+                <button className="ps-btn primary sm" disabled={!cookiesReady || probe?.state === "running"}
+                  onClick={autoAdjust} title="Rewrite mismatched values to match what the browser actually presents">
+                  <Sparkles size={13} /> Auto-adjust
+                </button>
+              </div>
+              <ProbePanel probe={probe} kind="trust" />
+              <ProbePanel probe={probe} kind="tls" />
+              <ProbePanel probe={probe} kind="align" />
+              <div className="ps-hint"><ShieldCheck size={12} /> {cookiesReady
+                ? "Trust check grades the real browser; TLS/JA3 reads the handshake JavaScript can't touch. Auto-adjust closes the gap — it rewrites platform, CPU, GPU, fonts and the rest to what the browser actually shows (regenerating the OS identity if the engine renders a different one), so nothing contradicts."
+                : "Save the profile and start the engine to grade — and auto-adjust — the real browser."}</div>
+            </>
+          )}
+
+          {tab === "proxy" && (
+            <>
+              <div className="ps-proxy-toggle">
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Use proxy for this profile</span>
+                <button className={"ps-toggle" + (p.proxy ? " on" : "")} onClick={() => set({ proxy: p.proxy ? null : { type: "HTTP", host: "", port: "", user: "", pass: "", country: "US" } })}>
+                  <span className="knob" /> <em>{p.proxy ? "On" : "Off"}</em>
+                </button>
+              </div>
+              {p.proxy ? (
+                <>
+                  {pool.length > 0 && (
+                    <Field label="Saved proxy">
+                      <select className="ps-in" value={poolPick?.id || ""} onChange={e => {
+                        const x = pool.find(q => q.id === e.target.value);
+                        if (x) setProxy({ type: x.type || "HTTP", host: x.host, port: String(x.port), user: x.user || "", pass: x.pass || "", country: x.country || "" });
+                      }}>
+                        <option value="">— manual entry —</option>
+                        {pool.map(x => (
+                          <option key={x.id} value={x.id}>
+                            {x.host}:{x.port}{x.country ? ` · ${x.country}` : ""}{x.status === "ok" ? " · live" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  )}
+                  <Row>
+                    <Field label="Type"><select className="ps-in" value={p.proxy.type} onChange={e => setProxy({ type: e.target.value })}>{["HTTP", "HTTPS", "SOCKS5"].map(t => <option key={t}>{t}</option>)}</select></Field>
+                    <Field label="Country"><select className="ps-in" value={p.proxy.country} onChange={e => setProxy({ country: e.target.value })}>{Object.keys(COUNTRY_LOCALE).map(c => <option key={c}>{c}</option>)}</select></Field>
+                  </Row>
+                  <Row>
+                    <Field label="Host"><input className="ps-in mono" value={p.proxy.host} onChange={e => setProxy({ host: e.target.value })} placeholder="host.proxy.io" /></Field>
+                    <Field label="Port"><input className="ps-in mono" value={p.proxy.port} onChange={e => setProxy({ port: e.target.value })} placeholder="8080" /></Field>
+                  </Row>
+                  <Row>
+                    <Field label="Username"><input className="ps-in mono" value={p.proxy.user} onChange={e => setProxy({ user: e.target.value })} /></Field>
+                    <Field label="Password"><input className="ps-in mono" type="password" value={p.proxy.pass} onChange={e => setProxy({ pass: e.target.value })} /></Field>
+                  </Row>
+                  <div className="ps-cookie-actions" style={{ marginTop: 4 }}>
+                    <button className="ps-btn ghost sm"
+                      disabled={!cookiesReady || probe?.state === "running"}
+                      onClick={() => runProbe("proxy", () => api.proxyTest(p.id))}>
+                      <RefreshCw size={13} /> Test connection
+                    </button>
+                    <button className="ps-btn ghost sm"
+                      disabled={!cookiesReady || probe?.state === "running"}
+                      onClick={() => runProbe("dns", () => api.dns(p.id))}
+                      title="Do the profile's DNS lookups exit through the proxy, or leak to your real ISP?">
+                      <Globe size={13} /> DNS leak test
+                    </button>
+                  </div>
+                  <ProbePanel probe={probe} kind="proxy" />
+                  <ProbePanel probe={probe} kind="dns" />
+                  <div className="ps-hint"><MapPin size={12} /> {cookiesReady
+                    ? "Test connection routes a real request and reports the exit IP, country and WebRTC leaks. DNS leak test checks whether name lookups escape the proxy to your real ISP's resolver."
+                    : "Save the profile and start the engine to test the connection for real."}</div>
+                </>
+              ) : <div className="ps-hint">No proxy — this profile connects directly. Turn it on to route through a residential or datacenter proxy.</div>}
+            </>
+          )}
+
+          {tab === "advanced" && (
+            <>
+              <Field label="Startup URLs (one per line)"><textarea className="ps-in mono" rows={3} value={p.startupUrls} onChange={e => set({ startupUrls: e.target.value })} placeholder={"https://facebook.com\nhttps://business.facebook.com"} /></Field>
+              <Field label="WebGL vendor"><input className="ps-in mono" value={p.webglVendor} onChange={e => set({ webglVendor: e.target.value })} /></Field>
+              <div className="ps-hint"><Fingerprint size={12} /> Seed & canvas noise are managed by the engine and stay stable across launches for this profile.</div>
+
+              <SectionLabel icon={<Blocks size={13} />} text="Extensions" />
+              <Field label="Unpacked extension folders (one per line)">
+                <textarea className="ps-in mono" rows={2} value={p.extensions || ""}
+                  onChange={e => set({ extensions: e.target.value })}
+                  placeholder={"C:\\\\tools\\\\metamask\\n/home/me/ext/ublock"} />
+              </Field>
+              <div className="ps-hint"><Blocks size={12} /> Point at the folder containing <code>manifest.json</code>. Only these extensions load, so nothing carries over between profiles.</div>
+
+              <SectionLabel icon={<Sparkles size={13} />} text="Warm-up" />
+              <Row>
+                <Field label="Vertical (which sites to browse)">
+                  <select className="ps-in" value={preset} onChange={e => setPreset(e.target.value)}>
+                    {WARMUP_PRESETS.map(v => <option key={v.key} value={v.key}>{v.label}</option>)}
+                  </select>
+                </Field>
+                <Field label="Run now">
+                  <button className="ps-btn ghost sm" disabled={!cookiesReady} onClick={warmNow} style={{ width: "100%", justifyContent: "center" }}>
+                    <Sparkles size={13} /> Warm up 5 min
+                  </button>
+                </Field>
+              </Row>
+              <div className="ps-proxy-toggle" style={{ marginTop: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Schedule recurring warm-up</span>
+                <button className={"ps-toggle" + (sched ? " on" : "")} disabled={!cookiesReady || schedBusy} onClick={toggleSchedule}>
+                  <span className="knob" /> <em>{sched ? "On" : "Off"}</em>
+                </button>
+              </div>
+              {sched && (
+                <Row>
+                  <Field label="Every (hours)">
+                    <input type="number" min="1" className="ps-in" value={sched.everyHours}
+                      disabled={schedBusy} onChange={e => patchSchedule({ everyHours: Number(e.target.value) })} />
+                  </Field>
+                  <Field label="Vertical">
+                    <select className="ps-in" value={sched.preset} disabled={schedBusy}
+                      onChange={e => patchSchedule({ preset: e.target.value })}>
+                      {WARMUP_PRESETS.map(v => <option key={v.key} value={v.key}>{v.label}</option>)}
+                    </select>
+                  </Field>
+                </Row>
+              )}
+              <div className="ps-hint"><Sparkles size={12} /> A profile created minutes ago with no history is a signal in itself. Warm-up browses that vertical's sites at human pace so the session arrives with a plausible past. Scheduling reruns it unattended (the engine must be running) so the session never goes cold. {cookiesReady ? "" : "Save the profile and start the engine to enable it."}</div>
+
+              <SectionLabel icon={<Cookie size={13} />} text="Session cookies" />
+              {cookiesReady ? (
+                <>
+                  <div className="ps-cookie-actions">
+                    <button className="ps-btn ghost sm" disabled={!!ckBusy} onClick={exportCookies}>
+                      <Download size={13} /> {ckBusy === "export" ? "Reading session…" : "Export cookies"}
+                    </button>
+                    <label className={"ps-btn ghost sm" + (ckBusy ? " disabled" : "")}>
+                      <Upload size={13} /> {ckBusy === "import" ? "Writing session…" : "Import cookies"}
+                      <input type="file" accept=".json,.txt" style={{ display: "none" }} disabled={!!ckBusy}
+                        onChange={e => { importCookies(e.target.files?.[0]); e.target.value = ""; }} />
+                    </label>
+                    <button className={"ps-toggle sm" + (ckReplace ? " on" : "")} onClick={() => setCkReplace(v => !v)}>
+                      <span className="knob" /> <em>Replace existing</em>
+                    </button>
+                  </div>
+                  {ckMsg && <div className="ps-hint">{ckMsg}</div>}
+                  <div className="ps-hint"><Cookie size={12} /> Reads and writes the profile's real cookie jar. Accepts Cookie-Editor / EditThisCookie JSON, Playwright storage state, and Netscape <code>cookies.txt</code>. Stop the profile first — its session can't be open twice.</div>
+                </>
+              ) : (
+                <div className="ps-hint"><Cookie size={12} /> {p._new
+                  ? "Save this profile first, then you can move a session in or out."
+                  : "Cookie transfer needs the engine running — start it with numera serve."}</div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="ps-drawer-foot">
+          <button className="ps-btn ghost" onClick={onClose}>Cancel</button>
+          <button className="ps-btn primary" disabled={!p.name} onClick={() => onSave({ ...p, _new: false })}>
+            <Check size={15} /> {p._new ? "Create profile" : "Save changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export { ProbePanel, Editor };
