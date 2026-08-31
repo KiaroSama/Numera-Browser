@@ -263,7 +263,17 @@ any *content*:
 * **Every request body is `{"type": "object", "additionalProperties": true}`.**
   The routes take `body: dict`, so the schema cannot name a single field. From
   the schema alone there is no way to know that `POST /api/profiles/{pid}/launch`
-  accepts `{"headless": bool}`, or what a profile object contains.
+  accepts `{"headless": bool}`, or what a profile object contains. The schema is
+  the misleading part here, not the API: **profile writes are strict**. An
+  unknown key is a `422` naming it, on create, update, batch and bulk alike, so
+  a typo cannot land as a field nothing reads.
+* **Fields the server owns are dropped, not refused.** `GET`/`POST` return
+  `status`, `lastActive` and the store's `_`-prefixed bookkeeping, so a client
+  that reads a profile, changes one value and `PUT`s it back is sending exactly
+  what it was given. Refusing that would make the API reject its own output.
+  The values a client sends for them are discarded either way.
+* **`PUT /api/profiles/{pid}` edits in place.** The id comes from the path; an
+  `id` in the body is ignored rather than honoured. `POST` always mints one.
 * **Every 200 response is `{}`.** The handlers have no return annotation, so
   generated clients get `Any` everywhere.
 * **The failure modes are undocumented.** The `409` from launching a profile
