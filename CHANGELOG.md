@@ -4,6 +4,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- **The dark theme sits on a charcoal now, not near-black.** The floor was `#0a0c11`, which read as
+  a hole rather than a surface. Every step of the background ramp moved together, so the separation
+  between page, panel, card and raised surface survives instead of flattening. Two values needed
+  more than a shift: the faintest text step fell below the contrast floor and was lifted, and the
+  mint chip background read as a smudge against the lighter surface. Body text clears 14.6:1 and
+  nothing on the page is under 4.5:1. The light theme is untouched.
+
 ## [0.5.0] - 2026-08-31
 
 ### Added
