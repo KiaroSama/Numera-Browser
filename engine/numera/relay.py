@@ -43,7 +43,9 @@ _CHUNK = 65536
 _HEAD_LIMIT = 64 * 1024    # a request head bigger than this is not a browser
 
 _HTTP_SCHEMES = {"http", "https"}
-_SOCKS_SCHEMES = {"socks", "socks5", "socks5h"}
+_SOCKS5_SCHEMES = {"socks", "socks5", "socks5h"}
+_SOCKS4_SCHEMES = {"socks4", "socks4a"}
+_SOCKS_SCHEMES = _SOCKS5_SCHEMES | _SOCKS4_SCHEMES
 
 # Hop-by-hop headers: the relay terminates that hop, so the browser's versions
 # are dropped rather than forwarded.
@@ -209,6 +211,44 @@ def _socks5_connect(sock: socket.socket, host: str, port: int,
     _recv_exact(sock, length + 2)
 
 
+_SOCKS4_REPLY = {
+    91: "request rejected or failed",
+    92: "rejected: the proxy could not reach an identd on this machine",
+    93: "rejected: the proxy's identd disagreed with the user id we sent",
+}
+
+
+def _socks4_connect(sock: socket.socket, host: str, port: int,
+                    user: Optional[str]) -> None:
+    """Open a tunnel through an already-connected SOCKS4 proxy.
+
+    The SOCKS4a form, so the destination goes over as a name and the *upstream*
+    resolves it - the same reason the SOCKS5 path uses address type 3. The
+    marker for it is a bogus address 0.0.0.x.
+
+    SOCKS4 has a user-id field but no password, which is why `ProxyRelay`
+    refuses a SOCKS4 proxy that was given one: there is nowhere to put it. That
+    is a real limitation of the protocol. Being unable to *health-check* one was
+    not - the check only needs a connection and an exit IP, and this is it.
+    """
+    ident = (user or "").encode("utf-8")
+    if len(ident) > 255:
+        raise ProxyRelayError("SOCKS4 user id may not exceed 255 bytes")
+    target = host.encode("idna" if not host.isascii() else "utf-8")
+    if not target or len(target) > 255:
+        raise ProxyRelayError(f"hostname does not fit a SOCKS4a request: {host!r}")
+    sock.sendall(b"\x04\x01" + port.to_bytes(2, "big") + b"\x00\x00\x00\x01"
+                 + ident + b"\x00" + target + b"\x00")
+    reply = _recv_exact(sock, 8)
+    if reply[0] != 0:
+        raise ProxyRelayError(
+            f"upstream did not answer as SOCKS4 (version byte {reply[0]})")
+    if reply[1] != 90:
+        raise ProxyRelayError(
+            f"SOCKS4 upstream refused CONNECT to {host}:{port} "
+            f"({_SOCKS4_REPLY.get(reply[1], reply[1])})")
+
+
 # --------------------------------------------------------------------------
 # Byte pump
 # --------------------------------------------------------------------------
@@ -329,9 +369,14 @@ class ProxyRelay:
         scheme = (parts.scheme or "http").lower()
         if scheme not in _HTTP_SCHEMES and scheme not in _SOCKS_SCHEMES:
             raise ProxyRelayError(
-                f"the relay cannot forward to a '{scheme}' proxy — it speaks HTTP "
-                f"and SOCKS5 only. SOCKS4 has no password authentication at all, "
-                f"so a SOCKS4 proxy with credentials cannot work anywhere.")
+                f"the relay cannot forward to a '{scheme}' proxy — it speaks "
+                f"HTTP, SOCKS4 and SOCKS5.")
+        if scheme in _SOCKS4_SCHEMES and proxy.password:
+            # Not a gap in the relay: SOCKS4 has a user-id field and no password
+            # field, so there is nowhere for this to go on the wire.
+            raise ProxyRelayError(
+                "SOCKS4 has no password in the protocol, so a SOCKS4 proxy with "
+                "a password cannot be used anywhere — use SOCKS5 for this one.")
         try:
             host, port = parts.hostname, parts.port
         except ValueError as e:                                # non-numeric port
@@ -341,6 +386,7 @@ class ProxyRelay:
                 f"upstream proxy address needs a host and a port: {proxy.server!r}")
 
         self.is_socks = scheme in _SOCKS_SCHEMES
+        self._socks4 = scheme in _SOCKS4_SCHEMES
         # Why the last upstream connection failed, for callers whose transport
         # cannot see the relay's 502 body (see the handler).
         self.last_error: Optional[str] = None
@@ -435,7 +481,10 @@ class ProxyRelay:
         sock = socket.create_connection((self._host, self._port), _CONNECT_TIMEOUT)
         try:
             if self.is_socks:
-                _socks5_connect(sock, host, port, self._user, self._password)
+                if self._socks4:
+                    _socks4_connect(sock, host, port, self._user)
+                else:
+                    _socks5_connect(sock, host, port, self._user, self._password)
             sock.settimeout(None)   # handshake done; a tunnel may idle for hours
         except BaseException:
             sock.close()

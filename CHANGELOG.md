@@ -4,6 +4,69 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-31
+
+### Fixed
+
+- **Every profile edit created a second profile and left the original.** `PUT /api/profiles/{pid}`
+  set the id from the path and then called `_validate_profile()`, which minted a fresh UUID
+  unconditionally. Renaming a profile gave you two, the old name still there. Create mints; update
+  keeps the id from the path and validates it.
+- **The API returned a body it would not accept back.** `GET`/`POST` include `status`, `lastActive`
+  and the store's private fields, and sending them back was a 422 - so the dashboard's inline
+  rename, which posts `{...p, name}` straight from the list, failed silently. Server-owned fields
+  are now dropped from input rather than refused; the client's value still never reaches disk.
+- **Unknown fields were stored instead of refused.** A typo persisted as a field nothing reads and
+  nothing shows. Create, update, batch and bulk now reject unknown keys with a 4xx. The allowlist is
+  derived from the converter's own output, so adding a dashboard field carries the contract with it.
+- **Windows device names passed the id guard.** `CON`, `NUL`, `COM1` and friends are devices, not
+  files - opening one succeeds and reads or writes the device. Server-minted ids never look like
+  this; an import, a restore or the CLI could carry one in.
+- **Turning the vault on was not atomic.** The descriptor was written first and the profiles
+  converted after, so a failure part-way left the vault switched on with plaintext secrets still in
+  the profiles it had not reached. Every secret is converted first and the vault becomes visible
+  last; a failure puts every profile back.
+- **A locked vault refused edits it should have allowed, and allowed a divergence it should have
+  refused.** Saving a profile that merely *has* a proxy password failed while locked, because the
+  value coming back round is the ciphertext the store handed out - re-writing that downgrades
+  nothing. Separately, `DashboardStore.save()` wrote its copy first and swallowed the engine's
+  failure, so an edit reported success over a stale engine copy. Both copies now move together or
+  neither does.
+- **Restore could destroy a live session and update the metadata anyway.** It saved the profile,
+  `rmtree(..., ignore_errors=True)`'d the session and moved staging in. On Windows a running
+  Chromium holds its files, so the delete failed silently - and `shutil.move` onto a directory that
+  still exists moves the source *inside* it. The old session is now renamed aside, which fails
+  loudly, and any failure puts all of it back.
+- **A job that finished before its parent recorded it lost its outcome.** Parent and child are
+  separate processes, so no in-process lock helps: the parent read the record before `Popen`
+  returned, the child wrote its outcome, and the parent's write put back a record with none. The
+  job showed as running until the startup grace expired, then as "lost", having finished. Identity
+  and outcome are separate files now, merged on read.
+- **Schedules, config, dashboard profiles and metadata used `write_text`**, which truncates before
+  it writes - an interrupted write left a file the store reads as empty. All of them use the atomic
+  writer, and `ScheduleStore` re-reads under a lock instead of writing back a stale snapshot.
+- **Schedule validation was route-only**, so the CLI and any internal caller wrote `everyHours:
+  "soon"` straight to disk. It is enforced at the store now, with a separate `record()` for the
+  outcome fields the scheduler itself has to write.
+- **SOCKS4 proxies could not be health-checked**, reported as "the protocol has no authentication
+  to test". That was the wrong reason: a check needs a connection and an exit IP, neither of which
+  involves authentication. The real gap was that the relay spoke only SOCKS5. It speaks SOCKS4a
+  now, so the Test button on a SOCKS4 row does what it says, and a SOCKS4 proxy given a *password*
+  is refused for the reason that is actually true.
+- **The portable build shipped no browser.** `pip install playwright` installs the package; the
+  browser is a separate download into a per-user cache, which a clean machine does not have. The
+  app started, served the dashboard and failed at the first launch. The build now downloads
+  Chromium and ships it beside the engine, and the engine resolves it deterministically. The
+  272MB headless shell is left out - the launcher passes `channel="chromium"` precisely to avoid it.
+
+### Added
+
+- `scripts/smoke-portable.ps1` - drives an assembled artifact the way a user's machine would:
+  version, create, launch the bundled Chromium, `/api/ready`, and persistence across a restart.
+- CI: a Rust job (`cargo fmt --check`, `clippy -D warnings`, `cargo test`), a Windows portable
+  build, and an artifact smoke on every platform. Dashboard lint/test steps were **not** added -
+  no such scripts exist.
+
 ## [0.10.0] - 2026-08-31
 
 ### Fixed

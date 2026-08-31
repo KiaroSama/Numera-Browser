@@ -261,9 +261,8 @@ fn healthy(port: u16) -> bool {
     // `/api/ready`, not `/api/health`: health is behind the token, so an engine
     // with one configured answered 401 and the shell decided it had failed to
     // start - leaving no way to reach the screen that asks for the token.
-    let req = format!(
-        "GET /api/ready HTTP/1.0\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n"
-    );
+    let req =
+        format!("GET /api/ready HTTP/1.0\r\nHost: 127.0.0.1:{port}\r\nConnection: close\r\n\r\n");
     if sock.write_all(req.as_bytes()).is_err() {
         return false;
     }
@@ -319,7 +318,12 @@ fn drain(stream: impl Read + Send + 'static, log: Log) {
 }
 
 fn tail(log: &Log) -> String {
-    log.lock().unwrap().iter().cloned().collect::<Vec<_>>().join("\n")
+    log.lock()
+        .unwrap()
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[cfg(test)]
@@ -342,8 +346,12 @@ mod tests {
 
     #[test]
     fn accepts_the_engines_own_health_payload() {
-        // Exactly what `numera serve` returns, verified against a live server.
-        let port = stub("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"ok\":true,\"version\":\"0.3.0\"}");
+        // Exactly what `numera serve` returns from `/api/ready`, verified
+        // against a live server. This stub still carried the old
+        // `/api/health` payload, which has no `service` field - so it
+        // asserted a contract `healthy()` had stopped accepting, and
+        // nothing ever ran it to notice.
+        let port = stub("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"ok\":true,\"service\":\"numera-browser\",\"version\":\"0.11.0\",\"authRequired\":false}");
         assert!(healthy(port));
     }
 
@@ -379,8 +387,14 @@ mod tests {
             .stderr(Stdio::null())
             .spawn()
             .expect("could not start the stand-in child");
-        assert!(guard.adopt(&child), "the child was not adopted into the job");
-        assert!(child.try_wait().unwrap().is_none(), "the child died on its own");
+        assert!(
+            guard.adopt(&child),
+            "the child was not adopted into the job"
+        );
+        assert!(
+            child.try_wait().unwrap().is_none(),
+            "the child died on its own"
+        );
 
         drop(guard);
 

@@ -103,14 +103,13 @@ def register(app, ctx):
                 if proc.poll() not in (None, 0):
                     raise RuntimeError(f"warm-up exited immediately ({proc.returncode})")
                 sched.mark_run(s["id"], time.time())
-                sched.update(s["id"], {"lastOutcome": "started", "lastError": None})
+                sched.record(s["id"], lastOutcome="started", lastError=None)
             except Exception as e:  # noqa: BLE001 - one row's problem is its own
                 try:
-                    sched.update(s.get("id"), {
-                        "lastOutcome": "failed",
-                        "lastError": str(e).splitlines()[0][:200],
-                        "lastFailedAt": time.time(),
-                    })
+                    sched.record(s.get("id"),
+                        lastOutcome="failed",
+                        lastError=str(e).splitlines()[0][:200],
+                        lastFailedAt=time.time())
                 except Exception:
                     pass            # the store itself is unwell; the next tick retries
 
@@ -130,10 +129,9 @@ def register(app, ctx):
                 if s.get("profileId") != pid:
                     continue
                 try:
-                    sched.update(s["id"], {
-                        "lastOutcome": "ok" if code == 0 else "failed",
-                        "lastError": None if code == 0 else f"warm-up exited {code}",
-                    })
+                    sched.record(s["id"],
+                        lastOutcome="ok" if code == 0 else "failed",
+                        lastError=None if code == 0 else f"warm-up exited {code}")
                 except Exception:
                     pass
 

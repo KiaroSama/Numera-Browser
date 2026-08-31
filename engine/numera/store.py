@@ -23,7 +23,7 @@ from typing import Optional
 
 from . import crypto
 from .models import Profile
-from .paths import id_path, resolve_data_dir, safe_join, write_json
+from .paths import _lock_for, id_path, resolve_data_dir, safe_join, write_json
 
 
 class ProfileStore:
@@ -59,7 +59,8 @@ class ProfileStore:
             return {}
 
     def save_config(self, cfg: dict) -> dict:
-        self.config_path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+        with _lock_for(self.config_path):
+            write_json(self.config_path, cfg)
         return cfg
 
     def get_default_engine(self) -> str:
@@ -141,17 +142,42 @@ class ProfileStore:
         if self.vault_enabled():
             raise RuntimeError("A vault is already set up. Use `vault change` to rotate it.")
         salt = crypto.new_salt()
-        cfg = self.get_config()
-        cfg["vault"] = {"salt": salt, "verifier": crypto.make_verifier(password, salt)}
-        self.save_config(cfg)
+        targets = [p for p in self.list() if any(self._secret_values(p))]
+
+        # Convert every profile first; make the vault visible last. The other
+        # order wrote the descriptor and then migrated, so a failure part-way
+        # left the vault switched on with plaintext secrets still sitting in the
+        # profiles it had not reached - the user is told they are protected
+        # while some of them are not, which is worse than not turning it on.
+        #
+        # Encrypting directly rather than through `save()` because `save()`
+        # reads the vault out of the config, and the config is exactly what is
+        # not written yet.
+        written: list = []
+        try:
+            for prof in targets:
+                path = self._path(prof.id)
+                written.append((path, path.read_bytes() if path.exists() else None))
+                data = prof.to_dict()
+                for a, b in self.SECRET_PATHS:
+                    node = data.get(a)
+                    if isinstance(node, dict) and node.get(b) and not crypto.is_encrypted(node[b]):
+                        node[b] = crypto.encrypt(password, salt, node[b])
+                write_json(path, data)
+            cfg = self.get_config()
+            cfg["vault"] = {"salt": salt, "verifier": crypto.make_verifier(password, salt)}
+            self.save_config(cfg)
+        except BaseException:
+            # Put every profile back exactly as it was. A half-migrated store is
+            # the one state nothing downstream knows how to read.
+            for path, original in reversed(written):
+                if original is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.write_bytes(original)
+            raise
         self._password = password
-        # Re-save every profile so its secrets get written back encrypted.
-        n = 0
-        for prof in self.list():
-            if any(self._secret_values(prof)):
-                self.save(prof)
-                n += 1
-        return n
+        return len(targets)
 
     def _secret_values(self, profile: Profile) -> list:
         vals = []
@@ -199,7 +225,14 @@ class ProfileStore:
         profile.updated_at = time.time()
         # Refuse to write a plaintext secret over an encrypted one: if the vault
         # is on but locked, saving would silently downgrade security.
-        if self.vault_enabled() and not self.unlocked() and any(self._secret_values(profile)):
+        #
+        # Only a *plaintext* one. This used to refuse any secret at all, which
+        # made every edit of a profile that merely has a proxy password fail
+        # while locked - renaming it, changing its notes - because the value
+        # coming back round is the ciphertext the store handed out. Re-writing
+        # the ciphertext downgrades nothing.
+        if self.vault_enabled() and not self.unlocked() and any(
+                v and not crypto.is_encrypted(v) for v in self._secret_values(profile)):
             raise crypto.VaultLocked(
                 "the vault is locked — unlock with the master password before saving "
                 "a profile that has a proxy password")
@@ -363,15 +396,43 @@ class ProfileStore:
                     with z.open(info) as fh:
                         target.write_bytes(fh.read())
 
-                self.save(prof)
+                # Replace, do not merge: a session that is half the old
+                # identity and half the restored one is worse than either.
+                #
+                # Commit order matters, and it used to be wrong. The profile was
+                # saved first, then the old session was removed with
+                # `ignore_errors=True`, then staging was moved in. On Windows a
+                # running Chromium holds its files, so the delete failed
+                # silently - and `shutil.move` onto a directory that still
+                # exists moves the source *inside* it, leaving
+                # `user-data/<id>/numera-restore-xxxx/`. The metadata was
+                # already updated, so the store described a session it did not
+                # have. Now the old session is renamed aside (which fails loudly
+                # if it is in use), the new one is moved into place, the profile
+                # is written last, and any failure puts all of it back.
                 ud = self.user_data_path(prof.id)
-                # Replace, do not merge: a session that is half the old identity
-                # and half the restored one is worse than either.
+                record = self._path(prof.id)
+                previous_json = record.read_bytes() if record.exists() else None
+                aside = None
                 if ud.exists():
+                    aside = ud.with_name(f"{ud.name}.replaced-{uuid.uuid4().hex[:8]}")
+                    ud.rename(aside)
+                try:
+                    ud.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.move(str(staging), str(ud))
+                    staging = None
+                    self.save(prof)
+                except BaseException:
                     shutil.rmtree(ud, ignore_errors=True)
-                ud.parent.mkdir(parents=True, exist_ok=True)
-                shutil.move(str(staging), str(ud))
-                staging = None
+                    if aside is not None:
+                        aside.rename(ud)
+                    if previous_json is not None:
+                        record.write_bytes(previous_json)
+                    else:
+                        record.unlink(missing_ok=True)
+                    raise
+                if aside is not None:
+                    shutil.rmtree(aside, ignore_errors=True)
             finally:
                 if staging is not None:
                     shutil.rmtree(staging, ignore_errors=True)

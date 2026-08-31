@@ -64,9 +64,137 @@ def test_new_is_never_written_to_disk(c, tmp_path):
 
 
 def test_new_is_stripped_on_update_too(c, tmp_path):
+    """The old version of this proved nothing. It PUT and then read back the
+    file at the *original* id - which the update never touched, because the
+    update wrote a second profile under a fresh id. It asserted an absence in a
+    file nothing had written to."""
     made = c.post("/api/profiles", json={"name": "a"}).json()
-    c.put(f"/api/profiles/{made['id']}", json={**made, "_new": True})
-    assert "_new" not in stored(tmp_path, made["id"])
+    r = c.put(f"/api/profiles/{made['id']}", json={**made, "_new": True, "notes": "x"})
+    assert r.status_code == 200, r.json()
+    on_disk = stored(tmp_path, made["id"])
+    assert on_disk["notes"] == "x", "the update did not reach the stored profile"
+    assert "_new" not in on_disk
+
+
+# --- update edits, it does not fork ------------------------------------------
+
+def files_in(tmp_path):
+    return sorted(f.name for f in (tmp_path / "dashboard").glob("*.json"))
+
+
+def test_an_edit_changes_the_same_profile(c, tmp_path):
+    """`_validate_profile()` minted a fresh id unconditionally, and the update
+    route called it *after* setting the id from the path. So every edit saved a
+    new profile and left the original as it was: rename a profile and you had
+    two, the old name still there."""
+    made = c.post("/api/profiles", json={"name": "alpha"}).json()
+    pid = made["id"]
+
+    r = c.put(f"/api/profiles/{pid}", json={"name": "renamed"})
+    assert r.status_code == 200, r.json()
+    assert r.json()["id"] == pid, "the edit was saved under a different id"
+
+    after = c.get("/api/profiles").json()
+    assert len(after) == 1, f"the edit forked the profile: {after}"
+    assert after[0]["name"] == "renamed"
+    assert after[0]["id"] == pid
+    assert files_in(tmp_path) == [f"{pid}.json"], files_in(tmp_path)
+
+
+def test_repeated_edits_do_not_accumulate_profiles(c, tmp_path):
+    made = c.post("/api/profiles", json={"name": "alpha"}).json()
+    pid = made["id"]
+    for i in range(5):
+        assert c.put(f"/api/profiles/{pid}", json={"name": f"n{i}"}).status_code == 200
+    assert len(c.get("/api/profiles").json()) == 1
+    assert files_in(tmp_path) == [f"{pid}.json"]
+    assert stored(tmp_path, pid)["name"] == "n4"
+
+
+def test_the_body_the_api_returns_is_accepted_back(c, tmp_path):
+    """`GET`/`POST` return `status`, `lastActive` and the store's private
+    fields. Refusing them on the way back in made the API reject its own
+    output - the dashboard's inline rename posts `{...p, name}` straight from
+    the list and got a 422, so renaming from the list silently failed."""
+    made = c.post("/api/profiles", json={"name": "alpha"}).json()
+    assert {"status", "lastActive"} <= set(made), "decorate stopped adding these"
+
+    r = c.put(f"/api/profiles/{made['id']}", json={**made, "name": "inline"})
+    assert r.status_code == 200, r.json()
+    assert stored(tmp_path, made["id"])["name"] == "inline"
+
+
+def test_an_edit_cannot_move_a_profile_to_another_id(c, tmp_path):
+    """The path is the only thing that says which profile is being edited."""
+    a = c.post("/api/profiles", json={"name": "a"}).json()
+    b = c.post("/api/profiles", json={"name": "b"}).json()
+    r = c.put(f"/api/profiles/{a['id']}", json={"name": "moved", "id": b["id"]})
+    assert r.status_code == 200, r.json()
+    assert r.json()["id"] == a["id"]
+    assert stored(tmp_path, a["id"])["name"] == "moved"
+    assert stored(tmp_path, b["id"])["name"] == "b", "the other profile was overwritten"
+    assert len(files_in(tmp_path)) == 2
+
+
+def test_editing_a_profile_that_does_not_exist_is_a_404(c, tmp_path):
+    assert c.put("/api/profiles/deadbeef1234", json={"name": "x"}).status_code == 404
+    assert files_in(tmp_path) == []
+
+
+# --- unknown fields are refused, not quietly stored --------------------------
+
+def test_a_typo_is_refused_rather_than_persisted(c, tmp_path):
+    """An unknown key used to be written and then read by nothing: a control
+    that looks saved and does nothing, which is this project's recurring bug."""
+    r = c.post("/api/profiles", json={"name": "a", "nmae": "typo"})
+    assert r.status_code == 422, r.status_code
+    assert "nmae" in r.json()["detail"]
+    assert c.get("/api/profiles").json() == []
+
+
+def test_a_typo_on_update_is_refused_and_changes_nothing(c, tmp_path):
+    made = c.post("/api/profiles", json={"name": "a"}).json()
+    r = c.put(f"/api/profiles/{made['id']}", json={"name": "b", "notez": "typo"})
+    assert r.status_code == 422, r.status_code
+    assert stored(tmp_path, made["id"])["name"] == "a", "a refused update still wrote"
+
+
+def test_a_typo_in_a_bulk_patch_is_refused(c, tmp_path):
+    made = c.post("/api/profiles", json={"name": "a"}).json()
+    r = c.post("/api/profiles/bulk",
+               json={"ids": [made["id"]], "patch": {"folderr": "x"}})
+    assert r.status_code in (400, 422), r.status_code
+    assert "folderr" in r.json()["detail"]
+
+
+def test_a_typo_in_a_batch_entry_is_refused(c, tmp_path):
+    r = c.post("/api/profiles/batch",
+               json={"profiles": [{"name": "ok"}, {"name": "bad", "tagz": []}]})
+    assert r.status_code in (400, 422), r.status_code
+    assert c.get("/api/profiles").json() == [], "half the batch was written"
+
+
+def test_every_real_dashboard_field_is_still_accepted(c):
+    """The allowlist is derived from the converter's own output. If that ever
+    drifts from what the editor sends, saving a profile starts failing on a
+    field the UI offers - so check the whole shape round-trips."""
+    from numera.server.convert import to_dashboard_profile, to_engine_profile
+    from numera.server.routes_profiles import strip_server_owned
+
+    shape = to_dashboard_profile(to_engine_profile({}))
+    strip_server_owned(shape)
+    assert shape, "nothing left to send"
+    r = c.post("/api/profiles", json={**shape, "name": "full"})
+    assert r.status_code == 200, r.json()
+
+
+def test_bulk_tag_helpers_are_not_unknown_fields(c, tmp_path):
+    """`addTags`/`removeTags` are patch verbs, not profile fields."""
+    made = c.post("/api/profiles", json={"name": "a", "tags": ["keep"]}).json()
+    r = c.post("/api/profiles/bulk",
+               json={"ids": [made["id"]], "patch": {"addTags": ["new"]}})
+    assert r.status_code == 200, r.json()
+    assert set(stored(tmp_path, made["id"])["tags"]) == {"keep", "new"}
 
 
 EXPORT = {"name": "imported", "navigator": {
@@ -138,11 +266,21 @@ def test_the_store_itself_refuses_a_dangerous_id(tmp_path):
 # --- the request contract --------------------------------------------------
 
 def test_a_bulk_patch_cannot_write_private_metadata(c, tmp_path):
+    """A forged trust grade must not reach disk.
+
+    It used to be a 4xx. Now the field is dropped and the rest of the patch
+    applies, because the API returns these fields itself - refusing them made
+    `GET` output invalid as `PUT` input and broke inline rename. What matters
+    is unchanged and is what this asserts: the client's value is not stored.
+    """
     made = c.post("/api/profiles", json={"name": "a"}).json()
     r = c.post("/api/profiles/bulk", json={"ids": [made["id"]],
-                                           "patch": {"_trust": {"grade": "A"}}})
-    assert r.status_code in (400, 422), r.status_code
-    assert "_trust" not in stored(tmp_path, made["id"])
+                                           "patch": {"_trust": {"grade": "A"},
+                                                     "notes": "kept"}})
+    assert r.status_code == 200, r.status_code
+    on_disk = stored(tmp_path, made["id"])
+    assert on_disk.get("_trust") != {"grade": "A"}, "a forged trust grade was stored"
+    assert on_disk["notes"] == "kept", "the rest of the patch was dropped too"
 
 
 @pytest.mark.parametrize("body", [
@@ -188,9 +326,10 @@ def test_a_bulk_patch_cannot_rewrite_an_id(c, tmp_path):
     made = c.post("/api/profiles", json={"name": "a"}).json()
     r = c.post("/api/profiles/bulk", json={"ids": [made["id"]],
                                            "patch": {"id": "hijacked"}})
-    assert r.status_code in (400, 422), r.status_code
+    assert r.status_code == 200, r.status_code
     assert (tmp_path / "dashboard" / f"{made['id']}.json").is_file()
     assert not (tmp_path / "dashboard" / "hijacked.json").exists()
+    assert stored(tmp_path, made["id"])["id"] == made["id"]
 
 
 def test_a_bulk_patch_cannot_break_a_list_field(c, tmp_path):

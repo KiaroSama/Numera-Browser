@@ -46,6 +46,7 @@ from typing import Callable, Optional
 
 from . import devices as fp_mod_devices
 from . import fingerprint as fp_mod
+from . import paths as paths_mod
 from .models import Profile
 from .relay import ProxyRelay
 from .stealth import build_init_script
@@ -527,6 +528,10 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
     if fp.do_not_track:
         context_opts["extra_http_headers"]["dnt"] = "1"
 
+    # Before Playwright starts, not after: it reads the browsers path when the
+    # driver launches. A portable build ships its own Chromium and there is no
+    # developer cache to fall back on.
+    paths_mod.use_bundled_browsers()
     pw = sync_playwright().start()
     try:
         context = pw.chromium.launch_persistent_context(
