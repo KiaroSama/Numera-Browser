@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Numera",
+  "productName": "Numera Browser",
   "version": "0.5.0",
   "identifier": "com.numera.desktop",
   "build": {
@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Numera",
+        "title": "Numera Browser",
         "width": 1280,
         "height": 820,
         "minWidth": 940,
