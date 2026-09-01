@@ -398,11 +398,19 @@ def test_close_releases_the_port_and_every_thread(serve):
     relay.close()
 
     assert not _relay_threads(), f"threads survived close(): {_relay_threads()}"
-    rebind = socket.socket()
+    # Connect, don't rebind. Binding answers "has the kernel finished with the
+    # port", which is a different question: Linux holds it in TIME_WAIT after a
+    # clean close, so the bind failed on a relay that had shut down perfectly.
+    # SO_REUSEADDR is not the fix either - on Windows it permits binding a port
+    # that something *is* still listening on, so the test would pass either way.
+    # A refused connection means nothing is listening, on both platforms.
+    probe = socket.socket()
+    probe.settimeout(5)
     try:
-        rebind.bind(("127.0.0.1", port))   # raises if the listener is still up
+        with pytest.raises(OSError):
+            probe.connect(("127.0.0.1", port))
     finally:
-        rebind.close()
+        probe.close()
 
 
 def test_close_does_not_hang_on_an_open_tunnel(serve):

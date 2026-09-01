@@ -65,24 +65,32 @@ def test_a_detached_child_argv_carries_no_password(tmp_path, argv):
 def test_the_job_record_never_holds_the_password(tmp_path, monkeypatch):
     from numera import jobs
 
-    seen = {}
+    # Every call, then pick out the one `spawn` made. `subprocess.Popen` is
+    # patched process-wide, so keeping only the most recent call meant asserting
+    # against whatever ran last - which on Windows happened to be `spawn`, and on
+    # Linux was a stranger with no `env=`. Matching `-m numera` by position is
+    # exact: the interpreter path contains the word too.
+    calls = []
 
     class FakeProc:
         pid = 4242
 
     def capture(cmd, *a, **k):
-        seen["argv"] = list(cmd)
-        seen["env"] = k.get("env") or {}
+        calls.append({"argv": list(cmd), "env": k.get("env") or {}})
         return FakeProc()
 
     monkeypatch.setattr(jobs.subprocess, "Popen", capture)
     rec = jobs.spawn(tmp_path, child_argv(["--password", "SECRET", "launch", "p", "--detach"],
                                           tmp_path), command="launch", password="SECRET")
 
+    spawned = [c for c in calls if c["argv"][1:3] == ["-m", "numera"]]
+    assert len(spawned) == 1, f"expected one numera child, saw {len(spawned)}"
+    call = spawned[0]
+
     on_disk = (tmp_path / "jobs" / f"{rec['id']}.json").read_text(encoding="utf-8")
     assert "SECRET" not in on_disk, "the password was written to the job record"
-    assert "SECRET" not in " ".join(seen["argv"]), "the password reached the child's argv"
-    assert seen["env"].get("NUMERA_PASSWORD") == "SECRET", "the child was left locked"
+    assert "SECRET" not in " ".join(call["argv"]), "the password reached the child's argv"
+    assert call["env"].get("NUMERA_PASSWORD") == "SECRET", "the child was left locked"
 
 
 # --- 2. a partial PUT is a patch ------------------------------------------

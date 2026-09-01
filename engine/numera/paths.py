@@ -119,6 +119,9 @@ def legacy_dirs() -> list[Path]:
     return [Path.home() / HOME_DIR, Path.home() / LEGACY_HOME_DIR]
 
 
+_DRIVE_PREFIX = re.compile(r"^[A-Za-z]:")
+
+
 def safe_join(base: Path, member: str) -> Path:
     """Resolve ``member`` under ``base``, or raise if it would escape.
 
@@ -128,9 +131,9 @@ def safe_join(base: Path, member: str) -> Path:
     ``str(target).startswith(str(base))`` passes for a *sibling* whose name
     merely begins with the base, so `<ext>-evil/x` was accepted beside `<ext>/`.
 
-    Comparing resolved paths as paths, not as strings, is the fix. `..`,
-    absolute members and Windows drive letters are all rejected by the same
-    test, because `Path("a") / "C:/x"` is `C:/x` - the join throws the base away.
+    Comparing resolved paths as paths, not as strings, is the fix for `..` and
+    absolute members. A drive letter is checked separately because the join only
+    throws the base away on Windows - see below.
     """
     base = Path(base).resolve()
     # A member is always archive-relative. Normalising separators first means a
@@ -138,6 +141,13 @@ def safe_join(base: Path, member: str) -> Path:
     rel = str(member).replace("\\", "/").strip("/")
     if not rel or rel in (".", ".."):
         raise ValueError(f"refusing empty or dot archive member: {member!r}")
+    # `C:/x` is drive-absolute on Windows, so the join throws the base away and
+    # the resolve check below catches it. On Linux it is an ordinary relative
+    # name, so the same archive quietly created a directory called `C:` inside
+    # the profile. An archive is portable; the refusal has to be too.
+    if _DRIVE_PREFIX.match(rel):
+        raise ValueError(
+            f"{member!r} names a Windows drive and cannot be part of an archive")
     target = (base / rel).resolve()
     if target != base and base not in target.parents:
         raise ValueError(
