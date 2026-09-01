@@ -4,6 +4,60 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-09-01
+
+### Fixed
+
+- **`--detach` leaked the master password into argv and onto disk.** The password-propagation
+  fix missed the direct CLI detach path: `child_argv()` dropped only `--detach`, so
+  `numera --password X launch p --detach` handed `--password X` to the child - readable in the
+  process table by any local user - and `spawn()` records the argv it ran, so the same secret was
+  written into `jobs/<id>.json` in the clear and stayed there. Both flag syntaxes are stripped and
+  the unlock reaches the child by environment.
+- **A partial `PUT /api/profiles/{id}` replaced the profile instead of patching it.** The body was
+  normalised on its own, so every omitted field was treated as "reset me": a name-only rename moved
+  a Camoufox profile to **Playwright** (the converter's default), emptied its tags, notes, folder
+  and startup URLs, and minted a fresh `_created`, discarding cached trust. The patch is merged onto
+  the stored record and the merged result normalised.
+- **A failed delete had already deleted the profile.** Metadata went first and the session second,
+  so once session removal could fail loudly a held directory produced a failed request whose profile
+  was gone. The session is detached by rename first - which fails while nothing else has moved -
+  then the records go with rollback, then the detached bytes are reclaimed. A cleanup failure is a
+  warning, not a failed delete.
+- **Locked-vault proxy work was only half guarded.** `POST /api/proxies/export` rendered blank
+  credentials into a file that looked complete, bulk rotate recorded false failures, and CLI `pool
+  export/test/rotate/assign` did the same. All refuse while locked. CLI `pool edit` now goes through
+  `proxypool.normalize()` like the HTTP route, so an unsupported type or a port of 70000 can no
+  longer reach storage from the CLI. A withheld secret no longer dedupes as "no password".
+- **The vendor importer rewrote the protocol.** Every `socks*` became SOCKS5 and everything else
+  HTTP, so an imported SOCKS4 or HTTPS proxy claimed one protocol while the browser spoke another.
+- **`/api/profiles/bulk` and `/api/profiles/import` saved sequentially**, so a failure on item N left
+  0..N-1 changed while the request raised - and the obvious retry applied a bulk edit twice or
+  duplicated an import. Both commit through the same transaction batch create uses.
+- **A folder rename could erase a concurrent profile edit.** `folders` rewrote `dashboard/*.json`
+  through its own batch while `DashboardStore.save()` locked per file. The folder transaction now
+  takes the profile locks, in sorted order so it cannot deadlock. `ProfileStore.save()` also holds
+  its file lock across the read-preserve-write that carries a withheld secret forward.
+- **The SSRF guard used an incomplete deny list and re-resolved the host.** `100.64.0.0/10` (carrier
+  grade NAT) is neither private nor reserved in Python, so it was allowed; the rule is now
+  `is_global`. And validation resolved the hostname once while `urlopen` resolved it again, leaving
+  a rebinding window - the connection is pinned to the address that was actually validated, with the
+  Host header and TLS hostname verification unchanged, and every redirect hop is revalidated and
+  repinned.
+- **Bulk delete reported success when it had failed.** The success toast fired unconditionally,
+  including after the request threw. It now reports the real `removed` count and surfaces `missing`
+  and `failed` separately.
+- **The portable app folder was still called `Numera`.** The product, window title and executable
+  metadata were renamed to "Numera Browser" earlier, but the folder a user actually unzips was
+  missed - along with the line the server prints on startup.
+
+### Changed
+
+- The dashboard sidebar is darker than the content it frames, matching the reference tool; it read
+  as raised above the content before. A new `--surface-rail` token carries this; the page floor is
+  unchanged, so the theme is not darker overall.
+- CI runs `npm run lint`, so the dashboard linter is an actual gate.
+
 ## [0.14.0] - 2026-09-01
 
 Finishes the audit set: `plans/011` (deferred from 0.13.0 pending a measurement)

@@ -116,7 +116,8 @@ def register(app, ctx):
 
     engine_store, dash, sched, running, is_running, decorate, stop_session = ctx.engine_store, ctx.dash, ctx.sched, ctx.running, ctx.is_running, ctx.decorate, ctx.stop_session
 
-    def _validate_profile(profile: dict, *, pid: "str | None" = None) -> dict:
+    def _validate_profile(profile: dict, *, pid: "str | None" = None,
+                          strip: bool = True) -> dict:
         """Reject shapes the dashboard cannot render, before they reach disk.
 
         An unrenderable profile used to be stored happily and then take the
@@ -125,8 +126,15 @@ def register(app, ctx):
         from .. import drivers  # local, matching the other call sites in this module
         if not isinstance(profile, dict):
             raise HTTPException(422, "profile must be an object")
-        strip_server_owned(profile)      # takes `id` and `_new` with it
-        problems = check_fields(profile, where="profile")
+        if strip:
+            strip_server_owned(profile)  # takes `id` and `_new` with it
+        # `strip=False` is for a record already merged onto stored state: the
+        # patch was stripped before the merge, and stripping again here would
+        # throw away the server-owned bookkeeping (`_created`, `_trust`, ...)
+        # this merge exists to preserve.
+        problems = check_fields({k: v for k, v in profile.items()
+                                 if strip or k not in CLIENT_MAY_NOT_SET and not k.startswith("_")},
+                                where="profile")
         if problems:
             raise HTTPException(422, "; ".join(problems[:8]))
         eng = profile.get("engine")
@@ -232,9 +240,13 @@ def register(app, ctx):
 
     @app.put("/api/profiles/{pid}")
     def update_profile(pid: str, profile: dict):
-        existing = dash.get(pid)
-        if not existing:
+        # The stored record as written, server-owned bookkeeping and all. The
+        # decrypted view is not used as the base: it reports a locked secret as
+        # None, and writing that back would destroy the proxy password.
+        stored = dash._raw(pid)
+        if not stored:
             raise HTTPException(404, "profile not found")
+
         # Read explicitness *before* normalisation: `_validate_profile` fills a
         # missing engine in from the current default, so asking afterwards can
         # never tell what the caller actually sent.
@@ -243,10 +255,23 @@ def register(app, ctx):
         # profile silently switched the global default away from whatever the
         # user had chosen - and nothing in the UI said so.
         asked = profile.get("engine")
-        _validate_profile(profile, pid=pid)
-        if asked and asked != existing.get("engine"):
-            _remember_engine(profile)
-        return decorate(dash.save(profile))
+        if not isinstance(profile, dict):
+            raise HTTPException(422, "profile must be an object")
+        strip_server_owned(profile)
+        problems = check_fields(profile, where="profile")
+        if problems:
+            raise HTTPException(422, "; ".join(problems[:8]))
+
+        # A PUT is a patch. Normalising the body on its own treated every
+        # omitted field as "reset me": a name-only rename moved a Camoufox
+        # profile to Playwright (the converter's default), emptied its tags,
+        # notes and folder, and minted a fresh `_created`. Merge onto what is
+        # stored, then normalise the complete result.
+        merged = {**stored, **profile}
+        _validate_profile(merged, pid=pid, strip=False)
+        if asked and asked != stored.get("engine"):
+            _remember_engine(merged)
+        return decorate(dash.save(merged))
 
     @app.delete("/api/profiles/{pid}")
     def delete_profile(pid: str):
@@ -357,7 +382,7 @@ def register(app, ctx):
                 problems.append(f"patch: {key!r} must be a list")
         if problems:
             raise HTTPException(400, "; ".join(problems))
-        updated = []
+        pending = []
         for pid in ids:
             d = dash.get(pid)
             if not d:
@@ -379,8 +404,11 @@ def register(app, ctx):
             # whatever the last profile in the selection happened to use.
             if patch.get("engine"):
                 _remember_engine(d)
-            updated.append(decorate(dash.save(d)))
-        return updated
+            pending.append(d)
+        # One transaction. Saving in the loop meant a write failure on item N
+        # left 0..N-1 edited while the request raised - and the obvious retry
+        # applied the patch to part of the selection twice.
+        return [decorate(p) for p in dash.save_many(pending)]
 
     @app.post("/api/fingerprint/validate")
     def validate_fingerprint(profile: dict):
@@ -420,7 +448,7 @@ def register(app, ctx):
         exports = importers._unwrap(raw)
         if not exports:
             raise HTTPException(400, "no profiles found in that file")
-        results = []
+        results, pending = [], []
         for exp in exports:
             prof, issues = importers.profile_from_export(exp)
             d = to_dashboard_profile(prof)
@@ -435,8 +463,11 @@ def register(app, ctx):
             # picked, so only an engine the export actually specified counts.
             if _export_named_an_engine(exp):
                 _remember_engine(d)
-            dash.save(d)
+            pending.append(d)
             results.append({"name": prof.name, "issues": issues})
+        # Same contract as batch create: an import either lands whole or not at
+        # all. Saving as it went left a partial import that a retry duplicated.
+        dash.save_many(pending)
         return {"imported": len(results), "results": results}
 
     # ---- Fingerprint collisions -----------------------------------------

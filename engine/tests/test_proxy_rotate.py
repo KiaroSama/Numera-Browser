@@ -27,9 +27,15 @@ def allow_the_local_stub(monkeypatch):
     the destination check is stubbed here rather than the guard weakened for
     everyone.
     """
+    import ipaddress
+
+    # `(problem, pinned_ip)` since the guard began pinning the connection to the
+    # address it validated. The stub is on loopback, which the real guard
+    # rejects, so it hands back the loopback address as the pin.
     monkeypatch.setattr(pp, "_public_destination",
-                        lambda url: None if url.lower().startswith(("http://", "https://"))
-                        else f"the change-IP URL must be http(s), got {url[:60]!r}")
+                        lambda url: (None, ipaddress.ip_address("127.0.0.1"))
+                        if url.lower().startswith(("http://", "https://"))
+                        else (f"the change-IP URL must be http(s), got {url[:60]!r}", None))
 
 
 class Endpoint:

@@ -15,6 +15,7 @@ import json
 import os
 import time
 import uuid
+import warnings
 import shutil
 import tempfile
 import zipfile
@@ -270,9 +271,15 @@ class ProfileStore:
         # rename the profile, change its notes - came back here carrying None and
         # wrote it straight over the ciphertext. The password was gone and
         # nothing said so. Carry the stored value across instead.
-        if self.vault_enabled() and not self.unlocked():
-            data = self._keep_stored_secrets(profile.id, data)
-        write_json(self._path(profile.id), data)
+        # The lock spans the read *and* the write: `_keep_stored_secrets` reads
+        # the stored record to carry a withheld secret across, so this is a real
+        # read-modify-write and was running outside any lock. Two saves of the
+        # same profile could interleave and drop one's preserved ciphertext.
+        path = self._path(profile.id)
+        with _lock_for(path):
+            if self.vault_enabled() and not self.unlocked():
+                data = self._keep_stored_secrets(profile.id, data)
+            write_json(path, data)
         return profile
 
     def _keep_stored_secrets(self, profile_id: str, data: dict) -> dict:
@@ -332,44 +339,83 @@ class ProfileStore:
         return sorted(out, key=lambda p: p.created_at)
 
     def delete(self, profile_id: str) -> bool:
+        """Delete a profile and its session, or leave both exactly as they were."""
         path = self._path(profile_id)
         if not path.exists():
             return False
-        path.unlink()
-        self.delete_session(profile_id)
+        # Session first: if it is held, this raises before the record is touched.
+        tomb = self.detach_session(profile_id)
+        original = path.read_bytes()
+        try:
+            path.unlink()
+        except OSError:
+            self.restore_session(profile_id, tomb)
+            raise
+        if tomb is not None and not self.discard_tombstone(tomb):
+            # Committed. The profile is gone and the detached bytes are
+            # unreachable through it, so this is untidiness, not a failure.
+            warnings.warn(f"the deleted session for {profile_id} is still on disk "
+                          f"as {tomb.name}; remove it once nothing holds it",
+                          RuntimeWarning, stacklevel=2)
+        assert original is not None
         return True
 
-    def delete_session(self, profile_id: str) -> None:
-        """Remove a profile's browser session directory.
+    def detach_session(self, profile_id: str) -> "Optional[Path]":
+        """Move the session aside and return the tombstone, or None if none.
 
-        Separate from `delete()` because it is the only irreversible half: the
-        metadata can be written back from bytes held in memory, a wiped session
-        cannot. Callers that delete two records do this once, after both have
-        gone.
+        This is step one of a delete, and it is deliberately first: renaming
+        fails loudly while a browser holds the directory, and at that point
+        nothing else has been touched. Deleting the metadata first and
+        discovering the session was held afterwards produced the one answer a
+        caller cannot act on - a failed request that had already deleted the
+        profile.
         """
         import shutil
 
+        assert shutil                                   # used by the siblings
         try:
             ud = self.userdata_dir / safe_id(profile_id)
         except ValueError:
-            return
+            return None
         if not ud.exists():
-            return
-        # Rename first, delete second. `rmtree(..., ignore_errors=True)` hid a
-        # failure completely: on Windows a running Chromium holds its files, so
-        # the delete quietly did nothing and the caller reported the session
-        # gone while the whole browsing profile was still on disk. A rename
-        # fails loudly when the directory is held, which is what we want to
-        # know, and once it succeeds the data is already detached from the id.
+            return None
         tomb = ud.with_name(f"{ud.name}.deleting-{uuid.uuid4().hex[:8]}")
         ud.rename(tomb)
+        return tomb
+
+    def restore_session(self, profile_id: str, tomb) -> None:
+        """Put a detached session back, when the rest of the delete failed."""
+        if tomb is None or not tomb.exists():
+            return
+        try:
+            self.userdata_dir.mkdir(parents=True, exist_ok=True)
+            tomb.rename(self.userdata_dir / safe_id(profile_id))
+        except (OSError, ValueError):                   # pragma: no cover
+            pass                # the raise that brought us here still stands
+
+    @staticmethod
+    def discard_tombstone(tomb) -> bool:
+        """Reclaim a detached session. False means it is still on disk.
+
+        A failure here is untidy, not incorrect: the profile is already gone
+        and the bytes are no longer reachable through it. Callers report it as
+        cleanup-pending rather than turning a committed delete into a failure.
+        """
+        import shutil
+
+        if tomb is None:
+            return True
         shutil.rmtree(tomb, ignore_errors=True)
-        if tomb.exists():
-            # Detached but not yet reclaimed. The profile is correctly gone; say
-            # so rather than pretending the bytes are.
+        return not tomb.exists()
+
+    def delete_session(self, profile_id: str) -> None:
+        """Detach and reclaim in one step, for callers deleting nothing else."""
+        tomb = self.detach_session(profile_id)
+        if tomb is not None and not self.discard_tombstone(tomb):
             raise OSError(
                 f"the session for {profile_id} was detached to {tomb.name} but "
                 f"could not be deleted - remove it by hand once nothing holds it")
+
 
     # ---- import / export -------------------------------------------------
     def secret_withheld(self, profile_id: str) -> bool:

@@ -47,12 +47,20 @@ export const T = { ...DARK };
  * page, panel, card and raised surfaces without inventing one-off colours. */
 const RAMPS = {
   dark: {
+    // `bg-rail` sits *below* the page floor: the navigation chrome recedes,
+    // the content it frames comes forward. It is the one step that goes darker
+    // than `bg-0`, and it stops well short of the near-black this theme was
+    // deliberately lifted away from.
+    "bg-rail": "#14181f",
     "bg-0": "#191d24", "bg-1": "#1f242c", "bg-2": "#252b35", "bg-3": "#2c323e",
     "bg-hover": "#2a303b",
     "bd-1": "#2e343f", "bd-2": "#39404e", "bd-3": "#495264",
     "tx-1": "#eceef3", "tx-2": "#a8aebd", "tx-3": "#7d8494", "tx-4": "#727a8c",
   },
   light: {
+    // Same relationship in light: the rail is tinted and the content is the
+    // brighter surface, so the hierarchy reads identically in both themes.
+    "bg-rail": "#e4e7ee",
     "bg-0": "#eef0f4", "bg-1": "#ffffff", "bg-2": "#f6f7fa", "bg-3": "#e9ebf1",
     "bg-hover": "#eceef4",
     "bd-1": "#e3e6ec", "bd-2": "#d3d7e0", "bd-3": "#c3c8d4",
@@ -88,6 +96,7 @@ ${varBlock("dark")}
      happened to use the same hex. Both themes define the same set, which is why
      switching is one attribute and never a second code path. */
   --surface-page: var(--bg);
+  --surface-rail: var(--bg-rail);
   --surface-panel: var(--surface);
   --surface-raised: var(--surface2);
   --text-primary: var(--text);
@@ -111,6 +120,7 @@ ${varBlock("light")}
      happened to use the same hex. Both themes define the same set, which is why
      switching is one attribute and never a second code path. */
   --surface-page: var(--bg);
+  --surface-rail: var(--bg-rail);
   --surface-panel: var(--surface);
   --surface-raised: var(--surface2);
   --text-primary: var(--text);
@@ -202,7 +212,7 @@ a { color: inherit; }
 .ps-ext-sub { font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* sidebar */
-.ps-side { width: 244px; flex-shrink: 0; background: linear-gradient(180deg, var(--bg2), var(--bg)); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 18px 13px; position: sticky; top: 0; height: 100vh; }
+.ps-side { width: 244px; flex-shrink: 0; background: var(--surface-rail); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 18px 13px; position: sticky; top: 0; height: 100vh; }
 .ps-brand { display: flex; align-items: center; gap: 12px; padding: 4px 6px 20px; }
 .ps-logo { position: relative; width: 36px; height: 36px; border-radius: 11px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .ps-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
@@ -211,12 +221,12 @@ a { color: inherit; }
 .ps-brand-sub { font-size: 10px; color: var(--dim); letter-spacing: 3px; text-transform: uppercase; margin-top: 1px; }
 .ps-nav { display: flex; flex-direction: column; gap: 3px; }
 .ps-navitem { display: flex; align-items: center; gap: 11px; padding: 9px 11px; border-radius: 9px; border: none; background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; transition: .14s; text-align: left; position: relative; }
-.ps-navitem:hover { background: var(--surface); color: var(--text); }
-.ps-navitem.active { background: var(--surface2); color: var(--text); box-shadow: inset 2px 0 0 var(--violet); }
+.ps-navitem:hover { background: var(--bg-0); color: var(--text); }
+.ps-navitem.active { background: var(--bg-1); color: var(--text); box-shadow: inset 2px 0 0 var(--violet); }
 .ps-folders { margin-top: 22px; flex: 1; overflow-y: auto; }
 .ps-folders-h { display: flex; align-items: center; font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--dim); padding: 0 8px 8px; }
 .ps-folder { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 9px; border-radius: 8px; border: none; background: transparent; color: var(--muted); font-size: 12.5px; cursor: pointer; transition: .14s; }
-.ps-folder:hover { background: var(--surface); color: var(--text); }
+.ps-folder:hover { background: var(--bg-0); color: var(--text); }
 .ps-folder.active { color: var(--lilac); background: var(--violetDim); }
 .ps-count { font-size: 11px; color: var(--dim); font-family: ${FONT.mono}; }
 .ps-side-foot { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted); padding: 11px 10px; margin-top: 8px; border-top: 1px solid var(--lineSoft); }
