@@ -271,7 +271,11 @@ numera list                                # works without it — only the secre
 ```
 
 Names, OS, tags and the rest stay visible while locked, so you can still manage
-profiles; only the proxy password is withheld until you unlock. **Keep the
+profiles; only the proxy password is withheld until you unlock. Operations that
+*need* that password refuse rather than run without it - profile export and
+backup, proxy test, rotate, assign and pool export - because an artifact that
+silently omits a credential is worse than one you were told you cannot make
+yet. **Keep the
 password — there's no recovery.**
 
 It covers **every** secret under the data directory, not just the engine's own
@@ -335,7 +339,7 @@ in place of the bearer header.
 | GET | `/api/health` | Liveness check the dashboard pings on load |
 | GET | `/api/profiles` | List profiles (with live run status) |
 | POST | `/api/profiles` | Create a profile |
-| PUT | `/api/profiles/{id}` | Update a profile |
+| PUT | `/api/profiles/{id}` | Update a profile. A **patch**: fields you omit keep their stored values, so `{"name": "x"}` renames and changes nothing else |
 | DELETE | `/api/profiles/{id}` | Delete a profile + its session |
 | POST | `/api/profiles/{id}/launch` | Open the profile in a real Chromium window (`{headless}` for a display-less host) |
 | POST | `/api/profiles/{id}/stop` | Close a running profile |
