@@ -94,6 +94,14 @@ def register(app, ctx):
         if ids:
             keep = set(ids)
             items = [p for p in items if p.get("id") in keep]
+        # An export whose credentials cannot be read would render blank
+        # passwords into a file that looks complete and re-imports as a set of
+        # broken proxies. Refuse instead of writing a plausible wrong artifact.
+        from ..vault import LOCKED_MESSAGE
+        withheld = [p["id"] for p in items if pool.secret_withheld(p["id"])]
+        if withheld:
+            raise HTTPException(409, f"{len(withheld)} of these proxies have a "
+                                     f"password that cannot be read: " + LOCKED_MESSAGE)
         lines = [pp.to_line(p) for p in items]
         return {"count": len(lines), "text": "\n".join(lines) + ("\n" if lines else "")}
 
@@ -221,10 +229,19 @@ def register(app, ctx):
         """Rotate several. Serial on purpose: these hit one provider's control
         plane, and firing eight at once is how a pool gets rate-limited."""
         from .. import proxypool as pp
+        from ..vault import LOCKED_MESSAGE
         ids = body.get("ids") or []
-        targets = [p for p in (pool.get(i) for i in ids) if p]
+        # One snapshot rather than a full re-read per id.
+        by_id = {p["id"]: p for p in pool.list()}
+        targets = [by_id[i] for i in ids if i in by_id]
         if not targets:
             raise HTTPException(400, "no proxies to rotate")
+        # Rotating verifies the new exit IP *through* the proxy, so a hidden
+        # credential would record a failure that says nothing about the provider.
+        locked = [p["id"] for p in targets if pool.secret_withheld(p["id"])]
+        if locked:
+            raise HTTPException(409, f"{len(locked)} of these proxies have a "
+                                     f"password that cannot be read: " + LOCKED_MESSAGE)
         results = []
         for proxy in targets:
             res = pp.rotate(proxy)

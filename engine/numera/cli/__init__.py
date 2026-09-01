@@ -72,7 +72,8 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     if getattr(args, "detach", False):
         rec = jobs.spawn(store.root, jobs.child_argv(argv, store.root),
-                         command=args.command, profile=_detach_target(args, store))
+                         command=args.command, profile=_detach_target(args, store),
+                         password=store._password)
         say(_c(f"Started job {rec['id']}", C.GRN)
             + _c(f"  (pid {rec['pid']}, log {rec['log']})", C.DIM))
         say(_c(f"  poll it with:  numera jobs show {rec['id']}", C.DIM))

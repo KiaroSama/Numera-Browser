@@ -19,7 +19,7 @@
 # Every wait is bounded and polls for a condition. Nothing sleeps blindly.
 #
 # Usage:  bash scripts/smoke-portable.sh <assembled-folder> [timeout-seconds]
-# e.g.    bash scripts/smoke-portable.sh build/linux/Numera
+# e.g.    bash scripts/smoke-portable.sh 'build/linux/Numera Browser'
 
 set -euo pipefail
 

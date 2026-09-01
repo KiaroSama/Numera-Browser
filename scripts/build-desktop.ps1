@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Build the portable Numera desktop folder: Tauri shell + frozen Python engine
+    Build the portable Numera Browser desktop folder: Tauri shell + frozen Python engine
     + the built dashboard, in one directory you can copy to a flash drive.
 
 .DESCRIPTION
@@ -9,7 +9,7 @@
 
     Output layout (under -OutDir):
 
-        Numera/
+        Numera Browser/
           numera.exe               the shell; this is what the user runs
           engine/
             numera-engine.exe      frozen engine (PyInstaller, onedir)
@@ -18,7 +18,8 @@
 
 .PARAMETER OutDir
     Where to assemble. Default: <repo>/build/windows, so the finished app sits at
-    build/windows/Numera/numera.exe. Everything under build/ is ignored by git and
+    build/windows/Numera Browser/numera.exe. Everything under build/ is ignored by git
+    and
     is what gets attached to a GitHub Release.
 
 .PARAMETER SkipFreeze
@@ -43,7 +44,7 @@ $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 # what gets attached to a GitHub Release.
 if (-not $OutDir) { $OutDir = Join-Path $repo 'build\windows' }
 $build = Join-Path $repo 'build\.cache'
-$stage = Join-Path $OutDir 'Numera'
+$stage = Join-Path $OutDir 'Numera Browser'
 
 function Step($text) { Write-Host "==> $text" -ForegroundColor Cyan }
 
@@ -204,7 +205,7 @@ if ($clearFailed) {
         New-Item -ItemType Directory -Force -Path $stage | Out-Null
         Move-Item $dataKeep $dataDir
     }
-    throw ("could not clear $stage - close Numera if it is running from there, then " +
+    throw ("could not clear $stage - close Numera Browser if it is running from there, then " +
            "build again. Continuing would ship the previous build. ($clearFailed)")
 }
 New-Item -ItemType Directory -Force -Path $stage | Out-Null

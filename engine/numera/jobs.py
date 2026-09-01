@@ -31,7 +31,7 @@ import time
 import uuid
 from pathlib import Path
 
-from .paths import write_json
+from .paths import child_env, write_json
 from typing import Optional
 
 # How long a record may sit with no pid and no outcome before it is called lost.
@@ -213,15 +213,34 @@ def child_argv(argv: list[str], root: Path) -> list[str]:
     Drops ``--detach`` (or the job would fork forever) and pins the data
     directory, so the child resolves the same root as its parent even though it
     starts in a different working directory.
+
+    **Also drops the master password.** `numera --password SECRET launch p
+    --detach` used to hand `--password SECRET` straight to the child, where it
+    sat in the process table for every local user to read - and `spawn()`
+    records the argv it ran, so the same secret was written into
+    `jobs/<id>.json` in the clear and stayed there. The unlock reaches the child
+    by environment instead; see `spawn`.
     """
-    rest = [a for a in argv if a != "--detach"]
+    rest, skip = [], False
+    for arg in argv:
+        if skip:                       # the value that followed a bare --password
+            skip = False
+            continue
+        if arg == "--detach":
+            continue
+        if arg == "--password":
+            skip = True
+            continue
+        if arg.startswith("--password="):
+            continue
+        rest.append(arg)
     if not any(a == "--data-dir" or a.startswith("--data-dir=") for a in rest):
         rest = ["--data-dir", str(root), *rest]
     return rest
 
 
 def spawn(root: Path, argv: list[str], command: str = "",
-          profile: Optional[str] = None) -> dict:
+          profile: Optional[str] = None, password: Optional[str] = None) -> dict:
     """Start ``argv`` as a background job and return its record.
 
     ``command`` is the subcommand's name. It is passed in rather than sniffed
@@ -232,7 +251,9 @@ def spawn(root: Path, argv: list[str], command: str = "",
     d = _dir(root)
     rec_path = d / f"{jid}.json"
     log = d / f"{jid}.log"
-    env = {**os.environ, "NUMERA_JOB_FILE": str(rec_path)}
+    # The unlock travels by environment, never argv - and `argv` below is
+    # persisted to the job record, so anything left in it is written to disk.
+    env = {**child_env(password), "NUMERA_JOB_FILE": str(rec_path)}
     # The child's output goes to the log, never to our stdout: a --json caller
     # is parsing that stream and a background process writing into the middle of
     # it is the whole reason structured output was worth having.

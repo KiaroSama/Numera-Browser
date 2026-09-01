@@ -118,13 +118,30 @@ function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSe
           // One request. This looped a DELETE per id, so removing a large
           // selection was that many round trips - and a failure part-way left
           // the toast claiming every one had gone.
+          // Report what actually happened. The success toast used to fire
+          // unconditionally - after a partial failure and even after the
+          // request threw - which is the misleading success the bulk route was
+          // added to remove.
+          let removed;
           try {
             const res = await api.removeMany(ids);
+            removed = res?.removed?.length ?? 0;
             if (res?.failed?.length) {
               toast.error(`${res.failed.length} could not be deleted: ${res.failed[0].error}`);
             }
-          } catch (e) { toast.error(e.message); }
+            if (res?.missing?.length) {
+              toast.error(`${res.missing.length} no longer existed.`);
+            }
+          } catch (e) {
+            toast.error(e.message);
+            await refresh();
+            return;
+          }
           await refresh();
+          if (removed) {
+            toast.success(`Deleted ${removed} profile${removed === 1 ? "" : "s"}.`);
+          }
+          return;
         } else {
           setProfiles(ps => ps.filter(p => !ids.includes(p.id)));
         }

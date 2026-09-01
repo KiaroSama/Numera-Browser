@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import re
 import time
+import http.client
 import urllib.error
 import urllib.request
 from typing import Optional
@@ -342,56 +343,123 @@ def exit_country(proxy, timeout: float = 10) -> Optional[str]:
 ROTATE_COOLDOWN = 20.0
 
 
-def _public_destination(url: str) -> "Optional[str]":
-    """Why this URL must not be fetched from the engine process, or None.
-
-    The rotate endpoint is the one place the engine fetches a caller-supplied
-    address, deliberately *not* through the proxy - so it runs with the
-    server's own network position. Only the scheme was checked, which let an
-    authenticated caller aim it at loopback, the LAN, or a cloud metadata
-    address and read the outcome through the reflected error.
-
-    Every hop is checked, not just the first: `urlopen` follows redirects by
-    default, so validating only the original host would be bypassable with a
-    single 3xx.
-    """
+def _resolve(host: str, port: int) -> list:
+    """Every address `host` currently resolves to, as `ipaddress` objects."""
     import ipaddress
     import socket
+
+    out = []
+    for info in socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP):
+        try:
+            out.append(ipaddress.ip_address(info[4][0]))
+        except ValueError:                                      # pragma: no cover
+            continue
+    return out
+
+
+def _not_global(ip) -> bool:
+    """True when this address is not routable on the public internet.
+
+    An allow rule, not a deny list. The previous check enumerated private,
+    loopback, link-local, multicast and reserved - and missed
+    `100.64.0.0/10` (carrier-grade NAT), which Python reports as none of those.
+    `is_global` is the property that actually answers the question, so anything
+    it rejects is rejected here, whatever range it belongs to.
+    """
+    return not ip.is_global
+
+
+def _public_destination(url: str) -> "tuple":
+    """`(problem, pinned_ip)` for a rotate URL - problem is None when allowed.
+
+    The rotate endpoint is the one place the engine fetches a caller-supplied
+    address, deliberately *not* through the proxy, so it runs from the server's
+    own network position. Returns the address it validated so the connection can
+    be pinned to it: resolving here and letting `urlopen` resolve again leaves a
+    window where a hostname answers with a public address for the check and a
+    private one for the connection.
+    """
     from urllib.parse import urlsplit
 
     parts = urlsplit(url)
     if parts.scheme.lower() not in ("http", "https"):
-        return f"the change-IP URL must be http(s), got {parts.scheme!r}"
+        return (f"the change-IP URL must be http(s), got {parts.scheme!r}", None)
     host = parts.hostname
     if not host:
-        return "the change-IP URL has no host"
+        return ("the change-IP URL has no host", None)
+    port = parts.port or (443 if parts.scheme.lower() == "https" else 80)
     try:
-        infos = socket.getaddrinfo(host, parts.port or
-                                   (443 if parts.scheme == "https" else 80),
-                                   proto=socket.IPPROTO_TCP)
-    except socket.gaierror as e:
-        return f"{host} does not resolve ({e})"
-    for info in infos:
-        try:
-            ip = ipaddress.ip_address(info[4][0])
-        except ValueError:
-            continue
-        if (ip.is_private or ip.is_loopback or ip.is_link_local
-                or ip.is_multicast or ip.is_reserved or ip.is_unspecified):
+        addresses = _resolve(host, port)
+    except OSError as e:
+        return (f"{host} does not resolve ({e})", None)
+    if not addresses:
+        return (f"{host} does not resolve", None)
+    for ip in addresses:
+        if _not_global(ip):
             return (f"{host} resolves to {ip}, which is not a public address - "
                     f"a change-IP URL points at your provider, not at this "
-                    f"machine or your network")
-    return None
+                    f"machine or your network", None)
+    return (None, addresses[0])
 
 
-class _GuardedRedirects(urllib.request.HTTPRedirectHandler):
-    """Re-check every hop. A redirect is the obvious way around a host check."""
+class _PinnedHTTPConnection(http.client.HTTPConnection):
+    """Connect to a pre-validated address while keeping the real hostname.
 
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        problem = _public_destination(newurl)
-        if problem:
-            raise urllib.error.URLError(f"refused to follow a redirect: {problem}")
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
+    The Host header and TLS verification still use the name; only the socket
+    target is pinned, so a second lookup cannot hand back a different address
+    than the one that passed validation.
+    """
+
+    pinned_ip = None
+
+    def connect(self):
+        import socket
+
+        self.sock = socket.create_connection((str(self.pinned_ip), self.port), self.timeout)
+        if getattr(self, "_tunnel_host", None):                 # pragma: no cover
+            self._tunnel()
+
+
+class _PinnedHTTPSConnection(http.client.HTTPSConnection):
+    pinned_ip = None
+
+    def connect(self):
+        import socket
+
+        sock = socket.create_connection((str(self.pinned_ip), self.port), self.timeout)
+        # `server_hostname` keeps SNI and certificate verification on the name,
+        # not on the pinned literal - pinning must not weaken TLS.
+        self.sock = self._context.wrap_socket(sock, server_hostname=self.host)
+
+
+def _pinned_opener(ip):
+    """An opener whose sockets go to `ip`, revalidating on every redirect."""
+
+    class _H(urllib.request.HTTPHandler):
+        def http_open(self, req):
+            return self.do_open(type("C", (_PinnedHTTPConnection,), {"pinned_ip": ip}), req)
+
+    class _HS(urllib.request.HTTPSHandler):
+        def https_open(self, req):
+            return self.do_open(type("C", (_PinnedHTTPSConnection,), {"pinned_ip": ip}), req)
+
+    class _Redirects(urllib.request.HTTPRedirectHandler):
+        """Every hop is checked and pinned again.
+
+        `urlopen` follows redirects by default, so validating only the first URL
+        would be bypassable with a single 3xx to an internal address.
+        """
+
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            problem, next_ip = _public_destination(newurl)
+            if problem:
+                raise urllib.error.URLError(f"refused to follow a redirect: {problem}")
+            new = super().redirect_request(req, fp, code, msg, headers, newurl)
+            if new is not None:
+                new.pinned_ip = next_ip
+            return new
+
+    return urllib.request.build_opener(_H, _HS, _Redirects)
 
 
 def rotate(proxy: dict, timeout: float = 20) -> dict:
@@ -406,7 +474,7 @@ def rotate(proxy: dict, timeout: float = 20) -> dict:
     if not url:
         return {"ok": None, "rotated": False,
                 "error": "no change-IP URL is set for this proxy"}
-    problem = _public_destination(url)
+    problem, pinned = _public_destination(url)
     if problem:
         return {"ok": None, "rotated": False, "error": problem}
 
@@ -425,7 +493,7 @@ def rotate(proxy: dict, timeout: float = 20) -> dict:
         # provider's control plane, and routing it through the very proxy being
         # rotated is how you lose the response mid-flight.
         req = urllib.request.Request(url, headers={"User-Agent": "numera-proxy-rotate/1.0"})
-        opener = urllib.request.build_opener(_GuardedRedirects)
+        opener = _pinned_opener(pinned)
         with opener.open(req, timeout=timeout) as r:
             body = r.read(500).decode("utf-8", "replace").strip()
     except Exception as e:  # noqa: BLE001 - the provider's endpoint is theirs to fail

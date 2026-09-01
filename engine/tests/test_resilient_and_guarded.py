@@ -181,7 +181,7 @@ def test_rotate_refuses_a_private_destination(url):
     from the server's own network position. Only the scheme was checked."""
     from numera import proxypool
 
-    problem = proxypool._public_destination(url)
+    problem, _pinned = proxypool._public_destination(url)
     assert problem, f"{url} was allowed"
 
     res = proxypool.rotate({"rotateUrl": url, "host": "1.2.3.4", "port": "8080"})
@@ -193,14 +193,16 @@ def test_rotate_still_allows_a_real_provider_url():
     """The guard must not break the feature: a public host is fine."""
     from numera import proxypool
 
-    assert proxypool._public_destination("https://example.com/api/rotate") is None
+    problem, pinned = proxypool._public_destination("https://example.com/api/rotate")
+    assert problem is None, problem
+    assert pinned is not None, "an allowed destination must return the address it validated"
 
 
 @pytest.mark.parametrize("url", ["ftp://example.com/x", "file:///etc/passwd", "gopher://x/"])
 def test_rotate_still_refuses_a_non_http_scheme(url):
     from numera import proxypool
 
-    assert proxypool._public_destination(url)
+    assert proxypool._public_destination(url)[0]
 
 
 # --- an empty bind host is a bind-all, not loopback ------------------------
