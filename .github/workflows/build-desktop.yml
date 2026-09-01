@@ -65,7 +65,7 @@ jobs:
           curl -sf http://127.0.0.1:8788/ | grep -q Numera
           echo "server artifact serves both the API and the dashboard"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: numera-server-wheel
           path: build/server/*
@@ -175,7 +175,7 @@ jobs:
       - name: Smoke the assembled artifact
         run: bash scripts/smoke-portable.sh "build/$PLAT/Numera Browser"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: numera-desktop-${{ runner.os }}
           path: "build/${{ env.PLAT }}/Numera Browser"
@@ -215,7 +215,7 @@ jobs:
         shell: pwsh
         run: ./scripts/smoke-portable.ps1 -Stage 'build/windows/Numera Browser'
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: numera-desktop-Windows
           path: "build/windows/Numera Browser"
