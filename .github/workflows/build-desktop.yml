@@ -237,7 +237,7 @@ jobs:
           cd artifacts
           for d in */; do zip -rq "../${d%/}.zip" "$d"; done
           ls -la ../*.zip
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: "*.zip"
           fail_on_unmatched_files: true
