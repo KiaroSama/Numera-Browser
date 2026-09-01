@@ -4,6 +4,41 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-09-01
+
+### Fixed
+
+- **An archive member naming a Windows drive was only refused on Windows.** `paths.safe_join()`
+  relied on `Path("a") / "C:/x"` evaluating to `C:/x`, which is true on Windows and false
+  everywhere else - on Linux the same member is an ordinary relative name, so restoring a
+  Windows-made backup quietly created a directory called `C:` inside the profile. Archives are
+  portable, so the refusal is now explicit and platform-independent.
+
+- **`test_close_releases_the_port_and_every_thread` asked the wrong question.** It probed by
+  rebinding the port, which tests whether the kernel has finished with it rather than whether
+  anything is still listening; Linux holds a cleanly closed port in `TIME_WAIT` and the test
+  failed on a relay that had shut down correctly. It now probes by connecting, and a refused
+  connection means the same thing on both platforms. `SO_REUSEADDR` was rejected as the fix
+  because on Windows it permits binding a port that *is* still being listened on, which would
+  have made the assertion vacuous on the platform this ships to.
+
+- **`test_the_job_record_never_holds_the_password` asserted against the wrong process.** It kept
+  only the most recent `subprocess.Popen` call, which happened to be `spawn`'s on Windows and was
+  a stranger's - with no `env=` - on Linux. It now records every call and picks out the one
+  running `-m numera` by position.
+
+### Changed
+
+- `dashboard/package-lock.json` carried version `0.12.0` while `package.json` said `0.15.0`;
+  the lockfile had not been bumped for three releases and now tracks it again.
+
+### Note
+
+These three are the first defects found by GitHub Actions actually executing. Every workflow added
+since 0.9.0 had been written but never run - the account's billing block made each job report
+`steps=0` in about three seconds. All three failures were Linux-specific and none was observable
+from this machine.
+
 ## [0.15.0] - 2026-09-01
 
 ### Fixed
