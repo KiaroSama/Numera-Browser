@@ -144,7 +144,7 @@ Two artifacts, two scripts. Pick the one that matches how you will run it.
 pwsh -File scripts/build-desktop.ps1
 ```
 
-Produces `build/windows/Numera Browser/` (~590 MB): a native window, the engine frozen
+Produces `build/windows/Numera Browser/` (~565 MB): a native window, the engine frozen
 inside it, the dashboard, and a Chromium build. Nearly all of that size is the
 browser - it is bundled so the folder can launch a profile on a machine that has
 never run Playwright, which is the whole point of a portable build. Copy that
