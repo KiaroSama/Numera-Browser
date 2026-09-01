@@ -127,9 +127,19 @@ def test_a_failed_engine_delete_leaves_both_copies(tmp_path, monkeypatch):
     assert engine_file.is_file()
 
 
-def test_the_session_is_removed_only_after_both_records(tmp_path, monkeypatch):
-    """Metadata can be written back from bytes held in memory; a wiped session
-    cannot. So the irreversible half goes last."""
+def test_the_session_is_detached_before_any_metadata_is_touched(tmp_path, monkeypatch):
+    """The ordering changed, and the new one is stronger.
+
+    It used to delete both records and remove the session last, on the reasoning
+    that metadata can be written back from memory and a wiped session cannot.
+    That was right about which half is recoverable and wrong about the failure
+    it created: once the session removal could fail loudly, a held directory
+    produced a failed request that had *already* deleted the profile.
+
+    So the session is detached by rename first - which fails while a browser
+    holds it, at a point where nothing else has moved - then the records go,
+    then the detached bytes are reclaimed.
+    """
     from numera.server.stores import DashboardStore
 
     engine = ProfileStore(tmp_path)
@@ -140,15 +150,51 @@ def test_the_session_is_removed_only_after_both_records(tmp_path, monkeypatch):
     (session / "Cookies").write_text("real", encoding="utf-8")
 
     order = []
-    real_delete_session = ProfileStore.delete_session
-    monkeypatch.setattr(ProfileStore, "delete_session",
-                        lambda self, p: (order.append("session"),
-                                         real_delete_session(self, p))[1])
+    real_detach = ProfileStore.detach_session
+    real_discard = ProfileStore.discard_tombstone
+    monkeypatch.setattr(ProfileStore, "detach_session",
+                        lambda self, p: (order.append("detach"), real_detach(self, p))[1])
+    monkeypatch.setattr(ProfileStore, "discard_tombstone",
+                        staticmethod(lambda t: (order.append("discard"), real_discard(t))[1]))
+    real_unlink = type(session).unlink
+    monkeypatch.setattr(type(session), "unlink",
+                        lambda self, *a, **k: (order.append("metadata"),
+                                               real_unlink(self, *a, **k))[1])
     dash.delete(pid)
-    assert order == ["session"]
+
+    assert order[0] == "detach", f"metadata moved before the session: {order}"
+    assert order[-1] == "discard", f"the tombstone was not reclaimed last: {order}"
+    assert "metadata" in order
     assert not (tmp_path / "dashboard" / f"{pid}.json").exists()
     assert not (tmp_path / "profiles" / f"{pid}.json").exists()
     assert not session.exists()
+
+
+def test_a_held_session_fails_the_delete_without_touching_the_records(tmp_path, monkeypatch):
+    """The failure this ordering exists to prevent: a DELETE that reports
+    failure and has already removed the profile."""
+    from pathlib import Path
+
+    from numera.server.stores import DashboardStore
+
+    engine = ProfileStore(tmp_path)
+    dash = DashboardStore(tmp_path, engine_store=engine)
+    pid = dash.save({"name": "held", "tags": []})["id"]
+    session = engine.user_data_path(pid)
+    session.mkdir(parents=True, exist_ok=True)
+    (session / "Cookies").write_text("live", encoding="utf-8")
+
+    real_rename = Path.rename
+    monkeypatch.setattr(Path, "rename",
+                        lambda self, target: (_ for _ in ()).throw(OSError("in use"))
+                        if self.name == pid else real_rename(self, target))
+    with pytest.raises(OSError):
+        dash.delete(pid)
+    monkeypatch.setattr(Path, "rename", real_rename)
+
+    assert (tmp_path / "dashboard" / f"{pid}.json").is_file(), "the record was deleted anyway"
+    assert (tmp_path / "profiles" / f"{pid}.json").is_file()
+    assert (session / "Cookies").read_text(encoding="utf-8") == "live"
 
 
 def test_a_successful_delete_removes_both_copies(c, tmp_path):

@@ -132,6 +132,11 @@ jobs:
       - name: Tests
         working-directory: dashboard
         run: npm test
+
+      # The linter is only a gate if CI runs it.
+      - name: Lint
+        working-directory: dashboard
+        run: npm run lint
       - name: Build
         working-directory: dashboard
         run: npm run build

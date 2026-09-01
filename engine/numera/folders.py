@@ -19,6 +19,7 @@ what the GUI wrote and nothing has to be migrated.
 from __future__ import annotations
 
 import json
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 
 from .paths import _lock_for, write_batch, write_json
@@ -74,6 +75,25 @@ def listing(root: Path) -> list[str]:
     return list(dict.fromkeys([*meta.get("folders", []), *used]))
 
 
+@contextmanager
+def _profile_locks(root: Path):
+    """Hold every dashboard profile lock for the whole folder transaction.
+
+    `rename`/`delete` rewrite `dashboard/*.json` through `write_batch()`, but
+    `DashboardStore.save()` locks per file - so a folder rename and an ordinary
+    profile edit could each read, change and atomically replace the same file,
+    and whichever landed second erased the other's change.
+
+    Sorted, so two transactions that need overlapping sets always take them in
+    the same order and cannot deadlock against each other.
+    """
+    paths = sorted(_profiles_dir(root).glob("*.json")) if _profiles_dir(root).is_dir() else []
+    with ExitStack() as stack:
+        for path in paths:
+            stack.enter_context(_lock_for(path))
+        yield
+
+
 def _folder_lock(root: Path):
     """The lock every folder change takes, keyed on the file they all rewrite.
 
@@ -95,7 +115,7 @@ def _persist(root: Path, names: list[str]) -> list[str]:
 
 
 def create(root: Path, name: str) -> list[str]:
-    with _folder_lock(root):
+    with _folder_lock(root), _profile_locks(root):
         name = (name or "").strip()
         if not name:
             raise ValueError("folder name required")
@@ -103,7 +123,7 @@ def create(root: Path, name: str) -> list[str]:
 
 
 def rename(root: Path, src: str, dst: str) -> list[str]:
-    with _folder_lock(root):
+    with _folder_lock(root), _profile_locks(root):
         src, dst = (src or "").strip(), (dst or "").strip()
         if not src or not dst:
             raise ValueError("both a source and a destination name are required")
@@ -121,7 +141,7 @@ def rename(root: Path, src: str, dst: str) -> list[str]:
 
 def delete(root: Path, name: str, reassign_to: Optional[str] = None) -> list[str]:
     """Remove a folder. Its profiles are moved, never deleted."""
-    with _folder_lock(root):
+    with _folder_lock(root), _profile_locks(root):
         name = (name or "").strip()
         if not name:
             raise ValueError("folder name required")

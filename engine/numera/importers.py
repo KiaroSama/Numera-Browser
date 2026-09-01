@@ -91,7 +91,16 @@ def _parse_proxy(d: dict) -> Optional[Proxy]:
     if mode in ("none", "no_proxy", "direct", ""):
         if not _first(px, "type", "proxy_type"):
             return None
-    scheme = "socks5" if "socks" in mode else "http"
+    # Preserve what the export actually said. Mapping every "socks*" to SOCKS5
+    # and everything else to HTTP silently changed the protocol: a SOCKS4 entry
+    # came back as SOCKS5 and an HTTPS one as HTTP, so the imported profile
+    # claimed one protocol while the browser spoke another.
+    _DECLARED = {"http": "http", "https": "https", "socks4": "socks4",
+                 "socks4a": "socks4", "socks5": "socks5", "socks5h": "socks5",
+                 "socks": "socks5"}
+    declared = str(_first(px, "type", "proxy_type", "mode", default="")).lower().strip()
+    scheme = _DECLARED.get(declared) or ("socks5" if "socks" in mode else "http")
+
     port = _first(px, "port", "proxy_port", default="")
     return Proxy(
         server=f"{scheme}://{host}:{port}".rstrip(":"),

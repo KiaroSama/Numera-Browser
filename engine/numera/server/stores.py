@@ -12,6 +12,7 @@ import json
 import secrets
 import time
 import uuid
+import warnings
 from pathlib import Path
 from typing import Optional
 from .. import vault
@@ -210,6 +211,13 @@ class DashboardStore:
         if not f.exists() and not (engine_record and engine_record.exists()):
             return False
 
+        # Step one, before any metadata moves: detach the session. A held
+        # directory raises here, and at that point nothing has been deleted -
+        # which is what a failed DELETE has to mean. Doing it last meant a
+        # failure had already removed the profile, so the caller was told the
+        # delete failed while the dashboard showed it gone.
+        tomb = self._engine.detach_session(pid) if self._engine is not None else None
+
         undo = []
         try:
             for path in (f, engine_record):
@@ -219,12 +227,17 @@ class DashboardStore:
         except OSError:
             for path, original in reversed(undo):
                 path.write_bytes(original)
+            if self._engine is not None:
+                self._engine.restore_session(pid, tomb)
             raise
 
-        # Past the point of no return: both records are gone, so the session
-        # they described is orphaned whatever happens next.
-        if self._engine is not None:
-            self._engine.delete_session(pid)
+        # Committed. Reclaiming the detached bytes can still fail, but the
+        # profile is gone and they are unreachable through it - that is
+        # cleanup-pending, not a failed request.
+        if tomb is not None and not self._engine.discard_tombstone(tomb):
+            warnings.warn(f"the deleted session for {pid} is still on disk as "
+                          f"{tomb.name}; remove it once nothing holds it",
+                          RuntimeWarning, stacklevel=2)
         return True
 
     # Dashboard-only settings (folder list, etc.) live in a sibling file rather
@@ -330,7 +343,12 @@ class ProxyPool:
     def add_many(self, proxies: list[dict]) -> list[dict]:
       with self._lock:
         items = self.list()
-        seen = {vault_identity(p) for p in items}
+        # A locked entry reads back with `pass=None`, which is indistinguishable
+        # from a proxy that genuinely has no password - so a new passwordless
+        # proxy would dedupe against a credentialed one and be silently dropped.
+        # Entries whose secret is hidden take no part in the comparison.
+        seen = {vault_identity(p) for p in items
+                if not self.secret_withheld(p.get("id", ""))}
         added = []
         for pr in proxies:
             key = vault_identity(pr)

@@ -353,7 +353,7 @@ def serve(host: str = "127.0.0.1", port: int = 8787, data_dir: Optional[str] = N
 
     app = create_app(str(root), password=password)
     where = "the dashboard and API" if dashboard_dir() else "the API"
-    print(f"Numera: {where} on http://{host}:{port}  (data: {root})")
+    print(f"Numera Browser: {where} on http://{host}:{port}  (data: {root})")
     if log_path:
         print(f"  log: {log_path}")
     log.info("listening on %s:%s", host, port)

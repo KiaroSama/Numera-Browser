@@ -128,7 +128,7 @@ that is never continued hangs the page for good.
 ### What a portable build contains
 
 ```
-Numera/
+Numera Browser/
   numera.exe      the Tauri shell
   engine/         the frozen Python engine (PyInstaller onedir)
   browsers/       Chromium, shipped with the app

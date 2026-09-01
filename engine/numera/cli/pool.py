@@ -13,6 +13,23 @@ from ..store import ProfileStore
 from .out import C, _c, emit, say
 
 
+def _refuse_if_locked(pool, entries) -> "Optional[str]":
+    """Why these proxies cannot be used right now, or None.
+
+    The API guards its own test/rotate/assign; the CLI reached the same
+    operations with `pass=None` and treated it as a proxy that simply has no
+    password - exporting blanks, and recording real failures against proxies
+    that are fine.
+    """
+    from ..vault import LOCKED_MESSAGE
+
+    hidden = [e for e in entries if pool.secret_withheld(e.get("id", ""))]
+    if not hidden:
+        return None
+    return (f"{len(hidden)} of these proxies have a password that cannot be "
+            f"read: {LOCKED_MESSAGE}")
+
+
 def cmd_pool(args, store: ProfileStore) -> int:
     """The shared proxy pool — the same ``<data-dir>/proxies.json`` the dashboard's
     Proxies page reads and writes, so an import from either side is visible to both."""
@@ -74,6 +91,10 @@ def cmd_pool(args, store: ProfileStore) -> int:
             say(_c("No proxy with that id.", C.RED))
             return emit({"ok": False, "error": "no proxy with that id"}, 1)
         results, moved = [], 0
+        locked = _refuse_if_locked(pool, targets)
+        if locked:
+            say(_c(locked, C.RED))
+            return emit({"ok": False, "error": locked}, 1)
         for pr in targets:
             # Serial: these hit one provider's control plane and firing several
             # at once is how a pool gets rate-limited.
@@ -118,6 +139,18 @@ def cmd_pool(args, store: ProfileStore) -> int:
             say(_c("Nothing to change. Pass --host, --port, --user, --pass, "
                    "--type, --country, --label or --rotate-url.", C.RED))
             return emit({"ok": False, "error": "nothing to change"}, 1)
+        # Through `normalize()`, exactly as `PUT /api/proxies/{id}` does. This
+        # went straight to the store, so an unsupported type, a port of 70000 or
+        # a malformed country reached disk from the CLI and only failed later at
+        # launch.
+        try:
+            clean = pp.normalize({**pr, **patch})
+        except ValueError as e:
+            say(_c(str(e), C.RED))
+            return emit({"ok": False, "error": str(e)}, 1)
+        for field in ("type", "host", "port", "user", "pass", "country"):
+            if field in patch:
+                patch[field] = clean[field]
         # A changed address means the stored verdict describes somewhere else.
         if {"host", "port", "user", "pass", "type"} & set(patch):
             patch.update({"status": "untested", "lastCheck": None, "checkedAt": None})
@@ -130,6 +163,10 @@ def cmd_pool(args, store: ProfileStore) -> int:
         if args.id:
             keep = set(args.id)
             items = [p for p in items if p["id"] in keep]
+        locked = _refuse_if_locked(pool, items)
+        if locked:
+            say(_c(locked, C.RED))
+            return emit({"ok": False, "error": locked}, 1)
         lines = [pp.to_line(p) for p in items]
         text = "\n".join(lines) + ("\n" if lines else "")
         if args.file:
@@ -147,6 +184,10 @@ def cmd_pool(args, store: ProfileStore) -> int:
         if not targets:
             say(_c("No proxy with that id." if not args.all else "The proxy pool is empty.", C.RED))
             return emit({"ok": False, "error": "nothing to test"}, 1)
+        locked = _refuse_if_locked(pool, targets)
+        if locked:
+            say(_c(locked, C.RED))
+            return emit({"ok": False, "error": locked}, 1)
         import time as _time
         results, bad = [], 0
         for pr in targets:
@@ -173,6 +214,10 @@ def cmd_pool(args, store: ProfileStore) -> int:
     if not proxies:
         say(_c("The proxy pool is empty.", C.RED))
         return emit({"ok": False, "error": "the proxy pool is empty"}, 1)
+        locked = _refuse_if_locked(pool, proxies)
+        if locked:
+            say(_c(locked, C.RED))
+            return emit({"ok": False, "error": locked}, 1)
     targets = select(store.list(), refs=args.ref, tag=args.tag, everything=args.all)
     if not targets:
         say(_c("Nothing matched. Pass profile names/ids, --tag TAG, or --all.", C.RED))

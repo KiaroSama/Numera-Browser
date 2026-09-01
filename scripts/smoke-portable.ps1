@@ -19,7 +19,7 @@
     Every wait is bounded and polls for a condition. Nothing sleeps blindly.
 
 .PARAMETER Stage
-    The assembled folder, e.g. build\windows\Numera.
+    The assembled folder, e.g. 'build\windows\Numera Browser'.
 
 .PARAMETER TimeoutSeconds
     Ceiling for the whole run.
@@ -34,7 +34,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-if (-not $Stage) { $Stage = Join-Path $repo 'build\windows\Numera' }
+if (-not $Stage) { $Stage = Join-Path $repo 'build\windows\Numera Browser' }
 $Stage = (Resolve-Path $Stage).Path
 
 $deadline = [datetime]::UtcNow.AddSeconds($TimeoutSeconds)

@@ -130,10 +130,10 @@ jobs:
         run: |
           plat=$([ "$RUNNER_OS" = "macOS" ] && echo macos || echo linux)
           echo "PLAT=$plat" >> "$GITHUB_ENV"
-          mkdir -p "build/$plat/Numera"
-          cp desktop/src-tauri/target/release/numera "build/$plat/Numera/numera"
-          cp -r desktop/dist/.build/numera-engine "build/$plat/Numera/engine"
-          du -sh "build/$plat/Numera"
+          mkdir -p "build/$plat/Numera Browser"
+          cp desktop/src-tauri/target/release/numera "build/$plat/Numera Browser/numera"
+          cp -r desktop/dist/.build/numera-engine "build/$plat/Numera Browser/engine"
+          du -sh "build/$plat/Numera Browser"
 
       # `pip install playwright` installs the package, not the browser: that is a
       # separate download into a per-user cache. A release artifact lands on
@@ -144,7 +144,7 @@ jobs:
       # beside the engine directory as well as inside it.
       - name: Bundle the Playwright browser
         run: |
-          dest="$PWD/build/$PLAT/Numera/browsers"
+          dest="$PWD/build/$PLAT/Numera Browser/browsers"
           if [ "$RUNNER_OS" = "Linux" ]; then
             # Chromium wants system libraries the WebKitGTK set above does not
             # cover, and that list changes with the runner image. --with-deps is
@@ -165,7 +165,7 @@ jobs:
       # Proof the binary is for the runner it was built on. A silently
       # mis-targeted artifact would upload happily and fail on a user's machine.
       - name: Check the binary matches the platform
-        run: file "build/$PLAT/Numera/numera"
+        run: file "build/$PLAT/Numera Browser/numera"
 
       # A file listing is not a working app. The gate that matters: the
       # assembled folder has to start, create a profile, launch the *bundled*
@@ -173,12 +173,12 @@ jobs:
       # that cannot open a browser is the exact failure this catches, and it
       # looks like a successful build without it.
       - name: Smoke the assembled artifact
-        run: bash scripts/smoke-portable.sh "build/$PLAT/Numera"
+        run: bash scripts/smoke-portable.sh "build/$PLAT/Numera Browser"
 
       - uses: actions/upload-artifact@v4
         with:
           name: numera-desktop-${{ runner.os }}
-          path: build/${{ env.PLAT }}/Numera
+          path: "build/${{ env.PLAT }}/Numera Browser"
 
   # Windows has its own script: it proves the static CRT took, which the POSIX
   # steps above have no equivalent of, and it is the same script a maintainer
@@ -213,12 +213,12 @@ jobs:
       # failure this catches, and it looks like a successful build without it.
       - name: Smoke the assembled artifact
         shell: pwsh
-        run: ./scripts/smoke-portable.ps1 -Stage build/windows/Numera
+        run: ./scripts/smoke-portable.ps1 -Stage 'build/windows/Numera Browser'
 
       - uses: actions/upload-artifact@v4
         with:
           name: numera-desktop-Windows
-          path: build/windows/Numera
+          path: "build/windows/Numera Browser"
 
   # Attach everything to the tag that triggered the run. This is how a build
   # reaches a user: the repository never carries one.
