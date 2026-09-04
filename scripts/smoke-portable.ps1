@@ -85,17 +85,17 @@ function Engine([string[]]$EngineArgs, [int]$Timeout = 120, [switch]$AllowFailur
 }
 
 try {
-    Step '1/5 the engine runs at all'
+    Step '1/6 the engine runs at all'
     $version = (Engine @('--version') 30).Trim()
     if (-not $version) { Fail '--version printed nothing' }
     Write-Host "    $version"
 
-    Step '2/5 it creates a profile'
+    Step '2/6 it creates a profile'
     Engine @('create', 'smoke') 60 | Out-Null
     $listed = Engine @('list') 60
     if ($listed -notmatch 'smoke') { Fail "the profile is not in ``list``:`n$listed" }
 
-    Step '3/5 it launches the bundled browser'
+    Step '3/6 it launches the bundled browser'
     # `trust` opens a real headless browser and reads back what the page shows.
     # Nothing short of launching proves the bundle resolves.
     # A non-zero exit here means the *profile* scored imperfectly, which is not
@@ -110,7 +110,7 @@ try {
     }
     Write-Host "    $(($trust -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 3) -join ' | ')"
 
-    Step '4/5 serve comes up and answers /api/ready'
+    Step '4/6 serve comes up and answers /api/ready'
     $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
     $listener.Start(); $port = $listener.LocalEndpoint.Port; $listener.Stop()
     $server = Start-Process -FilePath $engine -PassThru -NoNewWindow `
@@ -128,12 +128,50 @@ try {
     if (-not $ready.ok) { Fail "/api/ready answered but not ok: $($ready | ConvertTo-Json -Compress)" }
     Write-Host "    $($ready | ConvertTo-Json -Compress)"
 
-    Step '5/5 the profile and its session survive a restart'
+    Step '5/6 the profile and its session survive a restart'
     $server.Kill($true); $server.WaitForExit(15000) | Out-Null; $server = $null
     $again = Engine @('list') 60
     if ($again -notmatch 'smoke') { Fail "the profile did not survive the restart:`n$again" }
     $sessions = Get-ChildItem -Path (Join-Path $data 'user-data') -Directory -ErrorAction SilentlyContinue
     if (-not $sessions) { Fail 'the launch left no session directory behind' }
+
+    Step '6/6 the vault encrypts a real secret and reopens it'
+    # `cryptography` lives in the `secure` extra, and a frozen app cannot
+    # pip-install into its own embedded runtime - so if that extra is missing
+    # from the build, every one of these steps fails here and nowhere earlier.
+    # The product advertises an encrypted vault; this is what proves the
+    # shipped artifact has one.
+    $secret = 'smoke-proxy-password'
+    $lines = Join-Path $data 'smoke-proxies.txt'
+    Set-Content -Path $lines -Value "http://u:$secret@203.0.113.7:8080" -Encoding utf8
+    Engine @('pool', 'add', $lines) 60 | Out-Null
+    $poolFile = Join-Path $data 'proxies.json'
+    if (-not (Test-Path $poolFile)) { Fail 'pool add wrote no proxies.json' }
+    if ((Get-Content $poolFile -Raw) -notmatch [regex]::Escape($secret)) {
+        Fail 'the proxy password is not in the pool file before enabling the vault'
+    }
+
+    Engine @('--password', 'smoke-master', 'vault', 'enable') 120 | Out-Null
+
+    $onDisk = Get-Content $poolFile -Raw
+    if ($onDisk -match [regex]::Escape($secret)) {
+        Fail 'vault enable reported success but the password is still readable on disk'
+    }
+    if ($onDisk -notmatch 'enc:v\d+:') {
+        Fail 'the stored secret is neither plaintext nor an encrypted envelope'
+    }
+
+    # Reopen with the master password and check the secret comes back usable -
+    # encrypting is only half of it; a vault you cannot unlock is data loss.
+    $exported = Engine @('--password', 'smoke-master', 'pool', 'export') 60
+    if ($exported -notmatch [regex]::Escape($secret)) {
+        Fail 'the vault would not give the secret back with the master password'
+    }
+    $locked = Engine @('pool', 'export') 60 -AllowFailure
+    if ($locked -match [regex]::Escape($secret)) {
+        Fail 'a locked export handed out the secret'
+    }
+    Write-Host '    encrypted at rest, readable with the master password, withheld without it'
 
     Write-Host ''
     Write-Host 'PORTABLE SMOKE: PASS' -ForegroundColor Green

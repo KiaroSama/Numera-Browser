@@ -435,13 +435,23 @@ class _PinnedHTTPSConnection(http.client.HTTPSConnection):
 def _pinned_opener(ip):
     """An opener whose sockets go to `ip`, revalidating on every redirect."""
 
+    # Each request carries its own pin. These classes used to close over the
+    # opener's original `ip`, so the redirect handler below validated hop two's
+    # address, stored it on the new request - and the connection still went to
+    # hop one's IP. A cross-host redirect was checked against one host and
+    # connected to another, which is the whole bypass the pinning exists to stop.
+    def _pin_for(req):
+        return getattr(req, "pinned_ip", ip)
+
     class _H(urllib.request.HTTPHandler):
         def http_open(self, req):
-            return self.do_open(type("C", (_PinnedHTTPConnection,), {"pinned_ip": ip}), req)
+            return self.do_open(
+                type("C", (_PinnedHTTPConnection,), {"pinned_ip": _pin_for(req)}), req)
 
     class _HS(urllib.request.HTTPSHandler):
         def https_open(self, req):
-            return self.do_open(type("C", (_PinnedHTTPSConnection,), {"pinned_ip": ip}), req)
+            return self.do_open(
+                type("C", (_PinnedHTTPSConnection,), {"pinned_ip": _pin_for(req)}), req)
 
     class _Redirects(urllib.request.HTTPRedirectHandler):
         """Every hop is checked and pinned again.
@@ -459,7 +469,12 @@ def _pinned_opener(ip):
                 new.pinned_ip = next_ip
             return new
 
-    return urllib.request.build_opener(_H, _HS, _Redirects)
+    # An empty ProxyHandler, explicitly. `build_opener` installs one built from
+    # the environment by default, so `HTTP_PROXY`/`HTTPS_PROXY` silently routed
+    # this deliberately-direct control-plane request through somebody else's
+    # proxy - and the pinned socket then connected to the proxy, not to the
+    # address that was validated.
+    return urllib.request.build_opener(urllib.request.ProxyHandler({}), _H, _HS, _Redirects)
 
 
 def rotate(proxy: dict, timeout: float = 20) -> dict:

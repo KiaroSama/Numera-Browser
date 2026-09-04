@@ -19,10 +19,10 @@ what the GUI wrote and nothing has to be migrated.
 from __future__ import annotations
 
 import json
-from contextlib import ExitStack, contextmanager
+from contextlib import contextmanager
 from pathlib import Path
 
-from .paths import _lock_for, write_batch, write_json
+from .paths import _lock_for, transaction_lock, write_batch, write_json
 from typing import Optional
 
 UNFILED = "Unfiled"
@@ -77,20 +77,24 @@ def listing(root: Path) -> list[str]:
 
 @contextmanager
 def _profile_locks(root: Path):
-    """Hold every dashboard profile lock for the whole folder transaction.
+    """Hold the root transaction lock for the whole folder transaction.
 
     `rename`/`delete` rewrite `dashboard/*.json` through `write_batch()`, but
     `DashboardStore.save()` locks per file - so a folder rename and an ordinary
     profile edit could each read, change and atomically replace the same file,
     and whichever landed second erased the other's change.
 
-    Sorted, so two transactions that need overlapping sets always take them in
-    the same order and cannot deadlock against each other.
+    This used to enumerate the profile files and lock each one. That closed the
+    common case and left a real hole: the set was snapshotted *before* the
+    locks were taken, so a profile created a moment later belonged to the
+    folder being renamed and was not held by anything - the transaction either
+    missed it or rewrote it with no lock at all. A set that can grow while you
+    are locking it cannot be locked by enumeration.
+
+    The root transaction lock has no such window: it is one lock, taken before
+    anything is read, and every profile mutation takes it too.
     """
-    paths = sorted(_profiles_dir(root).glob("*.json")) if _profiles_dir(root).is_dir() else []
-    with ExitStack() as stack:
-        for path in paths:
-            stack.enter_context(_lock_for(path))
+    with transaction_lock(root):
         yield
 
 

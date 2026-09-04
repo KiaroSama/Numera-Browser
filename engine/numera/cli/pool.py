@@ -214,10 +214,15 @@ def cmd_pool(args, store: ProfileStore) -> int:
     if not proxies:
         say(_c("The proxy pool is empty.", C.RED))
         return emit({"ok": False, "error": "the proxy pool is empty"}, 1)
-        locked = _refuse_if_locked(pool, proxies)
-        if locked:
-            say(_c(locked, C.RED))
-            return emit({"ok": False, "error": locked}, 1)
+    # On the live path. This guard was written *inside* the empty-pool branch,
+    # after its `return`, so it never ran: a credentialed proxy read from a
+    # locked vault arrived with `pass=None` and was written onto every selected
+    # profile as a proxy with no password, while the changelog said assign
+    # refuses while locked. The other three verbs guard here; assign did not.
+    locked = _refuse_if_locked(pool, proxies)
+    if locked:
+        say(_c(locked, C.RED))
+        return emit({"ok": False, "error": locked}, 1)
     targets = select(store.list(), refs=args.ref, tag=args.tag, everything=args.all)
     if not targets:
         say(_c("Nothing matched. Pass profile names/ids, --tag TAG, or --all.", C.RED))

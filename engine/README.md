@@ -261,7 +261,9 @@ numera vault enable                        # prompts for a master password
 numera vault status                        # off / locked / unlocked
 ```
 
-Enabling re-writes existing proxy passwords as `enc:v1:…` tokens
+Enabling re-writes existing proxy passwords as `enc:v2:…` tokens
+(`enc:v1:` tokens written by an older build keep opening; the version travels
+in the prefix because it is part of what the key derives from)
 (AES via Fernet, key derived with PBKDF2-HMAC-SHA256). After that, give the
 password when you need the proxy — set `NUMERA_PASSWORD` or pass `--password`:
 

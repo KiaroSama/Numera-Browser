@@ -25,6 +25,7 @@ import hashlib
 from functools import lru_cache
 import importlib.util
 import os
+import re
 from typing import Optional
 
 # Current OWASP guidance for PBKDF2-HMAC-SHA256. New secrets are written at
@@ -91,8 +92,28 @@ def _fernet(password: str, salt_b64: str, rounds: int = PBKDF2_ROUNDS):
     return Fernet(_derive_key(password, salt_b64, rounds))
 
 
-def is_encrypted(value) -> bool:
+# Any `enc:v<N>:` marker, including a version this build cannot open. Matching
+# only the *known* prefixes made an `enc:v9:` record read back as ordinary
+# plaintext, and every caller then did the wrong thing with it: handed it to a
+# launcher as the password, counted it as a plaintext leak, wrapped it a second
+# time. A future envelope is still an envelope.
+_ENVELOPE = re.compile(r"^enc:v\d+:")
+
+
+def is_envelope(value) -> bool:
+    """Any versioned secret envelope, readable by this build or not."""
+    return isinstance(value, str) and _ENVELOPE.match(value) is not None
+
+
+def is_supported_envelope(value) -> bool:
+    """An envelope whose KDF version this build knows how to open."""
     return isinstance(value, str) and value.startswith(ENC_PREFIXES)
+
+
+# The question almost every caller means is the wide one: "is this a secret
+# marker rather than a password?" Answering it narrowly is what let a future
+# version through.
+is_encrypted = is_envelope
 
 
 def encrypt(password: str, salt_b64: str, plaintext: str) -> str:

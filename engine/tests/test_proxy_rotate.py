@@ -138,11 +138,16 @@ def test_the_endpoint_is_fetched_directly_not_through_the_proxy(monkeypatch):
     proxy being rotated is how the response gets lost mid-flight - and a dead
     proxy would then make every rotate fail for the wrong reason.
 
-    This used to assert `build_opener` was never called at all. That premise
-    expired: `rotate` now builds an opener on purpose, to install the redirect
-    guard that re-checks every hop against a private destination. So the
-    assertion is the invariant it always meant - no proxy handler is installed -
-    rather than the proxy for it.
+    Twice now this test has asserted a proxy for the invariant rather than the
+    invariant. First it asserted `build_opener` was never called - which expired
+    when `rotate` started building an opener on purpose, for the redirect guard.
+    Then it asserted no `ProxyHandler` was installed - which expired when
+    `rotate` started installing an *empty* one deliberately, because
+    `build_opener` otherwise adds a handler built from `HTTP_PROXY`/`HTTPS_PROXY`
+    and the environment could capture this request.
+
+    An empty ProxyHandler is how you guarantee no proxy is used, so the third
+    version asserts the thing itself: no handler carries any proxies.
     """
     import urllib.request as _ur
 
@@ -155,11 +160,15 @@ def test_the_endpoint_is_fetched_directly_not_through_the_proxy(monkeypatch):
         res = pp.rotate(proxy(rotateUrl=ep.url))
     assert ep.hits == 1 and res["rotated"] is True
 
-    def is_proxy_handler(h):
-        cls = h if isinstance(h, type) else type(h)
-        return issubclass(cls, _ur.ProxyHandler)
+    def routes_through_a_proxy(h):
+        # A class (not an instance) means `build_opener` was asked to construct
+        # the handler itself, which for ProxyHandler reads the environment.
+        if isinstance(h, type):
+            return issubclass(h, _ur.ProxyHandler)
+        return isinstance(h, _ur.ProxyHandler) and bool(h.proxies)
 
-    assert not any(is_proxy_handler(h) for h in handlers),         f"rotate routed its own request through a proxy: {handlers}"
+    assert not any(routes_through_a_proxy(h) for h in handlers), \
+        f"rotate routed its own request through a proxy: {handlers}"
 
 
 # --- one canonical proxy identity ------------------------------------------

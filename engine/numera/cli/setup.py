@@ -105,6 +105,28 @@ def cmd_vault(args, store: ProfileStore) -> int:
         say(_c("Set NUMERA_PASSWORD (or pass --password) when launching so profiles can use their proxy.", C.DIM))
         return emit({"ok": True, "enabled": True, "encrypted": n})
 
+    if args.vault_command == "change":
+        # The old password first, and from the same places every other command
+        # takes it, so `--password` / NUMERA_PASSWORD still work unattended.
+        old_pw = store._password or _prompt_password()
+        new_pw = getattr(args, "new_password", None)
+        if not new_pw:
+            if json_mode():
+                raise RuntimeError("this needs the new master password - pass "
+                                   "--new-password (a --json run never prompts)")
+            import getpass
+            new_pw = getpass.getpass("New master password: ")
+            if getpass.getpass("Confirm new master password: ") != new_pw:
+                raise RuntimeError("Passwords didn't match.")
+        try:
+            n = store.change_vault_password(old_pw, new_pw)
+        except (crypto.VaultLocked, ValueError, RuntimeError) as e:
+            say(_c(str(e), C.RED))
+            return emit({"ok": False, "error": str(e)}, 1)
+        say(_c(f"Master password changed - re-encrypted {n} secret(s).", C.GRN))
+        say(_c("The old password no longer opens anything. Update NUMERA_PASSWORD.", C.YEL))
+        return emit({"ok": True, "rotated": n})
+
     return emit({"ok": False, "error": f"unknown vault command '{args.vault_command}'"}, 1)
 
 

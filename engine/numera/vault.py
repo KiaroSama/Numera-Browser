@@ -125,6 +125,47 @@ class _Migration:
                 converted += changed
         return converted
 
+    def rekey_all(self, old_password: str, old_salt: str,
+                  new_password: str, new_salt: str) -> int:
+        """Re-encrypt every secret under a new key. Returns how many moved.
+
+        Decrypt-then-encrypt, file by file, through the same batch as
+        `encrypt_all` - so a failure at any point puts every file back and the
+        vault keeps opening with the old password. There is no password
+        recovery, which makes a half-rotated store unrecoverable: some secrets
+        under the old key, some under the new, and no single password that
+        opens them all.
+
+        A record this build cannot decrypt (a foreign key, a newer version)
+        stops the rotation rather than being dropped: rotating past it would
+        leave a secret nothing can ever open.
+        """
+        moved = 0
+        for path, site in secret_files(self.root):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                raise ValueError(f"{path} is unreadable, so its secrets cannot be rotated")
+            changed = 0
+            for holder in holders(data, site):
+                value = holder[site.field]
+                if not crypto.is_encrypted(value):
+                    # Plaintext under an enabled vault should not happen; leaving
+                    # it alone is right - `enable` is what encrypts.
+                    continue
+                try:
+                    plain = crypto.decrypt(old_password, old_salt, value)
+                except Exception as e:                          # noqa: BLE001
+                    raise ValueError(
+                        f"{path} holds a secret this password cannot open, so the "
+                        f"rotation would leave it unreadable forever ({e})")
+                holder[site.field] = crypto.encrypt(new_password, new_salt, plain)
+                changed += 1
+            if changed:
+                self._batch.write(path, data)
+                moved += changed
+        return moved
+
     def rollback(self) -> None:
         """Restore every file this migration wrote, newest first."""
         self._batch.rollback()
@@ -182,12 +223,19 @@ def is_withheld(engine, stored_value) -> bool:
     """
     if not stored_value or not crypto.is_encrypted(stored_value):
         return False
-    return not (engine and engine.unlocked() and engine._password)
+    if not (engine and engine.unlocked() and engine._password):
+        return True
+    # An unlocked vault is not the same as a readable record. One entry can be
+    # encrypted under a different key (a record pasted in from another install),
+    # truncated by a bad write, or written by a newer build than this one. This
+    # used to answer "not withheld" purely because the *verifier* opened, so
+    # export, health-check and assign carried on and silently dropped exactly
+    # the credential they could not read.
+    return decrypt_for_read(engine, stored_value) is None
 
 
 LOCKED_MESSAGE = ("the vault is locked, so this needs the master password - "
-                  "unlock with `numera vault unlock`, set NUMERA_PASSWORD, or "
-                  "pass --password")
+                  "set NUMERA_PASSWORD or pass --password")
 
 
 def encrypt_for_write(engine, value, stored=None):
@@ -212,9 +260,13 @@ def encrypt_for_write(engine, value, stored=None):
     if crypto.is_encrypted(value):
         return value
     if not engine.unlocked():
-        if stored:
-            return stored
+        # Refuse, whether or not something is already stored. Returning the
+        # existing ciphertext here meant a locked password *change* reported
+        # success and changed nothing - the caller sent a new plaintext, got a
+        # 200 back, and the old password was still the one on disk. Only an
+        # empty/absent value means "keep what is there", and that is handled
+        # above; a non-empty plaintext is always a replacement.
         raise crypto.VaultLocked(
             "the vault is locked, so this proxy password cannot be stored "
-            "safely - unlock it with `numera vault unlock` first")
+            "safely - set NUMERA_PASSWORD or pass --password first")
     return crypto.encrypt(engine._password, engine.vault()["salt"], value)

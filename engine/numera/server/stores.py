@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Optional
 from .. import vault
 from ..proxypool import identity as vault_identity
-from ..paths import _lock_for, id_path, write_json
+from ..paths import _lock_for, transaction_lock, id_path, write_json
 from .convert import to_engine_profile
 
 
@@ -38,6 +38,7 @@ class DashboardStore:
     """
 
     def __init__(self, root: Path, engine_store=None):
+        self.root = Path(root)
         self.dir = root / "dashboard"
         self.dir.mkdir(parents=True, exist_ok=True)
         self._engine = engine_store
@@ -121,7 +122,11 @@ class DashboardStore:
         prof.setdefault("_created", time.time())
         prof = self._guard_secrets(prof)
         path = self._path(prof["id"])
-        with _lock_for(path):
+        # Transaction lock outermost, per-file lock inside - the one order every
+        # profile mutation uses. Without it a single save could land between a
+        # batch's snapshot and its rollback, and the rollback then wrote the old
+        # bytes over a change that had already succeeded.
+        with transaction_lock(self.root), _lock_for(path):
             previous = path.read_bytes() if path.exists() else None
             write_json(path, prof)
             try:
@@ -153,7 +158,7 @@ class DashboardStore:
         from ..paths import write_batch
 
         saved = []
-        with write_batch() as batch:
+        with transaction_lock(self.root), write_batch() as batch:
             for prof in profiles:
                 if not prof.get("id"):
                     prof["id"] = uuid.uuid4().hex[:12]
@@ -202,6 +207,10 @@ class DashboardStore:
             f = self._path(pid)
         except ValueError:
             return False
+        with transaction_lock(self.root):
+            return self._delete_locked(pid, f)
+
+    def _delete_locked(self, pid: str, f: Path) -> bool:
         engine_record = None
         if self._engine is not None:
             try:

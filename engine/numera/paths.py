@@ -223,6 +223,35 @@ def _lock_for(path) -> threading.RLock:
         return lock
 
 
+_ROOT_LOCKS: dict = {}
+
+
+def transaction_lock(root):
+    """The one lock every multi-file profile mutation under `root` takes first.
+
+    A batch snapshots each file, writes them all, and on failure puts the old
+    bytes back. Per-file locks are not enough for that: a single `save()` can
+    land in the window between the snapshot and the rollback, and the rollback
+    then overwrites a change that had already succeeded. There is no per-file
+    ordering that fixes it, because the batch does not know its full file set
+    until it has finished writing.
+
+    So multi-file mutations serialise against each other and against single
+    saves, and the order is always this lock first, per-file lock second - one
+    lock, taken outermost, cannot deadlock against itself.
+
+    ponytail: one lock per root, not per file. Profile writes are user-paced
+    (a save, a rename, a folder move); if a workload ever makes this the
+    bottleneck, the upgrade is a reader/writer lock, not finer keys.
+    """
+    key = str(Path(root).resolve())
+    with _LOCKS_GUARD:
+        lock = _ROOT_LOCKS.get(key)
+        if lock is None:
+            lock = _ROOT_LOCKS[key] = threading.RLock()
+        return lock
+
+
 # Windows hands out ERROR_ACCESS_DENIED for a rename whose source or destination
 # another process has open for a moment - an antivirus scanner or the search
 # indexer looking at the file we just wrote. It clears on its own in
@@ -288,6 +317,20 @@ def mutate_json(path, change, default=None):
         return updated
 
 
+def _restore_bytes(path: Path, blob: bytes) -> None:
+    """Put `blob` back at `path` through the same temp-then-replace dance."""
+    tmp = path.with_name(f"{path.name}.undo-{os.getpid()}-{threading.get_ident():x}")
+    try:
+        tmp.write_bytes(blob)
+        _replace(tmp, path)
+    finally:
+        if tmp.exists():
+            try:
+                tmp.unlink()
+            except OSError:                                     # pragma: no cover
+                pass
+
+
 class _Batch:
     """Files written as one change; `rollback()` puts every one back."""
 
@@ -305,7 +348,12 @@ class _Batch:
                 if original is None:
                     path.unlink(missing_ok=True)
                 else:
-                    path.write_bytes(original)
+                    # Atomically, exactly like the write it is undoing. A plain
+                    # `write_bytes` truncates first, so a crash mid-rollback
+                    # left the file empty - and an empty profiles.json reads as
+                    # "no profiles", which is the failure the atomic writer
+                    # exists to prevent.
+                    _restore_bytes(path, original)
             except OSError:                                     # pragma: no cover
                 pass                # nothing better to do; the raise stands
         self._undo.clear()

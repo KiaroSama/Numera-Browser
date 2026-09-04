@@ -250,3 +250,20 @@ Key points:
   instant feedback; the engine re-validates the real fingerprint at launch.
 - **Graceful fallback.** If the API is offline the dashboard runs on in-memory
   sample data (demo mode), so it still works standalone.
+
+## Bundling a browser engine
+
+No browser engine is committed to this repository - the portable build downloads
+one at build time. Before a proprietary build bundles a *different* engine,
+check that engine's own licence for redistribution terms. Some copyleft licences
+survive being wrapped in a proprietary product:
+
+| Engine | Licence | Redistribution |
+|---|---|---|
+| `fingerprint-chromium` | BSD-3-Clause | permissive, redistributable as-is |
+| `patchright` | Apache-2.0 | permissive, redistributable as-is |
+| `camoufox` | MPL-2.0 expected | file-level copyleft - **verify the repo licence before bundling** |
+| `cloakbrowser` | proprietary | **not redistributable** - must not be bundled |
+
+This lived in `LICENSE` until it was trimmed to licence terms only. It is
+engineering guidance about what may ship, not a term of the licence itself.

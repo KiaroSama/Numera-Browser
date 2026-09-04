@@ -122,9 +122,17 @@ def test_the_frozen_engine_includes_the_launch_extra():
     lives in the `launch` extra and is the default engine, so a portable build
     made this way starts, serves the dashboard, and fails at the first launch."""
     text = SCRIPT.read_text(encoding="utf-8")
-    assert "engine[api,launch]" in text, \
-        "the desktop build does not install the launch dependency"
-    assert "engine[api]\"" not in text
+    # By extra, not by exact string: the list grew when `secure` was added, and a
+    # literal match would have failed for a build that had got *more* correct.
+    m = re.search(r"engine\[([a-z,]+)\]", text)
+    assert m, "the desktop build does not install the engine with any extras"
+    extras = set(m.group(1).split(","))
+    assert "launch" in extras, "the desktop build does not install the launch dependency"
+    assert "api" in extras, "the desktop build does not install the API dependency"
+    # `cryptography` lives in `secure`, and a frozen app cannot pip-install into its
+    # own embedded runtime - so without it the portable build advertises an
+    # encrypted vault it has no backend for.
+    assert "secure" in extras, "the portable build ships without the vault backend"
 
 
 @pytest.fixture
