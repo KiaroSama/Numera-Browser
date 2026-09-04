@@ -50,9 +50,29 @@ function Step($text) { Write-Host "==> $text" -ForegroundColor Cyan }
 
 # --- preflight ---------------------------------------------------------------
 
+# The dashboard is a build input, so this builds it. It used to demand that
+# `dashboard/dist/index.html` already existed - and `dashboard/dist` is
+# git-ignored, so a fresh clone could never satisfy it. Both the Windows CI job
+# and the README tell you to run this script directly, and both were broken from
+# a clean checkout for exactly that reason.
 $dash = Join-Path $repo 'dashboard\dist\index.html'
 if (-not (Test-Path $dash)) {
-    throw "The dashboard is not built. Run:  npm --prefix `"$repo\dashboard`" run build"
+    Step 'Building the dashboard (no dashboard/dist yet)'
+    $npm = (Get-Command npm -ErrorAction SilentlyContinue)
+    if (-not $npm) {
+        throw ("the dashboard is not built and npm is not on PATH. Install Node.js " +
+               "(>=20.19 or >=22.12, per dashboard/package.json), or build it yourself " +
+               "with:  npm --prefix `"$repo\dashboard`" ci; npm --prefix `"$repo\dashboard`" run build")
+    }
+    # `ci` not `install`: deterministic from the committed lockfile, which is
+    # what a release build has to be.
+    & npm --prefix "$repo\dashboard" ci
+    if ($LASTEXITCODE -ne 0) { throw 'npm ci failed for the dashboard' }
+    & npm --prefix "$repo\dashboard" run build
+    if ($LASTEXITCODE -ne 0) { throw 'npm run build failed for the dashboard' }
+}
+if (-not (Test-Path $dash)) {
+    throw "the dashboard build reported success but $dash is missing"
 }
 
 # Resolve cargo from the environment or PATH. This used to hardcode one
@@ -104,7 +124,11 @@ if ($SkipFreeze) {
         & $host_py -m venv $venv
         if ($LASTEXITCODE -ne 0) { throw 'could not create the build venv' }
     }
-    & $py -m pip install --quiet --upgrade pip pyinstaller "$repo\engine[api,launch]"
+    # `secure` too. `cryptography` lives in that extra, and a frozen portable app
+    # cannot ask the user to pip-install into its embedded runtime - so shipping
+    # without it meant `numera vault enable` was unavailable in exactly the build
+    # where the encrypted vault is advertised as built in.
+    & $py -m pip install --quiet --upgrade pip pyinstaller "$repo\engine[api,launch,secure]"
     if ($LASTEXITCODE -ne 0) { throw 'could not install the build dependencies' }
 
     # `pip install playwright` installs the package, not the browser: that is a
@@ -186,10 +210,45 @@ Step "Assembling $stage"
 $dataDir = Join-Path $stage 'data'
 $dataKeep = $null
 if (Test-Path $dataDir) {
-    $dataKeep = Join-Path ([System.IO.Path]::GetTempPath()) ("numera-data-" + [guid]::NewGuid().ToString('N'))
+    # Beside the build output, not in the system temp directory, and under a
+    # name a person can recognise. If this script is killed mid-rebuild - Ctrl-C,
+    # a power cut, an antivirus lock - the profiles are findable instead of
+    # sitting in %TEMP% under a GUID nobody will ever look for.
+    # A sibling of the stage, derived from $stage alone - the assemble block is
+    # also run in isolation by the regression test, which binds $stage and
+    # nothing else.
+    $dataKeep = "$stage.data-preserved"
+    if (Test-Path $dataKeep) {
+        throw ("$dataKeep already exists, which means an earlier build was interrupted " +
+               "after moving the data out. That folder holds your profiles: move it back " +
+               "to `"$dataDir`" before building again.")
+    }
     Move-Item $dataDir $dataKeep
-    Step "Preserving existing data directory across the rebuild"
+    Step "Preserving existing data directory across the rebuild ($dataKeep)"
 }
+
+# From here to the restore, the user's profiles live in $dataKeep and nowhere
+# else. Every exit path has to put them back - the previous version only handled
+# the one failure it could name (a locked stage folder), so any other error
+# between here and the restore left real data orphaned under a temporary name
+# and the next build started from an empty data directory.
+$restored = $false
+function Restore-Data {
+    if ($script:dataKeep -and -not $script:restored -and (Test-Path $script:dataKeep)) {
+        New-Item -ItemType Directory -Force -Path $script:stage | Out-Null
+        Move-Item $script:dataKeep $script:dataDir
+        $script:restored = $true
+    }
+}
+
+trap {
+    # Anything from here on - a failed copy, a locked file, Ctrl-C - puts the
+    # profiles back before the error propagates. Defined after `Restore-Data`
+    # so the handler always has something to call.
+    try { Restore-Data } catch { Write-Warning "could not restore the data directory: $_" }
+    break
+}
+
 $clearFailed = $null
 if (Test-Path $stage) {
     try { Remove-Item $stage -Recurse -Force -ErrorAction Stop }
@@ -197,21 +256,15 @@ if (Test-Path $stage) {
     if (-not $clearFailed -and (Test-Path $stage)) { $clearFailed = "the folder is still there" }
 }
 if ($clearFailed) {
-    # Put the data back before giving up. It was moved to a temp folder a few
-    # lines up, and abandoning it there would be worse than the wipe this guard
-    # exists to prevent: the next build would start from an empty data dir and
-    # the profiles would look deleted.
-    if ($dataKeep -and (Test-Path $dataKeep)) {
-        New-Item -ItemType Directory -Force -Path $stage | Out-Null
-        Move-Item $dataKeep $dataDir
-    }
+    Restore-Data
     throw ("could not clear $stage - close Numera Browser if it is running from there, then " +
            "build again. Continuing would ship the previous build. ($clearFailed)")
 }
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 if ($dataKeep) {
-    Move-Item $dataKeep $dataDir
+    Restore-Data
     if (-not (Test-Path $dataDir)) { throw "failed to restore the data directory to $dataDir" }
+    Step "Restored the data directory"
 }
 Copy-Item $shell -Destination $stage
 Copy-Item $frozen -Destination (Join-Path $stage 'engine') -Recurse

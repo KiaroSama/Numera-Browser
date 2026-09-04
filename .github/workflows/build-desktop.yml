@@ -114,9 +114,9 @@ jobs:
       # and destination are separated by `:` here and `;` there.
       - name: Freeze the engine
         run: |
-          python -m pip install --quiet pyinstaller ".[api,launch]" --prefix /tmp/eng || true
+          python -m pip install --quiet pyinstaller ".[api,launch,secure]" --prefix /tmp/eng || true
           python -m pip install --quiet pyinstaller
-          python -m pip install --quiet ./engine[api,launch]
+          python -m pip install --quiet ./engine[api,launch,secure]
           pyinstaller --noconfirm --name numera-engine --distpath desktop/dist/.build \
                       --add-data "dashboard/dist:numera/web" \
                       --collect-all uvicorn --collect-submodules numera \
@@ -202,6 +202,19 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: desktop/src-tauri
+
+      # The point of running the script bare: `dashboard/dist` is git-ignored, so
+      # a fresh checkout never has one, and the script used to abort on exactly
+      # that. This job was therefore broken from a clean checkout for as long as
+      # it existed. Asserting the absence keeps it honest - if someone adds an
+      # `npm run build` step above, this fails and says why it should not be
+      # needed.
+      - name: There is no prebuilt dashboard (the script must make its own)
+        shell: pwsh
+        run: |
+          if (Test-Path dashboard/dist) {
+            throw "dashboard/dist exists before the build, so this job no longer proves the script works from a clean checkout"
+          }
 
       - name: Build the portable app
         shell: pwsh

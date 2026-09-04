@@ -399,37 +399,52 @@ def register(app, ctx):
                     d["timezone"] = devices.LOCALES.get(value, (d.get("timezone"), None))[0]
                 else:
                     d[key] = value
-            # Only when this patch names an engine. It used to fire for every
-            # touched profile, so a tag-only bulk edit set the default to
-            # whatever the last profile in the selection happened to use.
-            if patch.get("engine"):
-                _remember_engine(d)
+            # The same validator a single-profile PUT runs. Bulk checked only
+            # `check_fields`, to which {"engine": "bogus"} is a perfectly good
+            # string - so an unknown engine reached every selected profile and
+            # was promoted to the global default from there.
+            _validate_profile(d, pid=pid, strip=False)
             pending.append(d)
         # One transaction. Saving in the loop meant a write failure on item N
         # left 0..N-1 edited while the request raised - and the obvious retry
         # applied the patch to part of the selection twice.
-        return [decorate(p) for p in dash.save_many(pending)]
+        saved = dash.save_many(pending)
+        # Config *after* data. `_remember_engine` writes `config.json`, which is
+        # outside the profile batch; running it in the loop meant a failing
+        # `save_many` rolled the profiles back and left the default engine set
+        # by a request that failed. Only when the patch names one - a tag-only
+        # bulk edit must not touch the default at all.
+        if patch.get("engine") and pending:
+            _remember_engine(patch)
+        return [decorate(p) for p in saved]
 
     @app.post("/api/fingerprint/validate")
     def validate_fingerprint(profile: dict):
         return {"issues": dashboard_coherence(profile)}
 
-    def _export_named_an_engine(exp: dict) -> bool:
-        """Did the imported file actually specify a launch engine?
+    def _named_engine(exp: dict) -> "str | None":
+        """The Numera engine this export explicitly names, or None.
 
         A vendor export names a browser, not one of our engines, so this is
-        almost always False - which is the point: the importer's fallback is a
+        almost always None - which is the point: the importer's fallback is a
         default, not a choice, and must not be persisted as one.
+
+        It returns the value rather than a bool because the previous version
+        only *detected* the choice. `profile_from_export` does not carry an
+        engine through, so an export naming `camoufox` produced a Playwright
+        profile whose global default was then set to Camoufox - the one engine
+        the profile was not going to use.
         """
         from .. import drivers
 
         if not isinstance(exp, dict):
-            return False
+            return None
+        known = set(drivers.names())
         for key in ("engine", "launcher", "browserEngine"):
             value = exp.get(key)
-            if isinstance(value, str) and value.strip().lower() in set(drivers.names()):
-                return True
-        return False
+            if isinstance(value, str) and value.strip().lower() in known:
+                return value.strip().lower()
+        return None
 
     @app.post("/api/profiles/import")
     def import_profiles(body: dict):
@@ -448,7 +463,7 @@ def register(app, ctx):
         exports = importers._unwrap(raw)
         if not exports:
             raise HTTPException(400, "no profiles found in that file")
-        results, pending = [], []
+        results, pending, explicit = [], [], None
         for exp in exports:
             prof, issues = importers.profile_from_export(exp)
             d = to_dashboard_profile(prof)
@@ -461,13 +476,19 @@ def register(app, ctx):
             # export named none. Remembering that as "last engine wins" lets an
             # import silently change the user's default to something nobody
             # picked, so only an engine the export actually specified counts.
-            if _export_named_an_engine(exp):
-                _remember_engine(d)
+            chosen = _named_engine(exp)
+            if chosen:
+                d["engine"] = chosen           # the export's choice, on the profile
+                explicit = chosen              # last explicit choice wins
             pending.append(d)
             results.append({"name": prof.name, "issues": issues})
         # Same contract as batch create: an import either lands whole or not at
         # all. Saving as it went left a partial import that a retry duplicated.
         dash.save_many(pending)
+        # Config after data, for the same reason as bulk: a failed import must
+        # not leave the default engine changed.
+        if explicit:
+            _remember_engine({"engine": explicit})
         return {"imported": len(results), "results": results}
 
     # ---- Fingerprint collisions -----------------------------------------

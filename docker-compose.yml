@@ -26,6 +26,13 @@ services:
     volumes:
       # Profiles, browser sessions, the proxy pool and tokens. Losing this is
       # losing every logged-in session.
+      #
+      # A *named* volume, deliberately. The image runs as `pwuser` (uid 1001)
+      # and Docker initialises a named volume from the image, so /data arrives
+      # already owned by that user. Swapping this for a bind mount
+      # (`- ./data:/data`) keeps the host directory's ownership instead, the
+      # container cannot write to it, and it exits at startup. If you do want a
+      # host directory, create it and `chown 1001:1001` it first.
       - numera-data:/data
     # Chromium needs more than the 64 MB default, and a headless browser in a
     # container without it dies with an opaque crash rather than an error.

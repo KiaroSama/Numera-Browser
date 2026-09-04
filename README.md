@@ -126,8 +126,9 @@ Details for each are in [engine/README.md](engine/README.md).
 ## Quick start
 
 **Prerequisites:** [Python 3.10+](https://www.python.org/downloads/) and (for the
-dashboard) [Node.js 18+](https://nodejs.org/). Check with `python --version` and
-`node --version`.
+dashboard) [Node.js](https://nodejs.org/) **20.19+ or 22.12+** — the version the
+Vite 8 toolchain actually requires; Node 18 fails at `npm run build`. Check with
+`python --version` and `node --version`.
 
 ```bash
 git clone https://github.com/KiaroSama/Numera-Browser.git

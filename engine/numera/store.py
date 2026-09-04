@@ -26,7 +26,47 @@ from . import crypto
 from . import vault
 from .models import Profile
 from .paths import (_lock_for, id_path, mutate_json, resolve_data_dir, safe_id,
-                    safe_join, write_json)
+                    safe_join, transaction_lock, write_json)
+
+
+def _make_data_dirs(root: Path, *dirs: Path) -> None:
+    """Create the data directories, or explain why it could not.
+
+    This used to be two bare `mkdir` calls, so a data directory the process
+    cannot write to surfaced as a `PermissionError` traceback out of
+    `pathlib.mkdir` - forty lines of stack, no mention of which directory, and
+    nothing about what to do. The two ways to meet it are both ordinary:
+
+    * a container started with a bind mount (`-v ./data:/data`). The image runs
+      as `pwuser`, uid 1001, and a bind mount keeps the *host* directory's
+      ownership, so the `chown` in the Dockerfile does not apply to it. The
+      documented `docker compose` path uses a named volume and is unaffected.
+    * an app unpacked somewhere the user cannot write, which on Windows means
+      anywhere under Program Files.
+
+    The exception type stays the same so existing callers behave the same; only
+    the message changes.
+    """
+    for path in dirs:
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+        except PermissionError as e:
+            owner = ""
+            try:
+                st = root.stat()
+                owner = f" (it is owned by uid {st.st_uid}:{st.st_gid}"
+                owner += f", this process runs as uid {os.getuid()}:{os.getgid()})"
+            except (OSError, AttributeError):        # no st_uid/getuid on Windows
+                owner = ""
+            raise PermissionError(
+                f"cannot create {path} - the data directory {root} is not "
+                f"writable by this process{owner}. Point --data-dir or "
+                f"NUMERA_DATA_DIR at a directory you can write, or fix the "
+                f"ownership of that one. In Docker, prefer the named volume the "
+                f"bundled docker-compose.yml uses; a bind-mounted host directory "
+                f"keeps its own ownership and must already be writable by the "
+                f"container's user."
+            ) from e
 
 
 class ProfileStore:
@@ -39,8 +79,7 @@ class ProfileStore:
         self.profiles_dir = self.root / "profiles"
         self.userdata_dir = self.root / "user-data"
         self.config_path = self.root / "config.json"
-        self.profiles_dir.mkdir(parents=True, exist_ok=True)
-        self.userdata_dir.mkdir(parents=True, exist_ok=True)
+        _make_data_dirs(self.root, self.profiles_dir, self.userdata_dir)
         # The master password comes from the caller or the environment, so a
         # launched subprocess inherits it without it ever hitting disk.
         self._password = password or os.environ.get("NUMERA_PASSWORD") or None
@@ -186,7 +225,8 @@ class ProfileStore:
         """
         crypto._require()
         if self.vault_enabled():
-            raise RuntimeError("A vault is already set up. Use `vault change` to rotate it.")
+            raise RuntimeError("A vault is already set up. Use `numera vault change` "
+                               "to rotate the master password.")
         salt = crypto.new_salt()
         with vault.migration(self.root) as step:
             converted = step.encrypt_all(password, salt)
@@ -195,6 +235,35 @@ class ProfileStore:
             self.save_config(cfg)
         self._password = password
         return converted
+
+    def change_vault_password(self, old_password: str, new_password: str) -> int:
+        """Rotate the master password, or change nothing. Returns secrets moved.
+
+        A new salt as well as a new key: reusing the salt would leave the two
+        passwords deriving from the same input, and the point of a rotation is
+        that the old password stops being able to open anything.
+
+        The verifier is written last and inside the migration block, exactly as
+        `enable_vault` does, so a failure anywhere leaves the old password still
+        working rather than a store no password can open.
+        """
+        crypto._require()
+        v = self.vault()
+        if not v:
+            raise RuntimeError("There is no vault to rotate. Use `numera vault enable` first.")
+        if not crypto.check_password(old_password, v["salt"], v["verifier"]):
+            raise crypto.VaultLocked("that is not the current master password")
+        if not new_password:
+            raise ValueError("the new master password cannot be empty")
+        new_salt = crypto.new_salt()
+        with vault.migration(self.root) as step:
+            moved = step.rekey_all(old_password, v["salt"], new_password, new_salt)
+            cfg = self.get_config()
+            cfg["vault"] = {"salt": new_salt,
+                            "verifier": crypto.make_verifier(new_password, new_salt)}
+            self.save_config(cfg)
+        self._password = new_password
+        return moved
 
     def _secret_values(self, profile: Profile) -> list:
         vals = []
@@ -276,7 +345,10 @@ class ProfileStore:
         # read-modify-write and was running outside any lock. Two saves of the
         # same profile could interleave and drop one's preserved ciphertext.
         path = self._path(profile.id)
-        with _lock_for(path):
+        # Transaction lock first, per-file lock second - the same order every
+        # profile mutation uses, so a batch and a single save can never
+        # interleave and undo each other.
+        with transaction_lock(self.root), _lock_for(path):
             if self.vault_enabled() and not self.unlocked():
                 data = self._keep_stored_secrets(profile.id, data)
             write_json(path, data)
@@ -340,6 +412,10 @@ class ProfileStore:
 
     def delete(self, profile_id: str) -> bool:
         """Delete a profile and its session, or leave both exactly as they were."""
+        with transaction_lock(self.root):
+            return self._delete_locked(profile_id)
+
+    def _delete_locked(self, profile_id: str) -> bool:
         path = self._path(profile_id)
         if not path.exists():
             return False

@@ -4,6 +4,105 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-09-05
+
+### Fixed
+
+- **`pool assign` never checked whether the vault was locked.** The guard was written inside
+  the empty-pool branch, after its `return`, so the live path could not reach it. A credentialed
+  proxy read from a locked vault arrived with `pass=None` and was written onto every selected
+  profile as a proxy with no password, while the changelog said assign refuses while locked. The
+  other three verbs guarded correctly; only assign was dead. Its regression drives `cli.main`,
+  because a helper-level test of the guard passed the whole time.
+
+- **A locked vault silently ignored a password change.** `encrypt_for_write` returned the stored
+  ciphertext when a locked caller supplied a new plaintext, so a proxy or profile password edit
+  answered 200 and changed nothing. An empty value still means "keep what is there"; a non-empty
+  plaintext is a replacement and is now refused.
+
+- **An envelope this build cannot open was treated as a plaintext password.** `is_encrypted()`
+  matched only the currently known prefixes, so a stored `enc:v9:` read back as an ordinary
+  string and would have been handed to a launcher as the password itself. The predicate is split:
+  `crypto.is_envelope()` (any `enc:v<N>:` marker), `crypto.is_supported_envelope()` (one this
+  build knows), and `vault.is_withheld()` now answers by *attempting the read* rather than by
+  asking whether the vault verifier opened - so a foreign-key or corrupt record counts as
+  withheld even with the vault unlocked, instead of being silently dropped from an export,
+  health check or assignment.
+
+- **A failing bulk edit left the default engine changed.** `config.json` is not part of the
+  profile batch and was written first, so a storage failure rolled the profiles back and kept a
+  default engine chosen by a request that had failed. Config now commits after the data.
+
+- **Bulk update validated less than a single update did.** It ran only `check_fields()`, to which
+  `{"engine": "bogus"}` is a perfectly good string, so an unknown engine could reach every
+  selected profile and poison the global default. Bulk now runs the same domain validator a
+  single-profile PUT does.
+
+- **An import that named an engine got a profile that did not use it.** The explicit choice was
+  detected and then discarded - `profile_from_export` carries no engine - so an export naming
+  `camoufox` produced a Playwright profile and set the global default to Camoufox.
+
+- **A failed batch could erase a concurrent save.** `save_many` snapshots each file and restores
+  the old bytes on failure; a single `save()` landing in that window was overwritten by the
+  rollback of a transaction it had nothing to do with. Every profile mutation - engine store,
+  dashboard store, folder transaction - now takes one root transaction lock first and its
+  per-file lock second. The folder transaction also stopped enumerating profile files before
+  locking them, which left a profile created after the snapshot held by nothing.
+
+- **Batch rollback wrote non-atomically.** It restored with a plain `write_bytes`, which
+  truncates first, so a crash mid-rollback left an empty file - and an empty `profiles.json`
+  reads as "no profiles", the exact failure the atomic writer exists to prevent.
+
+- **A redirected rotate request connected to the wrong host.** `_pinned_opener` closed over the
+  first hop's address, so the redirect handler validated hop two and the socket still went to hop
+  one. Each request now carries its own validated pin. `urllib.request.ProxyHandler({})` is also
+  installed explicitly, because `build_opener()` otherwise adds one built from the environment
+  and `HTTP_PROXY` could capture the one request that is direct by design.
+
+- **The Windows build could not run from a clean checkout.** `build-desktop.ps1` aborted unless
+  `dashboard/dist/index.html` already existed, and `dashboard/dist` is git-ignored - so the
+  Windows CI job, and the README's own instructions, were broken from a fresh clone. The script
+  builds the dashboard itself now, and CI asserts no prebuilt `dist` is present.
+
+- **Portable builds shipped without the vault backend.** Both freeze paths installed
+  `engine[api,launch]`, and `cryptography` lives in the `secure` extra - so a frozen app could
+  not enable the encrypted vault the product advertises, and could not be told to `pip install`
+  it into its own embedded runtime. Both now build with `[api,launch,secure]`, and the Windows
+  and POSIX artifact smokes prove a real round trip: write a proxy password, enable the vault,
+  confirm the on-disk secret is encrypted, reopen it with the master password, and confirm a
+  locked read refuses.
+
+- **A rebuild could orphan real profile data.** The portable app writes into `<stage>/data`, and
+  only one failure path put that directory back; any other error between moving it out and
+  restoring it left profiles under a GUID name in `%TEMP%`. The data is now parked beside the
+  build output under a recognisable name and restored on every exit path.
+
+- **The dependency-review check had been red since the day it was added.** It needs the
+  dependency-graph API, which on a private repository needs GitHub Advanced Security, so it was
+  failing with "not supported on this repository" on every pull request while reviewing nothing.
+  It now runs where it can work, and an advisory `npm audit` / `pip-audit` job covers this
+  repository meanwhile.
+
+### Added
+
+- **`numera vault change`** - rotate the master password. The error message told users to run it
+  and it did not exist, which also meant a master password could never be changed at all. It
+  re-encrypts every secret under a new salt through the existing migration, so a failure anywhere
+  leaves the old password still working: a half-rotated store would have no password that opens
+  all of it, and there is no recovery.
+
+### Changed
+
+- `dashboard/package.json` declares the Node range Vite actually needs
+  (`^20.19.0 || >=22.12.0`); the README said 18+, which cannot build the dashboard.
+- `engine/README.md` said new vault secrets are written as `enc:v1:`; they have been `enc:v2:`
+  since 0.14.0.
+- The locked-vault message pointed at `numera vault unlock`, which has never existed. It names
+  `NUMERA_PASSWORD` and `--password`, which do.
+- `LICENSE` keeps the proprietary terms and the MIT notice persona-studio requires; the
+  browser-engine redistribution table moved to `docs/architecture.md`, where it is guidance about
+  what may ship rather than a term of the licence.
+
 ## [0.16.0] - 2026-09-01
 
 ### Fixed

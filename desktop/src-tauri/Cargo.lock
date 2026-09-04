@@ -1907,7 +1907,7 @@ dependencies = [
 
 [[package]]
 name = "numera-desktop"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "serde_json",
  "tauri",

@@ -96,17 +96,17 @@ run_engine() {
     allow_failure=0
 }
 
-step '1/6 the engine runs at all'
+step '1/7 the engine runs at all'
 run_engine 30 --version
 [ -n "$output" ] || fail '--version printed nothing'
 printf '    %s\n' "$output"
 
-step '2/6 it creates a profile'
+step '2/7 it creates a profile'
 run_engine 60 create smoke
 run_engine 60 list
 grep -q smoke <<<"$output" || fail "the profile is not in \`list\`: $output"
 
-step '3/6 it launches the bundled browser'
+step '3/7 it launches the bundled browser'
 # `trust` opens a real browser and reads back what the page shows. Nothing short
 # of launching proves the bundle resolves.
 # A non-zero exit here means the *profile* scored imperfectly, which is not what
@@ -120,7 +120,7 @@ grep -q '\[PASS\]' <<<"$output" \
     || fail "\`trust\` reported no passing check - the page was never inspected: $output"
 grep -m1 -i 'trust score' <<<"$output"
 
-step '4/6 serve comes up and answers /api/ready'
+step '4/7 serve comes up and answers /api/ready'
 # Ask the kernel for a free port rather than hoping a fixed one is idle: two
 # jobs on one runner would otherwise collide and read as a flaky build.
 port="$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')"
@@ -139,7 +139,7 @@ done
 grep -q '"ok": *true' <<<"$ready" || fail "/api/ready answered but not ok: $ready"
 printf '    %s\n' "$ready"
 
-step '5/6 the dashboard is served, not just the API'
+step '5/7 the dashboard is served, not just the API'
 # `/api/ready` says nothing about the UI. The engine serves the dashboard out of
 # `numera/web`, and a freeze that collects the Python modules but forgets that
 # directory answers every API route while `/` 404s - an artifact that passes a
@@ -158,7 +158,7 @@ curl -sf --max-time 5 -o /dev/null "http://127.0.0.1:$port$asset" \
     || fail "the page references $asset and the build does not serve it"
 printf '    dashboard served, %s resolves\n' "$asset"
 
-step '6/6 the profile and its session survive a restart'
+step '6/7 the profile and its session survive a restart'
 kill "$serve_pid" 2>/dev/null || true
 for _ in $(seq 1 40); do
     kill -0 "$serve_pid" 2>/dev/null || break
@@ -170,5 +170,32 @@ serve_pid=""
 run_engine 60 list
 grep -q smoke <<<"$output" || fail "the profile did not survive the restart: $output"
 ls -d "$data"/user-data/*/ >/dev/null 2>&1 || fail 'the launch left no session directory behind'
+
+step '7/7 the vault encrypts a real secret and reopens it'
+# `cryptography` lives in the `secure` extra, and a frozen app cannot
+# pip-install into its own embedded runtime - so a build without that extra
+# fails here and nowhere earlier. The product advertises an encrypted vault;
+# this is what proves the shipped artifact has one.
+secret='smoke-proxy-password'
+printf 'http://u:%s@203.0.113.7:8080\n' "$secret" > "$data/smoke-proxies.txt"
+run_engine 60 pool add "$data/smoke-proxies.txt"
+grep -q "$secret" "$data/proxies.json" \
+    || fail 'the proxy password is not readable in the pool file before enabling the vault'
+
+run_engine 120 --password smoke-master vault enable
+
+grep -q "$secret" "$data/proxies.json" \
+    && fail 'vault enable reported success but the password is still readable on disk'
+grep -qE 'enc:v[0-9]+:' "$data/proxies.json" \
+    || fail 'the stored secret is neither plaintext nor an encrypted envelope'
+
+# Encrypting is only half of it - a vault you cannot unlock is data loss.
+run_engine 60 --password smoke-master pool export
+grep -q "$secret" <<<"$output" \
+    || fail 'the vault would not give the secret back with the master password'
+allow_failure=1
+run_engine 60 pool export
+grep -q "$secret" <<<"$output" && fail 'a locked export handed out the secret'
+printf '    encrypted at rest, readable with the master password, withheld without it\n'
 
 printf '\nPORTABLE SMOKE: PASS\n'

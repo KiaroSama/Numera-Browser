@@ -399,6 +399,11 @@ def build_parser() -> argparse.ArgumentParser:
                   help="Show whether the vault is on, locked or unlocked").set_defaults(func=cmd_vault)
     vt.add_parser("enable", parents=[_AGENT],
                   help="Turn on encryption and encrypt existing secrets").set_defaults(func=cmd_vault)
+    v = vt.add_parser("change", parents=[_AGENT],
+                      help="Rotate the master password; re-encrypts every secret")
+    v.add_argument("--new-password", dest="new_password", default=None,
+                   help="The new master password (prompted for when omitted)")
+    v.set_defaults(func=cmd_vault)
 
     c = add("folder", help="Folders: list, create, rename, delete")
     fs = c.add_subparsers(dest="folder_command", required=True)
