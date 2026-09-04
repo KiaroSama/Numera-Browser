@@ -68,7 +68,14 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     set_json_mode(getattr(args, "json", False))
-    store = ProfileStore(args.data_dir, password=args.password)
+    try:
+        store = ProfileStore(args.data_dir, password=args.password)
+    except OSError as e:
+        # Constructing the store is where the data directory is created, so this
+        # is the first thing that fails on an unwritable one - and it happens
+        # before the try block below could catch it.
+        say(_c(str(e), C.RED))
+        return emit({"ok": False, "error": str(e)}, 1)
 
     if getattr(args, "detach", False):
         rec = jobs.spawn(store.root, jobs.child_argv(argv, store.root),
@@ -82,7 +89,12 @@ def main(argv: Optional[list[str]] = None) -> int:
     code = 0
     try:
         code = args.func(args, store)
-    except RuntimeError as e:
+    # OSError alongside RuntimeError: a data directory that cannot be written,
+    # a disk that is full, a file another process holds. Those carry a message
+    # written for the user, and printing forty lines of `pathlib` stack above it
+    # buries the one line that says what to do - which is how an unwritable
+    # `/data` in a container read as "the app is broken".
+    except (RuntimeError, OSError) as e:
         say(_c(str(e), C.RED))
         code = emit({"ok": False, "error": str(e)}, 1)
     except KeyboardInterrupt:
