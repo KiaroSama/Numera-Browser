@@ -22,6 +22,7 @@ import time
 import pytest
 
 from numera.models import Proxy
+from numera import relay as relay_mod
 from numera.relay import ProxyRelay, ProxyRelayError
 
 USER = "relay-user"
@@ -411,6 +412,49 @@ def test_close_releases_the_port_and_every_thread(serve):
             probe.connect(("127.0.0.1", port))
     finally:
         probe.close()
+
+
+def test_the_tunnel_thread_ends_when_its_sockets_are_pulled(tmp_path):
+    """`_tunnel` directly, with both sockets closed under it.
+
+    This is what `close()` does, and on Linux it left the thread wedged: closing
+    a file descriptor removes it from the epoll interest list, so the selector
+    emptied while the loop still believed two directions were open, and an
+    untimed `select()` on an empty set never returns. `server_close()` then
+    joined a thread that could not finish and the whole run hung - visible only
+    on CI, because Windows' `SelectSelector` raises on a closed socket instead.
+
+    Driving `_tunnel` directly rather than through a real relay is deliberate:
+    the platform difference is in the selector, and this reproduces the wedge on
+    both platforms rather than only where epoll is used.
+    """
+    a, b = socket.socketpair()
+    c, d = socket.socketpair()
+    done = threading.Event()
+
+    def pump():
+        try:
+            relay_mod._tunnel(a, c)
+        finally:
+            done.set()
+
+    t = threading.Thread(target=pump, name="tunnel-under-test", daemon=True)
+    t.start()
+
+    # Let it get as far as select(), then pull both sides exactly as close() does.
+    for sock in (a, c):
+        try:
+            sock.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
+        sock.close()
+
+    assert done.wait(10), \
+        "the tunnel thread outlived its sockets - close() would join it forever"
+    t.join(5)
+    assert not t.is_alive()
+    for sock in (b, d):
+        sock.close()
 
 
 def test_close_does_not_hang_on_an_open_tunnel(serve):

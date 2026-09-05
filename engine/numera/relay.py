@@ -252,6 +252,12 @@ def _socks4_connect(sock: socket.socket, host: str, port: int,
 # --------------------------------------------------------------------------
 # Byte pump
 # --------------------------------------------------------------------------
+# How long the tunnel parks in `select()` before looking up. Long enough that an
+# idle tunnel costs nothing measurable, short enough that `close()` is not left
+# waiting on it.
+_TUNNEL_POLL = 0.5
+
+
 def _tunnel(client: socket.socket, upstream: socket.socket) -> None:
     """Copy both directions until each one ends.
 
@@ -264,7 +270,31 @@ def _tunnel(client: socket.socket, upstream: socket.socket) -> None:
     try:
         open_directions = 2
         while open_directions:
-            for key, _mask in sel.select():
+            events = sel.select(_TUNNEL_POLL)
+            if not events:
+                # A quiet tunnel is normal, so an empty poll is not by itself a
+                # reason to stop - but a *closed* socket produces exactly the
+                # same empty poll, forever.
+                #
+                # `close()` closes both sockets under this thread. On Linux that
+                # removes their descriptors from the epoll interest list, so no
+                # event can ever arrive again, while `open_directions` is still
+                # 2 and the selector's own map still lists them - the map
+                # records registrations, not whether the descriptors are still
+                # valid. The loop had nothing left to wait for and waited
+                # anyway: the thread outlived `close()`, `server_close()` joined
+                # it forever, and the test run hung.
+                #
+                # Windows never showed it. `SelectSelector` raises OSError on a
+                # closed socket, which the handler below already caught, so the
+                # suite was green here and hung on every Linux runner.
+                #
+                # `fileno()` is -1 once a socket is closed, which is the only
+                # thing here that actually answers "can this still deliver".
+                if client.fileno() == -1 or upstream.fileno() == -1:
+                    break
+                continue
+            for key, _mask in events:
                 data = key.fileobj.recv(_CHUNK)
                 if not data:
                     sel.unregister(key.fileobj)
