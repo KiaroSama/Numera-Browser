@@ -4,6 +4,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- **The container image is built and exercised by CI.** It had only ever been
+  built by hand. The Dockerfile changes rarely but the engine it installs
+  changes on nearly every commit, so a broken `pip install ./engine[...]` would
+  have surfaced the first time somebody pulled - which is the same gap that let
+  the Linux and macOS portable artifacts stay broken for months. The job builds
+  the image, runs it, and checks that it answers `/api/health` with a token,
+  refuses without one, round-trips a profile through the real API, and carries
+  `cryptography` inside - building alone would prove none of that.
+
+- **The portable artifact is built on every push, not only on a tag.** Three of
+  this cycle's defects came out of `build-desktop.yml`, which ran only when
+  someone remembered to trigger it. Every push now builds and smokes the
+  **Linux** artifact; a tag or a manual run still adds macOS and Windows.
+
+  That split is a measured cost decision, not a compromise on coverage: the
+  three desktop jobs take 6.1, 4.6 and 7.1 minutes, and GitHub bills macOS at
+  10x and Windows at 2x - roughly 66 billable minutes for the full matrix
+  against about 8 for ordinary CI. Linux is the right one to keep, because the
+  artifact defects this workflow actually caught were not platform-specific in
+  origin; they went unnoticed because nothing ran the workflow at all.
+
 ## [0.18.0] - 2026-09-05
 
 The ninth audit brief. Every item is about state that could be left inconsistent
