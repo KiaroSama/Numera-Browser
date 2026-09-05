@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import subprocess
 import sys
 import threading
 import os
 import time
 from typing import Optional
-from .convert import to_engine_profile
-from ..paths import child_env
 
 
 def register(app, ctx):
@@ -23,18 +20,22 @@ def register(app, ctx):
     from ..scheduler import due_schedules, next_run_at, validate_schedule
 
     engine_store, dash, sched, running, is_running, start_scheduler = ctx.engine_store, ctx.dash, ctx.sched, ctx.running, ctx.is_running, ctx.start_scheduler
+    spawn_owner, materialize_current = ctx.spawn_owner, ctx.materialize_current
 
     # ---- Scheduled warm-up ----------------------------------------------
-    def _spawn_warmup(pid: str, minutes: float, preset: Optional[str]) -> None:
-        """Launch a headless warm-up in the background (shared by the endpoint
-        and the scheduler). The profile shows as running until it finishes."""
+    def _spawn_warmup(pid: str, minutes: float, preset: Optional[str]):
+        """Start a headless warm-up in the background and wait for it to own
+        the profile. It shows as running until it finishes.
+
+        Returns the process, or None when something else already owns the
+        profile - see `spawn_owner`, which also raises rather than returning a
+        child that never took the session.
+        """
         cli = [sys.executable, "-m", "numera", "--data-dir", str(engine_store.root),
                "warmup", pid, "--minutes", str(minutes), "--headless"]
         if preset:
             cli += ["--preset", str(preset)]
-        proc = subprocess.Popen(cli, env=child_env(engine_store._password))
-        running[pid] = proc
-        return proc
+        return spawn_owner(pid, cli)
 
     def _decorate_schedule(s: dict) -> dict:
         d = dash.get(s["profileId"])
@@ -92,6 +93,7 @@ def register(app, ctx):
             # Per row, not per tick. One unconvertible profile used to abort the
             # whole loop, so every schedule after it silently never ran - and the
             # only symptom was warm-ups that stopped happening.
+            claimed = False
             try:
                 pid = s["profileId"]
                 d = dash.get(pid)
@@ -102,16 +104,29 @@ def register(app, ctx):
                 # run-due` - could both see the same row due and both start it.
                 if not sched.claim_due(s["id"], f"server:{os.getpid()}"):
                     continue
-                engine_store.save(to_engine_profile(d))
-                proc = _spawn_warmup(pid, s.get("minutes", 5), s.get("preset"))
-                # A process that is already dead never ran. Marking the schedule
-                # as run here would hide the failure until someone noticed the
-                # profile had gone cold.
-                if proc.poll() not in (None, 0):
-                    raise RuntimeError(f"warm-up exited immediately ({proc.returncode})")
+                claimed = True
+                materialize_current(pid)
+                # Blocks until the child holds the session lease and has
+                # revalidated the profile, and raises otherwise - so a warm-up
+                # that dies on a locked vault never reaches `mark_run`. The old
+                # `poll()` check could only catch a child that had already
+                # exited by the time `Popen` returned.
+                if _spawn_warmup(pid, s.get("minutes", 5), s.get("preset")) is None:
+                    raise RuntimeError("another session took the profile first")
                 sched.mark_run(s["id"], time.time())
                 sched.record(s["id"], lastOutcome="started", lastError=None)
             except Exception as e:  # noqa: BLE001 - one row's problem is its own
+                if claimed:
+                    # This occurrence never started, so the claim must not sit
+                    # on it for the whole TTL - the row would be silently
+                    # skipped by every tick until it expired. `record()` clears
+                    # a claim only alongside `lastRun`, which a failure has no
+                    # business writing, so it is released explicitly and the
+                    # row is due again next tick.
+                    try:
+                        sched.release(s["id"])
+                    except Exception:
+                        pass
                 try:
                     sched.record(s.get("id"),
                         lastOutcome="failed",

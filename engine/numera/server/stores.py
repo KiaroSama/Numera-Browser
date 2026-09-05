@@ -355,6 +355,38 @@ class DashboardStore:
     def delete(self, pid: str) -> bool:
         """Remove both copies of a profile, and its session last.
 
+        Delegates to the core primitive: `ProfileRepo.delete` owns the order,
+        the rollback and - the part this path was missing - the session lease.
+        Without it, `detach_session`'s rename was not proof of ownership on
+        POSIX, so an API DELETE could move a directory another process had a
+        browser open on.
+        """
+        from ..repo import repo
+
+        if self._engine is None:                          # pragma: no cover
+            return False
+        return repo(self._engine).delete(pid)
+
+    def _mirror(self, prof: dict) -> None:
+        """Write the engine-shaped twin.
+
+        A profile the dashboard can hold but the engine cannot *model* still
+        saves - refusing would take the UI down for a reason the user cannot
+        see. A failure to *write* one it modelled fine is a different thing and
+        is raised: that is the store telling us it could not store, and
+        continuing would leave the two copies describing different profiles.
+        """
+        if self._engine is None:
+            return
+        try:
+            twin = to_engine_profile(prof)
+        except Exception:       # pragma: no cover - conversion is best-effort
+            return
+        self._engine.save(twin)
+
+    def delete(self, pid: str) -> bool:
+        """Remove both copies of a profile, and its session last.
+
         The order is the point. Metadata deletion is recoverable - the bytes are
         held and written back - so both metadata files go first and the session
         directory, which cannot be brought back, only afterwards. And the engine

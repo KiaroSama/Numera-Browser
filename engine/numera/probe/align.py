@@ -56,6 +56,19 @@ def _vendor_from_renderer(renderer: str) -> str:
     return "Google Inc."
 
 
+# Everything alignment is authoritative about. Listing them explicitly is what
+# lets the commit be a patch rather than a whole-record write: any field NOT
+# here belongs to whoever edited the profile while the browser was open.
+_ALIGNED = (
+    "os", "is_mobile", "os_version", "device_model", "chrome_version",
+    "platform", "ch_platform", "user_agent", "hardware_concurrency",
+    "device_memory", "max_touch_points", "device_pixel_ratio",
+    "webgl_vendor", "webgl_renderer", "screen_width", "screen_height",
+    "viewport_width", "viewport_height", "cameras", "microphones",
+    "languages", "locale", "timezone", "fonts",
+)
+
+
 def align_to_reality(profile: Profile, store: ProfileStore,
                      engine: Optional[str] = None) -> dict:
     """Make the profile's declared fingerprint match what the browser really
@@ -177,7 +190,26 @@ def align_to_reality(profile: Profile, store: ProfileStore,
         fp.fonts = os_fonts
         changed.append("fonts")
 
-    store.save(profile)
+    # Commit through the coordinator, onto the profile as it is NOW. The
+    # observation above opened a browser and took tens of seconds; saving the
+    # object read before that reverted anything edited meanwhile, and wrote
+    # only the engine copy, so the dashboard kept the pre-align identity.
+    #
+    # Only the fields alignment owns are carried over - `_ALIGNED` - so a
+    # rename or a note made during the run survives.
+    from ..repo import repo
+
+    aligned = {field: getattr(fp, field) for field in _ALIGNED}
+
+    def commit(current):
+        for field, value in aligned.items():
+            setattr(current.fingerprint, field, value)
+        return current
+
+    saved = repo(store).edit(profile.id, commit)
+    if saved is not None:
+        profile = saved
+        fp = profile.fingerprint
     # The user-agent is fed to the engine at launch, so it will report the new
     # value next time — grade against that, not the stale observed UA.
     after = _grade(fp, {**seen, "userAgent": fp.user_agent}, engine_name)

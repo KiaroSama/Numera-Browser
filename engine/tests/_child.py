@@ -1,0 +1,58 @@
+"""A stand-in for a spawned session process that answers the startup handshake.
+
+`spawn_owner` waits for the child to say it holds the session lease before it
+registers it as the owner, so a test double that only pretends to be a process
+now hangs the parent until its deadline. This one writes the same file a real
+child writes - see `numera.handshake` - which keeps the wait deterministic and
+lets a test choose what the child claims: ready, refused for a named reason, or
+dead without a word.
+"""
+
+import json
+from pathlib import Path
+
+from numera.handshake import READY_ENV
+
+
+class FakeChild:
+    """A `Popen` stand-in whose startup result the test decides.
+
+    `ready=True` answers "I own the session", which is what a healthy launch
+    does. `ready=False` reports a refusal with `kind` ("busy", "locked", ...).
+    `ready=None` says nothing at all, which is a child that died before it
+    could - pair it with a non-None `code` so the parent notices instead of
+    waiting out its deadline.
+    """
+
+    def __init__(self, cli=None, env=None, ready: bool = True, kind: str = "failed",
+                 error: str = "", code=None, **_ignored):
+        self.cli = list(cli or [])
+        self.returncode = code
+        self.terminated = False
+        path = (env or {}).get(READY_ENV)
+        if path and ready is not None:
+            Path(path).write_text(
+                json.dumps({"ok": bool(ready), "error": error, "kind": kind}),
+                encoding="utf-8")
+
+    def poll(self):
+        return self.returncode
+
+    def terminate(self):
+        self.terminated = True
+        self.returncode = -15
+
+    def wait(self, timeout=None):
+        return self.returncode
+
+    def kill(self):
+        self.returncode = -9
+
+
+def spawning(record: list, **kw):
+    """A `Popen` replacement that appends every child it makes to `record`."""
+    def popen(cli, env=None, **_kw):
+        child = FakeChild(cli, env, **kw)
+        record.append(child)
+        return child
+    return popen

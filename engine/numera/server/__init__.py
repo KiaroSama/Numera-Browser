@@ -45,7 +45,9 @@ from dataclasses import dataclass
 from typing import Callable
 # Re-exported so `numera.server` keeps its whole surface: `cli/`, `mcp.py`
 # and the test suite import these by name.
-from ..paths import session_lease
+from ..handshake import (READY_ENV, READY_TIMEOUT, StartupFailed, await_ready,
+                         ready_channel, terminate)
+from ..paths import child_env, session_lease
 from .stores import DashboardStore, DuplicateToken, ProxyPool, TokenStore
 from .convert import (_parse_lines, _rel_time, _parse_startup_urls, _stable_seed,
                       dashboard_coherence, to_dashboard_profile,
@@ -75,6 +77,8 @@ class _Ctx:
     is_running: Callable[[str], bool]
     stop_session: Callable[[str], None]
     decorate: Callable[[dict], dict]
+    spawn_owner: Callable[..., object]
+    materialize_current: Callable[[str], object]
 
 
 def _require_fastapi():
@@ -264,6 +268,68 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
             except subprocess.TimeoutExpired:
                 proc.kill()
 
+    # One decision at a time per profile. Two HTTP launches for the same
+    # profile arrive on two threadpool workers, and both used to spawn: the
+    # loser's `running[pid] = proc` overwrote the winner's, so `/stop`
+    # terminated a process that owned nothing while the real browser stayed up.
+    #
+    # ponytail: one lock per profile ever launched, never pruned. A few dozen
+    # bytes each; prune if a data root ever holds enough profiles to matter.
+    spawn_locks: dict[str, threading.Lock] = {}
+    spawn_guard = threading.Lock()
+
+    def _spawn_lock(pid: str) -> threading.Lock:
+        with spawn_guard:
+            return spawn_locks.setdefault(pid, threading.Lock())
+
+    def spawn_owner(pid: str, cli: list, timeout: float = READY_TIMEOUT):
+        """Start a session process, and register it only once it owns `pid`.
+
+        `Popen` returning proves a process started, nothing else. The child
+        takes the session lease and re-reads the vault seconds later, so the
+        old code acknowledged "running" for launches about to exit with
+        `SessionBusy` or `VaultLocked`, and the scheduler recorded runs whose
+        browser never opened. Now the parent waits for the child to say it
+        holds the lease and has revalidated the profile - see handshake.py -
+        and a child that never gets there is terminated and never registered.
+
+        Returns the process, or None when *this* server already has a live
+        child for the profile - the second of two simultaneous requests, which
+        the caller may read as idempotent success. A lease held by some other
+        process is different and raises instead: this server cannot stop what
+        it did not start, so answering "running" would offer a `/stop` that
+        does nothing.
+        """
+        with _spawn_lock(pid):
+            ours = running.get(pid)
+            if ours is not None and ours.poll() is None:
+                return None
+            if is_running(pid):
+                raise StartupFailed(
+                    "another process has this profile's browser session open",
+                    "busy")
+            with ready_channel() as ready:
+                env = {**child_env(engine_store._password), READY_ENV: str(ready)}
+                proc = subprocess.Popen(cli, env=env)
+                try:
+                    await_ready(proc, ready, timeout)
+                except BaseException:
+                    terminate(proc)      # never leave a child nobody owns
+                    raise
+            running[pid] = proc
+            return proc
+
+    def materialize_current(pid: str):
+        """Re-derive the engine copy from the dashboard record as it is now.
+
+        A thin pass-through to the core coordinator, which holds the reasoning:
+        the routes used to save an engine profile built from a snapshot read
+        before a browser ran, reverting whatever had been edited meanwhile.
+        """
+        from ..repo import repo
+
+        return repo(engine_store).materialize_current(pid)
+
     def decorate(d: dict) -> dict:
         # Attach live run state. Coherence is computed by the dashboard itself
         # (its meter mirrors the validator), so we don't duplicate it here.
@@ -273,9 +339,13 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         d["lastActive"] = "now" if running_now else _rel_time(d.get("_last_active"))
         return d
 
+    app.state.spawn_owner = spawn_owner
+    app.state.materialize_current = materialize_current
+
     ctx = _Ctx(engine_store=engine_store, dash=dash, pool=pool, tokens=tokens, sched=sched,
                running=running, attached=attached, start_scheduler=start_scheduler,
-               is_running=is_running, stop_session=stop_session, decorate=decorate)
+               is_running=is_running, stop_session=stop_session, decorate=decorate,
+               spawn_owner=spawn_owner, materialize_current=materialize_current)
     @app.get("/api/ready")
     def ready():
         """Is the engine up, and does it want a token? Public by design.

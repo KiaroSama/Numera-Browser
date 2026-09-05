@@ -17,7 +17,8 @@ import time
 from pathlib import Path
 from typing import Optional
 from .. import cookies as cookies_mod
-from .convert import OS_TO_DASH, to_engine_profile
+from .convert import OS_TO_DASH
+from ..handshake import StartupFailed
 from ..paths import child_env
 
 
@@ -30,6 +31,18 @@ def register(app, ctx):
     from fastapi import HTTPException
 
     engine_store, dash, running, attached, is_running, decorate, stop_session = ctx.engine_store, ctx.dash, ctx.running, ctx.attached, ctx.is_running, ctx.decorate, ctx.stop_session
+    spawn_owner, materialize_current = ctx.spawn_owner, ctx.materialize_current
+
+    # A session that never started, reported as the status that says why. 423
+    # for a locked vault is the literal answer - the profile is there and the
+    # request is fine, the server just cannot read its proxy password - and it
+    # keeps 409 meaning exactly one thing: someone else owns this profile now.
+    _STARTUP_STATUS = {"busy": 409, "locked": 423, "gone": 404}
+
+    def _startup_error(failure: StartupFailed):
+        return HTTPException(_STARTUP_STATUS.get(failure.kind, 500), str(failure))
+
+    BUSY = "stop the profile first - its session is in use"
 
     @app.post("/api/profiles/{pid}/launch")
     def launch_profile(pid: str, body: Optional[dict] = None):
@@ -41,10 +54,20 @@ def register(app, ctx):
         d = dash.get(pid)
         if not d:
             raise HTTPException(404, "profile not found")
-        if is_running(pid):
-            return decorate(d)
-        # Materialise a real engine profile, then open it in its own process.
-        engine_store.save(to_engine_profile(d))
+        ours = running.get(pid)
+        if ours is not None and ours.poll() is None:
+            return decorate(d)          # ours, already open - launch is idempotent
+        # A lease held by some *other* process is not the same thing, and falls
+        # through to `spawn_owner`, which refuses it: this server cannot stop
+        # what it did not start, so answering "running" would offer a /stop
+        # that does nothing.
+        #
+        # Materialise a real engine profile from the record as it is *now*,
+        # then open it in its own process and wait for that process to say it
+        # owns the session. Returning before then reported "running" for
+        # launches that were about to exit with a locked vault or a session
+        # someone else held.
+        materialize_current(pid)
         headless = (body or {}).get("headless")
         if headless is None:
             headless = engine_store.get_headless_launch()
@@ -52,9 +75,13 @@ def register(app, ctx):
                "launch", pid]
         if headless:
             cli.append("--headless")
-        proc = subprocess.Popen(cli, env=child_env(engine_store._password))
-        running[pid] = proc
-        return decorate(d)
+        try:
+            spawn_owner(pid, cli)
+        except StartupFailed as failure:
+            raise _startup_error(failure) from None
+        # `spawn_owner` returning None means another request won the race for
+        # this profile; it is running either way, which is what was asked for.
+        return decorate(dash.get(pid) or d)
 
     @app.post("/api/profiles/{pid}/stop")
     def stop_profile(pid: str):
@@ -86,14 +113,14 @@ def register(app, ctx):
         return proc.stdout
 
     def _prepare(pid: str) -> dict:
-        """Fetch a dashboard profile, refuse if its session is busy, and make sure
-        the engine-side profile exists so a subcommand can open it."""
+        """Fetch a dashboard profile, refuse if its session is busy, and bring the
+        engine-side copy into step so a subcommand can open it."""
         d = dash.get(pid)
         if not d:
             raise HTTPException(404, "profile not found")
         if is_running(pid):
-            raise HTTPException(409, "stop the profile first — its session is in use")
-        engine_store.save(to_engine_profile(d))
+            raise HTTPException(409, BUSY)
+        materialize_current(pid)
         return d
 
     def _free_port() -> int:
@@ -176,18 +203,28 @@ def register(app, ctx):
             info = attached.get(pid)
             if info:
                 return info                  # already attached — idempotent
-            raise HTTPException(409, "stop the profile first — its session is in use")
+            raise HTTPException(409, BUSY)
         engine = d.get("engine") or engine_store.get_default_engine()
         if engine not in CHROMIUM_ENGINES:
             raise HTTPException(400, f"the '{engine}' engine has no DevTools to attach "
                                      f"to — use one of: {', '.join(CHROMIUM_ENGINES)}")
-        engine_store.save(to_engine_profile(d))
+        materialize_current(pid)
         port = _free_port()
         cli = [sys.executable, "-m", "numera", "--data-dir", str(engine_store.root),
                "attach", pid, "--port", str(port)]
         if (body or {}).get("headless"):
             cli.append("--headless")
-        running[pid] = subprocess.Popen(cli, env=child_env(engine_store._password))
+        # Same protocol as launch, with the CDP wait layered on top: the child
+        # is registered as the owner once it holds the session lease, and only
+        # then is it worth waiting for DevTools to answer. Registering first
+        # meant a child that exited on a locked vault still looked attached
+        # until the CDP wait timed out.
+        try:
+            owner = spawn_owner(pid, cli)
+        except StartupFailed as failure:
+            raise _startup_error(failure) from None
+        if owner is None:
+            raise HTTPException(409, BUSY)
         try:
             info = cdp_info(port)            # waits for DevTools to answer
         except RuntimeError as e:
@@ -218,9 +255,17 @@ def register(app, ctx):
         if body.get("preset"):
             cli += ["--preset", str(body["preset"])]
         # Warm-up runs for minutes, so it goes in the background exactly like a
-        # launch — the profile shows as running and "stop" ends it.
-        running[pid] = subprocess.Popen(cli, env=child_env(engine_store._password))
-        return decorate(d)
+        # launch — the profile shows as running and "stop" ends it. And like a
+        # launch, it is not acknowledged until the child owns the session: a
+        # warm-up that exits immediately on a locked vault used to leave the
+        # profile showing as warming up until someone looked.
+        try:
+            owner = spawn_owner(pid, cli)
+        except StartupFailed as failure:
+            raise _startup_error(failure) from None
+        if owner is None:
+            raise HTTPException(409, BUSY)
+        return decorate(dash.get(pid) or d)
 
     @app.post("/api/profiles/{pid}/align")
     def align(pid: str):

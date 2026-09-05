@@ -4,6 +4,90 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-09-06
+
+The twelfth audit brief, and the closure of the eleventh. 0.20.0 introduced the
+session lease and `ProfileRepo`; this pass makes them the *actual* single
+authority for a session's lifetime and for a profile's contents, by fixing the
+paths that still went round them.
+
+### Fixed
+
+- **A session is nobody's until the process that opens it says so.** The API
+  and the scheduler ran a browser by spawning a CLI child and registering it as
+  the owner the instant `Popen` returned - but `Popen` proves a process
+  started, nothing more. The child took the lease and re-read the vault seconds
+  later, so a launch about to exit with `SessionBusy` or `VaultLocked` was
+  reported as running; two simultaneous requests spawned two children and the
+  loser overwrote the winner's registration, leaving `/stop` pointed at a
+  process that owned nothing; and the scheduler wrote `lastRun` for occurrences
+  whose browser never opened. There is now a bounded startup handshake
+  (`numera/handshake.py`): the child announces itself the moment it holds the
+  lease and has revalidated the profile and its credential, and the parent
+  waits for that before registering it - terminating and reporting a child that
+  never gets there. Per-profile spawn decisions are serialised inside one
+  server, so exactly one child can own a profile. A locked vault now answers
+  423, a busy session 409, and a deleted profile 404.
+
+- **Opening a session takes the lease before it decides anything.** The gate
+  checked the profile and *then* took the lease, so a delete could commit and
+  release its own lease in between - and the opener took the free lease and
+  launched the snapshot it had already read, recreating `user-data/<id>` for a
+  profile that no longer existed. The order is now lease, short root
+  transaction, re-read profile and stored credential, release the transaction,
+  keep the lease for the browser's lifetime. The gate hands back the profile it
+  re-read, so no caller can continue with a stale pre-lease object.
+
+- **A stale dashboard snapshot cannot rewrite the engine copy.** `launch`,
+  every probe route, `attach` and the scheduler each read a dashboard record,
+  did slow work, and then wrote `to_engine_profile()` of that same snapshot. An
+  edit committed in between was reverted on the engine side only, so the two
+  copies disagreed and the browser opened an identity the dashboard no longer
+  described. They now call `repo.materialize_current(pid)`, which re-reads
+  inside the transaction that writes and touches the engine copy only when it
+  actually differs.
+
+- **Deleting a profile is one transaction under the lease.** The repository
+  deleted the engine record and session in one transaction and unlinked the
+  dashboard copy in another, so a failure between them lost the profile while
+  leaving its twin, and an API edit landing in the gap recreated the engine
+  record - an engine-only profile again. The HTTP path had its own
+  implementation that renamed the session directory aside without holding the
+  lease at all. There is now one primitive: lease, transaction, detach session,
+  both records with byte-level rollback, tombstone reclaimed last. A profile
+  another process has open answers 409 and nothing is touched.
+
+- **`restore` and the vendor import write both copies.** A restore committed
+  only the engine record, so restoring onto an existing id left the dashboard
+  describing the identity it had just replaced. Both records are now written as
+  one metadata transaction and rolled back together, with dashboard-only fields
+  (folder, notes, trust) preserved across the restore.
+
+- **A schedule claim outlives only a run that actually started.** `record()`
+  clears `claimedBy` only alongside `lastRun`, which a failure has no business
+  writing - so a materialisation error, a failed spawn or a child that died
+  before readiness left the occurrence claimed for the whole 12-hour TTL, and
+  every tick in between skipped that schedule without a word. Every failure
+  before a confirmed start now releases the claim, reaps any child, and records
+  the failure without moving the due time.
+
+- **Two profiles cannot be born with one name.** `bulk create` read the taken
+  names, chose a run of free ones, and only then asked for the write - a
+  check-then-act two processes both passed, creating distinct ids under
+  identical names and leaving `numera <name>` ambiguous with nothing having
+  reported a problem. Batch writes now decide names inside the transaction that
+  performs them, under an explicit per-caller policy: `bulk create` skips a
+  taken name and says how many, `apply` and the vendor import refuse the whole
+  batch, and the vendor import reports which names it passed over. A profile
+  keeping the name it already has is not a claim, so an unrelated bulk edit
+  never fails on a duplicate it did not create.
+
+### Changed
+
+- `numera import-from` returns the profiles it wrote and the names it skipped,
+  and prints the skipped ones. Importing the same vendor file twice now adds
+  nothing the second time instead of duplicating every profile in it.
+
 ## [0.20.0] - 2026-09-06
 
 The eleventh audit brief. Storage was already process-safe; this pass is about

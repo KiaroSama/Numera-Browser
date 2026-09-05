@@ -411,24 +411,57 @@ def _camoufox_kwargs(profile: Profile, store, headless: bool) -> tuple:
     return kwargs, relay
 
 
+class ProfileGone(RuntimeError):
+    """The profile was deleted between the request and the session opening."""
+
+
+def _startup_kind(exc: BaseException) -> str:
+    """Which handshake `kind` a startup failure is - see handshake.py."""
+    from . import crypto
+    from .paths import SessionBusy
+
+    if isinstance(exc, SessionBusy):
+        return "busy"
+    if isinstance(exc, crypto.VaultLocked):
+        return "locked"
+    if isinstance(exc, ProfileGone):
+        return "gone"
+    return "failed"
+
+
 @contextmanager
 def open_session(profile: Profile, store):
-    """The gate every browser open goes through: lease first, credential second.
+    """The gate every browser open goes through. Yields the profile to launch.
+
+    **Order matters, and it was wrong.** The check used to come first and the
+    lease second, which is a TOCTOU with a delete: the profile was inspected,
+    a delete committed and released its lease, and the opener then took the
+    free lease and launched the snapshot it had read - recreating
+    `user-data/<id>` for a profile that no longer existed. Now:
+
+    1. take the session lease (the ownership decision);
+    2. take a SHORT root transaction and re-read the profile and its raw
+       stored credential inside it;
+    3. verify the profile still exists and the credential is readable;
+    4. release the transaction - it is never held for a browser's lifetime;
+    5. keep only the lease, and yield the profile that was just re-read.
+
+    Callers use the yielded profile, not the one they passed in, so a stale
+    pre-lease object cannot reach the browser.
 
     **The lease** is what makes `user-data/<id>` owned. It is a Chromium
     profile directory and Chromium assumes it owns one exclusively - two
     processes on one directory corrupt its databases. The storage locks never
     covered this: they guard JSON writes and are held for milliseconds, while a
-    session lasts as long as the window does. So this is a separate lease, and
-    it is emphatically NOT taken while a data transaction is held.
+    session lasts as long as the window does.
 
     **The credential check** belongs here rather than in each caller because a
     locked vault hands out `proxy.password = None`, which is indistinguishable
     from "this proxy has no password". A launch would then start with no proxy
     credential at all - the profile browsing from the host's own IP, which is
-    the one outcome an anti-detect profile exists to prevent. Refusing is the
-    only safe reading of an unreadable secret. A genuinely passwordless proxy
-    is untouched: `is_withheld` is false when nothing is stored.
+    the one outcome an anti-detect profile exists to prevent. A genuinely
+    passwordless proxy is untouched: `is_withheld` is false when nothing is
+    stored.
 
     Reads and ordinary edits stay available while locked; only opening a
     browser is refused.
@@ -436,27 +469,43 @@ def open_session(profile: Profile, store):
     import json
 
     from . import crypto, vault
-    from .paths import session_lease
+    from .handshake import announce
+    from .paths import session_lease, transaction_lock
 
-    # Read the record as it is ON DISK. `profile.proxy.password` has already
-    # been through the decrypting read, so a locked vault has replaced the
-    # ciphertext with None - the exact ambiguity this check exists to resolve.
-    stored = None
+    started = False
     try:
-        path = store._path(profile.id)
-        if path.exists():
-            raw = json.loads(path.read_text(encoding="utf-8"))
-            stored = ((raw.get("proxy") or {}) or {}).get("password")
-    except (OSError, ValueError):                                # pragma: no cover
-        stored = None
-    if vault.is_withheld(store, stored):
-        raise crypto.VaultLocked(
-            f"{profile.name} has a proxy password this process cannot read, so the "
-            f"browser would start without it and browse from your own IP. Unlock "
-            f"the vault first: numera --password ... <command>")
-
-    with session_lease(store.root, profile.id):
-        yield
+        with session_lease(store.root, profile.id):
+            # Short, and released before the browser starts.
+            with transaction_lock(store.root):
+                current = store.get(profile.id)
+                if current is None:
+                    raise ProfileGone(
+                        f"{profile.name} was deleted while its session was being "
+                        f"opened, so there is nothing to launch.")
+                stored = None
+                try:
+                    path = store._path(profile.id)
+                    if path.exists():
+                        raw = json.loads(path.read_text(encoding="utf-8"))
+                        stored = ((raw.get("proxy") or {}) or {}).get("password")
+                except (OSError, ValueError):                    # pragma: no cover
+                    stored = None
+                if vault.is_withheld(store, stored):
+                    raise crypto.VaultLocked(
+                        f"{current.name} has a proxy password this process cannot read, "
+                        f"so the browser would start without it and browse from your own "
+                        f"IP. Unlock the vault first: numera --password ... <command>")
+            # Owned and revalidated - the one point at which a parent that
+            # spawned this process may call the session started. Anything that
+            # fails before here is reported instead, so nobody is registered as
+            # the owner of a session they never took. See handshake.py.
+            announce(True)
+            started = True
+            yield current
+    except BaseException as failure:
+        if not started:
+            announce(False, str(failure), _startup_kind(failure))
+        raise
 
 
 @contextmanager
@@ -470,8 +519,9 @@ def session(profile: Profile, store, engine: Optional[str] = None,
     session. The context is always closed on the way out, which is also what
     flushes cookies to disk.
     """
-    # Every browser open goes through the same gate - see `open_session`.
-    with open_session(profile, store):
+    # Every browser open goes through the same gate - see `open_session`. It
+    # yields the profile as it is NOW, re-read under the lease.
+    with open_session(profile, store) as profile:
         name = engine or profile.engine or "playwright"
         quiet = replace(profile, startup_urls=[])
 
