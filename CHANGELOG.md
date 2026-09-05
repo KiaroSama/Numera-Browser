@@ -4,6 +4,35 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.17.2] - 2026-09-05
+
+### Fixed
+
+- **An exception could escape the relay's tunnel thread during shutdown.** `selectors.register()`
+  raises `ValueError: Invalid file descriptor: -1` - not `OSError` - for a socket that has already
+  been closed, and the two `register` calls sat outside `_tunnel`'s `try`. `close()` can pull both
+  sockets between the handler opening the upstream and the tunnel registering them, so an ordinary
+  shutdown killed the handler thread with an unhandled exception and printed a traceback for it.
+
+  Being a race, it surfaced as an intermittent `PytestUnhandledThreadExceptionWarning` rather than
+  a failing test - one run in six on Linux. Promoting that warning to an error is what caught it.
+  A direct probe reproduced it on the first attempt before the fix and not once in 200 attempts
+  after; eight consecutive Linux suite runs are now clean.
+
+### Changed
+
+- **Vitest 4 -> 5.** None of the APIs its breaking changes touch (`toHaveTextContent`,
+  `clearMocks`, `expect.poll`, `sequential`, `vi.mock`) are used here, and the vitest config is a
+  single `environment: "jsdom"`; all 17 dashboard tests pass unchanged.
+
+  Vitest 5 requires **Node 22**, so `engines` narrows from `^20.19.0 || >=22.12.0` to `>=22.12.0`
+  and the README follows. Every CI job already runs Node 22; claiming support for a version
+  `npm test` cannot run on would be worse than dropping it.
+
+- `eslint` 10.10.0, `globals` 17.12.0 and `lucide-react` 1.41.0 - all within their declared
+  ranges, so a plain install, no manifest change. The engine's Python dependencies are floors
+  (`>=`) rather than pins and needed nothing.
+
 ## [0.17.1] - 2026-09-05
 
 ### Fixed

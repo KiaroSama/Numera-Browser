@@ -265,9 +265,17 @@ def _tunnel(client: socket.socket, upstream: socket.socket) -> None:
     tunnel is exactly the thread that would still be alive after close().
     """
     sel = selectors.DefaultSelector()
-    sel.register(client, selectors.EVENT_READ, upstream)
-    sel.register(upstream, selectors.EVENT_READ, client)
     try:
+        # Registration is inside the try, and ValueError is caught with OSError.
+        # `close()` can pull both sockets between the handler opening the
+        # upstream and this point; `selectors` then raises
+        # `ValueError: Invalid file descriptor: -1` - not an OSError - which
+        # escaped this function entirely, killed the handler thread with an
+        # unhandled exception and printed a traceback for what is an ordinary
+        # shutdown. It is racy, so it showed up as an intermittent
+        # `PytestUnhandledThreadExceptionWarning` rather than a failing test.
+        sel.register(client, selectors.EVENT_READ, upstream)
+        sel.register(upstream, selectors.EVENT_READ, client)
         open_directions = 2
         while open_directions:
             events = sel.select(_TUNNEL_POLL)
@@ -305,7 +313,7 @@ def _tunnel(client: socket.socket, upstream: socket.socket) -> None:
                         pass
                     continue
                 key.data.sendall(data)
-    except OSError:
+    except (OSError, ValueError):
         pass          # either side went away, or close() pulled the sockets
     finally:
         sel.close()

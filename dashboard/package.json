@@ -1,9 +1,9 @@
 {
   "name": "numera-dashboard",
   "private": true,
-  "version": "0.17.1",
+  "version": "0.17.2",
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": ">=22.12.0"
   },
   "type": "module",
   "description": "Web dashboard for Numera Browser, a self-hosted anti-detect browser profile manager.",
@@ -30,6 +30,6 @@
     "globals": "^17.11.0",
     "jsdom": "^30.0.1",
     "vite": "^8.2.2",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.0"
   }
 }
