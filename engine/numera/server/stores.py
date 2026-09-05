@@ -17,8 +17,14 @@ from pathlib import Path
 from typing import Optional
 from .. import vault
 from ..proxypool import identity as vault_identity
-from ..paths import _lock_for, transaction_lock, id_path, write_json
+from ..paths import (_lock_for, _restore_bytes, id_path,
+                     transaction_lock, write_json)
+from ..store import SessionStranded
 from .convert import to_engine_profile
+
+
+class StaleProfile(RuntimeError):
+    """A full-profile write carried a revision older than the stored one."""
 
 
 class DashboardStore:
@@ -116,37 +122,84 @@ class DashboardStore:
             return prof
         return {**prof, a: {**node, b: vault.decrypt_for_read(self._engine, node[b])}}
 
-    def save(self, prof: dict) -> dict:
-        if not prof.get("id"):
-            prof["id"] = uuid.uuid4().hex[:12]
-        prof.setdefault("_created", time.time())
-        prof = self._guard_secrets(prof)
-        path = self._path(prof["id"])
+    REVISION = "_rev"
+
+    def save(self, prof: dict, *, config_change=None, expect_rev=None) -> dict:
+        """Write one profile, and optionally a config change, as one unit.
+
+        `config_change` exists so a request that owns both - "save this profile
+        *and* make its engine the default" - commits them together. They were
+        two separate writes, and both orders were wrong: config first meant a
+        failed profile write left the default changed; config second meant a
+        failed config write reported failure over profile changes that had
+        already landed, so the obvious retry applied them twice.
+
+        `expect_rev` is the optimistic-concurrency check. A client that submits
+        a whole profile - which the dashboard does, even for an inline rename -
+        carries a copy that may already be stale, and without this the later
+        writer silently erases the earlier one's fields.
+        """
         # Transaction lock outermost, per-file lock inside - the one order every
         # profile mutation uses. Without it a single save could land between a
         # batch's snapshot and its rollback, and the rollback then wrote the old
         # bytes over a change that had already succeeded.
-        with transaction_lock(self.root), _lock_for(path):
-            # Inside the lock: a folder rename commits under this same lock, so
-            # resolving the name outside it reads meta that a rename is about to
-            # replace - which is the whole race this is here to close.
-            prof = self._resolve_folder(prof)
-            path = self._path(prof["id"])
-            previous = path.read_bytes() if path.exists() else None
-            write_json(path, prof)
-            try:
-                self._mirror(prof)
-            except Exception:
-                # Both copies or neither. This half was written first and the
-                # mirror's failure was swallowed, so a locked vault produced a
-                # dashboard that said "saved" over an engine copy still holding
-                # the old proxy - and nothing anywhere said the two had parted.
-                if previous is None:
-                    path.unlink(missing_ok=True)
-                else:
-                    path.write_bytes(previous)
-                raise
+        with transaction_lock(self.root):
+            path = self._path(prof.get("id") or uuid.uuid4().hex[:12])
+            with _lock_for(path):
+                return self._save_locked(prof, config_change, expect_rev)
+
+    def _save_locked(self, prof: dict, config_change, expect_rev) -> dict:
+        from ..paths import write_batch
+
+        if not prof.get("id"):
+            prof["id"] = uuid.uuid4().hex[:12]
+        prof.setdefault("_created", time.time())
+        stored = self._raw(prof["id"]) or {}
+        if expect_rev is not None and stored:
+            current = stored.get(self.REVISION)
+            if current is not None and str(current) != str(expect_rev):
+                raise StaleProfile(
+                    f"profile {prof['id']} changed since you loaded it "
+                    f"(revision {current}, you sent {expect_rev})")
+        # Both of these read the stored record, so both belong inside the lock.
+        # `_guard_secrets` ran outside it and could decide whether to preserve a
+        # secret from a record another writer was already replacing;
+        # `_resolve_folder` had the same problem with a folder rename.
+        prof = self._guard_secrets(prof)
+        prof = self._resolve_folder(prof)
+        prof[self.REVISION] = int(stored.get(self.REVISION) or 0) + 1
+
+        with write_batch() as batch:
+            batch.write(self._path(prof["id"]), prof)
+            twin = self._twin(prof)
+            if twin is not None:
+                # Both copies or neither. The mirror's failure used to be
+                # swallowed, so a locked vault produced a dashboard that said
+                # "saved" over an engine copy still holding the old proxy.
+                batch.write(*twin)
+            if config_change:
+                batch.write(self._engine.config_path,
+                            {**self._engine.get_config(), **config_change})
         return prof
+
+    def _twin(self, prof: dict):
+        """`(path, data)` for the engine's copy of `prof`, or None.
+
+        A profile the dashboard can hold but the engine cannot *model* still
+        saves - refusing would take the UI down for a reason the user cannot
+        see. A failure to *write* one it modelled fine is a different thing and
+        the caller's batch raises it.
+        """
+        if self._engine is None:
+            return None
+        try:
+            twin = to_engine_profile(prof)
+        except Exception:                       # pragma: no cover - see `_mirror`
+            return None
+        if twin is None:
+            return None
+        return (self._engine._path(twin.id),
+                self._engine._apply_secrets(twin.to_dict(), "enc"))
 
     def _resolve_folder(self, prof: dict) -> dict:
         """Follow a folder rename that retired this profile's folder name.
@@ -163,7 +216,7 @@ class DashboardStore:
         moved = folders.resolve_name(self.root, name)
         return prof if moved == name else {**prof, "folder": moved}
 
-    def save_many(self, profiles: list) -> list:
+    def save_many(self, profiles: list, *, config_change=None) -> list:
         """Save a batch as one transaction: all of them, or none.
 
         Validation was already all-or-nothing, but the writes were a plain loop,
@@ -194,7 +247,15 @@ class DashboardStore:
                     if twin is not None:
                         batch.write(self._engine._path(twin.id),
                                     self._engine._apply_secrets(twin.to_dict(), "enc"))
+                prof[self.REVISION] = int(
+                    (self._raw(prof["id"]) or {}).get(self.REVISION) or 0) + 1
                 saved.append(prof)
+            if config_change:
+                # In the same batch, so a failed config write rolls the profiles
+                # back with it. Writing config afterwards meant the API could
+                # report failure over changes that had already committed.
+                batch.write(self._engine.config_path,
+                            {**self._engine.get_config(), **config_change})
         return saved
 
     def _mirror(self, prof: dict) -> None:
@@ -254,11 +315,23 @@ class DashboardStore:
                 if path is not None and path.exists():
                     undo.append((path, path.read_bytes()))
                     path.unlink()
-        except OSError:
+        except OSError as first:
+            # Rollback is a first-class outcome, not a best-effort gesture.
+            # The metadata goes back through the atomic writer - a plain
+            # `write_bytes` truncates first, so a crash mid-rollback left an
+            # empty profile file, which reads as a corrupt profile rather than
+            # as the delete that did not happen.
             for path, original in reversed(undo):
-                path.write_bytes(original)
+                _restore_bytes(path, original)
             if self._engine is not None:
-                self._engine.restore_session(pid, tomb)
+                try:
+                    self._engine.restore_session(pid, tomb)
+                except SessionStranded as stranded:
+                    # Both halves failed. Surfacing only `first` would describe
+                    # a profile that exists with a session nothing points at, so
+                    # the message that names the tombstone is the one to raise -
+                    # with the original failure attached as its cause.
+                    raise stranded from first
             raise
 
         # Committed. Reclaiming the detached bytes can still fail, but the

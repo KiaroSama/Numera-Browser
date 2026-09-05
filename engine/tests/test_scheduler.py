@@ -1,6 +1,8 @@
 """Warm-up schedule bookkeeping: the store round-trips, and the due-rule fires
 at the right time. No browser, no clock — a fixed ``now`` is passed in."""
 
+import pytest
+
 from numera.scheduler import (MIN_INTERVAL_HOURS, ScheduleStore, due_schedules,
                                next_run_at)
 
@@ -16,9 +18,19 @@ def test_add_and_list_round_trip(tmp_path):
 
 
 def test_interval_is_floored(tmp_path):
+    """A small positive interval is clamped; zero is refused.
+
+    `add()` used to clamp anything, including 0, while `update()` and the API
+    create route ran `validate_schedule` and refused a non-positive interval.
+    The two surfaces disagreed about the same store. `add()` uses the validator
+    now, so 0 is refused everywhere rather than becoming a schedule nobody asked
+    for.
+    """
     st = ScheduleStore(tmp_path)
-    entry = st.add(profile_id="p1", every_hours=0, now=0)
+    entry = st.add(profile_id="p1", every_hours=0.0001, now=0)
     assert entry["everyHours"] == MIN_INTERVAL_HOURS
+    with pytest.raises(ValueError):
+        st.add(profile_id="p1", every_hours=0, now=0)
 
 
 def test_delete(tmp_path):

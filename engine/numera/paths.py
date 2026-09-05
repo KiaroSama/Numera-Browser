@@ -24,6 +24,7 @@ the cause.
 from __future__ import annotations
 
 import os
+import hashlib
 import sys
 import tempfile
 import time
@@ -37,6 +38,71 @@ from typing import Optional
 APP_DIR_NAME = "data"
 LEGACY_HOME_DIR = ".persona"
 HOME_DIR = ".numera"
+
+
+# How often the parent watcher looks. A second is far below any human noticing
+# a stale port, and costs nothing measurable.
+_PARENT_POLL = 1.0
+
+
+def _parent_alive(pid: int) -> bool:
+    """Is `pid` still running?
+
+    `os.kill(pid, 0)` is the portable liveness check on POSIX. Windows has no
+    equivalent that is meaningful here, and does not need one: the desktop shell
+    puts the engine in a job object there.
+    """
+    if os.name == "nt":                                  # pragma: no cover
+        return True
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:                              # pragma: no cover
+        return True          # it exists; we simply may not signal it
+    return True
+
+
+def watch_parent(pid=None, on_gone=None) -> "Optional[threading.Thread]":
+    """Exit when the process that started this one disappears.
+
+    The desktop shell owns the engine, and the two platforms that can enforce
+    that do so themselves: Windows through a job object, Linux through
+    `PR_SET_PDEATHSIG`. macOS has neither, so a force-killed shell left the
+    engine alive holding its port, and the next launch started a second engine
+    against the same portable data root - two writers, one directory.
+
+    This is the portable half. It runs on every platform that can answer "is
+    that pid alive", which makes one mechanism cover the gap rather than a
+    different guess per platform.
+
+    Returns the watcher thread, or None when there is nothing to watch.
+    """
+    raw = pid if pid is not None else os.environ.get("NUMERA_PARENT_PID")
+    try:
+        parent = int(raw)
+    except (TypeError, ValueError):
+        return None
+    if parent <= 0 or not _parent_alive(parent):
+        return None
+
+    def leave():
+        # `os._exit`, not `sys.exit`: this runs on a daemon thread, where
+        # SystemExit would only end the thread and leave the server serving.
+        os._exit(0)
+
+    stop = on_gone or leave
+
+    def watch():
+        while True:
+            time.sleep(_PARENT_POLL)
+            if not _parent_alive(parent):
+                stop()
+                return
+
+    thread = threading.Thread(target=watch, name="numera-parent-watch", daemon=True)
+    thread.start()
+    return thread
 
 
 def app_dir() -> Path:
@@ -213,13 +279,147 @@ def id_path(base: Path, value, suffix: str = "") -> Path:
 _FILE_LOCKS: dict = {}
 _LOCKS_GUARD = threading.Lock()
 
+# How long to wait for a lock another process holds before giving up. Long
+# enough to outlast any legitimate write (the slowest here is the vault
+# migration), short enough that a stuck holder is reported rather than waited on
+# forever. `NUMERA_LOCK_TIMEOUT` overrides it for a slow disk or a big vault.
+_LOCK_TIMEOUT = float(os.environ.get("NUMERA_LOCK_TIMEOUT") or 30.0)
+_LOCK_POLL = 0.05
 
-def _lock_for(path) -> threading.RLock:
-    key = str(Path(path).resolve())
+
+class LockTimeout(RuntimeError):
+    """Another process held a data lock for too long."""
+
+
+def _lock_dir(path: Path) -> Path:
+    """Where the lock file for `path` lives.
+
+    Beside the data root rather than beside the file itself: a `.lock` next to
+    every profile would show up in `profiles/*.json` globs, and those globs are
+    how the vault finds secrets and how folders enumerate profiles.
+    """
+    return Path(path).parent / ".locks"
+
+
+def _lock_path(key: str, name: str) -> Path:
+    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
+    # The readable part is for a human staring at the directory; the digest is
+    # what makes it unique.
+    safe = re.sub(r"[^A-Za-z0-9._-]", "_", name)[:40] or "lock"
+    return Path(f"{safe}.{digest}.lock")
+
+
+if os.name == "nt":
+    import msvcrt
+
+    def _take(fd) -> bool:
+        try:
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+            return True
+        except OSError:
+            return False
+
+    def _drop(fd) -> None:
+        try:
+            os.lseek(fd, 0, os.SEEK_SET)
+            msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+        except OSError:                                          # pragma: no cover
+            pass
+else:
+    import fcntl
+
+    def _take(fd) -> bool:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return True
+        except OSError:
+            return False
+
+    def _drop(fd) -> None:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        except OSError:                                          # pragma: no cover
+            pass
+
+
+class _DataLock:
+    """Mutual exclusion across threads *and* processes for one piece of state.
+
+    Two layers, because they answer different questions:
+
+    * a `threading.RLock`, so the owning thread can re-enter (a save inside a
+      folder transaction inside a batch) and other threads in this process wait;
+    * an OS lock on a file, so *other processes* wait too.
+
+    The second layer is the point. Numera runs several processes against one
+    data root - `numera serve`, CLI commands, detached jobs, the scheduler, a
+    second desktop window - and the in-process `RLock` these locks used to be
+    was invisible to every one of them. Two processes could read, modify and
+    atomically replace the same JSON and the later write simply erased the
+    earlier one.
+
+    The OS releases the lock when the file handle closes, including when the
+    process dies, so a crash cannot leave the data root permanently locked. The
+    lock *file* stays behind; it holds no state and is reused.
+    """
+
+    def __init__(self, path: Path):
+        self._path = Path(path)
+        self._rlock = threading.RLock()
+        self._depth = 0
+        self._fd = None
+
+    def _open(self):
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        return os.open(self._path, os.O_RDWR | os.O_CREAT, 0o600)
+
+    def __enter__(self):
+        self._rlock.acquire()
+        try:
+            if self._depth == 0:
+                self._acquire_os_lock()
+            self._depth += 1
+        except BaseException:
+            self._rlock.release()
+            raise
+        return self
+
+    def _acquire_os_lock(self) -> None:
+        fd = self._open()
+        deadline = time.monotonic() + _LOCK_TIMEOUT
+        try:
+            while True:
+                if _take(fd):
+                    self._fd = fd
+                    return
+                if time.monotonic() >= deadline:
+                    raise LockTimeout(
+                        f"another process has held {self._path} for more than "
+                        f"{_LOCK_TIMEOUT:g}s. If nothing else is running, delete "
+                        f"that file; otherwise set NUMERA_LOCK_TIMEOUT higher.")
+                time.sleep(_LOCK_POLL)
+        except BaseException:
+            os.close(fd)
+            raise
+
+    def __exit__(self, *exc) -> None:
+        self._depth -= 1
+        if self._depth == 0 and self._fd is not None:
+            fd, self._fd = self._fd, None
+            _drop(fd)
+            os.close(fd)
+        self._rlock.release()
+
+
+def _lock_for(path):
+    """The lock guarding one file, held against other processes too."""
+    resolved = Path(path).resolve()
+    key = str(resolved)
     with _LOCKS_GUARD:
         lock = _FILE_LOCKS.get(key)
         if lock is None:
-            lock = _FILE_LOCKS[key] = threading.RLock()
+            lock = _FILE_LOCKS[key] = _DataLock(
+                _lock_dir(resolved) / _lock_path(key, resolved.name))
         return lock
 
 
@@ -244,11 +444,13 @@ def transaction_lock(root):
     (a save, a rename, a folder move); if a workload ever makes this the
     bottleneck, the upgrade is a reader/writer lock, not finer keys.
     """
-    key = str(Path(root).resolve())
+    resolved = Path(root).resolve()
+    key = str(resolved)
     with _LOCKS_GUARD:
         lock = _ROOT_LOCKS.get(key)
         if lock is None:
-            lock = _ROOT_LOCKS[key] = threading.RLock()
+            lock = _ROOT_LOCKS[key] = _DataLock(
+                resolved / ".locks" / _lock_path(key, "transaction"))
         return lock
 
 

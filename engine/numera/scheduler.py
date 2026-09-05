@@ -60,13 +60,25 @@ class ScheduleStore:
     def add(self, *, profile_id: str, every_hours: float, minutes: float = 5,
             preset: str = "general", enabled: bool = True,
             now: Optional[float] = None) -> dict:
+        # Through the same validator `update()` and the HTTP create route use.
+        # `add()` converted with a bare `float()`, and argparse happily accepts
+        # `nan` and `inf` - so `numera schedule add --minutes nan` wrote a
+        # non-finite number into `schedules.json`, which is not even valid JSON
+        # to a strict reader. Validity is a property of the store, not of which
+        # surface happened to call it.
+        clean = validate_schedule({
+            "everyHours": every_hours,
+            "minutes": minutes,
+            "preset": preset,
+            "enabled": enabled,
+        })
         entry = {
             "id": uuid.uuid4().hex[:12],
             "profileId": profile_id,
-            "everyHours": max(MIN_INTERVAL_HOURS, float(every_hours)),
-            "minutes": float(minutes),
-            "preset": preset or "general",
-            "enabled": bool(enabled),
+            "everyHours": clean["everyHours"],
+            "minutes": clean["minutes"],
+            "preset": clean["preset"],
+            "enabled": clean["enabled"],
             "lastRun": None,
             "createdAt": now,
         }

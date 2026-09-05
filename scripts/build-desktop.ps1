@@ -61,7 +61,7 @@ if (-not (Test-Path $dash)) {
     $npm = (Get-Command npm -ErrorAction SilentlyContinue)
     if (-not $npm) {
         throw ("the dashboard is not built and npm is not on PATH. Install Node.js " +
-               "(>=20.19 or >=22.12, per dashboard/package.json), or build it yourself " +
+               "(>=22.12, per dashboard/package.json), or build it yourself " +
                "with:  npm --prefix `"$repo\dashboard`" ci; npm --prefix `"$repo\dashboard`" run build")
     }
     # `ci` not `install`: deterministic from the committed lockfile, which is

@@ -1,6 +1,6 @@
 [package]
 name = "numera-desktop"
-version = "0.17.2"
+version = "0.18.0"
 edition = "2021"
 rust-version = "1.77"
 description = "Numera Browser desktop shell"
@@ -26,6 +26,11 @@ windows-sys = { version = "0.61", features = [
     "Win32_System_Threading", # gates the limit structs
     "Win32_Security",         # gates CreateJobObjectW (SECURITY_ATTRIBUTES)
 ] }
+
+# Linux only: PR_SET_PDEATHSIG, so a force-killed shell takes the engine with
+# it the way the job object already does on Windows.
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"
 
 [profile.release]
 opt-level = "s"

@@ -83,6 +83,12 @@ fn start_engine(log: Log) -> Result<(Child, u16), String> {
         .stderr(Stdio::piped());
     no_console(&mut cmd);
 
+    die_with_parent(&mut cmd);
+    // The portable half of the same guarantee: the engine watches this pid and
+    // exits when it goes away. Linux has PDEATHSIG above and Windows has the
+    // job object, but macOS has neither, and a watcher is the one mechanism
+    // that works everywhere.
+    cmd.env("NUMERA_PARENT_PID", std::process::id().to_string());
     let mut child = cmd
         .spawn()
         .map_err(|e| format!("could not start the engine ({cmd:?}): {e}"))?;
@@ -158,6 +164,37 @@ fn no_console(cmd: &mut Command) {
 
 #[cfg(not(windows))]
 fn no_console(_cmd: &mut Command) {}
+
+/// Linux: ask the kernel to SIGKILL the engine when this process dies, however
+/// it dies. The job object does this on Windows; Linux had nothing, so a
+/// SIGKILLed shell left the engine running on its port and the next launch
+/// started a second one against the same portable data root.
+///
+/// The race matters. `PR_SET_PDEATHSIG` is set *after* the fork, and the parent
+/// can already be gone by then - in which case the signal has been delivered
+/// (to nobody) and will never fire again. Comparing the parent pid we recorded
+/// before forking with `getppid()` afterwards catches exactly that window, and
+/// the child exits immediately rather than becoming the orphan this is meant to
+/// prevent.
+#[cfg(target_os = "linux")]
+fn die_with_parent(cmd: &mut Command) {
+    use std::os::unix::process::CommandExt;
+    let parent = std::process::id();
+    unsafe {
+        cmd.pre_exec(move || {
+            if libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL) != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            if libc::getppid() as u32 != parent {
+                std::process::exit(0); // the parent died inside the race window
+            }
+            Ok(())
+        });
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn die_with_parent(_cmd: &mut Command) {}
 
 /// Killing the child at exit covers the user closing the window. It does not
 /// cover the shell being killed outright -- measured: force-kill the shell and

@@ -328,7 +328,12 @@ def serve(host: str = "127.0.0.1", port: int = 8787, data_dir: Optional[str] = N
     import uvicorn
 
     from .. import firstrun, logs
-    from ..paths import resolve_data_dir
+    from ..paths import resolve_data_dir, watch_parent
+
+    # The desktop shell sets NUMERA_PARENT_PID. Without this, a force-killed
+    # shell on macOS left the engine serving on its port, and the next launch
+    # started a second engine against the same portable data root.
+    watch_parent()
 
     root = resolve_data_dir(data_dir)
     # Normalise before the guard so an explicitly empty host is judged as what
