@@ -8,6 +8,25 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **The proxy relay's tunnel thread could outlive `close()` on Linux, hanging the whole test
+  run.** `close()` closes both sockets under the tunnel thread. On Linux, closing a file
+  descriptor removes it from the epoll interest list, so no event could ever arrive again - while
+  the loop still believed two directions were open and the selector's own map still listed both
+  sockets (the map records registrations, not whether the descriptors are still valid). The loop
+  had nothing left to wait for and waited anyway; `server_close()` then joined a thread that
+  could not finish.
+
+  Windows never showed it: `SelectSelector` raises `OSError` on a closed socket, which the
+  handler already caught. So the suite was green on the development machine and hung on every
+  Linux runner - as `Engine tests (py3.12)`, which ran 15.3 minutes against a 15-minute job
+  ceiling while py3.10 and py3.13 took about one minute. GitHub reports a job killed that way as
+  *cancelled*, which is indistinguishable from the `cancel-in-progress` cancellations that
+  happened here on the same day.
+
+  The poll is bounded now, and an empty poll checks `fileno()` - the only thing that actually
+  answers whether a socket can still deliver. Verified on Linux: the relay suite goes from
+  hanging to 20 passed in 4.3s, and the offline suite to 863 passed in 31.6s.
+
 - **The Linux and macOS portable artifacts had never worked.** Both froze
   `engine/numera/__main__.py` as the PyInstaller entry point. PyInstaller runs the entry as
   top-level `__main__` with no package context, so that file's `from .cli import main` raised
