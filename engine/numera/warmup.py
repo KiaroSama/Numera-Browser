@@ -89,6 +89,56 @@ PRESETS = {
 }
 
 
+# A warm-up opens a real browser and drives it for a wall-clock duration, so a
+# bad duration is not a bad number - it is a browser nobody closes. `inf`
+# passed straight through to `time.time() + minutes * 60` and produced a run
+# with no end; `nan` made every comparison false, which reads as "already
+# finished" in one place and "never finished" in another. Neither was rejected
+# anywhere: the HTTP route did a bare `float()`, the CLI took argparse's word,
+# and the scheduler stored whatever it was given.
+MAX_WARMUP_MINUTES = 8 * 60
+
+
+class WarmupInvalid(ValueError):
+    """The warm-up request cannot be run as asked."""
+
+
+def validate_warmup(minutes, preset=None, sites=None) -> float:
+    """The one check, before anything opens a browser. Returns the minutes.
+
+    Used by the CLI, the HTTP route, `ScheduleStore` add/update, the scheduler
+    and `warm_up()` itself - the last of those because a caller that skips the
+    others must not be the hole.
+    """
+    import math
+
+    try:
+        value = float(minutes)
+    except (TypeError, ValueError):
+        raise WarmupInvalid(f"minutes must be a number, got {minutes!r}") from None
+    if math.isnan(value) or math.isinf(value):
+        raise WarmupInvalid("minutes must be a finite number")
+    if value <= 0:
+        raise WarmupInvalid(f"minutes must be greater than zero, got {value:g}")
+    if value > MAX_WARMUP_MINUTES:
+        raise WarmupInvalid(
+            f"minutes must be at most {MAX_WARMUP_MINUTES:g} "
+            f"({MAX_WARMUP_MINUTES / 60:g}h), got {value:g}")
+
+    if preset is not None and str(preset).lower() not in PRESETS:
+        raise WarmupInvalid(
+            f"unknown preset {preset!r}. Known: {', '.join(sorted(PRESETS))}")
+
+    if sites is not None:
+        if isinstance(sites, str) or not hasattr(sites, "__iter__"):
+            raise WarmupInvalid("sites must be a list of URLs")
+        for site in sites:
+            url = str(site).strip()
+            if not url.startswith(("http://", "https://")):
+                raise WarmupInvalid(f"{site!r} is not an http(s) URL")
+    return value
+
+
 def preset_sites(name: Optional[str]) -> list[str]:
     """Resolve a preset name to its site list (falling back to the general set)."""
     return list(PRESETS.get((name or "general").lower(), DEFAULT_SITES))
@@ -145,6 +195,7 @@ def warm_up(profile: Profile, store: ProfileStore, minutes: float = 5,
     ``on_event`` receives progress lines so a CLI can narrate the run; the
     dashboard just waits for the summary.
     """
+    minutes = validate_warmup(minutes, preset, sites)
     rng = random.Random()
     pool = list(sites) if sites else preset_sites(preset)
     rng.shuffle(pool)

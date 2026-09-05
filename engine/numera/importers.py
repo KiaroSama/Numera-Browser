@@ -220,10 +220,14 @@ def load_export(path: str | Path) -> list[dict]:
 
 def import_file(path: str | Path, store) -> list[tuple[Profile, list[str]]]:
     """Import every profile in ``path`` into ``store``. Returns (profile, issues)
-    per profile so the caller can report what came in and what needs a look."""
-    out = []
-    for raw in load_export(path):
-        prof, issues = profile_from_export(raw)
-        store.save(prof)
-        out.append((prof, issues))
-    return out
+    per profile so the caller can report what came in and what needs a look.
+
+    Whole file or nothing. Saving as it went left a partial import when one
+    entry failed - and a partial import is the worst shape to recover from,
+    because re-running it duplicates whatever did land.
+    """
+    from .repo import repo
+
+    parsed = [profile_from_export(raw) for raw in load_export(path)]
+    repo(store).save_many([prof for prof, _issues in parsed])
+    return parsed

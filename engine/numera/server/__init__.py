@@ -45,6 +45,7 @@ from dataclasses import dataclass
 from typing import Callable
 # Re-exported so `numera.server` keeps its whole surface: `cli/`, `mcp.py`
 # and the test suite import these by name.
+from ..paths import session_lease
 from .stores import DashboardStore, DuplicateToken, ProxyPool, TokenStore
 from .convert import (_parse_lines, _rel_time, _parse_startup_urls, _stable_seed,
                       dashboard_coherence, to_dashboard_profile,
@@ -224,19 +225,28 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
             return JSONResponse({"detail": "invalid or missing API token"}, status_code=401)
         return await call_next(request)
 
+    def _touch_last_active(pid: str) -> None:
+        """Stamp `_last_active` and nothing else.
+
+        This used to read the whole record, set one field and save it all back.
+        The read and the write straddled a browser session, so any edit made
+        while the browser was open - a rename, a note - was silently reverted
+        the moment it closed. A patch writes the one field it owns.
+        """
+        dash.patch(pid, lambda current: ({**current, "_last_active": time.time()}, None))
+
     def is_running(pid: str) -> bool:
         proc = running.get(pid)
-        if proc is None:
-            return False
-        if proc.poll() is not None:      # exited (browser was closed)
+        if proc is not None:
+            if proc.poll() is None:
+                return True
             running.pop(pid, None)
-            # Session just ended — record when it was last active.
-            stored = dash.get(pid)
-            if stored is not None:
-                stored["_last_active"] = time.time()
-                dash.save(stored)
-            return False
-        return True
+            _touch_last_active(pid)      # exited: the browser was closed
+        # The local registry only knows what *this* server started. Another
+        # server, a desktop or a CLI can own the same profile, and reporting
+        # "stopped" for a profile someone else has open is how two processes
+        # end up in one Chromium user-data directory.
+        return session_lease(engine_store.root, pid).held_by_other_process()
 
     def stop_session(pid: str):
         """End a profile's browser and forget any CDP session it was serving.

@@ -16,17 +16,12 @@ from .out import C, _c, _confirm, _no_profile, _parse_proxy, _print_summary, _ro
 
 # ---- commands ------------------------------------------------------------
 def cmd_create(args, store: ProfileStore) -> int:
-    if store.find_by_name(args.name):
-        say(_c(f"A profile named '{args.name}' already exists.", C.RED))
-        return emit({"ok": False, "error": f"a profile named '{args.name}' already exists"}, 1)
     proxy = _parse_proxy(args.proxy, args.country)
     fp = generate(seed=args.seed, os=args.os, locale=args.locale,
                   proxy=proxy, mobile=args.mobile)
     # No --engine given? Fall back to the saved default (CloakBrowser first).
     # If one IS given, remember it as the new default ("last engine wins").
     engine = args.engine or store.get_default_engine()
-    if args.engine:
-        store.set_default_engine(args.engine)
     from .. import drivers
     installed = engine not in drivers.names() or drivers.is_installed(engine)
     if not installed:
@@ -34,7 +29,19 @@ def cmd_create(args, store: ProfileStore) -> int:
     prof = Profile(name=args.name, fingerprint=fp, proxy=proxy,
                    notes=args.notes or "", tags=args.tag or [], engine=engine,
                    extensions=store.get_default_extensions())
-    store.save(prof)
+    # Through the coordinator: it writes the dashboard twin in the same
+    # transaction, and decides the name is free *inside* it - the old
+    # `find_by_name()` beforehand was a check two processes could both pass.
+    from ..repo import NameTaken, repo
+    try:
+        # The default engine rides along in the same transaction. It was
+        # written first, so a create that then failed to save left the global
+        # default changed by a command that reported failure.
+        repo(store).create(prof, config_change=(
+            {"default_engine": args.engine} if args.engine else None))
+    except NameTaken as e:
+        say(_c(f"A profile named '{args.name}' already exists.", C.RED))
+        return emit({"ok": False, "error": str(e)}, 1)
     say(_c(f"Created profile '{prof.name}'  ", C.GRN) + _c(f"[{prof.id}]", C.DIM))
     _print_summary(prof)
     return emit({"ok": True, "profile": prof.to_dict(), "engineInstalled": installed})
@@ -65,9 +72,19 @@ def cmd_show(args, store: ProfileStore) -> int:
 
 
 def cmd_edit(args, store: ProfileStore) -> int:
-    prof = store.resolve(args.ref)
+    from ..repo import repo
+
+    # `apply` runs inside the transaction and receives the profile as it is
+    # *now*. Reading it out here, mutating the copy and saving it back is how a
+    # concurrent edit got acknowledged and then erased.
+    prof = repo(store).edit(args.ref, lambda prof: _apply_edit(args, prof))
     if not prof:
         return _no_profile(args.ref)
+    say(_c(f"Updated '{prof.name}'.", C.GRN))
+    return emit({"ok": True, "profile": prof.to_dict()})
+
+
+def _apply_edit(args, prof):
     if args.notes is not None:
         prof.notes = args.notes
     if args.add_tag:
@@ -76,17 +93,19 @@ def cmd_edit(args, store: ProfileStore) -> int:
                 prof.tags.append(t)
     if args.proxy is not None:
         prof.proxy = _parse_proxy(args.proxy, args.country) if args.proxy else None
-    store.save(prof)
-    say(_c(f"Updated '{prof.name}'.", C.GRN))
-    return emit({"ok": True, "profile": prof.to_dict()})
+    return prof
 
 
 def cmd_regen(args, store: ProfileStore) -> int:
-    prof = store.resolve(args.ref)
+    from ..repo import repo
+
+    def regenerate(prof):
+        prof.fingerprint = generate(os=args.os, locale=args.locale, proxy=prof.proxy)
+        return prof
+
+    prof = repo(store).edit(args.ref, regenerate)
     if not prof:
         return _no_profile(args.ref)
-    prof.fingerprint = generate(os=args.os, locale=args.locale, proxy=prof.proxy)
-    store.save(prof)
     say(_c(f"Regenerated fingerprint for '{prof.name}'.", C.GRN))
     _print_summary(prof)
     return emit({"ok": True, "profile": prof.to_dict()})
@@ -116,10 +135,16 @@ def cmd_delete(args, store: ProfileStore) -> int:
             say("Aborted.")
             return emit({"ok": False, "aborted": True})
 
+    from ..repo import repo
+
+    coordinator = repo(store)
     removed, failed = [], []
     for prof in found:
         try:
-            store.delete(prof.id)
+            # Through the coordinator so the dashboard twin goes too. Deleting
+            # only the engine record left a dashboard copy that the next
+            # listing adopted straight back, id and all.
+            coordinator.delete(prof.id)
             removed.append({"id": prof.id, "name": prof.name})
             say(_c(f"Deleted '{prof.name}'.", C.GRN))
         except Exception as exc:                                # noqa: BLE001
@@ -239,15 +264,22 @@ def cmd_apply(args, store: ProfileStore) -> int:
             say("Aborted.")
             return emit({"ok": False, "aborted": True, "matched": len(targets)})
 
-    touched = {}
+    from ..repo import repo
+
+    # Every change computed first, then written as one transaction. The loop
+    # used to save inside itself, so a failure on the Nth profile left the
+    # first N-1 changed and the command reporting failure - and the default
+    # engine was a separate commit after that.
+    touched, pending = {}, []
     for prof in targets:
         changed = apply_patch(prof, patch)
         if changed:
-            store.save(prof)
+            pending.append(prof)
             touched[prof.id] = changed
-            say(f"  {prof.name:<24}{_c(', '.join(changed), C.DIM)}")
-    if patch.get("engine"):
-        store.set_default_engine(patch["engine"])   # "last engine wins"
+    repo(store).save_many(pending, config_change=(
+        {"default_engine": patch["engine"]} if patch.get("engine") else None))
+    for prof in pending:
+        say(f"  {prof.name:<24}{_c(', '.join(touched[prof.id]), C.DIM)}")
     say(_c(f"Updated {len(touched)} of {len(targets)} profile(s).", C.GRN))
     return emit({"ok": True, "matched": len(targets), "updated": len(touched),
                  "changes": touched})
@@ -269,17 +301,22 @@ def cmd_bulk_create(args, store: ProfileStore) -> int:
         mobile=args.mobile,
         seed=args.seed,
     )
+    from ..repo import repo
+
     existing = {p.name for p in store.list()}
-    ids, skipped = [], 0
+    pending, skipped = [], 0
     for prof in profiles:
         if prof.name in existing:
             skipped += 1
             continue
-        store.save(prof)
+        pending.append(prof)
         existing.add(prof.name)
-        ids.append(prof.id)
-    if args.engine:
-        store.set_default_engine(args.engine)
+    # One transaction, including the default-engine change. A partial bulk
+    # create is the worst outcome here: nothing tells the user which half
+    # landed, and re-running duplicates it.
+    repo(store).save_many(pending, config_change=(
+        {"default_engine": args.engine} if args.engine else None))
+    ids = [prof.id for prof in pending]
     note = _c(f", skipped {skipped} name clash(es)", C.YEL) if skipped else ""
     say(_c(f"Created {len(ids)} profile(s)", C.GRN) + note
         + _c(f"  (engine {engine})", C.DIM))

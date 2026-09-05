@@ -89,26 +89,51 @@ def align_to_reality(profile: Profile, store: ProfileStore,
             changed.append(label or attr)
 
     # 1. Operating system — the root that everything else hangs off.
+    #
+    # `os_changed` is captured BEFORE the assignment. It used to be re-tested
+    # as `os_key != fp.os` after `fp.os = os_key`, which can never be true, so
+    # a profile crossing OS families kept the old version and handset: a
+    # "windows" fingerprint still carrying macOS 15.5 as its os_version, and
+    # with it the wrong UA-CH `platformVersion`, which `stealth` reports as a
+    # high-entropy hint. The trust grade never caught it because it does not
+    # read that hint.
     os_key = _os_from_platform(seen.get("platform"), fp.os)
+    os_changed = os_key != fp.os
     chrome = _chrome_from_ua(seen.get("userAgent")) or fp.chrome_version
-    if os_key != fp.os:
+    if os_changed:
         fp.os = os_key
         fp.is_mobile = (os_key == "android")
         changed.append("os")
     fp.chrome_version = chrome
     apply("platform", _devices.NAV_PLATFORM.get(os_key, seen.get("platform")), "platform")
     fp.ch_platform = _devices.CH_PLATFORM.get(os_key, fp.ch_platform)
-    if os_key != fp.os or not fp.os_version:
-        # A changed OS invalidates the version and handset the old one carried.
+    if os_changed or not fp.os_version:
+        # A changed OS invalidates the version and the handset the old one
+        # carried. The version is the head of the target OS's own table, which
+        # is also what a freshly generated fingerprint would pick.
         fp.os_version = _devices.OS_VERSIONS[os_key][0][0]
         if os_key != "android":
             fp.device_model = ""
+        elif not fp.device_model:
+            fp.device_model = _devices.ANDROID_MODELS[0]
     apply("user_agent",
           _build_ua(os_key, chrome, fp.os_version, fp.device_model), "userAgent")
 
     # 2. Hardware, straight from the machine.
     apply("hardware_concurrency", seen.get("cores"), "cores")
     apply("device_memory", seen.get("memory"), "memory")
+    # Touch points and DPR are OS-shaped too - 0 on a desktop, 5 on a phone;
+    # 2 on a Retina Mac against Windows' 1/1.25/1.5 - so a value carried across
+    # an OS transition is a contradiction. Observed values win; an OS change
+    # with nothing observed falls back to the target OS's own default rather
+    # than keeping the old one.
+    apply("max_touch_points", seen.get("maxTouchPoints"), "maxTouchPoints")
+    apply("device_pixel_ratio", seen.get("devicePixelRatio"), "devicePixelRatio")
+    if os_changed:
+        if seen.get("maxTouchPoints") is None:
+            apply("max_touch_points", _devices.TOUCH_POINTS[os_key][0], "maxTouchPoints")
+        if seen.get("devicePixelRatio") is None:
+            apply("device_pixel_ratio", _devices.PIXEL_RATIOS[os_key][0], "devicePixelRatio")
     if seen.get("webglRenderer"):
         apply("webgl_renderer", seen["webglRenderer"], "webglRenderer")
         fp.webgl_vendor = seen.get("webglVendor") or _vendor_from_renderer(seen["webglRenderer"])

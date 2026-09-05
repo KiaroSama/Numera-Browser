@@ -79,8 +79,15 @@ def race(action: str, writer: str, root, password="master"):
     bar = Rendezvous()
     procs = {}
     try:
-        procs["migrator"] = start(MIGRATOR.format(action=action), root, "migrator", bar.port)
+        # The writer starts FIRST and takes its snapshot before the migration
+        # begins. Since 0.20.0 an engine read joins the transaction, so a
+        #  issued while a migration holds the lock waits for it - which
+        # is the point of that change, and would deadlock this protocol if the
+        # snapshot were taken afterwards.
         procs["writer"] = start(writer, root, "writer", bar.port)
+        if "cached" in writer:
+            bar.expect("writer", "cached")
+        procs["migrator"] = start(MIGRATOR.format(action=action), root, "migrator", bar.port)
         frozen = bar.expect("migrator", "inside ")   # one file sealed, lock held
         bar.release("writer", frozen)                # write over that same file
         bar.expect("writer", "trying")
@@ -102,6 +109,7 @@ from numera import crypto
 from numera.store import ProfileStore
 store = ProfileStore(ROOT{password})
 cached = {{p.id: p for p in store.list()}}     # plaintext, taken before the migration
+say("cached")                                 # the snapshot exists; start the migration
 target = pathlib.Path(wait().split(" ", 1)[1]).stem
 prof = cached[target]
 prof.notes = "edited"

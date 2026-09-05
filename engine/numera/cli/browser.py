@@ -33,8 +33,13 @@ def cmd_launch(args, store: ProfileStore) -> int:
         say(_c(f"Warning: {warning}", C.YEL))
     engine = args.engine or prof.engine or "playwright"
     say(_c(f"Launching '{prof.name}' via {engine}...", C.CYN))
+    from ..drivers import open_session
     from ..launcher import launch  # imported lazily (browser deps optional)
-    launch(prof, store, headless=args.headless, keep_open=False, engine=engine)
+    # This process *is* the session - the server spawns exactly this command as
+    # a child - so the lease lives for as long as the command does, and the OS
+    # drops it if the process is killed.
+    with open_session(prof, store):
+        launch(prof, store, headless=args.headless, keep_open=False, engine=engine)
     return emit({"ok": True, "id": prof.id, "name": prof.name, "engine": engine,
                  "headless": bool(args.headless), "warnings": warnings})
 
@@ -106,7 +111,14 @@ def cmd_attach(args, store: ProfileStore) -> int:
     if not prof:
         return emit({"ok": False, "error": f"no profile matching '{args.ref}'"}, 1)
     from ..automation import attach, snippets
+    from ..drivers import open_session
     say(_c(f"Launching '{prof.name}' with DevTools on port {args.port}...", C.CYN))
+    # Held for the whole attached session, same as `launch`.
+    with open_session(prof, store):
+        return _attached(args, store, prof, attach, snippets)
+
+
+def _attached(args, store, prof, attach, snippets) -> int:
     (pw, context, page), info = attach(prof, store, port=args.port, engine=args.engine,
                                        headless=args.headless)
     ws = info.get("webSocketDebuggerUrl", "")

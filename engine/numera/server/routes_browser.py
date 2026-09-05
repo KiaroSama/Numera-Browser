@@ -136,13 +136,16 @@ def register(app, ctx):
 
     @app.post("/api/profiles/{pid}/trust")
     def trust(pid: str):
-        d = _prepare(pid)
+        _prepare(pid)
         rep = json.loads(_run_cli("trust", pid, "--json"))
         # Remember the last grade so the Health page can show it without
         # re-launching every profile (a trust run opens a real browser).
-        d["_trust"] = {"grade": rep.get("grade"), "score": rep.get("score"),
-                       "at": time.time()}
-        dash.save(d)
+        #
+        # Patched onto the *current* record, not onto the snapshot `_prepare`
+        # read. A trust run opens a browser and takes tens of seconds; any edit
+        # made in that window used to be reverted by saving the old object back.
+        stamp = {"grade": rep.get("grade"), "score": rep.get("score"), "at": time.time()}
+        dash.patch(pid, lambda current: ({**current, "_trust": stamp}, None))
         return rep
 
     @app.post("/api/profiles/{pid}/tls")
@@ -199,9 +202,17 @@ def register(app, ctx):
 
     @app.post("/api/profiles/{pid}/warmup")
     def warmup(pid: str, body: Optional[dict] = None):
-        d = _prepare(pid)
+        from ..warmup import WarmupInvalid, validate_warmup
+
         body = body or {}
-        minutes = float(body.get("minutes", 5))
+        # Validated before anything is prepared or spawned. A bare `float()`
+        # accepted `inf`, which became a browser with no end time, and `nan`,
+        # whose comparisons are false in both directions.
+        try:
+            minutes = validate_warmup(body.get("minutes", 5), body.get("preset"))
+        except WarmupInvalid as e:
+            raise HTTPException(400, str(e)) from None
+        d = _prepare(pid)
         cli = [sys.executable, "-m", "numera", "--data-dir", str(engine_store.root),
                "warmup", pid, "--minutes", str(minutes), "--headless"]
         if body.get("preset"):
@@ -215,21 +226,36 @@ def register(app, ctx):
     def align(pid: str):
         """Auto-adjust: rewrite the profile to match what its browser presents,
         then write the aligned values back so the dashboard profile stays put."""
-        d = _prepare(pid)
+        _prepare(pid)
         res = json.loads(_run_cli("align", pid, "--json"))
         fp = res.get("fingerprint") or {}
+        after = res.get("after") or {}
+
+        # Observe, then commit. The route used to hold the record it read
+        # *before* the child process launched a browser, and write the aligned
+        # values onto that object minutes later - so a rename or a note made
+        # during the align was silently undone. Only the fields alignment owns
+        # are patched onto whatever the record is now.
+        owned = {}
         if fp.get("os"):
-            d["os"] = OS_TO_DASH.get(fp["os"], d.get("os"))
+            owned["os"] = OS_TO_DASH.get(fp["os"])
         for src, dst in (("userAgent", "userAgent"), ("browserVersion", "browserVersion"),
                         ("cores", "cores"), ("memory", "memory"), ("screen", "screen"),
                         ("webglVendor", "webglVendor"), ("webglRenderer", "webglRenderer"),
                         ("cameras", "mediaVideo"), ("microphones", "mediaAudio"),
                         ("locale", "locale"), ("timezone", "timezone")):
             if fp.get(src) is not None:
-                d[dst] = fp[src]
-        after = res.get("after") or {}
+                owned[dst] = fp[src]
         if after.get("grade"):
-            d["_trust"] = {"grade": after["grade"], "score": after.get("score"),
-                           "at": time.time()}
-        res["profile"] = decorate(dash.save(d))
+            owned["_trust"] = {"grade": after["grade"], "score": after.get("score"),
+                               "at": time.time()}
+
+        def commit(current: dict):
+            merged = {**current, **{k: v for k, v in owned.items() if v is not None}}
+            if owned.get("os") is None and fp.get("os"):
+                merged["os"] = current.get("os")
+            return merged, None
+
+        saved = dash.patch(pid, commit)
+        res["profile"] = decorate(saved) if saved else None
         return res

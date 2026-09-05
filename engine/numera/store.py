@@ -26,7 +26,7 @@ from . import crypto
 from . import vault
 from .models import Profile
 from .paths import (_lock_for, id_path, mutate_json, resolve_data_dir, safe_id,
-                    safe_join, transaction_lock, write_json)
+                    safe_join, session_lease, transaction_lock, write_json)
 
 
 def unloadable_extensions(paths) -> list[str]:
@@ -491,7 +491,13 @@ class ProfileStore:
             return None
         if not path.exists():
             return None
-        data = self._apply_secrets(json.loads(path.read_text(encoding="utf-8")), "dec")
+        # Inside the transaction: this read's meaning depends on the profile
+        # file and `config.json` agreeing, and a migration rewrites the first
+        # before committing the second. Reentrant, so a caller already holding
+        # it (every write path) pays nothing.
+        with transaction_lock(self.root):
+            data = self._apply_secrets(
+                json.loads(path.read_text(encoding="utf-8")), "dec")
         return Profile.from_dict(data)
 
     def find_by_name(self, name: str) -> Optional[Profile]:
@@ -501,10 +507,19 @@ class ProfileStore:
         return None
 
     def resolve(self, ref: str) -> Optional[Profile]:
-        """Look up a profile by id first, then by name."""
-        return self.get(ref) or self.find_by_name(ref)
+        """Look up a profile by id first, then by name.
+
+        One lock for both attempts: a write landing between them could show a
+        profile under neither its old nor its new name.
+        """
+        with transaction_lock(self.root):
+            return self.get(ref) or self.find_by_name(ref)
 
     def list(self) -> list[Profile]:
+        with transaction_lock(self.root):     # one coherent vault state, see `get`
+            return self._list_locked()
+
+    def _list_locked(self) -> list[Profile]:
         out: list[Profile] = []
         for f in sorted(self.profiles_dir.glob("*.json")):
             try:
@@ -518,8 +533,15 @@ class ProfileStore:
         return sorted(out, key=lambda p: p.created_at)
 
     def delete(self, profile_id: str) -> bool:
-        """Delete a profile and its session, or leave both exactly as they were."""
-        with transaction_lock(self.root):
+        """Delete a profile and its session, or leave both exactly as they were.
+
+        The session lease is taken first and *outside* the data transaction, in
+        that order deliberately: a busy profile refuses immediately instead of
+        queueing behind - or holding up - every write in the data root. The
+        rename in `detach_session` was never the proof it looked like, because
+        POSIX renames a directory a browser is using without complaint.
+        """
+        with session_lease(self.root, profile_id), transaction_lock(self.root):
             return self._delete_locked(profile_id)
 
     def _delete_locked(self, profile_id: str) -> bool:
@@ -669,26 +691,30 @@ class ProfileStore:
         *plaintext* (secrets are decrypted on read), so treat a backup file as
         sensitive — it grants everything the profile does. Returns the path, or
         ``None`` if no such profile exists."""
-        prof = self.get(profile_id)
-        if not prof:
-            return None
-        # The docstring above promises the archive carries the proxy password.
-        # While locked it would not, and nothing in the file would say so - the
-        # restore would come back a working-looking profile that cannot reach
-        # its proxy.
-        if self.secret_withheld(profile_id):
-            raise crypto.VaultLocked(
-                f"backing up '{prof.name}' would drop its proxy password: "
-                + vault.LOCKED_MESSAGE)
-        dest = Path(dest)
-        with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
-            z.writestr("profile.json", json.dumps(prof.to_dict(), indent=2))
-            ud = self.userdata_dir / profile_id
-            if ud.exists():
-                for f in ud.rglob("*"):
-                    if f.is_file():
-                        z.write(f, arcname=str(Path("user-data") / f.relative_to(ud)))
-        return dest
+        # A live Chromium rewrites its databases continuously; zipping one
+        # mid-write produces an archive that restores into a corrupt profile,
+        # with nothing at backup time to say so.
+        with session_lease(self.root, profile_id):
+            prof = self.get(profile_id)
+            if not prof:
+                return None
+            # The docstring above promises the archive carries the proxy password.
+            # While locked it would not, and nothing in the file would say so - the
+            # restore would come back a working-looking profile that cannot reach
+            # its proxy.
+            if self.secret_withheld(profile_id):
+                raise crypto.VaultLocked(
+                    f"backing up '{prof.name}' would drop its proxy password: "
+                    + vault.LOCKED_MESSAGE)
+            dest = Path(dest)
+            with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
+                z.writestr("profile.json", json.dumps(prof.to_dict(), indent=2))
+                ud = self.userdata_dir / profile_id
+                if ud.exists():
+                    for f in ud.rglob("*"):
+                        if f.is_file():
+                            z.write(f, arcname=str(Path("user-data") / f.relative_to(ud)))
+            return dest
 
     def restore(self, src: str | Path, new_id: bool = False) -> Profile:
         """Recreate a profile and its session from a :meth:`backup` archive.
@@ -722,58 +748,62 @@ class ProfileStore:
             if new_id:
                 prof.id = uuid.uuid4().hex[:12]
 
-            staging = Path(tempfile.mkdtemp(prefix="numera-restore-", dir=self.root))
-            try:
-                for info in z.infolist():
-                    name = info.filename
-                    if not name.startswith("user-data/") or name.endswith("/"):
-                        continue
-                    if info.is_dir():
-                        continue
-                    # Raises before anything is written if the member escapes.
-                    target = safe_join(staging, name[len("user-data/"):])
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    with z.open(info) as fh:
-                        target.write_bytes(fh.read())
-
-                # Replace, do not merge: a session that is half the old
-                # identity and half the restored one is worse than either.
-                #
-                # Commit order matters, and it used to be wrong. The profile was
-                # saved first, then the old session was removed with
-                # `ignore_errors=True`, then staging was moved in. On Windows a
-                # running Chromium holds its files, so the delete failed
-                # silently - and `shutil.move` onto a directory that still
-                # exists moves the source *inside* it, leaving
-                # `user-data/<id>/numera-restore-xxxx/`. The metadata was
-                # already updated, so the store described a session it did not
-                # have. Now the old session is renamed aside (which fails loudly
-                # if it is in use), the new one is moved into place, the profile
-                # is written last, and any failure puts all of it back.
-                ud = self.user_data_path(prof.id)
-                record = self._path(prof.id)
-                previous_json = record.read_bytes() if record.exists() else None
-                aside = None
-                if ud.exists():
-                    aside = ud.with_name(f"{ud.name}.replaced-{uuid.uuid4().hex[:8]}")
-                    ud.rename(aside)
+            # The lease, now that the archive has named the profile: a restore
+            # replaces a whole session directory, and must not replace one
+            # another process is using.
+            with session_lease(self.root, prof.id):
+                staging = Path(tempfile.mkdtemp(prefix="numera-restore-", dir=self.root))
                 try:
-                    ud.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.move(str(staging), str(ud))
-                    staging = None
-                    self.save(prof)
-                except BaseException:
-                    shutil.rmtree(ud, ignore_errors=True)
+                    for info in z.infolist():
+                        name = info.filename
+                        if not name.startswith("user-data/") or name.endswith("/"):
+                            continue
+                        if info.is_dir():
+                            continue
+                        # Raises before anything is written if the member escapes.
+                        target = safe_join(staging, name[len("user-data/"):])
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        with z.open(info) as fh:
+                            target.write_bytes(fh.read())
+
+                    # Replace, do not merge: a session that is half the old
+                    # identity and half the restored one is worse than either.
+                    #
+                    # Commit order matters, and it used to be wrong. The profile was
+                    # saved first, then the old session was removed with
+                    # `ignore_errors=True`, then staging was moved in. On Windows a
+                    # running Chromium holds its files, so the delete failed
+                    # silently - and `shutil.move` onto a directory that still
+                    # exists moves the source *inside* it, leaving
+                    # `user-data/<id>/numera-restore-xxxx/`. The metadata was
+                    # already updated, so the store described a session it did not
+                    # have. Now the old session is renamed aside (which fails loudly
+                    # if it is in use), the new one is moved into place, the profile
+                    # is written last, and any failure puts all of it back.
+                    ud = self.user_data_path(prof.id)
+                    record = self._path(prof.id)
+                    previous_json = record.read_bytes() if record.exists() else None
+                    aside = None
+                    if ud.exists():
+                        aside = ud.with_name(f"{ud.name}.replaced-{uuid.uuid4().hex[:8]}")
+                        ud.rename(aside)
+                    try:
+                        ud.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.move(str(staging), str(ud))
+                        staging = None
+                        self.save(prof)
+                    except BaseException:
+                        shutil.rmtree(ud, ignore_errors=True)
+                        if aside is not None:
+                            aside.rename(ud)
+                        if previous_json is not None:
+                            record.write_bytes(previous_json)
+                        else:
+                            record.unlink(missing_ok=True)
+                        raise
                     if aside is not None:
-                        aside.rename(ud)
-                    if previous_json is not None:
-                        record.write_bytes(previous_json)
-                    else:
-                        record.unlink(missing_ok=True)
-                    raise
-                if aside is not None:
-                    shutil.rmtree(aside, ignore_errors=True)
-            finally:
-                if staging is not None:
-                    shutil.rmtree(staging, ignore_errors=True)
-        return prof
+                        shutil.rmtree(aside, ignore_errors=True)
+                finally:
+                    if staging is not None:
+                        shutil.rmtree(staging, ignore_errors=True)
+            return prof

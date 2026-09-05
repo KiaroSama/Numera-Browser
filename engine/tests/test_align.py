@@ -172,3 +172,95 @@ def test_align_keeps_timezone_when_no_locale_models_it(tmp_path, monkeypatch):
 
     assert prof.fingerprint.timezone == devices.LOCALES["en-US"][0]   # unchanged
     assert "timezone" not in res["changed"]
+
+
+# --- crossing OS families ---------------------------------------------------
+#
+# The reset of OS-derived values was gated on `os_key != fp.os` *after*
+# `fp.os = os_key`, which can never be true. A macOS profile aligned onto a
+# Windows host therefore kept macOS 15.5 as its `os_version` - and with it the
+# UA-CH `platformVersion` hint, which is the only thing that distinguishes
+# Windows 10 from 11 and is read by sites that check. The trust grade never saw
+# it, so these assertions go at the stored fingerprint and at the hints
+# `stealth` actually emits.
+
+def test_crossing_os_families_resets_the_values_the_old_os_owned(tmp_path, monkeypatch):
+    from numera.fingerprint import platform_version
+
+    store = ProfileStore(tmp_path)
+    prof = Profile(name="mac-to-win", fingerprint=generate(seed=3, os="macos", locale="en-US"),
+                   engine="cloak")
+    mac_version = prof.fingerprint.os_version
+    assert mac_version and mac_version.startswith(("13", "14", "15"))
+    store.save(prof)
+
+    monkeypatch.setattr(probe.trust, "_observe", lambda *a, **k: _windows_host_seen(prof))
+    align_to_reality(prof, store, engine="cloak")
+
+    fp = ProfileStore(tmp_path).resolve("mac-to-win").fingerprint
+    assert fp.os == "windows"
+    assert fp.os_version != mac_version, "the macOS release survived the move to Windows"
+    assert fp.os_version in [v for v, _hint in devices.OS_VERSIONS["windows"]]
+    assert fp.device_model == ""
+    assert "Windows NT" in fp.user_agent and "Mac OS X" not in fp.user_agent
+
+
+def test_the_client_hints_agree_with_the_new_os(tmp_path, monkeypatch):
+    """`platformVersion` is generated from `os_version`, so a stale version is
+    a hint that contradicts the UA string on the one axis the UA cannot carry."""
+    from numera import stealth
+    from numera.fingerprint import platform_version
+
+    store = ProfileStore(tmp_path)
+    prof = Profile(name="hints", fingerprint=generate(seed=4, os="macos", locale="en-US"),
+                   engine="cloak")
+    store.save(prof)
+    stale_hint = platform_version("macos", prof.fingerprint.os_version)
+
+    monkeypatch.setattr(probe.trust, "_observe", lambda *a, **k: _windows_host_seen(prof))
+    align_to_reality(prof, store, engine="cloak")
+
+    fp = prof.fingerprint
+    hint = platform_version(fp.os, fp.os_version)
+    assert hint != stale_hint
+    assert hint in [h for _v, h in devices.OS_VERSIONS["windows"]]
+
+    script = stealth.build_init_script(fp)
+    assert f'"platformVersion": "{hint}"' in script or f"'platformVersion': '{hint}'" in script, \
+        "the injected client hints still carry the old OS version"
+    # `uaPlatform` is the client-hint one; `platform` is navigator.platform.
+    assert '"uaPlatform": "Windows"' in script
+
+
+def test_touch_and_dpr_follow_the_observed_machine(tmp_path, monkeypatch):
+    """Neither is graded, so nothing else would notice them going stale."""
+    store = ProfileStore(tmp_path)
+    prof = Profile(name="touch", fingerprint=generate(seed=5, os="android", locale="en-US"),
+                   engine="cloak")
+    store.save(prof)
+    assert prof.fingerprint.max_touch_points == 5          # a phone
+
+    seen = {**_windows_host_seen(prof), "maxTouchPoints": 0, "devicePixelRatio": 1.25}
+    monkeypatch.setattr(probe.trust, "_observe", lambda *a, **k: seen)
+    align_to_reality(prof, store, engine="cloak")
+
+    fp = prof.fingerprint
+    assert fp.os == "windows"
+    assert fp.max_touch_points == 0, "a phone's touch points survived onto a desktop"
+    assert fp.device_pixel_ratio == 1.25
+    assert fp.is_mobile is False
+
+
+def test_an_unobserved_form_factor_falls_back_to_the_new_os(tmp_path, monkeypatch):
+    """An older engine that reports neither must still not keep the phone's."""
+    store = ProfileStore(tmp_path)
+    prof = Profile(name="fallback", fingerprint=generate(seed=6, os="android", locale="en-US"),
+                   engine="cloak")
+    store.save(prof)
+
+    monkeypatch.setattr(probe.trust, "_observe", lambda *a, **k: _windows_host_seen(prof))
+    align_to_reality(prof, store, engine="cloak")
+
+    fp = prof.fingerprint
+    assert fp.max_touch_points in devices.TOUCH_POINTS["windows"]
+    assert fp.device_pixel_ratio in devices.PIXEL_RATIOS["windows"]

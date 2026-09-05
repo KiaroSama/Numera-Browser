@@ -30,7 +30,15 @@ MIN_INTERVAL_HOURS = 0.25
 
 # Written by the scheduler as it runs, never by a client: patching `lastRun`
 # moves the next run, and patching an outcome forges a result nobody produced.
-SCHEDULER_OWNED = ("lastRun", "lastOutcome", "lastError", "lastFailedAt")
+SCHEDULER_OWNED = ("lastRun", "lastOutcome", "lastError", "lastFailedAt",
+                   "claimedBy", "claimedAt")
+
+# How long a claim stands before another worker may take the occurrence. Long
+# enough to cover a warm-up plus its browser startup, short enough that a
+# machine that lost power does not park a schedule forever. The claim is
+# advisory bookkeeping, not a lock: the session lease is what actually stops
+# two browsers, and this stops two *records* of one run.
+CLAIM_TTL_SECONDS = 12 * 60 * 60
 
 
 class ScheduleStore:
@@ -98,6 +106,39 @@ class ScheduleStore:
         """
         return self._apply(sid, validate_schedule(patch, partial=True))
 
+    def claim_due(self, sid: str, owner: str, now: Optional[float] = None) -> bool:
+        """Take the current due occurrence of `sid`, or return False.
+
+        Read-decide-write inside the store's own lock, which is what makes it a
+        claim rather than a check. `due_schedules()` is pure and honest, but two
+        servers - or a server and `schedule run-due` - could both read the same
+        due row, both start a warm-up and both write `lastRun`, leaving one
+        occurrence recorded twice and a second browser started for a profile
+        that already had one.
+        """
+        import time as _time
+
+        stamp = _time.time() if now is None else now
+        with self._lock:
+            items = self.list()
+            for s in items:
+                if s.get("id") != sid:
+                    continue
+                if not s.get("enabled", True) or next_run_at(s) > stamp:
+                    return False
+                held = s.get("claimedAt")
+                if held and stamp - float(held) < CLAIM_TTL_SECONDS:
+                    return False              # someone else has this occurrence
+                s["claimedBy"] = owner
+                s["claimedAt"] = stamp
+                self._save(items)
+                return True
+        return False
+
+    def release(self, sid: str) -> None:
+        """Drop a claim without recording a run - a spawn that never started."""
+        self._apply(sid, {"claimedBy": None, "claimedAt": None})
+
     def record(self, sid: str, **outcome) -> Optional[dict]:
         """Write the fields the scheduler owns: what ran, when, and how it went.
 
@@ -108,6 +149,9 @@ class ScheduleStore:
         unknown = sorted(set(outcome) - set(SCHEDULER_OWNED))
         if unknown:
             raise ValueError(f"not a scheduler-owned field: {', '.join(unknown)}")
+        if "lastRun" in outcome:
+            # The occurrence is over; the next one must not inherit its claim.
+            outcome = {**outcome, "claimedBy": None, "claimedAt": None}
         return self._apply(sid, outcome)
 
     def _apply(self, sid: str, patch: dict) -> Optional[dict]:
@@ -168,19 +212,25 @@ def validate_schedule(patch: dict, *, partial: bool = False) -> dict:
         out["everyHours"] = max(MIN_INTERVAL_HOURS, hours)
 
     if "minutes" in patch or not partial:
-        raw = patch.get("minutes", 5)
+        # The same validator the CLI, the HTTP route and warm_up() itself use.
+        # This had its own copy with its own bound (1440 against warmup.py 480),
+        # so a schedule could store a duration a direct run would refuse.
+        from .warmup import WarmupInvalid, validate_warmup
         try:
-            minutes = float(raw)
-        except (TypeError, ValueError):
-            raise ValueError(f"'minutes' must be a number, got {raw!r}") from None
-        if minutes != minutes or not (0 < minutes <= 24 * 60):
-            raise ValueError("'minutes' must be greater than 0 and at most 1440")
-        out["minutes"] = minutes
+            out["minutes"] = validate_warmup(patch.get("minutes", 5))
+        except WarmupInvalid as e:
+            raise ValueError(f"'minutes': {e}") from None
 
     if "preset" in patch:
         preset = patch["preset"]
         if preset is not None and not isinstance(preset, str):
             raise ValueError(f"'preset' must be a string, got {type(preset).__name__}")
+        if preset is not None:
+            from .warmup import WarmupInvalid as _WI, validate_warmup as _vw
+            try:
+                _vw(1, preset)
+            except _WI as e:
+                raise ValueError(f"'preset': {e}") from None
         out["preset"] = preset
 
     if "enabled" in patch:
