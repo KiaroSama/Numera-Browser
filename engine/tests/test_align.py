@@ -13,6 +13,9 @@ from numera.probe import (
     align_to_reality, _os_from_platform, _chrome_from_ua, _vendor_from_renderer,
 )
 import numera.probe as probe
+# Patched on probe.trust, which is where align_to_reality looks it
+# up. Setting it on the package would replace a re-export nobody calls, and
+# the test would quietly open a real browser instead of failing.
 
 
 def test_os_inferred_from_platform():
@@ -64,7 +67,7 @@ def test_align_reconciles_mac_profile_to_windows_host(tmp_path, monkeypatch):
                    engine="cloak")
     store.save(prof)
 
-    monkeypatch.setattr(probe, "_observe", lambda *a, **k: _windows_host_seen(prof))
+    monkeypatch.setattr(probe.trust, "_observe", lambda *a, **k: _windows_host_seen(prof))
     res = align_to_reality(prof, store, engine="cloak")
 
     # The identity now reads as the machine it actually runs on.
@@ -87,7 +90,7 @@ def test_aligned_profile_is_coherent(tmp_path, monkeypatch):
     store = ProfileStore(tmp_path)
     prof = Profile(name="p", fingerprint=generate(seed=2, os="macos", locale="en-US"))
     store.save(prof)
-    monkeypatch.setattr(probe, "_observe", lambda *a, **k: _windows_host_seen(prof))
+    monkeypatch.setattr(probe.trust, "_observe", lambda *a, **k: _windows_host_seen(prof))
     align_to_reality(prof, store, engine="cloak")
     # A real host GPU/screen must not trip the coherence validator.
     assert validate(prof.fingerprint) == []
@@ -113,7 +116,7 @@ def test_align_is_a_noop_when_already_matching(tmp_path, monkeypatch):
         "cameras": fp.cameras, "microphones": fp.microphones,
         "fontsRendered": list(fp.fonts),
     }
-    monkeypatch.setattr(probe, "_observe", lambda *a, **k: seen)
+    monkeypatch.setattr(probe.trust, "_observe", lambda *a, **k: seen)
     res = align_to_reality(prof, store, engine="playwright")
     assert res["changed"] == []
     assert res["after"]["score"] == 100
@@ -146,7 +149,7 @@ def test_align_moves_timezone_and_locale_to_reality(tmp_path, monkeypatch):
     prof = Profile(name="flow", engine="cloak",
                    fingerprint=generate(seed=1, os="windows", locale="en-US"))
     store.save(prof)
-    monkeypatch.setattr(probe, "_observe", lambda *a, **k: _fully_consistent_windows_seen("Asia/Karachi"))
+    monkeypatch.setattr(probe.trust, "_observe", lambda *a, **k: _fully_consistent_windows_seen("Asia/Karachi"))
 
     res = align_to_reality(prof, store, engine="cloak")
 
@@ -163,7 +166,7 @@ def test_align_keeps_timezone_when_no_locale_models_it(tmp_path, monkeypatch):
     prof = Profile(name="flow", engine="cloak",
                    fingerprint=generate(seed=1, os="windows", locale="en-US"))
     store.save(prof)
-    monkeypatch.setattr(probe, "_observe", lambda *a, **k: _fully_consistent_windows_seen("Antarctica/Troll"))
+    monkeypatch.setattr(probe.trust, "_observe", lambda *a, **k: _fully_consistent_windows_seen("Antarctica/Troll"))
 
     res = align_to_reality(prof, store, engine="cloak")
 

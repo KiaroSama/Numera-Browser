@@ -405,7 +405,7 @@ store.save(profile)
 | `cookies.py` | Cookie import/export across the formats people actually have |
 | `crypto.py` | Encrypt-at-rest for secrets (optional `cryptography` backend) |
 | `importers.py` | Tolerant import from GoLogin / AdsPower / Multilogin exports |
-| `probe.py` | Proxy/DNS/leak/TLS test, the trust report, and the auto-aligner (`align`) |
+| `probe/` | Proxy/DNS/leak/TLS tests, the trust report, and the auto-aligner (`align`) - one module per question: `network`, `dns`, `trust`, `align` |
 | `collision.py` | Finds profiles that share a fingerprint (`numera collisions`) |
 | `bulk.py` | Multi-profile synchroniser + bulk generator (`generate_profiles`) |
 | `proxypool.py` | Parse pasted proxy lists (any layout) + health-check them |

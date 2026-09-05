@@ -68,11 +68,15 @@ def test_the_table_is_symmetric():
 def test_the_probe_compares_with_the_alias_rule():
     """Both timezone checks in the trust/leak reports, not just one of them -
     the exit-location check compared strings the same way."""
-    import inspect
+    import pathlib
 
     from numera import probe
 
-    src = inspect.getsource(probe)
+    # The whole package, not `inspect.getsource(probe)` - that returns only
+    # `__init__.py`, and the two comparisons live in `network.py` and
+    # `trust.py`. Reading one file would have passed this vacuously.
+    src = "\n".join(p.read_text(encoding="utf-8")
+                    for p in sorted(pathlib.Path(probe.__path__[0]).glob("*.py")))
     assert 'info["timezone"] == fp.timezone' not in src
     assert 'seen["timezone"] == fp.timezone' not in src
     assert src.count("_same_timezone(") >= 2

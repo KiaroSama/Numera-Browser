@@ -4,6 +4,26 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.19.1] - 2026-09-05
+
+### Changed
+
+- **`probe.py` is a package.** At 839 lines it held four jobs that share
+  nothing but a record shape: the checks that need internet (proxy exit,
+  WebRTC, TLS), the DNS leak test, the fully offline trust grade, and the
+  aligner - the only one of the four that *writes* to a profile. Those are the
+  boundaries the file's own section comments already drew, so the split follows
+  them: `probe/network.py`, `probe/dns.py`, `probe/trust.py`, `probe/align.py`,
+  with `probe/shared.py` for the check shape and the in-memory page, and
+  `probe/__init__.py` re-exporting the whole previous surface. Every
+  `from numera.probe import ...` in the CLI and the tests is unchanged.
+
+  One coupling had to change with it. `align_to_reality` reads the browser
+  through `_observe`, which the alignment tests replace; importing it by name
+  would have left them patching a copy nobody calls, and the tests would have
+  quietly opened a real browser instead of failing. `align.py` imports the
+  module and calls `trust._observe`, and the tests patch it there.
+
 ## [0.19.0] - 2026-09-05
 
 The tenth audit brief: the delta the ninth pass left behind. Every item is the
