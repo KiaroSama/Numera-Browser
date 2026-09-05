@@ -117,10 +117,16 @@ jobs:
           python -m pip install --quiet pyinstaller ".[api,launch,secure]" --prefix /tmp/eng || true
           python -m pip install --quiet pyinstaller
           python -m pip install --quiet ./engine[api,launch,secure]
+          # `scripts/engine_entry.py`, not `engine/numera/__main__.py`. PyInstaller
+          # runs the entry as top-level `__main__` with no package, so the
+          # relative import in `__main__.py` raised "attempted relative import
+          # with no known parent package" and the artifact died on `--version`.
+          # It went unnoticed because this workflow had never actually run -
+          # every earlier attempt reported steps=0 under the billing block.
           pyinstaller --noconfirm --name numera-engine --distpath desktop/dist/.build \
                       --add-data "dashboard/dist:numera/web" \
                       --collect-all uvicorn --collect-submodules numera \
-                      engine/numera/__main__.py
+                      scripts/engine_entry.py
 
       - name: Build the shell
         working-directory: desktop/src-tauri

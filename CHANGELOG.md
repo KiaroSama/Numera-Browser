@@ -4,6 +4,24 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-09-05
+
+### Fixed
+
+- **The Linux and macOS portable artifacts had never worked.** Both froze
+  `engine/numera/__main__.py` as the PyInstaller entry point. PyInstaller runs the entry as
+  top-level `__main__` with no package context, so that file's `from .cli import main` raised
+  "attempted relative import with no known parent package" and the artifact died on its first
+  command. The Windows script had always generated a separate entry with an absolute import,
+  which is why only Windows worked - and having two definitions of the same file is how one of
+  them stayed wrong. There is now one committed `scripts/engine_entry.py` and both builds freeze
+  it, with a test asserting they do.
+
+  It went unnoticed because `build-desktop.yml` had never actually executed: like every other
+  workflow before 0.16.0, its runs reported `steps=0` under the account's billing block. This is
+  the first genuine run of it, and the Windows job passed on the same run - including the
+  clean-checkout dashboard build and the vault round trip added in 0.17.0.
+
 ## [0.17.0] - 2026-09-05
 
 ### Fixed

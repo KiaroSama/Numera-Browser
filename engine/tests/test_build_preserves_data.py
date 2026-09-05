@@ -135,6 +135,46 @@ def test_the_frozen_engine_includes_the_launch_extra():
     assert "secure" in extras, "the portable build ships without the vault backend"
 
 
+ENTRY = SCRIPT.parent / "engine_entry.py"
+WORKFLOW = SCRIPT.resolve().parents[1] / ".github" / "workflows" / "build-desktop.yml"
+
+
+def test_the_freeze_entry_point_uses_an_absolute_import():
+    """PyInstaller runs the entry as top-level `__main__` with no package.
+
+    `engine/numera/__main__.py` does `from .cli import main`, which is correct
+    for `python -m numera` and fatal as a frozen entry: the artifact died on its
+    first command with "attempted relative import with no known parent package".
+    The Windows script had always generated a separate entry with an absolute
+    import; the POSIX workflow froze `__main__.py` and was broken for as long as
+    it existed - invisibly, because that workflow had never actually run.
+    """
+    assert ENTRY.is_file(), f"the shared freeze entry point is missing: {ENTRY}"
+    text = ENTRY.read_text(encoding="utf-8")
+    assert "from numera.cli import main" in text, \
+        "the freeze entry must import absolutely; a relative import cannot survive freezing"
+    # Import statements only - the docstring here explains the relative-import
+    # trap and would match a naive substring search for it.
+    relative = [ln for ln in text.splitlines() if ln.startswith("from .")]
+    assert not relative, f"{ENTRY.name} has a relative import: {relative}"
+
+
+def test_both_freeze_paths_use_that_entry_point():
+    """One definition. Two of them is how the POSIX one stayed wrong."""
+    windows = SCRIPT.read_text(encoding="utf-8")
+    assert "scripts\\engine_entry.py" in windows or "scripts/engine_entry.py" in windows, \
+        "the Windows build does not use the shared entry point"
+
+    posix = WORKFLOW.read_text(encoding="utf-8")
+    assert "scripts/engine_entry.py" in posix, \
+        "the POSIX build does not use the shared entry point"
+    # Non-comment lines only: the comment above that invocation names the file it
+    # must not freeze, which is the whole point of the comment.
+    code = [ln for ln in posix.splitlines() if not ln.strip().startswith("#")]
+    assert not any("engine/numera/__main__.py" in ln for ln in code), \
+        "the POSIX build still freezes __main__.py, whose relative import breaks the artifact"
+
+
 @pytest.fixture
 def no_browsers_path():
     """Snapshot `PLAYWRIGHT_BROWSERS_PATH` and put it back.
