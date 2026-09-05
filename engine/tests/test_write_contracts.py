@@ -243,11 +243,20 @@ def test_two_settings_saved_at_once_both_survive(tmp_path):
 
 def test_a_setting_does_not_disturb_the_others(tmp_path):
     store = ProfileStore(tmp_path)
-    store.set_default_extensions(["/one", "/two"])
+    # Real folders: the store validates additions the way the API does, so a
+    # placeholder path is refused before it can round-trip.
+    kept = []
+    for name in ("one", "two"):
+        d = tmp_path / name
+        d.mkdir()
+        (d / "manifest.json").write_text(
+            '{"manifest_version": 3, "name": "x", "version": "1.0"}', encoding="utf-8")
+        kept.append(str(d))
+    store.set_default_extensions(kept)
     store.set_default_engine("playwright")
     store.set_headless_launch(True)
     cfg = ProfileStore(tmp_path).get_config()
-    assert cfg["default_extensions"] == ["/one", "/two"]
+    assert cfg["default_extensions"] == kept
     assert cfg["default_engine"] == "playwright"
     assert cfg["headless_launch"] is True
 

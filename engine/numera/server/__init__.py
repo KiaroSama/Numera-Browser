@@ -45,7 +45,7 @@ from dataclasses import dataclass
 from typing import Callable
 # Re-exported so `numera.server` keeps its whole surface: `cli/`, `mcp.py`
 # and the test suite import these by name.
-from .stores import DashboardStore, ProxyPool, TokenStore
+from .stores import DashboardStore, DuplicateToken, ProxyPool, TokenStore
 from .convert import (_parse_lines, _rel_time, _parse_startup_urls, _stable_seed,
                       dashboard_coherence, to_dashboard_profile,
                       to_engine_profile)
@@ -128,18 +128,34 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
     # the wrong branch - and it had been, so a server started without the
     # scheduler left its browsers running.
     shutdown_hooks: list = []
+    shutdown_done: list = []
 
-    @asynccontextmanager
-    async def lifespan(_app):
-        yield
+    def run_shutdown():
+        """Run every shutdown hook once, whoever asks.
+
+        The lifespan is not the only caller any more: when the desktop shell is
+        force-killed the watcher leaves through `os._exit`, which runs no
+        atexit handler and no lifespan teardown. That took the engine down and
+        left every browser it had launched running - orphaned, holding the
+        profile directories, and invisible to the next launch.
+        """
+        if shutdown_done:
+            return
+        shutdown_done.append(True)
         for fn in shutdown_hooks:
             try:
                 fn()
             except Exception:   # noqa: BLE001 - one bad hook must not strand the rest
                 pass
 
+    @asynccontextmanager
+    async def lifespan(_app):
+        yield
+        run_shutdown()
+
     app = FastAPI(title="Numera Browser API", version=__version__, lifespan=lifespan)
     app.state.add_shutdown = shutdown_hooks.append
+    app.state.run_shutdown = run_shutdown
 
     # The API can create profiles, launch browsers and export cookies, so it is
     # only safe unauthenticated because it binds to localhost. Setting
@@ -330,11 +346,6 @@ def serve(host: str = "127.0.0.1", port: int = 8787, data_dir: Optional[str] = N
     from .. import firstrun, logs
     from ..paths import resolve_data_dir, watch_parent
 
-    # The desktop shell sets NUMERA_PARENT_PID. Without this, a force-killed
-    # shell on macOS left the engine serving on its port, and the next launch
-    # started a second engine against the same portable data root.
-    watch_parent()
-
     root = resolve_data_dir(data_dir)
     # Normalise before the guard so an explicitly empty host is judged as what
     # it actually does - bind everything - rather than skipped as loopback.
@@ -357,6 +368,23 @@ def serve(host: str = "127.0.0.1", port: int = 8787, data_dir: Optional[str] = N
             print(f"  Imported {imported['profiles']} profile(s) from {imported['source']}")
 
     app = create_app(str(root), password=password)
+
+    # The desktop shell sets NUMERA_PARENT_PID. Without this, a force-killed
+    # shell on macOS left the engine serving on its port, and the next launch
+    # started a second engine against the same portable data root.
+    #
+    # Armed after the app exists so it can take the browsers with it: the
+    # default `on_gone` is a bare `os._exit`, which skips the lifespan and left
+    # every launched browser orphaned. Nothing before this point has started
+    # one, or bound the port, so the window it gives up is empty.
+    def shell_is_gone():
+        try:
+            app.state.run_shutdown()
+        finally:
+            os._exit(0)
+
+    watch_parent(on_gone=shell_is_gone)
+
     where = "the dashboard and API" if dashboard_dir() else "the API"
     print(f"Numera Browser: {where} on http://{host}:{port}  (data: {root})")
     if log_path:

@@ -147,3 +147,74 @@ def test_a_hand_unpacked_folder_is_named_too(client, unpacked):
     listed = client.get("/api/extensions/installed").json()["extensions"]
     assert [e["name"] for e in listed] == ["probe"]
     assert listed[0]["icon"] is None
+
+
+# --- every writer, not just the HTTP one ------------------------------------
+#
+# The validator lived in `routes_config.py`, so it guarded `PUT /api/config`
+# and nothing else. `numera config --default-extension` wrote straight through
+# `set_default_extensions()`, and `numera ext default-add` checked only
+# `is_dir()`. Both could persist a value the API rejects and the launcher
+# silently drops. `store.unloadable_extensions` is now the one rule, enforced
+# by the store, so these three agree by construction - and these tests fail if
+# one of them ever grows a private copy again.
+
+from numera import cli                            # noqa: E402
+from numera.store import ProfileStore             # noqa: E402
+
+
+def stored_defaults(root):
+    return ProfileStore(root).get_default_extensions()
+
+
+@pytest.mark.parametrize("bad", ["missing", "empty"])
+def test_the_cli_config_refuses_what_the_api_refuses(tmp_path, bad):
+    root = tmp_path / "data"
+    target = tmp_path / "nope" if bad == "missing" else tmp_path / "empty"
+    if bad == "empty":
+        target.mkdir()
+
+    code = cli.main(["--data-dir", str(root), "config",
+                     "--default-extension", str(target)])
+    assert code == 1, "the CLI stored an extension the API would refuse"
+    assert stored_defaults(root) == [], stored_defaults(root)
+
+
+@pytest.mark.parametrize("bad", ["missing", "empty"])
+def test_ext_default_add_refuses_what_the_api_refuses(tmp_path, bad):
+    root = tmp_path / "data"
+    target = tmp_path / "nope" if bad == "missing" else tmp_path / "empty"
+    if bad == "empty":
+        target.mkdir()
+
+    code = cli.main(["--data-dir", str(root), "ext", "default-add", str(target)])
+    assert code == 1, "`ext default-add` stored a folder with no manifest.json"
+    assert stored_defaults(root) == [], stored_defaults(root)
+
+
+def test_a_real_unpacked_extension_is_accepted_by_every_writer(tmp_path, unpacked, client):
+    root = tmp_path / "data"
+    assert cli.main(["--data-dir", str(root), "config",
+                     "--default-extension", str(unpacked)]) == 0
+    assert stored_defaults(root) == [str(unpacked)]
+
+    assert cli.main(["--data-dir", str(root), "ext", "default-add", str(unpacked)]) == 0
+    assert stored_defaults(root) == [str(unpacked)], "a duplicate add changed the set"
+
+    r = client.put("/api/config", json={"default_extensions": [str(unpacked)]})
+    assert r.status_code < 400, r.text
+
+
+def test_removing_a_default_still_works_when_its_folder_is_gone(tmp_path, unpacked):
+    """Validation covers what is being *added*.
+
+    Checking the whole list would let a path whose folder was deleted after it
+    was added block the very command that removes it.
+    """
+    root = tmp_path / "data"
+    assert cli.main(["--data-dir", str(root), "ext", "default-add", str(unpacked)]) == 0
+    (unpacked / "manifest.json").unlink()
+    unpacked.rmdir()
+
+    assert cli.main(["--data-dir", str(root), "ext", "default-remove", str(unpacked)]) == 0
+    assert stored_defaults(root) == []

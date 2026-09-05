@@ -22,7 +22,7 @@ import pytest
 
 from numera import generate
 from numera.models import Profile
-from numera.paths import LockTimeout, _lock_for, transaction_lock, write_json
+from numera.paths import _lock_for, transaction_lock, write_json
 from numera.store import ProfileStore
 
 ENGINE = str(Path(__file__).resolve().parents[1])
@@ -61,10 +61,8 @@ def test_a_second_process_waits_for_the_file_lock(tmp_path):
     write_json(target, {"held": True})
 
     body = """
-        from numera.paths import _lock_for, LockTimeout
         os.environ["NUMERA_LOCK_TIMEOUT"] = "1"
-        import importlib, numera.paths as P
-        importlib.reload(P)
+        import numera.paths as P
         try:
             with P._lock_for(os.path.join(ROOT, "guarded.json")):
                 print("GOT-IT")
@@ -108,17 +106,16 @@ def test_the_lock_is_released_when_the_holder_exits(tmp_path):
 
     # The lock must be free now. A short timeout keeps a regression from
     # hanging the suite for the full default instead of failing.
+    # No reload: the timeout is read per acquisition. Reloading `numera.paths`
+    # in this process replaced its lock registries and every class it defines,
+    # so a later `except LockTimeout` - or `pytest.raises(RollbackFailed)` in
+    # another test file - was matching a class the module no longer raises.
     os.environ["NUMERA_LOCK_TIMEOUT"] = "5"
     try:
-        import importlib
-
-        from numera import paths as P
-        importlib.reload(P)
-        with P._lock_for(target):
+        with _lock_for(target):
             pass
     finally:
         os.environ.pop("NUMERA_LOCK_TIMEOUT", None)
-        importlib.reload(P)
 
 
 # --- what the lock is for: writes that survive each other -------------------

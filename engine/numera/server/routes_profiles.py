@@ -209,10 +209,23 @@ def register(app, ctx):
         # engine store, and then read the dashboard store *again* for the
         # response - on an endpoint the UI polls every three seconds, with the
         # vault decrypting every record on each pass.
-        profiles = dash.list()
-        known = {p["id"] for p in profiles}
-        for prof in engine_store.list():
-            if prof.id not in known:
+        # Under the transaction lock, because this endpoint *writes*. A delete
+        # could remove the dashboard copy, this listing could observe the engine
+        # copy that had not been removed yet, the delete could finish - and then
+        # this would `save()` the stale engine object and resurrect a profile
+        # the caller had been told was deleted.
+        from ..paths import transaction_lock
+
+        with transaction_lock(engine_store.root):
+            profiles = dash.list()
+            known = {p["id"] for p in profiles}
+            for prof in engine_store.list():
+                if prof.id in known:
+                    continue
+                # Re-check inside the lock: `engine_store.list()` was taken from
+                # the same snapshot, but the record must still exist to adopt.
+                if not engine_store._path(prof.id).exists():
+                    continue
                 d = to_dashboard_profile(prof)
                 d["id"] = prof.id
                 profiles.append(dash.save(d))
@@ -270,25 +283,28 @@ def register(app, ctx):
         if problems:
             raise HTTPException(422, "; ".join(problems[:8]))
 
-        # A PUT is a patch. Normalising the body on its own treated every
-        # omitted field as "reset me": a name-only rename moved a Camoufox
-        # profile to Playwright (the converter's default), emptied its tags,
-        # notes and folder, and minted a fresh `_created`. Merge onto what is
-        # stored, then normalise the complete result.
-        merged = {**stored, **profile}
-        _validate_profile(merged, pid=pid, strip=False)
-        # `expect_rev` closes the lost update. Two requests can read the same
-        # record, prepare independent edits and serialise their writes; without
-        # this the second one carries stale values for every field it did not
-        # touch and erases the first. A client that does not send `_rev` keeps
-        # the old last-writer-wins behaviour rather than being refused.
+        # A PUT is a patch, and the merge happens *inside* the store's lock.
+        # Normalising the body on its own treated every omitted field as "reset
+        # me": a name-only rename moved a Camoufox profile to Playwright (the
+        # converter's default), emptied its tags, notes and folder, and minted a
+        # fresh `_created`. Merging onto stored state fixed that - but merging
+        # it out here left a second race, because two concurrent patches could
+        # merge onto the same old record and the later write would carry stale
+        # values for every field the earlier one had just changed. `expect_rev`
+        # cannot help there: a patch carries no revision.
+        def merge(current: dict):
+            merged = {**current, **profile}
+            _validate_profile(merged, pid=pid, strip=False)
+            change = ({"default_engine": merged["engine"]}
+                      if asked and asked != current.get("engine") else None)
+            return merged, change
+
         try:
-            saved = dash.save(merged, expect_rev=sent_rev,
-                              config_change=(
-                                  {"default_engine": merged["engine"]}
-                                  if asked and asked != stored.get("engine") else None))
+            saved = dash.patch(pid, merge, expect_rev=sent_rev)
         except StaleProfile as e:
             raise HTTPException(409, str(e)) from None
+        if saved is None:
+            raise HTTPException(404, "profile not found")
         return decorate(saved)
 
     @app.delete("/api/profiles/{pid}")
@@ -376,9 +392,12 @@ def register(app, ctx):
         last_engine = chosen[-1] if chosen else None
         # One transaction. A sequential loop left the profiles written before a
         # failing one on disk while the request reported failure.
-        ids = [p["id"] for p in dash.save_many(incoming)]
-        if last_engine:
-            engine_store.set_default_engine(last_engine)
+        # ...including the default-engine change. Committing it afterwards
+        # meant a failing config write reported failure over profiles that were
+        # already on disk, and the retry duplicated every one of them.
+        ids = [p["id"] for p in dash.save_many(
+            incoming,
+            config_change={"default_engine": last_engine} if last_engine else None)]
         return {"created": len(ids), "ids": ids}
 
     @app.post("/api/profiles/bulk")
@@ -400,11 +419,10 @@ def register(app, ctx):
                 problems.append(f"patch: {key!r} must be a list")
         if problems:
             raise HTTPException(400, "; ".join(problems))
-        pending = []
-        for pid in ids:
-            d = dash.get(pid)
-            if not d:
-                continue
+        # Built inside the store's lock, for the same reason the single patch
+        # is: reading every target first and writing them later lets a bulk edit
+        # carry values that changed in between.
+        def merge(pid: str, d: dict):
             for key, value in patch.items():
                 if key == "addTags":
                     d["tags"] = sorted({*d.get("tags", []), *value})
@@ -422,7 +440,7 @@ def register(app, ctx):
             # string - so an unknown engine reached every selected profile and
             # was promoted to the global default from there.
             _validate_profile(d, pid=pid, strip=False)
-            pending.append(d)
+            return d
         # One transaction. Saving in the loop meant a write failure on item N
         # left 0..N-1 edited while the request raised - and the obvious retry
         # applied the patch to part of the selection twice.
@@ -430,8 +448,8 @@ def register(app, ctx):
         # write reported failure over profiles that had already committed;
         # before it, a failed profile write left the default changed. Only when
         # the patch names an engine - a tag-only bulk edit must not touch it.
-        saved = dash.save_many(pending, config_change=(
-            {"default_engine": patch["engine"]} if patch.get("engine") and pending else None))
+        saved = dash.patch_many(ids, merge, config_change=(
+            {"default_engine": patch["engine"]} if patch.get("engine") else None))
         return [decorate(p) for p in saved]
 
     @app.post("/api/fingerprint/validate")

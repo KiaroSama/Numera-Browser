@@ -27,6 +27,128 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   artifact defects this workflow actually caught were not platform-specific in
   origin; they went unnoticed because nothing ran the workflow at all.
 
+## [0.19.0] - 2026-09-05
+
+The tenth audit brief: the delta the ninth pass left behind. Every item is the
+same shape - a decision taken outside the lock that protects the write depending
+on it - so the fix is the same shape too: move the decision inside.
+
+### Fixed
+
+- **A vault migration is one cross-process transaction.** `vault enable` and
+  `vault change` rewrite every secret-bearing file under the data root and held
+  no cross-process lock while they did it. Another process could write a
+  plaintext secret after the migration had converted that file and before the
+  vault descriptor committed, leaving a store the config calls encrypted with
+  one readable secret in it - which no reader can detect and no retry repairs.
+  Two simultaneous `vault enable` calls could both observe "disabled" and commit
+  different salts, and every secret sealed under the loser's salt was then
+  unopenable for good. Both now take the root transaction lock across the state
+  check, the enumeration, every write and the verifier commit, and re-check the
+  vault state after acquiring it.
+
+- **The vault decision inside `save()` is under the same lock as the write.**
+  Reading the descriptor and encrypting happened before the lock was taken, so a
+  rotation committing in between meant the save sealed a secret with the salt
+  the rotation had just replaced. The record then opened with neither password.
+  A writer holding a stale vault identity is refused now.
+
+- **`proxies.json` joins the same lock hierarchy.** Pool writers took the file
+  lock alone, which a migration - writing the same file under the transaction
+  lock - never waited for.
+
+- **`save_many()` persists the revision it returns.** `_rev` was incremented
+  after `batch.write`, so the number reached the client and never the disk: a
+  batch create answered `_rev=1` over a file with no revision at all, and a bulk
+  update answered N+1 while disk still said N. Every one of those was a revision
+  a client could hold and be wrongly rejected - or wrongly accepted - on later.
+
+- **A patch merges under the lock.** `PUT /api/profiles/{id}` read the stored
+  record and merged the body onto it before `save()` locked. `_rev` closes the
+  lost update for a client that sends a whole profile, but a patch carries no
+  revision, so two concurrent patches could merge onto the same old record and
+  the second write carried stale values for every field the first had just
+  changed. `/bulk` was worse: it built its whole pending list from unlocked
+  reads. Both go through `DashboardStore.patch()`/`patch_many()`, whose lock
+  covers read, merge, validation, secret preservation, folder resolution,
+  revision, mirror and write.
+
+- **`GET /api/profiles` no longer resurrects a deleted profile.** The listing
+  writes - it adopts engine-only profiles - and its snapshot was not under the
+  transaction lock, so a delete could remove the dashboard copy, the listing
+  could observe the engine copy that had not gone yet, and the adoption then
+  wrote the profile back.
+
+- **Batch create commits its engine change in the same transaction.** It created
+  the profiles and then set the default engine in a second write; a failure
+  there returned 500 over profiles already on disk, and the retry duplicated
+  every one of them.
+
+- **Config has one lock order.** The batch wrote `config.json` through
+  `batch.write`, which takes no file lock, while ordinary settings writes took
+  the file lock and no transaction lock - two independent domains, so a rollback
+  could restore config over a settings change that had already succeeded. Every
+  config mutation now takes the root transaction lock first and the config file
+  lock second.
+
+- **A rollback that failed is no longer silent.** `_Batch.rollback()` caught
+  `OSError` per file and passed, so a forward failure followed by a rollback
+  failure left partial state on disk while the caller saw only the original
+  error - indistinguishable from a clean refusal, and the obvious next move,
+  retry, wrote on top of it. It raises `RollbackFailed` now, carrying the
+  original cause and every file that could not be restored.
+
+- **The dashboard stops inventing a default-engine change.** `save()` ended with
+  `if (p.engine) setDefaultEngine(p.engine)`, so editing the notes of a
+  Playwright profile under a Camoufox default switched the UI to Playwright over
+  a server that had correctly left it alone - and the next new profile then sent
+  Playwright explicitly and made the server wrong too. The default is refetched
+  from the server after every save.
+
+- **One default-extension validator, enforced by the store.** The rule lived in
+  `routes_config.py`, so `numera config --default-extension` wrote straight
+  through and `numera ext default-add` checked only `is_dir()`. Both could
+  persist a value the API rejects and the launcher silently drops. Only entries
+  being *added* are checked, so removing a default whose folder has since been
+  deleted still works.
+
+- **A malformed `rotateUrl` already on disk is a refusal, not a 500.**
+  Write-time validation cannot reach a value from an older build, a hand-edited
+  `proxies.json` or a restored backup, and reading `.port` on
+  `http://example.test:99999/rotate` raises outside `rotate()`'s error handling.
+
+- **Named-token uniqueness is decided inside `TokenStore.create()`.** Both
+  callers checked for a duplicate name and then called it, so two requests could
+  each read a table without the name, both pass, and both append.
+
+- **A force-killed shell closes the browsers too.** The parent watcher leaves
+  through `os._exit`, which runs no lifespan teardown, so the engine died and
+  every browser it had launched stayed up - orphaned, holding its profile
+  directory, invisible to the next launch. The shutdown hooks run on that path
+  now.
+
+- **The lock timeout is read per acquisition, not once at import.** As a module
+  constant the only way to change it was `importlib.reload(numera.paths)`, which
+  a test did - and a reload replaces the module's lock registries and every
+  class it defines, so two `_DataLock` objects could guard one path and an
+  `except LockTimeout` elsewhere stopped matching the class being raised.
+
+- **`ProxyPool` and `TokenStore` accept a `str` data root.** Both did
+  `root / "..."` on the raw argument, so every CLI path that passed a string
+  raised `TypeError` before it reached anything worth testing.
+
+### Added
+
+- **A Windows engine job in CI.** The storage locks are OS locks and Windows
+  takes an entirely different path - `msvcrt.locking`, byte-range rather than
+  whole-file - which a Linux-only matrix never exercised.
+
+- **A cross-process barrier for concurrency tests** (`engine/tests/_rendezvous.py`).
+  Children check in by name and block in `recv()`; the parent releases them one
+  at a time. Every new concurrency test states the interleaving it needs and
+  fails with an assertion rather than flaking, and none of them contains a
+  `sleep`.
+
 ## [0.18.0] - 2026-09-05
 
 The ninth audit brief. Every item is about state that could be left inconsistent

@@ -14,6 +14,7 @@ import time
 import uuid
 import warnings
 from pathlib import Path
+from contextlib import contextmanager
 from typing import Optional
 from .. import vault
 from ..proxypool import identity as vault_identity
@@ -21,6 +22,26 @@ from ..paths import (_lock_for, _restore_bytes, id_path,
                      transaction_lock, write_json)
 from ..store import SessionStranded
 from .convert import to_engine_profile
+
+
+@contextmanager
+def _config_lock(engine, config_change):
+    """Hold `config.json`'s own lock for a batch that writes it.
+
+    The batch wrote config through `batch.write`, which takes no file lock, so
+    a profile transaction and an ordinary settings change were two independent
+    lock domains: neither waited for the other, and a rollback could restore
+    config over a settings change that had already succeeded. Config writers now
+    take `transaction_lock(root)` first and this second - one order, one
+    hierarchy. The lock spans the whole batch so the rollback is covered too,
+    and the read of the current config happens under the lock that protects its
+    write.
+    """
+    if not config_change or engine is None:
+        yield
+        return
+    with _lock_for(engine.config_path):
+        yield
 
 
 class StaleProfile(RuntimeError):
@@ -45,7 +66,7 @@ class DashboardStore:
 
     def __init__(self, root: Path, engine_store=None):
         self.root = Path(root)
-        self.dir = root / "dashboard"
+        self.dir = self.root / "dashboard"
         self.dir.mkdir(parents=True, exist_ok=True)
         self._engine = engine_store
 
@@ -148,6 +169,51 @@ class DashboardStore:
             with _lock_for(path):
                 return self._save_locked(prof, config_change, expect_rev)
 
+    def patch(self, pid: str, apply, *, expect_rev=None):
+        """Read, merge, validate and write one profile inside one lock.
+
+        `apply(stored)` returns `(merged, config_change)` and runs while the
+        lock is held, so what it merges onto cannot change under it.
+
+        The route used to do the read and the merge itself and only then call
+        `save()`, where the lock was taken. `expect_rev` closed that for a
+        client sending a whole profile, but a *patch* carries no revision - so
+        two concurrent patches could read the same record, build different full
+        merged copies, and the second write would carry stale values for every
+        field the first had just changed. Moving the merge inside the lock is
+        what fixes the patch case; the revision remains for the stale-client
+        case.
+
+        Returns None when the profile does not exist.
+        """
+        with transaction_lock(self.root):
+            path = self._path(pid)
+            with _lock_for(path):
+                stored = self._raw(pid)
+                if not stored:
+                    return None
+                merged, config_change = apply(dict(stored))
+                return self._save_locked(merged, config_change, expect_rev)
+
+    def patch_many(self, ids, apply, *, config_change=None) -> list:
+        """The same for a bulk edit: every record is read under the lock.
+
+        `apply(pid, current)` returns the merged profile, or None to skip.
+        `save_many()` was called with a `pending` list the route had already
+        built from unlocked reads, so a bulk edit could carry stale values just
+        as a single patch could.
+        """
+        with transaction_lock(self.root):
+            pending = []
+            for pid in ids:
+                current = self.get(pid)
+                if not current:
+                    continue
+                merged = apply(pid, current)
+                if merged is not None:
+                    pending.append(merged)
+            return self._save_many_locked(pending, config_change)
+
     def _save_locked(self, prof: dict, config_change, expect_rev) -> dict:
         from ..paths import write_batch
 
@@ -169,7 +235,7 @@ class DashboardStore:
         prof = self._resolve_folder(prof)
         prof[self.REVISION] = int(stored.get(self.REVISION) or 0) + 1
 
-        with write_batch() as batch:
+        with _config_lock(self._engine, config_change), write_batch() as batch:
             batch.write(self._path(prof["id"]), prof)
             twin = self._twin(prof)
             if twin is not None:
@@ -228,16 +294,29 @@ class DashboardStore:
         failure anywhere unwinds the dashboard files and the engine twins
         together.
         """
+        with transaction_lock(self.root):
+            return self._save_many_locked(profiles, config_change)
+
+    def _save_many_locked(self, profiles: list, config_change) -> list:
         from ..paths import write_batch
 
         saved = []
-        with transaction_lock(self.root), write_batch() as batch:
+        with _config_lock(self._engine, config_change), write_batch() as batch:
             for prof in profiles:
                 if not prof.get("id"):
                     prof["id"] = uuid.uuid4().hex[:12]
                 prof.setdefault("_created", time.time())
                 prof = self._guard_secrets(prof)
                 prof = self._resolve_folder(prof)
+                # Before the write, and from the record as it was *before* it.
+                # This ran after `batch.write`, so the revision never reached
+                # disk: a batch create returned `_rev=1` over a file with no
+                # revision at all, and a bulk update returned N+1 while disk
+                # still said N. Every one of those answers was a revision a
+                # client could hold and be wrongly rejected - or wrongly
+                # accepted - on later.
+                prof[self.REVISION] = int(
+                    (self._raw(prof["id"]) or {}).get(self.REVISION) or 0) + 1
                 batch.write(self._path(prof["id"]), prof)
                 if self._engine is not None:
                     try:
@@ -247,8 +326,6 @@ class DashboardStore:
                     if twin is not None:
                         batch.write(self._engine._path(twin.id),
                                     self._engine._apply_secrets(twin.to_dict(), "enc"))
-                prof[self.REVISION] = int(
-                    (self._raw(prof["id"]) or {}).get(self.REVISION) or 0) + 1
                 saved.append(prof)
             if config_change:
                 # In the same batch, so a failed config write rolls the profiles
@@ -365,6 +442,12 @@ class DashboardStore:
         return meta
 
 
+@contextmanager
+def _pool_lock(root, path):
+    with transaction_lock(root), _lock_for(path):
+        yield
+
+
 class ProxyPool:
     """A managed list of proxies the dashboard can import, test and assign."""
 
@@ -373,7 +456,8 @@ class ProxyPool:
     # its old plaintext behaviour, which is right for a caller that has no data
     # root of its own but wrong for the two that do - both pass it.
     def __init__(self, root: Path, engine_store=None):
-        self.path = root / "proxies.json"
+        self.root = Path(root)
+        self.path = self.root / "proxies.json"
         self._engine = engine_store
 
     def _stored(self) -> list[dict]:
@@ -435,7 +519,15 @@ class ProxyPool:
 
     @property
     def _lock(self):
-        return _lock_for(self.path)
+        """Root transaction first, then `proxies.json`.
+
+        Every writer here goes through this, so the whole pool serialises
+        against a vault migration - which rewrites `proxies.json` under the
+        transaction lock alone. With only the file lock, a credential written
+        during a migration landed in plaintext after the migration had already
+        passed that file, and the config then said the store was encrypted.
+        """
+        return _pool_lock(self.root, self.path)
 
     # Identity lives in `proxypool.identity()`, and only there. This class used
     # to carry its own copy that left the protocol out, so an HTTP and a SOCKS5
@@ -528,6 +620,10 @@ class ProxyPool:
 LAST_USED_RESOLUTION = 60.0
 
 
+class DuplicateToken(ValueError):
+    """A token with that name already exists."""
+
+
 class TokenStore:
     """Named API tokens, stored as hashes.
 
@@ -541,7 +637,7 @@ class TokenStore:
     """
 
     def __init__(self, root: Path):
-        self.path = root / "tokens.json"
+        self.path = Path(root) / "tokens.json"
 
     def list(self) -> list[dict]:
         if not self.path.exists():
@@ -571,12 +667,21 @@ class TokenStore:
         return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
     def create(self, name: str) -> dict:
-        """Mint a token. The value is returned once and never stored."""
+        """Mint a token. The value is returned once and never stored.
+
+        The name check is here, inside the lock, because both callers used to
+        do it themselves and then call this: two requests could each read a
+        table without the name, both pass, and both append. The OS lock made
+        the *writes* safe, never the decision.
+        """
+        wanted = (name or "").strip() or "unnamed"
         token = "nmr_" + secrets.token_urlsafe(32)
-        entry = {"id": uuid.uuid4().hex[:12], "name": (name or "").strip() or "unnamed",
+        entry = {"id": uuid.uuid4().hex[:12], "name": wanted,
                  "hash": self.hash(token), "created": time.time(), "lastUsed": None}
         with self._lock:
             items = self.list()
+            if any(str(t.get("name", "")).strip() == wanted for t in items):
+                raise DuplicateToken(f"a token called {wanted!r} already exists")
             items.append(entry)
             self._save(items)
         return {**entry, "token": token}

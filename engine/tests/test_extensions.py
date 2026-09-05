@@ -61,18 +61,34 @@ def test_profiles_saved_before_extensions_existed_still_load():
 # every profile" has to mean "copy onto each profile as it is created".
 
 
+def unpacked(root, name="ublock"):
+    """A folder Chromium would actually load.
+
+    The store validates what it is given now - the same rule the API applies -
+    so a placeholder path is refused here exactly as it would be refused in the
+    dashboard. These tests are about the round trip, not the refusal, so they
+    need a real one.
+    """
+    d = root / name
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "manifest.json").write_text(
+        '{"manifest_version": 3, "name": "' + name + '", "version": "1.0"}',
+        encoding="utf-8")
+    return d
+
+
 def test_default_extensions_round_trip(tmp_path):
     store = ProfileStore(tmp_path)
     assert store.get_default_extensions() == []
-    store.set_default_extensions(["/opt/ext/ublock"])
-    assert ProfileStore(tmp_path).get_default_extensions() == ["/opt/ext/ublock"]
+    ext = unpacked(tmp_path)
+    store.set_default_extensions([str(ext)])
+    assert ProfileStore(tmp_path).get_default_extensions() == [str(ext)]
 
 
 def test_new_profiles_inherit_the_default_set(tmp_path):
     from numera.cli import build_parser
     store = ProfileStore(tmp_path)
-    ext = tmp_path / "shared-ext"
-    ext.mkdir()
+    ext = unpacked(tmp_path, "shared-ext")
     store.set_default_extensions([str(ext)])
 
     args = build_parser().parse_args(["create", "inherits"])

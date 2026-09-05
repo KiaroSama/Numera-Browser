@@ -417,13 +417,24 @@ def _public_destination(url: str) -> "tuple":
     """
     from urllib.parse import urlsplit
 
-    parts = urlsplit(url)
-    if parts.scheme.lower() not in ("http", "https"):
+    # Fails closed on anything `urlsplit` cannot make sense of. Write-time
+    # validation only covers values written since it was added: an endpoint
+    # from an older build, a hand-edited proxies.json or a restored backup can
+    # still hold `http://example.test:99999/rotate`, and reading `.port` raises
+    # ValueError *here* - outside `rotate()`'s network `try`, so it left the
+    # request as a 500 with a traceback instead of a message the user can act
+    # on. `.hostname` can raise the same way on a malformed authority.
+    try:
+        parts = urlsplit(url)
+        scheme = parts.scheme.lower()
+        host = parts.hostname
+        port = parts.port or (443 if scheme == "https" else 80)
+    except ValueError as e:
+        return (f"the change-IP URL is malformed ({e})", None)
+    if scheme not in ("http", "https"):
         return (f"the change-IP URL must be http(s), got {parts.scheme!r}", None)
-    host = parts.hostname
     if not host:
         return ("the change-IP URL has no host", None)
-    port = parts.port or (443 if parts.scheme.lower() == "https" else 80)
     try:
         addresses = _resolve(host, port)
     except OSError as e:

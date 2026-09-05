@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 from .. import __version__
 from .. import folders
+from ..store import unloadable_extensions
+from .stores import DuplicateToken
 from .convert import _parse_lines
 
 
@@ -56,38 +58,6 @@ def register(app, ctx):
             # 27 because the only number the dashboard had was the in-use count.
             "proxyCount": len(pool.list()),
         }
-
-    def _unloadable_extensions(paths) -> list[str]:
-        """Reject entries the launcher would silently drop.
-
-        `_extension_args` filters out anything that is not a directory, so a
-        Web Store URL or a mistyped path was accepted here, shown as saved, and
-        then did nothing at launch - with no error anywhere. Chromium can only
-        load an *unpacked* extension: a folder containing manifest.json.
-        """
-        problems = []
-        for raw in paths:
-            entry = str(raw).strip()
-            if not entry:
-                continue
-            if "://" in entry:
-                # Store URLs are handled by POST /api/extensions/install, which
-                # downloads and unpacks them. Reaching here means a URL was put
-                # straight into the list, where the launcher could not use it.
-                problems.append(
-                    f"{entry!r} is a URL. Install it first - paste it on the "
-                    "Extensions page, where the button reads Install for a link, "
-                    "or run `numera ext install <url>` - then the unpacked folder "
-                    "goes in this list.")
-                continue
-            path = Path(entry).expanduser()
-            if not path.is_dir():
-                problems.append(f"{entry!r} is not a folder on this machine.")
-            elif not (path / "manifest.json").is_file():
-                problems.append(
-                    f"{entry!r} has no manifest.json, so Chromium will refuse it. "
-                    "Point at the folder that contains the manifest, not its parent.")
-        return problems
 
     @app.post("/api/extensions/install")
     def install_extension(body: dict):
@@ -190,7 +160,7 @@ def register(app, ctx):
                 exts = _parse_lines(exts)
             if not isinstance(exts, list):
                 raise HTTPException(400, "default_extensions must be a list of folder paths")
-            for bad in _unloadable_extensions(exts):
+            for bad in unloadable_extensions(exts):
                 raise HTTPException(400, bad)
             patch["default_extensions"] = [str(x) for x in exts]
 
@@ -258,9 +228,10 @@ def register(app, ctx):
         if not name:
             raise HTTPException(400, "give the token a name - an unnamed token is "
                                      "one nobody can safely revoke later")
-        if any(t.get("name") == name for t in tokens.list()):
-            raise HTTPException(409, f"a token called {name!r} already exists")
-        return tokens.create(name)
+        try:
+            return tokens.create(name)
+        except DuplicateToken as e:
+            raise HTTPException(409, str(e)) from None
 
     @app.delete("/api/tokens/{tid}")
     def revoke_token(tid: str):

@@ -283,8 +283,22 @@ _LOCKS_GUARD = threading.Lock()
 # enough to outlast any legitimate write (the slowest here is the vault
 # migration), short enough that a stuck holder is reported rather than waited on
 # forever. `NUMERA_LOCK_TIMEOUT` overrides it for a slow disk or a big vault.
-_LOCK_TIMEOUT = float(os.environ.get("NUMERA_LOCK_TIMEOUT") or 30.0)
+#
+# Read per acquisition, not once at import. As a module constant, the only way
+# to change it was to reload the module - which the tests did, and reloading
+# this module replaces `_FILE_LOCKS`, `_ROOT_LOCKS` and every class defined
+# here. Two `_DataLock` objects for one path means the in-process RLock layer
+# stops serialising anything, and `except LockTimeout` stops matching the class
+# that is now raised. One `os.environ` read per lock is not worth that.
+_DEFAULT_LOCK_TIMEOUT = 30.0
 _LOCK_POLL = 0.05
+
+
+def _lock_timeout() -> float:
+    try:
+        return float(os.environ.get("NUMERA_LOCK_TIMEOUT") or _DEFAULT_LOCK_TIMEOUT)
+    except ValueError:
+        return _DEFAULT_LOCK_TIMEOUT
 
 
 class LockTimeout(RuntimeError):
@@ -386,7 +400,8 @@ class _DataLock:
 
     def _acquire_os_lock(self) -> None:
         fd = self._open()
-        deadline = time.monotonic() + _LOCK_TIMEOUT
+        limit = _lock_timeout()
+        deadline = time.monotonic() + limit
         try:
             while True:
                 if _take(fd):
@@ -395,7 +410,7 @@ class _DataLock:
                 if time.monotonic() >= deadline:
                     raise LockTimeout(
                         f"another process has held {self._path} for more than "
-                        f"{_LOCK_TIMEOUT:g}s. If nothing else is running, delete "
+                        f"{limit:g}s. If nothing else is running, delete "
                         f"that file; otherwise set NUMERA_LOCK_TIMEOUT higher.")
                 time.sleep(_LOCK_POLL)
         except BaseException:
@@ -533,6 +548,27 @@ def _restore_bytes(path: Path, blob: bytes) -> None:
                 pass
 
 
+class RollbackFailed(RuntimeError):
+    """The batch failed *and* the undo failed: files are left half-written.
+
+    `write_batch` promises all-or-nothing. When a restore itself raises, that
+    promise is broken and the caller has to know - swallowing it handed back
+    only the original error, so a partially written data directory looked
+    exactly like a clean refusal and the obvious next move, retry, wrote on top
+    of it. This carries the paths that could not be put back, and why, because
+    that is what a repair needs.
+    """
+
+    def __init__(self, cause: BaseException, failures: list):
+        self.cause = cause
+        self.failures = list(failures)          # [(path, OSError), ...]
+        detail = "; ".join(f"{path}: {err}" for path, err in self.failures)
+        super().__init__(
+            f"{type(cause).__name__}: {cause} - and the rollback could not "
+            f"restore {len(self.failures)} file(s): {detail}. These files are "
+            f"left as the failed write left them; restore them before retrying.")
+
+
 class _Batch:
     """Files written as one change; `rollback()` puts every one back."""
 
@@ -544,7 +580,9 @@ class _Batch:
         self._undo.append((path, path.read_bytes() if path.exists() else None))
         write_json(path, data)
 
-    def rollback(self) -> None:
+    def rollback(self) -> list:
+        """Undo every write, and report the ones that could not be undone."""
+        failures = []
         for path, original in reversed(self._undo):
             try:
                 if original is None:
@@ -556,9 +594,13 @@ class _Batch:
                     # "no profiles", which is the failure the atomic writer
                     # exists to prevent.
                     _restore_bytes(path, original)
-            except OSError:                                     # pragma: no cover
-                pass                # nothing better to do; the raise stands
+            except OSError as exc:
+                # Keep going: one unrestorable file should not strand the
+                # others. What changed is that the failure is now reported
+                # instead of dropped.
+                failures.append((path, exc))
         self._undo.clear()
+        return failures
 
 
 @contextmanager
@@ -573,8 +615,10 @@ def write_batch():
     batch = _Batch()
     try:
         yield batch
-    except BaseException:
-        batch.rollback()
+    except BaseException as exc:
+        failures = batch.rollback()
+        if failures:
+            raise RollbackFailed(exc, failures) from exc
         raise
 
 
