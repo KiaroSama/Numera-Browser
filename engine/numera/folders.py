@@ -111,11 +111,43 @@ def _folder_lock(root: Path):
     return _lock_for(_meta_path(root))
 
 
-def _persist(root: Path, names: list[str]) -> list[str]:
+def _persist(root: Path, names: list[str], retire: "Optional[dict]" = None) -> list[str]:
     meta = _read_meta(root)
     meta["folders"] = list(dict.fromkeys(n for n in names if n))
+    renamed = dict(meta.get("renamed") or {})
+    if retire:
+        # Collapse chains: a -> b then b -> c must leave a -> c, not a -> b.
+        for old_name, new_name in retire.items():
+            renamed = {k: (new_name if v == old_name else v) for k, v in renamed.items()}
+            renamed[old_name] = new_name
+    # A name that exists again is not retired any more - creating "source"
+    # afresh must not keep forwarding it to whatever it was renamed to.
+    for name in meta["folders"]:
+        renamed.pop(name, None)
+    renamed = {k: v for k, v in renamed.items() if k != v}
+    if renamed:
+        meta["renamed"] = renamed
+    else:
+        meta.pop("renamed", None)
     _write_meta(root, meta)
     return meta["folders"]
+
+
+def resolve_name(root: Path, name: "Optional[str]") -> "Optional[str]":
+    """Where `name` lives now, following any rename that retired it.
+
+    Called on the profile write path, so a save that was prepared before a
+    rename - or that lands immediately after one - files the profile under the
+    folder the user would see rather than resurrecting the old name.
+    """
+    if not name:
+        return name
+    renamed = (_read_meta(root).get("renamed") or {})
+    seen = set()
+    while name in renamed and name not in seen:
+        seen.add(name)
+        name = renamed[name]
+    return name
 
 
 def create(root: Path, name: str) -> list[str]:
@@ -140,7 +172,15 @@ def rename(root: Path, src: str, dst: str) -> list[str]:
                 if p.get("folder") == src:
                     p["folder"] = dst
                     batch.write(f, p)
-            return _persist(root, [dst if x == src else x for x in listing(root)])
+            names = [dst if x == src else x for x in listing(root)]
+            # Record where the retired name went. A profile can be *created* in
+            # `src` a moment after this transaction commits - the transaction
+            # lock serialises the two, it cannot reorder them - and `listing()`
+            # derives folders from profiles as well as from the meta file, so
+            # that one profile resurrects the old folder name in the sidebar
+            # with a single profile stranded in it. `resolve_name` below sends
+            # such a write to `dst` instead.
+            return _persist(root, names, retire={src: dst})
 
 
 def delete(root: Path, name: str, reassign_to: Optional[str] = None) -> list[str]:

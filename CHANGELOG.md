@@ -8,6 +8,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **A profile created while its folder was being renamed resurrected the old folder.**
+  `folders.listing()` derives the folder list from the profiles as well as from the meta file, so
+  one profile still naming a renamed-away folder brought that name back into the sidebar with a
+  single profile stranded in it. The transaction lock serialises the two operations but cannot
+  reorder them, so a create landing just after a rename wrote a folder that no longer existed.
+  A rename now records where the retired name went, and every profile write follows it - inside
+  the transaction lock, because resolving it outside reads meta a rename is about to replace.
+
 - **The proxy relay's tunnel thread could outlive `close()` on Linux, hanging the whole test
   run.** `close()` closes both sockets under the tunnel thread. On Linux, closing a file
   descriptor removes it from the epoll interest list, so no event could ever arrive again - while

@@ -127,6 +127,11 @@ class DashboardStore:
         # batch's snapshot and its rollback, and the rollback then wrote the old
         # bytes over a change that had already succeeded.
         with transaction_lock(self.root), _lock_for(path):
+            # Inside the lock: a folder rename commits under this same lock, so
+            # resolving the name outside it reads meta that a rename is about to
+            # replace - which is the whole race this is here to close.
+            prof = self._resolve_folder(prof)
+            path = self._path(prof["id"])
             previous = path.read_bytes() if path.exists() else None
             write_json(path, prof)
             try:
@@ -142,6 +147,21 @@ class DashboardStore:
                     path.write_bytes(previous)
                 raise
         return prof
+
+    def _resolve_folder(self, prof: dict) -> dict:
+        """Follow a folder rename that retired this profile's folder name.
+
+        `folders.listing()` derives the folder list from profiles as well as
+        from the meta file, so one profile still naming a renamed-away folder
+        brings the old name back into the sidebar with that profile alone in it.
+        """
+        from .. import folders
+
+        name = prof.get("folder")
+        if not name:
+            return prof
+        moved = folders.resolve_name(self.root, name)
+        return prof if moved == name else {**prof, "folder": moved}
 
     def save_many(self, profiles: list) -> list:
         """Save a batch as one transaction: all of them, or none.
@@ -164,6 +184,7 @@ class DashboardStore:
                     prof["id"] = uuid.uuid4().hex[:12]
                 prof.setdefault("_created", time.time())
                 prof = self._guard_secrets(prof)
+                prof = self._resolve_folder(prof)
                 batch.write(self._path(prof["id"]), prof)
                 if self._engine is not None:
                     try:
