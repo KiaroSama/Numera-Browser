@@ -12,7 +12,10 @@ name: Build (desktop + server)
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     tags: ["v*"]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -79,7 +82,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # Every push builds and smokes the Linux artifact; a tag or a manual run
+        # adds macOS. This is a cost decision with a measured basis: the three
+        # desktop jobs take 6.1 + 7.1 + 4.6 minutes, and GitHub bills macOS at
+        # 10x and Windows at 2x - about 66 billable minutes for the full matrix
+        # against roughly 8 for ordinary CI.
+        #
+        # Linux alone is the right one to keep, because the artifact defects
+        # this workflow has actually caught were not platform-specific in
+        # origin: the PyInstaller entry point could not survive being frozen
+        # anywhere, and it went unnoticed only because nothing ran the workflow.
+        # One artifact that starts, launches its bundled Chromium and does a
+        # vault round trip is what closes that gap.
+        os: ${{ (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch') && fromJSON('["ubuntu-latest", "macos-latest"]') || fromJSON('["ubuntu-latest"]') }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -194,6 +209,10 @@ jobs:
     name: Desktop app (windows-latest)
     runs-on: windows-latest
     timeout-minutes: 60
+    # Release path only, for the cost reason above. The Windows-specific things
+    # it proves - the static CRT, the clean-checkout dashboard build - do not
+    # change on an ordinary push, and the Linux job covers the packaging.
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

@@ -109,6 +109,74 @@ jobs:
         working-directory: desktop/src-tauri
         run: cargo test --all-features
 
+  docker:
+    name: Container image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      # Plain `docker build`, no buildx actions and no registry cache: the
+      # runner has Docker, the image is not published from here, and the point
+      # is to find out whether the Dockerfile still describes something that
+      # works. Most of the time is the Playwright base image, which is the same
+      # download a developer pays once.
+      - name: Build the image
+        run: docker build -t numera-browser:ci .
+
+      # Building proves the Dockerfile parses and `pip install ./engine[...]`
+      # resolves. It does not prove the container serves anything - and the
+      # engine it installs changes on nearly every commit, which is exactly the
+      # part a build alone would not catch.
+      - name: The container serves, authenticates and stores
+        run: |
+          set -euo pipefail
+          token="ci-$RANDOM"
+          docker run -d --name numera-ci -e NUMERA_API_TOKEN="$token" \
+                     -p 18787:8787 numera-browser:ci
+
+          ready=""
+          for _ in $(seq 1 60); do
+            if curl -sf --max-time 3 -H "Authorization: Bearer $token" \
+                    http://127.0.0.1:18787/api/health -o /tmp/health.json; then
+              ready=1; break
+            fi
+            docker inspect -f '{{.State.Running}}' numera-ci | grep -q true || break
+            sleep 1
+          done
+          if [ -z "$ready" ]; then
+            echo "the container never answered /api/health"; docker logs numera-ci; exit 1
+          fi
+          echo "health: $(cat /tmp/health.json)"
+
+          # The bind refuses 0.0.0.0 without a token by design, so an
+          # unauthenticated request must be refused rather than served.
+          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
+                       http://127.0.0.1:18787/api/health)"
+          [ "$code" = "401" ] || { echo "unauthenticated request got $code, not 401"; exit 1; }
+
+          # And it can actually write: a profile through the real API.
+          curl -sf --max-time 10 -X POST -H "Authorization: Bearer $token" \
+               -H "Content-Type: application/json" -d '{"name":"ci-smoke"}' \
+               http://127.0.0.1:18787/api/profiles > /dev/null
+          curl -sf --max-time 10 -H "Authorization: Bearer $token" \
+               http://127.0.0.1:18787/api/profiles | grep -q ci-smoke \
+            || { echo "the profile it reported creating is not in the list"; exit 1; }
+
+          # The vault backend has to be inside the image; `cryptography` lives
+          # in the `secure` extra and a container cannot be told to pip-install
+          # into itself.
+          docker run --rm --entrypoint python numera-browser:ci \
+                 -c "import cryptography, numera; print(numera.__version__, cryptography.__version__)"
+
+      - name: Container logs on failure
+        if: failure()
+        run: docker logs numera-ci || true
+
+      - name: Stop the container
+        if: always()
+        run: docker rm -f numera-ci || true
+
   dashboard:
     name: Dashboard build and tests
     runs-on: ubuntu-latest
