@@ -151,15 +151,12 @@ if ($SkipFreeze) {
         Select-Object -First 1
     if (-not $chromeExe) { throw "the downloaded browser has no chrome.exe - the bundle would not launch" }
 
-    $entry = Join-Path $build 'engine_entry.py'
-    Set-Content -Path $entry -Encoding utf8 -Value @'
-"""PyInstaller entry point: the numera CLI, nothing else."""
-import sys
-
-from numera.cli import main
-
-sys.exit(main())
-'@
+    # The committed one, shared with the POSIX job. Generating it here meant two
+    # definitions of the same thing, and the other one was wrong - it froze
+    # `engine/numera/__main__.py`, whose relative import cannot survive being
+    # the PyInstaller entry.
+    $entry = Join-Path $repo 'scripts\engine_entry.py'
+    if (-not (Test-Path $entry)) { throw "missing the freeze entry point at $entry" }
 
     # onedir, not onefile. A onefile bootloader that gets TerminateProcess'd --
     # which is exactly how the shell stops the sidecar -- leaves its extracted
