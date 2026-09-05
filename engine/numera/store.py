@@ -29,6 +29,45 @@ from .paths import (_lock_for, id_path, mutate_json, resolve_data_dir, safe_id,
                     safe_join, transaction_lock, write_json)
 
 
+def unloadable_extensions(paths) -> list[str]:
+    """The entries Chromium could not load, one message each.
+
+    This lived in `routes_config.py`, so it guarded the HTTP config route and
+    nothing else: `numera config --default-extension` wrote straight through
+    `set_default_extensions()`, and `numera ext default-add` checked only
+    `is_dir()`. Both could persist a value the API rejects and the launcher
+    silently drops - `_extension_args` filters out whatever is not a directory,
+    so a Web Store URL or a folder without a manifest was shown as saved and
+    then did nothing at launch, with no error anywhere.
+
+    Chromium can load only an *unpacked* extension: a folder containing
+    manifest.json.
+    """
+    problems = []
+    for raw in paths:
+        entry = str(raw).strip()
+        if not entry:
+            continue
+        if "://" in entry:
+            # Store URLs go through the installer, which downloads and unpacks
+            # them. Reaching here means a URL was put straight into the list,
+            # where the launcher could not use it.
+            problems.append(
+                f"{entry!r} is a URL. Install it first - paste it on the "
+                "Extensions page, where the button reads Install for a link, "
+                "or run `numera ext install <url>` - then the unpacked folder "
+                "goes in this list.")
+            continue
+        path = Path(entry).expanduser()
+        if not path.is_dir():
+            problems.append(f"{entry!r} is not a folder on this machine.")
+        elif not (path / "manifest.json").is_file():
+            problems.append(
+                f"{entry!r} has no manifest.json, so Chromium will refuse it. "
+                "Point at the folder that contains the manifest, not its parent.")
+    return problems
+
+
 def _make_data_dirs(root: Path, *dirs: Path) -> None:
     """Create the data directories, or explain why it could not.
 
@@ -168,7 +207,19 @@ class ProfileStore:
         return list(self.get_config().get("default_extensions") or [])
 
     def set_default_extensions(self, paths) -> list:
-        return self._set_config("default_extensions", [str(p) for p in paths])
+        """Persist the set every new profile starts with, validated.
+
+        Only entries that are *new* are checked. Validating the whole list
+        would make an already-stored bad path - one whose folder was deleted
+        after it was added - block the very call that removes it.
+        """
+        wanted = [str(p) for p in paths]
+        with transaction_lock(self.root):
+            current = set(self.get_default_extensions())
+            problems = unloadable_extensions([p for p in wanted if p not in current])
+            if problems:
+                raise ValueError("; ".join(problems))
+            return self._set_config("default_extensions", wanted)
 
     def get_headless_launch(self) -> bool:
         """Whether the API launches profiles without a window.
@@ -197,7 +248,14 @@ class ProfileStore:
             cfg.update(changes)
             return cfg
 
-        return mutate_json(self.config_path, change)
+        # Root transaction lock first, then the config file lock `mutate_json`
+        # takes. Config used to be its own lock domain: a profile transaction
+        # wrote `config.json` while holding only the transaction lock, and an
+        # ordinary settings change held only the file lock - so neither waited
+        # for the other, and a rollback could restore config over a settings
+        # change that had already succeeded.
+        with transaction_lock(self.root):
+            return mutate_json(self.config_path, change)
 
     def _set_config(self, key: str, value):
         """Change one config key without disturbing the others."""
@@ -205,7 +263,9 @@ class ProfileStore:
             cfg[key] = value
             return cfg
 
-        return mutate_json(self.config_path, change)[key]
+        # Same hierarchy as `set_config_many`; see the note there.
+        with transaction_lock(self.root):
+            return mutate_json(self.config_path, change)[key]
 
     # ---- vault (encrypt-at-rest for secrets) -----------------------------
     # The fields worth encrypting: anything that grants access if leaked. Cookies
@@ -246,17 +306,29 @@ class ProfileStore:
         the user they are protected while some of them are not.
         """
         crypto._require()
-        if self.vault_enabled():
-            raise RuntimeError("A vault is already set up. Use `numera vault change` "
-                               "to rotate the master password.")
-        salt = crypto.new_salt()
-        with vault.migration(self.root) as step:
-            converted = step.encrypt_all(password, salt)
-            cfg = self.get_config()
-            cfg["vault"] = {"salt": salt, "verifier": crypto.make_verifier(password, salt)}
-            self.save_config(cfg)
-        self._password = password
-        return converted
+        # The whole migration under the root transaction lock, which every
+        # profile, pool and folder write also takes. Without it another process
+        # could write a plaintext secret *after* the scan had passed that file
+        # and *before* the vault descriptor committed - leaving a store the
+        # config says is encrypted with one readable password in it. Two
+        # simultaneous `vault enable` calls could also both see "disabled" and
+        # race different salts, which is unrecoverable: each secret opens with
+        # only one of them.
+        with transaction_lock(self.root):
+            # Re-check inside the lock. The check outside it is the classic
+            # check-then-act: both callers pass it before either commits.
+            if self.vault_enabled():
+                raise RuntimeError("A vault is already set up. Use `numera vault change` "
+                                   "to rotate the master password.")
+            salt = crypto.new_salt()
+            with vault.migration(self.root) as step:
+                converted = step.encrypt_all(password, salt)
+                cfg = self.get_config()
+                cfg["vault"] = {"salt": salt,
+                                "verifier": crypto.make_verifier(password, salt)}
+                self.save_config(cfg)
+            self._password = password
+            return converted
 
     def change_vault_password(self, old_password: str, new_password: str) -> int:
         """Rotate the master password, or change nothing. Returns secrets moved.
@@ -270,22 +342,27 @@ class ProfileStore:
         working rather than a store no password can open.
         """
         crypto._require()
-        v = self.vault()
-        if not v:
-            raise RuntimeError("There is no vault to rotate. Use `numera vault enable` first.")
-        if not crypto.check_password(old_password, v["salt"], v["verifier"]):
-            raise crypto.VaultLocked("that is not the current master password")
         if not new_password:
             raise ValueError("the new master password cannot be empty")
-        new_salt = crypto.new_salt()
-        with vault.migration(self.root) as step:
-            moved = step.rekey_all(old_password, v["salt"], new_password, new_salt)
-            cfg = self.get_config()
-            cfg["vault"] = {"salt": new_salt,
-                            "verifier": crypto.make_verifier(new_password, new_salt)}
-            self.save_config(cfg)
-        self._password = new_password
-        return moved
+        # Same transaction boundary as `enable_vault`, and for the same reason:
+        # a rotation rewrites every secret, and a write landing inside it leaves
+        # one record under the old key that the new password cannot open.
+        with transaction_lock(self.root):
+            v = self.vault()          # read inside the lock, not before it
+            if not v:
+                raise RuntimeError("There is no vault to rotate. "
+                                   "Use `numera vault enable` first.")
+            if not crypto.check_password(old_password, v["salt"], v["verifier"]):
+                raise crypto.VaultLocked("that is not the current master password")
+            new_salt = crypto.new_salt()
+            with vault.migration(self.root) as step:
+                moved = step.rekey_all(old_password, v["salt"], new_password, new_salt)
+                cfg = self.get_config()
+                cfg["vault"] = {"salt": new_salt,
+                                "verifier": crypto.make_verifier(new_password, new_salt)}
+                self.save_config(cfg)
+            self._password = new_password
+            return moved
 
     def _secret_values(self, profile: Profile) -> list:
         vals = []
@@ -344,24 +421,6 @@ class ProfileStore:
     # ---- CRUD ------------------------------------------------------------
     def save(self, profile: Profile) -> Profile:
         profile.updated_at = time.time()
-        # Refuse to write a plaintext secret over an encrypted one: if the vault
-        # is on but locked, saving would silently downgrade security.
-        #
-        # Only a *plaintext* one. This used to refuse any secret at all, which
-        # made every edit of a profile that merely has a proxy password fail
-        # while locked - renaming it, changing its notes - because the value
-        # coming back round is the ciphertext the store handed out. Re-writing
-        # the ciphertext downgrades nothing.
-        if self.vault_enabled() and not self.unlocked() and any(
-                v and not crypto.is_encrypted(v) for v in self._secret_values(profile)):
-            raise crypto.VaultLocked(
-                "the vault is locked — unlock with the master password before saving "
-                "a profile that has a proxy password")
-        data = self._apply_secrets(profile.to_dict(), "enc")
-        # A locked read hands back None for the secret, so an ordinary edit -
-        # rename the profile, change its notes - came back here carrying None and
-        # wrote it straight over the ciphertext. The password was gone and
-        # nothing said so. Carry the stored value across instead.
         # The lock spans the read *and* the write: `_keep_stored_secrets` reads
         # the stored record to carry a withheld secret across, so this is a real
         # read-modify-write and was running outside any lock. Two saves of the
@@ -370,8 +429,34 @@ class ProfileStore:
         # Transaction lock first, per-file lock second - the same order every
         # profile mutation uses, so a batch and a single save can never
         # interleave and undo each other.
+        #
+        # The vault decision is inside it. Reading the descriptor and
+        # encrypting outside the lock was a check-then-act across processes: a
+        # `vault change` committing in between meant this wrote a blob sealed
+        # with the *previous* salt over a record the rotation had just rekeyed,
+        # and the new password could never open it again. Re-reading here means
+        # a writer holding a stale password is refused instead.
         with transaction_lock(self.root), _lock_for(path):
-            if self.vault_enabled() and not self.unlocked():
+            locked = self.vault_enabled() and not self.unlocked()
+            # Refuse to write a plaintext secret over an encrypted one: if the
+            # vault is on but locked, saving would silently downgrade security.
+            #
+            # Only a *plaintext* one. This used to refuse any secret at all,
+            # which made every edit of a profile that merely has a proxy
+            # password fail while locked - renaming it, changing its notes -
+            # because the value coming back round is the ciphertext the store
+            # handed out. Re-writing the ciphertext downgrades nothing.
+            if locked and any(v and not crypto.is_encrypted(v)
+                              for v in self._secret_values(profile)):
+                raise crypto.VaultLocked(
+                    "the vault is locked — unlock with the master password before "
+                    "saving a profile that has a proxy password")
+            data = self._apply_secrets(profile.to_dict(), "enc")
+            # A locked read hands back None for the secret, so an ordinary edit
+            # - rename the profile, change its notes - came back here carrying
+            # None and wrote it straight over the ciphertext. The password was
+            # gone and nothing said so. Carry the stored value across instead.
+            if locked:
                 data = self._keep_stored_secrets(profile.id, data)
             write_json(path, data)
         return profile

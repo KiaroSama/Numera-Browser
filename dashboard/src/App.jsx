@@ -292,12 +292,20 @@ export default function App() {
       try {
         const exists = profiles.some(x => x.id === p.id) && !p._new;
         await (exists ? api.update(p) : api.create({ ...p, id: undefined }));
-        if (p.engine) setDefaultEngine(p.engine);   // "last engine wins" for the next new profile
-        await refresh();
+        // Refetched, never inferred from `p.engine`. The server changes the
+        // default only when the profile's engine actually changed, so editing
+        // the notes of a Playwright profile under a Camoufox default used to
+        // flip the UI to Playwright over a server that had correctly left it
+        // alone - and the next new profile then sent Playwright explicitly and
+        // made the server wrong too.
+        await Promise.all([refresh(), refreshConfig()]);
       } catch (e) { toast.error("Save failed: " + e.message); await refreshConfig(); }
       return;
     }
-    if (p.engine) setDefaultEngine(p.engine);
+    // Demo mode has no server, so it applies the server's rule itself: a
+    // default moves only when this profile's engine really changed.
+    const before = profiles.find(x => x.id === p.id);
+    if (p.engine && p.engine !== before?.engine) setDefaultEngine(p.engine);
     setProfiles(ps => ps.some(x => x.id === p.id) ? ps.map(x => x.id === p.id ? p : x) : [...ps, p]);
   };
 
@@ -523,8 +531,9 @@ export default function App() {
       {sync && <SyncModal ids={[...sel]} folders={folderList} onClose={() => setSync(false)} onApply={async (patch) => {
         const ids = [...sel];
         if (live) {
-          try { await api.bulkUpdate(ids, patch); await refresh(); }
-          catch (e) { toast.error("Bulk edit failed: " + e.message); }
+          // Same rule as `save`: the default comes back from the server.
+          try { await api.bulkUpdate(ids, patch); await Promise.all([refresh(), refreshConfig()]); }
+          catch (e) { toast.error("Bulk edit failed: " + e.message); await refreshConfig(); }
         } else {
           const { addTags, ...fields } = patch;
           setProfiles(ps => ps.map(p => !ids.includes(p.id) ? p : {
@@ -533,7 +542,7 @@ export default function App() {
             tags: addTags ? [...new Set([...p.tags, ...addTags])] : p.tags,
           }));
         }
-        if (patch.engine) setDefaultEngine(patch.engine);
+        if (!live && patch.engine) setDefaultEngine(patch.engine);
         setSel(new Set());
         setSync(false);
       }} />}

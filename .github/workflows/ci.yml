@@ -41,6 +41,33 @@ jobs:
         working-directory: engine
         run: python -m pytest -q --durations=10
 
+  engine-windows:
+    # The storage locks are OS locks, and Windows takes an entirely different
+    # path: `msvcrt.locking` rather than `fcntl.flock`, byte-range rather than
+    # whole-file, and `os.replace` over a file another process has open is a
+    # documented failure there. None of that was exercised by a Linux-only
+    # matrix, so the cross-process tests only ever ran on the half of the code
+    # that already worked.
+    name: Engine tests (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: engine/pyproject.toml
+      - name: Install engine
+        working-directory: engine
+        run: pip install -e ".[api,dev]"
+      - name: Compile check
+        working-directory: engine
+        run: python -m compileall -q numera
+      - name: Unit tests
+        working-directory: engine
+        run: python -m pytest -q --durations=10
+
   browser:
     name: Live browser tests
     runs-on: ubuntu-latest

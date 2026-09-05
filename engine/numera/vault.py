@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Iterator, Optional
 
 from . import crypto
-from .paths import _Batch
+from .paths import RollbackFailed, _Batch
 
 
 @dataclass(frozen=True)
@@ -166,9 +166,12 @@ class _Migration:
                 moved += changed
         return moved
 
-    def rollback(self) -> None:
-        """Restore every file this migration wrote, newest first."""
-        self._batch.rollback()
+    def rollback(self) -> list:
+        """Restore every file this migration wrote, newest first.
+
+        Returns the files that could not be restored, `[(path, error), ...]`.
+        """
+        return self._batch.rollback()
 
 
 @contextmanager
@@ -181,8 +184,14 @@ def migration(root: Path):
     step = _Migration(root)
     try:
         yield step
-    except BaseException:
-        step.rollback()
+    except BaseException as exc:
+        failures = step.rollback()
+        if failures:
+            # Worse here than anywhere else: a half-restored migration leaves
+            # some secrets under the new key and some under the old, and the
+            # config says one password opens them all. The caller has to be
+            # told which files, not just that the migration failed.
+            raise RollbackFailed(exc, failures) from exc
         raise
 
 

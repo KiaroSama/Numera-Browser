@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from .. import __version__
-from ..store import ProfileStore
+from ..store import ProfileStore, unloadable_extensions
 from .out import C, _c, _resolve_or_fail, emit, json_mode, say
 
 
@@ -56,7 +56,14 @@ def cmd_config(args, store: ProfileStore) -> int:
         store.set_headless_launch(args.headless_launch == "on")
         changed.append("headless_launch")
     if args.default_extension is not None:
-        store.set_default_extensions([str(Path(e).expanduser()) for e in args.default_extension if e])
+        # The store refuses what the launcher cannot load, so this path can no
+        # longer persist a value `PUT /api/config` rejects.
+        try:
+            store.set_default_extensions(
+                [str(Path(e).expanduser()) for e in args.default_extension if e])
+        except ValueError as e:
+            say(_c(str(e), C.RED))
+            return emit({"ok": False, "error": str(e)}, 1)
         changed.append("default_extensions")
 
     cfg = {
@@ -140,7 +147,7 @@ def cmd_token(args, store: ProfileStore) -> int:
     import os
     import time as _t
 
-    from ..server import TokenStore   # a plain JSON store; needs no FastAPI
+    from ..server import DuplicateToken, TokenStore   # plain JSON; needs no FastAPI
 
     tokens = TokenStore(store.root)
     sub = args.token_command
@@ -164,10 +171,11 @@ def cmd_token(args, store: ProfileStore) -> int:
 
     if sub == "create":
         name = (args.name or "").strip()
-        if any(t.get("name") == name for t in tokens.list()):
-            say(_c(f"A token called {name!r} already exists.", C.RED))
-            return emit({"ok": False, "error": f"a token called {name!r} already exists"}, 1)
-        made = tokens.create(name)
+        try:
+            made = tokens.create(name)
+        except DuplicateToken as e:
+            say(_c(f"{str(e)[:1].upper()}{str(e)[1:]}.", C.RED))
+            return emit({"ok": False, "error": str(e)}, 1)
         # Printed once, deliberately: only the hash is stored, so there is no
         # second chance to read it and no file to leak it from.
         say(_c(f"{made['token']}", C.GRN))
@@ -245,10 +253,13 @@ def _cmd_ext_default(args, store: ProfileStore) -> int:
 
     path = str(Path(args.path).expanduser())
     if args.ext_command == "default-add":
-        if not Path(path).is_dir():
-            say(_c(f"'{path}' is not a folder. Point at an *unpacked* extension "
-                   f"(the folder containing manifest.json).", C.RED))
-            return emit({"ok": False, "error": f"'{path}' is not a folder"}, 1)
+        # `is_dir()` alone let a folder with no manifest.json through - the API
+        # rejects it and Chromium refuses it, so it was saved and then did
+        # nothing. Same check, same message, everywhere now.
+        problems = unloadable_extensions([path])
+        if problems:
+            say(_c("; ".join(problems), C.RED))
+            return emit({"ok": False, "error": "; ".join(problems)}, 1)
         if path in current:
             say(_c("Already in the default set.", C.DIM))
             return emit({"ok": True, "extensions": current, "changed": False})
