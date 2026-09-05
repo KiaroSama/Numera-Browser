@@ -32,7 +32,7 @@ Issues = "https://github.com/KiaroSama/Numera-Browser/issues"
 launch = ["playwright>=1.40"]
 api = ["fastapi>=0.110", "uvicorn>=0.27"]
 secure = ["cryptography>=42.0"]
-dev = ["pytest>=7.0", "cryptography>=42.0", "httpx>=0.27"]
+dev = ["pytest>=7.0", "pytest-timeout>=2.3", "cryptography>=42.0", "httpx>=0.27"]
 
 [project.scripts]
 numera = "numera.cli:main"
@@ -54,4 +54,18 @@ testpaths = ["tests"]
 # worse - accepted a typo like `slwo` as a brand new marker, which would sort a
 # live browser test into the offline suite with nothing to say so.
 markers = ["slow: needs a real browser; excluded from the offline run"]
+
+# A per-test ceiling, so a hang fails as a named test with a traceback instead
+# of running out the CI job's clock. This is not hypothetical: the py3.12 job
+# reached 57% and then went silent for fourteen minutes until the 15-minute job
+# ceiling killed it, leaving an orphaned python process behind. The run was
+# reported as "cancelled", which reads like an infrastructure blip rather than
+# the defect it was. The whole suite takes about a minute on a runner, so 120s
+# for a single test is far above anything healthy and only fires on a real stall.
+#
+# `thread` method, not `signal`: the signal method only interrupts the main
+# thread, and the tests that are most likely to hang here are the ones running
+# a relay or a server on a worker thread.
+timeout = 120
+timeout_method = "thread"
 addopts = "--strict-markers"
