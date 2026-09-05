@@ -232,8 +232,9 @@ the genuinely shared ones.
    ok?  → live mode                     GET  /api/profiles ────────────▶ DashboardStore
    no   → demo mode (sample data)       POST /api/profiles                (JSON per profile)
                                         PUT/DELETE /api/profiles/{id}
- click ▶ → POST /…/{id}/launch ────────▶ to_engine_profile() ──────────▶ launcher.launch
+ click ▶ → POST /…/{id}/launch ────────▶ materialize_current() ────────▶ launcher.launch
                                           + subprocess: numera launch     (real Chromium)
+                                          wait for the child to own it
  click ■ → POST /…/{id}/stop ──────────▶ terminate the launch process
 ```
 
@@ -245,7 +246,16 @@ Key points:
   time (`to_engine_profile`), so nothing in the UI is lost on a round-trip.
 - **Launching is a subprocess.** `/launch` runs `numera launch <id>` in its own
   process rather than driving Playwright's sync API from inside the async server.
-  A profile is "running" while that process is alive; `/stop` terminates it.
+  The server does not call it the owner until the child confirms it holds the
+  profile's session lease and has revalidated the profile and its proxy
+  credential (`numera/handshake.py`); a child that never gets there is
+  terminated and the request answers with the reason - `409` busy, `423` locked
+  vault, `404` deleted. After that the profile is "running" while the process is
+  alive, and `/stop` terminates it.
+- **The engine copy is derived at write time.** The engine record a launch or a
+  probe opens is re-derived from the dashboard record inside the transaction
+  that writes it (`repo.materialize_current`), never from a snapshot read
+  before the browser ran.
 - **Coherence** stays in the dashboard (its meter mirrors `validate()`) for
   instant feedback; the engine re-validates the real fingerprint at launch.
 - **Graceful fallback.** If the API is offline the dashboard runs on in-memory

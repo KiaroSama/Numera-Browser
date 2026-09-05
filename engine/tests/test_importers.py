@@ -106,8 +106,9 @@ def test_import_file_saves_and_reports(tmp_path):
     store = ProfileStore(tmp_path / "store")
     results = ProfileStore  # placeholder to satisfy linters if unused
     from numera.importers import import_file
-    out = import_file(src, store)
-    assert len(out) == 3
+    imported, skipped = import_file(src, store)
+    assert len(imported) == 3
+    assert skipped == []
     assert len(store.list()) == 3
     assert {p.name for p in store.list()} == {"GL-Account-1", "ADS-Store-7", "ML-QA"}
 

@@ -82,19 +82,15 @@ def test_the_password_never_appears_in_a_child_argv(tmp_path, monkeypatch):
     vaulted(tmp_path)
     seen = {}
 
-    class FakeProc:
-        pid = 4242
-        returncode = 0
-        stdout = "{}"
-        stderr = ""
-
-        def poll(self):
-            return None
+    from _child import FakeChild
 
     def capture(cmd, *a, **k):
         seen["argv"] = list(cmd)
         seen["env"] = k.get("env") or {}
-        return FakeProc()
+        # A real child answers the startup handshake before the parent calls it
+        # the owner, so a stand-in that never does would only prove the wait is
+        # bounded - which `test_the_wait_is_bounded` already does.
+        return FakeChild(cmd, seen["env"])
 
     monkeypatch.setattr(subprocess, "Popen", capture)
     app = create_app(data_dir=str(tmp_path), start_scheduler=False, password="master")

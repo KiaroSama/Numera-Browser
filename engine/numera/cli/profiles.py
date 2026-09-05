@@ -303,20 +303,16 @@ def cmd_bulk_create(args, store: ProfileStore) -> int:
     )
     from ..repo import repo
 
-    existing = {p.name for p in store.list()}
-    pending, skipped = [], 0
-    for prof in profiles:
-        if prof.name in existing:
-            skipped += 1
-            continue
-        pending.append(prof)
-        existing.add(prof.name)
-    # One transaction, including the default-engine change. A partial bulk
-    # create is the worst outcome here: nothing tells the user which half
-    # landed, and re-running duplicates it.
-    repo(store).save_many(pending, config_change=(
+    # One transaction, including the default-engine change, and including the
+    # decision about which names are free. A partial bulk create is the worst
+    # outcome here: nothing tells the user which half landed, and re-running
+    # duplicates it. Reading the taken names *here* and choosing around them
+    # was the same check-then-act - two of these running at once both saw the
+    # same free names and created two profiles called each of them.
+    created = repo(store).save_many(profiles, on_name_clash="skip", config_change=(
         {"default_engine": args.engine} if args.engine else None))
-    ids = [prof.id for prof in pending]
+    skipped = len(profiles) - len(created)
+    ids = [prof.id for prof in created]
     note = _c(f", skipped {skipped} name clash(es)", C.YEL) if skipped else ""
     say(_c(f"Created {len(ids)} profile(s)", C.GRN) + note
         + _c(f"  (engine {engine})", C.DIM))
@@ -326,11 +322,11 @@ def cmd_bulk_create(args, store: ProfileStore) -> int:
 def cmd_import_from(args, store: ProfileStore) -> int:
     from .. import importers
     try:
-        results = importers.import_file(args.file, store)
+        results, skipped = importers.import_file(args.file, store)
     except (FileNotFoundError, ValueError) as e:
         say(_c(f"Couldn't read {args.file}: {e}", C.RED))
         return emit({"ok": False, "error": f"couldn't read {args.file}: {e}"}, 1)
-    if not results:
+    if not results and not skipped:
         say(_c("No profiles found in that file.", C.RED))
         return emit({"ok": False, "error": "no profiles found in that file"}, 1)
     clean = sum(1 for _, issues in results if not issues)
@@ -339,8 +335,12 @@ def cmd_import_from(args, store: ProfileStore) -> int:
     for prof, issues in results:
         if issues:
             say(f"  {prof.name:<24}{_c('review: ' + '; '.join(issues), C.YEL)}")
+    if skipped:
+        say(_c(f"Skipped {len(skipped)} - those names are already in use: "
+               + ", ".join(sorted(set(skipped))[:10]), C.YEL))
     say(_c("Run `numera check <name>` on any flagged profile to see details.", C.DIM))
     return emit({"ok": True, "imported": len(results), "coherent": clean,
+                 "skipped": skipped,
                  "results": [{"id": p.id, "name": p.name, "issues": iss}
                              for p, iss in results]})
 

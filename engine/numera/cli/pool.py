@@ -232,6 +232,12 @@ def cmd_pool(args, store: ProfileStore) -> int:
     # sent HTTPS to "http" - silently downgrading the scheme the profile claims -
     # and did not bracket an IPv6 host, so a CLI assignment produced a different
     # `Proxy.server` than every other path for the same pool entry.
+    # The plan first, then one transaction. The loop used to save as it went,
+    # so a failure on the Nth profile left the earlier ones assigned under a
+    # command that reported failure - and each save touched only the engine
+    # copy, leaving the dashboard showing the old proxy.
+    from ..repo import repo
+
     assigned = []
     for i, prof in enumerate(targets):
         pr = proxies[i % len(proxies)]
@@ -245,10 +251,13 @@ def cmd_pool(args, store: ProfileStore) -> int:
         if loc:
             prof.fingerprint.locale = loc
             prof.fingerprint.timezone, prof.fingerprint.languages = devices.LOCALES[loc]
-        store.save(prof)
+        assigned.append({"id": prof.id, "name": prof.name,
+                         "proxy": prof.proxy.server, "locale": prof.fingerprint.locale,
+                         "_locale_note": loc})
+    repo(store).save_many(targets)
+    for prof, row in zip(targets, assigned):
+        loc = row.pop("_locale_note")
         say(f"  {prof.name:<24}{_c(prof.proxy.server, C.DIM)}"
             + (_c(f"  -> {loc}", C.DIM) if loc else ""))
-        assigned.append({"id": prof.id, "name": prof.name,
-                         "proxy": prof.proxy.server, "locale": prof.fingerprint.locale})
     say(_c(f"Assigned {len(proxies)} proxy/proxies across {len(assigned)} profile(s).", C.GRN))
     return emit({"assigned": len(assigned), "pool": len(proxies), "profiles": assigned})

@@ -313,13 +313,24 @@ def register(app, ctx):
         # record first and *then* discover the dashboard had no such profile,
         # so a 404 could arrive after an engine-only profile had already been
         # erased - the one response that promises nothing happened.
+        from ..paths import SessionBusy
+
         if not dash.get(pid) and not engine_store.get(pid):
             raise HTTPException(404, "profile not found")
-        if is_running(pid):
+        # Only a session THIS server started can be stopped: `stop_session`
+        # terminates a local `Popen`, and `is_running` now also reports a lease
+        # held by another process. Calling it for a foreign session did nothing
+        # and the route deleted anyway, out from under a live browser. The
+        # lease inside `delete` is the real check; this just closes ours first
+        # so the common case does not have to fail.
+        if pid in running:
             stop_session(pid)
-        # One owner. The route deleted the engine copy and the dashboard store
-        # deleted it again, each half-aware of the other.
-        dash.delete(pid)
+        try:
+            # One owner. The route deleted the engine copy and the dashboard
+            # store deleted it again, each half-aware of the other.
+            dash.delete(pid)
+        except SessionBusy as e:
+            raise HTTPException(409, str(e)) from None
         return {"ok": True}
 
     @app.post("/api/profiles/delete")

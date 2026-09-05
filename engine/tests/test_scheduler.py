@@ -89,26 +89,7 @@ def app_and_client(tmp_path, monkeypatch):
     return app, TestClient(app)
 
 
-class FakeProc:
-    """A warm-up process that is still running unless told otherwise."""
-
-    def __init__(self, code=None):
-        self.returncode = code
-        self.terminated = False
-
-    def poll(self):
-        return self.returncode
-
-    def terminate(self):
-        self.terminated = True
-        self.returncode = -15
-
-    def wait(self, timeout=None):
-        return self.returncode
-
-    def kill(self):
-        self.returncode = -9
-
+from _child import FakeChild, spawning     # noqa: E402  (after importorskip)
 
 def schedule_for(c, name):
     pid = c.post("/api/profiles", json={"name": name}).json()["id"]
@@ -117,27 +98,38 @@ def schedule_for(c, name):
     return pid
 
 
+def failing_materialisation(monkeypatch, when):
+    """Make `materialize_current` raise for the profiles `when` selects."""
+    from numera.repo import ProfileRepo
+
+    real = ProfileRepo.materialize_current
+
+    def flaky(self, profile_id):
+        if when(profile_id):
+            raise ValueError("unconvertible")
+        return real(self, profile_id)
+
+    monkeypatch.setattr(ProfileRepo, "materialize_current", flaky)
+
+
 def test_one_unusable_schedule_does_not_stop_the_others(app_and_client, monkeypatch):
     """The try/except wrapped the whole loop, so an exception on the first row
     silently skipped every row after it - and the only symptom was warm-ups
     that quietly stopped happening."""
-    from numera.server import routes_schedules as rs
+    from numera import server as srv
 
     app, c = app_and_client
     bad = schedule_for(c, "bad")
     good = schedule_for(c, "good")
 
-    real = rs.to_engine_profile
-    monkeypatch.setattr(rs, "to_engine_profile",
-                        lambda d: (_ for _ in ()).throw(ValueError("unconvertible"))
-                        if d.get("id") == bad else real(d))
+    failing_materialisation(monkeypatch, lambda pid: pid == bad)
     started = []
-    monkeypatch.setattr(rs.subprocess, "Popen",
-                        lambda *a, **k: started.append(a[0][6]) or FakeProc())
+    monkeypatch.setattr(srv.subprocess, "Popen", spawning(started))
 
     app.state.scheduler_tick()
 
-    assert good in started, "the row after the bad one never ran"
+    assert [child for child in started if good in child.cli], \
+        "the row after the bad one never ran"
     rows = {s["profileId"]: s for s in c.get("/api/schedules").json()}
     assert rows[bad]["lastOutcome"] == "failed"
     assert rows[bad]["lastError"]
@@ -146,11 +138,11 @@ def test_one_unusable_schedule_does_not_stop_the_others(app_and_client, monkeypa
 def test_a_warm_up_that_dies_immediately_is_not_recorded_as_run(app_and_client, monkeypatch):
     """`Popen` returning means a process started, not that it worked. Marking
     the schedule as run here hid the failure until the profile went cold."""
-    from numera.server import routes_schedules as rs
+    from numera import server as srv
 
     app, c = app_and_client
-    pid = schedule_for(c, "dies")
-    monkeypatch.setattr(rs.subprocess, "Popen", lambda *a, **k: FakeProc(code=1))
+    schedule_for(c, "dies")
+    monkeypatch.setattr(srv.subprocess, "Popen", spawning([], ready=None, code=1))
 
     app.state.scheduler_tick()
     row = c.get("/api/schedules").json()[0]
@@ -159,17 +151,17 @@ def test_a_warm_up_that_dies_immediately_is_not_recorded_as_run(app_and_client, 
 
 
 def test_the_exit_code_of_a_finished_warm_up_is_recorded(app_and_client, monkeypatch):
-    from numera.server import routes_schedules as rs
+    from numera import server as srv
 
     app, c = app_and_client
-    pid = schedule_for(c, "finishes")
-    proc = FakeProc()
-    monkeypatch.setattr(rs.subprocess, "Popen", lambda *a, **k: proc)
+    schedule_for(c, "finishes")
+    children = []
+    monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
 
     app.state.scheduler_tick()
     assert c.get("/api/schedules").json()[0]["lastOutcome"] == "started"
 
-    proc.returncode = 3                      # it crashed after a while
+    children[0].returncode = 3               # it crashed after a while
     app.state.reap_warmups()
     row = c.get("/api/schedules").json()[0]
     assert row["lastOutcome"] == "failed"
@@ -182,18 +174,99 @@ def test_shutdown_terminates_the_children_it_started(app_and_client, monkeypatch
     names nothing the user can act on."""
     from fastapi.testclient import TestClient
 
-    from numera.server import create_app, routes_schedules as rs
+    from numera import server as srv
 
     app, c = app_and_client
-    proc = FakeProc()
-    monkeypatch.setattr(rs.subprocess, "Popen", lambda *a, **k: proc)
+    children = []
+    monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
     schedule_for(c, "child")
     app.state.scheduler_tick()
 
     with TestClient(app):
         pass                                  # entering and leaving fires shutdown
-    assert proc.terminated or proc.returncode is not None, \
+    assert children[0].terminated or children[0].returncode is not None, \
         "a live child survived shutdown"
+
+
+# --- a claim outlives only a run that actually started ---------------------
+#
+# `record()` clears `claimedBy` only alongside `lastRun`, which a failure has no
+# business writing. So every failure before a run was established used to leave
+# the occurrence claimed for the whole TTL, and every tick in the next twelve
+# hours skipped that schedule without a word.
+
+def claim_of(c, sid=None) -> dict:
+    row = c.get("/api/schedules").json()[0]
+    return {"claimedBy": row.get("claimedBy"), "outcome": row.get("lastOutcome"),
+            "lastRun": row.get("lastRun"), "id": row["id"]}
+
+
+def test_a_failed_materialisation_releases_the_claim(app_and_client, monkeypatch):
+    from numera import server as srv
+
+    app, c = app_and_client
+    schedule_for(c, "unconvertible")
+    failing_materialisation(monkeypatch, lambda pid: True)
+    children = []
+    monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
+
+    app.state.scheduler_tick()
+    row = claim_of(c)
+    assert row["claimedBy"] is None, "the occurrence stayed claimed for the TTL"
+    assert row["outcome"] == "failed" and row["lastRun"] is None
+    assert children == [], "a child was spawned for a profile that never materialised"
+
+    # And the next tick can actually retry it, which is the point.
+    monkeypatch.undo()
+    monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
+    app.state.scheduler_tick()
+    assert claim_of(c)["outcome"] == "started"
+
+
+def test_a_spawn_that_cannot_start_releases_the_claim(app_and_client, monkeypatch):
+    from numera import server as srv
+
+    app, c = app_and_client
+    schedule_for(c, "unspawnable")
+
+    def refuses(*a, **k):
+        raise OSError("no such executable")
+
+    monkeypatch.setattr(srv.subprocess, "Popen", refuses)
+    app.state.scheduler_tick()
+    row = claim_of(c)
+    assert row["claimedBy"] is None
+    assert row["outcome"] == "failed" and row["lastRun"] is None
+
+
+def test_a_child_that_never_reports_ready_releases_the_claim(app_and_client, monkeypatch):
+    from numera import server as srv
+
+    app, c = app_and_client
+    schedule_for(c, "stillborn")
+    children = []
+    monkeypatch.setattr(srv.subprocess, "Popen",
+                        spawning(children, ready=None, code=1))
+
+    app.state.scheduler_tick()
+    row = claim_of(c)
+    assert row["claimedBy"] is None
+    assert row["outcome"] == "failed" and row["lastRun"] is None
+
+
+def test_only_a_confirmed_start_advances_the_occurrence(app_and_client, monkeypatch):
+    from numera import server as srv
+
+    app, c = app_and_client
+    schedule_for(c, "starts")
+    children = []
+    monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
+
+    app.state.scheduler_tick()
+    row = claim_of(c)
+    assert row["outcome"] == "started"
+    assert row["lastRun"] is not None, "a confirmed start was not recorded"
+    assert row["claimedBy"] is None, "a finished occurrence kept its claim"
 
 
 # --- one schema for create and update --------------------------------------

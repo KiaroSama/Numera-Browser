@@ -277,8 +277,9 @@ any *content*:
 * **Every 200 response is `{}`.** The handlers have no return annotation, so
   generated clients get `Any` everywhere.
 * **The failure modes are undocumented.** The `409` from launching a profile
-  whose session is in use, the `404`s, the `400` from an unparseable proxy list —
-  none appear. Only the automatic `422` does.
+  whose session someone else holds, the `423` from one whose proxy password the
+  vault cannot read, the `404`s, the `400` from an unparseable proxy list — none
+  appear. Only the automatic `422` does.
 * **Bearer auth is invisible.** `NUMERA_API_TOKEN` - or any named token - adds a
   middleware that answers `401`; no security scheme or `401` response is
   declared, so a generated client will not send the header.

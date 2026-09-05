@@ -38,7 +38,7 @@ def cmd_launch(args, store: ProfileStore) -> int:
     # This process *is* the session - the server spawns exactly this command as
     # a child - so the lease lives for as long as the command does, and the OS
     # drops it if the process is killed.
-    with open_session(prof, store):
+    with open_session(prof, store) as prof:
         launch(prof, store, headless=args.headless, keep_open=False, engine=engine)
     return emit({"ok": True, "id": prof.id, "name": prof.name, "engine": engine,
                  "headless": bool(args.headless), "warnings": warnings})
@@ -114,7 +114,7 @@ def cmd_attach(args, store: ProfileStore) -> int:
     from ..drivers import open_session
     say(_c(f"Launching '{prof.name}' with DevTools on port {args.port}...", C.CYN))
     # Held for the whole attached session, same as `launch`.
-    with open_session(prof, store):
+    with open_session(prof, store) as prof:
         return _attached(args, store, prof, attach, snippets)
 
 

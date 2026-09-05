@@ -218,16 +218,31 @@ def load_export(path: str | Path) -> list[dict]:
     return _unwrap(json.loads(Path(path).read_text(encoding="utf-8")))
 
 
-def import_file(path: str | Path, store) -> list[tuple[Profile, list[str]]]:
-    """Import every profile in ``path`` into ``store``. Returns (profile, issues)
-    per profile so the caller can report what came in and what needs a look.
+def import_file(path: str | Path, store) -> tuple:
+    """Import every profile in ``path`` into ``store``.
 
-    Whole file or nothing. Saving as it went left a partial import when one
-    entry failed - and a partial import is the worst shape to recover from,
-    because re-running it duplicates whatever did land.
+    Returns ``(imported, skipped)``: (profile, issues) pairs for what was
+    written, so the caller can report what came in and what needs a look, and
+    the names that were already taken.
+
+    Whole file or nothing, for failures. Saving as it went left a partial
+    import when one entry failed - and a partial import is the worst shape to
+    recover from, because re-running it duplicates whatever did land.
+
+    Names are the stated exception, and the policy is skip-and-report. A vendor
+    export arrives with names of its own; creating a second profile under a
+    name this store already uses would make ``numera <name>`` resolve to one of
+    two profiles with nothing ever saying which. Skipping means importing the
+    same file twice adds nothing the second time, and one clash in fifty
+    profiles does not refuse the other forty-nine. Rename the existing profile
+    and re-import if the incoming one was the one you wanted.
     """
     from .repo import repo
 
     parsed = [profile_from_export(raw) for raw in load_export(path)]
-    repo(store).save_many([prof for prof, _issues in parsed])
-    return parsed
+    written = {prof.id for prof in
+               repo(store).save_many([prof for prof, _issues in parsed],
+                                     on_name_clash="skip")}
+    imported = [(prof, issues) for prof, issues in parsed if prof.id in written]
+    skipped = [prof.name for prof, _issues in parsed if prof.id not in written]
+    return imported, skipped

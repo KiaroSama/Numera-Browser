@@ -25,8 +25,9 @@ from typing import Optional
 from . import crypto
 from . import vault
 from .models import Profile
-from .paths import (_lock_for, id_path, mutate_json, resolve_data_dir, safe_id,
-                    safe_join, session_lease, transaction_lock, write_json)
+from .paths import (_lock_for, _restore_bytes, id_path, mutate_json,
+                    resolve_data_dir, safe_id, safe_join, session_lease,
+                    transaction_lock, write_json)
 
 
 def unloadable_extensions(paths) -> list[str]:
@@ -675,9 +676,17 @@ class ProfileStore:
         return dest
 
     def import_file(self, src: str | Path) -> Profile:
+        """Import one exported profile, into BOTH copies.
+
+        An existing id used to update only the engine record, leaving the
+        dashboard describing the identity that was replaced - two copies under
+        one id telling different stories.
+        """
+        from .repo import repo
+
         data = json.loads(Path(src).read_text(encoding="utf-8"))
         prof = Profile.from_dict(data)
-        return self.save(prof)
+        return repo(self).create(prof, unique_name=False)
 
     # ---- backup / restore ------------------------------------------------
     # ``export``/``import_file`` move only the profile *config* (a JSON file).
@@ -780,9 +789,17 @@ class ProfileStore:
                     # have. Now the old session is renamed aside (which fails loudly
                     # if it is in use), the new one is moved into place, the profile
                     # is written last, and any failure puts all of it back.
+                    from .repo import repo
+
+                    coordinator = repo(self)
                     ud = self.user_data_path(prof.id)
-                    record = self._path(prof.id)
-                    previous_json = record.read_bytes() if record.exists() else None
+                    # Both records roll back, not only the engine one. A
+                    # restore now writes the identity twice, so undoing half of
+                    # it would leave the two copies describing different
+                    # profiles - the divergence the twin exists to prevent.
+                    records = [self._path(prof.id), coordinator.dash_path(prof.id)]
+                    previous = [(r, r.read_bytes() if r.exists() else None)
+                                for r in records]
                     aside = None
                     if ud.exists():
                         aside = ud.with_name(f"{ud.name}.replaced-{uuid.uuid4().hex[:8]}")
@@ -791,15 +808,26 @@ class ProfileStore:
                         ud.parent.mkdir(parents=True, exist_ok=True)
                         shutil.move(str(staging), str(ud))
                         staging = None
-                        self.save(prof)
+                        # One metadata transaction for engine and dashboard.
+                        # `save()` wrote only the engine record, so restoring
+                        # onto an existing id replaced that identity and left
+                        # the dashboard still describing the one it replaced -
+                        # two copies under one id telling different stories.
+                        # Dashboard-only fields the engine cannot carry (the
+                        # folder, the trust stamp) survive through the merge.
+                        # The name is the archive's: a restore is asked for by
+                        # id, and refusing it because that name is taken would
+                        # refuse to restore a profile over itself.
+                        prof = coordinator.create(prof, unique_name=False)
                     except BaseException:
                         shutil.rmtree(ud, ignore_errors=True)
                         if aside is not None:
                             aside.rename(ud)
-                        if previous_json is not None:
-                            record.write_bytes(previous_json)
-                        else:
-                            record.unlink(missing_ok=True)
+                        for record, original in previous:
+                            if original is None:
+                                record.unlink(missing_ok=True)
+                            else:
+                                _restore_bytes(record, original)
                         raise
                     if aside is not None:
                         shutil.rmtree(aside, ignore_errors=True)

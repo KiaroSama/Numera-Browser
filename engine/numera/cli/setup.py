@@ -348,22 +348,41 @@ def cmd_ext(args, store: ProfileStore) -> int:
         return emit({"id": prof.id, "extensions": list(prof.extensions)})
 
     path = str(Path(args.path).expanduser())
-    if args.ext_command == "add":
-        if not Path(path).is_dir():
-            say(_c(f"'{path}' is not a folder. Point at an *unpacked* extension "
-                   f"(the folder containing manifest.json).", C.RED))
-            return emit({"ok": False, "error": f"'{path}' is not a folder"}, 1)
-        if path in prof.extensions:
-            say(_c("Already loaded.", C.DIM))
-            return emit({"ok": True, "id": prof.id, "extensions": list(prof.extensions),
-                         "changed": False})
-        prof.extensions.append(path)
-    else:  # remove
-        if path not in prof.extensions:
-            say(_c(f"'{path}' isn't on this profile.", C.RED))
-            return emit({"ok": False, "error": f"'{path}' isn't on this profile"}, 1)
-        prof.extensions.remove(path)
-    store.save(prof)
+    if args.ext_command == "add" and not Path(path).is_dir():
+        say(_c(f"'{path}' is not a folder. Point at an *unpacked* extension "
+               f"(the folder containing manifest.json).", C.RED))
+        return emit({"ok": False, "error": f"'{path}' is not a folder"}, 1)
+
+    # Decided inside the transaction, on the profile as it is now. Reading the
+    # list out here and saving it back could drop an extension another process
+    # had just added - and it wrote only the engine copy, so the dashboard went
+    # on showing the old list.
+    outcome = {}
+
+    def change(current):
+        if args.ext_command == "add":
+            if path in current.extensions:
+                outcome["already"] = True
+                return current
+            current.extensions.append(path)
+        else:
+            if path not in current.extensions:
+                outcome["missing"] = True
+                return current
+            current.extensions.remove(path)
+        return current
+
+    from ..repo import repo
+    prof = repo(store).edit(args.ref, change)
+    if prof is None:
+        return emit({"ok": False, "error": f"no profile matching '{args.ref}'"}, 1)
+    if outcome.get("already"):
+        say(_c("Already loaded.", C.DIM))
+        return emit({"ok": True, "id": prof.id, "extensions": list(prof.extensions),
+                     "changed": False})
+    if outcome.get("missing"):
+        say(_c(f"'{path}' isn't on this profile.", C.RED))
+        return emit({"ok": False, "error": f"'{path}' isn't on this profile"}, 1)
     say(_c(f"{'Added' if args.ext_command == 'add' else 'Removed'} — "
            f"'{prof.name}' now loads {len(prof.extensions)} extension(s).", C.GRN))
     return emit({"ok": True, "id": prof.id, "extensions": list(prof.extensions),

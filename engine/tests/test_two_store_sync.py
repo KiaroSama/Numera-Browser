@@ -153,6 +153,70 @@ def test_the_repo_refuses_a_duplicate_name(tmp_path):
         coordinator.create(Profile(name="one", fingerprint=generate(seed=2)))
 
 
+# --- restore and import move both copies ------------------------------------
+
+def test_a_restore_over_an_existing_id_replaces_both_copies(tmp_path):
+    """`restore` wrote only the engine record, so restoring onto an id the
+    dashboard already had left the two describing different profiles - one
+    identity for the launcher, the one it replaced for the GUI."""
+    c = client(tmp_path)
+    pid = c.post("/api/profiles", json={"name": "original"}).json()["id"]
+    c.put(f"/api/profiles/{pid}", json={**c.get("/api/profiles").json()[0],
+                                        "folder": "clients", "notes": "keep me"})
+
+    store = ProfileStore(tmp_path)
+    archive = tmp_path / "backup.zip"
+    store.backup(pid, archive)
+    repo(store).edit(pid, lambda prof: setattr(prof, "name", "changed") or prof)
+
+    store.restore(archive)                       # same id, the archived identity
+
+    assert ProfileStore(tmp_path).get(pid).name == "original"
+    twin = dash_raw(tmp_path, pid)
+    assert twin["name"] == "original", "the dashboard kept the identity it replaced"
+    assert twin["folder"] == "clients", "a dashboard-only field was dropped"
+    assert twin["notes"] == "keep me"
+
+
+def test_a_failed_restore_commit_leaves_both_copies_alone(tmp_path, monkeypatch):
+    """A rollback that put back only the engine record would leave the twin
+    describing the archive that never landed."""
+    from numera import paths
+
+    c = client(tmp_path)
+    pid = c.post("/api/profiles", json={"name": "original"}).json()["id"]
+    store = ProfileStore(tmp_path)
+    archive = tmp_path / "backup.zip"
+    store.backup(pid, archive)
+    repo(store).edit(pid, lambda prof: setattr(prof, "name", "current") or prof)
+    before = dash_raw(tmp_path, pid)
+
+    real = paths.write_json
+    monkeypatch.setattr(paths, "write_json",
+                        lambda path, data: (_ for _ in ()).throw(
+                            OSError("no space left on device")))
+    with pytest.raises(OSError):
+        ProfileStore(tmp_path).restore(archive)
+    monkeypatch.setattr(paths, "write_json", real)
+
+    assert ProfileStore(tmp_path).get(pid).name == "current"
+    assert dash_raw(tmp_path, pid) == before, "the twin moved on a failed restore"
+
+
+def test_an_import_of_an_existing_id_updates_both_copies(tmp_path):
+    c = client(tmp_path)
+    pid = c.post("/api/profiles", json={"name": "before"}).json()["id"]
+    store = ProfileStore(tmp_path)
+    exported = tmp_path / "p.json"
+    store.export(pid, exported)
+    repo(store).edit(pid, lambda prof: setattr(prof, "name", "after") or prof)
+
+    store.import_file(exported)                  # the same id comes back
+
+    assert ProfileStore(tmp_path).get(pid).name == "before"
+    assert dash_raw(tmp_path, pid)["name"] == "before"
+
+
 # --- concurrent edits from the two surfaces ---------------------------------
 
 def test_a_cli_note_and_an_api_tag_edit_both_survive(tmp_path):
