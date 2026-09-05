@@ -431,10 +431,16 @@ def test_the_tunnel_thread_ends_when_its_sockets_are_pulled(tmp_path):
     a, b = socket.socketpair()
     c, d = socket.socketpair()
     done = threading.Event()
+    escaped = []
 
     def pump():
         try:
             relay_mod._tunnel(a, c)
+        except BaseException as e:                              # noqa: BLE001
+            # Nothing may escape. `sel.register` raises ValueError - not
+            # OSError - on a socket closed before this ran, and that escaped
+            # into the handler thread as an unhandled exception.
+            escaped.append(e)
         finally:
             done.set()
 
@@ -451,6 +457,7 @@ def test_the_tunnel_thread_ends_when_its_sockets_are_pulled(tmp_path):
 
     assert done.wait(10), \
         "the tunnel thread outlived its sockets - close() would join it forever"
+    assert not escaped, f"an exception escaped the tunnel thread: {escaped[0]!r}"
     t.join(5)
     assert not t.is_alive()
     for sock in (b, d):

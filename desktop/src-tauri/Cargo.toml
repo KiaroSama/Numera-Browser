@@ -1,6 +1,6 @@
 [package]
 name = "numera-desktop"
-version = "0.17.1"
+version = "0.17.2"
 edition = "2021"
 rust-version = "1.77"
 description = "Numera Browser desktop shell"

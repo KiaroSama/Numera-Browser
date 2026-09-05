@@ -126,8 +126,8 @@ Details for each are in [engine/README.md](engine/README.md).
 ## Quick start
 
 **Prerequisites:** [Python 3.10+](https://www.python.org/downloads/) and (for the
-dashboard) [Node.js](https://nodejs.org/) **20.19+ or 22.12+** — the version the
-Vite 8 toolchain actually requires; Node 18 fails at `npm run build`. Check with
+dashboard) [Node.js](https://nodejs.org/) **22.12+** — Vitest 5 requires Node 22,
+and every CI job already runs on it. Node 18 fails at `npm run build`. Check with
 `python --version` and `node --version`.
 
 ```bash
