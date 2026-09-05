@@ -4,6 +4,98 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-09-05
+
+The ninth audit brief. Every item is about state that could be left inconsistent
+by concurrency or by a failure part-way, and every fix is proved by a regression
+that fails without it.
+
+### Fixed
+
+- **Storage locks held against threads but not against other processes.**
+  `paths._lock_for()` and `transaction_lock()` were `threading.RLock`s in module
+  dictionaries. Numera runs several processes against one data root - `numera
+  serve`, CLI commands, detached jobs, the scheduler, a second desktop window -
+  and none of them could see each other's locks. Two could read, modify and
+  atomically replace the same JSON, and the later write erased the earlier one.
+
+  Both now take an OS lock as well (`fcntl.flock` on POSIX, `msvcrt.locking` on
+  Windows), released by the OS when the handle closes so a crash cannot wedge
+  the data root, with a bounded wait and `NUMERA_LOCK_TIMEOUT` to raise it. The
+  regressions use real subprocesses: with the OS layer disabled, four concurrent
+  pool adds and four concurrent schedule writes both lose records.
+
+- **A profile update could erase a concurrent one.** The route read the stored
+  profile, merged, validated, and only then called `save()`, where the lock was
+  taken. Two requests could read the same record and serialise their writes,
+  and the second carried stale values for every field it had not touched. The
+  store owns read → merge → secret preservation → mirror → write inside the
+  lock now, and profiles carry a revision: a client that submits a whole profile
+  (the dashboard's inline rename does) gets 409 rather than silently reverting
+  somebody else's edit. A patch that names only what it changes still needs no
+  revision.
+
+  `_guard_secrets()` and the folder resolution moved inside the lock with it -
+  both read the stored record to decide what to preserve, and both could decide
+  from a record another writer was already replacing.
+
+- **Profile data and `config.json` were separate commits.** Create and update
+  wrote the default engine *before* the profile, so a failed write left the
+  global default changed by a request that returned an error; bulk and import
+  wrote it *after*, so a failed config write reported failure over profiles that
+  had already committed and the obvious retry applied them twice. Both now
+  commit in one batch. Failure is injected in both directions.
+
+- **`PUT /api/config` could half-apply a rejected request.** It validated and
+  wrote one field at a time, so a request whose third field was invalid had
+  already committed the first two. It also used `bool(cfg["headless_launch"])`,
+  so the JSON string `"false"` switched headless launching *on*. One validator
+  for the whole patch - unknown keys refused, a real boolean required - then one
+  atomic write.
+
+- **A failed delete could strand a session.** `restore_session()` swallowed a
+  failed rename-back, so when metadata removal failed *and* the session could
+  not be put back, the caller saw only the first error while the profile record
+  was restored and its real session was left under a `.deleting-*` name nothing
+  pointed at. That case raises `SessionStranded` now, naming the tombstone and
+  the destination so the repair is deterministic, with the original failure kept
+  as its cause. Metadata is restored through the atomic writer rather than a
+  truncating `write_bytes`.
+
+- **`ScheduleStore.add()` validated less than `update()` did.** It converted with
+  a bare `float()`, and argparse accepts `nan` and `inf` - so `numera schedule
+  add --minutes nan` wrote a non-finite number into `schedules.json`, which is
+  not valid JSON to a strict reader. It uses the same canonical validator now, so
+  validity no longer depends on which surface called the store.
+
+- **The dashboard could show a state the server had rejected.** Five actions
+  changed local state before the write was confirmed and only raised a toast on
+  failure, and the regular refresh reads *profiles* - so a rejected folder create
+  or default-engine change stayed on screen until a reload. The live path is
+  server-first, and a failure refetches authoritative config.
+
+- **A force-killed shell could leave the engine running on Linux and macOS.**
+  Windows put the engine in a job object; the others had nothing, so the engine
+  kept its port and the next launch started a second one against the same
+  portable data root. Linux uses `PR_SET_PDEATHSIG` with the parent-race check
+  (the parent can die between fork and prctl, and the signal is then already
+  spent), and every platform additionally gets a parent watcher inside the
+  engine, which is what covers macOS.
+
+- **`rotateUrl` was dropped by structured proxy creation.** `normalize()`
+  returned only the core fields, so `POST /api/proxies` discarded a rotation
+  endpoint that `PUT` would have kept. It is part of the canonical shape now and
+  is validated syntactically at write time - scheme, host, port - without
+  requiring DNS. An out-of-range port used to raise from `urlsplit().port`
+  outside `rotate()`'s network `try` and surface as a 500; it is a refusal.
+
+### Changed
+
+- `dashboard/package-lock.json` still advertised the old Node range in its root
+  entry, `scripts/build-desktop.ps1` still printed `>=20.19 or >=22.12`, and
+  `ProxiesView.jsx` still described SOCKS4 as untestable although the relay
+  speaks SOCKS4a and health-checks it. All three now match the code.
+
 ## [0.17.2] - 2026-09-05
 
 ### Fixed

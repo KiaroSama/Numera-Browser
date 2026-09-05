@@ -112,8 +112,10 @@ def test_a_name_only_put_changes_only_the_name(c, tmp_path):
     after = json.loads(path.read_text(encoding="utf-8"))
 
     assert after["name"] == "renamed"
+    # `_rev` is expected to change - a write that did not bump it would defeat
+    # the stale-write check that exists to stop one client erasing another's edit.
     differing = {k for k in set(before) | set(after)
-                 if k != "name" and before.get(k) != after.get(k)}
+                 if k not in ("name", "_rev") and before.get(k) != after.get(k)}
     assert not differing, f"a rename also changed: {sorted(differing)}"
 
 

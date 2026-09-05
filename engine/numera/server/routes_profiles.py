@@ -12,6 +12,7 @@ import json
 import os
 from .. import devices
 from ..fingerprint import validate
+from .stores import StaleProfile
 from ..models import Fingerprint
 from .convert import _rel_time, dashboard_coherence, to_dashboard_profile, to_engine_profile
 
@@ -231,11 +232,13 @@ def register(app, ctx):
         chose_engine = bool(profile.get("engine"))
         _validate_profile(profile)
         _apply_default_extensions(profile)
-        if chose_engine:
-            _remember_engine(profile)          # an explicit choice, worth remembering
-        elif not profile.get("engine"):
+        if not profile.get("engine"):
             profile["engine"] = engine_store.get_default_engine()
-        saved = dash.save(profile)
+        # One commit. `_remember_engine` wrote `config.json` *before* the
+        # profile, so a failed profile write left the global default changed by
+        # a request that returned an error.
+        saved = dash.save(profile, config_change=(
+            {"default_engine": profile["engine"]} if chose_engine else None))
         return decorate(saved)
 
     @app.put("/api/profiles/{pid}")
@@ -255,6 +258,11 @@ def register(app, ctx):
         # profile silently switched the global default away from whatever the
         # user had chosen - and nothing in the UI said so.
         asked = profile.get("engine")
+        # Read the revision here too, for the same reason `asked` is read here:
+        # `strip_server_owned` drops every `_`-prefixed key, so asking for it
+        # after that point always finds nothing and the check silently does not
+        # happen. That is exactly how the engine-explicitness bug worked.
+        sent_rev = profile.get(dash.REVISION)
         if not isinstance(profile, dict):
             raise HTTPException(422, "profile must be an object")
         strip_server_owned(profile)
@@ -269,9 +277,19 @@ def register(app, ctx):
         # stored, then normalise the complete result.
         merged = {**stored, **profile}
         _validate_profile(merged, pid=pid, strip=False)
-        if asked and asked != stored.get("engine"):
-            _remember_engine(merged)
-        return decorate(dash.save(merged))
+        # `expect_rev` closes the lost update. Two requests can read the same
+        # record, prepare independent edits and serialise their writes; without
+        # this the second one carries stale values for every field it did not
+        # touch and erases the first. A client that does not send `_rev` keeps
+        # the old last-writer-wins behaviour rather than being refused.
+        try:
+            saved = dash.save(merged, expect_rev=sent_rev,
+                              config_change=(
+                                  {"default_engine": merged["engine"]}
+                                  if asked and asked != stored.get("engine") else None))
+        except StaleProfile as e:
+            raise HTTPException(409, str(e)) from None
+        return decorate(saved)
 
     @app.delete("/api/profiles/{pid}")
     def delete_profile(pid: str):
@@ -408,14 +426,12 @@ def register(app, ctx):
         # One transaction. Saving in the loop meant a write failure on item N
         # left 0..N-1 edited while the request raised - and the obvious retry
         # applied the patch to part of the selection twice.
-        saved = dash.save_many(pending)
-        # Config *after* data. `_remember_engine` writes `config.json`, which is
-        # outside the profile batch; running it in the loop meant a failing
-        # `save_many` rolled the profiles back and left the default engine set
-        # by a request that failed. Only when the patch names one - a tag-only
-        # bulk edit must not touch the default at all.
-        if patch.get("engine") and pending:
-            _remember_engine(patch)
+        # Config in the *same* batch as the data. After it, a failed config
+        # write reported failure over profiles that had already committed;
+        # before it, a failed profile write left the default changed. Only when
+        # the patch names an engine - a tag-only bulk edit must not touch it.
+        saved = dash.save_many(pending, config_change=(
+            {"default_engine": patch["engine"]} if patch.get("engine") and pending else None))
         return [decorate(p) for p in saved]
 
     @app.post("/api/fingerprint/validate")
@@ -484,11 +500,8 @@ def register(app, ctx):
             results.append({"name": prof.name, "issues": issues})
         # Same contract as batch create: an import either lands whole or not at
         # all. Saving as it went left a partial import that a retry duplicated.
-        dash.save_many(pending)
-        # Config after data, for the same reason as bulk: a failed import must
-        # not leave the default engine changed.
-        if explicit:
-            _remember_engine({"engine": explicit})
+        dash.save_many(pending, config_change=(
+            {"default_engine": explicit} if explicit else None))
         return {"imported": len(results), "results": results}
 
     # ---- Fingerprint collisions -----------------------------------------

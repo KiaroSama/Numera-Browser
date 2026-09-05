@@ -89,10 +89,16 @@ def test_a_failed_engine_write_does_not_leave_the_dashboard_copy_ahead(tmp_path,
     saved = dash.save({"name": "before"})
     pid = saved["id"]
 
-    def refuse(_prof):
+    # Inject where the engine copy is actually produced. The write goes through
+    # one `write_batch` now rather than through `engine.save()`, so that both
+    # copies roll back together - patching `save` would no longer intercept
+    # anything and the test would pass without exercising the path. Failing
+    # `_apply_secrets` is also the real-world case: it is what raises when the
+    # vault is locked.
+    def refuse(*_a, **_k):
         raise OSError("engine store is read-only")
 
-    monkeypatch.setattr(engine, "save", refuse)
+    monkeypatch.setattr(engine, "_apply_secrets", refuse)
     with pytest.raises(OSError):
         dash.save({**saved, "name": "after"})
 

@@ -24,8 +24,9 @@ function ProxyStatus({ p }) {
   const s = p.status;
   if (s === "ok") return <span className="ps-pill ok" title={p.lastCheck?.ip || ""}><Check size={12} /> {p.lastCheck?.country || "OK"}{p.lastCheck?.latencyMs ? ` · ${p.lastCheck.latencyMs}ms` : ""}</span>;
   if (s === "failed") return <span className="ps-pill warn" title={p.lastCheck?.error || ""}><ShieldAlert size={12} /> Failed</span>;
-  // "skipped" now means genuinely untestable (SOCKS4 has no auth to check), not
-  // "we did not try" — SOCKS5 is health-checked through the relay like anything else.
+  // "skipped" means the check could not run at all, not "we did not try".
+  // SOCKS4 *is* health-checked - the relay speaks SOCKS4a - so this no longer
+  // covers it; the comment said otherwise for as long as that was true.
   if (s === "skipped") return <span className="ps-pill" title={p.lastCheck?.error || ""} style={{ background: T.violetDim, color: T.lilac }}><Circle size={10} /> N/A</span>;
   return <span className="ps-pill" style={{ color: T.dim }}><Circle size={10} /> Untested</span>;
 }

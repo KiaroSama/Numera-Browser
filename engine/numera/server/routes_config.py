@@ -155,14 +155,35 @@ def register(app, ctx):
             raise HTTPException(404, "that extension declares no usable icon")
         return FileResponse(ico)
 
-    @app.put("/api/config")
-    def set_config(cfg: dict):
+    # The keys `PUT /api/config` will act on. Everything else `get_config()`
+    # returns is derived or read-only (`folders`, `root`, `version`), and a
+    # request naming one of those was silently ignored rather than refused.
+    SETTABLE = ("default_engine", "default_extensions", "headless_launch")
+
+    def _config_patch(cfg: dict) -> dict:
+        """Every field validated, nothing written. Raises on the first problem.
+
+        Separate from the write on purpose. This used to validate and write one
+        field at a time, so a request whose *third* field was invalid had
+        already committed the first two before answering 400 - a rejected
+        request that changed the config anyway.
+        """
         from .. import drivers
+
+        if not isinstance(cfg, dict):
+            raise HTTPException(400, f"config must be an object, got {type(cfg).__name__}")
+        unknown = sorted(set(cfg) - set(SETTABLE))
+        if unknown:
+            raise HTTPException(400, f"unknown config key(s): {', '.join(unknown)}")
+
+        patch: dict = {}
+
         name = cfg.get("default_engine")
         if name is not None:
             if name not in drivers.names():
                 raise HTTPException(400, f"unknown engine '{name}'")
-            engine_store.set_default_engine(name)
+            patch["default_engine"] = name
+
         exts = cfg.get("default_extensions")
         if exts is not None:
             if isinstance(exts, str):
@@ -171,9 +192,24 @@ def register(app, ctx):
                 raise HTTPException(400, "default_extensions must be a list of folder paths")
             for bad in _unloadable_extensions(exts):
                 raise HTTPException(400, bad)
-            engine_store.set_default_extensions(exts)
-        if cfg.get("headless_launch") is not None:
-            engine_store.set_headless_launch(bool(cfg["headless_launch"]))
+            patch["default_extensions"] = [str(x) for x in exts]
+
+        headless = cfg.get("headless_launch")
+        if headless is not None:
+            # A real boolean. `bool("false")` is True, so the JSON string
+            # "false" used to switch headless launching *on* - the opposite of
+            # what was asked, with nothing to say so.
+            if not isinstance(headless, bool):
+                raise HTTPException(
+                    400, f"'headless_launch' must be true or false, got "
+                         f"{type(headless).__name__}")
+            patch["headless_launch"] = headless
+
+        return patch
+
+    @app.put("/api/config")
+    def set_config(cfg: dict):
+        engine_store.set_config_many(_config_patch(cfg))
         return get_config()
 
     # These delegate to numera.folders so the CLI and the API cannot drift on

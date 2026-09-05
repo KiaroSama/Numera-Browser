@@ -140,6 +140,37 @@ def to_line(proxy: dict) -> str:
     return f"{line}:{tail}" if tail else line
 
 
+def validate_rotate_url(url):
+    """A syntactically usable change-IP URL, or a ValueError naming the problem.
+
+    Shape only - scheme, host, port. Whether the address is public and where it
+    actually resolves is decided at *use* time by `_public_destination()`,
+    because DNS answers change and a write must not depend on the network.
+
+    The port matters more than it looks: `rotate()` reads `urlsplit(url).port`,
+    and `urlsplit` raises `ValueError` for an out-of-range port when the
+    attribute is read - outside `rotate()`'s network `try`, so a stored bad
+    endpoint surfaced as a 500 rather than a refusal.
+    """
+    from urllib.parse import urlsplit
+
+    if url in (None, ""):
+        return None
+    text = str(url).strip()
+    if not text:
+        return None
+    parts = urlsplit(text)
+    if parts.scheme.lower() not in ("http", "https"):
+        raise ValueError(f"the change-IP URL must be http(s), got {parts.scheme or 'nothing'!r}")
+    if not parts.hostname:
+        raise ValueError("the change-IP URL has no host")
+    try:
+        parts.port                                  # raises on an invalid port
+    except ValueError:
+        raise ValueError(f"{text!r} has an invalid port") from None
+    return text
+
+
 def normalize(entry) -> dict:
     """One proxy in the canonical shape, or a ValueError saying what is wrong.
 
@@ -183,7 +214,12 @@ def normalize(entry) -> dict:
 
     return {"type": kind, "host": host, "port": str(port),
             "user": text("user"), "pass": text("pass"),
-            "country": country, "label": text("label")}
+            "country": country, "label": text("label"),
+            # Part of the canonical shape, not an extra. `normalize()` returned
+            # only the core fields, so `POST /api/proxies` silently dropped a
+            # rotation endpoint the caller supplied - while `PUT` kept it,
+            # because edit merges onto the stored record instead.
+            "rotateUrl": validate_rotate_url(text("rotateUrl"))}
 
 
 def normalize_many(entries) -> list[dict]:

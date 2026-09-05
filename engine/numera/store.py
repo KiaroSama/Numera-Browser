@@ -69,6 +69,10 @@ def _make_data_dirs(root: Path, *dirs: Path) -> None:
             ) from e
 
 
+class SessionStranded(RuntimeError):
+    """A failed delete could not put its detached session back."""
+
+
 class ProfileStore:
     def __init__(self, root: Optional[str | Path] = None,
                  password: Optional[str] = None):
@@ -176,6 +180,24 @@ class ProfileStore:
 
     def set_headless_launch(self, on: bool) -> bool:
         return self._set_config("headless_launch", bool(on))
+
+    def set_config_many(self, changes: dict) -> dict:
+        """Apply several config keys as one read-modify-write.
+
+        `PUT /api/config` used to call `set_default_engine`, then
+        `set_default_extensions`, then `set_headless_launch` in turn - three
+        separate writes. A request whose *third* field was invalid had already
+        committed the first two and then answered 400, so a rejected request
+        still changed the config. One write, after everything is validated.
+        """
+        if not changes:
+            return self.get_config()
+
+        def change(cfg):
+            cfg.update(changes)
+            return cfg
+
+        return mutate_json(self.config_path, change)
 
     def _set_config(self, key: str, value):
         """Change one config key without disturbing the others."""
@@ -460,14 +482,28 @@ class ProfileStore:
         return tomb
 
     def restore_session(self, profile_id: str, tomb) -> None:
-        """Put a detached session back, when the rest of the delete failed."""
+        """Put a detached session back, when the rest of the delete failed.
+
+        Raises `SessionStranded` if it cannot. This used to swallow the error,
+        which produced the one state nothing downstream can make sense of: the
+        profile record restored and present, its real browser session left under
+        a `.deleting-*` name that nothing points at. The caller saw only the
+        first error and the profile looked healthy with its session missing.
+
+        The exception names the tombstone so the repair is deterministic rather
+        than a hunt.
+        """
         if tomb is None or not tomb.exists():
             return
         try:
             self.userdata_dir.mkdir(parents=True, exist_ok=True)
             tomb.rename(self.userdata_dir / safe_id(profile_id))
-        except (OSError, ValueError):                   # pragma: no cover
-            pass                # the raise that brought us here still stands
+        except (OSError, ValueError) as e:
+            raise SessionStranded(
+                f"the delete of {profile_id} failed and its session could not be "
+                f"put back: it is still on disk as {tomb}. Move that directory to "
+                f"{self.userdata_dir / safe_id(profile_id)} to finish recovering."
+            ) from e
 
     @staticmethod
     def discard_tombstone(tomb) -> bool:

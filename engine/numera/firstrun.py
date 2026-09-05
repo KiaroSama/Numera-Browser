@@ -53,6 +53,10 @@ def _merge_dir(src: Path, dst: Path) -> tuple:
     added = kept = 0
     dst.mkdir(parents=True, exist_ok=True)
     for item in src.iterdir():
+        if item.name == ".locks":
+            # Lock files belong to the install that made them. Copying another
+            # root's is harmless but pointless - they hold no state.
+            continue
         target = dst / item.name
         if target.exists():
             if item.is_dir():

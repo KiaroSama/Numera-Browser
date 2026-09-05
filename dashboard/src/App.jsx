@@ -174,6 +174,17 @@ export default function App() {
   const live = mode === "live";
 
   const refresh = async () => setProfiles(await api.list());
+  // The authoritative config, refetched. `refresh()` reads profiles only, so
+  // config and folder state - the default engine, an empty folder - has nothing
+  // that repairs it after a rejected mutation. This is that repair.
+  const refreshConfig = async () => {
+    try {
+      const cfg = await api.getConfig();
+      setConfig(cfg);
+      if (cfg?.default_engine) setDefaultEngine(cfg.default_engine);
+      if (Array.isArray(cfg?.folders)) setFolders(cfg.folders);
+    } catch { /* offline; the caller has already reported the failure */ }
+  };
 
   // A 401 can arrive at any moment, not just on the first request: creating the
   // first named token locks the running engine, and the token this session is
@@ -273,12 +284,20 @@ export default function App() {
     setProfiles(ps => ps.filter(p => p.id !== id));
   };
   const save = async (p) => {
-    if (p.engine) setDefaultEngine(p.engine);   // "last engine wins" for the next new profile
     if (live) {
-      try { const exists = profiles.some(x => x.id === p.id) && !p._new; await (exists ? api.update(p) : api.create({ ...p, id: undefined })); await refresh(); }
-      catch (e) { toast.error("Save failed: " + e.message); }
+      // Server first. `setDefaultEngine` used to run before the request, so a
+      // rejected save still moved the engine every *new* profile would use -
+      // and the profile refresh does not repair config state, so the wrong
+      // value stayed on screen until a reload.
+      try {
+        const exists = profiles.some(x => x.id === p.id) && !p._new;
+        await (exists ? api.update(p) : api.create({ ...p, id: undefined }));
+        if (p.engine) setDefaultEngine(p.engine);   // "last engine wins" for the next new profile
+        await refresh();
+      } catch (e) { toast.error("Save failed: " + e.message); await refreshConfig(); }
       return;
     }
+    if (p.engine) setDefaultEngine(p.engine);
     setProfiles(ps => ps.some(x => x.id === p.id) ? ps.map(x => x.id === p.id ? p : x) : [...ps, p]);
   };
 
@@ -286,32 +305,83 @@ export default function App() {
   const createFolder = async (name) => {
     name = (name || "").trim();
     if (!name || folderList.includes(name)) { if (name) toast.info(`Folder "${name}" already exists.`); return; }
+    if (live) {
+      // An empty folder exists only in the folder list, and `refresh()` reads
+      // profiles - so a rejected create left a folder in the sidebar that the
+      // server had never heard of, and nothing later removed it.
+      try {
+        const r = await api.createFolder(name);
+        // The server's list, or append if it did not return one. Passing the
+        // updater as a *fallback value* would have stored the function itself.
+        if (Array.isArray(r?.folders)) setFolders(r.folders); else setFolders(f => [...f, name]);
+      }
+      catch (e) { toast.error("Create folder failed: " + e.message); await refreshConfig(); }
+      return;
+    }
     setFolders(f => [...f, name]);
-    if (live) { try { await api.createFolder(name); } catch (e) { toast.error("Create folder failed: " + e.message); } }
-    else toast.success(`Folder "${name}" created.`);
+    toast.success(`Folder "${name}" created.`);
   };
   const renameFolder = async (from, to) => {
     to = (to || "").trim();
     if (!to || to === from) return;
     if (folderList.includes(to)) { toast.info(`Folder "${to}" already exists.`); return; }
+    if (live) {
+      try {
+        const r = await api.renameFolder(from, to);
+        if (r?.folders) setFolders(r.folders);
+        if (folder === from) setFolder(to);
+        await refresh();
+      } catch (e) {
+        // Put the authoritative state back rather than leaving the rename on
+        // screen: the selected folder can otherwise point at a name that does
+        // not exist, which filters the list down to nothing.
+        toast.error("Rename failed: " + e.message);
+        await refreshConfig();
+        await refresh();
+      }
+      return;
+    }
     setFolders(f => f.map(x => x === from ? to : x));
     setProfiles(ps => ps.map(p => p.folder === from ? { ...p, folder: to } : p));
     if (folder === from) setFolder(to);
-    if (live) { try { const r = await api.renameFolder(from, to); if (r?.folders) setFolders(r.folders); await refresh(); } catch (e) { toast.error("Rename failed: " + e.message); } }
   };
   const deleteFolder = async (name) => {
+    if (live) {
+      try {
+        const r = await api.deleteFolder(name);
+        if (r?.folders) setFolders(r.folders);
+        if (folder === name) setFolder("All profiles");
+        await refresh();
+      } catch (e) {
+        toast.error("Delete folder failed: " + e.message);
+        await refreshConfig();
+        await refresh();
+      }
+      return;
+    }
     setFolders(f => f.filter(x => x !== name));
     setProfiles(ps => ps.map(p => p.folder === name ? { ...p, folder: "Unfiled" } : p));
     if (folder === name) setFolder("All profiles");
-    if (live) { try { const r = await api.deleteFolder(name); if (r?.folders) setFolders(r.folders); await refresh(); } catch (e) { toast.error("Delete folder failed: " + e.message); } }
-    else toast.success(`Folder "${name}" removed — its profiles moved to Unfiled.`);
+    toast.success(`Folder "${name}" removed — its profiles moved to Unfiled.`);
   };
 
   // Change the engine used for every new profile (Settings tab).
   const changeDefaultEngine = async (name) => {
+    if (live) {
+      try {
+        await api.setDefaultEngine(name);
+        setDefaultEngine(name);
+        toast.success(`New profiles will use ${ENGINE_META[name]?.label || name}.`);
+      } catch (e) {
+        // Nothing refetches config on its own, so an optimistic change that the
+        // server rejected simply stayed on the Settings screen looking saved.
+        toast.error("Couldn't save default engine: " + e.message);
+        await refreshConfig();
+      }
+      return;
+    }
     setDefaultEngine(name);
-    if (live) { try { await api.setDefaultEngine(name); toast.success(`New profiles will use ${ENGINE_META[name]?.label || name}.`); } catch (e) { toast.error("Couldn't save default engine: " + e.message); } }
-    else toast.info("Connect the engine (numera serve) to save this setting.");
+    toast.info("Connect the engine (numera serve) to save this setting.");
   };
 
   // Import profiles exported from GoLogin / AdsPower / Multilogin.
