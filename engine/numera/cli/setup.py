@@ -7,6 +7,7 @@ process you start rather than a task that finishes."""
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from .. import __version__
 from ..store import ProfileStore, unloadable_extensions
@@ -42,29 +43,42 @@ def cmd_default_engine(args, store: ProfileStore) -> int:
 
 
 def cmd_config(args, store: ProfileStore) -> int:
-    """Show or change the settings the dashboard exposes on GET/PUT /api/config."""
+    """Show or change the settings the dashboard exposes on GET/PUT /api/config.
+
+    Validate everything, then write once. The fields were applied in the order
+    they appear on the command line, each with its own commit, so
+    `numera config --headless-launch on --default-extension /nope` turned
+    headless on and *then* failed - a command that reports failure having
+    already changed something.
+    """
     changed = []
+    patch = {}
+
     if args.default_engine is not None:
         from .. import drivers
         if args.default_engine not in drivers.names():
             say(_c(f"Unknown engine '{args.default_engine}'.", C.RED))
             return emit({"ok": False, "error": f"unknown engine '{args.default_engine}'",
                          "known": drivers.names()}, 1)
-        store.set_default_engine(args.default_engine)
+        patch["default_engine"] = args.default_engine
         changed.append("default_engine")
+
     if args.headless_launch is not None:
-        store.set_headless_launch(args.headless_launch == "on")
+        patch["headless_launch"] = (args.headless_launch == "on")
         changed.append("headless_launch")
+
     if args.default_extension is not None:
-        # The store refuses what the launcher cannot load, so this path can no
-        # longer persist a value `PUT /api/config` rejects.
-        try:
-            store.set_default_extensions(
-                [str(Path(e).expanduser()) for e in args.default_extension if e])
-        except ValueError as e:
-            say(_c(str(e), C.RED))
-            return emit({"ok": False, "error": str(e)}, 1)
+        wanted = [str(Path(e).expanduser()) for e in args.default_extension if e]
+        current = set(store.get_default_extensions())
+        problems = unloadable_extensions([x for x in wanted if x not in current])
+        if problems:
+            say(_c("; ".join(problems), C.RED))
+            return emit({"ok": False, "error": "; ".join(problems)}, 1)
+        patch["default_extensions"] = wanted
         changed.append("default_extensions")
+
+    if patch:
+        store.set_config_many(patch)
 
     cfg = {
         "default_engine": store.get_default_engine(),
@@ -447,8 +461,19 @@ def cmd_schedule(args, store: ProfileStore) -> int:
                 say(_c(f"  skip {s['id']} — profile {s['profileId']} not in this store", C.YEL))
                 skipped.append(s["id"])
                 continue
+            # Same claim the server tick takes: whoever gets it runs the
+            # occurrence, and the other reports it as taken rather than
+            # starting a second browser and recording a duplicate run.
+            if not sched.claim_due(s["id"], f"cli:{os.getpid()}"):
+                say(_c(f"  skip {s['id']} - another worker has this occurrence", C.DIM))
+                skipped.append(s["id"])
+                continue
             say(_c(f"  warming '{prof.name}' ({s['preset']}, {s['minutes']}min)...", C.CYN))
-            warm_up(prof, store, minutes=s["minutes"], preset=s["preset"], headless=True)
+            try:
+                warm_up(prof, store, minutes=s["minutes"], preset=s["preset"], headless=True)
+            except BaseException:
+                sched.release(s["id"])       # never started: let the next tick have it
+                raise
             sched.mark_run(s["id"], _time.time())
             ran.append(s["id"])
         say(_c(f"Ran {len(ran)} due schedule(s).", C.GRN))

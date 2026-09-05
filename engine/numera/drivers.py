@@ -412,6 +412,54 @@ def _camoufox_kwargs(profile: Profile, store, headless: bool) -> tuple:
 
 
 @contextmanager
+def open_session(profile: Profile, store):
+    """The gate every browser open goes through: lease first, credential second.
+
+    **The lease** is what makes `user-data/<id>` owned. It is a Chromium
+    profile directory and Chromium assumes it owns one exclusively - two
+    processes on one directory corrupt its databases. The storage locks never
+    covered this: they guard JSON writes and are held for milliseconds, while a
+    session lasts as long as the window does. So this is a separate lease, and
+    it is emphatically NOT taken while a data transaction is held.
+
+    **The credential check** belongs here rather than in each caller because a
+    locked vault hands out `proxy.password = None`, which is indistinguishable
+    from "this proxy has no password". A launch would then start with no proxy
+    credential at all - the profile browsing from the host's own IP, which is
+    the one outcome an anti-detect profile exists to prevent. Refusing is the
+    only safe reading of an unreadable secret. A genuinely passwordless proxy
+    is untouched: `is_withheld` is false when nothing is stored.
+
+    Reads and ordinary edits stay available while locked; only opening a
+    browser is refused.
+    """
+    import json
+
+    from . import crypto, vault
+    from .paths import session_lease
+
+    # Read the record as it is ON DISK. `profile.proxy.password` has already
+    # been through the decrypting read, so a locked vault has replaced the
+    # ciphertext with None - the exact ambiguity this check exists to resolve.
+    stored = None
+    try:
+        path = store._path(profile.id)
+        if path.exists():
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            stored = ((raw.get("proxy") or {}) or {}).get("password")
+    except (OSError, ValueError):                                # pragma: no cover
+        stored = None
+    if vault.is_withheld(store, stored):
+        raise crypto.VaultLocked(
+            f"{profile.name} has a proxy password this process cannot read, so the "
+            f"browser would start without it and browse from your own IP. Unlock "
+            f"the vault first: numera --password ... <command>")
+
+    with session_lease(store.root, profile.id):
+        yield
+
+
+@contextmanager
 def session(profile: Profile, store, engine: Optional[str] = None,
             headless: bool = True):
     """Open a profile's persistent session and yield its browser context.
@@ -422,34 +470,36 @@ def session(profile: Profile, store, engine: Optional[str] = None,
     session. The context is always closed on the way out, which is also what
     flushes cookies to disk.
     """
-    name = engine or profile.engine or "playwright"
-    quiet = replace(profile, startup_urls=[])
+    # Every browser open goes through the same gate - see `open_session`.
+    with open_session(profile, store):
+        name = engine or profile.engine or "playwright"
+        quiet = replace(profile, startup_urls=[])
 
-    if name == "camoufox":
-        # Camoufox's driver is launch-and-wait only, so open it directly.
-        from camoufox.sync_api import Camoufox
-        # Exactly the options a real launch uses. The proxy matters most - without
-        # it the leak test and the trust report measured the host's own
-        # connection and called it clean, which is worse than no check - but so
-        # do the OS and locale, or the report grades an identity the profile
-        # does not have.
-        kwargs, relay = _camoufox_kwargs(quiet, store, headless)
+        if name == "camoufox":
+            # Camoufox's driver is launch-and-wait only, so open it directly.
+            from camoufox.sync_api import Camoufox
+            # Exactly the options a real launch uses. The proxy matters most - without
+            # it the leak test and the trust report measured the host's own
+            # connection and called it clean, which is worse than no check - but so
+            # do the OS and locale, or the report grades an identity the profile
+            # does not have.
+            kwargs, relay = _camoufox_kwargs(quiet, store, headless)
+            try:
+                with Camoufox(**kwargs) as browser:
+                    yield browser
+            finally:
+                if relay:
+                    relay.close()
+            return
+
+        handles = get(name)(quiet, store, headless=headless, keep_open=True)
+        pw, context, _page = handles
         try:
-            with Camoufox(**kwargs) as browser:
-                yield browser
+            yield context
         finally:
-            if relay:
-                relay.close()
-        return
-
-    handles = get(name)(quiet, store, headless=headless, keep_open=True)
-    pw, context, _page = handles
-    try:
-        yield context
-    finally:
-        context.close()
-        if pw:
-            pw.stop()
+            context.close()
+            if pw:
+                pw.stop()
 
 
 # --------------------------------------------------------------------------

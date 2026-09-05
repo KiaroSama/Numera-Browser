@@ -34,6 +34,13 @@ async (probe) => {
   out.memory = navigator.deviceMemory;
   out.screenW = screen.width;
   out.screenH = screen.height;
+  // Read so the aligner can use the real values instead of guessing a default
+  // for the target OS. Both are OS-shaped - a desktop reports 0 touch points,
+  // a phone 5; a Retina Mac is DPR 2 where Windows scaling gives 1/1.25/1.5 -
+  // so after an OS transition a stale one is a contradiction a detector reads
+  // for free.
+  out.maxTouchPoints = navigator.maxTouchPoints;
+  out.devicePixelRatio = window.devicePixelRatio;
   out.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   try {

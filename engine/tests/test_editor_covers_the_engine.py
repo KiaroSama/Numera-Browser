@@ -16,7 +16,10 @@ from pathlib import Path
 import pytest
 
 SRC = Path(__file__).resolve().parents[2] / "dashboard" / "src"
-CONVERT = Path(__file__).resolve().parents[1] / "numera" / "server" / "convert.py"
+# The conversion moved to the core in 0.20.0 so the CLI could use it without
+# the HTTP package; `server/convert.py` is now a re-export, and reading that
+# would pass this test vacuously.
+CONVERT = Path(__file__).resolve().parents[1] / "numera" / "convert.py"
 
 pytestmark = pytest.mark.skipif(not SRC.is_dir(), reason="dashboard sources not present")
 

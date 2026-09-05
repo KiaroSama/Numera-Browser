@@ -4,6 +4,99 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-09-06
+
+The eleventh audit brief. Storage was already process-safe; this pass is about
+everything that is *not* a JSON write - who owns a browser session, which of
+the two profile copies is authoritative, and what a command has already changed
+when it reports failure.
+
+### Fixed
+
+- **A browser session has an owner across processes.** `user-data/<id>` is a
+  Chromium profile directory and Chromium assumes it owns one exclusively, but
+  nothing held it: two servers, a desktop and a CLI could open the same profile
+  at once, `backup()` could zip a live one, `restore()` could replace it, and a
+  delete's "rename it aside" was never proof, because POSIX renames a directory
+  a browser is using without complaint. There is now a per-profile OS-backed
+  **session lease**, deliberately unlike a data lock - it refuses immediately
+  with `SessionBusy` rather than waiting, and it is never taken while a data
+  transaction is held. Launch, attach, `drivers.session()`, warm-up, probes,
+  cookies, backup, restore and delete all take it, and cross-process status
+  consults it instead of only the local registry.
+
+- **A browser never starts with a credential it could not read.** A locked
+  vault hands out `proxy.password = None`, which is indistinguishable from
+  "this proxy has no password" - so a launch started with no proxy credential
+  at all and browsed from the host's own IP, the one outcome an anti-detect
+  profile exists to prevent. Every session open now refuses when the *stored*
+  secret cannot be decrypted. A genuinely passwordless proxy is unaffected.
+
+- **The CLI and the dashboard keep one profile, not two that drift.** Dashboard
+  writes always mirrored into the engine, but the engine's copy reached the
+  dashboard only for an id it had never seen. So `numera edit`, `regen` and
+  `apply` left the dashboard's copy stale, and `numera delete` left one behind
+  that the next listing adopted straight back - a deleted profile reappearing
+  under its own id. `numera/repo.py` is now the one mutation path: read, merge,
+  validate, revision, both copies, in one transaction, preserving the fields
+  only the dashboard has. The conversion moved to `numera/convert.py` so the
+  CLI can use it without the optional HTTP stack.
+
+- **Core CLI edits no longer lose a concurrent change.** `resolve()` → mutate →
+  `save()` spans a whole command; the mutation now runs *inside* the
+  transaction. Same-name uniqueness moved in with it - `find_by_name()` before
+  `save()` was a check two processes could both pass.
+
+- **Slow routes commit onto the current record.** `trust` and `align` held a
+  record read before a browser launched and wrote it back tens of seconds
+  later, reverting anything edited in between; `is_running()` did the same for
+  `_last_active`. All three patch only the fields they own.
+
+- **Proxy assignment is one transaction.** It read every target first and then
+  saved in a loop, so a concurrent edit could be overwritten by a stale
+  snapshot and a failure on target N left 0..N-1 assigned under a generic
+  error. It goes through `patch_many()`.
+
+- **Compound CLI commands are one request.** `config` validates the whole patch
+  before writing any of it; `create --engine` commits the default engine in the
+  same transaction as the profile; `apply`, `bulk-create` and the vendor
+  importer write once through a core `save_many` instead of a loop.
+
+- **A migration is not visible half-done.** `enable_vault` rewrites every secret
+  file and commits the descriptor last; a reader outside the transaction could
+  see ciphertext while `config.json` still said there was no vault, and hand
+  that ciphertext on as the password. Engine `get`, `list` and `resolve` join
+  the transaction snapshot - reentrant, so writers pay nothing.
+
+- **First-run import is locked.** Marker check, `copy2()` and marker write were
+  unguarded: two fresh desktops could import together, and a file written
+  between the importer's "does it exist?" and its copy was overwritten by the
+  legacy one. It takes the destination's transaction lock, re-checks inside it,
+  and copies each single-file store under that file's own lock.
+
+- **Exactly one worker runs a due schedule.** `due_schedules()` is a pure read,
+  so two servers - or a server and `schedule run-due` - could both start the
+  same occurrence and both record it. There is an atomic claim with a TTL, and
+  a spawn that never started releases it.
+
+- **One warm-up validator.** `minutes=inf` produced a browser with no end time
+  and `nan` compared false in both directions; the HTTP route did a bare
+  `float()`, and the scheduler had its own copy with a different bound. One
+  validator - finite, positive, bounded, known preset, http(s) sites - is used
+  by the CLI, the HTTP route, `ScheduleStore`, the scheduler and `warm_up()`
+  itself.
+
+- **Crossing OS families resets what the old OS owned.** The reset was gated on
+  `os_key != fp.os` *after* `fp.os = os_key`, which can never be true, so a
+  profile aligned onto a different OS kept the old version and handset - and
+  with them the UA-CH `platformVersion` hint, which is the only thing
+  distinguishing Windows 10 from 11 and is read by sites that check. The trust
+  grade never saw it. Touch points and device pixel ratio are observed now, and
+  fall back to the target OS's own defaults when they are not.
+
+- **`ProxyPool` and `TokenStore` on a `str` root.** Both did `root / "..."` on
+  the raw argument.
+
 ## [0.19.1] - 2026-09-05
 
 ### Changed

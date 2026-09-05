@@ -426,6 +426,109 @@ class _DataLock:
         self._rlock.release()
 
 
+class SessionBusy(RuntimeError):
+    """Another process already has this profile's browser session open."""
+
+
+class _SessionLease:
+    """One profile's browser session, owned across processes.
+
+    Deliberately *not* a `_DataLock`. The two answer different questions and
+    behave differently on both axes that matter:
+
+    * **Duration.** A data lock is held for one atomic write. A lease is held
+      for as long as a browser is open - minutes to hours - so it must never be
+      taken while a data transaction is, or every write in the data root would
+      wait on a human closing a window.
+    * **Contention.** A data lock waits, because the holder is about to finish.
+      A lease refuses immediately with `SessionBusy`, because "someone has this
+      profile open" is an answer, not a delay. Waiting 30 seconds to say it is
+      the worst of both.
+
+    Not reentrant across the *same* process either: two `launch()` calls in one
+    server are as wrong as two across two servers, and an RLock would let the
+    second through. `held_by_other_process()` is what status checks use, and it
+    is honest about its one blind spot - it cannot see a lease this process
+    holds, which is exactly what the in-process registry already knows.
+
+    The OS drops the lock when the handle closes, so a killed browser or a
+    crashed engine releases it without a sweeper.
+    """
+
+    def __init__(self, path: Path):
+        self._path = Path(path)
+        self._guard = threading.Lock()
+        self._fd = None
+
+    def __enter__(self):
+        if not self._guard.acquire(blocking=False):
+            raise SessionBusy(f"{self._path.stem} is already open in this process")
+        try:
+            self._path.parent.mkdir(parents=True, exist_ok=True)
+            fd = os.open(self._path, os.O_RDWR | os.O_CREAT, 0o600)
+            if not _take(fd):
+                os.close(fd)
+                raise SessionBusy(
+                    "another process has this profile's browser session open. "
+                    "Close it there, or wait for it to finish.")
+            self._fd = fd
+        except BaseException:
+            self._guard.release()
+            raise
+        return self
+
+    def __exit__(self, *exc) -> None:
+        fd, self._fd = self._fd, None
+        if fd is not None:
+            _drop(fd)
+            os.close(fd)
+        self._guard.release()
+
+    def held_by_other_process(self) -> bool:
+        """True when some *other* process holds this lease.
+
+        Probes by taking the OS lock and dropping it again. A lease this
+        process holds is invisible here - the OS lock is per handle and this
+        one is ours - so callers pair it with their own session registry.
+        """
+        if self._fd is not None:
+            return False
+        try:
+            self._path.parent.mkdir(parents=True, exist_ok=True)
+            fd = os.open(self._path, os.O_RDWR | os.O_CREAT, 0o600)
+        except OSError:                                          # pragma: no cover
+            return False
+        try:
+            if _take(fd):
+                _drop(fd)
+                return False
+            return True
+        finally:
+            os.close(fd)
+
+
+_SESSION_LEASES: dict = {}
+
+
+def session_lease(root, profile_id: str) -> "_SessionLease":
+    """The lease for one profile's browser session under `root`.
+
+    Held for the browser's whole lifetime by every path that opens the
+    persistent `user-data/<id>` directory, and by everything that moves or
+    deletes it. Without it `user-data` had no owner at all: two servers, a
+    desktop and a CLI could open one Chromium profile directory at the same
+    time, and delete/backup/restore could run against a live one.
+    """
+    resolved = Path(root).resolve()
+    key = f"{resolved}\x00{profile_id}"
+    with _LOCKS_GUARD:
+        lease = _SESSION_LEASES.get(key)
+        if lease is None:
+            lease = _SESSION_LEASES[key] = _SessionLease(
+                resolved / ".locks" / _lock_path(key, f"session-{profile_id}"))
+        return lease
+
+
 def _lock_for(path):
     """The lock guarding one file, held against other processes too."""
     resolved = Path(path).resolve()

@@ -115,11 +115,20 @@ def import_from(source: Path, destination: Path) -> dict:
                     copied.append(f"{name} ({added})")
                 if kept:
                     skipped.append(f"{name} ({kept} already here)")
-            elif dst.exists():
-                skipped.append(name)      # a single file: the destination wins
             else:
-                shutil.copy2(src, dst)
-                copied.append(name)
+                # Under the file's own lock, and re-checked inside it. The
+                # root transaction lock excludes profile and config writers,
+                # but the token and schedule stores take only their file lock -
+                # so "does it exist?" and the copy could still straddle one of
+                # their writes, and the legacy file would land on top of it.
+                from .paths import _lock_for
+
+                with _lock_for(dst):
+                    if dst.exists():
+                        skipped.append(name)   # a single file: the destination wins
+                    else:
+                        shutil.copy2(src, dst)
+                        copied.append(name)
         except OSError as e:
             failed.append(f"{name}: {e}")
 
@@ -139,14 +148,31 @@ def run_if_needed(destination: Path) -> Optional[dict]:
 
     The marker is written even when nothing was copied, so a user who genuinely
     has no old data is not rescanned on every start."""
+    from .paths import transaction_lock
+
     destination = Path(destination)
     if already_imported(destination):
-        return None
+        return None                      # cheap check, no lock: the common case
 
+    destination.mkdir(parents=True, exist_ok=True)
+    # Everything from here under the destination's transaction lock. This is a
+    # migration: it copies whole stores in, and it was completely unguarded -
+    # marker check, `copy2()` and marker write. Two fresh desktops starting
+    # together both saw "not imported" and both copied; and a profile written
+    # by one of them between the importer's "does it exist?" and its `copy2()`
+    # was overwritten by the legacy file.
+    with transaction_lock(destination):
+        # Re-checked inside the lock: the other process may have finished the
+        # whole import while this one was waiting for it.
+        if already_imported(destination):
+            return None
+        return _import_locked(destination)
+
+
+def _import_locked(destination: Path) -> Optional[dict]:
     source = find_legacy(destination)
     result = import_from(source, destination) if source else None
 
-    destination.mkdir(parents=True, exist_ok=True)
     # Do not close the door on an import that partly failed. The marker used to
     # be written unconditionally, so one unreadable file meant the rest was
     # never retried - and the user was never asked to do anything about it.

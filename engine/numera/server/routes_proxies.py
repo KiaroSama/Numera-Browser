@@ -297,19 +297,27 @@ def register(app, ctx):
                                      if not pool.list() else
                                      "every proxy in the pool is archived")
         ids = body.get("profileIds")
-        targets = [dash.get(i) for i in ids] if ids else dash.list()
-        targets = [t for t in targets if t]
-        assigned = 0
-        for i, prof in enumerate(targets):
-            pr = proxies[i % len(proxies)]
-            prof["proxy"] = {"type": pr.get("type", "HTTP"), "host": pr["host"], "port": str(pr["port"]),
-                             "user": pr.get("user") or "", "pass": pr.get("pass") or "",
-                             "country": pr.get("country") or ""}
+        # The plan is built from ids, not from objects read now: `patch_many`
+        # re-reads each record inside the transaction, so an edit made while
+        # this request was deciding is not overwritten by a stale snapshot.
+        target_ids = list(ids) if ids else [p["id"] for p in dash.list()]
+        order = {pid: i for i, pid in enumerate(target_ids)}
+
+        def merge(pid: str, current: dict) -> dict:
+            pr = proxies[order[pid] % len(proxies)]
+            current["proxy"] = {
+                "type": pr.get("type", "HTTP"), "host": pr["host"],
+                "port": str(pr["port"]), "user": pr.get("user") or "",
+                "pass": pr.get("pass") or "", "country": pr.get("country") or ""}
             cc = (pr.get("country") or "").upper()
             loc = devices.COUNTRY_TO_LOCALE.get(cc)
             if loc:
-                prof["locale"] = loc
-                prof["timezone"] = devices.LOCALES[loc][0]
-            dash.save(prof)
-            assigned += 1
-        return {"assigned": assigned, "pool": len(proxies)}
+                current["locale"] = loc
+                current["timezone"] = devices.LOCALES[loc][0]
+            return current
+
+        # All of them or none. The loop used to save as it went, so a failure
+        # on target N left 0..N-1 assigned while the request raised - an
+        # unknown prefix committed under a generic error.
+        saved = dash.patch_many(target_ids, merge)
+        return {"assigned": len(saved), "pool": len(proxies)}

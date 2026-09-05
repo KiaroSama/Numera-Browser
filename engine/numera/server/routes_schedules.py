@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import threading
+import os
 import time
 from typing import Optional
 from .convert import to_engine_profile
@@ -96,6 +97,11 @@ def register(app, ctx):
                 d = dash.get(pid)
                 if not d or is_running(pid):
                     continue        # gone, or busy - try again next tick
+                # Claim the occurrence before spawning. `due_schedules()` is a
+                # pure read, so two servers - or this tick and a `schedule
+                # run-due` - could both see the same row due and both start it.
+                if not sched.claim_due(s["id"], f"server:{os.getpid()}"):
+                    continue
                 engine_store.save(to_engine_profile(d))
                 proc = _spawn_warmup(pid, s.get("minutes", 5), s.get("preset"))
                 # A process that is already dead never ran. Marking the schedule
