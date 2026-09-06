@@ -208,6 +208,7 @@ def restore(store, src: str | Path, new_id: bool = False) -> Profile:
     except zipfile.BadZipFile as e:
         raise ValueError(f"{src.name} is not a readable archive: {e}") from e
 
+    replaced = None
     with zf as z:
         try:
             data = json.loads(z.read("profile.json").decode("utf-8"))
@@ -293,22 +294,26 @@ def restore(store, src: str | Path, new_id: bool = False) -> Profile:
                     except BaseException as failure:
                         _put_the_session_back(ud, aside, failure)
                         raise
-                    if aside is not None:
-                        # Checked, not `ignore_errors`. The restore is
-                        # committed and the replaced session is unreachable
-                        # through the profile - so a cleanup failure is
-                        # untidiness, not a failed restore - but discarding it
-                        # silently left a whole browser identity on disk with
-                        # nothing naming it and no way to find it later. Same
-                        # rule as the delete tombstone.
-                        shutil.rmtree(aside, ignore_errors=True)
-                        if aside.exists():
-                            warnings.warn(
-                                f"{prof.id} was restored, but the session it "
-                                f"replaced is still on disk as {aside}; remove "
-                                f"it once nothing holds it",
-                                RuntimeWarning, stacklevel=2)
+                    replaced = aside          # reclaimed after the locks go
         finally:
             if staging is not None:
                 shutil.rmtree(staging, ignore_errors=True)
-        return prof
+
+    # Outside the session lease and the root transaction, both released above.
+    # The restore is committed and the replaced tree is unreachable through the
+    # profile, so removing it is garbage collection - and a recursive delete of
+    # a whole browser profile held under the root transaction made every
+    # unrelated write in the data root wait for it.
+    #
+    # Checked, not `ignore_errors`: a cleanup failure is untidiness rather than
+    # a failed restore, but discarding it silently left a whole browser
+    # identity on disk with nothing naming it. Same rule as the delete
+    # tombstone.
+    if replaced is not None:
+        shutil.rmtree(replaced, ignore_errors=True)
+        if replaced.exists():
+            warnings.warn(
+                f"{prof.id} was restored, but the session it replaced is still "
+                f"on disk as {replaced}; remove it once nothing holds it",
+                RuntimeWarning, stacklevel=2)
+    return prof

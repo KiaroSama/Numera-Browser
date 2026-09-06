@@ -221,18 +221,41 @@ class ProfileRepo:
                     return False
                 if current.id != pid:
                     raise TargetMoved(ref, pid, current.id)
-                return self._delete_locked(pid)
+                gone, tomb = self._delete_locked(pid)
 
-    def _delete_locked(self, pid: str) -> bool:
+        # Both locks are released here, and the delete is already committed.
+        # What is left is garbage collection: a Chromium profile directory can
+        # be hundreds of megabytes, and recursively deleting it under the root
+        # transaction blocked *every* unrelated profile, config and vault write
+        # in the data root - long enough to push them into the lock timeout.
+        # Nothing can reference the tombstone any more, so nothing needs the
+        # lock to reclaim it.
+        if gone:
+            self._reclaim(pid, tomb)
+        return gone
+
+    @staticmethod
+    def _reclaim(pid: str, tomb) -> None:
+        """Remove a detached session tree, and say so if it will not go."""
         import warnings
 
+        from .store import ProfileStore
+
+        if tomb is None:
+            return
+        if not ProfileStore.discard_tombstone(tomb):
+            warnings.warn(
+                f"{pid} is deleted, but its session is still on disk as {tomb}; "
+                f"remove it once nothing holds it", RuntimeWarning, stacklevel=2)
+
+    def _delete_locked(self, pid: str) -> tuple:
         from .paths import RollbackFailed, _restore_bytes
         from .store import SessionStranded
 
         engine_record = self.store._path(pid)
         dash_record = self.dash_path(pid)
         if not dash_record.exists() and not engine_record.exists():
-            return False
+            return False, None
 
         tomb = self.store.detach_session(pid)
 
@@ -247,18 +270,17 @@ class ProfileRepo:
                               RollbackFailed, _restore_bytes, SessionStranded)
             raise
 
-        # Logical commit is done; the tombstone is disposable from here.
+        # Logical commit is done. The tombstone is handed back rather than
+        # reclaimed here: removing it is a recursive delete of a whole browser
+        # profile, and doing that under the root transaction made every
+        # unrelated write in the data root wait for it. `delete()` reclaims it
+        # once both locks are released - see `_reclaim`.
         #
-        # `delete_session(pid)` was wrong here and silently so: it detaches
-        # again, and `user-data/<id>` no longer exists after the detach above,
-        # so it found nothing, reclaimed nothing, and left the entire browser
-        # identity on disk as `.deleting-*` forever. Every successful delete
-        # leaked one. The tombstone we actually made is the thing to discard.
-        if not self.store.discard_tombstone(tomb):
-            warnings.warn(
-                f"{pid} is deleted, but its session is still on disk as {tomb}; "
-                f"remove it once nothing holds it", RuntimeWarning, stacklevel=2)
-        return True
+        # (`delete_session(pid)` used to stand here, and was wrong silently: it
+        # detaches again, and `user-data/<id>` no longer exists after the
+        # detach above, so it found nothing and left the entire browser
+        # identity on disk as `.deleting-*` forever.)
+        return True, tomb
 
     def _undo_delete(self, pid, tomb, undo, first,
                      RollbackFailed, _restore_bytes, SessionStranded) -> None:

@@ -407,9 +407,9 @@ class DashboardStore:
             twin = to_engine_profile(prof)
         except Exception:       # pragma: no cover - conversion is best-effort
             return
-        # `save_engine`, not `save`: this IS the mirror, and the coordinator
+        # `_save_engine`, not `save`: this IS the mirror, and the coordinator
         # would write the dashboard record we are already inside.
-        self._engine.save_engine(twin)
+        self._engine._save_engine(twin)
 
     def delete(self, pid: str) -> bool:
         """Remove both copies of a profile, and its session last.

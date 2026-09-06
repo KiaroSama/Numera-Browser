@@ -182,29 +182,78 @@ def alive(pid: int, token=None) -> bool:
     return True
 
 
-def _terminate_tree(pid: int, token=None) -> bool:
-    """End the job and everything it started.
+def _signal_tree(pid: int, token=None, *, force: bool = False) -> bool:
+    """Ask the job's whole tree to end. True if the request was delivered.
 
     A detached ``numera launch`` owns a Chromium that outlives it, so signalling
     the job alone leaks a browser. Windows has ``taskkill /T`` for exactly this;
     elsewhere the job was started in its own process group and the group gets
     the signal.
+
+    The token is re-checked immediately before every signal, not once at the
+    start: between a first `SIGTERM` and an escalation the process can exit and
+    the OS can hand its number to something else, and `taskkill /T /F` on a
+    recycled pid takes down an unrelated tree.
+
+    Delivering a signal is not death. `_prove_dead` is what decides that.
     """
     # Refuse to touch a pid that is no longer the process we recorded.
     if token is not None and started_at(pid) != token:
         return False
     if os.name == "nt":
+        # Windows has no graceful tree stop for a process without a console we
+        # own, so both passes are the same forced call. It is idempotent.
         return subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)],
                               capture_output=True).returncode == 0
+    sig = signal.SIGKILL if force else signal.SIGTERM
     try:
-        os.killpg(os.getpgid(int(pid)), signal.SIGTERM)
+        os.killpg(os.getpgid(int(pid)), sig)
         return True
     except OSError:
         try:
-            os.kill(int(pid), signal.SIGTERM)
+            os.kill(int(pid), sig)
             return True
         except OSError:
             return False
+
+
+def _prove_dead(pid: int, token=None, *, deadline: float = 5.0) -> bool:
+    """Poll until this pid is gone, or the deadline passes.
+
+    Bounded polling rather than a blind sleep: there is no `wait()` to call on
+    a process this one did not spawn, so the only honest answer comes from
+    asking repeatedly whether it is still there.
+    """
+    end = time.monotonic() + deadline
+    while True:
+        if not alive(pid, token):
+            return True
+        if time.monotonic() >= end:
+            return False
+        time.sleep(0.05)
+
+
+def _terminate_tree(pid: int, token=None, *, grace: float = 5.0,
+                    kill_grace: float = 5.0) -> bool:
+    """End the job's tree and prove it. False means it is still running.
+
+    The cross-process twin of `handshake.end_child`, and it had the same defect
+    in a worse place: it sent one signal and returned True for *delivering*
+    it. `stop()` then wrote `state=stopped` while the detached process and its
+    browser were still alive and still holding the profile's session lease - so
+    `numera jobs stop`, `numera stop` and the MCP job-stop all reported an
+    outcome the machine had not honoured.
+
+    Terminate, wait, escalate, wait again, and answer only what was proved.
+    """
+    if token is not None and started_at(pid) != token:
+        return True                     # already gone, or never ours
+    if not _signal_tree(pid, token):
+        return not alive(pid, token)    # refused: is it gone anyway?
+    if _prove_dead(pid, token, deadline=grace):
+        return True
+    _signal_tree(pid, token, force=True)
+    return _prove_dead(pid, token, deadline=kill_grace)
 
 
 def child_argv(argv: list[str], root: Path) -> list[str]:
@@ -342,7 +391,15 @@ def stop(root: Path, jid: str) -> Optional[dict]:
     if rec is None:
         return None
     if rec["running"] and rec.get("pid"):
-        _terminate_tree(rec["pid"], rec.get("pidToken"))
+        if not _terminate_tree(rec["pid"], rec.get("pidToken")):
+            # Not stopped. Writing the outcome anyway is what made `jobs list`
+            # say "stopped" for a browser that was still open and still owned
+            # the profile - so the record stays as it is, and the caller is
+            # told rather than reassured.
+            raise RuntimeError(
+                f"job {jid} (pid {rec['pid']}) did not stop: it is still "
+                f"running and still holds its profile's session. Stop it by "
+                f"hand and re-run this once it is gone.")
         # The signal is a hard terminate on both platforms, so the job never
         # reaches its own exit hook — this side has to record the outcome.
         # The outcome file, like the job's own exit hook: this is an outcome,

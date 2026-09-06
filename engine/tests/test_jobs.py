@@ -18,13 +18,26 @@ def test_a_recycled_pid_is_not_treated_as_the_original_process():
         "a pid whose start time does not match was accepted as ours"
 
 
-def test_terminate_refuses_a_pid_that_is_no_longer_ours():
+def test_terminate_never_signals_a_pid_that_is_no_longer_ours(monkeypatch):
+    """The pid is this very process, so a signal would end the test run.
+
+    Asserting on the return value alone is the weaker check, and it changed
+    meaning: `_terminate_tree` now answers "is the job's tree gone", and for a
+    pid the OS has handed to somebody else the honest answer is yes - our
+    process is not running. What must never happen is a *signal*, so that is
+    what this asserts, and it cannot pass by accident.
+    """
     import os
 
     from numera import jobs
 
     me = os.getpid()
-    assert jobs._terminate_tree(me, (jobs.started_at(me) or 0) + 1) is False
+    signalled = []
+    monkeypatch.setattr(jobs, "_signal_tree",
+                        lambda *a, **kw: signalled.append(a) or True)
+
+    assert jobs._terminate_tree(me, (jobs.started_at(me) or 0) + 1) is True
+    assert signalled == [], "a recycled pid was signalled"
 
 
 def test_a_dead_pid_is_dead_with_or_without_a_token():

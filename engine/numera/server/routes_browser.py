@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Optional
 from .. import cookies as cookies_mod
 from .convert import OS_TO_DASH
-from ..handshake import StartupFailed
+from ..handshake import ChildTerminationFailed, StartupFailed
 from ..paths import child_env, session_lease
 
 
@@ -100,7 +100,14 @@ def register(app, ctx):
         d = dash.get(pid)
         if not d:
             raise HTTPException(404, "profile not found")
-        if not stop_session(pid):
+        try:
+            stopped = stop_session(pid)
+        except ChildTerminationFailed as e:
+            # The child would not die. It still holds the profile, and this
+            # server still owns the record of it - so the answer is the
+            # failure, not a success the browser has not honoured.
+            raise HTTPException(500, str(e)) from None
+        if not stopped:
             # Nothing of ours was stopped. A lease still on the profile means
             # the browser is open in a process this server has no way to reach.
             if session_lease(engine_store.root, pid).held_by_other_process():

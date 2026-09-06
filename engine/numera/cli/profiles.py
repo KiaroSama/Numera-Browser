@@ -118,20 +118,40 @@ def cmd_delete(args, store: ProfileStore) -> int:
     through that one name was a typo leaves a partial deletion nobody asked for.
     """
     refs = args.ref if isinstance(args.ref, list) else [args.ref]
-    found, missing = [], []
+    # Resolve once to build the confirmation set - and keep the *reference* the
+    # user typed beside it. What is deleted later is the reference, not this
+    # id: `delete alpha` that resolves A and then deletes `A` by id defeats the
+    # coordinator's own protection, because by the time it runs, `alpha` may
+    # name a different profile and A may be called something else. Asking again
+    # by the original word is what lets `TargetMoved` fire.
+    #
+    # Deduplicated by id, so `delete alpha <alpha's id>` is one deletion rather
+    # than one deletion and one confusing miss.
+    targets, seen, missing = [], set(), []
     for ref in refs:
-        prof = store.resolve(ref)
-        (found if prof else missing).append(prof if prof else ref)
+        try:
+            prof = store.resolve(ref)
+        except Exception as exc:                                # noqa: BLE001
+            # An ambiguous legacy name, most likely. It names no single profile,
+            # so there is nothing to confirm and nothing to delete.
+            say(_c(str(exc), C.RED))
+            return emit({"ok": False, "error": str(exc)}, 1)
+        if prof is None:
+            missing.append(ref)
+        elif prof.id not in seen:
+            seen.add(prof.id)
+            targets.append((ref, prof))
     if missing:
         return _no_profile(", ".join(missing))
-    if not found:
+    if not targets:
         return _no_profile(", ".join(refs))
 
     if not args.yes:
-        what = (f"'{found[0].name}' [{found[0].id}]" if len(found) == 1
-                else f"{len(found)} profiles")
+        first = targets[0][1]
+        what = (f"'{first.name}' [{first.id}]" if len(targets) == 1
+                else f"{len(targets)} profiles")
         if not _confirm(f"Delete {what}? This removes "
-                        f"{'its session' if len(found) == 1 else 'their sessions'} too. (y/N) "):
+                        f"{'its session' if len(targets) == 1 else 'their sessions'} too. (y/N) "):
             say("Aborted.")
             return emit({"ok": False, "aborted": True})
 
@@ -139,24 +159,32 @@ def cmd_delete(args, store: ProfileStore) -> int:
 
     coordinator = repo(store)
     removed, failed = [], []
-    for prof in found:
+    for ref, prof in targets:
         try:
             # Through the coordinator so the dashboard twin goes too. Deleting
             # only the engine record left a dashboard copy that the next
             # listing adopted straight back, id and all.
-            coordinator.delete(prof.id)
-            removed.append({"id": prof.id, "name": prof.name})
-            say(_c(f"Deleted '{prof.name}'.", C.GRN))
+            #
+            # `ref`, not `prof.id`: see above. And the answer is checked -
+            # False means the profile was already gone, which is not a deletion
+            # this command performed and must not be reported as one.
+            if coordinator.delete(ref):
+                removed.append({"id": prof.id, "name": prof.name})
+                say(_c(f"Deleted '{prof.name}'.", C.GRN))
+            else:
+                missing.append(ref)
+                say(_c(f"'{prof.name}' was already gone.", C.DIM))
         except Exception as exc:                                # noqa: BLE001
-            # A session that could not be removed is reported, not swallowed -
-            # see `ProfileStore.delete_session`.
+            # A target that moved, a name that became ambiguous, or a session
+            # that could not be removed - reported, not swallowed.
             failed.append({"id": prof.id, "name": prof.name,
                            "error": str(exc).splitlines()[0][:200]})
-            say(_c(f"Could not fully delete '{prof.name}': {exc}", C.RED))
-    if len(removed) == 1 and not failed:
+            say(_c(f"Could not delete '{prof.name}': {exc}", C.RED))
+    if len(removed) == 1 and not failed and not missing:
         return emit({"ok": True, **removed[0]})
-    return emit({"ok": not failed, "removed": removed, "failed": failed},
-                0 if not failed else 1)
+    return emit({"ok": not failed and not missing, "removed": removed,
+                 "missing": missing, "failed": failed},
+                0 if not failed and not missing else 1)
 
 
 def cmd_export(args, store: ProfileStore) -> int:
