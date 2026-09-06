@@ -7,6 +7,7 @@ import uuid
 from functools import lru_cache
 
 from ..paths import safe_id
+from ..handshake import ChildTerminationFailed
 
 import json
 import os
@@ -351,7 +352,14 @@ def register(app, ctx):
         # lease inside `delete` is the real check; this just closes ours first
         # so the common case does not have to fail.
         if pid in running:
-            stop_session(pid)
+            try:
+                stop_session(pid)
+            except ChildTerminationFailed as e:
+                # Deleting a profile whose browser is still running is how a
+                # session outlives the identity it belongs to. The lease inside
+                # `delete` would refuse it anyway; saying why here is clearer
+                # than the busy message that would follow.
+                raise HTTPException(409, str(e)) from None
         try:
             # One owner. The route deleted the engine copy and the dashboard
             # store deleted it again, each half-aware of the other.
@@ -382,9 +390,9 @@ def register(app, ctx):
             if not dash.get(pid) and not engine_store.get(pid):
                 missing.append(pid)
                 continue
-            if is_running(pid):
-                stop_session(pid)
             try:
+                if is_running(pid):
+                    stop_session(pid)
                 dash.delete(pid)
                 removed.append(pid)
             except Exception as exc:                            # noqa: BLE001

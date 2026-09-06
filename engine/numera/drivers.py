@@ -167,7 +167,29 @@ def _startup_kind(exc: BaseException) -> str:
     return "failed"
 
 
-def _abandon(context=None, driver=None, relay=None) -> None:
+class StartupRecoveryFailed(RuntimeError):
+    """A startup failed *and* something it had acquired could not be released.
+
+    `_abandon` used to swallow every cleanup error, so a caller was told only
+    the original failure while a browser or a Playwright driver might still be
+    running. "No browser survives a failed startup" is a promise; discarding
+    the evidence that a close failed turns it into a guess.
+
+    Carries the failure that started it and each step that could not be undone,
+    because those are two different repairs.
+    """
+
+    def __init__(self, cause: BaseException, failures: list):
+        self.cause = cause
+        self.failures = list(failures)          # [(what, error), ...]
+        detail = "; ".join(f"{what}: {err}" for what, err in self.failures)
+        super().__init__(
+            f"{type(cause).__name__}: {cause} - and the session could not be "
+            f"cleaned up afterwards ({detail}). Something it started may still "
+            f"be running and still holding the profile.")
+
+
+def _abandon(context=None, driver=None, relay=None, cause=None):
     """Release everything a failed startup acquired, before the failure is told.
 
     A browser open is not one call. Between "the persistent context exists" and
@@ -184,16 +206,25 @@ def _abandon(context=None, driver=None, relay=None) -> None:
 
     Order is the reverse of acquisition: the browser first, then the driver
     that owns it, then the relay it was talking through.
+
+    A step that fails does not stop the others, and it is not forgotten either:
+    given `cause`, anything left behind is raised as `StartupRecoveryFailed`
+    carrying both. Without it the failures are returned, for a caller that
+    genuinely only wants a best-effort release.
     """
-    for close in (getattr(context, "close", None),
-                  getattr(driver, "stop", None),
-                  getattr(relay, "close", None)):
+    failures = []
+    for what, close in (("the browser", getattr(context, "close", None)),
+                        ("the browser driver", getattr(driver, "stop", None)),
+                        ("the proxy relay", getattr(relay, "close", None))):
         if close is None:
             continue
         try:
             close()
-        except Exception:      # noqa: BLE001 - see above
-            pass
+        except Exception as err:      # noqa: BLE001 - see above
+            failures.append((what, err))
+    if failures and cause is not None:
+        raise StartupRecoveryFailed(cause, failures) from cause
+    return failures
 
 
 def _opened() -> None:
@@ -402,38 +433,37 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
             ),
         },
     }
-    proxy_cfg, relay = _browser_proxy(profile)
-    if proxy_cfg:
-        context_opts["proxy"] = proxy_cfg
-    geo_mode = (fp.geolocation or "prompt").lower()
-    if geo_mode == "block":
-        # Deny outright: no coordinates, and the permission is explicitly refused
-        # so a site gets a hard "denied" instead of a prompt that never resolves.
-        context_opts["permissions"] = []
-    elif geolocation:
-        context_opts["geolocation"] = geolocation
-        if geo_mode == "allow":
-            # Grant it, so a site that asks gets the coordinates rather than a
-            # prompt that would stall an unattended session.
-            context_opts["permissions"] = ["geolocation"]
-        # "prompt" keeps the coordinates ready but leaves the grant to the user,
-        # which is what a real browser does on first visit.
-
-    if fp.do_not_track:
-        context_opts["extra_http_headers"]["dnt"] = "1"
-
-    # Before Playwright starts, not after: it reads the browsers path when the
-    # driver launches. A portable build ships its own Chromium and there is no
-    # developer cache to fall back on.
-    paths_mod.use_bundled_browsers()
-    pw = sync_playwright().start()
-    context = None
-    # One guard from here to READY. `pw.stop()` was missing from the old
-    # launch-failure path, and everything after the context was created had no
-    # guard at all - so an init script that would not compile, or a first page
-    # that would not open, left a live browser and a running driver behind for
-    # a session the parent was correctly told had failed.
+    # Everything acquired from here to READY is covered by one guard. The
+    # relay used to be started *before* it: an authenticated proxy opens a
+    # local listener, so if `sync_playwright().start()` then raised, that
+    # port was leaked with nothing left holding a reference to close it.
+    relay = pw = context = None
     try:
+        proxy_cfg, relay = _browser_proxy(profile)
+        if proxy_cfg:
+            context_opts["proxy"] = proxy_cfg
+        geo_mode = (fp.geolocation or "prompt").lower()
+        if geo_mode == "block":
+            # Deny outright: no coordinates, and the permission is explicitly refused
+            # so a site gets a hard "denied" instead of a prompt that never resolves.
+            context_opts["permissions"] = []
+        elif geolocation:
+            context_opts["geolocation"] = geolocation
+            if geo_mode == "allow":
+                # Grant it, so a site that asks gets the coordinates rather than a
+                # prompt that would stall an unattended session.
+                context_opts["permissions"] = ["geolocation"]
+            # "prompt" keeps the coordinates ready but leaves the grant to the user,
+            # which is what a real browser does on first visit.
+
+        if fp.do_not_track:
+            context_opts["extra_http_headers"]["dnt"] = "1"
+
+        # Before Playwright starts, not after: it reads the browsers path when the
+        # driver launches. A portable build ships its own Chromium and there is no
+        # developer cache to fall back on.
+        paths_mod.use_bundled_browsers()
+        pw = sync_playwright().start()
         context = pw.chromium.launch_persistent_context(
             user_data_dir=str(store.user_data_path(profile.id)),
             headless=headless,
@@ -456,8 +486,8 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
         context.add_init_script(build_init_script(fp))
         _apply_client_hints(context, fp)
         page = context.pages[0] if context.pages else context.new_page()
-    except BaseException:
-        _abandon(context, pw, relay)
+    except BaseException as failure:
+        _abandon(context, pw, relay, failure)
         raise
     _opened()
     _open_startup_urls(context, page, profile)
@@ -616,12 +646,12 @@ def _driver_cloak(profile, store, headless=False, keep_open=True, extra_args=Non
     _clear_unkept(profile, store.user_data_path(profile.id))
     _seed_bookmarks(profile, store.user_data_path(profile.id))
     fp = profile.fingerprint
-    proxy_cfg, relay = _browser_proxy(profile)
-    context = None
     # Same guard as the Playwright path, and for the same reason: the window
-    # between a live context and READY is where a failure used to leave a
-    # browser running for a session nobody owns.
+    # between the first acquired resource and READY is where a failure used to
+    # leave a browser - or just a relay port - behind for a session nobody owns.
+    relay = context = None
     try:
+        proxy_cfg, relay = _browser_proxy(profile)
         context = cloakbrowser.launch_persistent_context(
             user_data_dir=str(store.user_data_path(profile.id)),
             headless=headless,
@@ -644,8 +674,10 @@ def _driver_cloak(profile, store, headless=False, keep_open=True, extra_args=Non
         if relay:
             context.on("close", lambda *_: relay.close())
         page = context.pages[0] if context.pages else context.new_page()
-    except BaseException:
-        _abandon(context, None, relay)   # cloakbrowser owns no separate driver
+    except BaseException as failure:
+        # cloakbrowser owns no separate driver, so there is nothing to stop
+        # between the browser and the relay.
+        _abandon(context, None, relay, failure)
         raise
     _opened()
     _open_startup_urls(context, page, profile)

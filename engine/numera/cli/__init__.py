@@ -77,17 +77,26 @@ def main(argv: Optional[list[str]] = None) -> int:
         say(_c(str(e), C.RED))
         return emit({"ok": False, "error": str(e)}, 1)
 
-    if getattr(args, "detach", False):
-        rec = jobs.spawn(store.root, jobs.child_argv(argv, store.root),
-                         command=args.command, profile=_detach_target(args, store),
-                         password=store._password)
-        say(_c(f"Started job {rec['id']}", C.GRN)
-            + _c(f"  (pid {rec['pid']}, log {rec['log']})", C.DIM))
-        say(_c(f"  poll it with:  numera jobs show {rec['id']}", C.DIM))
-        return emit(rec)
-
     code = 0
     try:
+        if getattr(args, "detach", False):
+            # Inside the handler, not before it. `_detach_target` resolves the
+            # profile, and resolution can fail for a reason the user needs
+            # stated - an ambiguous legacy name raises `AmbiguousProfile` - so
+            # running it out here meant the foreground command printed a clean
+            # JSON error while the same command with `--detach` printed a
+            # traceback and spawned nothing anyone could ask about.
+            rec = jobs.spawn(store.root, jobs.child_argv(argv, store.root),
+                             command=args.command,
+                             profile=_detach_target(args, store),
+                             password=store._password)
+            say(_c(f"Started job {rec['id']}", C.GRN)
+                + _c(f"  (pid {rec['pid']}, log {rec['log']})", C.DIM))
+            say(_c(f"  poll it with:  numera jobs show {rec['id']}", C.DIM))
+            # Through `code`, because the `finally` below reports it.
+            code = emit(rec)
+            return code
+
         code = args.func(args, store)
     # OSError alongside RuntimeError: a data directory that cannot be written,
     # a disk that is full, a file another process holds. Those carry a message

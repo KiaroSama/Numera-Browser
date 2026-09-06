@@ -4,6 +4,87 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-09-06
+
+The fifteenth audit brief. 0.23.0 fixed the coordinator and session paths; this
+pass is the callers and the recovery branches that still stepped around them —
+and one promise the code was making without being able to keep.
+
+### Fixed
+
+- **"Stopped" now means proved stopped.** `end_child` answered `None` when a
+  signal was refused or the process was still unreaped after the kill, and
+  every caller read that as an ordinary exit: `/stop` returned 200 for a
+  browser that was still running, a schedule recorded "warm-up exited None",
+  and the registry entry was dropped while the child still held the profile's
+  session lease. It returns a real exit code or raises
+  `ChildTerminationFailed`; a child that cannot be killed stays owned and
+  visibly running, and a startup child that cannot be reaped is reported as an
+  orphan instead of the profile being called free.
+
+- **Detached jobs had the same defect in a worse place.** `numera jobs stop`,
+  `numera stop` and the MCP job-stop sent one `SIGTERM`, ignored the result and
+  wrote `state=stopped` — over a detached process and browser that were still
+  alive and still holding the profile. Termination now re-checks the pid token
+  before every signal, waits, escalates to a forced tree kill, waits again, and
+  records the outcome only once death is proved. If it cannot be proved the job
+  stays visibly running and the caller is told.
+
+- **`numera stop` no longer says "nothing running" about someone else's
+  session.** The job registry only knows what this machine's CLI detached; a
+  profile held by a server, a desktop or another CLI now reports that this
+  command does not own it.
+
+- **A browser startup releases everything it acquired.** The guard began after
+  the Playwright driver had started, so an authenticated proxy's relay — opened
+  before it — was leaked whenever the driver itself failed. And `_abandon`
+  swallowed every cleanup error, so "no browser survives a failed startup" was
+  a promise made while discarding the evidence that `close()` had failed. The
+  guarded region now runs from the first acquired resource through READY, and a
+  cleanup that fails raises `StartupRecoveryFailed` carrying both the original
+  failure and the steps that could not be undone.
+
+- **Legacy name ambiguity is a two-directory question.** `AmbiguousProfile` was
+  raised from a scan of `profiles/` alone, so an engine profile called `same`
+  beside a dashboard-only one called `same` looked unambiguous and a name-based
+  delete went ahead. Both directories are searched now, an id present in both
+  counts once, and a dashboard-only profile is repaired into a complete pair
+  rather than denied — answering "no such profile" for an id the GUI is showing
+  was the engine disagreeing with the interface in front of the user.
+
+- **The CLI deletes what you named.** `delete alpha` resolved a profile and
+  then deleted it *by id*, which discarded the coordinator's own protection: by
+  the time the lease was taken, `alpha` could name a different profile. The
+  original reference is carried through to the delete, so a target that moved
+  is refused. Repeated references to one profile delete it once, and a delete
+  that removed nothing is no longer reported as a deletion.
+
+- **`--detach` errors like every other command.** Its target was resolved
+  before the CLI's error handler, so an ambiguous legacy name printed a
+  traceback and created no job record, while the same command in the foreground
+  printed a clean JSON error.
+
+- **Reclaiming a deleted or replaced session no longer freezes the data root.**
+  Both ran `rmtree` over a whole Chromium profile while holding the root
+  transaction, blocking every unrelated profile, config and vault write long
+  enough to reach the lock timeout. The commit and the garbage collection are
+  separate now: locks are released once the metadata is final, and the detached
+  tree is reclaimed after — with the same warning naming the exact path if it
+  cannot be.
+
+### Changed
+
+- `ProfileStore.save_engine`/`delete_engine` are now `_save_engine`/
+  `_delete_engine`. They were documented as internal but looked public, and
+  they are the one way to create the one-sided records this release teaches the
+  store to detect.
+- `POST /api/profiles/{id}/stop` can return `500` when a child will not die,
+  and `DELETE` refuses with `409` rather than deleting a profile whose browser
+  is still running.
+- The settings half of `ProfileStore` moved to `numera/config_store.py`.
+  Nothing changed for callers; `store.get_default_engine()` and the rest are
+  where they were.
+
 ## [0.23.0] - 2026-09-06
 
 The fourteenth audit brief. 0.22.0 made the coordinator and the session

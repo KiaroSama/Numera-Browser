@@ -64,10 +64,24 @@ def cmd_stop(args, store: ProfileStore) -> int:
     stopped = jobs.stop_profile(store.root, prof.id)
     if stopped:
         say(_c(f"Stopped {len(stopped)} session(s) for '{prof.name}'.", C.GRN))
-    else:
-        say(_c(f"'{prof.name}' has nothing running.", C.DIM))
-    return emit({"ok": True, "id": prof.id, "name": prof.name,
-                 "stopped": [j["id"] for j in stopped]})
+        return emit({"ok": True, "id": prof.id, "name": prof.name,
+                     "stopped": [j["id"] for j in stopped]})
+
+    # No job of ours - which is not the same as nothing running. The job
+    # registry only knows what this machine's CLI detached; a server, a desktop
+    # or another CLI can hold the profile, and "nothing running" was simply
+    # false in that state. There is no cross-process stop, so the honest answer
+    # is that this command does not own the session.
+    from ..paths import session_lease
+
+    if session_lease(store.root, prof.id).held_by_other_process():
+        say(_c(f"'{prof.name}' is open in another process, which this command "
+               f"cannot stop.", C.YEL))
+        return emit({"ok": False, "id": prof.id, "name": prof.name,
+                     "stopped": [], "error": "the session belongs to another "
+                     "process; stop it where it was started"}, 1)
+    say(_c(f"'{prof.name}' has nothing running.", C.DIM))
+    return emit({"ok": True, "id": prof.id, "name": prof.name, "stopped": []})
 
 
 def cmd_jobs(args, store: ProfileStore) -> int:

@@ -363,3 +363,52 @@ def test_a_confirmed_start_still_records_normally(app_and_client, monkeypatch):
     row = client.get("/api/schedules").json()[0]
     assert row["lastOutcome"] == "started" and row["lastRun"] is not None
     assert not children[0].terminated, "a healthy warm-up was stopped"
+
+
+def test_the_relay_is_closed_when_the_driver_will_not_even_start(tmp_path, monkeypatch):
+    """The guard used to begin *after* `sync_playwright().start()`.
+
+    An authenticated proxy opens a local listener before that line, so a driver
+    that would not start leaked the port with nothing left holding a reference
+    to close it - and the next launch of the same profile opened another.
+    """
+    prof = a_profile(tmp_path)
+    store = ProfileStore(tmp_path)
+    relay = FakeRelay()
+    monkeypatch.setattr(drivers, "_browser_proxy",
+                        lambda profile: ({"server": "http://127.0.0.1:1"}, relay))
+
+    def will_not_start():
+        raise RuntimeError("the driver would not start")
+
+    class Starter:
+        start = staticmethod(will_not_start)
+
+    with pytest.raises(RuntimeError, match="would not start"):
+        drivers._launch_playwright_like(lambda: Starter(), prof, store,
+                                        headless=True, keep_open=True)
+    assert relay.closed, "the relay port was stranded"
+
+
+def test_a_cleanup_that_fails_is_surfaced_not_swallowed(tmp_path, monkeypatch):
+    """"No browser survives a failed startup" is a promise. Discarding the
+    evidence that `close()` failed turns it into a guess, and the caller was
+    told only the original error while a browser might still be running."""
+    prof = a_profile(tmp_path)
+    store = ProfileStore(tmp_path)
+    context, relay = FakeContext(), FakeRelay()
+    driver = FakeDriver(context)
+    monkeypatch.setattr(context, "close",
+                        lambda: (_ for _ in ()).throw(RuntimeError("close refused")))
+    monkeypatch.setattr(drivers, "_browser_proxy",
+                        lambda profile: ({"server": "http://127.0.0.1:1"}, relay))
+    fail_between_context_and_ready(monkeypatch, [])
+
+    with pytest.raises(drivers.StartupRecoveryFailed) as caught:
+        drivers._launch_playwright_like(fake_playwright(driver), prof, store,
+                                        headless=True, keep_open=True)
+
+    assert "init script" in str(caught.value.cause), "the original failure was lost"
+    assert any("browser" in what for what, _err in caught.value.failures)
+    assert driver.stopped and relay.closed, \
+        "one failing step stopped the others from being attempted"

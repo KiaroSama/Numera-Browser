@@ -62,6 +62,26 @@ READY_TIMEOUT = 120.0
 _POLL_SECONDS = 0.05
 
 
+class ChildTerminationFailed(RuntimeError):
+    """A child could not be proved dead, so nothing may act as though it is.
+
+    `end_child` used to answer `None` for this - a permission error on the
+    signal, or a process still unreaped after the kill - and every caller read
+    that as an ordinary exit. So `/stop` returned success for a browser that
+    was still running, a schedule recorded "warm-up exited None", and the
+    registry entry was dropped while the child still held the profile's session
+    lease, which is the one state that makes the next launch fail for a reason
+    nobody can act on.
+
+    Not being able to kill something is rare. Reporting it as a clean stop is
+    worse than reporting it at all.
+    """
+
+    def __init__(self, message: str, pid=None):
+        self.pid = pid
+        super().__init__(message)
+
+
 class StartupFailed(RuntimeError):
     """A spawned session never reached the point of owning its profile.
 
@@ -201,9 +221,14 @@ def end_child(proc: subprocess.Popen, *, grace: float = 5.0,
     * on POSIX the child stayed unreaped, because nothing ever waited on it.
 
     A signal is a request. Only `wait()` is the answer, so this returns the
-    real exit code and returns it only once the process is gone. `None` means
-    even the kill did not reap it inside `kill_grace` - genuinely rare, and the
-    caller has to say so rather than record it as an ordinary exit.
+    real exit code, and returns it only once the process is gone.
+
+    It never returns `None`. Every path that cannot prove death raises
+    `ChildTerminationFailed` instead - a signal that was refused, or a process
+    still unreaped after the kill. Returning `None` for those made "I could not
+    stop it" and "it exited" the same value, and every caller chose the second
+    reading: the registry entry was dropped, `/stop` answered success, and the
+    schedule recorded an exit code of `None` for a browser that was still up.
     """
     code = proc.poll()
     if code is not None:
@@ -211,23 +236,33 @@ def end_child(proc: subprocess.Popen, *, grace: float = 5.0,
 
     try:
         proc.terminate()
-    except OSError:                                          # pragma: no cover
-        return proc.poll()              # it died between the poll and the signal
+    except OSError as err:                                   # pragma: no cover
+        code = proc.poll()
+        if code is not None:
+            return code                 # it died between the poll and the signal
+        raise ChildTerminationFailed(
+            f"the session process could not be signalled and is still "
+            f"running: {err}", getattr(proc, "pid", None)) from err
     try:
         return proc.wait(timeout=grace)
     except subprocess.TimeoutExpired:
-        pass
+        pass                            # it ignored the polite ask; escalate
 
     try:
         proc.kill()
-    except OSError:                                          # pragma: no cover
-        return proc.poll()
+    except OSError as err:                                   # pragma: no cover
+        code = proc.poll()
+        if code is not None:
+            return code
+        raise ChildTerminationFailed(
+            f"the session process refused the kill and is still running: {err}",
+            getattr(proc, "pid", None)) from err
     try:
         return proc.wait(timeout=kill_grace)
-    except subprocess.TimeoutExpired:                        # pragma: no cover
-        return proc.poll()              # unkillable: honest None, not a fake code
+    except subprocess.TimeoutExpired as err:
+        raise ChildTerminationFailed(
+            f"the session process was killed but had not exited after "
+            f"{kill_grace:.0f}s, so it may still hold the profile",
+            getattr(proc, "pid", None)) from err
 
 
-def terminate(proc: subprocess.Popen) -> None:
-    """Deprecated alias for `end_child`, kept for callers that ignore the code."""
-    end_child(proc)

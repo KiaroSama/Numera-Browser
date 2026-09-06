@@ -363,3 +363,54 @@ def test_a_delete_by_id_after_a_rename_still_works(tmp_path, monkeypatch):
     monkeypatch.setattr(paths, "session_lease", racing)
     assert repo(ProfileStore(tmp_path)).delete(prof.id) is True
     assert fired
+
+
+# --- reclaiming a detached tree is not part of the commit ------------------
+
+def test_reclaiming_a_deleted_session_does_not_block_the_data_root(tmp_path, monkeypatch):
+    """A Chromium profile is hundreds of megabytes, and `rmtree` on it used to
+    run inside the root transaction - so every unrelated profile, config and
+    vault write in the data root waited for it, long enough to reach the lock
+    timeout.
+
+    The commit is finished by then and nothing can reference the tombstone, so
+    the lock buys nothing. Here cleanup is frozen and an unrelated edit has to
+    complete anyway.
+    """
+    import threading
+
+    store = ProfileStore(tmp_path)
+    doomed = repo(store).create(made("doomed"))
+    with_a_session(store, doomed)
+    other = repo(store).create(made("other"))
+
+    reached, release = threading.Event(), threading.Event()
+    real = ProfileStore.discard_tombstone
+
+    def frozen(tomb):
+        reached.set()
+        assert release.wait(timeout=30), "the test never released cleanup"
+        return real(tomb)
+
+    monkeypatch.setattr(ProfileStore, "discard_tombstone", staticmethod(frozen))
+    failed = []
+    worker = threading.Thread(
+        target=lambda: repo(ProfileStore(tmp_path)).delete(doomed.id),
+        daemon=True)
+    worker.start()
+    try:
+        assert reached.wait(timeout=30), "the delete never reached cleanup"
+        # The whole point: this must not wait for the frozen rmtree.
+        repo(ProfileStore(tmp_path)).edit(
+            other.id, lambda p: setattr(p, "notes", "went through") or p)
+    except BaseException as exc:                                # noqa: BLE001
+        failed.append(exc)
+    finally:
+        release.set()
+        worker.join(timeout=30)
+    assert not failed, f"an unrelated write was blocked by cleanup: {failed}"
+
+    assert ProfileStore(tmp_path).get(other.id).notes == "went through"
+    assert ProfileStore(tmp_path).get(doomed.id) is None, \
+        "the delete had not committed before cleanup ran"
+    assert tombstones(ProfileStore(tmp_path)) == []

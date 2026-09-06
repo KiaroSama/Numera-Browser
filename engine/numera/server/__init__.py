@@ -45,8 +45,8 @@ from dataclasses import dataclass
 from typing import Callable
 # Re-exported so `numera.server` keeps its whole surface: `cli/`, `mcp.py`
 # and the test suite import these by name.
-from ..handshake import (READY_ENV, READY_TIMEOUT, StartupFailed, await_ready,
-                         end_child, ready_channel)
+from ..handshake import (READY_ENV, READY_TIMEOUT, ChildTerminationFailed,
+                         StartupFailed, await_ready, end_child, ready_channel)
 from ..paths import child_env, session_lease
 from .stores import DashboardStore, DuplicateToken, ProxyPool, TokenStore
 from .convert import (_parse_lines, _rel_time, _parse_startup_urls, _stable_seed,
@@ -348,9 +348,13 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
             return False
         # `end_child` returns only once the process is actually gone, so the
         # code handed to `_finish` is the real one and the session lease is
-        # free by the time this returns. Passing `proc.poll()` after a bare
-        # `kill()` recorded `None` as an exit code and released ownership of a
-        # profile whose child was still holding it.
+        # free by the time this returns.
+        #
+        # If it cannot prove death it raises, and the registry entry stays.
+        # That is deliberate: the child is still holding the profile, so the
+        # honest state is "this server still owns a session it could not stop",
+        # and dropping the record would tell the next launch the profile was
+        # free while a browser had it open.
         _finish(pid, child, end_child(child.proc))
         return True
 
@@ -411,9 +415,18 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
                 proc = subprocess.Popen(cli, env=env)
                 try:
                     await_ready(proc, ready, timeout)
-                except BaseException:
-                    end_child(proc)      # never leave a child nobody owns,
-                    raise                # and do not return before it is gone
+                except BaseException as failure:
+                    # Never leave a child nobody owns - and never claim the
+                    # profile is free if it could not be stopped. It is not
+                    # registered, so nothing here will find it again; the only
+                    # honest answer is to say so.
+                    try:
+                        end_child(proc)
+                    except ChildTerminationFailed as orphan:
+                        raise StartupFailed(
+                            f"{failure} - and the process started for it could "
+                            f"not be stopped: {orphan}", "orphaned") from failure
+                    raise
             child = Child(proc=proc, kind=kind, started_at=time.time(),
                           schedule_id=schedule_id)
             running[pid] = child

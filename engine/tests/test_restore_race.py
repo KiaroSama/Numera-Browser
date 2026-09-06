@@ -266,3 +266,51 @@ def test_a_replaced_session_that_cannot_be_reclaimed_is_named(tmp_path, monkeypa
     assert restored.notes == "original", "the restore did not commit"
     leftovers = list((tmp_path / "user-data").glob("*.replaced-*"))
     assert leftovers, "nothing was left behind, so the warning was wrong"
+
+
+def test_reclaiming_a_replaced_session_does_not_block_the_data_root(tmp_path, monkeypatch):
+    """Restore's `.replaced-*` cleanup had the same shape as the delete
+    tombstone's: a recursive delete of a whole browser profile, under the root
+    transaction, after the commit that made it unreachable."""
+    import threading
+
+    from numera import archive
+
+    prof = seeded(tmp_path, "alpha", note="original")
+    store = ProfileStore(tmp_path)
+    backup = tmp_path / "alpha.zip"
+    store.backup(prof.id, backup)
+    other = repo(store).create(Profile(name="other", fingerprint=generate(seed=2)))
+
+    reached, release = threading.Event(), threading.Event()
+    real = archive.shutil.rmtree
+
+    # Whether the wait *succeeded* is recorded, not asserted in the thread:
+    # an assertion here is invisible to pytest, so a cleanup that blocked the
+    # edit until this timed out would look like a pass. That is how a barrier
+    # test proves nothing.
+    waited = []
+
+    def frozen(path, *a, **kw):
+        if ".replaced-" in str(path):
+            reached.set()
+            waited.append(release.wait(timeout=30))
+        return real(path, *a, **kw)
+
+    monkeypatch.setattr(archive.shutil, "rmtree", frozen)
+    failed = []
+    worker = threading.Thread(
+        target=lambda: archive.restore(ProfileStore(tmp_path), backup), daemon=True)
+    worker.start()
+    try:
+        assert reached.wait(timeout=30), "the restore never reached cleanup"
+        repo(ProfileStore(tmp_path)).edit(
+            other.id, lambda p: setattr(p, "notes", "went through") or p)
+    except BaseException as exc:                                # noqa: BLE001
+        failed.append(exc)
+    finally:
+        release.set()
+        worker.join(timeout=30)
+    assert not failed, f"an unrelated write was blocked by cleanup: {failed}"
+    assert waited and waited[0],         "the unrelated write did not finish until cleanup gave up - it was blocked"
+    assert ProfileStore(tmp_path).get(other.id).notes == "went through"

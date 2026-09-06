@@ -24,6 +24,7 @@ from typing import Optional
 
 from . import crypto
 from . import vault
+from .config_store import ConfigStore
 from .models import Profile
 from .paths import (_lock_for, _restore_bytes, id_path, mutate_json,
                     resolve_data_dir, safe_id, safe_join, session_lease,
@@ -208,7 +209,7 @@ class AmbiguousProfile(RuntimeError):
               "changes or deletes 'by name' cannot be told which you mean.")
 
 
-class ProfileStore:
+class ProfileStore(ConfigStore):
     def __init__(self, root: Optional[str | Path] = None,
                  password: Optional[str] = None):
         # Where the data lives is one decision, made in paths.py - see the order
@@ -216,152 +217,17 @@ class ProfileStore:
         # first run now imports it into the portable root instead (firstrun.py).
         self.root = resolve_data_dir(root)
         self.profiles_dir = self.root / "profiles"
+        # The dashboard's copies. The engine store does not write them - the
+        # coordinator does - but it has to *see* them: a name belongs to a
+        # profile, not to a directory, and an older version could leave a
+        # record in one and not the other.
+        self.dash_dir = self.root / "dashboard"
         self.userdata_dir = self.root / "user-data"
         self.config_path = self.root / "config.json"
         _make_data_dirs(self.root, self.profiles_dir, self.userdata_dir)
         # The master password comes from the caller or the environment, so a
         # launched subprocess inherits it without it ever hitting disk.
         self._password = password or os.environ.get("NUMERA_PASSWORD") or None
-
-    # ---- config (small key/value settings) -------------------------------
-    # Preference order for a fresh install, strongest first. `cloak` is NOT in
-    # it: CloakBrowser needs a paid subscription and cannot be bundled, so
-    # defaulting to it meant the very first launch click failed on every new
-    # install. An explicit user choice still wins over this list.
-    ENGINE_PREFERENCE = ("camoufox", "patchright", "playwright")
-    DEFAULT_ENGINE = "playwright"
-
-    def get_config(self) -> dict:
-        """The stored config, re-read only when the file has actually changed.
-
-        `vault()` and `unlocked()` both call this, and `vault.decrypt_for_read`
-        calls both - so decrypting a single secret cost two full reads of
-        `config.json`. Listing a 60-proxy pool did over a hundred, which is
-        where a pool sweep's quadratic cost really came from; the PBKDF2 work
-        was only half of it.
-
-        Keyed on the file's size and modification time. Writes go through
-        `write_json`, which replaces the file atomically, so any change moves
-        one of those. A copy is returned because callers mutate what they get.
-        """
-        import copy
-
-        try:
-            stat = self.config_path.stat()
-        except OSError:
-            self._config_cache = None
-            return {}
-        key = (stat.st_mtime_ns, stat.st_size)
-        cached = getattr(self, "_config_cache", None)
-        if cached is not None and cached[0] == key:
-            return copy.deepcopy(cached[1])
-        try:
-            data = json.loads(self.config_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return {}
-        if not isinstance(data, dict):
-            return {}
-        self._config_cache = (key, data)
-        return copy.deepcopy(data)
-
-    def save_config(self, cfg: dict) -> dict:
-        with _lock_for(self.config_path):
-            write_json(self.config_path, cfg)
-        return cfg
-
-    def get_default_engine(self) -> str:
-        """The engine used for new profiles when none is given (persisted).
-
-        An explicitly configured engine is returned as-is even when its package
-        is missing - silently substituting another one would be the same class
-        of bug as a UI control that does nothing, and the launcher already
-        raises a clear "needs the 'x' package" error. The preference order only
-        decides what a *fresh* install gets."""
-        configured = self.get_config().get("default_engine")
-        if configured:
-            return configured
-        from . import drivers  # local: keeps store importable without a driver stack
-        for name in self.ENGINE_PREFERENCE:
-            if drivers.is_installed(name):
-                return name
-        return self.DEFAULT_ENGINE
-
-    def set_default_engine(self, name: str) -> str:
-        # Read and write inside one lock. Reading outside it meant two settings
-        # saved at once each wrote their own copy of the whole config, and the
-        # second one silently dropped the first one's change.
-        self._set_config("default_engine", name)
-        return name
-
-    def get_default_extensions(self) -> list:
-        """Extension folders every new profile starts with.
-
-        Chromium loads extensions per browser instance, and each profile is its
-        own instance, so there is no "install once, applies everywhere" step to
-        hook — a global set has to be copied onto each profile as it is created.
-        """
-        return list(self.get_config().get("default_extensions") or [])
-
-    def set_default_extensions(self, paths) -> list:
-        """Persist the set every new profile starts with, validated.
-
-        Only entries that are *new* are checked. Validating the whole list
-        would make an already-stored bad path - one whose folder was deleted
-        after it was added - block the very call that removes it.
-        """
-        wanted = [str(p) for p in paths]
-        with transaction_lock(self.root):
-            current = set(self.get_default_extensions())
-            problems = unloadable_extensions([p for p in wanted if p not in current])
-            if problems:
-                raise ValueError("; ".join(problems))
-            return self._set_config("default_extensions", wanted)
-
-    def get_headless_launch(self) -> bool:
-        """Whether the API launches profiles without a window.
-
-        A GUI-less server has no display for Chromium to open a window on, so
-        the dashboard's launch button needs this on to work there at all.
-        """
-        return bool(self.get_config().get("headless_launch"))
-
-    def set_headless_launch(self, on: bool) -> bool:
-        return self._set_config("headless_launch", bool(on))
-
-    def set_config_many(self, changes: dict) -> dict:
-        """Apply several config keys as one read-modify-write.
-
-        `PUT /api/config` used to call `set_default_engine`, then
-        `set_default_extensions`, then `set_headless_launch` in turn - three
-        separate writes. A request whose *third* field was invalid had already
-        committed the first two and then answered 400, so a rejected request
-        still changed the config. One write, after everything is validated.
-        """
-        if not changes:
-            return self.get_config()
-
-        def change(cfg):
-            cfg.update(changes)
-            return cfg
-
-        # Root transaction lock first, then the config file lock `mutate_json`
-        # takes. Config used to be its own lock domain: a profile transaction
-        # wrote `config.json` while holding only the transaction lock, and an
-        # ordinary settings change held only the file lock - so neither waited
-        # for the other, and a rollback could restore config over a settings
-        # change that had already succeeded.
-        with transaction_lock(self.root):
-            return mutate_json(self.config_path, change)
-
-    def _set_config(self, key: str, value):
-        """Change one config key without disturbing the others."""
-        def change(cfg):
-            cfg[key] = value
-            return cfg
-
-        # Same hierarchy as `set_config_many`; see the note there.
-        with transaction_lock(self.root):
-            return mutate_json(self.config_path, change)[key]
 
     # ---- vault (encrypt-at-rest for secrets) -----------------------------
     # The fields worth encrypting: anything that grants access if leaked. Cookies
@@ -532,7 +398,7 @@ class ProfileStore:
         re-saved under the name it already holds is not making a claim, so
         ordinary updates are unaffected.
 
-        `save_engine` is the engine-only primitive this used to be. It is not
+        `_save_engine` is the engine-only primitive this used to be. It is not
         part of the supported surface: the only thing that should write one
         copy without the other is the dashboard mirror, which is writing the
         other copy at that moment.
@@ -541,7 +407,7 @@ class ProfileStore:
 
         return repo(self).create(profile)
 
-    def save_engine(self, profile: Profile) -> Profile:
+    def _save_engine(self, profile: Profile) -> Profile:
         """Write ONLY `profiles/<id>.json`. Internal - see `save`.
 
         The dashboard mirror is the one legitimate caller: it is already
@@ -644,11 +510,44 @@ class ProfileStore:
         Every match is collected rather than the first one returned, because
         "the first one in directory order" is not an answer to "which profile
         is called this". See `AmbiguousProfile`.
+
+        Both directories are searched, and that is the point. `list()` reads
+        `profiles/` alone, so an engine profile called `same` beside a
+        *dashboard-only* one called `same` looked unambiguous from here - and a
+        name-based delete went ahead, while the GUI went on showing the other.
+        The write-time check has scanned both since 0.22; the read had not
+        caught up. An id present in both copies counts once.
         """
-        matches = [p for p in self.list() if p.name == name]
-        if len(matches) > 1:
-            raise AmbiguousProfile(name, [p.id for p in matches])
-        return matches[0] if matches else None
+        with transaction_lock(self.root):
+            ids = sorted({pid for pid, stored
+                          in stored_names(self.profiles_dir, self.dash_dir)
+                          if stored == name})
+            if len(ids) > 1:
+                raise AmbiguousProfile(name, ids)
+            if not ids:
+                return None
+            return self.get(ids[0]) or self._adopt_legacy(ids[0])
+
+    def _adopt_legacy(self, profile_id: str) -> Optional[Profile]:
+        """Give a dashboard-only profile the engine copy it is missing.
+
+        An older version could write one side and not the other. The GUI still
+        lists such a profile and can still launch it, so answering "no such
+        profile" from here would be this store disagreeing with the one the
+        user is looking at - and the two-copy invariant says the answer is to
+        repair it, not to report it. Materialising is idempotent and derives
+        the engine record from the dashboard one, which is the only copy that
+        exists.
+        """
+        from .repo import repo
+
+        try:
+            path = id_path(self.dash_dir, profile_id, ".json")
+        except ValueError:
+            return None            # not an id at all - `resolve` will try it as a name
+        if not path.exists():
+            return None
+        return repo(self).materialize_current(profile_id)
 
     def resolve(self, ref: str) -> Optional[Profile]:
         """Look up a profile by id first, then by name.
@@ -659,10 +558,17 @@ class ProfileStore:
         Id first is what keeps an ambiguous store usable: two profiles may
         share a name, but never an id, so `numera <command> <id>` still works
         on both of them and is how the ambiguity gets fixed.
+
+        An id the *dashboard* alone knows resolves too, by repairing it - see
+        `_adopt_legacy`. Returning None there would have been this store
+        denying a profile the GUI was showing at that moment.
         """
         with transaction_lock(self.root):
             found = self.get(ref)
-            return found if found is not None else self.find_by_name(ref)
+            if found is not None:
+                return found
+            adopted = self._adopt_legacy(ref)
+            return adopted if adopted is not None else self.find_by_name(ref)
 
     def list(self) -> list[Profile]:
         with transaction_lock(self.root):     # one coherent vault state, see `get`
@@ -689,14 +595,14 @@ class ProfileStore:
         profile was deleted still had its dashboard twin on disk and the GUI
         went on showing a profile that no longer existed for the engine.
 
-        `delete_engine` is the engine-only primitive this used to be, kept
-        private for the same reason as `save_engine`.
+        `_delete_engine` is the engine-only primitive this used to be, kept
+        private for the same reason as `_save_engine`.
         """
         from .repo import repo
 
         return repo(self).delete(ref)
 
-    def delete_engine(self, profile_id: str) -> bool:
+    def _delete_engine(self, profile_id: str) -> bool:
         """Delete ONLY the engine record and its session. Internal - see `delete`.
 
         The session lease is taken first and *outside* the data transaction, in
