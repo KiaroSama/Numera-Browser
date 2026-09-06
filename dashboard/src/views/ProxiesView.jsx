@@ -20,6 +20,15 @@ import { ConfirmModal, Field, Row } from "../ui";
 
 const TYPES = ["HTTP", "HTTPS", "SOCKS5", "SOCKS4"];
 
+// The tabs, and the one predicate each of them means. Module scope because
+// nothing here depends on a render: rebuilt inside the component it was a new
+// array every time, which is a dependency the filter memo could not honour.
+const TABS = [
+  ["all", "All", p => !p.archived],
+  ["errors", "Errors", p => !p.archived && p.status === "failed"],
+  ["archive", "Archive", p => p.archived],
+];
+
 function ProxyStatus({ p }) {
   const s = p.status;
   if (s === "ok") return <span className="ps-pill ok" title={p.lastCheck?.ip || ""}><Check size={12} /> {p.lastCheck?.country || "OK"}{p.lastCheck?.latencyMs ? ` · ${p.lastCheck.latencyMs}ms` : ""}</span>;
@@ -191,11 +200,6 @@ function ProxiesView({ profiles, live, refresh }) {
   useEffect(() => { if (live) load(); }, [live]);
 
   const selected = useMemo(() => pool.filter(p => sel.has(p.id)), [pool, sel]);
-  const TABS = [
-    ["all", "All", p => !p.archived],
-    ["errors", "Errors", p => !p.archived && p.status === "failed"],
-    ["archive", "Archive", p => p.archived],
-  ];
   // One filter feeds both the list and the tab counts. Two would drift, and the
   // number above a list that disagrees with the rows is worse than no number.
   const view = useMemo(

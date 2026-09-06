@@ -55,18 +55,23 @@ def _merge_dashboard(previous: Optional[dict], fresh: dict) -> dict:
     The converter builds a complete dashboard object from an engine profile, so
     a naive overwrite drops every field the engine cannot represent. Anything
     the engine does not model is carried across from the stored copy.
+
+    **Which copy owns a field is decided by the field, never by its value.** The
+    previous version preserved the stored `tags` and `notes` and then let the
+    engine's win *only when truthy*, which made clearing either of them
+    impossible: `numera edit --notes ""` wrote the empty note to the engine
+    record and left the dashboard showing the old one, and removing the last tag
+    did the same. An empty string is a value a user chose, not a missing
+    argument, and truthiness cannot tell those apart. Both fields are modelled
+    by `Profile`, so both are engine-owned and an empty one propagates.
     """
     if not previous:
         return fresh
     merged = {**previous, **fresh}
-    for key in ("folder", "tags", "notes", "_created", "_rev", "_last_active",
+    for key in ("folder", "_created", "_rev", "_last_active",
                 "_trust", "status", "lastActive"):
         if key in previous and key not in _ENGINE_OWNED:
             merged[key] = previous[key]
-    # `tags` and `notes` exist in both shapes; the engine's win only when set.
-    for key in ("tags", "notes"):
-        if fresh.get(key):
-            merged[key] = fresh[key]
     return merged
 
 
@@ -78,6 +83,9 @@ _ENGINE_OWNED = frozenset({
     "languages", "proxy", "startupUrls", "extensions", "bookmarks", "launchArgs",
     "dns", "ipBased", "clearOnStart", "switchedOff", "mediaVideo", "mediaAudio",
     "canvas", "webrtc", "audio", "fonts", "geo", "dnt",
+    # Both shapes carry these, and `Profile` models them, so an engine-shaped
+    # edit is authoritative about them - including when it sets them empty.
+    "tags", "notes",
 })
 
 
@@ -140,9 +148,7 @@ class ProfileRepo:
         """
         with transaction_lock(self.root):
             if unique_name and profile.name:
-                existing = self.store.find_by_name(profile.name)
-                if existing is not None and existing.id != profile.id:
-                    raise NameTaken(f"a profile called {profile.name!r} already exists")
+                self._refuse_taken_names([profile])
             return self._write_both(profile, config_change)
 
     def delete(self, ref: str) -> bool:
@@ -169,8 +175,7 @@ class ProfileRepo:
            crash mid-rollback would leave an empty profile file - which reads
            as corruption rather than as the delete that did not happen.
         """
-        from .paths import _restore_bytes, session_lease
-        from .store import SessionStranded
+        from .paths import session_lease
 
         profile = self.store.resolve(ref)
         if profile is None:
@@ -179,9 +184,14 @@ class ProfileRepo:
 
         with session_lease(self.root, pid):
             with transaction_lock(self.root):
-                return self._delete_locked(pid, _restore_bytes, SessionStranded)
+                return self._delete_locked(pid)
 
-    def _delete_locked(self, pid: str, _restore_bytes, SessionStranded) -> bool:
+    def _delete_locked(self, pid: str) -> bool:
+        import warnings
+
+        from .paths import RollbackFailed, _restore_bytes
+        from .store import SessionStranded
+
         engine_record = self.store._path(pid)
         dash_record = self.dash_path(pid)
         if not dash_record.exists() and not engine_record.exists():
@@ -196,21 +206,52 @@ class ProfileRepo:
                     undo.append((path, path.read_bytes()))
                     path.unlink()
         except OSError as first:
-            for path, original in reversed(undo):
-                _restore_bytes(path, original)
-            try:
-                self.store.restore_session(pid, tomb)
-            except SessionStranded as stranded:
-                # Both halves failed. Surfacing only `first` would describe a
-                # profile that exists with a session nothing points at, so the
-                # message naming the tombstone is the one to raise.
-                raise stranded from first
+            self._undo_delete(pid, tomb, undo, first,
+                              RollbackFailed, _restore_bytes, SessionStranded)
             raise
 
-        # Logical commit is done; the tombstone is disposable from here. A
-        # cleanup failure is a warning, not an ambiguous delete.
-        self.store.delete_session(pid)
+        # Logical commit is done; the tombstone is disposable from here.
+        #
+        # `delete_session(pid)` was wrong here and silently so: it detaches
+        # again, and `user-data/<id>` no longer exists after the detach above,
+        # so it found nothing, reclaimed nothing, and left the entire browser
+        # identity on disk as `.deleting-*` forever. Every successful delete
+        # leaked one. The tombstone we actually made is the thing to discard.
+        if not self.store.discard_tombstone(tomb):
+            warnings.warn(
+                f"{pid} is deleted, but its session is still on disk as {tomb}; "
+                f"remove it once nothing holds it", RuntimeWarning, stacklevel=2)
         return True
+
+    def _undo_delete(self, pid, tomb, undo, first,
+                     RollbackFailed, _restore_bytes, SessionStranded) -> None:
+        """Put back everything this delete had already removed, then report.
+
+        Rollback is an outcome, not a gesture. The previous version restored
+        the metadata in a bare loop, so the first `_restore_bytes` failure
+        propagated out of the handler - the remaining record was never put
+        back, `restore_session` was never called, and what reached the caller
+        described neither the delete that failed nor the damage that was left.
+
+        Every step is attempted, every failure is collected, and if any of them
+        failed the caller gets `RollbackFailed` carrying the original error and
+        each path that could not be restored. A repair needs the list; an
+        exception that hides half of it is worse than the failure itself.
+        """
+        failures = []
+        for path, original in reversed(undo):
+            try:
+                _restore_bytes(path, original)
+            except OSError as err:
+                failures.append((path, err))
+        try:
+            self.store.restore_session(pid, tomb)
+        except SessionStranded as stranded:
+            failures.append((tomb, stranded))
+        except OSError as err:                               # pragma: no cover
+            failures.append((tomb, err))
+        if failures:
+            raise RollbackFailed(first, failures) from first
 
     def _engine_raw(self, profile_id: str) -> Optional[dict]:
         """The engine record exactly as it is on disk - ciphertext and all."""
@@ -254,6 +295,38 @@ class ProfileRepo:
             # and either may be the one that survived.
             stored = ((previous_dash or {}).get("proxy") or {}).get("pass") or None
         return vault.encrypt_for_write(self.store, profile.proxy.password, stored)
+
+    def _name_taken(self, profile: Profile, accepted: list) -> bool:
+        """Would writing `profile` claim a name something else already holds?
+
+        The rule itself is `store.name_clash`, and it is the *same call* the
+        HTTP surface makes from `DashboardStore._claim_names`. Two
+        implementations of "is this name free" is precisely the divergence this
+        audit was about: the CLI refused duplicates the API happily created,
+        and `resolve(name)` then answered for one of two profiles without ever
+        saying which.
+
+        `accepted` is what this batch has already agreed to write, so two
+        pending profiles asking for one name collide with each other and not
+        only with the disk.
+
+        ponytail: asked once per profile, so a batch of n rebuilds the name map
+        n times. A few hundred profiles is nothing; if bulk create ever runs to
+        tens of thousands, hoist the map.
+        """
+        from .store import name_clash, stored_names
+
+        stored = stored_names(self.store.profiles_dir, self.dash_dir)
+        stored += [(p.id, p.name) for p in accepted if p.name]
+        return name_clash(stored, [(profile.id, profile.name)]) is not None
+
+    def _refuse_taken_names(self, profiles: list) -> None:
+        """Raise `NameTaken` for the first profile claiming a taken name."""
+        accepted: list = []
+        for profile in profiles:
+            if self._name_taken(profile, accepted):
+                raise NameTaken(f"a profile called {profile.name!r} already exists")
+            accepted.append(profile)
 
     def _records(self, profile: Profile) -> tuple:
         """The exact contents both copies of one profile are about to get.
@@ -388,40 +461,81 @@ class ProfileRepo:
         purpose - and an unrelated bulk edit does not fail on a duplicate it
         did not create.
         """
+        with transaction_lock(self.root):
+            return self._write_batch(profiles, config_change, on_name_clash)
+
+    def patch_many(self, refs, apply: Callable[[Profile], object], *,
+                   config_change: Optional[dict] = None,
+                   on_name_clash: str = "reject") -> list:
+        """Re-read every profile, change it, and write them all as one transaction.
+
+        The difference from `save_many` is *where the decision is made*, and it
+        is the whole point. `apply` and `pool assign` did:
+
+            targets = select(store.list(), ...)   # read
+            for prof in targets:                  # mutate stale snapshots
+                apply_patch(prof, patch)
+            repo.save_many(targets)               # write them back whole
+
+        `save_many` made that write atomic, which fixed the half-applied
+        command - but it still wrote objects read before any lock was held, so
+        an API edit committing in between was acknowledged and then overwritten
+        by a bulk command that never saw it. Serialising a write cannot repair a
+        decision taken outside it.
+
+        Here the transaction opens first and everything happens inside it:
+        re-read each profile as it is *now*, hand it to `apply`, check names,
+        seal secrets, write once. `apply(profile)` mutates the profile in place
+        and returns something truthy for "write this one" - `bulk.apply_patch`
+        already returns the list of fields it changed, which is exactly that -
+        or something falsey to leave that profile alone.
+
+        A ref matching nothing is skipped rather than failing the batch: a
+        profile deleted between the selection and the write is not an error, it
+        is a profile that is no longer there. Returns the profiles written.
+        """
+        with transaction_lock(self.root):
+            pending = []
+            for ref in refs:
+                current = self.store.resolve(ref)
+                if current is None:
+                    continue
+                if apply(current):
+                    pending.append(current)
+            return self._write_batch(pending, config_change, on_name_clash)
+
+    def _write_batch(self, profiles, config_change: Optional[dict],
+                     on_name_clash: str) -> list:
+        """The shared body of `save_many` and `patch_many`.
+
+        The caller already holds the root transaction, so every decision made
+        here - which names are free, what the stored ciphertext is - is made
+        under the same lock that performs the write.
+        """
         if on_name_clash not in ("reject", "skip"):
             raise ValueError(f"unknown name-clash policy: {on_name_clash!r}")
-        with transaction_lock(self.root):
-            held, taken = {}, {}
-            for existing in self.store.list():
-                held[existing.id] = existing.name
-                if existing.name:
-                    taken.setdefault(existing.name, existing.id)
-            pending = []
-            for profile in profiles:
-                claiming = profile.name and held.get(profile.id) != profile.name
-                owner = taken.get(profile.name) if claiming else None
-                if owner is not None and owner != profile.id:
-                    if on_name_clash == "reject":
-                        raise NameTaken(
-                            f"a profile called {profile.name!r} already exists")
-                    continue
-                if claiming:
-                    taken[profile.name] = profile.id
-                pending.append(profile)
+        pending = []
+        for profile in profiles:
+            if self._name_taken(profile, pending):
+                if on_name_clash == "reject":
+                    raise NameTaken(
+                        f"a profile called {profile.name!r} already exists")
+                continue
+            pending.append(profile)
 
-            # Every secret sealed before the batch opens, for the same reason
-            # as `_write_both`: one locked replacement anywhere in the set must
-            # refuse the whole request without having written any of it.
-            saved = [(p, *self._records(p)) for p in pending]
+        # Every secret sealed before the batch opens, for the same reason
+        # as `_write_both`: one locked replacement anywhere in the set must
+        # refuse the whole request without having written any of it.
+        saved = [(p, *self._records(p)) for p in pending]
 
-            with self._config_lock(config_change), write_batch() as batch:
-                for profile, engine_data, merged in saved:
-                    batch.write(self.store._path(profile.id), engine_data)
-                    batch.write(self.dash_path(profile.id), merged)
-                if config_change:
-                    batch.write(self.store.config_path,
-                                {**self.store.get_config(), **config_change})
-            return [p for p, _e, _m in saved]
+        with self._config_lock(config_change), write_batch() as batch:
+            for profile, engine_data, merged in saved:
+                batch.write(self.store._path(profile.id), engine_data)
+                batch.write(self.dash_path(profile.id), merged)
+            if config_change:
+                batch.write(self.store.config_path,
+                            {**self.store.get_config(), **config_change})
+        return [p for p, _e, _m in saved]
 
 
 def repo(store) -> ProfileRepo:

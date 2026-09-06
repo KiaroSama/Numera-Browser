@@ -20,11 +20,21 @@ small JSON object exactly once, atomically, and the parent polls for it against
 a deadline while watching for the process to die - so neither side can wait
 forever, and neither needs the other to be alive.
 
-**The ready point** is the moment the child owns the session and has
-revalidated what it is about to launch: the lease is held, and the current
-profile and its stored credential were re-read under the root transaction. That
-is `drivers.open_session`, the single gate every browser open goes through,
-which is why the signal is emitted there rather than in each command.
+**The ready point** is the moment a browser is actually open on the profile.
+It used to stop one step short of that: `drivers.open_session` announced
+success as soon as it held the lease and had re-read the profile, and *then*
+yielded to the caller that starts the browser. So the parent returned 200,
+registered the child and let the scheduler stamp `lastRun` for sessions that
+went on to die on a missing browser executable, a backend that would not
+import, an invalid launch option, a headful launch with no display or a
+persistent context that would not open. Owning the profile is a precondition
+for opening a browser, not evidence that one opened.
+
+Ownership is still taken first and held for the whole session; only the claim
+of readiness moved to the far side of the browser starting. Every backend in
+`drivers.py` calls `drivers._opened()` the instant it holds a live persistent
+context and page, and `open_session` announces failure only for what goes wrong
+before that.
 """
 
 from __future__ import annotations
@@ -43,11 +53,11 @@ from typing import Optional
 #: nobody is waiting on - a plain CLI run - which makes the signal a no-op.
 READY_ENV = "NUMERA_READY_FILE"
 
-#: How long a parent waits for that result. The ready point is reached before
-#: any browser starts, so this covers a Python start-up and a few store reads,
-#: not a Chromium launch. Generous on purpose: timing out kills a child that
-#: was about to succeed.
-READY_TIMEOUT = 60.0
+#: How long a parent waits for that result. It spans a real browser start now -
+#: a cold Chromium with extensions, on a machine already running several - and
+#: not just a Python start-up and a few store reads. A ceiling with room in it
+#: on purpose: timing out kills a child that was about to succeed.
+READY_TIMEOUT = 120.0
 
 _POLL_SECONDS = 0.05
 
@@ -95,6 +105,23 @@ def announce(ok: bool, error: str = "", kind: str = "failed") -> None:
         pass
 
 
+def reported() -> bool:
+    """Has a startup result already been written for this session?
+
+    The failure path needs it. Readiness is announced by the backend once the
+    browser is open, so an error raised *after* that - a startup URL that will
+    not load, a window closing badly - must not overwrite a success the parent
+    has already acted on. `drivers.open_session` reports a failure only when
+    this says nothing has been reported yet.
+
+    A file rather than a flag: the result is per session and per process, the
+    write is atomic, and the path therefore exists only once a whole object is
+    there.
+    """
+    target = os.environ.get(READY_ENV)
+    return bool(target) and Path(target).exists()
+
+
 # ---- parent side ---------------------------------------------------------
 @contextmanager
 def ready_channel():
@@ -122,7 +149,7 @@ def _result(path: Path) -> Optional[dict]:
 
 def await_ready(proc: subprocess.Popen, path: Path,
                 timeout: float = READY_TIMEOUT) -> None:
-    """Block until the child owns its session, or raise `StartupFailed`.
+    """Block until the child has a browser open, or raise `StartupFailed`.
 
     Three ways out, and every one of them is bounded: the child answers, the
     child dies, or the deadline passes. The process is re-checked for a written

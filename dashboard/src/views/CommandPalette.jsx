@@ -1,6 +1,6 @@
 /* Ctrl-K: jump to a view or act on a profile by name. */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Activity, Blocks, FolderTree, Globe, Layers, Pencil, Play, Plus, Search, Settings, Square, Sun, Zap } from "lucide-react";
 import { T } from "../theme";
 
@@ -10,33 +10,36 @@ function CommandPalette({ onClose, profiles, setView, setEditor, toggleRun, togg
   const inputRef = useRef(null);
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  const cmds = useMemo(() => {
-    const nav = [
-      ["Go to Profiles", () => setView("profiles"), Layers],
-      ["Go to Health", () => setView("health"), Activity],
-      ["Go to Engines", () => setView("engines"), Blocks],
-      ["Go to Proxies", () => setView("proxies"), Globe],
-      ["Go to Automation", () => setView("automation"), Zap],
-      ["Go to Folders", () => setView("folders"), FolderTree],
-      ["Go to Settings", () => setView("settings"), Settings],
-    ].map(([label, run, Ic]) => ({ label, run, Ic, group: "Navigate" }));
-    const actions = [
-      ["New profile", () => newProfile(), Plus],
-      ["Toggle light / dark theme", () => toggleTheme(), Sun],
-    ].map(([label, run, Ic]) => ({ label, run, Ic, group: "Action" }));
-    // Cap the per-profile commands so a 10k list doesn't build 20k entries.
-    const profs = profiles.slice(0, 150).flatMap(p => ([
-      { label: `Open ${p.name}`, run: () => setEditor(p), Ic: Pencil, group: "Profile" },
-      { label: `${p.status === "running" ? "Stop" : "Launch"} ${p.name}`, run: () => toggleRun(p.id),
-        Ic: p.status === "running" ? Square : Play, group: "Profile" },
-    ]));
-    return [...nav, ...actions, ...profs];
-  }, [profiles]);
+  // Built plainly, not memoised. Every handler below is a fresh function on
+  // each of the parent's renders, so a memo keyed on them would rebuild the
+  // list every render anyway - and one keyed on `profiles` alone would hold
+  // yesterday's handlers. The cap is what actually protects a 10k list; 300-odd
+  // small objects per keystroke costs nothing worth a stale closure.
+  const nav = [
+    ["Go to Profiles", () => setView("profiles"), Layers],
+    ["Go to Health", () => setView("health"), Activity],
+    ["Go to Engines", () => setView("engines"), Blocks],
+    ["Go to Proxies", () => setView("proxies"), Globe],
+    ["Go to Automation", () => setView("automation"), Zap],
+    ["Go to Folders", () => setView("folders"), FolderTree],
+    ["Go to Settings", () => setView("settings"), Settings],
+  ].map(([label, run, Ic]) => ({ label, run, Ic, group: "Navigate" }));
+  const actions = [
+    ["New profile", () => newProfile(), Plus],
+    ["Toggle light / dark theme", () => toggleTheme(), Sun],
+  ].map(([label, run, Ic]) => ({ label, run, Ic, group: "Action" }));
+  const profs = profiles.slice(0, 150).flatMap(p => ([
+    { label: `Open ${p.name}`, run: () => setEditor(p), Ic: Pencil, group: "Profile" },
+    { label: `${p.status === "running" ? "Stop" : "Launch"} ${p.name}`, run: () => toggleRun(p.id),
+      Ic: p.status === "running" ? Square : Play, group: "Profile" },
+  ]));
+  const cmds = [...nav, ...actions, ...profs];
 
-  const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    return (s ? cmds.filter(c => c.label.toLowerCase().includes(s)) : cmds).slice(0, 40);
-  }, [q, cmds]);
+  const needle = q.trim().toLowerCase();
+  const filtered = (needle
+    ? cmds.filter(c => c.label.toLowerCase().includes(needle))
+    : cmds).slice(0, 40);
+
   useEffect(() => { setSel(0); }, [q]);
 
   const runAt = (i) => { const c = filtered[i]; if (c) { c.run(); onClose(); } };

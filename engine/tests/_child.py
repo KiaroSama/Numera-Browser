@@ -1,11 +1,15 @@
 """A stand-in for a spawned session process that answers the startup handshake.
 
-`spawn_owner` waits for the child to say it holds the session lease before it
-registers it as the owner, so a test double that only pretends to be a process
-now hangs the parent until its deadline. This one writes the same file a real
-child writes - see `numera.handshake` - which keeps the wait deterministic and
-lets a test choose what the child claims: ready, refused for a named reason, or
-dead without a word.
+`spawn_owner` waits for the child to say a browser is open on the profile
+before it registers it as the owner, so a test double that only pretends to be
+a process now hangs the parent until its deadline. This one writes the same
+file a real child writes - see `numera.handshake` - which keeps the wait
+deterministic and lets a test choose what the child claims: ready, refused for
+a named reason, or dead without a word.
+
+What it cannot stand in for is the readiness point itself: it answers because
+the test told it to, not because a browser opened. That is proved against real
+children in `test_browser_readiness.py`.
 """
 
 import json

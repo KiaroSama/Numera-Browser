@@ -348,10 +348,16 @@ def cmd_ext(args, store: ProfileStore) -> int:
         return emit({"id": prof.id, "extensions": list(prof.extensions)})
 
     path = str(Path(args.path).expanduser())
-    if args.ext_command == "add" and not Path(path).is_dir():
-        say(_c(f"'{path}' is not a folder. Point at an *unpacked* extension "
-               f"(the folder containing manifest.json).", C.RED))
-        return emit({"ok": False, "error": f"'{path}' is not a folder"}, 1)
+    if args.ext_command == "add":
+        # The same validator the API and the default set use. `is_dir()` alone
+        # accepted an empty folder - and a Web Store URL pasted in whole - which
+        # the launcher's `_extension_args` then filters out at launch time. The
+        # profile was shown loading an extension Chromium never sees, with no
+        # error anywhere: a dead control that reports instead of acting.
+        problems = unloadable_extensions([path])
+        if problems:
+            say(_c("; ".join(problems), C.RED))
+            return emit({"ok": False, "error": "; ".join(problems)}, 1)
 
     # Decided inside the transaction, on the profile as it is now. Reading the
     # list out here and saving it back could drop an extension another process

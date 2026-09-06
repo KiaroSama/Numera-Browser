@@ -27,7 +27,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from _child import FakeChild, spawning
-from _rendezvous import ENGINE, RENDEZVOUS_TIMEOUT, Rendezvous, finish, start
+from _rendezvous import (ENGINE, RENDEZVOUS_TIMEOUT, Rendezvous, finish,
+                         run_all, start)
 
 from numera import generate
 from numera.handshake import READY_ENV, StartupFailed, await_ready, ready_channel
@@ -42,6 +43,16 @@ with session_lease(ROOT, {pid!r}):
     say("holding")
     wait()
 say("released")
+"""
+
+# Switches the engine from another process, on the parent's word, and does not
+# report back until the write has committed.
+ENGINE_SWAP = """
+from numera.repo import repo
+from numera.store import ProfileStore
+wait()
+repo(ProfileStore(ROOT)).edit({pid!r}, lambda p: setattr(p, "engine", "camoufox") or p)
+say("changed")
 """
 
 
@@ -179,6 +190,59 @@ def test_the_gate_yields_the_profile_as_it_is_now(tmp_path, monkeypatch):
     monkeypatch.setattr(paths, "session_lease", racing)
     with drivers.open_session(prof, store) as current:
         assert current.name == "after"
+
+
+# --- and the caller has to launch what the gate yielded --------------------
+
+def _engine_used(tmp_path, monkeypatch, override):
+    """Run `numera launch` while another process switches the engine.
+
+    The swap commits at the exact instant the command reaches for the lease -
+    the window `open_session` exists to close - and the launcher records which
+    backend it was asked for instead of opening a browser.
+    """
+    from types import SimpleNamespace
+
+    from numera import launcher, paths
+    from numera.cli.browser import cmd_launch
+
+    store = ProfileStore(tmp_path)
+    prof = repo(store).create(Profile(name="switching", fingerprint=generate(seed=2)))
+    assert prof.engine == "playwright", "the profile has to start somewhere else"
+
+    used, fired = [], []
+    monkeypatch.setattr(launcher, "launch",
+                        lambda p, s, **kw: used.append(kw.get("engine")))
+    real = paths.session_lease
+
+    def drive(bar):
+        def racing(root, profile_id):
+            if not fired:
+                fired.append(True)
+                bar.release("editor")
+                bar.expect("editor", "changed")   # blocks until it is committed
+            return real(root, profile_id)
+
+        monkeypatch.setattr(paths, "session_lease", racing)
+        cmd_launch(SimpleNamespace(ref=prof.id, engine=override, headless=True), store)
+
+    run_all({"editor": ENGINE_SWAP.format(pid=prof.id)}, tmp_path, drive)
+    assert fired, "the swap never ran - the test proves nothing"
+    assert ProfileStore(tmp_path).get(prof.id).engine == "camoufox", \
+        "the other process's write did not land"
+    return used
+
+
+def test_the_engine_is_read_from_the_profile_the_lease_re_read(tmp_path, monkeypatch):
+    """`cmd_launch` resolved the profile, picked the engine off it, and only
+    then took the lease - so a switch landing in between sent the browser out
+    on the old backend while every stored copy already said the new one."""
+    assert _engine_used(tmp_path, monkeypatch, override=None) == ["camoufox"]
+
+
+def test_an_explicit_engine_still_wins(tmp_path, monkeypatch):
+    """--engine is a decision the user just made, and it is not a stale read."""
+    assert _engine_used(tmp_path, monkeypatch, override="playwright") == ["playwright"]
 
 
 # --- one owner per profile, and only once it owns it -----------------------

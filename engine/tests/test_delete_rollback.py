@@ -16,6 +16,7 @@ import pytest
 
 from numera import generate
 from numera.models import Profile
+from numera.paths import RollbackFailed
 from numera.store import ProfileStore, SessionStranded
 
 pytest.importorskip("fastapi")
@@ -59,8 +60,15 @@ def test_a_failed_delete_puts_the_session_back(tmp_path, monkeypatch):
 
 
 def test_a_rollback_that_cannot_finish_names_the_tombstone(tmp_path, monkeypatch):
-    """Both halves fail. The error must be the one that says where the session
-    is, not the first one - that is what makes the repair deterministic."""
+    """Both halves fail, and the caller gets every casualty, not just the first.
+
+    This used to raise the `SessionStranded` alone, chained onto the delete
+    failure. That was right about which message matters - the one saying where
+    the session went - and wrong about how many there can be: the metadata
+    restore can fail too, and a rollback that stops at its first problem never
+    attempts the rest. `RollbackFailed` carries the original failure and every
+    path that could not be put back, which is what a repair actually needs.
+    """
     engine, dash, pid, session = make(tmp_path)
 
     real_unlink = type(session).unlink
@@ -82,7 +90,7 @@ def test_a_rollback_that_cannot_finish_names_the_tombstone(tmp_path, monkeypatch
 
     monkeypatch.setattr("pathlib.Path.unlink", refuse_unlink)
     monkeypatch.setattr("pathlib.Path.rename", refuse_rename)
-    with pytest.raises(SessionStranded) as caught:
+    with pytest.raises(RollbackFailed) as caught:
         dash.delete(pid)
     monkeypatch.undo()
 
@@ -90,8 +98,11 @@ def test_a_rollback_that_cannot_finish_names_the_tombstone(tmp_path, monkeypatch
     assert ".deleting-" in message or "deleting" in message.lower(), \
         f"the error does not name the tombstone: {message}"
     assert pid in message
-    # The original failure is preserved as the cause, so nothing is hidden.
+    # The original failure is preserved both ways, so nothing is hidden.
     assert caught.value.__cause__ is not None, "the first failure was dropped"
+    assert isinstance(caught.value.cause, OSError)
+    assert any(isinstance(err, SessionStranded) for _path, err in caught.value.failures), \
+        "the stranded session is not among the casualties"
 
 
 def test_the_metadata_comes_back_through_the_atomic_writer(tmp_path, monkeypatch):

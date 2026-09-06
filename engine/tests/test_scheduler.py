@@ -162,7 +162,7 @@ def test_the_exit_code_of_a_finished_warm_up_is_recorded(app_and_client, monkeyp
     assert c.get("/api/schedules").json()[0]["lastOutcome"] == "started"
 
     children[0].returncode = 3               # it crashed after a while
-    app.state.reap_warmups()
+    app.state.reap_children()
     row = c.get("/api/schedules").json()[0]
     assert row["lastOutcome"] == "failed"
     assert "3" in (row["lastError"] or "")

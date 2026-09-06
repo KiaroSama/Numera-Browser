@@ -23,22 +23,29 @@ def cmd_launch(args, store: ProfileStore) -> int:
     prof = store.resolve(args.ref)
     if not prof:
         return _no_profile(args.ref)
-    warnings = list(validate(prof.fingerprint))
-    if warnings:
-        say(_c("Warning: fingerprint has consistency issues:", C.YEL))
-        for p in warnings:
-            say(f"  - {p}")
-    for warning in proxy_warnings(prof):
-        warnings.append(warning)
-        say(_c(f"Warning: {warning}", C.YEL))
-    engine = args.engine or prof.engine or "playwright"
-    say(_c(f"Launching '{prof.name}' via {engine}...", C.CYN))
     from ..drivers import open_session
     from ..launcher import launch  # imported lazily (browser deps optional)
     # This process *is* the session - the server spawns exactly this command as
     # a child - so the lease lives for as long as the command does, and the OS
     # drops it if the process is killed.
     with open_session(prof, store) as prof:
+        # Everything about *what* to launch is read from the profile the gate
+        # yielded, never from the copy resolved before the lease. The engine
+        # and the warnings used to be derived up there: another process
+        # switching the engine in that window sent the browser out on the old
+        # backend while every stored copy already said the new one, and the
+        # warnings graded a fingerprint that had been edited since. An explicit
+        # --engine is a decision the user just made and still wins.
+        engine = args.engine or prof.engine or "playwright"
+        warnings = list(validate(prof.fingerprint))
+        if warnings:
+            say(_c("Warning: fingerprint has consistency issues:", C.YEL))
+            for problem in warnings:
+                say(f"  - {problem}")
+        for warning in proxy_warnings(prof):
+            warnings.append(warning)
+            say(_c(f"Warning: {warning}", C.YEL))
+        say(_c(f"Launching '{prof.name}' via {engine}...", C.CYN))
         launch(prof, store, headless=args.headless, keep_open=False, engine=engine)
     return emit({"ok": True, "id": prof.id, "name": prof.name, "engine": engine,
                  "headless": bool(args.headless), "warnings": warnings})

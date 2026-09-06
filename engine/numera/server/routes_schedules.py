@@ -21,21 +21,26 @@ def register(app, ctx):
 
     engine_store, dash, sched, running, is_running, start_scheduler = ctx.engine_store, ctx.dash, ctx.sched, ctx.running, ctx.is_running, ctx.start_scheduler
     spawn_owner, materialize_current = ctx.spawn_owner, ctx.materialize_current
+    reap_children, stop_session = ctx.reap_children, ctx.stop_session
 
     # ---- Scheduled warm-up ----------------------------------------------
-    def _spawn_warmup(pid: str, minutes: float, preset: Optional[str]):
-        """Start a headless warm-up in the background and wait for it to own
-        the profile. It shows as running until it finishes.
+    def _spawn_warmup(pid: str, minutes: float, preset: Optional[str], sid: str):
+        """Start a headless warm-up in the background and wait for its browser
+        to open. It shows as running until it finishes.
 
-        Returns the process, or None when something else already owns the
+        Returns the registration, or None when something else already owns the
         profile - see `spawn_owner`, which also raises rather than returning a
         child that never took the session.
+
+        `sid` is carried into the registry so this child's exit updates that
+        occurrence and no other. The reaper used to match on `profileId`, so a
+        profile with two schedules had both rows written by one warm-up.
         """
         cli = [sys.executable, "-m", "numera", "--data-dir", str(engine_store.root),
                "warmup", pid, "--minutes", str(minutes), "--headless"]
         if preset:
             cli += ["--preset", str(preset)]
-        return spawn_owner(pid, cli)
+        return spawn_owner(pid, cli, kind="scheduled_warmup", schedule_id=sid)
 
     def _decorate_schedule(s: dict) -> dict:
         d = dash.get(s["profileId"])
@@ -106,12 +111,13 @@ def register(app, ctx):
                     continue
                 claimed = True
                 materialize_current(pid)
-                # Blocks until the child holds the session lease and has
-                # revalidated the profile, and raises otherwise - so a warm-up
-                # that dies on a locked vault never reaches `mark_run`. The old
-                # `poll()` check could only catch a child that had already
-                # exited by the time `Popen` returned.
-                if _spawn_warmup(pid, s.get("minutes", 5), s.get("preset")) is None:
+                # Blocks until the child has a browser open on the profile,
+                # and raises otherwise - so a warm-up that dies on a locked
+                # vault or a missing browser executable never reaches
+                # `mark_run`. The old `poll()` check could only catch a child
+                # that had already exited by the time `Popen` returned.
+                if _spawn_warmup(pid, s.get("minutes", 5), s.get("preset"),
+                                 s["id"]) is None:
                     raise RuntimeError("another session took the profile first")
                 sched.mark_run(s["id"], time.time())
                 sched.record(s["id"], lastOutcome="started", lastError=None)
@@ -135,40 +141,23 @@ def register(app, ctx):
                 except Exception:
                     pass            # the store itself is unwell; the next tick retries
 
-    def _reap_warmups() -> None:
-        """Record how the warm-ups that have finished actually ended.
-
-        `Popen` returning is not success - it means a process started. Without
-        this, a warm-up that crashed on its first page looked identical to one
-        that browsed for thirty minutes.
-        """
-        for pid, proc in list(running.items()):
-            code = proc.poll()
-            if code is None:
-                continue
-            running.pop(pid, None)
-            for s in sched.list():
-                if s.get("profileId") != pid:
-                    continue
-                try:
-                    sched.record(s["id"],
-                        lastOutcome="ok" if code == 0 else "failed",
-                        lastError=None if code == 0 else f"warm-up exited {code}")
-                except Exception:
-                    pass
-
     # Exposed so the behaviours below can be exercised directly: a tick that
     # skips rows, records a false success or leaks a child all fail silently,
     # and none of it is reachable through an HTTP route.
     app.state.scheduler_tick = _scheduler_tick
-    app.state.reap_warmups = _reap_warmups
 
     if start_scheduler:
         stop = threading.Event()
 
         def _loop():
             while not stop.wait(60):     # check once a minute
-                _reap_warmups()
+                # Reaping used to live here, and it walked every exited process
+                # in the registry to write the outcome of *every* schedule whose
+                # `profileId` matched - but that registry also holds ordinary
+                # launches, attach sessions and manual warm-ups. It belongs to
+                # the shared finalisation path, which knows what each child was
+                # started for; this is only the clock that drives it.
+                reap_children()
                 _scheduler_tick()
 
         threading.Thread(target=_loop, daemon=True, name="numera-scheduler").start()
@@ -181,18 +170,16 @@ def register(app, ctx):
         Each holds a lock on a profile's user-data directory. Left behind, the
         next launch of that profile fails with a directory-in-use error that
         names nothing the user can act on - and the browser keeps running.
+
+        Through `stop_session`, so a shutdown leaves the same trail any other
+        exit does: `_last_active` stamped, attached state dropped, and a
+        scheduled warm-up's occurrence closed rather than left reading
+        "started" forever.
         """
-        for pid, proc in list(running.items()):
-            if proc.poll() is not None:
-                continue
+        for pid in list(running):
             try:
-                proc.terminate()
-                proc.wait(timeout=5)
-            except Exception:       # noqa: BLE001 - it is going away either way
-                try:
-                    proc.kill()
-                except Exception:
-                    pass
-            running.pop(pid, None)
+                stop_session(pid)
+            except Exception:       # noqa: BLE001 - one bad child must not
+                pass                # strand the ones after it
 
     app.state.add_shutdown(_stop_children)

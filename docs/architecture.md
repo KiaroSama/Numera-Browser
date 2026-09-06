@@ -236,6 +236,7 @@ the genuinely shared ones.
                                           + subprocess: numera launch     (real Chromium)
                                           wait for the child to own it
  click ■ → POST /…/{id}/stop ──────────▶ terminate the launch process
+                                          (409 if another process owns it)
 ```
 
 Key points:
@@ -251,7 +252,11 @@ Key points:
   credential (`numera/handshake.py`); a child that never gets there is
   terminated and the request answers with the reason - `409` busy, `423` locked
   vault, `404` deleted. After that the profile is "running" while the process is
-  alive, and `/stop` terminates it.
+  alive, and `/stop` terminates it. The server records what each child *is* -
+  a launch, an attach, a manual warm-up or a scheduled one, with the exact
+  schedule occurrence - so closing an ordinary launch is never written into a
+  schedule's result, and `/stop` answers `409` rather than claiming it stopped
+  a browser another process owns.
 - **The engine copy is derived at write time.** The engine record a launch or a
   probe opens is re-derived from the dashboard record inside the transaction
   that writes it (`repo.materialize_current`), never from a snapshot read

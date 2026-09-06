@@ -19,7 +19,7 @@ from typing import Optional
 from .. import cookies as cookies_mod
 from .convert import OS_TO_DASH
 from ..handshake import StartupFailed
-from ..paths import child_env
+from ..paths import child_env, session_lease
 
 
 def register(app, ctx):
@@ -43,6 +43,9 @@ def register(app, ctx):
         return HTTPException(_STARTUP_STATUS.get(failure.kind, 500), str(failure))
 
     BUSY = "stop the profile first - its session is in use"
+    NOT_OURS = ("another process has this profile's browser open - this server "
+                "did not start it and cannot stop it. Close it where it was "
+                "started.")
 
     @app.post("/api/profiles/{pid}/launch")
     def launch_profile(pid: str, body: Optional[dict] = None):
@@ -55,7 +58,7 @@ def register(app, ctx):
         if not d:
             raise HTTPException(404, "profile not found")
         ours = running.get(pid)
-        if ours is not None and ours.poll() is None:
+        if ours is not None and ours.proc.poll() is None:
             return decorate(d)          # ours, already open - launch is idempotent
         # A lease held by some *other* process is not the same thing, and falls
         # through to `spawn_owner`, which refuses it: this server cannot stop
@@ -76,7 +79,7 @@ def register(app, ctx):
         if headless:
             cli.append("--headless")
         try:
-            spawn_owner(pid, cli)
+            spawn_owner(pid, cli, kind="launch")
         except StartupFailed as failure:
             raise _startup_error(failure) from None
         # `spawn_owner` returning None means another request won the race for
@@ -85,10 +88,23 @@ def register(app, ctx):
 
     @app.post("/api/profiles/{pid}/stop")
     def stop_profile(pid: str):
+        """End the browser this server started for the profile.
+
+        200 used to be unconditional, which made it a lie for the one case that
+        matters: `stop_session` can only terminate a local child, so when the
+        lease is held by another server, a desktop or a CLI, nothing was
+        stopped and the browser is still open - and the dashboard showed the
+        profile as stopped anyway. There is no cross-process stop, so the
+        answer is the conflict rather than a success nobody produced.
+        """
         d = dash.get(pid)
         if not d:
             raise HTTPException(404, "profile not found")
-        stop_session(pid)
+        if not stop_session(pid):
+            # Nothing of ours was stopped. A lease still on the profile means
+            # the browser is open in a process this server has no way to reach.
+            if session_lease(engine_store.root, pid).held_by_other_process():
+                raise HTTPException(409, NOT_OURS)
         return decorate(d)
 
     def _run_cli(*cli_args: str, allow_fail: bool = False) -> str:
@@ -215,12 +231,12 @@ def register(app, ctx):
         if (body or {}).get("headless"):
             cli.append("--headless")
         # Same protocol as launch, with the CDP wait layered on top: the child
-        # is registered as the owner once it holds the session lease, and only
-        # then is it worth waiting for DevTools to answer. Registering first
-        # meant a child that exited on a locked vault still looked attached
-        # until the CDP wait timed out.
+        # is registered as the owner once its browser is actually open, and
+        # only then is it worth waiting for DevTools to answer. Registering
+        # first meant a child that exited on a locked vault still looked
+        # attached until the CDP wait timed out.
         try:
-            owner = spawn_owner(pid, cli)
+            owner = spawn_owner(pid, cli, kind="attach")
         except StartupFailed as failure:
             raise _startup_error(failure) from None
         if owner is None:
@@ -260,7 +276,7 @@ def register(app, ctx):
         # warm-up that exits immediately on a locked vault used to leave the
         # profile showing as warming up until someone looked.
         try:
-            owner = spawn_owner(pid, cli)
+            owner = spawn_owner(pid, cli, kind="manual_warmup")
         except StartupFailed as failure:
             raise _startup_error(failure) from None
         if owner is None:
