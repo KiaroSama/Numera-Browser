@@ -183,6 +183,31 @@ class SessionStranded(RuntimeError):
     """A failed delete could not put its detached session back."""
 
 
+class AmbiguousProfile(RuntimeError):
+    """A name matches more than one profile, so no lookup can answer it.
+
+    0.22 stopped *new* duplicate names from being created; it did nothing for a
+    data root that already had them - an older Numera, a hand edit, a restored
+    backup, a clone from a version that allowed it. `find_by_name` returned the
+    first match in directory order, so `numera delete <name>` on such a store
+    destroyed an arbitrary one of the two and reported success.
+
+    Failing closed is the only safe answer: the store cannot know which profile
+    was meant, and picking one is the outcome nothing can undo. `RuntimeError`,
+    like `SessionBusy`, because the CLI already renders those as a message for
+    the user rather than a traceback.
+    """
+
+    def __init__(self, name: str, ids):
+        self.name = name
+        self.ids = list(ids)
+        super().__init__(
+            f"{len(self.ids)} profiles are called {name!r}: "
+            + ", ".join(self.ids)
+            + ". Use an id instead, or rename one of them - a command that "
+              "changes or deletes 'by name' cannot be told which you mean.")
+
+
 class ProfileStore:
     def __init__(self, root: Optional[str | Path] = None,
                  password: Optional[str] = None):
@@ -491,6 +516,38 @@ class ProfileStore:
 
     # ---- CRUD ------------------------------------------------------------
     def save(self, profile: Profile) -> Profile:
+        """Save a profile - **both** copies of it - and return it.
+
+        This is the public mutator, and it is what `numera.__doc__` tells an
+        external script to call. It used to write `profiles/<id>.json` and
+        nothing else, which recreated the exact divergence `ProfileRepo` exists
+        to prevent: a profile created this way was engine-only until a
+        dashboard listing happened to adopt it, and an *update* to an id the
+        dashboard already knew changed only the engine copy - the listing does
+        not re-adopt a known id, so the GUI kept showing the old identity
+        indefinitely.
+
+        Name uniqueness applies here for the same reason it applies to the CLI
+        and the API: one name, one profile, on every surface. A profile
+        re-saved under the name it already holds is not making a claim, so
+        ordinary updates are unaffected.
+
+        `save_engine` is the engine-only primitive this used to be. It is not
+        part of the supported surface: the only thing that should write one
+        copy without the other is the dashboard mirror, which is writing the
+        other copy at that moment.
+        """
+        from .repo import repo
+
+        return repo(self).create(profile)
+
+    def save_engine(self, profile: Profile) -> Profile:
+        """Write ONLY `profiles/<id>.json`. Internal - see `save`.
+
+        The dashboard mirror is the one legitimate caller: it is already
+        writing the dashboard record, and going through the coordinator from
+        there would have it rewrite the copy it was called from.
+        """
         profile.updated_at = time.time()
         # The lock spans the read *and* the write: `_keep_stored_secrets` reads
         # the stored record to carry a withheld secret across, so this is a real
@@ -560,31 +617,52 @@ class ProfileStore:
             path = self._path(profile_id)
         except ValueError:
             return None
-        if not path.exists():
-            return None
-        # Inside the transaction: this read's meaning depends on the profile
-        # file and `config.json` agreeing, and a migration rewrites the first
-        # before committing the second. Reentrant, so a caller already holding
-        # it (every write path) pays nothing.
+        # Existence and content are decided by the same transaction. Checking
+        # `exists()` outside it was a TOCTOU with delete: the file could be
+        # unlinked between the check and the lock, and this raised
+        # `FileNotFoundError` at a caller that had asked a question whose
+        # honest answer was "no such profile". `get()` returning None is how
+        # every caller expects a missing profile to arrive.
+        #
+        # The read is in there for its own reason too: its meaning depends on
+        # the profile file and `config.json` agreeing, and a migration rewrites
+        # the first before committing the second. Reentrant, so a caller
+        # already holding it (every write path) pays nothing.
         with transaction_lock(self.root):
-            data = self._apply_secrets(
-                json.loads(path.read_text(encoding="utf-8")), "dec")
+            if not path.exists():
+                return None
+            try:
+                raw = path.read_text(encoding="utf-8")
+            except FileNotFoundError:                # pragma: no cover
+                return None                          # lost a race we cannot lock
+            data = self._apply_secrets(json.loads(raw), "dec")
         return Profile.from_dict(data)
 
     def find_by_name(self, name: str) -> Optional[Profile]:
-        for p in self.list():
-            if p.name == name:
-                return p
-        return None
+        """The profile with this name, None if there is none - or raise.
+
+        Every match is collected rather than the first one returned, because
+        "the first one in directory order" is not an answer to "which profile
+        is called this". See `AmbiguousProfile`.
+        """
+        matches = [p for p in self.list() if p.name == name]
+        if len(matches) > 1:
+            raise AmbiguousProfile(name, [p.id for p in matches])
+        return matches[0] if matches else None
 
     def resolve(self, ref: str) -> Optional[Profile]:
         """Look up a profile by id first, then by name.
 
         One lock for both attempts: a write landing between them could show a
         profile under neither its old nor its new name.
+
+        Id first is what keeps an ambiguous store usable: two profiles may
+        share a name, but never an id, so `numera <command> <id>` still works
+        on both of them and is how the ambiguity gets fixed.
         """
         with transaction_lock(self.root):
-            return self.get(ref) or self.find_by_name(ref)
+            found = self.get(ref)
+            return found if found is not None else self.find_by_name(ref)
 
     def list(self) -> list[Profile]:
         with transaction_lock(self.root):     # one coherent vault state, see `get`
@@ -603,8 +681,23 @@ class ProfileStore:
                 continue
         return sorted(out, key=lambda p: p.created_at)
 
-    def delete(self, profile_id: str) -> bool:
-        """Delete a profile and its session, or leave both exactly as they were.
+    def delete(self, ref: str) -> bool:
+        """Delete a profile - both copies and its session - or nothing.
+
+        The public deleter, and it goes through the coordinator. It used to
+        remove the engine record and the session only, so a caller told the
+        profile was deleted still had its dashboard twin on disk and the GUI
+        went on showing a profile that no longer existed for the engine.
+
+        `delete_engine` is the engine-only primitive this used to be, kept
+        private for the same reason as `save_engine`.
+        """
+        from .repo import repo
+
+        return repo(self).delete(ref)
+
+    def delete_engine(self, profile_id: str) -> bool:
+        """Delete ONLY the engine record and its session. Internal - see `delete`.
 
         The session lease is taken first and *outside* the data transaction, in
         that order deliberately: a busy profile refuses immediately instead of
@@ -718,17 +811,25 @@ class ProfileStore:
             path = self._path(profile_id)
         except ValueError:
             return False
-        if not path.exists():
-            return False
-        try:
-            raw = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return False
-        for a, b in self.SECRET_PATHS:
-            node = raw.get(a)
-            value = node.get(b) if isinstance(node, dict) else None
-            if vault.is_withheld(self, value):
-                return True
+        # The record and the vault state are one decision, so they are read
+        # under one lock. `is_withheld` asks whether the *current* key can open
+        # what is stored; a rotation rewrites the record before it commits the
+        # new descriptor, so reading the bytes outside the transaction and
+        # judging them against `config.json` afterwards compared a value to a
+        # key state that never coexisted. The dashboard store and the proxy
+        # pool were given this boundary in 0.22; the engine store was missed.
+        with transaction_lock(self.root):
+            if not path.exists():
+                return False
+            try:
+                raw = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                return False
+            for a, b in self.SECRET_PATHS:
+                node = raw.get(a)
+                value = node.get(b) if isinstance(node, dict) else None
+                if vault.is_withheld(self, value):
+                    return True
         return False
 
     # ---- moving a profile in and out of a file --------------------------

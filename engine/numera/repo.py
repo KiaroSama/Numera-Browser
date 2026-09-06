@@ -46,6 +46,29 @@ class NameTaken(ValueError):
     """A profile with that name already exists."""
 
 
+class TargetMoved(RuntimeError):
+    """The reference named one profile when we looked, and another when we acted.
+
+    `delete("alpha")` resolved a profile, took its lease, and deleted it by id.
+    Between those two steps another process could rename that profile to
+    `beta` - and the delete went ahead, so both operations reported success
+    even though no serial order of the two explains the result: after a
+    successful rename, "delete alpha" should not have deleted the profile now
+    called `beta`.
+
+    Raised instead of deleting a stale target. Not `NameTaken`, and not a plain
+    "not found": the profile is there, the name is there, and they no longer
+    refer to each other, which is a different thing to tell someone.
+    """
+
+    def __init__(self, ref: str, expected: str, found: str):
+        self.ref, self.expected, self.found = ref, expected, found
+        super().__init__(
+            f"{ref!r} meant profile {expected} when the command started and "
+            f"means {found} now - something renamed one of them in between. "
+            f"Nothing was deleted; re-run it against the id you meant.")
+
+
 # Fields the dashboard owns and the engine has no room for. An engine-shaped
 # edit must not erase them just by being written back through the converter.
 def _merge_dashboard(previous: Optional[dict], fresh: dict) -> dict:
@@ -177,6 +200,8 @@ class ProfileRepo:
         """
         from .paths import session_lease
 
+        # A candidate, not a decision. Nothing is locked yet, so this only
+        # says which profile to take the lease on.
         profile = self.store.resolve(ref)
         if profile is None:
             return False
@@ -184,6 +209,18 @@ class ProfileRepo:
 
         with session_lease(self.root, pid):
             with transaction_lock(self.root):
+                # Now that nothing else can move, ask the same question again.
+                # `resolve` is id-first, so an exact id re-checks existence -
+                # a delete that committed in the gap answers "no such profile"
+                # instead of raising out of `_delete_locked` - and a name
+                # re-answers *which* profile is called that. A name that has
+                # moved to another id is refused rather than deleted, because
+                # the request was about the name.
+                current = self.store.resolve(ref)
+                if current is None:
+                    return False
+                if current.id != pid:
+                    raise TargetMoved(ref, pid, current.id)
                 return self._delete_locked(pid)
 
     def _delete_locked(self, pid: str) -> bool:

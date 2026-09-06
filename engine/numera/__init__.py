@@ -13,6 +13,8 @@ Quick start:
     store = ProfileStore()
     fp = generate(os="windows", locale="en-US")
     profile = store.save(Profile(name="acct-01", fingerprint=fp))
+    # save/delete write both copies of the profile - the engine's and the
+    # dashboard's - so a script and the GUI never disagree about one.
     # numera launch acct-01   (via the CLI)
 """
 
@@ -20,7 +22,7 @@ from .models import Fingerprint, Profile, Proxy
 from .fingerprint import generate, validate, sec_ch_ua
 from .store import ProfileStore
 
-__version__ = "0.22.0"
+__version__ = "0.23.0"
 
 __all__ = [
     "Fingerprint",

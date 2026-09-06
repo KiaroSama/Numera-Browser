@@ -70,7 +70,12 @@ def test_a_successful_migration_converts_everything_and_then_switches_on(tmp_pat
     ids = [store.save(profile(f"p{i}", password=f"secret-{i}")).id for i in range(3)]
     plain = store.save(profile("no-secret")).id
 
-    assert store.enable_vault("master") == 3
+    # Six, not three: `save()` writes both copies of a profile, and the
+    # dashboard's `proxy.pass` holds the same secret the engine's
+    # `proxy.password` does. Both are named in `vault.SITES` and both have to be
+    # sealed, or an unlocked dashboard read would hand back a plaintext
+    # credential the engine had already encrypted.
+    assert store.enable_vault("master") == 6
     assert ProfileStore(tmp_path).vault_enabled()
     for pid in ids:
         assert crypto.is_encrypted(secret_of(tmp_path, pid)), f"{pid} stayed in the clear"
@@ -183,8 +188,18 @@ def test_a_restore_that_succeeds_replaces_the_session_and_the_metadata(tmp_path)
 @pytest.mark.parametrize("kind", ["profile", "config", "schedules"])
 def test_an_interrupted_write_leaves_the_previous_content(tmp_path, monkeypatch, kind):
     """`write_text` truncates first and then writes, so a crash mid-write left
-    an empty or half-written file - and the store reads that as "no profiles"."""
+    an empty or half-written file - and the store reads that as "no profiles".
+
+    `os.replace` is broken for the whole call here, which is deliberately worse
+    than a real transient failure: it breaks the rollback as well as the write.
+    A profile save is a two-file batch now, so that worst case surfaces as
+    `RollbackFailed` naming what could not be put back, rather than the bare
+    `OSError` a single-file writer raised. Either way the assertion below is
+    the point - the target was never touched, because the swap that would have
+    touched it is the thing that failed.
+    """
     from numera import paths
+    from numera.paths import RollbackFailed
 
     store = ProfileStore(tmp_path)
     sched = ScheduleStore(tmp_path)
@@ -206,7 +221,7 @@ def test_an_interrupted_write_leaves_the_previous_content(tmp_path, monkeypatch,
     real = os.replace
     monkeypatch.setattr(os, "replace",
                         lambda *a, **k: (_ for _ in ()).throw(OSError("crash")))
-    with pytest.raises(OSError):
+    with pytest.raises((OSError, RollbackFailed)):
         act()
     monkeypatch.setattr(os, "replace", real)
 

@@ -21,6 +21,7 @@ def register(app, ctx):
 
     engine_store, dash, sched, running, is_running, start_scheduler = ctx.engine_store, ctx.dash, ctx.sched, ctx.running, ctx.is_running, ctx.start_scheduler
     spawn_owner, materialize_current = ctx.spawn_owner, ctx.materialize_current
+    stop_session = ctx.stop_session
     reap_children, stop_session = ctx.reap_children, ctx.stop_session
 
     # ---- Scheduled warm-up ----------------------------------------------
@@ -98,7 +99,7 @@ def register(app, ctx):
             # Per row, not per tick. One unconvertible profile used to abort the
             # whole loop, so every schedule after it silently never ran - and the
             # only symptom was warm-ups that stopped happening.
-            claimed = False
+            claimed = started = False
             try:
                 pid = s["profileId"]
                 d = dash.get(pid)
@@ -119,9 +120,24 @@ def register(app, ctx):
                 if _spawn_warmup(pid, s.get("minutes", 5), s.get("preset"),
                                  s["id"]) is None:
                     raise RuntimeError("another session took the profile first")
+                started = True      # a browser is open, and this server owns it
                 sched.mark_run(s["id"], time.time())
                 sched.record(s["id"], lastOutcome="started", lastError=None)
             except Exception as e:  # noqa: BLE001 - one row's problem is its own
+                if started:
+                    # The browser opened, and then the bookkeeping failed. The
+                    # forbidden state is a live scheduled warm-up against a row
+                    # that is due and unclaimed: the next tick starts a second
+                    # one, and they stack until someone notices. So the child
+                    # is stopped before the claim is dropped, never after.
+                    try:
+                        stop_session(pid)
+                    except Exception:   # noqa: BLE001
+                        # Cannot prove the child is gone. Keeping the claim
+                        # parks this occurrence until its TTL, which is the
+                        # safe direction: a row that waits is recoverable, a
+                        # row that re-runs beside a live browser is not.
+                        claimed = False
                 if claimed:
                     # This occurrence never started, so the claim must not sit
                     # on it for the whole TTL - the row would be silently

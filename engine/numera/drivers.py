@@ -167,6 +167,35 @@ def _startup_kind(exc: BaseException) -> str:
     return "failed"
 
 
+def _abandon(context=None, driver=None, relay=None) -> None:
+    """Release everything a failed startup acquired, before the failure is told.
+
+    A browser open is not one call. Between "the persistent context exists" and
+    `_opened()` there is the init script, the client-hint overrides and the
+    first page, and any of them can raise - as can a launch that fails after
+    the driver has started. The parent is about to be told this session never
+    opened, so nothing may survive it: a live Chromium keeps the profile's
+    user-data directory busy, a running Playwright driver leaks a process, and
+    a relay holds a port for a proxy nobody is using.
+
+    Every step is attempted even if an earlier one raises. This runs while an
+    exception is already on its way up, and *that* is the error worth having -
+    not whatever the cleanup hit on the way out.
+
+    Order is the reverse of acquisition: the browser first, then the driver
+    that owns it, then the relay it was talking through.
+    """
+    for close in (getattr(context, "close", None),
+                  getattr(driver, "stop", None),
+                  getattr(relay, "close", None)):
+        if close is None:
+            continue
+        try:
+            close()
+        except Exception:      # noqa: BLE001 - see above
+            pass
+
+
 def _opened() -> None:
     """Tell a parent that spawned this session that its browser is now open.
 
@@ -398,6 +427,12 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
     # developer cache to fall back on.
     paths_mod.use_bundled_browsers()
     pw = sync_playwright().start()
+    context = None
+    # One guard from here to READY. `pw.stop()` was missing from the old
+    # launch-failure path, and everything after the context was created had no
+    # guard at all - so an init script that would not compile, or a first page
+    # that would not open, left a live browser and a running driver behind for
+    # a session the parent was correctly told had failed.
     try:
         context = pw.chromium.launch_persistent_context(
             user_data_dir=str(store.user_data_path(profile.id)),
@@ -414,17 +449,16 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
             ignore_default_args=["--enable-automation"],
             **context_opts,
         )
-    except BaseException:
         if relay:
-            relay.close()   # the browser never opened; don't strand its port
+            # Tie the relay to the session: whoever closes the context — the user
+            # closing the window, `session()`, the API — frees the port with it.
+            context.on("close", lambda *_: relay.close())
+        context.add_init_script(build_init_script(fp))
+        _apply_client_hints(context, fp)
+        page = context.pages[0] if context.pages else context.new_page()
+    except BaseException:
+        _abandon(context, pw, relay)
         raise
-    if relay:
-        # Tie the relay to the session: whoever closes the context — the user
-        # closing the window, `session()`, the API — frees the port with it.
-        context.on("close", lambda *_: relay.close())
-    context.add_init_script(build_init_script(fp))
-    _apply_client_hints(context, fp)
-    page = context.pages[0] if context.pages else context.new_page()
     _opened()
     _open_startup_urls(context, page, profile)
 
@@ -583,6 +617,10 @@ def _driver_cloak(profile, store, headless=False, keep_open=True, extra_args=Non
     _seed_bookmarks(profile, store.user_data_path(profile.id))
     fp = profile.fingerprint
     proxy_cfg, relay = _browser_proxy(profile)
+    context = None
+    # Same guard as the Playwright path, and for the same reason: the window
+    # between a live context and READY is where a failure used to leave a
+    # browser running for a session nobody owns.
     try:
         context = cloakbrowser.launch_persistent_context(
             user_data_dir=str(store.user_data_path(profile.id)),
@@ -603,13 +641,12 @@ def _driver_cloak(profile, store, headless=False, keep_open=True, extra_args=Non
                   *(profile.launch_args or []),
                   *(extra_args or [])],
         )
-    except BaseException:
         if relay:
-            relay.close()   # the browser never opened; don't strand its port
+            context.on("close", lambda *_: relay.close())
+        page = context.pages[0] if context.pages else context.new_page()
+    except BaseException:
+        _abandon(context, None, relay)   # cloakbrowser owns no separate driver
         raise
-    if relay:
-        context.on("close", lambda *_: relay.close())
-    page = context.pages[0] if context.pages else context.new_page()
     _opened()
     _open_startup_urls(context, page, profile)
 

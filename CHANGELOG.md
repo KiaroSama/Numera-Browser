@@ -4,6 +4,92 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-09-06
+
+The fourteenth audit brief. 0.22.0 made the coordinator and the session
+protocol strong; most of what is left is the edge of them — the public API that
+never went through the coordinator, the data an older version already wrote,
+and the windows the 0.22.0 changes opened behind themselves.
+
+### Fixed
+
+- **The documented Python API bypassed the coordinator.** `numera.__doc__`
+  tells a script to call `store.save(Profile(...))`, and that wrote the engine
+  record alone. So a profile created by a script was engine-only until a
+  dashboard listing happened to adopt it; an *update* to an id the dashboard
+  already knew never reached the GUI at all, because the listing only adopts
+  ids it has not seen; and a delete left the twin behind, so the GUI went on
+  showing a profile the script had been told was gone. `save` and `delete` are
+  now the coordinator, with `save_engine`/`delete_engine` kept as the internal
+  primitives the dashboard mirror needs.
+
+- **Upgrading did not make an old data root safe.** 0.22.0 stopped duplicate
+  names from being *created*; `find_by_name` still returned the first match in
+  directory order, so on a store that already had two — an older Numera, a hand
+  edit, a restored backup — `numera delete <name>` destroyed an arbitrary one
+  of them and reported success. Name lookup now fails closed with
+  `AmbiguousProfile`, naming both ids. Lookup by id still works, which is how
+  the ambiguity gets fixed, and listing still works, which is how it is seen.
+
+- **A browser that failed to start left itself running.** Moving readiness past
+  real context creation was right, and it opened a window behind it: the init
+  script, the client-hint overrides and the first page all run after the
+  browser exists and before the parent is told anything. A failure in any of
+  them left a live Chromium, a running Playwright driver and a relay port
+  behind for a session correctly reported as failed — and even a failed launch
+  never stopped the driver it had just started. Startup is now transactional in
+  its resources: everything acquired before READY is released on every
+  exception, so the profile's lease is free for the next attempt.
+
+- **A killed child was not waited for.** `terminate()` escalated to `kill()`
+  and returned without waiting again, so the exit code read straight afterwards
+  was `None` for a child that had not been reaped. A schedule recorded
+  "warm-up exited None", the registry entry was dropped while the child still
+  held the session lease, and `/stop` reported success on a profile that was
+  still busy. One helper now terminates, escalates and waits, and returns a
+  real code only once the process is gone.
+
+- **A scheduled warm-up could outlive its own occurrence.** The scheduler waits
+  for a real browser and then writes `lastRun`. If that write failed, the claim
+  was released and the warm-up left running — so the row was immediately due
+  again and the next tick started a second browser beside the first. The child
+  is now stopped before the claim is dropped, and if it cannot be stopped the
+  claim is kept rather than the run repeated.
+
+- **Restore discarded a session it could not reclaim.** The replaced session is
+  moved aside as `.replaced-*` and removed with `ignore_errors=True`, so a
+  cleanup failure left a whole browser identity on disk with nothing naming it.
+  It is reported now, with the exact path, exactly like a delete tombstone.
+
+- **`get()` raised where it should have said "no such profile".** The existence
+  check ran outside the transaction the read then took, so a delete committing
+  in the gap produced a `FileNotFoundError` instead of a clean miss. Both are
+  inside one transaction now.
+
+- **The engine store's withheld check straddled the vault boundary.** The
+  dashboard store and the proxy pool joined the snapshot in 0.22.0;
+  `ProfileStore.secret_withheld` still read the record's bytes unlocked and
+  judged them against `config.json` afterwards, comparing a stored value to a
+  key state that never coexisted with it. It is the check several operations
+  use to refuse rather than produce a confidently wrong backup or export.
+
+- **A delete could act on a target that had moved.** `delete("alpha")` resolved
+  a profile, took its lease, and deleted it by id — so a rename committing in
+  between let both operations report success with no ordering that explains
+  them. The reference is re-resolved under the lease now, and a name that has
+  moved to another profile is refused with `TargetMoved` rather than deleted.
+
+### Changed
+
+- `ProfileStore.save()` enforces the same name-uniqueness contract as every
+  other surface; a duplicate raises `NameTaken`.
+- Name lookup can raise `AmbiguousProfile`, and `ProfileRepo.delete` can raise
+  `TargetMoved`. Both are `RuntimeError`s, so the CLI renders them as a message
+  rather than a traceback.
+- Enabling or rotating the vault reports a higher count for a store built by a
+  script. It already sealed both copies of every profile; a script-created
+  profile simply has two of them now instead of one.
+
 ## [0.22.0] - 2026-09-06
 
 The thirteenth audit brief, and the closure of the twelfth. 0.21.0 built the

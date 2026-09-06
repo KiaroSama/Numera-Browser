@@ -243,3 +243,26 @@ def test_a_restore_that_fails_before_the_lease_touches_nothing(tmp_path):
     assert not [d for d in store.root.iterdir()
                 if d.is_dir() and d.name.startswith("numera-restore-")], \
         "a staging directory was left in the data root"
+
+
+def test_a_replaced_session_that_cannot_be_reclaimed_is_named(tmp_path, monkeypatch):
+    """The restore is committed either way - the replaced session is
+    unreachable through the profile - but discarding it silently left a whole
+    browser identity on disk with nothing naming it."""
+    from numera import archive
+
+    prof = seeded(tmp_path, "alpha", note="original")
+    store = ProfileStore(tmp_path)
+    backup = tmp_path / "alpha.zip"
+    store.backup(prof.id, backup)
+    repo(store).edit(prof.id, lambda p: setattr(p, "notes", "changed") or p)
+
+    monkeypatch.setattr(archive.shutil, "rmtree", lambda *a, **kw: None)
+    with pytest.warns(RuntimeWarning, match=r"\.replaced-"):
+        archive.restore(ProfileStore(tmp_path), backup)
+    monkeypatch.undo()
+
+    restored = ProfileStore(tmp_path).get(prof.id)
+    assert restored.notes == "original", "the restore did not commit"
+    leftovers = list((tmp_path / "user-data").glob("*.replaced-*"))
+    assert leftovers, "nothing was left behind, so the warning was wrong"
