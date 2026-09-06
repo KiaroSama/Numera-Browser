@@ -394,6 +394,13 @@ profile = Profile(
 store.save(profile)
 ```
 
+`save()` and `delete()` write **both** copies of a profile — the engine's and
+the dashboard's — so a script and the GUI never disagree about one, and they
+share the same one-name-one-profile rule as the CLI and the API: a duplicate
+name raises `NameTaken`. Looking a profile up by a name two profiles already
+share raises `AmbiguousProfile` naming both ids, rather than silently picking
+one; look up by id to act on either.
+
 ## Modules
 
 | Module | Responsibility |
@@ -418,7 +425,7 @@ store.save(profile)
 | `launcher.py` | Thin dispatcher: picks the profile's engine and hands off |
 | `drivers.py` | Pluggable launch backends (cloak / camoufox / patchright / playwright), the registry, and the gate every browser open goes through |
 | `launch_options.py` | What a profile *means* to a browser before a backend is chosen: flags, proxy, DoH, geolocation, bookmarks, extensions |
-| `handshake.py` | The startup channel a spawned session uses to tell its parent it owns the profile |
+| `handshake.py` | The startup channel a spawned session uses to tell its parent a browser is open on the profile, and the terminate-escalate-reap helper that ends one |
 | `server/` | The HTTP API: stores, dashboard<->engine conversion, SPA mounting, and one module per route group. `numera.server` still exports `create_app`, `serve` and the converters |
 | `cli/` | Command-line interface: one module per command group, plus `parser.py` for the argparse tree and `out.py` for terminal output. `numera.cli` still exports `main` and `build_parser` |
 
