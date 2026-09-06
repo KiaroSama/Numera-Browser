@@ -266,22 +266,33 @@ def cmd_apply(args, store: ProfileStore) -> int:
 
     from ..repo import repo
 
-    # Every change computed first, then written as one transaction. The loop
-    # used to save inside itself, so a failure on the Nth profile left the
-    # first N-1 changed and the command reporting failure - and the default
-    # engine was a separate commit after that.
-    touched, pending = {}, []
-    for prof in targets:
-        changed = apply_patch(prof, patch)
-        if changed:
-            pending.append(prof)
-            touched[prof.id] = changed
-    repo(store).save_many(pending, config_change=(
-        {"default_engine": patch["engine"]} if patch.get("engine") else None))
-    for prof in pending:
+    # The selection above is a *plan* - which profiles to touch - and nothing
+    # more. The change itself is applied inside the transaction, to each
+    # profile as it is at that moment.
+    #
+    # Two defects, one after the other. The loop used to save as it went, so a
+    # failure on the Nth profile left the first N-1 changed under a command
+    # that reported failure; `save_many` fixed that by writing them together.
+    # But it still wrote the objects this loop had mutated, read before any
+    # lock was held - so an API edit committing in between was acknowledged and
+    # then silently overwritten. Making the write atomic could not repair a
+    # decision taken outside it; `patch_many` moves the decision in.
+    touched: dict = {}
+
+    def change(prof):
+        fields = apply_patch(prof, patch)
+        if fields:
+            touched[prof.id] = fields
+        return fields
+
+    written = repo(store).patch_many(
+        [prof.id for prof in targets], change,
+        config_change=({"default_engine": patch["engine"]}
+                       if patch.get("engine") else None))
+    for prof in written:
         say(f"  {prof.name:<24}{_c(', '.join(touched[prof.id]), C.DIM)}")
-    say(_c(f"Updated {len(touched)} of {len(targets)} profile(s).", C.GRN))
-    return emit({"ok": True, "matched": len(targets), "updated": len(touched),
+    say(_c(f"Updated {len(written)} of {len(targets)} profile(s).", C.GRN))
+    return emit({"ok": True, "matched": len(targets), "updated": len(written),
                  "changes": touched})
 
 

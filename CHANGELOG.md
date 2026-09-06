@@ -4,6 +4,108 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-09-06
+
+The thirteenth audit brief, and the closure of the twelfth. 0.21.0 built the
+session lease, the profile coordinator and the startup handshake; this pass
+fixes the places that reached past them, and one place where the new code was
+never reached at all.
+
+### Fixed
+
+- **The safe delete was dead code.** `DashboardStore` ended up with two
+  `delete()` methods, and Python keeps the last one — so the lease-aware
+  implementation that 0.21.0 added was never called and every API delete still
+  ran the old unleased path. Removed the shadowing pair; there is one delete
+  and it reaches the core primitive.
+
+- **Every successful delete leaked the whole browser identity.** `delete()`
+  detached the session (a rename to a tombstone) and then called
+  `delete_session()`, which detaches *again* — and after the first detach there
+  is nothing at that path, so it found nothing and reclaimed nothing. The
+  session directory was left on disk as `.deleting-*` forever. It now discards
+  the tombstone it actually made, and says exactly which path is left if that
+  fails. The rollback no longer stops at its first problem either: every
+  restore is attempted, and a failure raises `RollbackFailed` carrying the
+  original error and each path that could not be put back.
+
+- **Clearing a value was impossible.** The merge that keeps both profile copies
+  in step let an engine-shaped edit win only when its value was *truthy*, so
+  `--notes ""` and removing the last tag changed the engine record and left the
+  dashboard showing the old one. Field authority is decided by the field now,
+  never by the value.
+
+- **Bulk commands still overwrote edits they never saw.** `apply` and
+  `pool assign` selected profiles, changed those snapshots and handed the
+  finished objects to an atomic write. The write was atomic; the decision was
+  not, so an API edit committing in between was acknowledged and then lost. A
+  new `patch_many` holds the transaction across re-read → change → name check →
+  seal → write.
+
+- **One name contract, on every surface.** `ProfileRepo` refused duplicate
+  names on the CLI paths while HTTP create, batch create, rename, bulk update
+  and vendor import went straight to the dashboard store — so the API created
+  duplicates the CLI refused, and a name-based lookup then silently picked one
+  of them. Both surfaces now ask the same function, inside the transaction that
+  writes, and `restore --new-id` gives its clone an unclaimed name instead of a
+  second profile with the same one. A duplicate answers `409`.
+
+- **A launch reported success before the browser opened.** The handshake
+  announced readiness as soon as the child held the lease and had revalidated
+  the profile — which is *before* the backend starts. A session that then died
+  on a missing browser executable, a backend that would not import or a headful
+  launch with no display had already returned 200, registered a running child
+  and advanced a schedule. Every backend now announces readiness the moment it
+  holds a live browser context and page, and nothing earlier.
+
+- **A launch could open the engine the profile no longer used.** `numera
+  launch` resolved the engine and the fingerprint warnings before taking the
+  lease, then launched the profile the gate handed back — so a change committed
+  in between was honoured everywhere except in the backend actually started.
+  Both now come from the profile the gate returns; an explicit `--engine` still
+  wins.
+
+- **A schedule could be marked by a browser that was nothing to do with it.**
+  The server's child registry was `id -> process`, and the reaper wrote the
+  outcome of any exited child into *every* schedule for that profile. Closing
+  an ordinary launch rewrote a schedule's result, and one warm-up updated both
+  rows of a profile with two schedules. Each child now records what it is and,
+  for a scheduled warm-up, which occurrence started it; one finalisation path
+  owns the registry, the attached state, `_last_active` and the schedule
+  outcome.
+
+- **`/stop` claimed to stop browsers it could not reach.** It returned 200
+  unconditionally, but it can only terminate a local child — so when another
+  server, desktop or CLI held the session, nothing was stopped and the
+  dashboard showed the profile as stopped anyway. It answers `409` for a
+  session this server does not own.
+
+- **A failing restore could undo a successful edit.** Restore snapshotted both
+  metadata files, staged the session, and on any failure wrote those old bytes
+  back — over any edit that had committed in between, since metadata writes do
+  not need the session lease. It now stages outside every lock, takes the lease,
+  then a short transaction for the swap and the commit, and lets the write batch
+  own metadata rollback instead of layering an older snapshot over it.
+
+- **Vault-dependent reads could see half a migration.** The engine store's reads
+  joined the root transaction in 0.20.0; the dashboard store's and the proxy
+  pool's did not, so a read that decrypts — or that decides whether a secret is
+  withheld — could observe records rewritten before the new vault descriptor
+  committed. They share the boundary now.
+
+- **`numera ext add` accepted a directory Chromium ignores.** It checked only
+  that the path was a directory, while the default-extension and API paths
+  require a loadable unpacked extension with a `manifest.json`. All three use
+  the same validator.
+
+### Changed
+
+- `POST /api/profiles/{id}/stop` can return `409`. `POST /launch`, `/attach` and
+  `/warmup` can return `423` for a locked vault and `404` for a profile deleted
+  under them.
+- The startup wait is longer, because it now spans a real browser start rather
+  than a lease acquisition.
+
 ## [0.21.0] - 2026-09-06
 
 The twelfth audit brief, and the closure of the eleventh. 0.20.0 introduced the

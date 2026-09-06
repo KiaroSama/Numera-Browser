@@ -96,6 +96,57 @@ def test_new_profiles_inherit_the_default_set(tmp_path):
     assert store.find_by_name("inherits").extensions == [str(ext)]
 
 
+# ---- and the per-profile list uses the same validator --------------------
+# `numera ext add` checked `Path(path).is_dir()` and nothing else, while the
+# API and the default set both required a genuinely loadable unpacked
+# extension. So the CLI stored what the launcher then dropped: `_extension_args`
+# filters out anything without a manifest, and the profile was shown loading an
+# extension Chromium never saw, with no error at any point.
+
+def add_extension(root, ref, path) -> int:
+    from numera.cli import build_parser
+
+    args = build_parser().parse_args(["ext", "add", ref, str(path)])
+    return args.func(args, ProfileStore(root))
+
+
+def a_profile_in(root, name="target"):
+    from numera.repo import repo
+
+    store = ProfileStore(root)
+    return repo(store).create(Profile(name=name, fingerprint=generate(seed=3)))
+
+
+def test_an_empty_folder_is_not_an_extension(tmp_path):
+    """A folder with no manifest.json is exactly the case `is_dir()` let
+    through - Chromium refuses it silently and the profile claims to load it."""
+    prof = a_profile_in(tmp_path)
+    empty = tmp_path / "not-an-extension"
+    empty.mkdir()
+
+    assert add_extension(tmp_path, prof.name, empty) != 0
+    assert ProfileStore(tmp_path).get(prof.id).extensions == [], \
+        "an unloadable folder was stored on the profile"
+
+
+def test_a_web_store_url_is_not_an_extension_path(tmp_path):
+    """The other half of the shared validator: a URL belongs to `ext install`,
+    which downloads and unpacks it. Pasted into the list it does nothing."""
+    prof = a_profile_in(tmp_path)
+
+    assert add_extension(tmp_path, prof.name,
+                         "https://chrome.google.com/webstore/detail/abc") != 0
+    assert ProfileStore(tmp_path).get(prof.id).extensions == []
+
+
+def test_a_real_unpacked_extension_is_still_added(tmp_path):
+    prof = a_profile_in(tmp_path)
+    ext = unpacked(tmp_path, "ublock")
+
+    assert add_extension(tmp_path, prof.name, ext) == 0
+    assert ProfileStore(tmp_path).get(prof.id).extensions == [str(ext)]
+
+
 def test_bulk_apply_pushes_extensions_onto_existing_profiles(tmp_path):
     # Existing profiles predate the default set, so they need an explicit push.
     from numera.bulk import apply_patch

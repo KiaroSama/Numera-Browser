@@ -14,7 +14,7 @@
  * One limit is stated on the page rather than hidden: Firefox-family engines
  * cannot load unpacked Chromium extensions at all.                            */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Check, Download, Info, Plus, Puzzle, RefreshCw, ShieldAlert, Trash2, Upload, WifiOff } from "lucide-react";
 import { api } from "../api";
 import { T } from "../theme";
@@ -62,18 +62,21 @@ function ExtensionsView({ config, live, onSaved, profiles, refresh }) {
   // A store install lands in <data-dir>/extensions/<32-char id>, so a row would
   // otherwise be an unreadable path and nothing else. The engine has already read
   // every manifest; borrow the name and whether it has an icon worth drawing.
-  const loadNames = async () => {
+  // `useCallback` so this has one identity per value of `live` - the effect
+  // below depends on the function itself, and a new one each render would
+  // re-fire it forever.
+  const loadNames = useCallback(async () => {
     if (!live) return;
     try {
       const r = await api.installedExtensions();
       setNames(Object.fromEntries((r.extensions || []).map(e => [e.path, e])));
     } catch { /* the list still works without names */ }
-  };
-  // Depend on `live`, never on `items`: `items` is an array whose identity
-  // changes on every render, so listing it here re-fires the effect in a loop
-  // that starves the fetch it is supposed to make. The list changes only through
-  // save() and add(), and both call loadNames() themselves.
-  useEffect(() => { loadNames(); }, [live]);
+  }, [live]);
+  // Which is to say: this depends on `live`, never on `items`. `items` is an
+  // array whose identity changes on every render, so listing it here re-fires
+  // the effect in a loop that starves the fetch it is supposed to make. The
+  // list changes only through save() and add(), and both call loadNames().
+  useEffect(() => { loadNames(); }, [loadNames]);
 
   const save = async (next) => {
     setErr(""); setItems(next);          // optimistic: the list is the source of truth on screen

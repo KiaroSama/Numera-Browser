@@ -402,6 +402,8 @@ store.save(profile)
 | `fingerprint.py` | Assembles coherent fingerprints; `validate()` proves it |
 | `models.py` | `Fingerprint`, `Proxy`, `Profile` data models |
 | `store.py` | JSON-per-profile persistence + user-data dirs |
+| `repo.py` | The one path a profile changes: both copies, one transaction, names and secrets decided under the lock that writes them |
+| `archive.py` | Moving a profile between the store and a file: `export`/`import`, and `backup`/`restore` of the whole session |
 | `cookies.py` | Cookie import/export across the formats people actually have |
 | `crypto.py` | Encrypt-at-rest for secrets (optional `cryptography` backend) |
 | `importers.py` | Tolerant import from GoLogin / AdsPower / Multilogin exports |
@@ -414,7 +416,9 @@ store.save(profile)
 | `automation.py` | CDP attach so Selenium/Puppeteer/Playwright can drive a profile |
 | `stealth.py` | Generates the page-level JS patch for a fingerprint |
 | `launcher.py` | Thin dispatcher: picks the profile's engine and hands off |
-| `drivers.py` | Pluggable launch backends (cloak / camoufox / patchright / playwright) |
+| `drivers.py` | Pluggable launch backends (cloak / camoufox / patchright / playwright), the registry, and the gate every browser open goes through |
+| `launch_options.py` | What a profile *means* to a browser before a backend is chosen: flags, proxy, DoH, geolocation, bookmarks, extensions |
+| `handshake.py` | The startup channel a spawned session uses to tell its parent it owns the profile |
 | `server/` | The HTTP API: stores, dashboard<->engine conversion, SPA mounting, and one module per route group. `numera.server` still exports `create_app`, `serve` and the converters |
 | `cli/` | Command-line interface: one module per command group, plus `parser.py` for the argparse tree and `out.py` for terminal output. `numera.cli` still exports `main` and `build_parser` |
 

@@ -69,6 +69,76 @@ def unloadable_extensions(paths) -> list[str]:
     return problems
 
 
+# ---- one name, one profile -------------------------------------------------
+# The product contract: a profile name identifies exactly one profile, on every
+# surface. It has to, because `resolve(ref)` falls back to `find_by_name()` and
+# `numera delete <name>` acts on what that returns - so two profiles under one
+# name make a destructive command pick one of them and say nothing.
+#
+# `ProfileRepo` enforced it for the CLI, inside the transaction that writes.
+# The HTTP writes went through `DashboardStore` and did not, so the API created
+# duplicates the CLI refused. These two functions are the check itself, kept
+# apart from either store so both can make the same decision from the same
+# facts rather than growing two policies that drift.
+def stored_names(*dirs) -> list:
+    """`(id, name)` for every profile record in `dirs`, exactly as stored.
+
+    Raw JSON on purpose. The question is about names, which are not secrets, so
+    going through `list()` would decrypt every proxy password to answer it -
+    and would answer it differently depending on whether the vault happens to
+    be unlocked.
+
+    A record that cannot be parsed contributes nothing: it holds no name this
+    store can honour, and refusing every write because one file is corrupt
+    would be worse than the ambiguity being guarded against.
+    """
+    out = []
+    for directory in dirs:
+        if directory is None:
+            continue
+        for path in sorted(Path(directory).glob("*.json")):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if isinstance(data, dict) and data.get("name"):
+                out.append((data.get("id") or path.stem, data["name"]))
+    return out
+
+
+def name_clash(stored, pending):
+    """The first pending profile that claims a name another one holds, or None.
+
+    `stored` is `(id, name)` for what is already on disk - both copies of a
+    profile may appear, and they may even disagree after an older version left
+    them diverged, so every name an id is known by counts as its own.
+    `pending` is `(id, name)` in write order. Returns the offending
+    `(id, name)`.
+
+    Only a *new* claim is policed, the same rule `ProfileRepo.save_many` uses:
+    a profile re-saving the name it already holds is not asking for anything,
+    so an ordinary edit never fails on a duplicate it did not create, and
+    `GET /api/profiles` can still adopt a CLI-made profile into the dashboard
+    without the adoption looking like a second claim on its own name.
+
+    Two pending profiles with one name clash with each other: that is the
+    ambiguity, whether or not anything on disk has the name yet.
+    """
+    held, taken = {}, {}
+    for pid, name in stored:
+        held.setdefault(pid, set()).add(name)
+        taken.setdefault(name, pid)
+    for pid, name in pending:
+        if not name or name in held.get(pid, ()):
+            continue
+        owner = taken.get(name)
+        if owner is not None and owner != pid:
+            return (pid, name)
+        taken[name] = pid
+        held.setdefault(pid, set()).add(name)
+    return None
+
+
 def _make_data_dirs(root: Path, *dirs: Path) -> None:
     """Create the data directories, or explain why it could not.
 
@@ -661,177 +731,31 @@ class ProfileStore:
                 return True
         return False
 
+    # ---- moving a profile in and out of a file --------------------------
+    # The four archive operations live in `archive.py`: they are the only code
+    # in the store that speaks zip, staging and rollback, and each is built out
+    # of the primitives above rather than being one of them. These stay as the
+    # public entry points, so no caller had to change.
     def export(self, profile_id: str, dest: str | Path) -> Optional[Path]:
-        prof = self.get(profile_id)
-        if not prof:
-            return None
-        # An export of a profile whose password we cannot read would omit it
-        # silently, and the file gives no hint that anything is missing.
-        if self.secret_withheld(profile_id):
-            raise crypto.VaultLocked(
-                f"exporting '{prof.name}' would drop its proxy password: "
-                + vault.LOCKED_MESSAGE)
-        dest = Path(dest)
-        dest.write_text(json.dumps(prof.to_dict(), indent=2), encoding="utf-8")
-        return dest
+        """Write this profile's config to `dest` as JSON. See `archive.export`."""
+        from . import archive
+
+        return archive.export(self, profile_id, dest)
 
     def import_file(self, src: str | Path) -> Profile:
-        """Import one exported profile, into BOTH copies.
+        """Read one exported profile into BOTH copies. See `archive.import_file`."""
+        from . import archive
 
-        An existing id used to update only the engine record, leaving the
-        dashboard describing the identity that was replaced - two copies under
-        one id telling different stories.
-        """
-        from .repo import repo
+        return archive.import_file(self, src)
 
-        data = json.loads(Path(src).read_text(encoding="utf-8"))
-        prof = Profile.from_dict(data)
-        return repo(self).create(prof, unique_name=False)
-
-    # ---- backup / restore ------------------------------------------------
-    # ``export``/``import_file`` move only the profile *config* (a JSON file).
-    # A backup is the whole identity: the config **and** its browser session
-    # (cookies, localStorage — everything under user-data), zipped into one
-    # portable file you can archive or carry to another machine.
     def backup(self, profile_id: str, dest: str | Path) -> Optional[Path]:
-        """Zip a profile and its entire browser session into one file.
+        """Zip the profile and its whole browser session. See `archive.backup`."""
+        from . import archive
 
-        The profile JSON inside the archive holds any proxy password in
-        *plaintext* (secrets are decrypted on read), so treat a backup file as
-        sensitive — it grants everything the profile does. Returns the path, or
-        ``None`` if no such profile exists."""
-        # A live Chromium rewrites its databases continuously; zipping one
-        # mid-write produces an archive that restores into a corrupt profile,
-        # with nothing at backup time to say so.
-        with session_lease(self.root, profile_id):
-            prof = self.get(profile_id)
-            if not prof:
-                return None
-            # The docstring above promises the archive carries the proxy password.
-            # While locked it would not, and nothing in the file would say so - the
-            # restore would come back a working-looking profile that cannot reach
-            # its proxy.
-            if self.secret_withheld(profile_id):
-                raise crypto.VaultLocked(
-                    f"backing up '{prof.name}' would drop its proxy password: "
-                    + vault.LOCKED_MESSAGE)
-            dest = Path(dest)
-            with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
-                z.writestr("profile.json", json.dumps(prof.to_dict(), indent=2))
-                ud = self.userdata_dir / profile_id
-                if ud.exists():
-                    for f in ud.rglob("*"):
-                        if f.is_file():
-                            z.write(f, arcname=str(Path("user-data") / f.relative_to(ud)))
-            return dest
+        return archive.backup(self, profile_id, dest)
 
     def restore(self, src: str | Path, new_id: bool = False) -> Profile:
-        """Recreate a profile and its session from a :meth:`backup` archive.
+        """Recreate a profile and its session from a backup. See `archive.restore`."""
+        from . import archive
 
-        By default the profile keeps its original id, overwriting any profile
-        already under that id (a true restore). Pass ``new_id=True`` to bring it
-        in as a fresh copy instead — useful for cloning a warmed-up session
-        onto a second machine without the two fighting over one id."""
-        src = Path(src)
-        # Everything in the archive is untrusted: it may have come from another
-        # machine, or from someone else entirely. Validate the whole thing and
-        # stage it before touching a single profile file - the previous version
-        # saved the profile first and wrote members as it went, so a hostile or
-        # merely truncated archive left a half-made profile behind.
-        try:
-            zf = zipfile.ZipFile(src, "r")
-        except zipfile.BadZipFile as e:
-            raise ValueError(f"{src.name} is not a readable archive: {e}") from e
-
-        with zf as z:
-            try:
-                data = json.loads(z.read("profile.json").decode("utf-8"))
-            except KeyError:
-                raise ValueError(f"{src.name} has no profile.json - not a Numera backup") from None
-            except (json.JSONDecodeError, UnicodeDecodeError) as e:
-                raise ValueError(f"{src.name} has an unreadable profile.json: {e}") from e
-            try:
-                prof = Profile.from_dict(data)
-            except (KeyError, TypeError, ValueError) as e:
-                raise ValueError(f"{src.name} does not contain a usable profile: {e}") from e
-            if new_id:
-                prof.id = uuid.uuid4().hex[:12]
-
-            # The lease, now that the archive has named the profile: a restore
-            # replaces a whole session directory, and must not replace one
-            # another process is using.
-            with session_lease(self.root, prof.id):
-                staging = Path(tempfile.mkdtemp(prefix="numera-restore-", dir=self.root))
-                try:
-                    for info in z.infolist():
-                        name = info.filename
-                        if not name.startswith("user-data/") or name.endswith("/"):
-                            continue
-                        if info.is_dir():
-                            continue
-                        # Raises before anything is written if the member escapes.
-                        target = safe_join(staging, name[len("user-data/"):])
-                        target.parent.mkdir(parents=True, exist_ok=True)
-                        with z.open(info) as fh:
-                            target.write_bytes(fh.read())
-
-                    # Replace, do not merge: a session that is half the old
-                    # identity and half the restored one is worse than either.
-                    #
-                    # Commit order matters, and it used to be wrong. The profile was
-                    # saved first, then the old session was removed with
-                    # `ignore_errors=True`, then staging was moved in. On Windows a
-                    # running Chromium holds its files, so the delete failed
-                    # silently - and `shutil.move` onto a directory that still
-                    # exists moves the source *inside* it, leaving
-                    # `user-data/<id>/numera-restore-xxxx/`. The metadata was
-                    # already updated, so the store described a session it did not
-                    # have. Now the old session is renamed aside (which fails loudly
-                    # if it is in use), the new one is moved into place, the profile
-                    # is written last, and any failure puts all of it back.
-                    from .repo import repo
-
-                    coordinator = repo(self)
-                    ud = self.user_data_path(prof.id)
-                    # Both records roll back, not only the engine one. A
-                    # restore now writes the identity twice, so undoing half of
-                    # it would leave the two copies describing different
-                    # profiles - the divergence the twin exists to prevent.
-                    records = [self._path(prof.id), coordinator.dash_path(prof.id)]
-                    previous = [(r, r.read_bytes() if r.exists() else None)
-                                for r in records]
-                    aside = None
-                    if ud.exists():
-                        aside = ud.with_name(f"{ud.name}.replaced-{uuid.uuid4().hex[:8]}")
-                        ud.rename(aside)
-                    try:
-                        ud.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.move(str(staging), str(ud))
-                        staging = None
-                        # One metadata transaction for engine and dashboard.
-                        # `save()` wrote only the engine record, so restoring
-                        # onto an existing id replaced that identity and left
-                        # the dashboard still describing the one it replaced -
-                        # two copies under one id telling different stories.
-                        # Dashboard-only fields the engine cannot carry (the
-                        # folder, the trust stamp) survive through the merge.
-                        # The name is the archive's: a restore is asked for by
-                        # id, and refusing it because that name is taken would
-                        # refuse to restore a profile over itself.
-                        prof = coordinator.create(prof, unique_name=False)
-                    except BaseException:
-                        shutil.rmtree(ud, ignore_errors=True)
-                        if aside is not None:
-                            aside.rename(ud)
-                        for record, original in previous:
-                            if original is None:
-                                record.unlink(missing_ok=True)
-                            else:
-                                _restore_bytes(record, original)
-                        raise
-                    if aside is not None:
-                        shutil.rmtree(aside, ignore_errors=True)
-                finally:
-                    if staging is not None:
-                        shutil.rmtree(staging, ignore_errors=True)
-            return prof
+        return archive.restore(self, src, new_id=new_id)

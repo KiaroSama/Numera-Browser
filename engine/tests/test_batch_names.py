@@ -60,9 +60,9 @@ def test_skip_drops_the_clash_and_keeps_the_rest(tmp_path):
 
 def test_keeping_the_name_you_already_have_is_not_a_claim(tmp_path):
     """`apply` re-saves every matched profile under its existing name. A store
-    that legitimately holds two profiles with one name - `restore --new-id`
-    makes exactly that, on purpose - must not make an unrelated bulk edit fail
-    on a duplicate it did not create."""
+    that legitimately holds two profiles with one name - an older version's
+    `restore --new-id`, or any `unique_name=False` write, could leave one - must
+    not make an unrelated bulk edit fail on a duplicate it did not create."""
     store = ProfileStore(tmp_path)
     first = repo(store).create(made("same"))
     second = repo(store).create(made("same"), unique_name=False)

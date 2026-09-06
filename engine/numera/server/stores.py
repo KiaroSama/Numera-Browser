@@ -12,15 +12,14 @@ import json
 import secrets
 import time
 import uuid
-import warnings
 from pathlib import Path
 from contextlib import contextmanager
 from typing import Optional
 from .. import vault
 from ..proxypool import identity as vault_identity
-from ..paths import (_lock_for, _restore_bytes, id_path,
-                     transaction_lock, write_json)
-from ..store import SessionStranded
+from ..paths import _lock_for, id_path, transaction_lock, write_json
+from ..repo import NameTaken
+from ..store import name_clash, stored_names
 from .convert import to_engine_profile
 
 
@@ -73,14 +72,28 @@ class DashboardStore:
     def _path(self, pid: str) -> Path:
         return id_path(self.dir, pid, ".json")
 
+    # Every read below joins the root transaction, for the reason
+    # `ProfileStore.get` does: what a decrypted record *means* depends on the
+    # record and `config.json` agreeing, and a vault migration rewrites every
+    # secret-bearing file before committing the descriptor that describes the
+    # key. A read that crossed that boundary saw a sealed record under a config
+    # that said "no vault", and `decrypt_for_read` answers `None` for it -
+    # indistinguishable from "this profile has no proxy password". The engine
+    # store was given this boundary and these two were not, so the same request
+    # could be told both stories at once.
+    #
+    # The lock is reentrant, so the write paths that already hold it pay
+    # nothing, and a read is only ever delayed by a migration actually in
+    # flight.
     def list(self) -> list[dict]:
-        out = []
-        for f in sorted(self.dir.glob("*.json")):
-            try:
-                out.append(self._decrypted(json.loads(f.read_text(encoding="utf-8"))))
-            except json.JSONDecodeError:
-                continue
-        return sorted(out, key=lambda p: p.get("_created", 0))
+        with transaction_lock(self.root):
+            out = []
+            for f in sorted(self.dir.glob("*.json")):
+                try:
+                    out.append(self._decrypted(json.loads(f.read_text(encoding="utf-8"))))
+                except json.JSONDecodeError:
+                    continue
+            return sorted(out, key=lambda p: p.get("_created", 0))
 
     def get(self, pid: str) -> Optional[dict]:
         # An id that cannot name a file is a miss, not an error: routes look
@@ -89,9 +102,10 @@ class DashboardStore:
             f = self._path(pid)
         except ValueError:
             return None
-        if not f.exists():
-            return None
-        return self._decrypted(json.loads(f.read_text(encoding="utf-8")))
+        with transaction_lock(self.root):
+            if not f.exists():
+                return None
+            return self._decrypted(json.loads(f.read_text(encoding="utf-8")))
 
     # The vault encrypts the proxy password in the engine's own profile file.
     # This store writes a second copy of the same profile, and it was writing
@@ -106,17 +120,22 @@ class DashboardStore:
         deliberate - handing the ciphertext to a caller would send it onwards as
         if it were the password. But deciding what to *keep* on a locked save
         needs the ciphertext itself, so that one caller reads the file directly.
+
+        In the transaction like its siblings: the value read here decides
+        whether a secret is preserved or replaced, and a migration rewriting
+        this file is exactly the writer that must not be observed half-done.
         """
         try:
             f = self._path(pid)
         except ValueError:
             return {}
-        if not f.exists():
-            return {}
-        try:
-            return json.loads(f.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return {}
+        with transaction_lock(self.root):
+            if not f.exists():
+                return {}
+            try:
+                return json.loads(f.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                return {}
 
     def _guard_secrets(self, prof: dict) -> dict:
         """Return a copy that never carries a plaintext secret past the vault.
@@ -214,11 +233,44 @@ class DashboardStore:
                     pending.append(merged)
             return self._save_many_locked(pending, config_change)
 
+    def _claim_names(self, profiles: list) -> None:
+        """Refuse a write that would give one name to a second profile.
+
+        The check has to be here, inside the transaction that writes, and it
+        has to be on *this* path: `ProfileRepo` has held the same invariant for
+        the CLI since 0.21.0, but every HTTP write - single create, batch
+        create, `PUT` rename, bulk update including a name patch, and the
+        vendor import - goes through this store instead. So the API happily
+        created the duplicate names `numera create` refuses, and from then on
+        `resolve(name)` returned whichever of them the directory listed first:
+        `numera delete <name>` destroyed an arbitrary one of the two.
+
+        Ids are minted first because a profile with no id yet is a new profile
+        by definition, and the check needs to know which id is claiming what.
+
+        Refuses before any file is opened. A batch that raised mid-write would
+        unwind correctly, but a rollback is a real filesystem operation with
+        its own failure mode, and there is nothing to roll back if the request
+        never starts.
+        """
+        for prof in profiles:
+            if not prof.get("id"):
+                prof["id"] = uuid.uuid4().hex[:12]
+        # Both directories: a dashboard write mirrors into the engine store and
+        # a repo write mirrors back, so either copy may be the one carrying a
+        # name, and a name held in only one of them is still held.
+        known = [self.dir] + ([self._engine.profiles_dir] if self._engine else [])
+        clash = name_clash(stored_names(*known),
+                           [(p.get("id"), p.get("name")) for p in profiles])
+        if clash:
+            raise NameTaken(f"a profile called {clash[1]!r} already exists")
+
     def _save_locked(self, prof: dict, config_change, expect_rev) -> dict:
         from ..paths import write_batch
 
         if not prof.get("id"):
             prof["id"] = uuid.uuid4().hex[:12]
+        self._claim_names([prof])
         prof.setdefault("_created", time.time())
         stored = self._raw(prof["id"]) or {}
         if expect_rev is not None and stored:
@@ -300,6 +352,11 @@ class DashboardStore:
     def _save_many_locked(self, profiles: list, config_change) -> list:
         from ..paths import write_batch
 
+        # Before the batch opens, and over the whole set at once: two entries of
+        # one batch naming the same profile are the ambiguity just as surely as
+        # a collision with something already stored, and a bulk rename of a
+        # selection onto one name is the fastest way to produce a dozen of them.
+        self._claim_names(profiles)
         saved = []
         with _config_lock(self._engine, config_change), write_batch() as batch:
             for prof in profiles:
@@ -360,97 +417,17 @@ class DashboardStore:
         Without it, `detach_session`'s rename was not proof of ownership on
         POSIX, so an API DELETE could move a directory another process had a
         browser open on.
+
+        The old implementation lived below this one for a while, and Python
+        keeps the LAST definition of a name in a class body - so this method
+        was dead the moment it was added and every API delete still ran the
+        unleased path. There is one `delete` in this class, and this is it.
         """
         from ..repo import repo
 
         if self._engine is None:                          # pragma: no cover
             return False
         return repo(self._engine).delete(pid)
-
-    def _mirror(self, prof: dict) -> None:
-        """Write the engine-shaped twin.
-
-        A profile the dashboard can hold but the engine cannot *model* still
-        saves - refusing would take the UI down for a reason the user cannot
-        see. A failure to *write* one it modelled fine is a different thing and
-        is raised: that is the store telling us it could not store, and
-        continuing would leave the two copies describing different profiles.
-        """
-        if self._engine is None:
-            return
-        try:
-            twin = to_engine_profile(prof)
-        except Exception:       # pragma: no cover - conversion is best-effort
-            return
-        self._engine.save(twin)
-
-    def delete(self, pid: str) -> bool:
-        """Remove both copies of a profile, and its session last.
-
-        The order is the point. Metadata deletion is recoverable - the bytes are
-        held and written back - so both metadata files go first and the session
-        directory, which cannot be brought back, only afterwards. And the engine
-        failure is no longer swallowed: it left the dashboard copy gone and the
-        twin behind, so the profile reappeared in `numera list` after the GUI
-        said it was deleted, and the call reported success.
-        """
-        try:
-            f = self._path(pid)
-        except ValueError:
-            return False
-        with transaction_lock(self.root):
-            return self._delete_locked(pid, f)
-
-    def _delete_locked(self, pid: str, f: Path) -> bool:
-        engine_record = None
-        if self._engine is not None:
-            try:
-                engine_record = self._engine._path(pid)
-            except ValueError:
-                engine_record = None
-        if not f.exists() and not (engine_record and engine_record.exists()):
-            return False
-
-        # Step one, before any metadata moves: detach the session. A held
-        # directory raises here, and at that point nothing has been deleted -
-        # which is what a failed DELETE has to mean. Doing it last meant a
-        # failure had already removed the profile, so the caller was told the
-        # delete failed while the dashboard showed it gone.
-        tomb = self._engine.detach_session(pid) if self._engine is not None else None
-
-        undo = []
-        try:
-            for path in (f, engine_record):
-                if path is not None and path.exists():
-                    undo.append((path, path.read_bytes()))
-                    path.unlink()
-        except OSError as first:
-            # Rollback is a first-class outcome, not a best-effort gesture.
-            # The metadata goes back through the atomic writer - a plain
-            # `write_bytes` truncates first, so a crash mid-rollback left an
-            # empty profile file, which reads as a corrupt profile rather than
-            # as the delete that did not happen.
-            for path, original in reversed(undo):
-                _restore_bytes(path, original)
-            if self._engine is not None:
-                try:
-                    self._engine.restore_session(pid, tomb)
-                except SessionStranded as stranded:
-                    # Both halves failed. Surfacing only `first` would describe
-                    # a profile that exists with a session nothing points at, so
-                    # the message that names the tombstone is the one to raise -
-                    # with the original failure attached as its cause.
-                    raise stranded from first
-            raise
-
-        # Committed. Reclaiming the detached bytes can still fail, but the
-        # profile is gone and they are unreachable through it - that is
-        # cleanup-pending, not a failed request.
-        if tomb is not None and not self._engine.discard_tombstone(tomb):
-            warnings.warn(f"the deleted session for {pid} is still on disk as "
-                          f"{tomb.name}; remove it once nothing holds it",
-                          RuntimeWarning, stacklevel=2)
-        return True
 
     # Dashboard-only settings (folder list, etc.) live in a sibling file rather
     # than inside the dashboard/ dir, so list()'s "*.json" glob never mistakes
@@ -511,19 +488,30 @@ class ProxyPool:
         and encryption is randomised: the same password stored twice produces
         two different ciphertexts, so comparing those would make every proxy
         look unique and every usage count fall to zero.
+
+        In the root transaction, like every other read that decrypts. The pool
+        *writers* already took it; the readers did not, so `proxies.json` -
+        which `vault.SITES` names and a migration rewrites - could be read
+        after it had been sealed and before the descriptor committed. Every
+        credential came back `None`, which the callers cannot tell apart from
+        "this proxy has no password".
         """
-        return [self._decrypted(p) for p in self._stored()]
+        with transaction_lock(self.root):
+            return [self._decrypted(p) for p in self._stored()]
 
     def secret_withheld(self, pid: str) -> bool:
         """Does this pool entry have a password the lock state hides?
 
         Reads the stored bytes: `list()` hands out `None` for a locked secret,
         which is exactly what a caller cannot tell apart from "no password".
+        This is the read whose answer a half-committed migration corrupts most
+        directly, so it takes the same boundary.
         """
-        for entry in self._stored():
-            if entry.get("id") == pid:
-                return vault.is_withheld(self._engine, entry.get("pass"))
-        return False
+        with transaction_lock(self.root):
+            for entry in self._stored():
+                if entry.get("id") == pid:
+                    return vault.is_withheld(self._engine, entry.get("pass"))
+            return False
 
     def _decrypted(self, entry: dict) -> dict:
         if not entry.get("pass"):

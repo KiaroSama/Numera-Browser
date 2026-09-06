@@ -57,6 +57,36 @@ from . import (routes_browser, routes_config, routes_profiles,
                routes_proxies, routes_schedules)
 
 
+#: What a child may have been started for. A registry that only held
+#: processes could not tell them apart, so the scheduler's reaper matched on
+#: `profileId` alone and wrote a schedule's outcome from an ordinary launch
+#: being closed - or wrote both rows when a profile had two schedules.
+KINDS = ("launch", "attach", "manual_warmup", "scheduled_warmup")
+
+
+@dataclass
+class Child:
+    """One session process this server started, and what it was started for.
+
+    `schedule_id` is set for `scheduled_warmup` and nothing else, and it names
+    the exact occurrence that spawned this child rather than "some schedule on
+    this profile". Nothing else may be attributed to a schedule: a user closing
+    a launch is not a warm-up result, and a profile with two schedules has two
+    rows that are not interchangeable.
+
+    `finished_at` is stamped by the one finalisation path (`_finish`) as the
+    child leaves, and is what `_last_active` is set from - so the moment the
+    browser stopped and the moment recorded against the profile are the same
+    moment, whichever caller noticed the exit first.
+    """
+
+    proc: subprocess.Popen
+    kind: str
+    started_at: float
+    schedule_id: Optional[str] = None
+    finished_at: Optional[float] = None
+
+
 @dataclass
 class _Ctx:
     """The state the route modules share.
@@ -75,10 +105,11 @@ class _Ctx:
     attached: dict
     start_scheduler: bool
     is_running: Callable[[str], bool]
-    stop_session: Callable[[str], None]
+    stop_session: Callable[[str], bool]
     decorate: Callable[[dict], dict]
     spawn_owner: Callable[..., object]
     materialize_current: Callable[[str], object]
+    reap_children: Callable[[], None]
 
 
 def _require_fastapi():
@@ -124,7 +155,7 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
     # unlocked is otherwise invisible from outside, and that is exactly the
     # thing that was silently wrong.
     app_state_stores = {"engine_store": engine_store, "dash": dash, "pool": pool}
-    running: dict[str, subprocess.Popen] = {}
+    running: dict[str, Child] = {}   # pid -> the session process we started
     attached: dict[str, dict] = {}   # pid -> CDP connection info while attached
 
     # One place for "run this when the server stops". `on_event` is deprecated
@@ -229,7 +260,7 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
             return JSONResponse({"detail": "invalid or missing API token"}, status_code=401)
         return await call_next(request)
 
-    def _touch_last_active(pid: str) -> None:
+    def _touch_last_active(pid: str, when: float) -> None:
         """Stamp `_last_active` and nothing else.
 
         This used to read the whole record, set one field and save it all back.
@@ -237,36 +268,93 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         while the browser was open - a rename, a note - was silently reverted
         the moment it closed. A patch writes the one field it owns.
         """
-        dash.patch(pid, lambda current: ({**current, "_last_active": time.time()}, None))
+        dash.patch(pid, lambda current: ({**current, "_last_active": when}, None))
+
+    def _finish(pid: str, child: Child, code) -> None:
+        """The one path every child this server started leaves by.
+
+        Three things have to happen when a session process ends, and they used
+        to happen in two places that each ran on their own clock: `is_running`
+        popped the child and stamped `_last_active`, while the scheduler's
+        reaper popped it and wrote a schedule outcome. Whichever got there
+        first took the record away from the other - so a warm-up the reaper saw
+        first never stamped `_last_active`, and an ordinary launch the reaper
+        saw at all was written into the `lastOutcome` of every schedule on that
+        profile. One path, in one order, once per child.
+
+        The schedule outcome is written for the exact occurrence that spawned
+        this child and for no other. Everything here is best-effort on purpose:
+        a record deleted mid-session, or a store that is unwell, must not
+        strand the rest of the cleanup - which is what actually frees the
+        profile for the next launch.
+        """
+        if running.get(pid) is child:
+            running.pop(pid, None)
+        attached.pop(pid, None)
+        child.finished_at = time.time()
+        try:
+            _touch_last_active(pid, child.finished_at)   # the browser closed
+        except Exception:      # noqa: BLE001 - see above
+            pass
+        if child.kind == "scheduled_warmup" and child.schedule_id:
+            try:
+                sched.record(child.schedule_id,
+                             lastOutcome="ok" if code == 0 else "failed",
+                             lastError=None if code == 0 else f"warm-up exited {code}")
+            except Exception:  # noqa: BLE001 - see above
+                pass
+
+    def reap_children() -> None:
+        """Finalise every child that has exited since the last look.
+
+        The scheduler runs this on its own clock, so a warm-up's outcome is
+        recorded whether or not anything happens to ask whether that profile is
+        running.
+        """
+        for pid, child in list(running.items()):
+            code = child.proc.poll()
+            if code is not None:
+                _finish(pid, child, code)
 
     def is_running(pid: str) -> bool:
-        proc = running.get(pid)
-        if proc is not None:
-            if proc.poll() is None:
+        child = running.get(pid)
+        if child is not None:
+            code = child.proc.poll()
+            if code is None:
                 return True
-            running.pop(pid, None)
-            _touch_last_active(pid)      # exited: the browser was closed
+            _finish(pid, child, code)    # exited: the browser was closed
         # The local registry only knows what *this* server started. Another
         # server, a desktop or a CLI can own the same profile, and reporting
         # "stopped" for a profile someone else has open is how two processes
         # end up in one Chromium user-data directory.
         return session_lease(engine_store.root, pid).held_by_other_process()
 
-    def stop_session(pid: str):
-        """End a profile's browser and forget any CDP session it was serving.
+    def stop_session(pid: str) -> bool:
+        """End a profile's browser, and say whether there was one of ours.
 
-        Lives here rather than in a route module because two of them need it:
-        `POST /stop` and `DELETE /profiles/{id}`, which must not leave a browser
-        running for a profile that no longer exists.
+        Lives here rather than in a route module because three of them need it:
+        `POST /stop`, `DELETE /profiles/{id}` - which must not leave a browser
+        running for a profile that no longer exists - and shutdown.
+
+        The return value is the honest half. This can only terminate a child
+        *this* server started; a lease held by another server, a desktop or a
+        CLI is untouched by it, and `POST /stop` answered 200 for that anyway.
+        False means nothing here was stopped, so the caller can find out why
+        before claiming that it was.
         """
-        proc = running.pop(pid, None)
-        attached.pop(pid, None)
-        if proc and proc.poll() is None:
+        child = running.get(pid)
+        if child is None:
+            attached.pop(pid, None)
+            return False
+        proc = child.proc
+        if proc.poll() is None:
             proc.terminate()
             try:
                 proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 proc.kill()
+        _finish(pid, child, proc.poll())
+        return True
 
     # One decision at a time per profile. Two HTTP launches for the same
     # profile arrive on two threadpool workers, and both used to spawn: the
@@ -282,27 +370,39 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         with spawn_guard:
             return spawn_locks.setdefault(pid, threading.Lock())
 
-    def spawn_owner(pid: str, cli: list, timeout: float = READY_TIMEOUT):
-        """Start a session process, and register it only once it owns `pid`.
+    def spawn_owner(pid: str, cli: list, *, kind: str,
+                    schedule_id: Optional[str] = None,
+                    timeout: float = READY_TIMEOUT):
+        """Start a session process, and register it only once its browser is up.
 
         `Popen` returning proves a process started, nothing else. The child
-        takes the session lease and re-reads the vault seconds later, so the
-        old code acknowledged "running" for launches about to exit with
-        `SessionBusy` or `VaultLocked`, and the scheduler recorded runs whose
-        browser never opened. Now the parent waits for the child to say it
-        holds the lease and has revalidated the profile - see handshake.py -
-        and a child that never gets there is terminated and never registered.
+        takes the session lease and re-reads the vault seconds later, and later
+        still actually opens a browser - so the old code acknowledged "running"
+        for launches about to exit with `SessionBusy`, `VaultLocked` or a
+        missing browser executable, and the scheduler recorded runs whose
+        browser never opened. Now the parent waits for the child to say that a
+        browser is open on the profile - see handshake.py - and a child that
+        never gets there is terminated and never registered.
 
-        Returns the process, or None when *this* server already has a live
+        `kind` says what the child is for, and it is not optional: the
+        scheduler's reaper decides from it whether an exit belongs to a
+        schedule at all, so a child registered as the wrong thing writes a
+        result nobody produced. `schedule_id` names the exact occurrence a
+        `scheduled_warmup` came from.
+
+        Returns the registration, or None when *this* server already has a live
         child for the profile - the second of two simultaneous requests, which
         the caller may read as idempotent success. A lease held by some other
         process is different and raises instead: this server cannot stop what
         it did not start, so answering "running" would offer a `/stop` that
         does nothing.
         """
+        if kind not in KINDS:
+            raise ValueError(f"unknown child kind {kind!r}; "
+                             f"known: {', '.join(KINDS)}")
         with _spawn_lock(pid):
             ours = running.get(pid)
-            if ours is not None and ours.poll() is None:
+            if ours is not None and ours.proc.poll() is None:
                 return None
             if is_running(pid):
                 raise StartupFailed(
@@ -316,8 +416,10 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
                 except BaseException:
                     terminate(proc)      # never leave a child nobody owns
                     raise
-            running[pid] = proc
-            return proc
+            child = Child(proc=proc, kind=kind, started_at=time.time(),
+                          schedule_id=schedule_id)
+            running[pid] = child
+            return child
 
     def materialize_current(pid: str):
         """Re-derive the engine copy from the dashboard record as it is now.
@@ -341,11 +443,18 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
 
     app.state.spawn_owner = spawn_owner
     app.state.materialize_current = materialize_current
+    # The session registry and the sweep over it, for the same reason the
+    # scheduler's tick is exposed: what the registry holds - and that it holds
+    # nothing after a child dies - is not observable through any route, and a
+    # stale entry is exactly the failure this bookkeeping exists to prevent.
+    app.state.running = running
+    app.state.reap_children = reap_children
 
     ctx = _Ctx(engine_store=engine_store, dash=dash, pool=pool, tokens=tokens, sched=sched,
                running=running, attached=attached, start_scheduler=start_scheduler,
                is_running=is_running, stop_session=stop_session, decorate=decorate,
-               spawn_owner=spawn_owner, materialize_current=materialize_current)
+               spawn_owner=spawn_owner, materialize_current=materialize_current,
+               reap_children=reap_children)
     @app.get("/api/ready")
     def ready():
         """Is the engine up, and does it want a token? Public by design.

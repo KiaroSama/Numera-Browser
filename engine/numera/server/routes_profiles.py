@@ -114,8 +114,27 @@ def register(app, ctx):
     environment it had inside `create_app` - the bodies are unchanged.
     """
     from fastapi import HTTPException
+    from fastapi.responses import JSONResponse
+
+    from ..repo import NameTaken
 
     engine_store, dash, sched, running, is_running, decorate, stop_session = ctx.engine_store, ctx.dash, ctx.sched, ctx.running, ctx.is_running, ctx.decorate, ctx.stop_session
+
+    @app.exception_handler(NameTaken)
+    def name_taken(request, exc: NameTaken):
+        """One name, one profile - answered the same way on every route.
+
+        Five separate routes write profiles (create, `PUT`, batch, bulk and
+        import) and each of them can now be refused by the store's name check.
+        A handler rather than five `try`/`except` blocks because the sixth
+        write route somebody adds next would otherwise return the store's
+        `ValueError` as a 500, which is the wrong answer to a request that is
+        merely asking for a name somebody else has.
+
+        The body matches `HTTPException`'s so a client cannot tell which
+        mechanism produced it.
+        """
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
 
     def _validate_profile(profile: dict, *, pid: "str | None" = None,
                           strip: bool = True) -> dict:
@@ -219,6 +238,7 @@ def register(app, ctx):
         with transaction_lock(engine_store.root):
             profiles = dash.list()
             known = {p["id"] for p in profiles}
+            adopting = []
             for prof in engine_store.list():
                 if prof.id in known:
                     continue
@@ -228,7 +248,14 @@ def register(app, ctx):
                     continue
                 d = to_dashboard_profile(prof)
                 d["id"] = prof.id
-                profiles.append(dash.save(d))
+                adopting.append(d)
+            # One batch, not one `save()` each. Every write now checks the name
+            # it claims against every stored profile, so adopting a store the
+            # CLI filled with N profiles would otherwise scan N records N times
+            # - on the endpoint the UI polls. The batch makes that one scan, and
+            # a store adopts either wholly or not at all.
+            if adopting:
+                profiles += dash.save_many(adopting)
         return [decorate(p) for p in profiles]
 
     def _apply_default_extensions(profile: dict) -> dict:

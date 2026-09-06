@@ -232,15 +232,21 @@ def cmd_pool(args, store: ProfileStore) -> int:
     # sent HTTPS to "http" - silently downgrading the scheme the profile claims -
     # and did not bracket an IPv6 host, so a CLI assignment produced a different
     # `Proxy.server` than every other path for the same pool entry.
-    # The plan first, then one transaction. The loop used to save as it went,
-    # so a failure on the Nth profile left the earlier ones assigned under a
-    # command that reported failure - and each save touched only the engine
-    # copy, leaving the dashboard showing the old proxy.
+    # Which profile gets which proxy is decided here, from the selection; the
+    # assignment itself happens inside the transaction, on each profile as it
+    # is then. The loop used to save as it went, so a failure on the Nth
+    # profile left the earlier ones assigned under a command that reported
+    # failure, and each save touched only the engine copy. `save_many` fixed
+    # both - and still wrote objects mutated before any lock was held, so a
+    # concurrent edit to a name or a note was overwritten by a command that
+    # only meant to change the proxy. `patch_many` re-reads first.
     from ..repo import repo
 
+    plan = {prof.id: proxies[i % len(proxies)] for i, prof in enumerate(targets)}
     assigned = []
-    for i, prof in enumerate(targets):
-        pr = proxies[i % len(proxies)]
+
+    def assign(prof):
+        pr = plan[prof.id]
         cc = (pr.get("country") or "").upper()
         prof.proxy = Proxy(server=pp.server_url(pr.get("type", "HTTP"),
                                                 pr["host"], pr.get("port", "")),
@@ -254,10 +260,12 @@ def cmd_pool(args, store: ProfileStore) -> int:
         assigned.append({"id": prof.id, "name": prof.name,
                          "proxy": prof.proxy.server, "locale": prof.fingerprint.locale,
                          "_locale_note": loc})
-    repo(store).save_many(targets)
-    for prof, row in zip(targets, assigned):
+        return True
+
+    repo(store).patch_many(list(plan), assign)
+    for row in assigned:
         loc = row.pop("_locale_note")
-        say(f"  {prof.name:<24}{_c(prof.proxy.server, C.DIM)}"
+        say(f"  {row['name']:<24}{_c(row['proxy'], C.DIM)}"
             + (_c(f"  -> {loc}", C.DIM) if loc else ""))
     say(_c(f"Assigned {len(proxies)} proxy/proxies across {len(assigned)} profile(s).", C.GRN))
     return emit({"assigned": len(assigned), "pool": len(proxies), "profiles": assigned})

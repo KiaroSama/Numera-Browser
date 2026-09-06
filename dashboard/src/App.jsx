@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, Blocks, Boxes, Command, Download, FolderTree, Globe, KeyRound, Layers, Moon, Plus, Puzzle, RefreshCw, Server, Settings, ShieldAlert, ShieldCheck, Sun, Users, X, Zap } from "lucide-react";
 import { api, auth, setAuthLostHandler } from "./api";
 import { DARK, FONT, LIGHT, T, makeCss } from "./theme";
@@ -173,7 +173,9 @@ export default function App() {
 
   const live = mode === "live";
 
-  const refresh = async () => setProfiles(await api.list());
+  // `useCallback` because the polling effect depends on it: recreated every
+  // render, it would tear down and restart the interval every render.
+  const refresh = useCallback(async () => setProfiles(await api.list()), []);
   // The authoritative config, refetched. `refresh()` reads profiles only, so
   // config and folder state - the default engine, an empty folder - has nothing
   // that repairs it after a rejected mutation. This is that repair.
@@ -219,21 +221,26 @@ export default function App() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+    // `refresh` is stable, so this still runs exactly once, on mount.
+  }, [refresh]);
+
+  // Poll less often once the list is large — refetching thousands of profiles
+  // every few seconds is wasteful, and run-status doesn't change that fast.
+  // Computed here rather than inside the effect so the dependency is a plain
+  // value: `profiles.length > 500` in the array is an expression the linter
+  // cannot check, and it hid that the effect reads `profiles` at all.
+  const pollEvery = profiles.length > 500 ? 12000 : 3000;
 
   // Keep run status in sync: the browser can be closed by the user directly, so
   // poll the API in live mode and flip the launch button back to "start".
   useEffect(() => {
     if (!live) return;
     let cancelled = false;
-    // Poll less often once the list is large — refetching thousands of profiles
-    // every few seconds is wasteful, and run-status doesn't change that fast.
-    const every = profiles.length > 500 ? 12000 : 3000;
     const id = setInterval(() => {
       if (!cancelled && !editor && !bulk && !sync) refresh().catch(() => {});
-    }, every);
+    }, pollEvery);
     return () => { cancelled = true; clearInterval(id); };
-  }, [live, editor, bulk, sync, profiles.length > 500]);
+  }, [live, editor, bulk, sync, pollEvery, refresh]);
 
   const filtered = useMemo(() =>
     profiles.filter(p =>
@@ -268,8 +275,13 @@ export default function App() {
   const toggleRun = async (id) => {
     const p = profiles.find(x => x.id === id);
     if (live) {
-      try { await (p?.status === "running" ? api.stop(id) : api.launch(id)); await refresh(); }
-      catch (e) { toast.error("Launch failed: " + e.message); }
+      // Stopping can genuinely fail now: the engine answers 409 when the
+      // browser belongs to another server, desktop or CLI, because it has no
+      // way to reach it. Saying "Launch failed" there named the wrong action.
+      const stopping = p?.status === "running";
+      try { await (stopping ? api.stop(id) : api.launch(id)); }
+      catch (e) { toast.error((stopping ? "Stop failed: " : "Launch failed: ") + e.message); }
+      await refresh();
       return;
     }
     setProfiles(ps => ps.map(x => x.id === id ? { ...x, status: x.status === "running" ? "stopped" : "running", lastActive: "now" } : x));
