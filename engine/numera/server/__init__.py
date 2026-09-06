@@ -46,7 +46,7 @@ from typing import Callable
 # Re-exported so `numera.server` keeps its whole surface: `cli/`, `mcp.py`
 # and the test suite import these by name.
 from ..handshake import (READY_ENV, READY_TIMEOUT, StartupFailed, await_ready,
-                         ready_channel, terminate)
+                         end_child, ready_channel)
 from ..paths import child_env, session_lease
 from .stores import DashboardStore, DuplicateToken, ProxyPool, TokenStore
 from .convert import (_parse_lines, _rel_time, _parse_startup_urls, _stable_seed,
@@ -346,14 +346,12 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         if child is None:
             attached.pop(pid, None)
             return False
-        proc = child.proc
-        if proc.poll() is None:
-            proc.terminate()
-            try:
-                proc.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-        _finish(pid, child, proc.poll())
+        # `end_child` returns only once the process is actually gone, so the
+        # code handed to `_finish` is the real one and the session lease is
+        # free by the time this returns. Passing `proc.poll()` after a bare
+        # `kill()` recorded `None` as an exit code and released ownership of a
+        # profile whose child was still holding it.
+        _finish(pid, child, end_child(child.proc))
         return True
 
     # One decision at a time per profile. Two HTTP launches for the same
@@ -414,8 +412,8 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
                 try:
                     await_ready(proc, ready, timeout)
                 except BaseException:
-                    terminate(proc)      # never leave a child nobody owns
-                    raise
+                    end_child(proc)      # never leave a child nobody owns,
+                    raise                # and do not return before it is gone
             child = Child(proc=proc, kind=kind, started_at=time.time(),
                           schedule_id=schedule_id)
             running[pid] = child

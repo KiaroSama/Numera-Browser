@@ -80,13 +80,19 @@ stores_mod.transaction_lock = announced
 """
 
 
-def frozen_migration(root, target: str, reader: str):
-    """Freeze `enable_vault` with `target` sealed, then read into that window."""
+def frozen_migration(root, target: str, reader: str, announce: str = None):
+    """Freeze `enable_vault` with `target` sealed, then read into that window.
+
+    `announce` says which module the reader announces the boundary from: the
+    module that owns the read is the one that owns the name it looks the lock
+    up by, so patching the wrong one produces a test that proves nothing.
+    """
     pytest.importorskip("cryptography")
     bar = Rendezvous()
     procs = {}
     try:
-        procs["reader"] = start(ANNOUNCE + reader, root, "reader", bar.port)
+        procs["reader"] = start((announce or ANNOUNCE) + reader,
+                                root, "reader", bar.port)
         procs["migrator"] = start(f"TARGET = {target!r}\n" + MIGRATOR,
                                   root, "migrator", bar.port)
         bar.expect("migrator", "inside ")     # the file is sealed, the lock is held
@@ -208,3 +214,51 @@ def test_the_reads_still_work_with_no_migration_in_flight(tmp_path):
     assert dash._raw(prof.id)["proxy"]["pass"] == "SECRET"
     assert pool.list()[0]["pass"] == "SECRET"
     assert pool.secret_withheld(pool.list()[0]["id"]) is False
+
+
+# The engine store looks the lock up in its own module globals, so the reader
+# that announces the boundary is patched there rather than in `stores`.
+ANNOUNCE_ENGINE = """
+from numera import store as store_mod
+
+_tx = store_mod.transaction_lock
+
+def announced(root):
+    say("at the boundary")
+    return _tx(root)
+
+store_mod.transaction_lock = announced
+"""
+
+ENGINE_WITHHELD_READER = """
+from numera.store import ProfileStore
+
+wait()
+store = ProfileStore(ROOT, password="master")
+print("READ", store.secret_withheld(PID))
+say("done")
+"""
+
+
+def test_the_engine_side_withheld_check_cannot_straddle_the_boundary(tmp_path):
+    """`ProfileStore.get/list` joined the snapshot in 0.20.0; `secret_withheld`
+    did not.
+
+    It read the record's bytes with no lock and then asked `vault.is_withheld`
+    about them, comparing a stored value to a key state that never coexisted
+    with it. This is the check several operations use to *refuse* rather than
+    produce a confidently wrong artifact - a backup or an export that silently
+    drops a proxy password - so a wrong answer here is not cosmetic.
+
+    Unlocked with the right password, the honest answer is False: nothing is
+    being withheld from this reader.
+    """
+    prof = seeded_profile(tmp_path)
+    reader = "PID = " + repr(prof.id) + "\n" + ENGINE_WITHHELD_READER
+
+    results = frozen_migration(tmp_path, "profiles", reader,
+                               announce=ANNOUNCE_ENGINE)
+
+    assert results["reader"]["out"] == "READ False", (
+        "the engine-side withheld check judged a sealed record against a "
+        "descriptor that had not committed: " + str(results["reader"]))

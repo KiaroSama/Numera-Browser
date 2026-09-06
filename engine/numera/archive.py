@@ -31,6 +31,7 @@ import json
 import shutil
 import tempfile
 import uuid
+import warnings
 import zipfile
 from pathlib import Path
 from typing import Optional
@@ -293,7 +294,20 @@ def restore(store, src: str | Path, new_id: bool = False) -> Profile:
                         _put_the_session_back(ud, aside, failure)
                         raise
                     if aside is not None:
+                        # Checked, not `ignore_errors`. The restore is
+                        # committed and the replaced session is unreachable
+                        # through the profile - so a cleanup failure is
+                        # untidiness, not a failed restore - but discarding it
+                        # silently left a whole browser identity on disk with
+                        # nothing naming it and no way to find it later. Same
+                        # rule as the delete tombstone.
                         shutil.rmtree(aside, ignore_errors=True)
+                        if aside.exists():
+                            warnings.warn(
+                                f"{prof.id} was restored, but the session it "
+                                f"replaced is still on disk as {aside}; remove "
+                                f"it once nothing holds it",
+                                RuntimeWarning, stacklevel=2)
         finally:
             if staging is not None:
                 shutil.rmtree(staging, ignore_errors=True)

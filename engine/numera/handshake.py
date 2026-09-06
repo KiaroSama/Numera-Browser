@@ -183,14 +183,51 @@ def await_ready(proc: subprocess.Popen, path: Path,
         time.sleep(_POLL_SECONDS)
 
 
-def terminate(proc: subprocess.Popen) -> None:
-    """End a child that must not be left running, politely then not."""
-    if proc.poll() is not None:
-        return
+def end_child(proc: subprocess.Popen, *, grace: float = 5.0,
+              kill_grace: float = 5.0) -> Optional[int]:
+    """End a child that must not be left running, and return how it ended.
+
+    Politely, then not - and then **wait again**, which is the part that was
+    missing. The old version escalated to `kill()` on timeout and returned
+    immediately, so every caller carried on while the child was still dying:
+
+    * `stop_session` passed `proc.poll()` straight into the finalisation path,
+      where it is `None` for a child that has not been reaped yet - so a
+      schedule recorded "warm-up exited None" and the registry entry was
+      dropped while the child still held the profile's session lease;
+    * `/stop` therefore returned success on a profile that was still busy, and
+      the next launch refused with `SessionBusy` for a browser the caller had
+      just been told was stopped;
+    * on POSIX the child stayed unreaped, because nothing ever waited on it.
+
+    A signal is a request. Only `wait()` is the answer, so this returns the
+    real exit code and returns it only once the process is gone. `None` means
+    even the kill did not reap it inside `kill_grace` - genuinely rare, and the
+    caller has to say so rather than record it as an ordinary exit.
+    """
+    code = proc.poll()
+    if code is not None:
+        return code                     # already gone; nothing to escalate
+
     try:
         proc.terminate()
-        proc.wait(timeout=5)
+    except OSError:                                          # pragma: no cover
+        return proc.poll()              # it died between the poll and the signal
+    try:
+        return proc.wait(timeout=grace)
     except subprocess.TimeoutExpired:
+        pass
+
+    try:
         proc.kill()
     except OSError:                                          # pragma: no cover
-        pass
+        return proc.poll()
+    try:
+        return proc.wait(timeout=kill_grace)
+    except subprocess.TimeoutExpired:                        # pragma: no cover
+        return proc.poll()              # unkillable: honest None, not a fake code
+
+
+def terminate(proc: subprocess.Popen) -> None:
+    """Deprecated alias for `end_child`, kept for callers that ignore the code."""
+    end_child(proc)

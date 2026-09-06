@@ -288,3 +288,78 @@ def test_patch_many_skips_a_profile_that_is_already_gone(tmp_path):
         [kept.id, "nosuchprofile00"],
         lambda prof: setattr(prof, "notes", "here") or True)
     assert [p.id for p in written] == [kept.id]
+
+
+# --- the target and the answer are decided under the lock ------------------
+
+def test_a_delete_committing_before_the_lock_is_a_clean_miss(tmp_path, monkeypatch):
+    """`get()` checked `exists()` outside the transaction it then took.
+
+    A delete committing in that gap turned a question whose honest answer is
+    "no such profile" into a `FileNotFoundError` at a caller that had no reason
+    to expect one. The delete here lands in exactly that gap.
+    """
+    from numera import store as store_mod
+
+    store = ProfileStore(tmp_path)
+    prof = repo(store).create(made("doomed"))
+    # Patched where `get` looks it up: `store.py` imports the name, so the call
+    # resolves in its own module globals and never through `paths`.
+    real, fired = store_mod.transaction_lock, []
+
+    def deleting_lock(root):
+        if not fired:
+            fired.append(True)
+            (tmp_path / "profiles" / f"{prof.id}.json").unlink()
+        return real(root)
+
+    monkeypatch.setattr(store_mod, "transaction_lock", deleting_lock)
+    assert ProfileStore(tmp_path).get(prof.id) is None
+    assert fired, "the delete never ran - the test proves nothing"
+
+
+def test_a_rename_before_the_lease_refuses_the_delete(tmp_path, monkeypatch):
+    """`delete("alpha")` resolved a profile, took its lease, and deleted it by
+    id - so a rename committing in between let both operations report success
+    with no serial order that explains them."""
+    from numera import paths
+    from numera.repo import TargetMoved
+
+    store = ProfileStore(tmp_path)
+    prof = repo(store).create(made("alpha"))
+    real, fired = paths.session_lease, []
+
+    def racing(root, profile_id):
+        if not fired:
+            fired.append(True)
+            repo(ProfileStore(tmp_path)).edit(
+                profile_id, lambda p: setattr(p, "name", "beta") or p)
+            repo(ProfileStore(tmp_path)).create(made("alpha"))   # a new holder
+        return real(root, profile_id)
+
+    monkeypatch.setattr(paths, "session_lease", racing)
+    with pytest.raises(TargetMoved):
+        repo(ProfileStore(tmp_path)).delete("alpha")
+    assert fired, "the rename never ran - the test proves nothing"
+    assert ProfileStore(tmp_path).get(prof.id) is not None,         "the renamed profile was deleted by a command that named its old name"
+
+
+def test_a_delete_by_id_after_a_rename_still_works(tmp_path, monkeypatch):
+    """Revalidation must not make an ordinary delete fail: an id means the same
+    profile whatever it is called."""
+    from numera import paths
+
+    store = ProfileStore(tmp_path)
+    prof = repo(store).create(made("alpha"))
+    real, fired = paths.session_lease, []
+
+    def racing(root, profile_id):
+        if not fired:
+            fired.append(True)
+            repo(ProfileStore(tmp_path)).edit(
+                profile_id, lambda p: setattr(p, "name", "beta") or p)
+        return real(root, profile_id)
+
+    monkeypatch.setattr(paths, "session_lease", racing)
+    assert repo(ProfileStore(tmp_path)).delete(prof.id) is True
+    assert fired
