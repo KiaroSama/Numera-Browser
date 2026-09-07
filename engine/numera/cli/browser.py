@@ -93,8 +93,12 @@ def cmd_jobs(args, store: ProfileStore) -> int:
             return emit({"jobs": []})
         say(_c(f"{'ID':<14}{'STATE':<10}{'COMMAND':<14}PROFILE", C.B))
         for r in rows:
+            # A job whose leader exited while something it started is still up
+            # is not "done", whatever its own exit hook recorded. The stored
+            # outcome stays in the JSON; the column says what is true now.
+            state = "orphaned" if r.get("orphaned") else r["state"]
             colour = C.CYN if r["running"] else (C.GRN if r.get("exit") == 0 else C.YEL)
-            say(f"{r['id']:<14}{_c(r['state'], colour):<19}{r.get('command', ''):<14}"
+            say(f"{r['id']:<14}{_c(state, colour):<19}{r.get('command', ''):<14}"
                 f"{r.get('profile') or '-'}")
         return emit({"jobs": rows})
 
@@ -120,6 +124,12 @@ def cmd_jobs(args, store: ProfileStore) -> int:
     say(f"  pid          {rec.get('pid')}")
     if rec.get("exit") is not None:
         say(f"  exit code    {rec['exit']}")
+    if rec.get("orphaned"):
+        say(_c("  the process this job started has exited, but something it "
+               "launched is still running", C.YEL))
+    if rec.get("verified") is False:
+        say(_c("  Numera never captured a verified identity for this pid, so "
+               "`jobs stop` will refuse it: end it by hand", C.YEL))
     if lines:
         say(_c(f"\n  last {len(lines)} line(s) of {rec.get('log')}:", C.DIM))
         for line in lines:

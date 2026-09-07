@@ -4,6 +4,7 @@ Children check in by name and block in `recv()`. The parent releases them one
 at a time, so a test states the exact interleaving it needs and gets an
 assertion - not a flake - when the code under test does not honour it.
 """
+import select
 import socket
 import subprocess
 import sys
@@ -46,6 +47,21 @@ class Rendezvous:
         got = stream.readline().strip()
         assert got.startswith(prefix), f"{name} said {got!r}, expected {prefix!r}"
         return got
+
+    def silent(self, name: str, seconds: float) -> bool:
+        """True if `name` says nothing at all within `seconds`.
+
+        For stating that a child is *blocked*, which is the only way to show a
+        lock is doing its job: an assertion about something not happening needs
+        a bound, and this is the bound.
+
+        `select` on the socket rather than a short read - a timed-out read
+        leaves the buffered file object permanently unusable ("cannot read from
+        timed out object"), so the very next `expect` on that child would fail
+        for a reason that has nothing to do with the code under test.
+        """
+        conn, _ = self._peer(name)
+        return not select.select([conn], [], [], seconds)[0]
 
     def release(self, name: str, payload: str = "go") -> None:
         _, stream = self._peer(name)

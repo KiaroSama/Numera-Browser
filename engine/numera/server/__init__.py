@@ -47,6 +47,7 @@ from typing import Callable
 # and the test suite import these by name.
 from ..handshake import (READY_ENV, READY_TIMEOUT, ChildTerminationFailed,
                          StartupFailed, await_ready, end_child, ready_channel)
+from .. import proctree
 from ..paths import child_env, session_lease
 from .stores import DashboardStore, DuplicateToken, ProxyPool, TokenStore
 from .convert import (_parse_lines, _rel_time, _parse_startup_urls, _stable_seed,
@@ -85,6 +86,7 @@ class Child:
     started_at: float
     schedule_id: Optional[str] = None
     finished_at: Optional[float] = None
+    tree: Optional[object] = None
 
 
 @dataclass
@@ -312,14 +314,29 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         running.
         """
         for pid, child in list(running.items()):
-            code = child.proc.poll()
+            code = _settled(child)
             if code is not None:
                 _finish(pid, child, code)
+
+    def _settled(child: Child):
+        """The leader's exit code once its whole tree is gone, else None.
+
+        `child.proc` is a Python process that started a browser; the browser is
+        not it. Reading `poll()` alone answered "the launcher exited", and
+        every caller treated that as "the session is over" - so the registry
+        entry was dropped and the profile declared free while a Chromium still
+        held its user-data directory. A session is over when nothing it started
+        is left.
+        """
+        code = child.proc.poll()
+        if code is None or proctree.alive_tree(child.tree):
+            return None
+        return code
 
     def is_running(pid: str) -> bool:
         child = running.get(pid)
         if child is not None:
-            code = child.proc.poll()
+            code = _settled(child)
             if code is None:
                 return True
             _finish(pid, child, code)    # exited: the browser was closed
@@ -355,7 +372,7 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         # honest state is "this server still owns a session it could not stop",
         # and dropping the record would tell the next launch the profile was
         # free while a browser had it open.
-        _finish(pid, child, end_child(child.proc))
+        _finish(pid, child, proctree.end_session(child.proc, child.tree))
         return True
 
     # One decision at a time per profile. Two HTTP launches for the same
@@ -404,7 +421,7 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
                              f"known: {', '.join(KINDS)}")
         with _spawn_lock(pid):
             ours = running.get(pid)
-            if ours is not None and ours.proc.poll() is None:
+            if ours is not None and _settled(ours) is None:
                 return None
             if is_running(pid):
                 raise StartupFailed(
@@ -412,7 +429,12 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
                     "busy")
             with ready_channel() as ready:
                 env = {**child_env(engine_store._password), READY_ENV: str(ready)}
-                proc = subprocess.Popen(cli, env=env)
+                # Owned as a tree, not as one process: what this starts is a
+                # launcher, and the browser it goes on to start is what holds
+                # the profile. A plain `Popen` also left the child in *this*
+                # server's process group on POSIX, where a group signal would
+                # have taken the engine down with the browser.
+                proc, tree = proctree.spawn(cli, env=env)
                 try:
                     await_ready(proc, ready, timeout)
                 except BaseException as failure:
@@ -421,14 +443,14 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
                     # registered, so nothing here will find it again; the only
                     # honest answer is to say so.
                     try:
-                        end_child(proc)
+                        proctree.end_session(proc, tree)
                     except ChildTerminationFailed as orphan:
                         raise StartupFailed(
                             f"{failure} - and the process started for it could "
                             f"not be stopped: {orphan}", "orphaned") from failure
                     raise
             child = Child(proc=proc, kind=kind, started_at=time.time(),
-                          schedule_id=schedule_id)
+                          schedule_id=schedule_id, tree=tree)
             running[pid] = child
             return child
 

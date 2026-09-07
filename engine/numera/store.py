@@ -526,28 +526,7 @@ class ProfileStore(ConfigStore):
                 raise AmbiguousProfile(name, ids)
             if not ids:
                 return None
-            return self.get(ids[0]) or self._adopt_legacy(ids[0])
-
-    def _adopt_legacy(self, profile_id: str) -> Optional[Profile]:
-        """Give a dashboard-only profile the engine copy it is missing.
-
-        An older version could write one side and not the other. The GUI still
-        lists such a profile and can still launch it, so answering "no such
-        profile" from here would be this store disagreeing with the one the
-        user is looking at - and the two-copy invariant says the answer is to
-        repair it, not to report it. Materialising is idempotent and derives
-        the engine record from the dashboard one, which is the only copy that
-        exists.
-        """
-        from .repo import repo
-
-        try:
-            path = id_path(self.dash_dir, profile_id, ".json")
-        except ValueError:
-            return None            # not an id at all - `resolve` will try it as a name
-        if not path.exists():
-            return None
-        return repo(self).materialize_current(profile_id)
+            return self._reconciled(ids[0])
 
     def resolve(self, ref: str) -> Optional[Profile]:
         """Look up a profile by id first, then by name.
@@ -560,26 +539,91 @@ class ProfileStore(ConfigStore):
         on both of them and is how the ambiguity gets fixed.
 
         An id the *dashboard* alone knows resolves too, by repairing it - see
-        `_adopt_legacy`. Returning None there would have been this store
-        denying a profile the GUI was showing at that moment.
+        `_reconciled`. Returning None there would have been this store denying
+        a profile the GUI was showing at that moment.
         """
         with transaction_lock(self.root):
-            found = self.get(ref)
-            if found is not None:
-                return found
-            adopted = self._adopt_legacy(ref)
-            return adopted if adopted is not None else self.find_by_name(ref)
+            found = self._reconciled(ref)
+            return found if found is not None else self.find_by_name(ref)
 
     def list(self) -> list[Profile]:
         with transaction_lock(self.root):     # one coherent vault state, see `get`
             return self._list_locked()
 
+    def _all_ids(self) -> list:
+        """Every profile id either copy knows about.
+
+        This globbed `profiles/` alone, so a profile an older version wrote to
+        the dashboard and not to the engine was visible in the GUI, launchable
+        through the API and resolvable by id or by name from here - and absent
+        from `ProfileStore.list()` and `numera list`. A record on one side is
+        something to repair, not a reason to answer that the profile does not
+        exist.
+        """
+        ids = {p.stem for p in self.profiles_dir.glob("*.json")}
+        ids.update(p.stem for p in self.dash_dir.glob("*.json"))
+        return sorted(ids)
+
+    def _repair(self, profile_id: str, coordinator, engine, dash) -> bool:
+        """Bring the two copies of one profile into step. True if it wrote.
+
+        The authority is the dashboard record, for every field both shapes
+        carry: it is the superset, and the launch path has always derived the
+        engine copy from it. What it cannot express - the viewport - and what
+        must never be replaced by a derivation - the proxy password - are held
+        back by `materialize_current` itself.
+
+        A secret the two copies disagree about is reported and left alone.
+        Raising here would take a store with one questionable field and make it
+        impossible to list, resolve, edit or even delete a profile in; the
+        launch path raises instead, because that is where acting on the wrong
+        credential does damage.
+        """
+        from .repo import ProfileDiverged
+
+        if dash is None:
+            return False           # engine-only: nothing to compare against
+        if engine is not None and not coordinator._disagreements(engine, dash):
+            return False
+        try:
+            coordinator.materialize_current(profile_id)
+        except ProfileDiverged as clash:
+            warnings.warn(str(clash), RuntimeWarning, stacklevel=3)
+            return False
+        except (KeyError, TypeError, ValueError):
+            return False           # a dashboard record this version cannot read
+        return True
+
+    def _reconciled(self, profile_id: str) -> Optional[Profile]:
+        """One profile, with both its copies brought into step first.
+
+        The single-lookup form of what `_list_locked` does in bulk. `resolve`
+        and `find_by_name` go through it so that an id answers the same way
+        whichever surface asks - the GUI, `numera list`, a launch - which is
+        what "one profile, two copies" has to mean to be worth anything.
+        """
+        from .repo import repo
+
+        coordinator = repo(self)
+        self._repair(profile_id, coordinator,
+                     coordinator._engine_raw(profile_id),
+                     coordinator._dash_raw(profile_id))
+        return self.get(profile_id)
+
     def _list_locked(self) -> list[Profile]:
+        from .repo import repo
+
+        coordinator = repo(self)
         out: list[Profile] = []
-        for f in sorted(self.profiles_dir.glob("*.json")):
+        for pid in self._all_ids():
+            engine = coordinator._engine_raw(pid)
+            dash = coordinator._dash_raw(pid)
+            if self._repair(pid, coordinator, engine, dash):
+                engine = coordinator._engine_raw(pid)   # repaired, so re-read
+            if engine is None:
+                continue
             try:
-                data = self._apply_secrets(json.loads(f.read_text(encoding="utf-8")), "dec")
-                out.append(Profile.from_dict(data))
+                out.append(Profile.from_dict(self._apply_secrets(engine, "dec")))
             except (json.JSONDecodeError, KeyError, TypeError, ValueError):
                 # One unreadable record is skipped; it must never end the
                 # listing. TypeError/ValueError cover a stored shape a newer
@@ -698,8 +742,24 @@ class ProfileStore(ConfigStore):
         return not tomb.exists()
 
     def delete_session(self, profile_id: str) -> None:
-        """Detach and reclaim in one step, for callers deleting nothing else."""
-        tomb = self.detach_session(profile_id)
+        """Detach and reclaim a profile's browser session, for callers deleting
+        nothing else.
+
+        Under the profile's session lease, which this public entry point did
+        not take. `detach_session` is a rename, and on POSIX renaming a
+        directory a process has open succeeds - so a Python caller could move
+        `user-data/<id>` out from under a browser another Numera process was
+        running in it, which is the one thing the lease exists to prevent. The
+        API and CLI deletes have gone through the coordinator, and its lease,
+        since 0.22; this one never did.
+
+        The reclaim is outside the lease on purpose. Once the rename has
+        committed, the tombstone is unreachable through the profile, so
+        removing a whole Chromium directory - hundreds of megabytes - holds
+        nothing that another session could be waiting on.
+        """
+        with session_lease(self.root, profile_id):
+            tomb = self.detach_session(profile_id)
         if tomb is not None and not self.discard_tombstone(tomb):
             raise OSError(
                 f"the session for {profile_id} was detached to {tomb.name} but "

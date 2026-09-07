@@ -117,8 +117,12 @@ def test_listing_profiles_reads_each_file_once(tmp_path):
 
     with CountReads() as counter:
         c.get("/api/profiles")
-    # 6 dashboard + 6 engine + config. Three listings would be 18 plus.
-    assert counter.n <= 15, f"{counter.n} reads to list 6 profiles"
+    # 6 dashboard + 6 engine + 6 dashboard again + config. The third six is
+    # `ProfileStore.list()` reading the other copy of each profile: listing the
+    # union of both stores is what makes a profile written to one side visible
+    # at all, and telling two copies apart means reading both (0.25.0). Still
+    # one pass each - a regression to three listings would be 36 plus.
+    assert counter.n <= 20, f"{counter.n} reads to list 6 profiles"
 
 
 def test_health_converts_each_profile_once(tmp_path, monkeypatch):

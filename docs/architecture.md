@@ -48,6 +48,7 @@ pick OS ──▶ archetype (devices.py) ──▶ Fingerprint ──▶ validat
 | `firstrun.py` | Copies an older install's profiles, pool, config and browser sessions into a new root once. Copy, never move; never overwrites |
 | `logs.py` | Per-run log file, UTC. Credentials are redacted by a filter on the *handler*, so a library logging under its own name cannot bypass it |
 | `relay.py` | Loopback proxy that terminates upstream authentication, so engines that cannot authenticate a proxy still use one |
+| `proctree.py` | One spawned session and everything it starts, owned as a unit — a job object on Windows, its own session and process group on POSIX. Every "is it stopped?" answer goes through it, because the process Numera holds a handle to is a launcher and the browser holding the profile directory is three processes further down |
 | `stealth.py` | Builds the per-fingerprint JS patch injected via `add_init_script` |
 | `launcher.py` | Thin dispatcher — resolves `profile.engine` and hands off to a driver |
 | `drivers.py` | Pluggable launch backends (playwright / patchright / camoufox / cloak), plus what has to happen to the profile *directory* before Chromium opens: clearing the stores the profile does not carry over, seeding its bookmarks, resolving the signals marked "based on IP", and assembling the command line |
@@ -252,7 +253,13 @@ Key points:
   credential (`numera/handshake.py`); a child that never gets there is
   terminated and the request answers with the reason - `409` busy, `423` locked
   vault, `404` deleted. After that the profile is "running" while the process is
-  alive, and `/stop` terminates it. The server records what each child *is* -
+  alive, and `/stop` ends it. What it ends is the whole tree, not the
+  launcher: a `numera launch` starts Playwright, which starts a Node driver,
+  which starts Chromium, and none of those are the process the server has a
+  handle to. Each session is spawned into an OS-level tree (`numera/proctree.py`)
+  so emptiness is something the OS answers rather than something the engine
+  infers - and nothing releases the registry entry, the session lease or the
+  profile until that tree is proved empty. The server records what each child *is* -
   a launch, an attach, a manual warm-up or a scheduled one, with the exact
   schedule occurrence - so closing an ordinary launch is never written into a
   schedule's result, and `/stop` answers `409` rather than claiming it stopped

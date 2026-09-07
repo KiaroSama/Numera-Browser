@@ -22,21 +22,22 @@ def test_terminate_never_signals_a_pid_that_is_no_longer_ours(monkeypatch):
     """The pid is this very process, so a signal would end the test run.
 
     Asserting on the return value alone is the weaker check, and it changed
-    meaning: `_terminate_tree` now answers "is the job's tree gone", and for a
-    pid the OS has handed to somebody else the honest answer is yes - our
-    process is not running. What must never happen is a *signal*, so that is
-    what this asserts, and it cannot pass by accident.
+    meaning: ending a tree now answers "is the tree gone", and for a pid the OS
+    has handed to somebody else the honest answer is yes - our process is not
+    in it. What must never happen is a *signal*, so that is what this asserts,
+    and it cannot pass by accident.
     """
     import os
 
-    from numera import jobs
+    from numera import proctree
 
     me = os.getpid()
     signalled = []
-    monkeypatch.setattr(jobs, "_signal_tree",
+    monkeypatch.setattr(proctree, "signal_tree",
                         lambda *a, **kw: signalled.append(a) or True)
 
-    assert jobs._terminate_tree(me, (jobs.started_at(me) or 0) + 1) is True
+    stale = proctree.Tree(pid=me, token=(proctree.started_at(me) or 0) + 1)
+    assert proctree.end_tree(stale) is True
     assert signalled == [], "a recycled pid was signalled"
 
 
