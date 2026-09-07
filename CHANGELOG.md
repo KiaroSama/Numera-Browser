@@ -4,6 +4,80 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-09-07
+
+The sixteenth audit brief. 0.24.0 made every stop prove the process it could
+see had died. This pass is about what that process *starts*: a `numera launch`
+is a Python interpreter, and the browser holding the profile directory is three
+processes further down.
+
+### Fixed
+
+- **"Stopped" proved the launcher, not the browser.** The API, the scheduler
+  and every `--detach` job spawned a plain subprocess and asked only whether
+  that one process had exited. If Python died while a Chromium it started did
+  not, the registry entry was dropped, the session lease went with the dead
+  process, `/stop` and `jobs stop` recorded "stopped" — and the next launch took
+  the free lease and opened a second browser on the same `user-data/<id>`,
+  which is the corruption the lease exists to prevent. Every session is now
+  spawned as an owned process tree: a job object on Windows, its own session
+  and process group on POSIX. Nothing releases ownership, writes `stopped` or
+  treats a profile as free until the whole tree is proved gone, and the group
+  handle outlives the leader so a survivor can still be found and killed. New
+  module `numera/proctree.py`; the server, the scheduler, the CLI, the MCP job
+  tools and the desktop shell's death cleanup all route through it.
+
+- **A missing process identity authorised a signal.** A job recorded
+  `pidToken: None` whenever the start time could not be read, and `jobs stop`
+  then fell back to matching on the pid alone — so a recycled pid could send
+  `taskkill /T /F` to an unrelated process tree. Identity is captured at spawn,
+  retried only while the child is known to still be the one just created, and
+  recorded with the group handle. Without it the job is marked unverified and
+  `jobs stop` refuses rather than guessing; a child that exits before it can be
+  named has its outcome recorded there and then, so nothing later reaches for
+  its number.
+
+- **A zombie read as a running browser.** On POSIX a process that has exited
+  but not been reaped stays in its process group and goes on answering
+  `killpg(pgid, 0)`, so a group holding nothing but corpses looked like a live
+  session and no stop could ever prove otherwise.
+
+- **`ProfileStore.list()` was engine-only.** A profile an older version wrote
+  to the dashboard and not to the engine was visible in the GUI, launchable
+  through the API and resolvable by id or by name — and missing from
+  `numera list`. Listing is now the union of both stores under the root
+  transaction, and a one-sided record is repaired rather than skipped.
+
+- **Two copies of one profile that disagreed were never reconciled.**
+  `find_by_name("beta")` found the id through the dashboard's name and returned
+  the engine record, still called `alpha`. There is one policy now: for every
+  field both shapes carry the dashboard record is the authority, and `list`,
+  `resolve(id)`, `resolve(name)`, the API listing and launch all converge on
+  it. A field only the engine models — the viewport, which the dashboard shape
+  has no room for — is not a disagreement and is no longer reset by the
+  derivation, which also stops a launch quietly changing the fingerprint it
+  launches. Two different proxy passwords are the one case a derivation may not
+  settle: the stored credential stands and `ProfileDiverged` says so.
+
+- **Public `delete_session()` bypassed the session lease.** `detach_session` is
+  a rename, and on POSIX renaming a directory a process has open succeeds, so a
+  Python caller could move `user-data/<id>` out from under a browser another
+  Numera process was running in it. It takes the lease, and reclaims the
+  detached tree after releasing it.
+
+- **Public `save_config()` bypassed the root transaction.** It took the config
+  file's lock alone, making it a lock domain of its own: a vault migration
+  holds the transaction, reads the config, does minutes of work and saves it
+  back, and an outside settings save could write into the middle of that, be
+  told it had succeeded, and then be overwritten by the read-modify-write it
+  interrupted.
+
+### Changed
+
+- `numera jobs list` shows `orphaned` for a job whose process exited while
+  something it started is still running, and `jobs show` says when a job has no
+  verified identity and therefore cannot be stopped by Numera.
+
 ## [0.24.0] - 2026-09-06
 
 The fifteenth audit brief. 0.23.0 fixed the coordinator and session paths; this

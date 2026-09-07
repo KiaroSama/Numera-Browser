@@ -120,16 +120,20 @@ def test_stop_session_keeps_a_child_it_could_not_kill(tmp_path, monkeypatch):
 # --- the detached job ------------------------------------------------------
 
 def test_a_job_that_ignores_the_first_signal_is_escalated(monkeypatch):
-    calls = []
-    monkeypatch.setattr(jobs, "_signal_tree",
-                        lambda pid, token=None, force=False:
-                        calls.append(force) or True)
-    # Alive for the first proof, gone for the second: the escalation worked.
-    seen = []
-    monkeypatch.setattr(jobs, "alive",
-                        lambda pid, token=None: seen.append(1) is None and len(seen) < 3)
+    """And it is the escalation that empties the tree, not the wait.
 
-    assert jobs._terminate_tree(1234, token=None, grace=0.05, kill_grace=0.05) is True
+    The tree stays occupied until the forced signal lands, so a version that
+    asked once and waited it out cannot reach the assertion.
+    """
+    from numera import proctree
+
+    calls = []
+    monkeypatch.setattr(proctree, "signal_tree",
+                        lambda tree, force=False: calls.append(force) or True)
+    monkeypatch.setattr(proctree, "alive_tree", lambda tree: True not in calls)
+
+    tree = proctree.Tree(pid=1234, token=1)
+    assert proctree.end_tree(tree, grace=0.05, kill_grace=0.05) is True
     assert calls == [False, True], f"escalation did not happen: {calls}"
 
 
@@ -139,7 +143,9 @@ def test_a_job_that_cannot_be_killed_is_not_recorded_as_stopped(tmp_path, monkey
     rec = jobs.spawn(tmp_path, [sys.executable, "-c", "import sys; sys.stdin.read()"],
                      command="launch", profile=None)
     try:
-        monkeypatch.setattr(jobs, "_terminate_tree", lambda *a, **kw: False)
+        from numera import proctree
+
+        monkeypatch.setattr(proctree, "end_tree", lambda *a, **kw: False)
         with pytest.raises(RuntimeError, match="did not stop"):
             jobs.stop(tmp_path, rec["id"])
         monkeypatch.undo()
@@ -148,7 +154,7 @@ def test_a_job_that_cannot_be_killed_is_not_recorded_as_stopped(tmp_path, monkey
         assert after["state"] != "stopped", \
             "a job that could not be killed was recorded as stopped"
     finally:
-        jobs._signal_tree(rec["pid"], rec.get("pidToken"), force=True)
+        proctree.signal_tree(proctree.Tree.from_record(rec), force=True)
 
 
 HOLDER = """

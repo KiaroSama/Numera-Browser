@@ -22,15 +22,16 @@ matter.
 from __future__ import annotations
 
 import json
-import hashlib
-import os
-import signal
 import subprocess
 import sys
 import time
 import uuid
 from pathlib import Path
 
+from . import proctree
+# Re-exported: the identity primitives moved to `proctree` with the rest of
+# process ownership, and both names are part of this module's surface.
+from .proctree import alive, started_at   # noqa: F401
 from .paths import child_env, write_json
 from typing import Optional
 
@@ -91,171 +92,6 @@ def _write(path: Path, patch: dict) -> dict:
     return data
 
 
-def started_at(pid: int) -> "Optional[int]":
-    """When this pid's process started, or None if it cannot be read.
-
-    A pid on its own is not an identity: the OS reuses them, and this module
-    hands stored pids to `taskkill /T /F`, which would take down whatever tree
-    now happens to own that number. The start time is what makes the pair
-    unique - two processes can share a pid, never at the same instant.
-
-    Standard library only: the engine declares no required dependencies, and
-    pulling in psutil for one field would end that.
-    """
-    if not pid:
-        return None
-    try:
-        if os.name == "nt":
-            import ctypes
-            import ctypes.wintypes as wt
-
-            PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
-            k32 = ctypes.windll.kernel32
-            handle = k32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, int(pid))
-            if not handle:
-                return None
-            try:
-                created = wt.FILETIME()
-                other = (wt.FILETIME(), wt.FILETIME(), wt.FILETIME())
-                if not k32.GetProcessTimes(handle, ctypes.byref(created),
-                                           ctypes.byref(other[0]),
-                                           ctypes.byref(other[1]),
-                                           ctypes.byref(other[2])):
-                    return None
-                return (created.dwHighDateTime << 32) | created.dwLowDateTime
-            finally:
-                k32.CloseHandle(handle)
-
-        stat = Path(f"/proc/{int(pid)}/stat")
-        if stat.exists():
-            # Field 22 is starttime in clock ticks. The comm field can contain
-            # spaces and parentheses, so split after the last ")".
-            text = stat.read_text(encoding="utf-8", errors="replace")
-            return int(text[text.rindex(")") + 2:].split()[19])
-
-        out = subprocess.run(["ps", "-o", "lstart=", "-p", str(int(pid))],
-                             capture_output=True, text=True, timeout=5)
-        line = " ".join(out.stdout.split())      # normalise ps's padding
-        if not line:
-            return None
-        return int(hashlib.sha256(line.encode("utf-8")).hexdigest()[:12], 16)
-    except Exception:  # noqa: BLE001 - an unreadable start time is not an identity
-        return None
-
-
-def alive(pid: int, token=None) -> bool:
-    """Is this process still running - and still the one we started?
-
-    `token` is a `started_at` value captured when the pid was recorded. Without
-    it this answers the weaker question and says so; with it, a pid the OS has
-    handed to somebody else reads as dead, which is what stops this module
-    terminating an unrelated process tree.
-    """
-    if not pid:
-        return False
-    if token is not None:
-        now = started_at(pid)
-        # None means the process is gone, or is one we may not query - either
-        # way it is not ours to kill.
-        if now is None or now != token:
-            return False
-    if os.name == "nt":
-        # os.kill(pid, 0) is NOT a liveness probe on Windows: CPython maps every
-        # signal but CTRL_C/CTRL_BREAK to TerminateProcess, so the "harmless"
-        # POSIX idiom would kill the very job being polled.
-        import ctypes
-
-        SYNCHRONIZE = 0x00100000
-        WAIT_TIMEOUT = 0x00000102
-        k32 = ctypes.windll.kernel32
-        handle = k32.OpenProcess(SYNCHRONIZE, False, int(pid))
-        if not handle:
-            return False
-        try:
-            return k32.WaitForSingleObject(handle, 0) == WAIT_TIMEOUT
-        finally:
-            k32.CloseHandle(handle)
-    try:
-        os.kill(int(pid), 0)
-    except OSError:
-        return False
-    return True
-
-
-def _signal_tree(pid: int, token=None, *, force: bool = False) -> bool:
-    """Ask the job's whole tree to end. True if the request was delivered.
-
-    A detached ``numera launch`` owns a Chromium that outlives it, so signalling
-    the job alone leaks a browser. Windows has ``taskkill /T`` for exactly this;
-    elsewhere the job was started in its own process group and the group gets
-    the signal.
-
-    The token is re-checked immediately before every signal, not once at the
-    start: between a first `SIGTERM` and an escalation the process can exit and
-    the OS can hand its number to something else, and `taskkill /T /F` on a
-    recycled pid takes down an unrelated tree.
-
-    Delivering a signal is not death. `_prove_dead` is what decides that.
-    """
-    # Refuse to touch a pid that is no longer the process we recorded.
-    if token is not None and started_at(pid) != token:
-        return False
-    if os.name == "nt":
-        # Windows has no graceful tree stop for a process without a console we
-        # own, so both passes are the same forced call. It is idempotent.
-        return subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)],
-                              capture_output=True).returncode == 0
-    sig = signal.SIGKILL if force else signal.SIGTERM
-    try:
-        os.killpg(os.getpgid(int(pid)), sig)
-        return True
-    except OSError:
-        try:
-            os.kill(int(pid), sig)
-            return True
-        except OSError:
-            return False
-
-
-def _prove_dead(pid: int, token=None, *, deadline: float = 5.0) -> bool:
-    """Poll until this pid is gone, or the deadline passes.
-
-    Bounded polling rather than a blind sleep: there is no `wait()` to call on
-    a process this one did not spawn, so the only honest answer comes from
-    asking repeatedly whether it is still there.
-    """
-    end = time.monotonic() + deadline
-    while True:
-        if not alive(pid, token):
-            return True
-        if time.monotonic() >= end:
-            return False
-        time.sleep(0.05)
-
-
-def _terminate_tree(pid: int, token=None, *, grace: float = 5.0,
-                    kill_grace: float = 5.0) -> bool:
-    """End the job's tree and prove it. False means it is still running.
-
-    The cross-process twin of `handshake.end_child`, and it had the same defect
-    in a worse place: it sent one signal and returned True for *delivering*
-    it. `stop()` then wrote `state=stopped` while the detached process and its
-    browser were still alive and still holding the profile's session lease - so
-    `numera jobs stop`, `numera stop` and the MCP job-stop all reported an
-    outcome the machine had not honoured.
-
-    Terminate, wait, escalate, wait again, and answer only what was proved.
-    """
-    if token is not None and started_at(pid) != token:
-        return True                     # already gone, or never ours
-    if not _signal_tree(pid, token):
-        return not alive(pid, token)    # refused: is it gone anyway?
-    if _prove_dead(pid, token, deadline=grace):
-        return True
-    _signal_tree(pid, token, force=True)
-    return _prove_dead(pid, token, deadline=kill_grace)
-
-
 def child_argv(argv: list[str], root: Path) -> list[str]:
     """The argument list the detached copy should run.
 
@@ -307,11 +143,24 @@ def spawn(root: Path, argv: list[str], command: str = "",
     # is parsing that stream and a background process writing into the middle of
     # it is the whole reason structured output was worth having.
     with log.open("wb") as fh:
-        proc = subprocess.Popen(
+        # Not a bare `Popen`: a detached `numera launch` owns a browser that
+        # this record has to be able to end from a completely different
+        # process, and the leader's pid is not a handle on it. See proctree.
+        proc, tree = proctree.spawn(
             [sys.executable, "-m", "numera", *argv],
             stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-            env=env, start_new_session=True,   # POSIX only; ignored on Windows
+            env=env,
         )
+    if not tree.verified:
+        code = proc.poll()
+        if code is not None:
+            # It was gone before it could be named. How it ended is knowable
+            # right now and never will be again, so it is recorded here - and
+            # because the outcome is recorded, nothing later has any reason to
+            # signal a pid that already belongs to somebody else.
+            _write(_outcome_path(rec_path),
+                   {"state": "done" if code == 0 else "failed",
+                    "exit": int(code), "finished": time.time()})
     return _read_record_after(rec_path, {
         "id": jid,
         "argv": list(argv),
@@ -320,7 +169,15 @@ def spawn(root: Path, argv: list[str], command: str = "",
         "pid": proc.pid,
         # Recorded with the pid, not derived later: by the time anything asks,
         # the process may be gone and the number handed to someone else.
-        "pidToken": started_at(proc.pid),
+        "pidToken": tree.token,
+        # What actually owns the browser: a POSIX process group, or a Windows
+        # job object. Stored so a later `numera jobs stop` - a different
+        # process, minutes later - ends the tree rather than the leader.
+        "tree": tree.as_record(),
+        # Whether this record may authorise a signal at all. A pid whose start
+        # time could not be read is not an identity, and `stop` refuses it
+        # rather than risk terminating whatever now holds that number.
+        "verified": tree.verified,
         "log": str(log),
         "started": time.time(),
     })
@@ -347,10 +204,23 @@ def record_exit(job_file: str, code: int) -> None:
 
 
 def _decorate(rec: dict) -> dict:
-    """Add the live state a stored record cannot know on its own."""
+    """Add the live state a stored record cannot know on its own.
+
+    The leader is one process in a tree. A `numera launch` owns a browser that
+    can outlive it, and that browser holds the profile's user-data directory
+    whether or not the Python process that opened it is still there - so a
+    record whose leader is gone is not necessarily a finished job, and calling
+    it one is what let the next launch open a second browser on the same
+    directory. The tree is asked as well, and only where the group handle is
+    still unambiguously ours.
+    """
     rec = dict(rec)
+    tree = proctree.Tree.from_record(rec)
+    leader = alive(rec.get("pid") or 0, rec.get("pidToken"))
+    survivors = (not leader and tree.verified and proctree.owned(tree)
+                 and proctree.alive_tree(tree))
     if not rec.get("state"):
-        if alive(rec.get("pid") or 0, rec.get("pidToken")):
+        if leader or survivors:
             rec["state"] = "running"
         elif rec.get("pid") is None and time.time() - rec.get("started", 0) < _STARTUP_GRACE:
             rec["state"] = "starting"
@@ -358,7 +228,12 @@ def _decorate(rec: dict) -> dict:
             # It went away without recording an outcome — killed, or crashed
             # hard enough to skip its own exit hook.
             rec["state"] = "lost"
-    rec["running"] = rec["state"] in ("running", "starting")
+    if survivors:
+        # The job finished and left something running. Reported rather than
+        # hidden behind its stored outcome, and `running` stays true so
+        # `prune` will not drop the record that says how to stop it.
+        rec["orphaned"] = True
+    rec["running"] = rec["state"] in ("running", "starting") or survivors
     return rec
 
 
@@ -391,15 +266,27 @@ def stop(root: Path, jid: str) -> Optional[dict]:
     if rec is None:
         return None
     if rec["running"] and rec.get("pid"):
-        if not _terminate_tree(rec["pid"], rec.get("pidToken")):
+        tree = proctree.Tree.from_record(rec)
+        if not tree.verified:
+            # No start-time token and no group handle, so this record names a
+            # number and nothing else. The OS reuses pids; signalling it now
+            # could kill whatever was given that number since. A missing
+            # identity is not permission - it is the reason to refuse.
+            raise RuntimeError(
+                f"job {jid} cannot be stopped safely: Numera never captured a "
+                f"verified identity for pid {rec['pid']}, so that number may "
+                f"belong to an unrelated process by now. End it by hand, then "
+                f"run `numera jobs prune`.")
+        if not proctree.end_tree(tree):
             # Not stopped. Writing the outcome anyway is what made `jobs list`
             # say "stopped" for a browser that was still open and still owned
             # the profile - so the record stays as it is, and the caller is
             # told rather than reassured.
             raise RuntimeError(
-                f"job {jid} (pid {rec['pid']}) did not stop: it is still "
-                f"running and still holds its profile's session. Stop it by "
-                f"hand and re-run this once it is gone.")
+                f"job {jid} (pid {rec['pid']}) did not stop: something it "
+                f"started is still running and may still hold its profile's "
+                f"browser directory. Stop it by hand and re-run this once it "
+                f"is gone.")
         # The signal is a hard terminate on both platforms, so the job never
         # reaches its own exit hook — this side has to record the outcome.
         # The outcome file, like the job's own exit hook: this is an outcome,

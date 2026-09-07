@@ -69,6 +69,45 @@ class TargetMoved(RuntimeError):
             f"Nothing was deleted; re-run it against the id you meant.")
 
 
+class ProfileDiverged(RuntimeError):
+    """The two copies of one profile hold different secrets.
+
+    Every current write moves both copies together, so a disagreement means an
+    older version, a hand edit or a restored backup left them apart. For
+    ordinary fields that is answerable - the dashboard record is the authority,
+    because it is the superset shape and the launch path already derives the
+    engine copy from it - and the repair is silent.
+
+    A password is different. Replacing a stored credential with a different one
+    destroys something the user may not have anywhere else, and under a locked
+    vault the two cannot even be compared. So this is raised instead of a
+    write, and it is raised by the *launch* path rather than by reads: a
+    listing or a lookup with one field in doubt is still useful, while opening
+    a browser against a proxy credential Numera cannot justify is exactly the
+    thing not to guess at.
+    """
+
+    def __init__(self, profile_id: str, field: str = "proxy.password"):
+        self.profile_id, self.field = profile_id, field
+        super().__init__(
+            f"the two stored copies of profile {profile_id} hold different "
+            f"proxy passwords, and neither can be shown to be the one you "
+            f"meant, so Numera will not choose. Set the proxy password on this "
+            f"profile again - one write moves both copies - or clear it. "
+            f"Launches have been using the engine copy.")
+
+
+#: What a record derived from the dashboard cannot be expected to match. The id
+#: and the timestamps belong to the record rather than to the profile.
+_NOT_A_DISAGREEMENT = frozenset({"id", "created_at", "updated_at"})
+
+#: The engine fields the dashboard shape has no room for. It stores a screen
+#: size and no viewport, so a viewport derived back from it differs by the
+#: browser's own chrome - a conversion artefact, not a disagreement, and not
+#: something a repair may overwrite.
+_ENGINE_ONLY_FINGERPRINT = ("viewport_width", "viewport_height")
+
+
 # Fields the dashboard owns and the engine has no room for. An engine-shaped
 # edit must not erase them just by being written back through the converter.
 def _merge_dashboard(previous: Optional[dict], fresh: dict) -> dict:
@@ -355,6 +394,142 @@ class ProfileRepo:
             stored = ((previous_dash or {}).get("proxy") or {}).get("pass") or None
         return vault.encrypt_for_write(self.store, profile.proxy.password, stored)
 
+    def _for_derivation(self, profile_id: str, stored, fresh):
+        """What a *derived* engine record should store for the proxy password.
+
+        A derivation is not an edit. It rebuilds the engine copy from the
+        dashboard one, so it must never be the reason a credential changes.
+
+        Three answers, and the middle one is the one that matters. If the two
+        agree - the same string, or the same plaintext under two encryptions -
+        the derived value stands. If neither can be read, the stored one stands:
+        `vault enable` encrypts each file separately, so two *different*
+        ciphertexts of one password is the ordinary state of every profile in
+        an encrypted store, and a locked engine cannot tell that apart from a
+        real conflict. Only when both are readable and genuinely different is
+        there something to settle, and then nothing is written.
+        """
+        if not stored or self._same_secret(stored, fresh):
+            return fresh
+        if not fresh:
+            raise ProfileDiverged(profile_id)
+        readable = vault.decrypt_for_read(self.store, stored)
+        if readable is None or vault.decrypt_for_read(self.store, fresh) is None:
+            return stored                    # locked: keep, do not choose
+        raise ProfileDiverged(profile_id)
+
+    def _secret_disagrees(self, stored, fresh) -> bool:
+        """Is there a secret disagreement here worth acting on?
+
+        Not the same question as "are these two strings different". A locked
+        store cannot read either of them, and after `vault enable` - which
+        encrypts every file separately - two different ciphertexts of one
+        password is what every profile in it looks like. Calling that a
+        disagreement would have every listing try to repair every encrypted
+        profile, forever, over nothing.
+        """
+        if self._same_secret(stored, fresh):
+            return False
+        if not stored:
+            return bool(fresh)      # the dashboard has one the engine lacks
+        if not fresh:
+            return False            # a derivation keeps the stored one anyway
+        return (vault.decrypt_for_read(self.store, stored) is not None
+                and vault.decrypt_for_read(self.store, fresh) is not None)
+
+    def _same_secret(self, stored, fresh) -> bool:
+        """Do these two stored values hold the same secret?
+
+        Ciphertext cannot be compared as text: every encryption uses a fresh
+        nonce, so one password encrypted twice gives two different strings.
+        With the vault open they are compared as what they mean. With it
+        locked, neither can be read, and "I cannot tell" is answered as "not
+        the same" - the conservative direction, because the caller uses this to
+        decide whether it is safe to overwrite one of them.
+        """
+        if stored == fresh:
+            return True
+        if not stored or not fresh:
+            return False
+        left = vault.decrypt_for_read(self.store, stored)
+        right = vault.decrypt_for_read(self.store, fresh)
+        return left is not None and left == right
+
+    @staticmethod
+    def _keep_engine_only(profile: Profile, current: dict) -> None:
+        """Carry across the fields only the engine record models.
+
+        The dashboard shape stores a screen size and no viewport, so an engine
+        record derived from it has a viewport recomputed from that screen. A
+        profile created through the CLI, whose viewport was the screen less the
+        browser's own chrome, therefore had its viewport quietly changed every
+        time this ran - and it runs on every launch. The dashboard is the
+        authority for the fields it *has*; one it cannot express is not a
+        disagreement, and the stored value stands.
+
+        Only while the screen still matches, though: a screen the user actually
+        changed leaves the old viewport incoherent - larger than the display it
+        sits in - so that case takes the derived one.
+        """
+        stored = (current or {}).get("fingerprint") or {}
+        fresh = profile.fingerprint
+        if (stored.get("screen_width"), stored.get("screen_height")) != \
+                (fresh.screen_width, fresh.screen_height):
+            return
+        for field in _ENGINE_ONLY_FINGERPRINT:
+            if stored.get(field):
+                setattr(fresh, field, stored[field])
+
+    def divergence(self, profile_id: str) -> list:
+        """The fields the two stored copies of one profile disagree about.
+
+        Empty for a healthy profile, and for one that exists on only one side -
+        there is nothing to compare against, and that case is a repair rather
+        than a conflict.
+
+        The comparison is made in the engine shape, which is what normalises
+        the two: the dashboard stores a port as a string and a proxy type in
+        whatever case the client sent, and a record written through the GUI
+        carries only the keys that client set, with the rest filled in on read.
+        Comparing the raw JSON would call all of that a disagreement. Converting
+        first asks the only question that matters - do these two describe the
+        same profile.
+        """
+        return self._disagreements(self._engine_raw(profile_id),
+                                   self._dash_raw(profile_id))
+
+    def _disagreements(self, engine: Optional[dict], dash: Optional[dict]) -> list:
+        """The same question, for two records already read.
+
+        `list()` walks every profile and has both copies in hand, so it asks
+        this rather than paying for the two reads a second time.
+        """
+        if not engine or not dash:
+            return []
+        try:
+            fresh = to_engine_profile(dash).to_dict()
+        except Exception:      # noqa: BLE001 - a record this cannot read
+            return []          # cannot be compared, and will not be repaired
+        out = []
+        for key in sorted(set(engine) | set(fresh)):
+            if key in _NOT_A_DISAGREEMENT:
+                continue
+            left, right = engine.get(key), fresh.get(key)
+            if key == "fingerprint":
+                left = {k: v for k, v in (left or {}).items()
+                        if k not in _ENGINE_ONLY_FINGERPRINT}
+                right = {k: v for k, v in (right or {}).items()
+                         if k not in _ENGINE_ONLY_FINGERPRINT}
+            elif key == "proxy":
+                left, right = dict(left or {}), dict(right or {})
+                if self._secret_disagrees(left.pop("password", None),
+                                          right.pop("password", None)):
+                    out.append("proxy.password")
+                left, right = left or None, right or None
+            if left != right:
+                out.append(key)
+        return out
+
     def _name_taken(self, profile: Profile, accepted: list) -> bool:
         """Would writing `profile` claim a name something else already holds?
 
@@ -449,6 +624,12 @@ class ProfileRepo:
         when it differs - dashboard writes already mirror into it, so usually
         there is nothing to do. Returns the profile a browser would open, or
         None when no such dashboard record exists.
+
+        This is also the repair for a store whose two copies have drifted
+        apart, so it is careful about the two things a derivation must not do:
+        it does not reset a field the dashboard shape cannot express, and it
+        does not replace a stored proxy password with a different one. The
+        second raises `ProfileDiverged` rather than writing.
         """
         with transaction_lock(self.root):
             raw = self._dash_raw(profile_id)
@@ -463,9 +644,17 @@ class ProfileRepo:
             if current:
                 profile.created_at = current.get("created_at", profile.created_at)
                 profile.updated_at = current.get("updated_at", profile.updated_at)
+                self._keep_engine_only(profile, current)
             engine_data = profile.to_dict()
             if engine_data.get("proxy") is not None:
-                engine_data["proxy"]["password"] = self._seal(profile, raw)
+                engine_data["proxy"]["password"] = self._for_derivation(
+                    profile_id, ((current or {}).get("proxy") or {}).get("password"),
+                    self._seal(profile, raw))
+            elif ((current or {}).get("proxy") or {}).get("password"):
+                # The dashboard says there is no proxy at all while the engine
+                # copy holds a credential. Writing the derivation would delete
+                # it, and there is nowhere to keep it either.
+                raise ProfileDiverged(profile_id)
             if current == engine_data:
                 return profile
             engine_path = self.store._path(profile_id)

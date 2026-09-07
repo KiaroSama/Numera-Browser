@@ -34,16 +34,28 @@ ENGINE = str(Path(__file__).resolve().parents[1])
                                               "watcher never runs")
 def test_a_killed_shell_closes_the_browsers_the_engine_launched(tmp_path):
     held = tmp_path / "browser.lock"
+    # A second lock, held by a process the "browser" starts and does not wait
+    # for. A real Chromium is a tree - the launcher, a Node driver, the browser
+    # and its renderers - and ending the one process the engine has a handle to
+    # left the rest of it running, still holding the profile directory.
+    deeper = tmp_path / "renderer.lock"
     # Its own file rather than a nested `-c`: a Windows path inside a string
     # inside a string is an escape sequence away from a SyntaxError that looks
     # nothing like the thing under test.
     browser_script = tmp_path / "browser.py"
     browser_script.write_text(textwrap.dedent(f"""
-        import sys
+        import subprocess, sys
         sys.path.insert(0, {ENGINE!r})
         from numera.paths import _lock_for
+
         lock = _lock_for(sys.argv[1])
         lock.__enter__()
+        if len(sys.argv) > 2:
+            # The browser: start one more process and do not wait for it, the
+            # way a Chromium starts its renderers.
+            deeper = subprocess.Popen([sys.executable, sys.argv[0], sys.argv[2]],
+                                      stdout=subprocess.PIPE, text=True)
+            assert deeper.stdout.readline().strip() == "HOLDING"
         print("HOLDING", flush=True)
         sys.stdin.read()
     """), encoding="utf-8")
@@ -58,17 +70,17 @@ def test_a_killed_shell_closes_the_browsers_the_engine_launched(tmp_path):
 
         # Stands in for a launched browser: a real process holding a real OS
         # lock, so "did it survive" is answered by the kernel and not by us.
-        browser = subprocess.Popen(
-            [sys.executable, {str(browser_script)!r}, {str(held)!r}],
+        # Started and ended exactly the way `spawn_owner` and `stop_session`
+        # do it, so what this proves is the path the product actually uses.
+        from numera import proctree
+
+        browser, tree = proctree.spawn(
+            [sys.executable, {str(browser_script)!r}, {str(held)!r}, {str(deeper)!r}],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         assert browser.stdout.readline().strip() == "HOLDING"
 
         def close_browser():
-            browser.terminate()
-            try:
-                browser.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                browser.kill()
+            proctree.end_session(browser, tree, grace=5.0, kill_grace=5.0)
 
         app.state.add_shutdown(close_browser)
 
@@ -99,13 +111,18 @@ def test_a_killed_shell_closes_the_browsers_the_engine_launched(tmp_path):
         assert engine.returncode == 0, \
             f"the engine did not exit when the shell died: {engine.returncode}"
 
-        # The lock is free only if the process that held it is gone.
+        # A lock is free only if the process that held it is gone. Both of
+        # them: the browser the engine had a handle to, and the descendant it
+        # started, which no handle reaches and which used to survive all of it.
         os.environ["NUMERA_LOCK_TIMEOUT"] = "10"
         try:
-            with _lock_for(held):
-                pass
-        except LockTimeout:
-            pytest.fail("the browser outlived the shell: its lock is still held")
+            for path, who in ((held, "the browser"),
+                              (deeper, "a process the browser started")):
+                try:
+                    with _lock_for(path):
+                        pass
+                except LockTimeout:
+                    pytest.fail(f"{who} outlived the shell: its lock is still held")
         finally:
             os.environ.pop("NUMERA_LOCK_TIMEOUT", None)
     finally:

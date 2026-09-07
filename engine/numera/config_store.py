@@ -74,8 +74,23 @@ class ConfigStore:
         return copy.deepcopy(data)
 
     def save_config(self, cfg: dict) -> dict:
-        with _lock_for(self.config_path):
-            write_json(self.config_path, cfg)
+        """Replace the whole config, under the hierarchy the rest of this obeys.
+
+        Root transaction first, then the file lock - the order stated at the
+        top of this class and followed by `set_config_many` and `_set_config`.
+        This one took the file lock alone, which put it in its own lock domain:
+        a profile-and-config transaction and an outside `save_config()` never
+        waited for each other, so a rolled-back transaction could restore
+        `config.json` over a settings change that had already been
+        acknowledged. That is the exact bug the hierarchy was introduced to
+        close, left open on the one public entry point that skipped it.
+
+        The root lock is reentrant, so the vault callers already inside a
+        transaction pay nothing for it.
+        """
+        with transaction_lock(self.root):
+            with _lock_for(self.config_path):
+                write_json(self.config_path, cfg)
         return cfg
 
     def get_default_engine(self) -> str:

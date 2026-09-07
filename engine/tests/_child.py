@@ -28,6 +28,11 @@ class FakeChild:
     waiting out its deadline.
     """
 
+    #: No process, so no process tree. `proctree` reads this to decide what it
+    #: owns, and a fake that claimed a pid would have it looking up - and
+    #: possibly signalling - whatever real process holds that number.
+    pid = 0
+
     def __init__(self, cli=None, env=None, ready: bool = True, kind: str = "failed",
                  error: str = "", code=None, **_ignored):
         self.cli = list(cli or [])

@@ -73,7 +73,14 @@ def test_the_job_record_never_holds_the_password(tmp_path, monkeypatch):
     calls = []
 
     class FakeProc:
-        pid = 4242
+        # No pid, so nothing here can be mistaken for a real process: `spawn`
+        # now asks the OS about the child it started, and a made-up number
+        # would have it reading - and recording - the identity of whatever
+        # stranger happens to hold it.
+        pid = 0
+
+        def poll(self):
+            return None
 
     def capture(cmd, *a, **k):
         calls.append({"argv": list(cmd), "env": k.get("env") or {}})
