@@ -295,11 +295,11 @@ def stop(root: Path, jid: str) -> Optional[dict]:
                {"state": "stopped", "finished": time.time()})
         if rec.get("profile"):
             # Proved gone above, so the session claim it wrote is stale. It is
-            # only ever cleared here after that proof - `sessions.clear`
+            # only ever cleared here after that proof - `sessions.settle`
             # refuses a tree it cannot show is empty.
             from . import sessions
 
-            sessions.clear(root, rec["profile"])
+            sessions.settle(root, rec["profile"])
     return get(root, jid)
 
 

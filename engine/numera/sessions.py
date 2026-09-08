@@ -36,6 +36,7 @@ import json
 import os
 import platform
 import time
+import uuid
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
@@ -139,16 +140,26 @@ def describe(record: Optional[dict]) -> str:
 
 @contextmanager
 def owned(root, profile_id: str, tree: proctree.Tree, what: str = "a session"):
-    """Claim this profile for `tree`, and give the claim up when it is finished.
+    """Claim this profile for one session, and give it up when that ends.
 
     Taken inside the caller's session lease, so two openers cannot race here;
     the claim is what survives the lease.
+
+    The claim belongs to the *session*, not to the process. One Python process
+    can hold two profiles open at once, and it used to write two claims that
+    named the same process tree - so closing the first found the second's
+    browser still in that tree and kept the first profile owned, sometimes
+    until the host exited. Each session carries its own id and gives up its own
+    claim.
     """
-    take(root, profile_id, tree, what)
+    record = take(root, profile_id, tree, what)
+    ended_cleanly = False
     try:
-        yield
+        yield record["session"]
+        ended_cleanly = True
     finally:
-        release(root, profile_id, tree)
+        if ended_cleanly:
+            release(root, profile_id, record["session"])
 
 
 def take(root, profile_id: str, tree: proctree.Tree, what: str = "a session") -> dict:
@@ -167,6 +178,7 @@ def take(root, profile_id: str, tree: proctree.Tree, what: str = "a session") ->
                     f"Stop it first - `numera stop <profile>` - or wait for it "
                     f"to finish.")
         record = {
+            "session": uuid.uuid4().hex,
             "pid": tree.pid or os.getpid(),
             "token": tree.token,
             "tree": tree.as_record(),
@@ -178,21 +190,28 @@ def take(root, profile_id: str, tree: proctree.Tree, what: str = "a session") ->
         return record
 
 
-def release(root, profile_id: str, tree: proctree.Tree) -> bool:
-    """Give up our claim, unless something we started is still running.
+def release(root, profile_id: str, session: str) -> bool:
+    """Give up one session's claim. True when it was removed.
 
-    True when the claim was removed. False means the session is over for *this*
-    process but the tree it started is not empty - a browser that outlived the
-    launcher - and the claim stays so the next opener still finds the profile
-    owned. That is the whole point of writing it down.
+    Only the claim with this session's id, and only on a clean end - `owned`
+    keeps it when the body raised, because a browser whose close failed is
+    exactly the thing the claim is for.
+
+    It deliberately does *not* ask whether anything else is alive in the
+    process tree. That tree is per process, not per session: with two profiles
+    open here the other one's browser is in it, and so is every unrelated child
+    of an application embedding this API - and treating either as "my browser
+    survived" kept a profile owned until the host exited.
+
+    What that gives up is the case where this session's own browser leaked
+    while the process lives on. Nothing can distinguish it from a sibling in a
+    shared tree, so it is answered by the clean-exit rule above instead of by
+    guessing.
     """
-    me = os.getpid()
     with transaction_lock(root):
         current = read(root, profile_id)
-        if not current or current.get("pid") not in (tree.pid, me):
-            return False                # not ours to remove
-        if proctree.others_alive(tree, besides=me):
-            return False
+        if not current or current.get("session") != session:
+            return False                # not this session's to remove
         try:
             _path(root, profile_id).unlink(missing_ok=True)
         except OSError:                                      # pragma: no cover
@@ -218,17 +237,47 @@ def clear(root, profile_id: str) -> bool:
         return True
 
 
+def held(root, profile_id: str) -> bool:
+    """Is there any standing claim on this profile - including one of ours?
+
+    The safety question, and deliberately not the status one. `busy()` answers
+    "is somebody *else* using it", which is what a listing wants and what a
+    destructive operation must not ask: this process can own a session whose
+    browser failed to close, and "it is ours" is not a reason to rename the
+    directory that browser is writing to.
+    """
+    return state(read(root, profile_id)) != "free"
+
+
 def refuse_if_busy(root, profile_id: str) -> None:
-    """Raise `SessionBusy` when something still owns this profile's browser.
+    """Raise `SessionBusy` when anything still owns this profile's browser.
 
     For the operations that move or replace `user-data/<id>` - delete, backup,
-    restore. Each already takes the session lease, and the lease is exactly
-    what a killed launcher does not leave behind: its Chromium goes on holding
-    the directory while the lock reads free, so a delete would rename a live
-    profile out from under a running browser and a backup would zip a database
-    being written.
+    restore, session delete. Each already takes the session lease, and the
+    lease is exactly what a killed launcher does not leave behind: its Chromium
+    goes on holding the directory while the lock reads free, so a delete would
+    rename a live profile out from under a running browser and a backup would
+    zip a database being written.
+
+    A claim of our own counts. `busy()` used to be the check here, and it
+    returns false for our own claim - so a process whose session ended with a
+    browser that would not close, leaving the claim standing on purpose, could
+    then delete that very profile.
     """
-    if busy(root, profile_id):
+    if held(root, profile_id):
         raise SessionBusy(
             f"this profile's browser is still open: "
             f"{describe(read(root, profile_id))}. Stop it first.")
+
+
+def settle(root, profile_id: str) -> bool:
+    """The one transition from "this tree is proved gone" to "no claim".
+
+    Every stop path ends here - the server's, a detached `jobs stop`, `numera
+    stop`, the scheduler's cleanup, a successful delete - so ownership
+    metadata does not outlive the thing it described and wait for some later
+    opener to tidy it. It is `clear` under a name that says when to call it,
+    and it keeps `clear`'s refusal: a claim that is still occupied, or that
+    this machine cannot check, is left exactly where it is.
+    """
+    return clear(root, profile_id)

@@ -66,7 +66,7 @@ def cmd_stop(args, store: ProfileStore) -> int:
     stopped = jobs.stop_profile(store.root, prof.id)
     if stopped:
         # Proved gone, so the durable claim those jobs wrote may go too.
-        sessions.clear(store.root, prof.id)
+        sessions.settle(store.root, prof.id)
         say(_c(f"Stopped {len(stopped)} session(s) for '{prof.name}'.", C.GRN))
         return emit({"ok": True, "id": prof.id, "name": prof.name,
                      "stopped": [j["id"] for j in stopped]})
@@ -89,7 +89,7 @@ def cmd_stop(args, store: ProfileStore) -> int:
         return emit({"ok": False, "id": prof.id, "name": prof.name,
                      "stopped": [], "error": "the session belongs to another "
                      "process; stop it where it was started"}, 1)
-    if claim and sessions.clear(store.root, prof.id):
+    if claim and sessions.settle(store.root, prof.id):
         say(_c(f"Cleared a stale session claim for '{prof.name}'.", C.DIM))
     say(_c(f"'{prof.name}' has nothing running.", C.DIM))
     return emit({"ok": True, "id": prof.id, "name": prof.name, "stopped": []})

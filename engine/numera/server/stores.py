@@ -283,6 +283,12 @@ class DashboardStore:
         # `_guard_secrets` ran outside it and could decide whether to preserve a
         # secret from a record another writer was already replacing;
         # `_resolve_folder` had the same problem with a folder rename.
+        # What this write says about the secret, read before `_guard_secrets`
+        # turns a withheld one into the stored value. An absent key and a null
+        # are both "not saying anything"; "" is an explicit clear.
+        incoming_proxy = prof.get("proxy")
+        said = (incoming_proxy.get(self.SECRET[1])
+                if isinstance(incoming_proxy, dict) else None)
         prof = self._guard_secrets(prof)
         # The same refusal the CLI gets. A dashboard edit is a full-record
         # write too, so an unrelated change to a note would otherwise settle a
@@ -290,15 +296,19 @@ class DashboardStore:
         if self._engine is not None:
             from ..repo import repo as _repo
 
-            proxy = prof.get("proxy") or None
             _repo(self._engine).refuse_conflicting_write(
-                prof["id"], (proxy or {}).get("pass"), proxy is not None)
+                prof["id"], said, isinstance(prof.get("proxy"), dict))
         prof = self._resolve_folder(prof)
         prof[self.REVISION] = int(stored.get(self.REVISION) or 0) + 1
 
         with _config_lock(self._engine, config_change), write_batch() as batch:
             batch.write(self._path(prof["id"]), prof)
-            twin = self._twin(prof)
+            # An echo of the stored value says nothing about the secret, and a
+            # patch built from the stored record echoes every field it is not
+            # changing - so the engine copy keeps its own blob for those too.
+            echoed = said is None or said == (stored.get(self.SECRET[0]) or {}).get(
+                self.SECRET[1])
+            twin = self._twin(prof, keep_engine_secret=echoed)
             if twin is not None:
                 # Both copies or neither. The mirror's failure used to be
                 # swallowed, so a locked vault produced a dashboard that said
@@ -309,13 +319,19 @@ class DashboardStore:
                             {**self._engine.get_config(), **config_change})
         return prof
 
-    def _twin(self, prof: dict):
+    def _twin(self, prof: dict, keep_engine_secret: bool = False):
         """`(path, data)` for the engine's copy of `prof`, or None.
 
         A profile the dashboard can hold but the engine cannot *model* still
         saves - refusing would take the UI down for a reason the user cannot
         see. A failure to *write* one it modelled fine is a different thing and
         the caller's batch raises it.
+
+        `keep_engine_secret` is set when the write said nothing about the proxy
+        password. The engine copy then keeps its own stored value instead of
+        taking the dashboard's: under a locked vault the two are different
+        ciphertexts that may or may not be the same password, and mirroring a
+        note change is not a reason to decide.
         """
         if self._engine is None:
             return None
@@ -325,8 +341,14 @@ class DashboardStore:
             return None
         if twin is None:
             return None
-        return (self._engine._path(twin.id),
-                self._engine._apply_secrets(twin.to_dict(), "enc"))
+        data = self._engine._apply_secrets(twin.to_dict(), "enc")
+        if keep_engine_secret and isinstance(data.get("proxy"), dict):
+            from ..repo import repo as _repo
+
+            stored = ((_repo(self._engine)._engine_raw(twin.id) or {})
+                      .get("proxy") or {}).get("password")
+            data["proxy"]["password"] = stored
+        return (self._engine._path(twin.id), data)
 
     def _resolve_folder(self, prof: dict) -> dict:
         """Follow a folder rename that retired this profile's folder name.

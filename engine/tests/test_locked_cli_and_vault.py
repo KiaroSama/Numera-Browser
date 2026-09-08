@@ -100,16 +100,28 @@ def test_a_locked_plaintext_replacement_is_refused(tmp_path):
     assert again[0]["pass"] == ciphertext, "the stored secret changed"
 
 
-def test_a_locked_empty_value_still_preserves_the_secret(tmp_path):
-    """The redaction path stays working - this is how a locked edit of a
-    non-secret field round-trips the secret it cannot read."""
+def test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears(tmp_path):
+    """`None` and `""` used to mean the same thing - "keep" - which is why a
+    proxy password could not be removed while keeping the proxy. They are two
+    different intents now: withheld preserves, empty clears.
+
+    Clearing is refused while locked, because destroying a credential this
+    process cannot even read is the one irreversible thing to get wrong.
+    Clearing *nothing* is not a decision and stays allowed, or a locked edit of
+    a passwordless proxy would be refused for no reason.
+    """
     vaulted(tmp_path)
     locked = ProfileStore(tmp_path)
     stored = json.loads((tmp_path / "proxies.json").read_text(encoding="utf-8"))
     ciphertext = stored[0]["pass"]
 
-    assert vault.encrypt_for_write(locked, "", stored=ciphertext) == ciphertext
     assert vault.encrypt_for_write(locked, None, stored=ciphertext) == ciphertext
+    with pytest.raises(crypto.VaultLocked):
+        vault.encrypt_for_write(locked, "", stored=ciphertext)
+    assert vault.encrypt_for_write(locked, "", stored=None) == ""
+
+    unlocked = ProfileStore(tmp_path, password="master")
+    assert vault.encrypt_for_write(unlocked, "", stored=ciphertext) == ""
 
 
 def test_a_locked_non_secret_edit_still_works(tmp_path):

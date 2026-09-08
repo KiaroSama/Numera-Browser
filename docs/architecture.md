@@ -48,7 +48,7 @@ pick OS ──▶ archetype (devices.py) ──▶ Fingerprint ──▶ validat
 | `firstrun.py` | Copies an older install's profiles, pool, config and browser sessions into a new root once. Copy, never move; never overwrites |
 | `logs.py` | Per-run log file, UTC. Credentials are redacted by a filter on the *handler*, so a library logging under its own name cannot bypass it |
 | `relay.py` | Loopback proxy that terminates upstream authentication, so engines that cannot authenticate a proxy still use one |
-| `sessions.py` | The durable session claim: which tree owns a profile's browser, kept on disk so it survives the launcher. Every browser open goes through `drivers.open_session`, which takes it, and every status, stop and delete surface consults it |
+| `sessions.py` | The durable session claim: which tree owns a profile's browser, kept on disk so it survives the launcher, and identified per session so two profiles open in one process do not hold each other. Every browser open goes through `drivers.open_session`, which takes it, and every status, stop and delete surface consults it |
 | `proctree.py` | One spawned session and everything it starts, owned as a unit — a job object on Windows, its own session and process group on POSIX. Every "is it stopped?" answer goes through it, because the process Numera holds a handle to is a launcher and the browser holding the profile directory is three processes further down |
 | `stealth.py` | Builds the per-fingerprint JS patch injected via `add_init_script` |
 | `launcher.py` | Thin dispatcher — resolves `profile.engine` and hands off to a driver |

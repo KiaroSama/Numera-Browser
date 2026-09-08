@@ -35,6 +35,7 @@ detached session.
 
 from __future__ import annotations
 
+import atexit
 import hashlib
 import os
 import signal
@@ -701,12 +702,16 @@ def own_tree() -> "Tree":
       life of the process. That closes the case completely - killing the CLI
       takes the browser with it, because the OS does it.
     * POSIX uses the process group when this process already leads one, which
-      is what an interactive shell gives every command it runs. It deliberately
-      does *not* call `setpgrp()` otherwise: that would take the process out of
-      the terminal's foreground group and Ctrl+C would stop reaching it, and
-      recording a group we merely share - a shell script's own - would report
-      the profile busy for as long as that script lived. In that one case the
-      tree is the leader alone, which is weaker and says so.
+      is what an interactive shell gives every command it runs. When it does
+      not - a script with job control off, cron, systemd, an application
+      importing the Python API - it makes one, and takes the terminal with it
+      when there is one to take, so Ctrl+C still arrives. See `_adopt_group`.
+
+    It never falls back to "the leader alone". That was the 0.26 compromise and
+    it reopened the exact window the claim exists to close: kill a
+    non-group-leader launcher, and its Chromium survives with the leader dead,
+    so the claim reads free and the next opener takes the profile. A browser
+    session that cannot be given a real tree is refused instead.
 
     Cached: the answer must not change while the process runs, and on Windows
     calling it twice would make a second job.
@@ -754,7 +759,70 @@ def _adopt_tree() -> "Tree":
             "this process could not create the job object that would own the "
             "browser it is about to start, so the browser was not started: "
             "nothing could have proved it had stopped.")
-    return Tree(pid=me, token=started_at(me), kind="")
+    if not _adopt_group():
+        raise TreeUnavailable(
+            "this process could not be given a process group of its own, so "
+            "the browser it was about to start would have had no owner that "
+            "outlives it. Run it from a shell with job control, or through "
+            "`--detach` or the API, both of which start their own session.")
+    return Tree(pid=me, token=started_at(me), group=os.getpgrp(), kind="pgid")
+
+
+def _adopt_group() -> bool:
+    """Put this process in a process group of its own. True if it now leads one.
+
+    `setpgrp()` alone is not enough when there is a terminal: the kernel
+    delivers Ctrl+C to the terminal's *foreground* group, so a process that
+    leaves that group silently stops being interruptible. So the group is made
+    and then handed the terminal, which is the same dance a shell does for
+    every job it starts - and the old foreground group is put back on the way
+    out, or the shell is left talking to a group that no longer exists.
+
+    `tcsetpgrp` from a process that is not currently the foreground group
+    raises SIGTTOU at itself, which would stop us; it is ignored across the
+    call and restored afterwards.
+    """
+    try:
+        os.setpgrp()
+    except OSError:                                          # pragma: no cover
+        return False
+    fd = _terminal()
+    if fd is None:
+        return True                     # nothing to hand over; nothing to lose
+    try:
+        previous = os.tcgetpgrp(fd)
+        handler = signal.signal(signal.SIGTTOU, signal.SIG_IGN)
+        try:
+            os.tcsetpgrp(fd, os.getpgrp())
+        finally:
+            signal.signal(signal.SIGTTOU, handler)
+        atexit.register(_restore_terminal, fd, previous)
+    except OSError:                                          # pragma: no cover
+        pass                            # no controlling terminal after all
+    return True
+
+
+def _terminal() -> "Optional[int]":
+    """A descriptor for the controlling terminal, or None if there is none."""
+    for fd in (0, 1, 2):
+        try:
+            if os.isatty(fd) and os.tcgetpgrp(fd) >= 0:
+                return fd
+        except OSError:
+            continue
+    return None
+
+
+def _restore_terminal(fd: int, group: int) -> None:            # pragma: no cover
+    """Give the terminal back to whoever had it before we took it."""
+    try:
+        handler = signal.signal(signal.SIGTTOU, signal.SIG_IGN)
+        try:
+            os.tcsetpgrp(fd, group)
+        finally:
+            signal.signal(signal.SIGTTOU, handler)
+    except (OSError, ValueError):
+        pass
 
 
 def _job_assign_self(job) -> bool:

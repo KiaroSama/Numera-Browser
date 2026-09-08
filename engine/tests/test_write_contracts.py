@@ -150,9 +150,9 @@ def test_the_session_is_detached_before_any_metadata_is_touched(tmp_path, monkey
     (session / "Cookies").write_text("real", encoding="utf-8")
 
     order = []
-    real_detach = ProfileStore.detach_session
+    real_detach = ProfileStore._detach_session
     real_discard = ProfileStore.discard_tombstone
-    monkeypatch.setattr(ProfileStore, "detach_session",
+    monkeypatch.setattr(ProfileStore, "_detach_session",
                         lambda self, p: (order.append("detach"), real_detach(self, p))[1])
     monkeypatch.setattr(ProfileStore, "discard_tombstone",
                         staticmethod(lambda t: (order.append("discard"), real_discard(t))[1]))

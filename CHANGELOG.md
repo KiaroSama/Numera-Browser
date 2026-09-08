@@ -4,6 +4,61 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-09-09
+
+The eighteenth audit brief. Two identity boundaries: **one profile has one
+session-specific owner**, and **one secret write has one explicit intent**.
+
+### Fixed
+
+- **A launcher that never led a process group owned nothing.** POSIX used the
+  process group only when the process already led one — which an interactive
+  shell provides and a script with job control off, cron, systemd or an
+  application importing the Python API does not. Those got a claim naming the
+  dead leader, so killing the launcher left its Chromium running while the
+  claim read free. The process now makes a group of its own and hands the
+  terminal to it, so Ctrl+C still arrives, and a session that cannot be given a
+  real tree is refused rather than started.
+
+- **Two profiles open in one process held each other.** Both claims named the
+  same process tree, so closing the first found the second's browser in it and
+  kept the first profile owned — sometimes until the host exited, and an
+  unrelated child of an embedding application did the same. A claim belongs to
+  the session that took it, and is given up on a clean end.
+
+- **A destructive operation trusted its own claim.** `busy()` answers "is
+  somebody *else* using it", which is right for a listing and wrong for a
+  delete: a session whose browser would not close leaves its claim standing on
+  purpose, and that is exactly when the directory must not be renamed away.
+  Delete, backup, restore and session delete now ask whether anything holds it.
+
+- **Public `delete_session()` still only took the OS lease**, which is the one
+  thing a killed launcher does not leave behind. It takes the durable check
+  too, and the unguarded `detach_session`/`restore_session` primitives are
+  internal.
+
+- **An unrelated edit could destroy a credential the other copy lacked.** With
+  a password on one side and nothing on the other, the empty side was mirrored
+  over the working one. Present-on-one-side is now an unresolved conflict for
+  any write that says nothing about the secret — except in the direction where
+  nothing is destroyed: an engine copy that lost its password gets it back from
+  the authoritative one.
+
+- **A locked edit normalised two ciphertexts to one.** Under a locked vault two
+  blobs may be one password encrypted twice or two different passwords, and
+  this process cannot tell — so it now decides nothing: non-secret edits go
+  through and each copy keeps its own bytes.
+
+- **A proxy password could not be cleared while keeping the proxy.** Empty meant
+  "keep". A write now carries intent: withheld (`None`) preserves, empty (`""`)
+  clears, anything else replaces. Clearing a stored secret requires an unlocked
+  vault, because destroying a credential this process cannot read is the one
+  irreversible thing to get wrong; clearing nothing is always allowed.
+
+- **Claim cleanup is one transition** — `sessions.settle()` — used by the
+  server's stop and shutdown, detached `jobs stop`, `numera stop`, the
+  scheduler's reaper and a successful delete.
+
 ## [0.26.0] - 2026-09-08
 
 The seventeenth audit brief. 0.25.0 made ownership mean the whole browser tree

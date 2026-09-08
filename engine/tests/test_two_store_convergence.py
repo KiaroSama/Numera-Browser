@@ -418,3 +418,154 @@ def test_resolving_an_engine_only_profile_repairs_it_too(store):
 
     assert ProfileStore(store.root).resolve("alpha").id == prof.id
     assert (store.root / "dashboard" / f"{prof.id}.json").exists()
+
+
+# --- write intent: withheld, replace, clear --------------------------------
+
+def one_sided(store, engine_secret=None, dash_secret=None):
+    """A profile whose two copies disagree because one of them holds nothing."""
+    prof = repo(store).create(
+        made("alpha", proxy=Proxy(server="http://h:1", username="u",
+                                  password=engine_secret or "engine")))
+    raw = dash_raw(store, prof.id)
+    raw["proxy"] = {**raw["proxy"], "pass": dash_secret or ""}
+    write_dash(store, prof.id, raw)
+    if engine_secret is None:
+        record = engine_raw(store, prof.id)
+        record["proxy"]["password"] = ""
+        write_engine(store, prof.id, record)
+    return prof
+
+
+def test_a_secret_the_dashboard_has_lost_is_not_erased_by_an_unrelated_edit(store):
+    """`_secret_disagrees` answered "no disagreement" when one side was empty,
+    because that is true for a *derivation* - which keeps the stored one. For a
+    write it is false: the empty side is what gets mirrored, and the working
+    credential is gone."""
+    prof = one_sided(store, "working-secret", "")
+    before = (engine_raw(store, prof.id)["proxy"]["password"],
+              dash_raw(store, prof.id)["proxy"]["pass"])
+
+    with pytest.raises(ProfileDiverged):
+        repo(ProfileStore(store.root)).edit(
+            prof.id, lambda p: setattr(p, "notes", "unrelated") or p)
+
+    assert (engine_raw(store, prof.id)["proxy"]["password"],
+            dash_raw(store, prof.id)["proxy"]["pass"]) == before, \
+        "an unrelated edit changed a credential"
+
+
+def test_a_secret_only_the_dashboard_has_is_propagated_not_refused(store):
+    """The other direction, and it is deliberately not symmetrical.
+
+    The dashboard record is the authority, so an engine copy that lost its
+    password gets it back from the copy that still has it - nothing is
+    destroyed and nothing is chosen between. Refusing here would strand a
+    profile whose only credential is in the authoritative copy, and demand the
+    user retype a password Numera is holding.
+
+    Erasing is the direction that must be refused, and the test above is that.
+    """
+    prof = one_sided(store, None, "working-secret")
+
+    repo(ProfileStore(store.root)).edit(
+        prof.id, lambda p: setattr(p, "notes", "unrelated") or p)
+
+    assert engine_raw(store, prof.id)["proxy"]["password"] == "working-secret",         "the only credential there was did not reach the engine copy"
+    assert dash_raw(store, prof.id)["proxy"]["pass"] == "working-secret"
+    assert ProfileStore(store.root).get(prof.id).notes == "unrelated"
+
+
+def test_a_dashboard_edit_cannot_settle_a_one_sided_secret_either(store):
+    pytest.importorskip("fastapi")
+    from numera.server.stores import DashboardStore
+
+    prof = one_sided(store, "working-secret", "")
+    dash = DashboardStore(store.root, ProfileStore(store.root))
+    with pytest.raises(ProfileDiverged):
+        dash.patch(prof.id, lambda current: ({**current, "notes": "hello"}, None))
+    assert engine_raw(store, prof.id)["proxy"]["password"] == "working-secret"
+
+
+def test_a_locked_edit_leaves_each_ciphertext_exactly_as_it_found_it(store):
+    """Two ciphertexts under a locked vault may be one password encrypted twice
+    or two passwords. This process cannot tell, so it decides nothing: the
+    non-secret edit goes through and neither blob moves."""
+    pytest.importorskip("cryptography")
+    from numera import crypto
+
+    prof = repo(store).create(
+        made("alpha", proxy=Proxy(server="http://h:1", username="u", password="first")))
+    store.enable_vault("master")
+    opened = ProfileStore(store.root, password="master")
+    raw = dash_raw(store, prof.id)
+    raw["proxy"] = {**raw["proxy"],
+                    "pass": crypto.encrypt("master", opened.vault()["salt"], "second")}
+    write_dash(store, prof.id, raw)
+    before = (engine_raw(store, prof.id)["proxy"]["password"],
+              dash_raw(store, prof.id)["proxy"]["pass"])
+
+    locked = ProfileStore(store.root)                 # no password
+    repo(locked).edit(prof.id, lambda p: setattr(p, "notes", "while locked") or p)
+
+    assert (engine_raw(store, prof.id)["proxy"]["password"],
+            dash_raw(store, prof.id)["proxy"]["pass"]) == before, \
+        "a locked edit normalised the two copies to one blob"
+    assert ProfileStore(store.root).get(prof.id).notes == "while locked"
+
+    # Unlocked, the two are still distinct and the conflict is reported.
+    unlocked = ProfileStore(store.root, password="master")
+    assert repo(unlocked).divergence(prof.id) == ["proxy.password"]
+    with pytest.raises(ProfileDiverged):
+        repo(unlocked).edit(prof.id, lambda p: setattr(p, "notes", "now") or p)
+
+
+def test_a_password_can_be_cleared_while_the_proxy_stays(store):
+    """`encrypt_for_write` treated empty as "keep", so removing a proxy
+    password while keeping the endpoint was not expressible at all."""
+    prof = repo(store).create(
+        made("alpha", proxy=Proxy(server="http://h:1", username="u", password="gone")))
+
+    def clear(p):
+        p.proxy.password = ""
+        return p
+
+    repo(ProfileStore(store.root)).edit(prof.id, clear)
+
+    engine, dash = engine_raw(store, prof.id), dash_raw(store, prof.id)
+    assert engine["proxy"]["password"] in (None, "")
+    assert dash["proxy"]["pass"] in (None, "")
+    assert engine["proxy"]["server"] == "http://h:1", "the proxy itself was removed"
+    assert engine["proxy"]["username"] == "u"
+
+
+def test_an_explicit_clear_resolves_a_real_conflict(store):
+    prof = diverged(store)
+
+    repo(ProfileStore(store.root)).edit(
+        prof.id, lambda p: setattr(p.proxy, "password", "") or p)
+
+    assert engine_raw(store, prof.id)["proxy"]["password"] in (None, "")
+    assert dash_raw(store, prof.id)["proxy"]["pass"] in (None, "")
+    assert repo(ProfileStore(store.root)).divergence(prof.id) == []
+
+
+def test_clearing_a_password_needs_an_unlocked_vault(store):
+    """Destroying a credential this process cannot read is the one
+    irreversible thing to get wrong."""
+    pytest.importorskip("cryptography")
+    from numera import crypto
+
+    prof = repo(store).create(
+        made("alpha", proxy=Proxy(server="http://h:1", username="u", password="kept")))
+    store.enable_vault("master")
+    before = engine_raw(store, prof.id)["proxy"]["password"]
+
+    locked = ProfileStore(store.root)
+    with pytest.raises(crypto.VaultLocked):
+        repo(locked).edit(prof.id, lambda p: setattr(p.proxy, "password", "") or p)
+    assert engine_raw(store, prof.id)["proxy"]["password"] == before
+
+    unlocked = ProfileStore(store.root, password="master")
+    repo(unlocked).edit(prof.id, lambda p: setattr(p.proxy, "password", "") or p)
+    assert engine_raw(store, prof.id)["proxy"]["password"] in (None, "")
