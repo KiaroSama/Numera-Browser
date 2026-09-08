@@ -89,7 +89,7 @@ def app_and_client(tmp_path, monkeypatch):
     return app, TestClient(app)
 
 
-from _child import FakeChild, spawning     # noqa: E402  (after importorskip)
+from _child import FakeChild, spawning_tree   # noqa: E402  (after importorskip)
 
 def schedule_for(c, name):
     pid = c.post("/api/profiles", json={"name": name}).json()["id"]
@@ -124,7 +124,7 @@ def test_one_unusable_schedule_does_not_stop_the_others(app_and_client, monkeypa
 
     failing_materialisation(monkeypatch, lambda pid: pid == bad)
     started = []
-    monkeypatch.setattr(srv.subprocess, "Popen", spawning(started))
+    monkeypatch.setattr(srv.proctree, "spawn", spawning_tree(started))
 
     app.state.scheduler_tick()
 
@@ -142,7 +142,7 @@ def test_a_warm_up_that_dies_immediately_is_not_recorded_as_run(app_and_client, 
 
     app, c = app_and_client
     schedule_for(c, "dies")
-    monkeypatch.setattr(srv.subprocess, "Popen", spawning([], ready=None, code=1))
+    monkeypatch.setattr(srv.proctree, "spawn", spawning_tree([], ready=None, code=1))
 
     app.state.scheduler_tick()
     row = c.get("/api/schedules").json()[0]
@@ -156,7 +156,7 @@ def test_the_exit_code_of_a_finished_warm_up_is_recorded(app_and_client, monkeyp
     app, c = app_and_client
     schedule_for(c, "finishes")
     children = []
-    monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
+    monkeypatch.setattr(srv.proctree, "spawn", spawning_tree(children))
 
     app.state.scheduler_tick()
     assert c.get("/api/schedules").json()[0]["lastOutcome"] == "started"
@@ -178,7 +178,7 @@ def test_shutdown_terminates_the_children_it_started(app_and_client, monkeypatch
 
     app, c = app_and_client
     children = []
-    monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
+    monkeypatch.setattr(srv.proctree, "spawn", spawning_tree(children))
     schedule_for(c, "child")
     app.state.scheduler_tick()
 
@@ -208,7 +208,7 @@ def test_a_failed_materialisation_releases_the_claim(app_and_client, monkeypatch
     schedule_for(c, "unconvertible")
     failing_materialisation(monkeypatch, lambda pid: True)
     children = []
-    monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
+    monkeypatch.setattr(srv.proctree, "spawn", spawning_tree(children))
 
     app.state.scheduler_tick()
     row = claim_of(c)
@@ -218,7 +218,7 @@ def test_a_failed_materialisation_releases_the_claim(app_and_client, monkeypatch
 
     # And the next tick can actually retry it, which is the point.
     monkeypatch.undo()
-    monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
+    monkeypatch.setattr(srv.proctree, "spawn", spawning_tree(children))
     app.state.scheduler_tick()
     assert claim_of(c)["outcome"] == "started"
 
@@ -232,7 +232,7 @@ def test_a_spawn_that_cannot_start_releases_the_claim(app_and_client, monkeypatc
     def refuses(*a, **k):
         raise OSError("no such executable")
 
-    monkeypatch.setattr(srv.subprocess, "Popen", refuses)
+    monkeypatch.setattr(srv.proctree, "spawn", refuses)
     app.state.scheduler_tick()
     row = claim_of(c)
     assert row["claimedBy"] is None
@@ -245,8 +245,8 @@ def test_a_child_that_never_reports_ready_releases_the_claim(app_and_client, mon
     app, c = app_and_client
     schedule_for(c, "stillborn")
     children = []
-    monkeypatch.setattr(srv.subprocess, "Popen",
-                        spawning(children, ready=None, code=1))
+    monkeypatch.setattr(srv.proctree, "spawn",
+                        spawning_tree(children, ready=None, code=1))
 
     app.state.scheduler_tick()
     row = claim_of(c)
@@ -260,7 +260,7 @@ def test_only_a_confirmed_start_advances_the_occurrence(app_and_client, monkeypa
     app, c = app_and_client
     schedule_for(c, "starts")
     children = []
-    monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
+    monkeypatch.setattr(srv.proctree, "spawn", spawning_tree(children))
 
     app.state.scheduler_tick()
     row = claim_of(c)

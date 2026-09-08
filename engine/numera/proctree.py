@@ -66,6 +66,16 @@ _JOB_EXTENDED_LIMIT = 9
 _JOB_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
 
 
+class TreeUnavailable(RuntimeError):
+    """A session could not be given an OS tree to own what it starts.
+
+    Not a warning. Anything that can open a browser needs the tree primitive to
+    exist *before* it opens one, because that is the only handle by which the
+    browser can later be proved gone - and "proved gone" is what lets the next
+    launch reuse the profile directory. Without it the session is refused.
+    """
+
+
 class Unverified(RuntimeError):
     """Numera never established that this tree is the one it started.
 
@@ -350,23 +360,36 @@ def _job_assign(job, proc: subprocess.Popen) -> bool:
         k32.CloseHandle(job)
 
 
-def _job_active(name: str) -> "Optional[int]":
-    """How many processes are in this job, or None if there is no such job."""
+def _job_active(name: str) -> tuple:
+    """`(known, active)` for a named job.
+
+    Two different facts used to arrive as the same `None`: *there is no such
+    job* and *the job is there but could not be queried*. `alive_tree` read
+    both as empty, so a failing query - a handle refused, a transient error -
+    reported a live browser tree as gone, which is the one answer that lets a
+    second browser open on the same profile directory.
+
+    `(True, 0)` means proved empty, `(True, n)` proved occupied, and
+    `(False, 0)` means unknown, which every caller must treat as still owned.
+    """
     import ctypes
 
     k32 = _kernel32()
     job = k32.OpenJobObjectW(_JOB_QUERY, False, name)
     if not job:
-        return None                     # no job by that name: nothing is in it
+        # ERROR_FILE_NOT_FOUND is the job being gone, which is real evidence.
+        # Anything else - access denied, a broken handle table - is not.
+        absent = ctypes.get_last_error() in (2, 3)
+        return (True, 0) if absent else (False, 0)
     try:
         buf = ctypes.create_string_buffer(48)
         got = ctypes.c_ulong(0)
         if not k32.QueryInformationJobObject(job, _JOB_BASIC_ACCOUNTING,
                                              buf, 48, ctypes.byref(got)):
-            return None
+            return (False, 0)           # it exists; we simply cannot see in
         # JOBOBJECT_BASIC_ACCOUNTING_INFORMATION: four LARGE_INTEGERs, then
         # TotalPageFaultCount, TotalProcesses, ActiveProcesses.
-        return int.from_bytes(buf.raw[40:44], "little")
+        return (True, int.from_bytes(buf.raw[40:44], "little"))
     finally:
         k32.CloseHandle(job)
 
@@ -391,22 +414,35 @@ def spawn(argv, **kwargs) -> tuple:
     the API's launches, the scheduler's warm-ups and every detached CLI job -
     so there is one answer to "what did we start" and one way to end it.
 
-    The tree primitive is best-effort in one direction only: if it cannot be
-    created, the leader is still spawned and the returned `Tree` says so, so a
-    launch never fails because a job object could not be made. What it must not
-    do is *claim* an ownership it does not have, and `Tree.kind` is empty in
-    that case.
+    **It fails closed.** The first version treated the tree primitive as
+    best-effort: if the job object could not be made, the child was spawned
+    anyway with an empty `kind`, and everything downstream quietly fell back to
+    the leader - which is the original defect, reached by a different route.
+    Ownership of a browser tree is a correctness primitive, not an
+    optimisation, so a child that cannot be owned is terminated before it can
+    open anything and `TreeUnavailable` is raised. The environment carries the
+    tree down to the child, which needs to name it to claim its own session.
     """
     if _WINDOWS:
         name = f"numera-tree-{uuid.uuid4().hex}"
         job = _job_open(name)
+        if job is None:
+            raise TreeUnavailable(
+                "this session could not be given a job object to own the "
+                "browser it starts, so it was not started: without one, "
+                "nothing could prove the browser had stopped.")
+        kwargs = _with_tree_env(kwargs, Tree(pid=0, group=name, kind="job"))
         # Handle inheritance is off by default for everything Python opens, so
         # this hands the child exactly one extra handle: its own job.
-        proc = subprocess.Popen(argv, close_fds=job is None, **kwargs)
-        owned = job is not None and _job_assign(job, proc)
+        proc = subprocess.Popen(argv, close_fds=False, **kwargs)
+        if not _job_assign(job, proc):
+            _abandon(proc)
+            raise TreeUnavailable(
+                f"the session process could not be put in its job object, so "
+                f"it was stopped rather than left owning a browser nothing "
+                f"could account for (pid {proc.pid}).")
         return proc, Tree(pid=proc.pid, token=identify(proc),
-                          group=name if owned else None,
-                          kind="job" if owned else "")
+                          group=name, kind="job")
     # Its own session, so descendants inherit this group and the group id
     # outlives the leader. The server used to spawn without it and shared the
     # server's own process group, where a group signal would have taken the
@@ -415,6 +451,15 @@ def spawn(argv, **kwargs) -> tuple:
     proc = subprocess.Popen(argv, **kwargs)
     return proc, Tree(pid=proc.pid, token=identify(proc),
                       group=proc.pid, kind="pgid")
+
+
+def _abandon(proc) -> None:
+    """End a child we have decided not to keep, quietly."""
+    try:
+        proc.kill()
+        proc.wait(timeout=10)
+    except Exception:      # noqa: BLE001 - we are already failing            # pragma: no cover
+        pass
 
 
 # ---- asking whether it is gone -------------------------------------------
@@ -428,8 +473,16 @@ def alive_tree(tree: Tree) -> bool:
     if tree is None:
         return False
     if tree.kind == "job" and tree.group:
-        return bool(_job_active(str(tree.group)) or 0)
+        known, active = _job_active(str(tree.group))
+        # Unknown is not empty. A query that could not be answered leaves the
+        # tree owned, because the alternative is declaring a live browser gone.
+        return (not known) or active > 0
     if tree.kind == "pgid" and tree.group:
+        if _WINDOWS:
+            # A process group recorded on another platform - a data root shared
+            # with a POSIX machine. Nothing here can evaluate it, and unknown
+            # is owned.
+            return True
         pgid = int(tree.group)
         if pgid == os.getpgrp():        # pragma: no cover - never ours to poll
             return True
@@ -445,7 +498,7 @@ def alive_tree(tree: Tree) -> bool:
     return alive(tree.pid, tree.token)
 
 
-def _group_is_running(pgid: int) -> bool:
+def _group_is_running(pgid: int, ignore: int = 0) -> bool:
     """Is anything in this group more than a corpse?
 
     A process that has exited but has not been reaped stays in its process
@@ -467,17 +520,19 @@ def _group_is_running(pgid: int) -> bool:
                 # After the comm field: state, ppid, pgrp.
                 text = (entry / "stat").read_text(encoding="utf-8", errors="replace")
                 fields = text[text.rindex(")") + 2:].split()
-                if int(fields[2]) == pgid and fields[0] != "Z":
+                if (int(fields[2]) == pgid and fields[0] != "Z"
+                        and int(entry.name) != ignore):
                     return True
             except (OSError, ValueError, IndexError):
                 continue                # it exited while we were reading it
         return False
     try:                                                     # pragma: no cover
-        out = subprocess.run(["ps", "-A", "-o", "pgid=,state="],
+        out = subprocess.run(["ps", "-A", "-o", "pgid=,state=,pid="],
                              capture_output=True, text=True, timeout=5)
         for line in out.stdout.splitlines():
             parts = line.split()
-            if len(parts) >= 2 and parts[0] == str(pgid) and not parts[1].startswith("Z"):
+            if (len(parts) >= 3 and parts[0] == str(pgid)
+                    and not parts[1].startswith("Z") and parts[2] != str(ignore)):
                 return True
         return not out.stdout.strip()
     except Exception:  # noqa: BLE001 - no readable process table            # pragma: no cover
@@ -537,7 +592,7 @@ def signal_tree(tree: Tree, *, force: bool = False) -> bool:
         # There is no graceful form. A job object is terminated or it is not,
         # and the call is idempotent, so both passes are the same one.
         return _job_terminate(str(tree.group))
-    if tree.kind == "pgid" and tree.group:
+    if tree.kind == "pgid" and tree.group and not _WINDOWS:
         pgid = int(tree.group)
         if pgid == os.getpgrp():        # pragma: no cover - never ours to kill
             return False
@@ -603,3 +658,135 @@ def end_session(proc: subprocess.Popen, tree: Tree, *, grace: float = 5.0,
         f"started are still running and may still hold the profile's browser "
         f"directory. Close them before launching this profile again.",
         proc.pid)
+
+
+# ---- the tree this process itself owns -----------------------------------
+#: Names the tree a spawned child belongs to. POSIX children can derive their
+#: own process group; a Windows child cannot discover the name of the job it
+#: was put in, and it needs that name to record who owns the profile.
+TREE_ENV = "NUMERA_TREE"
+
+#: The job handle a self-adopting process opened for itself. Held for the life
+#: of the process on purpose: the job is set to kill on close, so this handle
+#: closing - including when the process is killed - is what takes the browser
+#: with it.
+_SELF_JOB = []
+_SELF_TREE = []
+
+
+def _with_tree_env(kwargs: dict, tree: "Tree") -> dict:
+    """Put the tree in the child's environment without disturbing the rest."""
+    import json
+
+    env = dict(kwargs.get("env") or os.environ)
+    env[TREE_ENV] = json.dumps(tree.as_record())
+    return {**kwargs, "env": env}
+
+
+def own_tree() -> "Tree":
+    """The tree *this* process owns, adopting one if it has none yet.
+
+    A spawned session inherits its tree from whoever started it: on POSIX it is
+    a session leader and its own process group id is the answer, and on Windows
+    the name arrives in the environment, because a process cannot ask which job
+    it is in by name.
+
+    A foreground `numera launch` has no parent that did any of that - it is the
+    user's own CLI process - and it is the case the audit called out: hard-kill
+    it and the Chromium it started has no owner, no record and no lease, so
+    nothing can even tell that the profile is still in use. So it adopts a tree
+    for itself:
+
+    * Windows gets a job object set to kill on close, held open here for the
+      life of the process. That closes the case completely - killing the CLI
+      takes the browser with it, because the OS does it.
+    * POSIX uses the process group when this process already leads one, which
+      is what an interactive shell gives every command it runs. It deliberately
+      does *not* call `setpgrp()` otherwise: that would take the process out of
+      the terminal's foreground group and Ctrl+C would stop reaching it, and
+      recording a group we merely share - a shell script's own - would report
+      the profile busy for as long as that script lived. In that one case the
+      tree is the leader alone, which is weaker and says so.
+
+    Cached: the answer must not change while the process runs, and on Windows
+    calling it twice would make a second job.
+    """
+    if _SELF_TREE:
+        return _SELF_TREE[0]
+    tree = _inherited_tree() or _adopt_tree()
+    _SELF_TREE.append(tree)
+    return tree
+
+
+def _inherited_tree() -> "Optional[Tree]":
+    """The tree our parent put us in, if it said so and it is still real."""
+    import json
+
+    me = os.getpid()
+    raw = os.environ.get(TREE_ENV)
+    if raw:
+        try:
+            rec = json.loads(raw)
+        except ValueError:                                   # pragma: no cover
+            rec = {}
+        kind, group = str(rec.get("kind") or ""), rec.get("group")
+        if kind == "job" and group and _job_active(str(group))[1]:
+            return Tree(pid=me, token=started_at(me), group=group, kind="job")
+    if not _WINDOWS and os.getpgrp() == me:
+        # `start_new_session=True` made us a session and group leader, so the
+        # group is ours and every descendant inherits it.
+        return Tree(pid=me, token=started_at(me), group=me, kind="pgid")
+    return None
+
+
+def _adopt_tree() -> "Tree":
+    """Make this process the owner of a tree it did not inherit."""
+    me = os.getpid()
+    if _WINDOWS:
+        name = f"numera-tree-{uuid.uuid4().hex}"
+        job = _job_open(name)
+        if job is not None and _job_assign_self(job):
+            _SELF_JOB.append(job)       # never closed; see `_SELF_JOB`
+            return Tree(pid=me, token=started_at(me), group=name, kind="job")
+        if job is not None:                                  # pragma: no cover
+            _kernel32().CloseHandle(job)
+        raise TreeUnavailable(
+            "this process could not create the job object that would own the "
+            "browser it is about to start, so the browser was not started: "
+            "nothing could have proved it had stopped.")
+    return Tree(pid=me, token=started_at(me), kind="")
+
+
+def _job_assign_self(job) -> bool:
+    """Put this process in `job`, keeping the job handle open.
+
+    Through a real handle from `OpenProcess`, not the `GetCurrentProcess`
+    pseudo-handle: that one is `(HANDLE)-1`, and ctypes would pass it through a
+    32-bit int parameter it does not have a declared type for.
+    """
+    k32 = _kernel32()
+    handle = k32.OpenProcess(_PROCESS_SET_QUOTA | _PROCESS_TERMINATE,
+                             False, os.getpid())
+    if not handle:                                           # pragma: no cover
+        return False
+    try:
+        return bool(k32.AssignProcessToJobObject(job, handle))
+    finally:
+        k32.CloseHandle(handle)
+
+
+def others_alive(tree: "Tree", besides: int) -> bool:
+    """Is anything in the tree still running apart from `besides`?
+
+    The question a session owner asks on its way out. `alive_tree` cannot
+    answer it for a tree the asker is itself part of - it would always say yes -
+    and "the browser closed" is not the same as "nothing it started is left".
+    """
+    if tree is None:
+        return False
+    if tree.kind == "job" and tree.group:
+        known, active = _job_active(str(tree.group))
+        return (not known) or active > 1
+    if tree.kind == "pgid" and tree.group and not _WINDOWS:
+        return _group_is_running(int(tree.group), ignore=besides)
+    return False

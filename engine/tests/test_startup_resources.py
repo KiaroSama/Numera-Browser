@@ -32,7 +32,7 @@ import types
 
 import pytest
 
-from _child import spawning
+from _child import spawning_tree
 
 from numera import drivers, generate
 from numera.handshake import end_child
@@ -333,7 +333,7 @@ def test_a_bookkeeping_failure_after_ready_stops_the_browser_it_opened(
     app, client = app_and_client
     schedule_for(client)
     children: list = []
-    monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
+    monkeypatch.setattr(srv.proctree, "spawn", spawning_tree(children))
     monkeypatch.setattr(ScheduleStore, "mark_run",
                         lambda self, sid, when: (_ for _ in ()).throw(
                             OSError("no space left on device")))
@@ -356,7 +356,7 @@ def test_a_confirmed_start_still_records_normally(app_and_client, monkeypatch):
     app, client = app_and_client
     schedule_for(client, "healthy")
     children: list = []
-    monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
+    monkeypatch.setattr(srv.proctree, "spawn", spawning_tree(children))
 
     app.state.scheduler_tick()
 

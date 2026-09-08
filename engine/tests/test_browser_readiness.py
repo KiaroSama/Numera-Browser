@@ -170,14 +170,14 @@ def spawned(monkeypatch):
     from numera import server as srv
 
     made: list = []
-    real = srv.subprocess.Popen
+    real = srv.proctree.spawn
 
     def watched(cli, **kw):
-        proc = real(cli, **kw)
+        proc, tree = real(cli, **kw)
         made.append(proc)
-        return proc
+        return proc, tree
 
-    monkeypatch.setattr(srv.subprocess, "Popen", watched)
+    monkeypatch.setattr(srv.proctree, "spawn", watched)
     return made
 
 

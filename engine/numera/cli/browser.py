@@ -61,8 +61,12 @@ def cmd_stop(args, store: ProfileStore) -> int:
     prof = store.resolve(args.ref)
     if not prof:
         return _no_profile(args.ref)
+    from .. import sessions
+
     stopped = jobs.stop_profile(store.root, prof.id)
     if stopped:
+        # Proved gone, so the durable claim those jobs wrote may go too.
+        sessions.clear(store.root, prof.id)
         say(_c(f"Stopped {len(stopped)} session(s) for '{prof.name}'.", C.GRN))
         return emit({"ok": True, "id": prof.id, "name": prof.name,
                      "stopped": [j["id"] for j in stopped]})
@@ -74,12 +78,19 @@ def cmd_stop(args, store: ProfileStore) -> int:
     # is that this command does not own the session.
     from ..paths import session_lease
 
-    if session_lease(store.root, prof.id).held_by_other_process():
+    # The lease dies with its holder; the claim does not. A launcher that was
+    # killed while its browser kept running leaves no lease at all, and
+    # "nothing running" was the answer this printed for exactly the state that
+    # most needs reporting.
+    claim = sessions.read(store.root, prof.id)
+    if session_lease(store.root, prof.id).held_by_other_process()             or sessions.busy(store.root, prof.id):
         say(_c(f"'{prof.name}' is open in another process, which this command "
-               f"cannot stop.", C.YEL))
+               f"cannot stop: {sessions.describe(claim)}.", C.YEL))
         return emit({"ok": False, "id": prof.id, "name": prof.name,
                      "stopped": [], "error": "the session belongs to another "
                      "process; stop it where it was started"}, 1)
+    if claim and sessions.clear(store.root, prof.id):
+        say(_c(f"Cleared a stale session claim for '{prof.name}'.", C.DIM))
     say(_c(f"'{prof.name}' has nothing running.", C.DIM))
     return emit({"ok": True, "id": prof.id, "name": prof.name, "stopped": []})
 

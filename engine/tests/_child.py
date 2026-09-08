@@ -65,3 +65,22 @@ def spawning(record: list, **kw):
         record.append(child)
         return child
     return popen
+
+
+def spawning_tree(record: list, **kw):
+    """A `proctree.spawn` replacement that appends every child it makes.
+
+    The seam moved up a layer in 0.26. A session spawn now fails closed when it
+    cannot put the child in an OS tree, and a stand-in process cannot be put in
+    one - it has no pid and no existence. Faking `subprocess.Popen` underneath
+    `proctree.spawn` therefore tests the failure path rather than the caller,
+    so the fake stands in for the spawn itself and hands back a tree that owns
+    nothing, which is exactly what a fake process owns.
+    """
+    from numera.proctree import Tree
+
+    def spawn(argv, **_kw):
+        child = FakeChild(argv, _kw.get("env"), **kw)
+        record.append(child)
+        return child, Tree(pid=0, kind="")
+    return spawn

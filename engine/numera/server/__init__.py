@@ -47,7 +47,7 @@ from typing import Callable
 # and the test suite import these by name.
 from ..handshake import (READY_ENV, READY_TIMEOUT, ChildTerminationFailed,
                          StartupFailed, await_ready, end_child, ready_channel)
-from .. import proctree
+from .. import proctree, sessions
 from ..paths import child_env, session_lease
 from .stores import DashboardStore, DuplicateToken, ProxyPool, TokenStore
 from .convert import (_parse_lines, _rel_time, _parse_startup_urls, _stable_seed,
@@ -344,7 +344,12 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         # server, a desktop or a CLI can own the same profile, and reporting
         # "stopped" for a profile someone else has open is how two processes
         # end up in one Chromium user-data directory.
-        return session_lease(engine_store.root, pid).held_by_other_process()
+        if session_lease(engine_store.root, pid).held_by_other_process():
+            return True
+        # And the claim, which is what survives a launcher that was killed
+        # while its browser kept the profile directory open. A free lease is
+        # not proof the profile is free.
+        return sessions.busy(engine_store.root, pid)
 
     def stop_session(pid: str) -> bool:
         """End a profile's browser, and say whether there was one of ours.
@@ -373,6 +378,9 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         # and dropping the record would tell the next launch the profile was
         # free while a browser had it open.
         _finish(pid, child, proctree.end_session(child.proc, child.tree))
+        # The tree is proved empty by `end_session`, so the claim the child
+        # wrote is stale by definition and this is the moment to drop it.
+        sessions.clear(engine_store.root, pid)
         return True
 
     # One decision at a time per profile. Two HTTP launches for the same

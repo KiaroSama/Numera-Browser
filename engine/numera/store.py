@@ -288,7 +288,7 @@ class ProfileStore(ConfigStore):
                 cfg = self.get_config()
                 cfg["vault"] = {"salt": salt,
                                 "verifier": crypto.make_verifier(password, salt)}
-                self.save_config(cfg)
+                self._save_config_locked(cfg)
             self._password = password
             return converted
 
@@ -322,7 +322,7 @@ class ProfileStore(ConfigStore):
                 cfg = self.get_config()
                 cfg["vault"] = {"salt": new_salt,
                                 "verifier": crypto.make_verifier(new_password, new_salt)}
-                self.save_config(cfg)
+                self._save_config_locked(cfg)
             self._password = new_password
             return moved
 
@@ -526,7 +526,16 @@ class ProfileStore(ConfigStore):
                 raise AmbiguousProfile(name, ids)
             if not ids:
                 return None
-            return self._reconciled(ids[0])
+            found = self._reconciled(ids[0])
+            if found is not None and found.name != name:
+                # The id was found *through* the other copy's name, and the
+                # repair could not go ahead - a secret conflict. Handing back a
+                # profile called something else would answer a question nobody
+                # asked: `resolve("beta")` returning `alpha`.
+                from .repo import ProfileDiverged
+
+                raise ProfileDiverged(found.id)
+            return found
 
     def resolve(self, ref: str) -> Optional[Profile]:
         """Look up a profile by id first, then by name.
@@ -582,7 +591,11 @@ class ProfileStore(ConfigStore):
         from .repo import ProfileDiverged
 
         if dash is None:
-            return False           # engine-only: nothing to compare against
+            # Engine-only: nothing to compare, but the twin is still missing.
+            # Listing it and leaving it one-sided made "two copies, one
+            # invariant" depend on somebody opening the GUI, whose listing
+            # adopts the record. A CLI-only machine never did.
+            return engine is not None and coordinator.adopt_engine_record(profile_id)
         if engine is not None and not coordinator._disagreements(engine, dash):
             return False
         try:

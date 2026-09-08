@@ -209,9 +209,12 @@ def test_an_interrupted_write_leaves_the_previous_content(tmp_path, monkeypatch,
         act = lambda: store.save(Profile(id=prof.id, name="second",  # noqa: E731
                                          fingerprint=prof.fingerprint))
     elif kind == "config":
-        store.save_config({"defaultEngine": "playwright"})
+        # Through the public mutation API: full replacement is private now and
+        # requires the caller to already hold the transaction, because a
+        # snapshot built before the lock deletes whatever landed in between.
+        store.set_config_many({"default_engine": "playwright"})
         target = store.config_path
-        act = lambda: store.save_config({"defaultEngine": "camoufox"})  # noqa: E731
+        act = lambda: store.set_config_many({"default_engine": "camoufox"})  # noqa: E731
     else:
         sched.add(profile_id="p1", every_hours=2)
         target = sched.path

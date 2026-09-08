@@ -4,6 +4,81 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-09-08
+
+The seventeenth audit brief. 0.25.0 made ownership mean the whole browser tree
+*inside the process that started it*. This pass makes it survive that process,
+and makes the two checks that only some callers ran into gates all of them
+share.
+
+### Fixed
+
+- **A killed launcher released the profile while its browser kept running.**
+  The session lease is an OS file lock, and the kernel drops it when the holder
+  dies — so a crashed or `kill -9`'d launcher left a Chromium holding
+  `user-data/<id>` with the lease free, and the next opener took it and started
+  a second browser on the same directory. Ownership is now also written down
+  (`numera/sessions.py`): a claim naming the *tree*, taken before a browser can
+  open and removed only once nothing that session started is left. A later
+  opener asks the OS whether that tree is still occupied — occupied refuses,
+  provably empty recovers, and anything it cannot check refuses. `numera stop`,
+  `/stop`, the API's status, delete, backup and restore all consult it, so the
+  state that used to report "nothing running" now reports what is running.
+
+- **A foreground `numera launch` owned nothing at all.** It is not spawned
+  through the tree abstraction — it is the user's own CLI process — so a hard
+  kill left a browser with no owner, no record and no lease. It now adopts a
+  tree for itself: a job object on Windows (which takes the browser with it,
+  because the OS does), or its own process group where the shell already gave
+  it one.
+
+- **Tree ownership degraded to leader-only instead of refusing.** If a job
+  object could not be created or assigned, the session was started anyway with
+  no durable handle on its descendants — the original defect, reached by
+  another route. A session that cannot be owned is now stopped before it opens
+  anything.
+
+- **A job object that could not be queried read as empty.** "No such job" and
+  "the query failed" arrived as the same answer, so one failed query declared a
+  live browser tree gone. Unknown is now owned.
+
+- **A direct launch bypassed the divergence refusal.** Two copies of a profile
+  holding different proxy passwords made the API refuse and let
+  `numera launch` proceed with the engine credential, because only the API
+  reconciled first. The check moved to `drivers.open_session`, the gate every
+  browser open already goes through.
+
+- **An ordinary edit settled that conflict by destroying one of the
+  passwords.** `resolve()` returned the engine copy with a warning, and the
+  next unrelated change — a note, a rename, from the CLI or the dashboard —
+  wrote that whole object through both files. A write that does not explicitly
+  replace or clear the credential is now refused; one that does resolves it and
+  converges both copies.
+
+- **A name lookup could answer with a different name.** `resolve("beta")`
+  reached the id through the dashboard's name and, with the repair refused,
+  returned a profile called `alpha`.
+
+- **A full config replacement deleted concurrent changes.** Taking the root
+  transaction inside `save_config()` closed the lock-domain hole but not the
+  stale snapshot: the caller's whole-document read happened before any lock, so
+  anything committed in between was erased by the write, and both callers were
+  told they had succeeded. Full replacement is now private and requires the
+  transaction that produced the snapshot; `set_config_many()` is the public
+  mutation API and reads under the lock it writes under.
+
+- **Engine-only legacy records were listed but never repaired.** The missing
+  dashboard twin was created only by an HTTP listing, so a CLI-only machine
+  could list and resolve a one-sided profile forever. Adoption preserves the
+  engine record byte for byte and carries the stored secret across as stored,
+  so a locked vault is no obstacle.
+
+### Changed
+
+- Live browser suites skip with a reason when no browser can start, instead of
+  failing. A machine with the package and without the browser's system
+  libraries produced a page of red that said nothing about the code.
+
 ## [0.25.0] - 2026-09-07
 
 The sixteenth audit brief. 0.24.0 made every stop prove the process it could

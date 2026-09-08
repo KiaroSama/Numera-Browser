@@ -544,6 +544,20 @@ def _lock_for(path):
 _ROOT_LOCKS: dict = {}
 
 
+def holding_transaction(root) -> bool:
+    """Does this process already hold `root`'s transaction?
+
+    So an API whose safety depends on the caller holding it can say so instead
+    of documenting it and hoping. `_DataLock` counts its own re-entries, and
+    the OS lock is per handle, so a non-zero depth means this process is
+    inside the transaction - which is exactly the precondition being checked.
+    """
+    resolved = str(Path(root).resolve())
+    with _LOCKS_GUARD:
+        lock = _ROOT_LOCKS.get(resolved)
+    return bool(lock is not None and lock._depth)
+
+
 def transaction_lock(root):
     """The one lock every multi-file profile mutation under `root` takes first.
 

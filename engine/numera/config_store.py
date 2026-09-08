@@ -23,7 +23,8 @@ import time
 from typing import Optional
 
 from . import vault
-from .paths import _lock_for, mutate_json, transaction_lock, write_json
+from .paths import (_lock_for, holding_transaction, mutate_json,
+                    transaction_lock, write_json)
 
 
 class ConfigStore:
@@ -73,24 +74,31 @@ class ConfigStore:
         self._config_cache = (key, data)
         return copy.deepcopy(data)
 
-    def save_config(self, cfg: dict) -> dict:
-        """Replace the whole config, under the hierarchy the rest of this obeys.
+    def _save_config_locked(self, cfg: dict) -> dict:
+        """Replace the whole config. The caller must hold the root transaction.
 
-        Root transaction first, then the file lock - the order stated at the
-        top of this class and followed by `set_config_many` and `_set_config`.
-        This one took the file lock alone, which put it in its own lock domain:
-        a profile-and-config transaction and an outside `save_config()` never
-        waited for each other, so a rolled-back transaction could restore
-        `config.json` over a settings change that had already been
-        acknowledged. That is the exact bug the hierarchy was introduced to
-        close, left open on the one public entry point that skipped it.
+        Private, and the assertion is the API. Taking the transaction *inside*
+        a full-replacement call closes the lock-domain hole but not the one
+        that matters for a whole-document write: the snapshot was built before
+        the lock, so another process can commit a change into the window
+        between the caller's read and this write, and every key it added is
+        deleted by a caller that never saw it. Both calls return success.
 
-        The root lock is reentrant, so the vault callers already inside a
-        transaction pay nothing for it.
+        Merging is not the fix either - an omitted key may be a deliberate
+        deletion, and no signature can tell the two apart. So the read and the
+        write have to happen inside one transaction, and the only way to say
+        that is to require it. `set_config_many` and `_set_config` are the
+        public way to change settings; they read under the lock that writes.
         """
-        with transaction_lock(self.root):
-            with _lock_for(self.config_path):
-                write_json(self.config_path, cfg)
+        if not holding_transaction(self.root):
+            raise RuntimeError(
+                "config may only be replaced wholesale inside the root "
+                "transaction that read it - otherwise a concurrent change is "
+                "silently deleted. Use set_config_many() for an ordinary "
+                "settings change, or take transaction_lock(root) around the "
+                "read and the write.")
+        with _lock_for(self.config_path):
+            write_json(self.config_path, cfg)
         return cfg
 
     def get_default_engine(self) -> str:

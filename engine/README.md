@@ -427,6 +427,7 @@ one; look up by id to act on either.
 | `drivers.py` | Pluggable launch backends (cloak / camoufox / patchright / playwright), the registry, and the gate every browser open goes through |
 | `launch_options.py` | What a profile *means* to a browser before a backend is chosen: flags, proxy, DoH, geolocation, bookmarks, extensions |
 | `handshake.py` | The startup channel a spawned session uses to tell its parent a browser is open on the profile, and the terminate-escalate-**prove-dead** helper that ends its immediate child |
+| `sessions.py` | Who owns a profile's browser, written down so it outlives the process that started it. The lease is an OS lock and dies with its holder; a claim names the *tree*, so a killed launcher whose Chromium is still running keeps the profile owned until that tree is proved empty |
 | `proctree.py` | A session and everything it starts, owned as one unit - a job object on Windows, its own session and process group on POSIX. The launcher is not the browser, so every stop, status and lease decision asks whether the whole **tree** is gone |
 | `server/` | The HTTP API: stores, dashboard<->engine conversion, SPA mounting, and one module per route group. `numera.server` still exports `create_app`, `serve` and the converters |
 | `cli/` | Command-line interface: one module per command group, plus `parser.py` for the argparse tree and `out.py` for terminal output. `numera.cli` still exports `main` and `build_parser` |

@@ -84,8 +84,9 @@ def test_a_spawned_session_owns_what_it_starts(leader):
     assert tree.kind in ("job", "pgid"), f"no tree primitive: {tree}"
     assert proctree.alive_tree(tree) is True
     if proctree._WINDOWS:
-        held = proctree._job_active(str(tree.group))
-        assert held and held >= 2, f"the job holds {held}: the descendant is not in it"
+        known, held = proctree._job_active(str(tree.group))
+        assert known and held >= 2, \
+            f"the job holds {held}: the descendant is not in it"
     else:
         import os
 
@@ -231,26 +232,20 @@ def test_a_job_records_the_tree_beside_the_pid(tmp_path):
 
 def test_a_child_that_exits_before_it_can_be_named_records_its_outcome(tmp_path,
                                                                        monkeypatch):
-    """If the identity cannot be captured, the outcome is what is knowable, and
-    it is knowable only now. Recording it is what stops anything later reaching
-    for a pid that may since have been handed to somebody else.
-
-    Both identities have to be gone for this to be the unverified case: a
-    Windows job object is an identity on its own - nothing else has that name -
-    so the start-time token is only the *last* thing to fail.
+    """A child that is already gone when `spawn` returns has an outcome that is
+    knowable right now and may never be again - it can exit before its own exit
+    hook runs - so it is recorded there and then. Nothing later has any reason
+    to reach for a pid that may since have been handed to somebody else.
     """
     def gone_before_we_looked(proc, deadline=2.0):
         proc.wait(timeout=30)
         return None
 
     monkeypatch.setattr(proctree, "identify", gone_before_we_looked)
-    if proctree._WINDOWS:
-        monkeypatch.setattr(proctree, "_job_open", lambda name: None)
 
     rec = jobs.spawn(tmp_path, [sys.executable, "-c", "raise SystemExit(3)"],
                      command="warmup", profile=None)
 
-    assert rec["verified"] is False
     after = jobs.get(tmp_path, rec["id"])
     assert after["running"] is False, "a job that had already exited looked alive"
     assert after["state"] == "failed", after["state"]
@@ -259,10 +254,17 @@ def test_a_child_that_exits_before_it_can_be_named_records_its_outcome(tmp_path,
 
 def test_a_job_that_could_not_be_identified_refuses_to_stop(tmp_path, monkeypatch):
     """The other half: it is still running, and unnamed. Nothing may be sent to
-    it, because the pid is all there is and pids get reused."""
-    monkeypatch.setattr(proctree, "identify", lambda proc, deadline=2.0: None)
+    it, because the pid is all there is and pids get reused.
+
+    POSIX only, and that is the point of the asymmetry: a Windows session is in
+    a job object, which is an identity nothing else can hold, so this state
+    cannot be reached there at all - `spawn` refuses to start a session it
+    cannot put in one. A process group is only as good as the token that proves
+    the leader was ours.
+    """
     if proctree._WINDOWS:
-        monkeypatch.setattr(proctree, "_job_open", lambda name: None)
+        pytest.skip("a Windows session always has a job object to identify it")
+    monkeypatch.setattr(proctree, "identify", lambda proc, deadline=2.0: None)
     signalled = []
     monkeypatch.setattr(proctree, "signal_tree",
                         lambda *a, **kw: signalled.append(a) or True)

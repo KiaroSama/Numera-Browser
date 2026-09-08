@@ -23,6 +23,10 @@ pytestmark = pytest.mark.slow
 
 pytest.importorskip("playwright")
 
+from _live import requires_browser        # noqa: E402
+
+requires_browser()
+
 IPV4 = re.compile(r"\b(\d{1,3}(?:\.\d{1,3}){3})\b")
 PRIVATE = re.compile(r"^(10\.|127\.|0\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)")
 

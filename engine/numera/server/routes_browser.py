@@ -19,6 +19,7 @@ from typing import Optional
 from .. import cookies as cookies_mod
 from .convert import OS_TO_DASH
 from ..handshake import ChildTerminationFailed, StartupFailed
+from .. import sessions
 from ..paths import child_env, session_lease
 
 
@@ -110,7 +111,7 @@ def register(app, ctx):
         if not stopped:
             # Nothing of ours was stopped. A lease still on the profile means
             # the browser is open in a process this server has no way to reach.
-            if session_lease(engine_store.root, pid).held_by_other_process():
+            if session_lease(engine_store.root, pid).held_by_other_process()                     or sessions.busy(engine_store.root, pid):
                 raise HTTPException(409, NOT_OURS)
         return decorate(d)
 
