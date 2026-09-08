@@ -277,8 +277,15 @@ profiles; only the proxy password is withheld until you unlock. Operations that
 *need* that password refuse rather than run without it - profile export and
 backup, proxy test, rotate, assign and pool export - because an artifact that
 silently omits a credential is worse than one you were told you cannot make
-yet. **Keep the
-password — there's no recovery.**
+yet. **Keep the password — there's no recovery.**
+
+Editing while locked is fine, and an edit that says nothing about the password
+leaves it exactly as it is. Two things about the password itself need the vault
+open: setting a new one, and *clearing* one - destroying a credential this
+process cannot even read is the one irreversible thing to get wrong. Clearing
+is a real operation now: an empty password removes it and keeps the proxy
+endpoint, where before an empty value meant "leave it alone" and there was no
+way to say "remove it".
 
 It covers **every** secret under the data directory, not just the engine's own
 profiles: the dashboard's copy of each profile and the shared proxy pool hold
