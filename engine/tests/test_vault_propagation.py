@@ -46,6 +46,7 @@ def test_serve_gets_an_unlocked_store_when_the_cli_was_unlocked(tmp_path):
     """`create_app` built its own `ProfileStore(data_dir)` with no password, so
     the flag did nothing for the one surface that runs longest."""
     pytest.importorskip("fastapi")
+    from numera import proctree
     from numera.server import create_app
 
     vaulted(tmp_path)
@@ -83,16 +84,19 @@ def test_the_password_never_appears_in_a_child_argv(tmp_path, monkeypatch):
     seen = {}
 
     from _child import FakeChild
+    from numera import proctree
 
     def capture(cmd, *a, **k):
+        from numera.proctree import Tree
+
         seen["argv"] = list(cmd)
         seen["env"] = k.get("env") or {}
         # A real child answers the startup handshake before the parent calls it
         # the owner, so a stand-in that never does would only prove the wait is
         # bounded - which `test_the_wait_is_bounded` already does.
-        return FakeChild(cmd, seen["env"])
+        return FakeChild(cmd, seen["env"]), Tree(pid=0, kind="")
 
-    monkeypatch.setattr(subprocess, "Popen", capture)
+    monkeypatch.setattr(proctree, "spawn", capture)
     app = create_app(data_dir=str(tmp_path), start_scheduler=False, password="master")
     from fastapi.testclient import TestClient
     c = TestClient(app)

@@ -261,3 +261,160 @@ def test_the_api_listing_shows_the_reconciled_profile(store):
     assert [r["name"] for r in rows] == ["beta"]
     assert engine_raw(store, prof.id)["name"] == "beta", \
         "the API listing left the two copies disagreeing"
+
+
+# --- the divergence gate every opener shares -------------------------------
+
+def diverged(store, name="alpha"):
+    """A profile whose two copies hold different readable proxy passwords."""
+    prof = repo(store).create(
+        made(name, proxy=Proxy(server="http://h:1", username="u", password="engine")))
+    raw = dash_raw(store, prof.id)
+    raw["proxy"] = {**raw["proxy"], "pass": "dashboard"}
+    write_dash(store, prof.id, raw)
+    return prof
+
+
+def test_a_direct_launch_is_refused_before_the_browser_starts(store):
+    """The API refused this and a direct `numera launch` did not, because only
+    the API called `materialize_current`. `open_session` is the gate every
+    opener shares, so the refusal is now the same one everywhere."""
+    from numera.drivers import open_session
+
+    prof = diverged(store)
+    fresh = ProfileStore(store.root)
+    with pytest.raises(ProfileDiverged):
+        with open_session(fresh.get(prof.id), fresh):
+            pytest.fail("a browser was opened on an unresolved credential")
+
+
+def test_the_refusal_leaves_no_claim_behind(store):
+    """A gate that refuses must not leave the profile marked as owned."""
+    from numera import sessions
+    from numera.drivers import open_session
+
+    prof = diverged(store)
+    fresh = ProfileStore(store.root)
+    with pytest.raises(ProfileDiverged):
+        with open_session(fresh.get(prof.id), fresh):
+            pass                                             # pragma: no cover
+    assert sessions.busy(store.root, prof.id) is False, "the profile stayed claimed"
+
+
+def test_an_ordinary_edit_cannot_settle_the_conflict(store):
+    """The conflict Numera said it would not choose between was being settled
+    by the next unrelated keystroke: `resolve` handed back the engine copy,
+    `edit` wrote that whole object through both files, and the dashboard
+    password was gone for good."""
+    prof = diverged(store)
+    before = dash_raw(store, prof.id)["proxy"]["pass"]
+
+    with pytest.raises(ProfileDiverged):
+        repo(ProfileStore(store.root)).edit(
+            prof.id, lambda p: setattr(p, "notes", "an unrelated note") or p)
+
+    assert dash_raw(store, prof.id)["proxy"]["pass"] == before, \
+        "an unrelated edit overwrote the other copy's credential"
+    assert engine_raw(store, prof.id)["proxy"]["password"] == "engine"
+    assert ProfileStore(store.root).get(prof.id).notes == "", "the edit went through"
+
+
+def test_a_dashboard_edit_cannot_settle_it_either(store):
+    """Same rule from the other surface - it is the write that is refused, not
+    the caller."""
+    pytest.importorskip("fastapi")
+    from numera.server.stores import DashboardStore
+
+    prof = diverged(store)
+    dash = DashboardStore(store.root, ProfileStore(store.root))
+    with pytest.raises(ProfileDiverged):
+        dash.patch(prof.id, lambda current: ({**current, "notes": "hello"}, None))
+    assert dash_raw(store, prof.id)["proxy"]["pass"] == "dashboard"
+
+
+def test_replacing_the_password_resolves_it(store):
+    """The way out. An edit that is *about* the credential is a decision, and
+    it converges both copies."""
+    prof = diverged(store)
+
+    def replace(p):
+        p.proxy.password = "chosen"
+        return p
+
+    repo(ProfileStore(store.root)).edit(prof.id, replace)
+
+    assert engine_raw(store, prof.id)["proxy"]["password"] == "chosen"
+    assert dash_raw(store, prof.id)["proxy"]["pass"] == "chosen"
+    assert repo(ProfileStore(store.root)).divergence(prof.id) == []
+
+
+def test_removing_the_proxy_resolves_it_too(store):
+    prof = diverged(store)
+
+    repo(ProfileStore(store.root)).edit(
+        prof.id, lambda p: setattr(p, "proxy", None) or p)
+
+    assert engine_raw(store, prof.id).get("proxy") is None
+    assert dash_raw(store, prof.id).get("proxy") in (None, {})
+    assert repo(ProfileStore(store.root)).divergence(prof.id) == []
+
+
+def test_a_name_lookup_never_answers_with_a_different_name(store):
+    """`find_by_name` reaches an id *through* the other copy's name. With the
+    repair refused, returning the engine record answered a question nobody
+    asked: `resolve("beta")` handing back a profile called `alpha`."""
+    prof = diverged(store)
+    raw = dash_raw(store, prof.id)
+    raw["name"] = "beta"
+    write_dash(store, prof.id, raw)
+
+    fresh = ProfileStore(store.root)
+    with pytest.raises(ProfileDiverged):
+        fresh.resolve("beta")
+    assert fresh.resolve(prof.id).name == "alpha", "an id lookup should still answer"
+
+
+# --- the other one-sided record --------------------------------------------
+
+def test_an_engine_only_profile_gets_its_twin(store):
+    """Listing it was half the invariant. Leaving `dashboard/<id>.json` missing
+    made "two copies" depend on somebody opening the GUI, whose listing adopts
+    the record - a CLI-only machine never did."""
+    prof = repo(store).create(made("alpha", notes="kept", tags=["t"]))
+    engine_before = engine_raw(store, prof.id)
+    (store.root / "dashboard" / f"{prof.id}.json").unlink()
+
+    listed = ProfileStore(store.root).list()
+
+    assert [p.id for p in listed] == [prof.id]
+    twin = dash_raw(store, prof.id)
+    assert twin["id"] == prof.id and twin["name"] == "alpha"
+    assert twin["notes"] == "kept" and twin["tags"] == ["t"]
+    assert engine_raw(store, prof.id) == engine_before, \
+        "the healthy engine record was rewritten to make the twin"
+    assert repo(ProfileStore(store.root)).divergence(prof.id) == []
+
+
+def test_adopting_an_engine_record_keeps_its_secret_encrypted(store):
+    """A locked vault must be no obstacle to making the twin, and the twin must
+    not be where the ciphertext turns back into a password."""
+    pytest.importorskip("cryptography")
+    prof = repo(store).create(
+        made("alpha", proxy=Proxy(server="http://h:1", username="u", password="s3cret")))
+    store.enable_vault("master")
+    stored = engine_raw(store, prof.id)["proxy"]["password"]
+    (store.root / "dashboard" / f"{prof.id}.json").unlink()
+
+    ProfileStore(store.root).list()          # locked: no password given
+
+    assert dash_raw(store, prof.id)["proxy"]["pass"] == stored, \
+        "the twin was written with something other than the stored ciphertext"
+    assert ProfileStore(store.root, password="master").get(prof.id).proxy.password == "s3cret"
+
+
+def test_resolving_an_engine_only_profile_repairs_it_too(store):
+    prof = repo(store).create(made("alpha"))
+    (store.root / "dashboard" / f"{prof.id}.json").unlink()
+
+    assert ProfileStore(store.root).resolve("alpha").id == prof.id
+    assert (store.root / "dashboard" / f"{prof.id}.json").exists()

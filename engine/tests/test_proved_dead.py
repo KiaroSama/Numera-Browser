@@ -100,14 +100,15 @@ def test_stop_session_keeps_a_child_it_could_not_kill(tmp_path, monkeypatch):
 
         def spawn_unkillable(cli, env=None, **kw):
             from _child import FakeChild
+            from numera.proctree import Tree
 
             child = FakeChild(cli, env)          # answers the handshake
             child.wait = lambda timeout=None: (_ for _ in ()).throw(
                 subprocess.TimeoutExpired("child", timeout))
             child.poll = lambda: None            # never reaped
-            return child
+            return child, Tree(pid=0, kind="")
 
-        monkeypatch.setattr(srv.subprocess, "Popen", spawn_unkillable)
+        monkeypatch.setattr(srv.proctree, "spawn", spawn_unkillable)
         assert client.post(f"/api/profiles/{pid}/launch").status_code == 200
 
         answer = client.post(f"/api/profiles/{pid}/stop")

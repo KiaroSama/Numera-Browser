@@ -17,6 +17,10 @@ from numera.store import ProfileStore
 
 pytest.importorskip("playwright")
 
+from _live import requires_browser        # noqa: E402
+
+requires_browser()
+
 from numera import drivers  # noqa: E402  - only meaningful once playwright is here
 
 pytestmark = pytest.mark.slow

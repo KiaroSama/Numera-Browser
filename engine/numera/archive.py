@@ -39,6 +39,7 @@ from typing import Optional
 from . import crypto
 from . import vault
 from .models import Profile
+from . import sessions
 from .paths import safe_join, session_lease, transaction_lock
 from .store import SessionStranded, name_clash, stored_names
 
@@ -94,6 +95,7 @@ def backup(store, profile_id: str, dest: str | Path) -> Optional[Path]:
     # mid-write produces an archive that restores into a corrupt profile,
     # with nothing at backup time to say so.
     with session_lease(store.root, profile_id):
+        sessions.refuse_if_busy(store.root, profile_id)
         prof = store.get(profile_id)
         if not prof:
             return None
@@ -248,6 +250,7 @@ def restore(store, src: str | Path, new_id: bool = False) -> Profile:
             # another process is using. Outside the transaction, always - see
             # the note in `_SessionLease`.
             with session_lease(store.root, prof.id):
+                sessions.refuse_if_busy(store.root, prof.id)
                 # And the transaction, held for the swap and the commit only.
                 # Everything this restore is about to replace is read inside
                 # it, so no concurrent write can land between the decision and

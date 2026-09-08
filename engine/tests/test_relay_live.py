@@ -32,6 +32,10 @@ pytestmark = pytest.mark.slow
 
 pytest.importorskip("playwright")
 
+from _live import requires_browser        # noqa: E402
+
+requires_browser()
+
 USER = "live-relay-user"
 PASSWORD = "live pass word"
 MARKER = "NUMERA-RELAY-CARRIED-THIS"

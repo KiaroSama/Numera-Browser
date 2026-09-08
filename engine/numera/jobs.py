@@ -151,16 +151,16 @@ def spawn(root: Path, argv: list[str], command: str = "",
             stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
             env=env,
         )
-    if not tree.verified:
-        code = proc.poll()
-        if code is not None:
-            # It was gone before it could be named. How it ended is knowable
-            # right now and never will be again, so it is recorded here - and
-            # because the outcome is recorded, nothing later has any reason to
-            # signal a pid that already belongs to somebody else.
-            _write(_outcome_path(rec_path),
-                   {"state": "done" if code == 0 else "failed",
-                    "exit": int(code), "finished": time.time()})
+    code = proc.poll()
+    if code is not None:
+        # It was gone before this returned. How it ended is knowable right now
+        # and may never be again - a child that exits before its own exit hook
+        # runs leaves nothing behind - and because the outcome is recorded,
+        # nothing later has a reason to reach for a pid that may since have
+        # been handed to somebody else.
+        _write(_outcome_path(rec_path),
+               {"state": "done" if code == 0 else "failed",
+                "exit": int(code), "finished": time.time()})
     return _read_record_after(rec_path, {
         "id": jid,
         "argv": list(argv),
@@ -293,6 +293,13 @@ def stop(root: Path, jid: str) -> Optional[dict]:
         # and the record file belongs to whoever spawned it.
         _write(_outcome_path(_dir(root) / f"{jid}.json"),
                {"state": "stopped", "finished": time.time()})
+        if rec.get("profile"):
+            # Proved gone above, so the session claim it wrote is stale. It is
+            # only ever cleared here after that proof - `sessions.clear`
+            # refuses a tree it cannot show is empty.
+            from . import sessions
+
+            sessions.clear(root, rec["profile"])
     return get(root, jid)
 
 

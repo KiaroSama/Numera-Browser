@@ -65,28 +65,31 @@ def test_a_detached_child_argv_carries_no_password(tmp_path, argv):
 def test_the_job_record_never_holds_the_password(tmp_path, monkeypatch):
     from numera import jobs
 
-    # Every call, then pick out the one `spawn` made. `subprocess.Popen` is
-    # patched process-wide, so keeping only the most recent call meant asserting
-    # against whatever ran last - which on Windows happened to be `spawn`, and on
-    # Linux was a stranger with no `env=`. Matching `-m numera` by position is
-    # exact: the interpreter path contains the word too.
+    # Every call, then pick out the one `spawn` made. Matching `-m numera` by
+    # position is exact: the interpreter path contains the word too.
+    #
+    # The seam is `proctree.spawn`, not `subprocess.Popen` underneath it: a
+    # session spawn fails closed when it cannot put the child in an OS tree,
+    # and a stand-in process cannot be put in one.
     calls = []
 
     class FakeProc:
         # No pid, so nothing here can be mistaken for a real process: `spawn`
-        # now asks the OS about the child it started, and a made-up number
-        # would have it reading - and recording - the identity of whatever
-        # stranger happens to hold it.
+        # asks the OS about the child it started, and a made-up number would
+        # have it reading - and recording - the identity of whatever stranger
+        # happens to hold it.
         pid = 0
 
         def poll(self):
             return None
 
     def capture(cmd, *a, **k):
-        calls.append({"argv": list(cmd), "env": k.get("env") or {}})
-        return FakeProc()
+        from numera.proctree import Tree
 
-    monkeypatch.setattr(jobs.subprocess, "Popen", capture)
+        calls.append({"argv": list(cmd), "env": k.get("env") or {}})
+        return FakeProc(), Tree(pid=0, kind="")
+
+    monkeypatch.setattr(jobs.proctree, "spawn", capture)
     rec = jobs.spawn(tmp_path, child_argv(["--password", "SECRET", "launch", "p", "--detach"],
                                           tmp_path), command="launch", password="SECRET")
 

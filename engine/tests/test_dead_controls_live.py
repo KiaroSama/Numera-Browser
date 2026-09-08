@@ -19,6 +19,10 @@ from numera.store import ProfileStore
 
 pytest.importorskip("playwright")
 
+from _live import requires_browser        # noqa: E402
+
+requires_browser()
+
 # Draw something with enough texture that a one-bit change moves the hash.
 CANVAS_HASH = """() => {
   const c = document.createElement('canvas');

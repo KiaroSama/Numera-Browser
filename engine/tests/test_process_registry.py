@@ -19,7 +19,7 @@ server started, no longer answers 200 for a browser it did not stop.
 import pytest
 from fastapi.testclient import TestClient
 
-from _child import FakeChild, spawning
+from _child import FakeChild, spawning_tree
 from _rendezvous import Rendezvous, finish, start
 
 from numera.server import KINDS, create_app
@@ -46,7 +46,7 @@ def children(monkeypatch):
     from numera import server as srv
 
     made: list = []
-    monkeypatch.setattr(srv.subprocess, "Popen", spawning(made))
+    monkeypatch.setattr(srv.proctree, "spawn", spawning_tree(made))
     return made
 
 

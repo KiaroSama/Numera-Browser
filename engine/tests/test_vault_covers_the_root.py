@@ -117,7 +117,7 @@ def test_a_config_write_failure_also_rolls_the_secrets_back(tmp_path, monkeypatc
     becoming visible is the step that commits everything before it."""
     engine, _, _ = populated(tmp_path)
     before = {f: f.read_bytes() for f in sorted(tmp_path.rglob("*.json")) if f.is_file()}
-    monkeypatch.setattr(ProfileStore, "save_config",
+    monkeypatch.setattr(ProfileStore, "_save_config_locked",
                         lambda self, cfg: (_ for _ in ()).throw(OSError("read-only")))
     with pytest.raises(OSError):
         engine.enable_vault("master")

@@ -237,6 +237,7 @@ class ProfileRepo:
            crash mid-rollback would leave an empty profile file - which reads
            as corruption rather than as the delete that did not happen.
         """
+        from . import sessions
         from .paths import session_lease
 
         # A candidate, not a decision. Nothing is locked yet, so this only
@@ -247,6 +248,10 @@ class ProfileRepo:
         pid = profile.id
 
         with session_lease(self.root, pid):
+            # The lease is free the moment a launcher dies; the browser it
+            # started is not. Deleting a profile whose Chromium is still open
+            # renames the directory out from under it.
+            sessions.refuse_if_busy(self.root, pid)
             with transaction_lock(self.root):
                 # Now that nothing else can move, ask the same question again.
                 # `resolve` is id-first, so an exact id re-checks existence -
@@ -480,6 +485,59 @@ class ProfileRepo:
             if stored.get(field):
                 setattr(fresh, field, stored[field])
 
+    def coherent(self, profile_id: str) -> Optional[Profile]:
+        """The profile a browser may open, both copies brought into step first.
+
+        The universal gate. Every path that opens a browser - `numera launch`,
+        `attach`, a warm-up, a probe, the API, the scheduler - goes through
+        `drivers.open_session`, and this is what it asks. Before, only the HTTP
+        route reconciled and only the HTTP route could refuse, so a direct CLI
+        launch would open a browser with a proxy credential the API had already
+        decided it could not justify.
+
+        Returns None when there is no such profile. Raises `ProfileDiverged`
+        when the two copies hold different readable secrets, which is the one
+        disagreement no derivation may settle.
+        """
+        with transaction_lock(self.root):
+            engine, dash = self._engine_raw(profile_id), self._dash_raw(profile_id)
+            if engine is None and dash is None:
+                return None
+            if dash is not None:
+                self.materialize_current(profile_id)
+            else:
+                self.adopt_engine_record(profile_id)
+            return self.store.get(profile_id)
+
+    def adopt_engine_record(self, profile_id: str) -> bool:
+        """Give an engine-only profile the dashboard twin it is missing.
+
+        The other half of the union listing. A dashboard-only record has been
+        repaired since 0.25 because `materialize_current` derives the engine
+        copy from it; an engine-only one was listed and left one-sided, so
+        "two copies, one invariant" quietly depended on someone opening the
+        GUI, whose listing adopts it. A CLI-only machine never did.
+
+        The engine record is the source and is not rewritten - it is healthy,
+        and touching it would change timestamps for nothing. The secret is
+        carried across exactly as stored, so an encrypted one stays encrypted
+        and a locked vault is no obstacle to making the twin.
+        """
+        with transaction_lock(self.root):
+            engine = self._engine_raw(profile_id)
+            if engine is None or self._dash_raw(profile_id) is not None:
+                return False
+            twin = to_dashboard_profile(Profile.from_dict(engine))
+            twin["id"] = profile_id
+            if twin.get("proxy") is not None:
+                twin["proxy"]["pass"] = (engine.get("proxy") or {}).get("password") or ""
+            twin["_rev"] = 1
+            twin.setdefault("_created", engine.get("created_at") or time.time())
+            dash_path = self.dash_path(profile_id)
+            with _lock_for(dash_path), write_batch() as batch:
+                batch.write(dash_path, twin)
+            return True
+
     def divergence(self, profile_id: str) -> list:
         """The fields the two stored copies of one profile disagree about.
 
@@ -562,6 +620,45 @@ class ProfileRepo:
                 raise NameTaken(f"a profile called {profile.name!r} already exists")
             accepted.append(profile)
 
+    def refuse_conflicting_write(self, profile_id: str, incoming,
+                                 has_proxy: bool) -> None:
+        """Refuse a write that would settle a secret conflict by accident.
+
+        The rule itself, asked by both writing surfaces: `ProfileRepo._records`
+        for anything engine-shaped, and `DashboardStore._save_locked` for the
+        GUI. One implementation, because two would drift and the whole point of
+        the refusal is that it holds wherever the write came from.
+        """
+        stored = ((self._engine_raw(profile_id) or {}).get("proxy") or {}).get("password")
+        twin = ((self._dash_raw(profile_id) or {}).get("proxy") or {}).get("pass")
+        if not self._secret_disagrees(stored, twin):
+            return
+        if not has_proxy:
+            return                       # the proxy is being removed outright
+        if incoming and not self._same_secret(incoming, stored)                 and not self._same_secret(incoming, twin):
+            return                       # a new credential, chosen on purpose
+        raise ProfileDiverged(profile_id)
+
+    def _refuse_to_settle_a_conflict(self, profile: Profile, previous) -> None:
+        """Refuse an ordinary write that would quietly pick one of two secrets.
+
+        A same-id proxy-password conflict is the one thing `materialize_current`
+        will not resolve on its own - and it did not have to, because a *write*
+        resolved it instead. `resolve()` returns the engine copy with a warning,
+        an unrelated edit (a note, a rename) sends that whole object back
+        through here, and `_seal` writes the engine credential into both files.
+        The conflict Numera said it would not settle was settled by the next
+        keystroke, and the other password was gone for good.
+
+        An edit that is *about* the credential still resolves it: a new
+        password that matches neither stored one is a replacement, and removing
+        the proxy is a deliberate clear. Anything else is refused.
+        """
+        self.refuse_conflicting_write(
+            profile.id,
+            profile.proxy.password if profile.proxy else None,
+            profile.proxy is not None)
+
     def _records(self, profile: Profile) -> tuple:
         """The exact contents both copies of one profile are about to get.
 
@@ -570,6 +667,7 @@ class ProfileRepo:
         batch is being prepared.
         """
         previous = self._dash_raw(profile.id)
+        self._refuse_to_settle_a_conflict(profile, previous)
         sealed = self._seal(profile, previous)
 
         profile.updated_at = time.time()

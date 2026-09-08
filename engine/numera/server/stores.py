@@ -284,6 +284,15 @@ class DashboardStore:
         # secret from a record another writer was already replacing;
         # `_resolve_folder` had the same problem with a folder rename.
         prof = self._guard_secrets(prof)
+        # The same refusal the CLI gets. A dashboard edit is a full-record
+        # write too, so an unrelated change to a note would otherwise settle a
+        # proxy-password conflict by writing one side over the other.
+        if self._engine is not None:
+            from ..repo import repo as _repo
+
+            proxy = prof.get("proxy") or None
+            _repo(self._engine).refuse_conflicting_write(
+                prof["id"], (proxy or {}).get("pass"), proxy is not None)
         prof = self._resolve_folder(prof)
         prof[self.REVISION] = int(stored.get(self.REVISION) or 0) + 1
 

@@ -26,7 +26,7 @@ import threading
 import pytest
 from fastapi.testclient import TestClient
 
-from _child import FakeChild, spawning
+from _child import FakeChild, spawning_tree
 from _rendezvous import (ENGINE, RENDEZVOUS_TIMEOUT, Rendezvous, finish,
                          run_all, start)
 
@@ -256,7 +256,7 @@ def test_two_simultaneous_launches_leave_exactly_one_owner(app_and_client, monke
     app, client = app_and_client
     pid = a_profile(client, "raced")
     children: list = []
-    monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
+    monkeypatch.setattr(srv.proctree, "spawn", spawning_tree(children))
 
     both, answers = threading.Barrier(2), {}
 
@@ -283,8 +283,8 @@ def test_a_locked_vault_launch_is_never_reported_as_running(app_and_client, monk
     app, client = app_and_client
     pid = a_profile(client, "locked")
     children: list = []
-    monkeypatch.setattr(srv.subprocess, "Popen",
-                        spawning(children, ready=False, kind="locked",
+    monkeypatch.setattr(srv.proctree, "spawn",
+                        spawning_tree(children, ready=False, kind="locked",
                                  error="the vault is locked", code=1))
 
     answer = client.post(f"/api/profiles/{pid}/launch")
@@ -299,8 +299,8 @@ def test_a_child_that_exits_before_readiness_owns_nothing(app_and_client, monkey
     app, client = app_and_client
     pid = a_profile(client, "stillborn")
     children: list = []
-    monkeypatch.setattr(srv.subprocess, "Popen",
-                        spawning(children, ready=None, code=1))
+    monkeypatch.setattr(srv.proctree, "spawn",
+                        spawning_tree(children, ready=None, code=1))
 
     assert client.post(f"/api/profiles/{pid}/warmup",
                        json={"minutes": 1}).status_code == 500
@@ -325,7 +325,7 @@ def test_a_foreign_lease_refuses_the_launch(app_and_client, tmp_path, monkeypatc
     holder = start(HOLDER.format(pid=pid), tmp_path, "holder", bar.port)
     try:
         bar.expect("holder", "holding")
-        monkeypatch.setattr(srv.subprocess, "Popen", spawning(children))
+        monkeypatch.setattr(srv.proctree, "spawn", spawning_tree(children))
         answer = client.post(f"/api/profiles/{pid}/launch")
         attach = client.post(f"/api/profiles/{pid}/attach")
         bar.release("holder")
@@ -351,7 +351,7 @@ def test_materialising_cannot_revert_a_concurrent_edit(app_and_client, monkeypat
 
     app, client = app_and_client
     pid = a_profile(client, "before")
-    monkeypatch.setattr(srv.subprocess, "Popen", spawning([]))
+    monkeypatch.setattr(srv.proctree, "spawn", spawning_tree([]))
 
     original, once = app.state.dash.get, []
 
@@ -415,7 +415,7 @@ def test_the_scheduler_does_not_materialise_a_stale_snapshot(tmp_path, monkeypat
         pid = a_profile(client, "scheduled")
         client.post("/api/schedules", json={"profileId": pid, "everyHours": 1,
                                             "minutes": 1, "preset": "general"})
-        monkeypatch.setattr(srv.subprocess, "Popen", spawning([]))
+        monkeypatch.setattr(srv.proctree, "spawn", spawning_tree([]))
         once = _edit_once_on_read(app, client, pid, monkeypatch)
 
         app.state.scheduler_tick()

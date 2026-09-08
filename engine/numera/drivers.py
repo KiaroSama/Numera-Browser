@@ -164,6 +164,10 @@ def _startup_kind(exc: BaseException) -> str:
         return "locked"
     if isinstance(exc, ProfileGone):
         return "gone"
+    from .repo import ProfileDiverged
+
+    if isinstance(exc, ProfileDiverged):
+        return "diverged"
     return "failed"
 
 
@@ -294,15 +298,28 @@ def open_session(profile: Profile, store):
     """
     import json
 
-    from . import crypto, vault
+    from . import crypto, proctree, sessions, vault
     from .handshake import announce, reported
     from .paths import session_lease, transaction_lock
+    from .repo import repo
 
     try:
-        with session_lease(store.root, profile.id):
+        # The tree this process owns, established *before* anything is claimed
+        # or opened. A foreground CLI adopts one for itself here; a spawned
+        # session inherits the one its parent made. Either way, a browser
+        # started after this point has an owner that can be named on disk and
+        # proved gone later - which is what the claim below is for.
+        tree = proctree.own_tree()
+        claimed = sessions.owned(store.root, profile.id, tree, "a browser session")
+        with session_lease(store.root, profile.id), claimed:
             # Short, and released before the browser starts.
             with transaction_lock(store.root):
-                current = store.get(profile.id)
+                # The coherence gate, for every opener rather than only the
+                # HTTP one. `materialize_current` has refused a launch on two
+                # irreconcilable proxy passwords since 0.25, but only the API
+                # called it: a direct `numera launch` re-read the engine copy
+                # and went ahead with that credential. One gate, one answer.
+                current = repo(store).coherent(profile.id)
                 if current is None:
                     raise ProfileGone(
                         f"{profile.name} was deleted while its session was being "

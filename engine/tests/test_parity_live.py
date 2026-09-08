@@ -30,6 +30,10 @@ pytestmark = pytest.mark.slow
 
 pytest.importorskip("playwright")
 
+from _live import requires_browser        # noqa: E402
+
+requires_browser()
+
 PAGE = "https://numera.test/"
 
 

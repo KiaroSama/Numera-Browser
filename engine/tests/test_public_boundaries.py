@@ -12,12 +12,14 @@ tested is not an invariant.
   from under a browser another Numera process was running in it - the exact
   collision the lease exists to prevent.
 
-* `save_config()` took the config file's lock and not the root transaction, so
-  it was a lock domain of its own. A vault migration holds the transaction,
-  reads the config, does minutes of work and saves it back; an outside settings
-  save never waited for that, so it could write into the middle of it, be told
-  it had succeeded, and then be overwritten by the read-modify-write it had
-  interrupted.
+* `save_config()` replaced the whole config from a snapshot the caller built
+  *before* any lock. A vault migration holds the transaction, reads the config,
+  does minutes of work and writes back what it read; anything committed in
+  between is deleted by that write, and both callers are told they succeeded.
+  Adding the transaction to the write does not fix it, because the stale read
+  is the problem. Full replacement is private and requires the transaction that
+  produced the snapshot; settings go through `set_config_many`, which reads
+  under the lock it writes under.
 
 Both are stated across real processes with the socket barrier, because both are
 about two processes and neither can be shown with threads in one.
@@ -134,11 +136,10 @@ def test_deleting_a_session_lets_go_before_it_reclaims(tmp_path):
 # --- the config lock domain -------------------------------------------------
 
 # One child does what `enable_vault` and `change_vault_password` do: hold the
-# root transaction, read the config, do work, and save it back. The other saves
-# a setting through the public entry point while that is open. If the two are
-# in different lock domains the second one writes into the middle of the first,
-# is told it succeeded, and is then overwritten by the read-modify-write it
-# interrupted.
+# root transaction, read the config, do work, and write it back. The other
+# changes a setting through the public mutation API while that is open. Both
+# calls report success, so both changes have to be on disk at the end - and the
+# second one must not have been able to write into the middle of the first.
 WRITER = """
 from numera.paths import transaction_lock
 from numera.store import ProfileStore
@@ -151,7 +152,7 @@ with transaction_lock(ROOT):
     say("read")
     wait()
     cfg["headless_launch"] = True
-    store.save_config(cfg)            # ... and the write, much later
+    store._save_config_locked(cfg)    # ... and the write, much later
 say("committed")
 """
 
@@ -161,24 +162,26 @@ from numera.store import ProfileStore
 store = ProfileStore(ROOT)
 say("ready")
 wait()
-pending = {**store.get_config(), "default_engine": "patchright"}
 say("saving")
-store.save_config(pending)
+store.set_config_many({"default_engine": "patchright"})
 say("saved")
 """
 
 
-def test_a_public_config_save_waits_for_the_transaction_it_would_undercut(tmp_path):
-    """The saver must not be able to write inside another process's
-    transaction, be told it worked, and then be silently overwritten.
+def test_two_acknowledged_config_changes_both_survive(tmp_path):
+    """The lost update a lock order alone does not fix.
 
-    Both halves are asserted, and each fails on its own against the
-    file-lock-only version: the saver is shown to be blocked while the
-    transaction is open - a bounded silence, the only way to state that
-    something is not happening - and the value it saved is still there at the
-    end rather than lost under the transaction's own read-modify-write.
+    Taking the root transaction inside a full-replacement call closes the
+    separate-lock-domain hole, but the snapshot is still built *before* the
+    lock: the writer reads, another process commits a key, the writer writes
+    what it read, and that key is gone. Both callers were told they succeeded.
+
+    So full replacement is private and requires the transaction that read it,
+    and ordinary settings go through `set_config_many`, which reads under the
+    lock it writes under. Then the interleaving below has one outcome: the
+    saver waits, and both changes are on disk.
     """
-    ProfileStore(tmp_path).save_config({"default_engine": "playwright"})
+    ProfileStore(tmp_path).set_config_many({"default_engine": "playwright"})
 
     bar = Rendezvous()
     procs = {}
@@ -193,7 +196,7 @@ def test_a_public_config_save_waits_for_the_transaction_it_would_undercut(tmp_pa
         bar.expect("saver", "saving")
         assert bar.silent("saver", 3.0), (
             "the save went through inside another process's transaction")
-        bar.release("writer")                 # it now writes what it read
+        bar.release("writer")
         bar.expect("writer", "committed")
         bar.expect("saver", "saved")
         results = finish(procs)
@@ -206,15 +209,38 @@ def test_a_public_config_save_waits_for_the_transaction_it_would_undercut(tmp_pa
 
     on_disk = json.loads(ProfileStore(tmp_path).config_path.read_text("utf-8"))
     assert on_disk["default_engine"] == "patchright", (
-        "an acknowledged config save was overwritten by the transaction it raced")
+        "the setting the saver was told it had written is gone")
+    assert on_disk["headless_launch"] is True, (
+        "the transaction's own acknowledged change was overwritten")
 
 
-def test_a_public_config_save_takes_the_root_transaction(tmp_path):
+def test_replacing_the_whole_config_needs_the_transaction_that_read_it(tmp_path):
+    """Structural, not documented: a caller that never took the transaction
+    cannot make a whole-document write at all. It is the only way to state
+    "your snapshot must come from inside this lock" in a signature."""
+    store = ProfileStore(tmp_path)
+    store.set_config_many({"default_engine": "playwright"})
+
+    with pytest.raises(RuntimeError, match="root transaction"):
+        store._save_config_locked({"default_engine": "camoufox"})
+
+    assert store.get_default_engine() == "playwright", "it wrote anyway"
+
+    from numera.paths import transaction_lock
+
+    with transaction_lock(tmp_path):
+        store._save_config_locked({**store.get_config(),
+                                   "default_engine": "camoufox"})
+    assert ProfileStore(tmp_path).get_default_engine() == "camoufox"
+
+
+def test_a_settings_change_waits_for_the_transaction(tmp_path):
     """Stated directly as well, because the race above can pass by luck of
     timing on a fast machine and this cannot: while another process holds the
-    root transaction, the save has to wait rather than write through it."""
+    root transaction, a settings change has to wait rather than write through
+    it."""
     store = ProfileStore(tmp_path)
-    store.save_config({"default_engine": "playwright"})
+    store.set_config_many({"default_engine": "playwright"})
 
     body = """
 from numera.paths import transaction_lock
@@ -232,15 +258,15 @@ say("released")
 
         done = threading.Event()
         worker = threading.Thread(
-            target=lambda: (store.save_config({"default_engine": "camoufox"}),
+            target=lambda: (store.set_config_many({"default_engine": "camoufox"}),
                             done.set()), daemon=True)
         worker.start()
-        assert not done.wait(timeout=2.0), \
-            "save_config wrote while another process held the root transaction"
+        assert not done.wait(timeout=2.0), (
+            "a settings change wrote while another process held the transaction")
 
         bar.release("holder")
         bar.expect("holder", "released")
-        assert done.wait(timeout=30), "save_config never completed once the lock was free"
+        assert done.wait(timeout=30), "it never completed once the lock was free"
         worker.join(timeout=30)
         assert finish({"holder": holder})["holder"]["code"] == 0
     finally:
