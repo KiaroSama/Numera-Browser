@@ -250,22 +250,43 @@ LOCKED_MESSAGE = ("the vault is locked, so this needs the master password - "
 def encrypt_for_write(engine, value, stored=None):
     """What to store for `value`, given what is already on disk.
 
-    Three cases, and the middle one is the one that keeps biting:
+    **`value` carries intent, and the three intents are different writes.**
 
-    * no vault - unchanged; there is nothing to protect it from.
-    * vault locked - a *new* secret is refused rather than written in the
-      clear, and an *unchanged* one keeps the ciphertext already on disk. A
-      locked read yields ``None`` for the secret, so an ordinary edit comes back
-      carrying ``None``; writing that would destroy the password.
-    * vault unlocked - the ciphertext.
+    * ``None`` - withheld. The caller is not saying anything about the secret,
+      which is what a locked read hands back and what an unrelated edit passes
+      through, so the stored value stands.
+    * ``""`` - an explicit clear. There was no way to say this: empty meant
+      "keep", so removing a proxy password while keeping the proxy endpoint was
+      impossible and the credential simply stayed. It now removes it.
+    * anything else - a replacement.
+
+    Then the vault:
+
+    * no vault - the value as given; there is nothing to protect it from.
+    * locked - a replacement is refused rather than written in the clear, and
+      so is a clear: destroying a credential this process cannot even read is
+      the one irreversible thing to get wrong, and unlocking first is a small
+      price. Withheld is always fine.
+    * unlocked - the ciphertext.
 
     Already-encrypted input is returned untouched, so a value that has been
     round-tripped is never encrypted twice.
     """
+    if value is None:
+        return stored                   # withheld, vault or no vault
     if engine is None or not getattr(engine, "vault_enabled", lambda: False)():
-        return value
-    if not value:
-        return stored if stored else value
+        return value                    # including "" - an explicit clear
+    if value == "":
+        # Clearing nothing is not a decision. A proxy with no password stores
+        # `""`, so every ordinary write on one carries `""` back, and refusing
+        # those would take locked editing away from the profiles with the least
+        # to protect.
+        if stored and not engine.unlocked():
+            raise crypto.VaultLocked(
+                "the vault is locked, so this proxy password cannot be "
+                "cleared: unlock first, so that what is being removed is "
+                "something you can see")
+        return ""
     if crypto.is_encrypted(value):
         return value
     if not engine.unlocked():

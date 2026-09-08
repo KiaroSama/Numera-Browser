@@ -303,6 +303,7 @@ def open_session(profile: Profile, store):
     from .paths import session_lease, transaction_lock
     from .repo import repo
 
+    session, started = None, False
     try:
         # The tree this process owns, established *before* anything is claimed
         # or opened. A foreground CLI adopts one for itself here; a spawned
@@ -310,8 +311,18 @@ def open_session(profile: Profile, store):
         # started after this point has an owner that can be named on disk and
         # proved gone later - which is what the claim below is for.
         tree = proctree.own_tree()
-        claimed = sessions.owned(store.root, profile.id, tree, "a browser session")
-        with session_lease(store.root, profile.id), claimed:
+        with session_lease(store.root, profile.id):
+            # Inside the lease, which is still the ownership decision and still
+            # first: a delete that commits in the window before it must be the
+            # one that wins, not one this claim refuses.
+            #
+            # The claim is given up on a clean end, and kept when the failure
+            # happened *after* the caller took over - the one case where a
+            # browser may be left running. A refusal on the way in (a locked
+            # credential, a divergent one) started nothing, so keeping it would
+            # lock the profile out of this process for no reason.
+            session = sessions.take(store.root, profile.id, tree,
+                                    "a browser session")["session"]
             # Short, and released before the browser starts.
             with transaction_lock(store.root):
                 # The coherence gate, for every opener rather than only the
@@ -339,8 +350,12 @@ def open_session(profile: Profile, store):
                         f"IP. Unlock the vault first: numera --password ... <command>")
             # Owned and revalidated. The caller opens the browser next, and
             # the backend is what says it opened - see `_opened`.
+            started = True
             yield current
+        sessions.release(store.root, profile.id, session)
     except BaseException as failure:
+        if session is not None and not started:
+            sessions.release(store.root, profile.id, session)
         # Only if nothing has been reported yet. Once a backend has said the
         # browser is open the parent has acted on it, and overwriting that with
         # a failure raised on the way out would be a second lie.

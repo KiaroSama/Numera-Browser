@@ -39,7 +39,7 @@ import pytest
 
 from _rendezvous import Rendezvous, finish
 
-from numera import generate, proctree, sessions
+from numera import archive, generate, proctree, sessions
 from numera.models import Profile
 from numera.paths import SessionBusy
 from numera.repo import repo
@@ -282,3 +282,151 @@ def test_the_rendezvous_helper_is_untouched():
     """A guard, not a test of the feature: the barrier these tests share is the
     one thing whose failure would make every result here meaningless."""
     assert Rendezvous and finish
+
+
+# --- one profile, one session-specific owner -------------------------------
+
+BARE_OWNER = """
+import subprocess, sys, time
+sys.path.insert(0, {engine!r})
+from numera.drivers import open_session
+from numera.store import ProfileStore
+
+store = ProfileStore({root!r})
+prof = store.get({pid!r})
+with open_session(prof, store) as prof:
+    kid = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(120)"])
+    print(kid.pid, flush=True)
+    time.sleep(300)
+"""
+
+
+def test_a_launcher_that_never_led_a_group_still_owns_its_browser(tmp_path, profile):
+    """The 0.26 compromise, and the window it left open.
+
+    POSIX only used the process group when the process *already* led one, which
+    an interactive shell provides and a script with job control off, cron,
+    systemd or an application importing the Python API does not. Those got a
+    claim naming the leader alone - so killing the launcher left its Chromium
+    running with the claim reading free, which is the corruption the claim
+    exists to prevent.
+
+    The owner here is started deliberately *without* `start_new_session`, so it
+    is not a group leader when it starts.
+    """
+    if proctree._WINDOWS:
+        pytest.skip("a Windows session is in a job object however it was started")
+
+    script = BARE_OWNER.format(engine=ENGINE, root=str(tmp_path), pid=profile.id)
+    owner = subprocess.Popen([sys.executable, "-c", textwrap.dedent(script)],
+                             stdout=subprocess.PIPE, text=True)
+    kid = int(owner.stdout.readline().strip())
+    try:
+        record = sessions.read(tmp_path, profile.id)
+        assert record["tree"]["kind"] == "pgid", \
+            f"a browser session was given a leader-only claim: {record['tree']}"
+        assert record["tree"]["group"] not in (None, os.getpgrp()), \
+            "the claim names the group this test already shares"
+
+        _kill(owner.pid)
+        owner.wait(timeout=30)
+        assert proctree.alive(kid) is True, "the descendant did not outlive its leader"
+        assert sessions.busy(tmp_path, profile.id) is True, \
+            "a killed non-leader launcher released the profile"
+
+        store = ProfileStore(tmp_path)
+        from numera.drivers import open_session
+
+        with pytest.raises(SessionBusy):
+            with open_session(store.get(profile.id), store):
+                pass                                         # pragma: no cover
+
+        _kill(kid)
+        assert _gone(kid)
+        assert sessions.busy(tmp_path, profile.id) is False
+        with open_session(store.get(profile.id), store):
+            pass
+    finally:
+        _kill(kid)
+        if owner.poll() is None:                             # pragma: no cover
+            _kill(owner.pid)
+
+
+def test_two_profiles_in_one_process_do_not_hold_each_other(tmp_path):
+    """The claim belongs to the session, not to the process.
+
+    Both sessions name the same process tree, so closing the first used to find
+    the second's browser in it and keep the first profile owned - sometimes
+    until the host exited. An unrelated child of the host did the same.
+    """
+    from numera.drivers import open_session
+
+    store = ProfileStore(tmp_path)
+    a = repo(store).create(Profile(name="a", fingerprint=generate(seed=1)))
+    b = repo(store).create(Profile(name="b", fingerprint=generate(seed=2)))
+    stranger = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    try:
+        with open_session(store.get(a.id), store):
+            with open_session(store.get(b.id), store):
+                assert sessions.held(tmp_path, a.id) and sessions.held(tmp_path, b.id)
+            # B closed first this time round; A is still open and still owned.
+            assert sessions.held(tmp_path, b.id) is False, "B's claim outlived B"
+            assert sessions.held(tmp_path, a.id) is True
+
+        assert sessions.held(tmp_path, a.id) is False, \
+            "A's claim was kept by something that was never A's browser"
+        assert sessions.read(tmp_path, a.id) is None
+        assert sessions.read(tmp_path, b.id) is None
+    finally:
+        stranger.kill()
+        stranger.wait(timeout=30)
+
+
+def test_each_session_writes_its_own_identity(tmp_path, profile):
+    """Two claims from one process must not be interchangeable."""
+    tree = proctree.own_tree()
+    first = sessions.take(tmp_path, profile.id, tree, "a browser session")
+    assert first["session"], "a claim with no session identity"
+    assert sessions.release(tmp_path, profile.id, "some-other-session") is False, \
+        "a claim was removed by a session that did not own it"
+    assert sessions.release(tmp_path, profile.id, first["session"]) is True
+
+
+# --- our own claim is still a claim ----------------------------------------
+
+def test_a_destructive_operation_refuses_our_own_standing_claim(tmp_path, profile):
+    """`busy()` answers "is somebody *else* using it", which is right for a
+    listing and wrong for a delete: a session of ours whose browser would not
+    close leaves the claim standing on purpose, and that is exactly when the
+    directory must not be renamed away."""
+    tree = proctree.own_tree()
+    sessions.take(tmp_path, profile.id, tree, "a browser session")
+
+    assert sessions.busy(tmp_path, profile.id) is False, "the status answer changed"
+    assert sessions.held(tmp_path, profile.id) is True
+
+    store = ProfileStore(tmp_path)
+    for attempt in (lambda: repo(store).delete(profile.id),
+                    lambda: store.delete_session(profile.id),
+                    lambda: archive.backup(store, profile.id, tmp_path / "b.zip")):
+        with pytest.raises(SessionBusy):
+            attempt()
+    assert store.get(profile.id) is not None, "it deleted anyway"
+
+
+def test_the_public_session_delete_honours_the_durable_claim(tmp_path, profile):
+    """0.25 gave this entry point the lease; the lease is exactly what a killed
+    launcher does not leave behind."""
+    store = ProfileStore(tmp_path)
+    live = store.user_data_path(profile.id)
+    (live / "Cookies").write_text("live", encoding="utf-8")
+    record = sessions.take(tmp_path, profile.id, proctree.own_tree(), "a browser session")
+
+    with pytest.raises(SessionBusy):
+        store.delete_session(profile.id)
+    assert (live / "Cookies").read_text(encoding="utf-8") == "live"
+    assert not list(live.parent.glob("*.deleting-*")), "a tombstone was left behind"
+
+    sessions.release(tmp_path, profile.id, record["session"])
+    store.delete_session(profile.id)
+    assert not live.exists(), "the session survived a delete nothing was holding"

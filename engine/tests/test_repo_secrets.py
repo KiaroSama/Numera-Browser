@@ -105,14 +105,15 @@ def test_a_locked_notes_edit_keeps_both_ciphertexts_untouched(tmp_path):
 
     assert engine_raw(tmp_path, prof.id)["proxy"]["password"] == before_engine, \
         "a locked edit wrote None over the stored credential"
-    # The dashboard's blob may legitimately CHANGE here without being rewritten
-    # in the crypto sense: `enable_vault` seals each file independently, and
-    # Fernet's IV is random, so the two copies started with different
-    # ciphertexts for the same secret. `_seal` gives both the engine's, which
-    # is the stronger invariant - one credential, one stored value.
+    # And the dashboard's own ciphertext is untouched too, byte for byte.
+    # `enable_vault` seals each file independently and Fernet's IV is random,
+    # so the two copies hold different ciphertexts of the same secret - and a
+    # locked process cannot tell that apart from two different passwords.
+    # Giving both the engine's blob was the earlier answer and it is the wrong
+    # one: it decides, while locked, something only an unlocked vault can know.
     after_dash = dash_raw(tmp_path, prof.id)["proxy"]["pass"]
     assert crypto.is_encrypted(after_dash), "the dashboard copy lost its ciphertext"
-    assert after_dash == before_engine, "the two copies no longer hold one value"
+    assert after_dash == before_dash, "a locked edit rewrote the other copy's blob"
     assert before_dash != "" and crypto.is_encrypted(before_dash)
     assert dash_raw(tmp_path, prof.id)["notes"] == "while locked"
     # Still readable with the real password.

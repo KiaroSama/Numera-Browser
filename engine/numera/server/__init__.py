@@ -292,6 +292,13 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         """
         if running.get(pid) is child:
             running.pop(pid, None)
+        # The child is gone, so its claim is stale by definition - and this is
+        # the one path every child leaves by, including the scheduler's reaper.
+        # `settle` still refuses a tree it cannot prove empty.
+        try:
+            sessions.settle(engine_store.root, pid)
+        except Exception:      # noqa: BLE001 - see the note below
+            pass
         attached.pop(pid, None)
         child.finished_at = time.time()
         try:
@@ -380,7 +387,7 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         _finish(pid, child, proctree.end_session(child.proc, child.tree))
         # The tree is proved empty by `end_session`, so the claim the child
         # wrote is stale by definition and this is the moment to drop it.
-        sessions.clear(engine_store.root, pid)
+        sessions.settle(engine_store.root, pid)
         return True
 
     # One decision at a time per profile. Two HTTP launches for the same

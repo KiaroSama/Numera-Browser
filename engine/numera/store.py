@@ -676,12 +676,12 @@ class ProfileStore(ConfigStore):
         if not path.exists():
             return False
         # Session first: if it is held, this raises before the record is touched.
-        tomb = self.detach_session(profile_id)
+        tomb = self._detach_session(profile_id)
         original = path.read_bytes()
         try:
             path.unlink()
         except OSError:
-            self.restore_session(profile_id, tomb)
+            self._restore_session(profile_id, tomb)
             raise
         if tomb is not None and not self.discard_tombstone(tomb):
             # Committed. The profile is gone and the detached bytes are
@@ -692,7 +692,7 @@ class ProfileStore(ConfigStore):
         assert original is not None
         return True
 
-    def detach_session(self, profile_id: str) -> "Optional[Path]":
+    def _detach_session(self, profile_id: str) -> "Optional[Path]":
         """Move the session aside and return the tombstone, or None if none.
 
         This is step one of a delete, and it is deliberately first: renaming
@@ -715,7 +715,7 @@ class ProfileStore(ConfigStore):
         ud.rename(tomb)
         return tomb
 
-    def restore_session(self, profile_id: str, tomb) -> None:
+    def _restore_session(self, profile_id: str, tomb) -> None:
         """Put a detached session back, when the rest of the delete failed.
 
         Raises `SessionStranded` if it cannot. This used to swallow the error,
@@ -771,8 +771,16 @@ class ProfileStore(ConfigStore):
         removing a whole Chromium directory - hundreds of megabytes - holds
         nothing that another session could be waiting on.
         """
+        from . import sessions
+
         with session_lease(self.root, profile_id):
-            tomb = self.detach_session(profile_id)
+            # The lease is free the moment a launcher dies; the browser it
+            # started is not, and the durable claim is what still says so.
+            # 0.26 gave this entry point the lease and not the claim, so the
+            # one state the claim exists to describe - dead launcher, live
+            # browser - could still have its directory renamed away.
+            sessions.refuse_if_busy(self.root, profile_id)
+            tomb = self._detach_session(profile_id)
         if tomb is not None and not self.discard_tombstone(tomb):
             raise OSError(
                 f"the session for {profile_id} was detached to {tomb.name} but "

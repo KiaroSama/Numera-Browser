@@ -275,6 +275,7 @@ class ProfileRepo:
         # Nothing can reference the tombstone any more, so nothing needs the
         # lock to reclaim it.
         if gone:
+            sessions.settle(self.root, pid)
             self._reclaim(pid, tomb)
         return gone
 
@@ -301,7 +302,7 @@ class ProfileRepo:
         if not dash_record.exists() and not engine_record.exists():
             return False, None
 
-        tomb = self.store.detach_session(pid)
+        tomb = self.store._detach_session(pid)
 
         undo = []
         try:
@@ -348,7 +349,7 @@ class ProfileRepo:
             except OSError as err:
                 failures.append((path, err))
         try:
-            self.store.restore_session(pid, tomb)
+            self.store._restore_session(pid, tomb)
         except SessionStranded as stranded:
             failures.append((tomb, stranded))
         except OSError as err:                               # pragma: no cover
@@ -398,6 +399,60 @@ class ProfileRepo:
             # and either may be the one that survived.
             stored = ((previous_dash or {}).get("proxy") or {}).get("pass") or None
         return vault.encrypt_for_write(self.store, profile.proxy.password, stored)
+
+    def _secrets_for(self, profile: Profile, previous) -> tuple:
+        """What each copy should store for the proxy password: `(engine, dash)`.
+
+        One value used to be computed and written to both, which is right for a
+        write that *says* something about the secret and wrong for one that
+        does not. Under a locked vault the two copies hold two ciphertexts -
+        `vault enable` encrypts each file separately - and this process cannot
+        tell whether they are the same password. Writing one over the other to
+        mirror a note change would destroy a credential to no purpose, so a
+        withheld write leaves each copy exactly as it found it.
+
+        A write that *does* speak - a replacement or an explicit clear - is one
+        decision and both copies take it.
+        """
+        if profile.proxy is None:
+            return None, None
+        stored = ((self._engine_raw(profile.id) or {}).get("proxy") or {}).get("password")
+        twin = ((previous or {}).get("proxy") or {}).get("pass")
+        incoming = profile.proxy.password
+        # Withheld, or an echo of what this profile already holds. `resolve()`
+        # hands the caller the stored password and `edit()` passes that whole
+        # object back, so "the value we just gave you" is not a decision about
+        # the secret - it is the ordinary shape of every unrelated edit.
+        if incoming is None or self._same_secret(incoming, stored):
+            self.refuse_unresolved_secret(profile.id, stored, twin)
+            return stored, twin
+        chosen = vault.encrypt_for_write(self.store, incoming, stored)
+        return chosen, chosen
+
+    def refuse_unresolved_secret(self, profile_id: str, stored, twin) -> None:
+        """Refuse a withheld write over a conflict only a person can settle.
+
+        Three states, and the third is the one that must stay writable:
+
+        * the two agree, or neither holds anything - nothing to settle;
+        * one side holds a credential the other does not, or both are readable
+          and different - a conflict, and an edit that says nothing about the
+          secret may not proceed past it. `resolve()` hands back one copy, and
+          before this an unrelated note or rename carried that copy into the
+          other file and the second credential was gone;
+        * both hold something and at least one cannot be read - a locked
+          vault, where two ciphertexts of one password look exactly like two
+          passwords. That is not a decision this process can make, so it makes
+          none: the write goes through and `_secrets_for` leaves each copy
+          alone.
+        """
+        if self._same_secret(stored, twin) or (not stored and not twin):
+            return
+        both_readable = (bool(stored) and bool(twin)
+                         and vault.decrypt_for_read(self.store, stored) is not None
+                         and vault.decrypt_for_read(self.store, twin) is not None)
+        if both_readable or not stored or not twin:
+            raise ProfileDiverged(profile_id)
 
     def _for_derivation(self, profile_id: str, stored, fresh):
         """What a *derived* engine record should store for the proxy password.
@@ -622,42 +677,19 @@ class ProfileRepo:
 
     def refuse_conflicting_write(self, profile_id: str, incoming,
                                  has_proxy: bool) -> None:
-        """Refuse a write that would settle a secret conflict by accident.
-
-        The rule itself, asked by both writing surfaces: `ProfileRepo._records`
-        for anything engine-shaped, and `DashboardStore._save_locked` for the
-        GUI. One implementation, because two would drift and the whole point of
-        the refusal is that it holds wherever the write came from.
+        """The dashboard's half of the same rule. `incoming` is None when the
+        write said nothing about the secret - see `refuse_unresolved_secret`.
         """
-        stored = ((self._engine_raw(profile_id) or {}).get("proxy") or {}).get("password")
-        twin = ((self._dash_raw(profile_id) or {}).get("proxy") or {}).get("pass")
-        if not self._secret_disagrees(stored, twin):
-            return
         if not has_proxy:
             return                       # the proxy is being removed outright
-        if incoming and not self._same_secret(incoming, stored)                 and not self._same_secret(incoming, twin):
-            return                       # a new credential, chosen on purpose
-        raise ProfileDiverged(profile_id)
-
-    def _refuse_to_settle_a_conflict(self, profile: Profile, previous) -> None:
-        """Refuse an ordinary write that would quietly pick one of two secrets.
-
-        A same-id proxy-password conflict is the one thing `materialize_current`
-        will not resolve on its own - and it did not have to, because a *write*
-        resolved it instead. `resolve()` returns the engine copy with a warning,
-        an unrelated edit (a note, a rename) sends that whole object back
-        through here, and `_seal` writes the engine credential into both files.
-        The conflict Numera said it would not settle was settled by the next
-        keystroke, and the other password was gone for good.
-
-        An edit that is *about* the credential still resolves it: a new
-        password that matches neither stored one is a replacement, and removing
-        the proxy is a deliberate clear. Anything else is refused.
-        """
-        self.refuse_conflicting_write(
-            profile.id,
-            profile.proxy.password if profile.proxy else None,
-            profile.proxy is not None)
+        stored = ((self._engine_raw(profile_id) or {}).get("proxy") or {}).get("password")
+        twin = ((self._dash_raw(profile_id) or {}).get("proxy") or {}).get("pass")
+        if incoming is not None and not self._same_secret(incoming, twin):
+            return                       # a replacement or an explicit clear
+        # Otherwise the write echoed this record's own stored value, which is
+        # what a patch built from the stored record carries for every field it
+        # is not changing.
+        self.refuse_unresolved_secret(profile_id, stored, twin)
 
     def _records(self, profile: Profile) -> tuple:
         """The exact contents both copies of one profile are about to get.
@@ -667,18 +699,17 @@ class ProfileRepo:
         batch is being prepared.
         """
         previous = self._dash_raw(profile.id)
-        self._refuse_to_settle_a_conflict(profile, previous)
-        sealed = self._seal(profile, previous)
+        engine_secret, dash_secret = self._secrets_for(profile, previous)
 
         profile.updated_at = time.time()
         engine_data = profile.to_dict()
         if engine_data.get("proxy") is not None:
-            engine_data["proxy"]["password"] = sealed
+            engine_data["proxy"]["password"] = engine_secret
 
         twin = to_dashboard_profile(profile)
         twin["id"] = profile.id
         if twin.get("proxy") is not None:
-            twin["proxy"]["pass"] = sealed or ""
+            twin["proxy"]["pass"] = dash_secret or ""
         merged = _merge_dashboard(previous, twin)
         merged["_rev"] = int((previous or {}).get("_rev") or 0) + 1
         merged.setdefault("_created", time.time())
