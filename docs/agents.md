@@ -74,12 +74,20 @@ A finished job also carries `exit`, the command's real exit code.
 | `numera jobs show <id> [--lines N]` | one job, with the tail of its output |
 | `numera jobs stop <id>` | terminate it **and everything it started** |
 | `numera jobs clear` | forget the finished ones |
-| `numera stop <ref>` | stop every job belonging to one profile |
+| `numera stop <ref>` | stop every job belonging to one profile, and report a browser still running under a launcher that died |
 
 Records live in `<data-dir>/jobs/`, one JSON file plus one log per job, so a
-later process can see work an earlier one started. `jobs stop` kills the whole
-process tree (`taskkill /T` on Windows, the process group elsewhere) — a
-detached `numera launch` owns a Chromium that would otherwise outlive it.
+later process can see work an earlier one started. `jobs stop` ends the whole
+process tree and proves it empty before recording the outcome — a Windows job
+object, a POSIX process group — because a detached `numera launch` owns a
+Chromium that would otherwise outlive it.
+
+Ownership of a profile's browser is written down separately, in
+`<data-dir>/sessions/`, and it outlives the process that took it: a launcher
+killed while its browser kept running leaves no lease (the OS releases that on
+death) but does leave the claim, so another process is refused the profile
+until that browser is gone. `numera stop` reports exactly that state instead of
+"nothing running".
 
 The HTTP API has its own equivalent and it is not this one: `POST /launch`
 returns immediately, the profile then reads `"status": "running"` in
