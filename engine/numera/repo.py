@@ -38,7 +38,7 @@ from typing import Callable, Optional
 
 from . import vault
 from .convert import to_dashboard_profile, to_engine_profile
-from .models import Profile
+from .models import Profile, Proxy
 from .paths import _lock_for, transaction_lock, write_batch
 
 
@@ -67,6 +67,30 @@ class TargetMoved(RuntimeError):
             f"{ref!r} meant profile {expected} when the command started and "
             f"means {found} now - something renamed one of them in between. "
             f"Nothing was deleted; re-run it against the id you meant.")
+
+
+#: What a write says about the proxy password. The model carries it for Python
+#: callers (`Proxy.password_intent`) and a request body carries it for the API
+#: (`secret_intent`), so both surfaces answer the same three-way question
+#: instead of comparing values and guessing.
+PRESERVE, CLEAR, REPLACE = Proxy.PRESERVE, Proxy.CLEAR, Proxy.REPLACE
+
+
+def secret_intent(incoming_proxy) -> str:
+    """What a request body said about the secret.
+
+    Key absent or null - it said nothing, so preserve. Empty - an explicit
+    clear. Anything else - a replacement, *including* a value that happens to
+    equal one of the stored copies: a client that sends a password is choosing
+    it, and refusing that made resolving a two-password conflict impossible
+    without inventing a third one.
+    """
+    if not isinstance(incoming_proxy, dict) or "pass" not in incoming_proxy:
+        return PRESERVE
+    value = incoming_proxy["pass"]
+    if value is None:
+        return PRESERVE
+    return CLEAR if value == "" else REPLACE
 
 
 class ProfileDiverged(RuntimeError):
@@ -418,15 +442,15 @@ class ProfileRepo:
             return None, None
         stored = ((self._engine_raw(profile.id) or {}).get("proxy") or {}).get("password")
         twin = ((previous or {}).get("proxy") or {}).get("pass")
-        incoming = profile.proxy.password
-        # Withheld, or an echo of what this profile already holds. `resolve()`
-        # hands the caller the stored password and `edit()` passes that whole
-        # object back, so "the value we just gave you" is not a decision about
-        # the secret - it is the ordinary shape of every unrelated edit.
-        if incoming is None or self._same_secret(incoming, stored):
+        intent = profile.proxy.password_intent
+        if intent == PRESERVE:
+            # Nothing was said about the secret, so nothing is decided: each
+            # copy keeps its own, and a conflict only a person can settle stops
+            # the write rather than being settled by it.
             self.refuse_unresolved_secret(profile.id, stored, twin)
             return stored, twin
-        chosen = vault.encrypt_for_write(self.store, incoming, stored)
+        asked = "" if intent == CLEAR else profile.proxy.password
+        chosen = vault.encrypt_for_write(self.store, asked, stored)
         return chosen, chosen
 
     def refuse_unresolved_secret(self, profile_id: str, stored, twin) -> None:
@@ -675,21 +699,20 @@ class ProfileRepo:
                 raise NameTaken(f"a profile called {profile.name!r} already exists")
             accepted.append(profile)
 
-    def refuse_conflicting_write(self, profile_id: str, incoming,
-                                 has_proxy: bool) -> None:
-        """The dashboard's half of the same rule. `incoming` is None when the
-        write said nothing about the secret - see `refuse_unresolved_secret`.
+    def refuse_conflicting_write(self, profile_id: str, intent: str) -> None:
+        """The dashboard's half of the same rule, asked with the same word.
+
+        `intent` is what the *request* said, not what the merged record holds -
+        a patch built from the stored record echoes the stored password for
+        every field it is not changing, and reading that as a decision is how
+        an unrelated note edit used to settle a credential conflict.
         """
-        if not has_proxy:
-            return                       # the proxy is being removed outright
-        stored = ((self._engine_raw(profile_id) or {}).get("proxy") or {}).get("password")
-        twin = ((self._dash_raw(profile_id) or {}).get("proxy") or {}).get("pass")
-        if incoming is not None and not self._same_secret(incoming, twin):
+        if intent != PRESERVE:
             return                       # a replacement or an explicit clear
-        # Otherwise the write echoed this record's own stored value, which is
-        # what a patch built from the stored record carries for every field it
-        # is not changing.
-        self.refuse_unresolved_secret(profile_id, stored, twin)
+        self.refuse_unresolved_secret(
+            profile_id,
+            ((self._engine_raw(profile_id) or {}).get("proxy") or {}).get("password"),
+            ((self._dash_raw(profile_id) or {}).get("proxy") or {}).get("pass"))
 
     def _records(self, profile: Profile) -> tuple:
         """The exact contents both copies of one profile are about to get.

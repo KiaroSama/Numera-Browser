@@ -126,10 +126,14 @@ say("done")
 def test_a_profile_write_cannot_land_inside_enable(tmp_path):
     seeded(tmp_path)
     results = race(ENABLE, PROFILE_WRITER.format(password=""), tmp_path)
-    # Refused is the right answer: the writer never had the master password, so
-    # once the vault is on it cannot seal the plaintext it is holding. What it
-    # must never do is write that plaintext over the sealed record.
-    assert results["writer"]["out"].startswith("REFUSED"), results["writer"]
+    # The write is allowed and the sealed record is untouched, which is the
+    # property that matters: the writer is editing a note, and the stale
+    # plaintext password it happens to be carrying is not something it is
+    # saying anything about. It used to be refused instead - `encrypt_for_write`
+    # could not tell "the value you handed me" from "the value I want stored",
+    # so an unrelated edit during a migration failed outright. Either answer
+    # protects the secret; this one does not also lose the edit.
+    assert results["writer"]["out"].startswith("WROTE"), results["writer"]
     assert_sealed(tmp_path, "master", [f"p{i}" for i in range(6)])
 
 
@@ -141,8 +145,10 @@ def test_a_secret_write_cannot_land_inside_a_password_rotation(tmp_path):
     # The writer unlocked with "master" and the rotation happened under it, so
     # its cached vault identity is stale. Sealing with the old salt over a
     # record the rotation had just rekeyed is what left a secret nothing could
-    # open; refusing is the correct answer.
-    assert results["writer"]["out"].startswith("REFUSED"), results["writer"]
+    # open - and the write says nothing about the secret, so it does not seal
+    # anything: the rekeyed value stays exactly as the rotation left it. That
+    # is the property, and `assert_sealed` below is where it is checked.
+    assert results["writer"]["out"].startswith("WROTE"), results["writer"]
     assert_sealed(tmp_path, "second", [f"p{i}" for i in range(6)])
     assert not ProfileStore(tmp_path, password="master").unlocked(), \
         "the old password still opens the store after a rotation"

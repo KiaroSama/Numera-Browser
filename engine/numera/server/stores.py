@@ -137,19 +137,27 @@ class DashboardStore:
             except (OSError, json.JSONDecodeError):
                 return {}
 
-    def _guard_secrets(self, prof: dict) -> dict:
+    def _guard_secrets(self, prof: dict, intent: str = None) -> dict:
         """Return a copy that never carries a plaintext secret past the vault.
 
         The rule itself lives in `vault.encrypt_for_write` - the engine store
         and the proxy pool need exactly the same one, and three copies of it
-        drifted apart once already.
+        drifted apart once already. `intent` says which of its three cases this
+        write is; without one it is read from the record, which is what a
+        caller outside the request path (a mirror, a migration) has.
         """
+        from ..repo import CLEAR, PRESERVE, REPLACE
+
         a, b = self.SECRET
         node = prof.get(a)
         if not isinstance(node, dict):
             return prof
         stored = (self._raw(prof.get("id", "")).get(a) or {}).get(b)
-        kept = vault.encrypt_for_write(self._engine, node.get(b), stored)
+        if intent is None:
+            asked = node.get(b)
+        else:
+            asked = {PRESERVE: None, CLEAR: "", REPLACE: node.get(b)}[intent]
+        kept = vault.encrypt_for_write(self._engine, asked, stored)
         if kept == node.get(b):
             return prof
         return {**prof, a: {**node, b: kept}}
@@ -164,7 +172,8 @@ class DashboardStore:
 
     REVISION = "_rev"
 
-    def save(self, prof: dict, *, config_change=None, expect_rev=None) -> dict:
+    def save(self, prof: dict, *, config_change=None, expect_rev=None,
+             secret_intent=None) -> dict:
         """Write one profile, and optionally a config change, as one unit.
 
         `config_change` exists so a request that owns both - "save this profile
@@ -186,9 +195,10 @@ class DashboardStore:
         with transaction_lock(self.root):
             path = self._path(prof.get("id") or uuid.uuid4().hex[:12])
             with _lock_for(path):
-                return self._save_locked(prof, config_change, expect_rev)
+                return self._save_locked(prof, config_change, expect_rev,
+                                         secret_intent)
 
-    def patch(self, pid: str, apply, *, expect_rev=None):
+    def patch(self, pid: str, apply, *, expect_rev=None, secret_intent=None):
         """Read, merge, validate and write one profile inside one lock.
 
         `apply(stored)` returns `(merged, config_change)` and runs while the
@@ -212,9 +222,11 @@ class DashboardStore:
                 if not stored:
                     return None
                 merged, config_change = apply(dict(stored))
-                return self._save_locked(merged, config_change, expect_rev)
+                return self._save_locked(merged, config_change, expect_rev,
+                                         secret_intent)
 
-    def patch_many(self, ids, apply, *, config_change=None) -> list:
+    def patch_many(self, ids, apply, *, config_change=None,
+                   secret_intent=None) -> list:
         """The same for a bulk edit: every record is read under the lock.
 
         `apply(pid, current)` returns the merged profile, or None to skip.
@@ -231,7 +243,7 @@ class DashboardStore:
                 merged = apply(pid, current)
                 if merged is not None:
                     pending.append(merged)
-            return self._save_many_locked(pending, config_change)
+            return self._save_many_locked(pending, config_change, secret_intent)
 
     def _claim_names(self, profiles: list) -> None:
         """Refuse a write that would give one name to a second profile.
@@ -265,7 +277,8 @@ class DashboardStore:
         if clash:
             raise NameTaken(f"a profile called {clash[1]!r} already exists")
 
-    def _save_locked(self, prof: dict, config_change, expect_rev) -> dict:
+    def _save_locked(self, prof: dict, config_change, expect_rev,
+                     secret_intent=None) -> dict:
         from ..paths import write_batch
 
         if not prof.get("id"):
@@ -283,32 +296,11 @@ class DashboardStore:
         # `_guard_secrets` ran outside it and could decide whether to preserve a
         # secret from a record another writer was already replacing;
         # `_resolve_folder` had the same problem with a folder rename.
-        # What this write says about the secret, read before `_guard_secrets`
-        # turns a withheld one into the stored value. An absent key and a null
-        # are both "not saying anything"; "" is an explicit clear.
-        incoming_proxy = prof.get("proxy")
-        said = (incoming_proxy.get(self.SECRET[1])
-                if isinstance(incoming_proxy, dict) else None)
-        prof = self._guard_secrets(prof)
-        # The same refusal the CLI gets. A dashboard edit is a full-record
-        # write too, so an unrelated change to a note would otherwise settle a
-        # proxy-password conflict by writing one side over the other.
-        if self._engine is not None:
-            from ..repo import repo as _repo
-
-            _repo(self._engine).refuse_conflicting_write(
-                prof["id"], said, isinstance(prof.get("proxy"), dict))
-        prof = self._resolve_folder(prof)
+        prof, twin = self._prepare(prof, secret_intent)
         prof[self.REVISION] = int(stored.get(self.REVISION) or 0) + 1
 
         with _config_lock(self._engine, config_change), write_batch() as batch:
             batch.write(self._path(prof["id"]), prof)
-            # An echo of the stored value says nothing about the secret, and a
-            # patch built from the stored record echoes every field it is not
-            # changing - so the engine copy keeps its own blob for those too.
-            echoed = said is None or said == (stored.get(self.SECRET[0]) or {}).get(
-                self.SECRET[1])
-            twin = self._twin(prof, keep_engine_secret=echoed)
             if twin is not None:
                 # Both copies or neither. The mirror's failure used to be
                 # swallowed, so a locked vault produced a dashboard that said
@@ -318,6 +310,34 @@ class DashboardStore:
                 batch.write(self._engine.config_path,
                             {**self._engine.get_config(), **config_change})
         return prof
+
+    def _prepare(self, prof: dict, intent: str):
+        """The dashboard record and its engine twin, with the secret rule applied.
+
+        The single-profile path grew this in 0.27 and the bulk path did not, so
+        `POST /api/profiles/bulk` - a notes or tags edit across a selection -
+        went round every safeguard the single write had: no refusal on an
+        unresolved conflict, and the dashboard's blob mirrored over the
+        engine's. One primitive, both callers, because the second copy of a
+        rule is the one that silently stops matching.
+
+        `intent` is what the *request* said about the secret, not what the
+        merged record happens to hold - see `secret_intent`.
+        """
+        from ..repo import PRESERVE, repo as _repo, secret_intent
+
+        if intent is None:
+            # No caller said. Read it from the record being written, which is
+            # right for a create or an adoption - the record *is* the request -
+            # and is why a request path must pass its own: a patch built on the
+            # stored profile echoes the stored password, and that is not a
+            # decision about it.
+            intent = secret_intent(prof.get(self.SECRET[0]))
+        if self._engine is not None:
+            _repo(self._engine).refuse_conflicting_write(prof["id"], intent)
+        prof = self._guard_secrets(prof, intent)
+        prof = self._resolve_folder(prof)
+        return prof, self._twin(prof, keep_engine_secret=intent == PRESERVE)
 
     def _twin(self, prof: dict, keep_engine_secret: bool = False):
         """`(path, data)` for the engine's copy of `prof`, or None.
@@ -365,7 +385,8 @@ class DashboardStore:
         moved = folders.resolve_name(self.root, name)
         return prof if moved == name else {**prof, "folder": moved}
 
-    def save_many(self, profiles: list, *, config_change=None) -> list:
+    def save_many(self, profiles: list, *, config_change=None,
+                  secret_intent=None) -> list:
         """Save a batch as one transaction: all of them, or none.
 
         Validation was already all-or-nothing, but the writes were a plain loop,
@@ -378,9 +399,10 @@ class DashboardStore:
         together.
         """
         with transaction_lock(self.root):
-            return self._save_many_locked(profiles, config_change)
+            return self._save_many_locked(profiles, config_change, secret_intent)
 
-    def _save_many_locked(self, profiles: list, config_change) -> list:
+    def _save_many_locked(self, profiles: list, config_change,
+                          secret_intent=None) -> list:
         from ..paths import write_batch
 
         # Before the batch opens, and over the whole set at once: two entries of
@@ -394,8 +416,7 @@ class DashboardStore:
                 if not prof.get("id"):
                     prof["id"] = uuid.uuid4().hex[:12]
                 prof.setdefault("_created", time.time())
-                prof = self._guard_secrets(prof)
-                prof = self._resolve_folder(prof)
+                prof, twin = self._prepare(prof, secret_intent)
                 # Before the write, and from the record as it was *before* it.
                 # This ran after `batch.write`, so the revision never reached
                 # disk: a batch create returned `_rev=1` over a file with no
@@ -406,14 +427,8 @@ class DashboardStore:
                 prof[self.REVISION] = int(
                     (self._raw(prof["id"]) or {}).get(self.REVISION) or 0) + 1
                 batch.write(self._path(prof["id"]), prof)
-                if self._engine is not None:
-                    try:
-                        twin = to_engine_profile(prof)
-                    except Exception:       # pragma: no cover - see `_mirror`
-                        twin = None
-                    if twin is not None:
-                        batch.write(self._engine._path(twin.id),
-                                    self._engine._apply_secrets(twin.to_dict(), "enc"))
+                if twin is not None:
+                    batch.write(*twin)
                 saved.append(prof)
             if config_change:
                 # In the same batch, so a failed config write rolls the profiles

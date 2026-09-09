@@ -150,8 +150,15 @@ def test_the_control(tmp_path, profile):
         owner.wait(timeout=30)
         from numera.paths import session_lease
 
-        assert session_lease(tmp_path, profile.id).held_by_other_process() is False, \
-            "the lease outlived its holder, so this file proves nothing"
+        # Bounded, not instantaneous: `wait()` reaps the process, and the OS
+        # releasing its file handles is a moment later. Asserting on the
+        # instant made this fail under load for a reason that has nothing to
+        # do with what it is testing.
+        end = time.monotonic() + 15.0
+        while session_lease(tmp_path, profile.id).held_by_other_process():
+            assert time.monotonic() < end, \
+                "the lease outlived its holder, so this file proves nothing"
+            time.sleep(0.05)
     finally:
         _kill(kid)
 
@@ -430,3 +437,231 @@ def test_the_public_session_delete_honours_the_durable_claim(tmp_path, profile):
     sessions.release(tmp_path, profile.id, record["session"])
     store.delete_session(profile.id)
     assert not live.exists(), "the session survived a delete nothing was holding"
+
+
+# --- what a failed session leaves behind -----------------------------------
+#
+# The claim used to be kept for every exception that reached `open_session`,
+# because "the yield happened" was read as "a browser is running". It is true
+# of a body that raises before opening anything, and of one that raises after
+# its own `finally` closed the browser again - and both left a profile owned by
+# nothing, until a person went and deleted the claim by hand. The backends say
+# what actually happened: `_opened` when a browser is up, `_closed` when it is
+# down again and its driver is stopped.
+
+def test_a_failure_before_the_browser_leaves_nothing_owned(tmp_path, profile):
+    """Nothing was opened, so there is nothing to keep the profile for."""
+    from numera.drivers import open_session
+
+    store = ProfileStore(tmp_path)
+    with pytest.raises(RuntimeError, match="failed before launch"):
+        with open_session(store.get(profile.id), store):
+            raise RuntimeError("failed before launch")
+
+    assert sessions.read(tmp_path, profile.id) is None, \
+        "a claim was left for a browser that was never started"
+    with open_session(store.get(profile.id), store):
+        pass                                    # and the profile is usable again
+
+
+def test_a_browser_that_was_closed_again_does_not_keep_the_profile(tmp_path, profile):
+    """The `session()` shape: user code raises, the `finally` closes the browser
+    successfully, and the exception carries on out. Nothing is left running."""
+    from numera.drivers import _closed, _opened, open_session
+
+    store = ProfileStore(tmp_path)
+    with pytest.raises(ValueError, match="the caller's own bug"):
+        with open_session(store.get(profile.id), store):
+            _opened()
+            try:
+                raise ValueError("the caller's own bug")
+            finally:
+                _closed()                       # the browser and its driver, down
+
+    assert sessions.read(tmp_path, profile.id) is None, \
+        "a closed browser kept the profile owned"
+
+
+def test_a_browser_that_would_not_close_keeps_the_profile(tmp_path, profile):
+    """The state the claim exists for. `_closed` is reached only *after* a close
+    returns, so a close that raised never says the browser is gone."""
+    from numera.drivers import _opened, open_session
+
+    store = ProfileStore(tmp_path)
+    with pytest.raises(RuntimeError, match="close failed"):
+        with open_session(store.get(profile.id), store):
+            _opened()
+            raise RuntimeError("close failed")
+
+    assert sessions.held(tmp_path, profile.id) is True, \
+        "a browser that may still be running lost its claim"
+    with pytest.raises(SessionBusy):
+        with open_session(store.get(profile.id), store):
+            pass                                             # pragma: no cover
+
+
+def test_an_inner_session_does_not_answer_for_the_one_around_it(tmp_path):
+    """One thread, two sessions: B's failure must not speak for A's browser.
+
+    A single per-thread flag would have been overwritten by B - and A, whose
+    browser is open, would have released its claim on the way out."""
+    from numera.drivers import _opened, open_session
+
+    store = ProfileStore(tmp_path)
+    a = repo(store).create(Profile(name="a", fingerprint=generate(seed=1)))
+    b = repo(store).create(Profile(name="b", fingerprint=generate(seed=2)))
+
+    with pytest.raises(RuntimeError, match="A's browser is stuck"):
+        with open_session(store.get(a.id), store):
+            _opened()                                   # A has a browser
+            with pytest.raises(RuntimeError, match="B never started"):
+                with open_session(store.get(b.id), store):
+                    raise RuntimeError("B never started")
+            assert sessions.read(tmp_path, b.id) is None, "B kept a claim"
+            raise RuntimeError("A's browser is stuck")
+
+    assert sessions.held(tmp_path, a.id) is True, \
+        "A's claim was released by what happened in B"
+    sessions.release(tmp_path, a.id, sessions.read(tmp_path, a.id)["session"])
+
+
+# --- a claim that cannot be read is not an absent one ----------------------
+#
+# `read()` answered `None` for both "no claim file" and "a claim file I cannot
+# parse", and `take()` reads `None` as an empty slot - so a truncated or
+# hand-edited claim, which may be the only surviving record of a browser whose
+# launcher died, was simply overwritten by the next opener. Three states now,
+# and the third fails closed.
+
+BAD_CLAIMS = {
+    "truncated json": '{"session": "abc", "pid": 1',
+    "a list, not a record": '[]',
+    "a pid that is not a number": '{"session": "a", "pid": "many", "tree": {"kind": "pgid", "group": 3}}',
+    "a tree that is not an object": '{"session": "a", "pid": 3, "tree": "nonsense"}',
+    "a kind that is not a string": '{"session": "a", "pid": 3, "tree": {"kind": 42}}',
+    "a pgid that is not a number": '{"session": "a", "pid": 3, "tree": {"kind": "pgid", "group": "x"}}',
+    "a job whose name is a number": '{"session": "a", "pid": 3, "tree": {"kind": "job", "group": 7}}',
+    "a session id that is not a string": '{"session": 17, "pid": 3, "tree": {"kind": "pgid", "group": 3}}',
+    "no identity at all": '{"what": "a browser session"}',
+}
+
+
+def _write_claim(root, pid, text):
+    path = sessions._path(root, pid)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+@pytest.mark.parametrize("shape", sorted(BAD_CLAIMS))
+def test_a_claim_that_cannot_be_read_refuses_a_second_open(tmp_path, profile, shape):
+    """The lease is free - its holder is gone - and the claim is all that is
+    left. Every one of these must be a controlled refusal, not a traceback and
+    not a free profile."""
+    from numera.drivers import open_session
+
+    _write_claim(tmp_path, profile.id, BAD_CLAIMS[shape])
+    store = ProfileStore(tmp_path)
+
+    assert sessions.held(tmp_path, profile.id) is True
+    assert sessions.busy(tmp_path, profile.id) is True
+    with pytest.raises(SessionBusy):
+        with open_session(store.get(profile.id), store):
+            pass                                             # pragma: no cover
+
+
+def test_a_claim_that_cannot_be_read_refuses_every_destructive_operation(tmp_path, profile):
+    """Delete, session delete, backup and restore all move `user-data/<id>` out
+    from under whatever is using it. An unreadable claim is the state where
+    nothing can say what that is."""
+    store = ProfileStore(tmp_path)
+    (store.user_data_path(profile.id) / "Cookies").write_text("live", encoding="utf-8")
+    archive.backup(store, profile.id, tmp_path / "before.zip")
+    _write_claim(tmp_path, profile.id, BAD_CLAIMS["truncated json"])
+
+    for attempt in (lambda: repo(store).delete(profile.id),
+                    lambda: store.delete_session(profile.id),
+                    lambda: archive.backup(store, profile.id, tmp_path / "b.zip"),
+                    lambda: archive.restore(store, tmp_path / "before.zip")):
+        with pytest.raises(SessionBusy):
+            attempt()
+
+    assert store.get(profile.id) is not None, "it went ahead anyway"
+    assert (store.user_data_path(profile.id) / "Cookies").read_text("utf-8") == "live"
+
+
+def test_an_unreadable_claim_says_what_a_person_has_to_do(tmp_path, profile):
+    """"Busy" with nothing to stop is a dead end; the message names the file."""
+    _write_claim(tmp_path, profile.id, BAD_CLAIMS["truncated json"])
+
+    with pytest.raises(SessionBusy) as refused:
+        sessions.refuse_if_busy(tmp_path, profile.id)
+    assert "sessions/<id>.json" in str(refused.value)
+
+
+def test_a_claim_that_is_simply_absent_still_opens(tmp_path, profile):
+    """The control: fail-closed on unreadable must not mean fail-closed on
+    nothing at all."""
+    from numera.drivers import open_session
+
+    store = ProfileStore(tmp_path)
+    assert sessions.read(tmp_path, profile.id) is None
+    with open_session(store.get(profile.id), store):
+        assert sessions.held(tmp_path, profile.id) is True
+    assert sessions.read(tmp_path, profile.id) is None
+
+
+# --- adopting a tree moves the host, so it is all or nothing ---------------
+
+# A worker thread asking for a tree, with a terminal it cannot take. The
+# descriptor and the foreground group are stand-ins - what matters is that
+# `signal.signal` genuinely refuses off the main thread, which is where the
+# host used to be left in a group it never asked for.
+THREADED_ADOPTION = """
+import os, sys, threading
+sys.path.insert(0, {engine!r})
+from numera import proctree
+
+proctree._terminal = lambda: 0
+os.tcgetpgrp = lambda fd: 4242          # a foreground group that is not ours
+
+before = os.getpgrp()
+outcome = []
+
+
+def ask():
+    try:
+        proctree.own_tree()
+        outcome.append("adopted")
+    except proctree.TreeUnavailable:
+        outcome.append("refused")
+    except BaseException as err:
+        outcome.append(type(err).__name__)
+
+
+worker = threading.Thread(target=ask)
+worker.start()
+worker.join(30)
+print(outcome[0] if outcome else "hung", before == os.getpgrp(), flush=True)
+"""
+
+
+def test_a_tree_that_cannot_be_taken_leaves_the_host_where_it_was(tmp_path):
+    """`setpgrp()` moves the embedding process, and `signal.signal` - the next
+    step - raises `ValueError` off the main thread. The group change used to
+    stand: an application whose first browser open happened on a worker thread
+    was left out of the terminal's foreground group, deaf to Ctrl+C, over an
+    exception `own_tree` did not even recognise as a refusal."""
+    if proctree._WINDOWS:
+        pytest.skip("Windows adopts a job object and never touches signals")
+
+    child = subprocess.run(
+        [sys.executable, "-c", textwrap.dedent(
+            THREADED_ADOPTION.format(engine=ENGINE))],
+        capture_output=True, text=True, timeout=60)
+    assert child.returncode == 0, child.stderr
+    outcome, unmoved = child.stdout.split()
+
+    assert outcome == "refused", \
+        f"a tree that could not be taken was reported as {outcome}"
+    assert unmoved == "True", "the host was left in a group it never asked for"

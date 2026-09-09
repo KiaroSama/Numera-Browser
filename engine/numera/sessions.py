@@ -55,27 +55,64 @@ def _path(root, profile_id: str) -> Path:
     return id_path(_dir(root), profile_id, ".json")
 
 
-def read(root, profile_id: str) -> Optional[dict]:
-    """The claim on this profile, or None. No judgement, just the record."""
+#: What a claim file that cannot be parsed comes back as. It is not `None`:
+#: "there is no claim" and "there is a claim and I cannot read it" were the
+#: same answer, and `take()` read both as an empty slot - so a corrupt file,
+#: which may be the only surviving record of a browser whose launcher died, was
+#: overwritten by the next opener.
+UNREADABLE = object()
+
+
+def read(root, profile_id: str):
+    """The claim on this profile: a dict, `None` for none, or `UNREADABLE`.
+
+    Three states, because they are three different facts. Anything that cannot
+    be turned into a claim record - bad JSON, a truncated write, a directory
+    where a file should be, a list instead of an object - is the third one, and
+    every caller treats it as owned until a person repairs it.
+    """
     try:
         path = _path(root, profile_id)
     except ValueError:
         return None
-    if not path.exists():
-        return None
     try:
+        if not path.exists():
+            return None
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
+        return UNREADABLE
+    return data if isinstance(data, dict) else UNREADABLE
+
+
+def _tree_of(record: dict) -> Optional[proctree.Tree]:
+    """The tree a claim names, or None when the record does not describe one.
+
+    Defensive about every field, because this reads a file that another process
+    wrote and that a person may have edited: a pid that is not a number, a kind
+    that is not a string, a group of the wrong shape. None means "cannot tell",
+    which `state` turns into `unknown`, never into free.
+    """
+    tree = (record or {}).get("tree")
+    if tree is not None and not isinstance(tree, dict):
         return None
-    return data if isinstance(data, dict) else None
-
-
-def _tree_of(record: dict) -> proctree.Tree:
-    tree = (record or {}).get("tree") or {}
-    return proctree.Tree(pid=int((record or {}).get("pid") or 0),
-                         token=(record or {}).get("token"),
-                         group=tree.get("group"),
-                         kind=str(tree.get("kind") or ""))
+    tree = tree or {}
+    try:
+        pid = int((record or {}).get("pid") or 0)
+    except (TypeError, ValueError):
+        return None
+    kind = tree.get("kind") or ""
+    if not isinstance(kind, str):
+        return None
+    group = tree.get("group")
+    if kind == "pgid":
+        try:
+            group = int(group)
+        except (TypeError, ValueError):
+            return None
+    elif kind == "job" and not isinstance(group, str):
+        return None
+    return proctree.Tree(pid=pid, token=(record or {}).get("token"),
+                         group=group, kind=kind)
 
 
 def state(record: Optional[dict]) -> str:
@@ -86,11 +123,17 @@ def state(record: Optional[dict]) -> str:
     a record with no identity in it at all - and every caller treats it as busy.
     Silence about ownership is the one thing that must never read as available.
     """
+    if record is UNREADABLE:
+        return "unknown"                # a claim we cannot read is not absent
     if not record:
         return "free"
     if record.get("host") and record["host"] != platform.node():
         return "unknown"
+    if not isinstance(record.get("session", ""), str):
+        return "unknown"
     tree = _tree_of(record)
+    if tree is None:
+        return "unknown"                # a record whose tree makes no sense
     if not tree.pid and not tree.group:
         return "unknown"
     if tree.kind == "" and tree.token is None:
@@ -105,8 +148,8 @@ def busy(root, profile_id: str) -> bool:
     held": a lease dies with its holder, and the browser does not.
     """
     record = read(root, profile_id)
-    if not record:
-        return False
+    if not record or record is UNREADABLE:
+        return record is UNREADABLE     # unreadable is owned, not free
     if _is_ours(record):
         return False                    # ours; the caller knows its own state
     return state(record) != "free"
@@ -126,8 +169,12 @@ def _is_ours(record: dict) -> bool:
             and record.get("token") == proctree.started_at(os.getpid()))
 
 
-def describe(record: Optional[dict]) -> str:
+def describe(record) -> str:
     """One line about a claim, for an error a person has to act on."""
+    if record is UNREADABLE:
+        return ("a session claim that cannot be read - repair or remove "
+                "`sessions/<id>.json` by hand once you know no browser is "
+                "using this profile")
     if not record:
         return "no session"
     what = record.get("what") or "a session"
@@ -171,8 +218,7 @@ def take(root, profile_id: str, tree: proctree.Tree, what: str = "a session") ->
     with transaction_lock(root):
         current = read(root, profile_id)
         if current is not None:
-            standing = state(current)
-            if standing != "free":
+            if state(current) != "free":
                 raise SessionBusy(
                     f"this profile is still owned: {describe(current)}. "
                     f"Stop it first - `numera stop <profile>` - or wait for it "
@@ -210,7 +256,7 @@ def release(root, profile_id: str, session: str) -> bool:
     """
     with transaction_lock(root):
         current = read(root, profile_id)
-        if not current or current.get("session") != session:
+        if not current or current is UNREADABLE                 or current.get("session") != session:
             return False                # not this session's to remove
         try:
             _path(root, profile_id).unlink(missing_ok=True)

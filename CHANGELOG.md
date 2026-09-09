@@ -4,6 +4,70 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-09-09
+
+The nineteenth audit brief. What a session leaves behind is now answered from
+what actually happened to its browser, one secret-write contract covers the
+bulk path as well as the single one, and a record nothing can read is owned.
+
+### Fixed
+
+- **A failed session left the profile owned by nothing.** "The yield happened"
+  was read as "a browser is running", which is true of a caller that raises
+  before it opens anything and of one that raises after its own `finally` has
+  closed the browser again — both left a claim standing until a person
+  deleted the file by hand. The backends now say what happened: a claim is kept
+  only for a browser that was opened and not closed, and a close that raised
+  never reports one.
+
+- **Two sessions on one thread answered for each other.** The record of "did a
+  browser open" was per thread, so a second profile opened inside the first
+  session's body reset it — and the outer session, whose browser was still
+  up, gave up its claim on the way out. Each session keeps its own.
+
+- **Adopting a process group could move the host and then fail.**
+  `os.setpgrp()` succeeds, and the `signal.signal` that follows raises
+  `ValueError` off the main thread: an application whose first browser open
+  happened on a worker thread was left in a group it never asked for, outside
+  the terminal's foreground group and therefore deaf to Ctrl+C, over an
+  exception the caller did not recognise as a refusal. Adoption is now all or
+  nothing, and serialised, so two threads cannot both take one.
+
+- **`POST /api/profiles/bulk` bypassed the secret contract the single write
+  had.** It went through a second write path with no conflict refusal and no
+  per-copy ciphertext preservation, so an unrelated notes or tags edit across a
+  selection could do what one profile at a time could not. Both paths now share
+  one secret-aware prepare step.
+
+- **An explicit clear was lost before it reached the vault.**
+  `proxypool.normalize()` maps both `None` and `""` to `None`, which is the
+  right canonical *data* and the wrong *intent* for a secret, and
+  `PUT /api/proxies/{pid}` copied the normalised value back over the caller's
+  — so `{"pass": ""}` answered 200 and left the old password in place. The
+  address fields take the canonical values; the password keeps the caller's.
+
+- **`ProfileDiverged` and `VaultLocked` reached HTTP as 500s.** A refusal the
+  store makes on purpose told a client that Numera had broken. They are
+  answered as **409 Conflict** and **423 Locked**, from one app-level handler
+  rather than per route.
+
+- **A claim file that could not be read was treated as absent.** "No claim" and
+  "a claim I cannot parse" were one answer, and the next opener overwrote what
+  may have been the only surviving record of a browser whose launcher died.
+  Unreadable is now its own state and counts as owned — for opening,
+  deleting, backing up and restoring — and every field of a claim is
+  validated, so a malformed pid, group, kind or session id is a controlled
+  refusal rather than a traceback.
+
+### Known limitation
+
+- A session's ownership unit is still the process tree, not a tree of its own.
+  For direct/foreground/Python opens that tree also contains sibling sessions
+  and unrelated children of an embedding application, so "this session's
+  browser is gone" is answered from what the backends report rather than from
+  proving that exact tree empty. Server and detached launches each get their
+  own tree already.
+
 ## [0.27.0] - 2026-09-09
 
 The eighteenth audit brief. Two identity boundaries: **one profile has one

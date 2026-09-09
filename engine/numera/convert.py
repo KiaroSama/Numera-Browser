@@ -182,12 +182,15 @@ def to_engine_profile(d: dict) -> Profile:
         # browser speaking a different protocol than the profile claimed.
         from .proxypool import server_url
 
+        # `from_storage`: this password came out of the dashboard record, so it
+        # is the stored one until a caller assigns to it. Without that, every
+        # profile converted for a read looked like a deliberate replacement.
         proxy = Proxy(
             server=server_url(px.get("type", "HTTP"), px["host"], px.get("port", "")),
             username=px.get("user") or None,
             password=px.get("pass") or None,
             country=px.get("country") or None,
-        )
+        ).from_storage()
 
     return Profile(
         id=d.get("id") or "unsaved",

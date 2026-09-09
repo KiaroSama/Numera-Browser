@@ -117,7 +117,7 @@ def register(app, ctx):
     from fastapi import HTTPException
     from fastapi.responses import JSONResponse
 
-    from ..repo import NameTaken
+    from ..repo import NameTaken, secret_intent
 
     engine_store, dash, sched, running, is_running, decorate, stop_session = ctx.engine_store, ctx.dash, ctx.sched, ctx.running, ctx.is_running, ctx.decorate, ctx.stop_session
 
@@ -279,7 +279,8 @@ def register(app, ctx):
         # profile, so a failed profile write left the global default changed by
         # a request that returned an error.
         saved = dash.save(profile, config_change=(
-            {"default_engine": profile["engine"]} if chose_engine else None))
+            {"default_engine": profile["engine"]} if chose_engine else None),
+            secret_intent=secret_intent(profile.get("proxy")))
         return decorate(saved)
 
     @app.put("/api/profiles/{pid}")
@@ -328,7 +329,12 @@ def register(app, ctx):
             return merged, change
 
         try:
-            saved = dash.patch(pid, merge, expect_rev=sent_rev)
+            # The intent comes from the *body*, not from the merged record:
+            # a patch built on the stored profile echoes the stored password
+            # for every field it is not changing, and reading that as a choice
+            # is how an unrelated edit used to settle a credential conflict.
+            saved = dash.patch(pid, merge, expect_rev=sent_rev,
+                               secret_intent=secret_intent(profile.get("proxy")))
         except StaleProfile as e:
             raise HTTPException(409, str(e)) from None
         if saved is None:
@@ -494,8 +500,10 @@ def register(app, ctx):
         # write reported failure over profiles that had already committed;
         # before it, a failed profile write left the default changed. Only when
         # the patch names an engine - a tag-only bulk edit must not touch it.
-        saved = dash.patch_many(ids, merge, config_change=(
-            {"default_engine": patch["engine"]} if patch.get("engine") else None))
+        saved = dash.patch_many(
+            ids, merge, config_change=(
+                {"default_engine": patch["engine"]} if patch.get("engine") else None),
+            secret_intent=secret_intent(patch.get("proxy")))
         return [decorate(p) for p in saved]
 
     @app.post("/api/fingerprint/validate")

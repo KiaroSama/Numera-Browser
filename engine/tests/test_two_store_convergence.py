@@ -61,6 +61,22 @@ def store(tmp_path):
     return ProfileStore(tmp_path)
 
 
+def api(store):
+    """A TestClient on this data root.
+
+    The conflict tests used to call `DashboardStore.patch()` directly, which
+    proves the store refuses and says nothing about what a client is told - and
+    "the store refused" reached HTTP as a 500 for a while precisely because
+    nothing tested the route.
+    """
+    pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+
+    from numera.server import create_app
+
+    return TestClient(create_app(data_dir=str(store.root), start_scheduler=False))
+
+
 # --- a record on one side only ---------------------------------------------
 
 def test_a_dashboard_only_profile_is_listed(store):
@@ -320,16 +336,18 @@ def test_an_ordinary_edit_cannot_settle_the_conflict(store):
 
 
 def test_a_dashboard_edit_cannot_settle_it_either(store):
-    """Same rule from the other surface - it is the write that is refused, not
-    the caller."""
-    pytest.importorskip("fastapi")
-    from numera.server.stores import DashboardStore
-
+    """Same rule from the other surface, and through the real route: a PUT that
+    changes a note says nothing about the password, however much of the record
+    it happens to echo back."""
+    client = api(store)
     prof = diverged(store)
-    dash = DashboardStore(store.root, ProfileStore(store.root))
-    with pytest.raises(ProfileDiverged):
-        dash.patch(prof.id, lambda current: ({**current, "notes": "hello"}, None))
+
+    answer = client.put(f"/api/profiles/{prof.id}", json={"notes": "hello"})
+
+    assert answer.status_code == 409, answer.text
     assert dash_raw(store, prof.id)["proxy"]["pass"] == "dashboard"
+    assert engine_raw(store, prof.id)["proxy"]["password"] == "engine"
+    assert ProfileStore(store.root).get(prof.id).notes == ""
 
 
 def test_replacing_the_password_resolves_it(store):
@@ -477,13 +495,12 @@ def test_a_secret_only_the_dashboard_has_is_propagated_not_refused(store):
 
 
 def test_a_dashboard_edit_cannot_settle_a_one_sided_secret_either(store):
-    pytest.importorskip("fastapi")
-    from numera.server.stores import DashboardStore
-
+    client = api(store)
     prof = one_sided(store, "working-secret", "")
-    dash = DashboardStore(store.root, ProfileStore(store.root))
-    with pytest.raises(ProfileDiverged):
-        dash.patch(prof.id, lambda current: ({**current, "notes": "hello"}, None))
+
+    answer = client.put(f"/api/profiles/{prof.id}", json={"notes": "hello"})
+
+    assert answer.status_code == 409, answer.text
     assert engine_raw(store, prof.id)["proxy"]["password"] == "working-secret"
 
 
@@ -569,3 +586,138 @@ def test_clearing_a_password_needs_an_unlocked_vault(store):
     unlocked = ProfileStore(store.root, password="master")
     repo(unlocked).edit(prof.id, lambda p: setattr(p.proxy, "password", "") or p)
     assert engine_raw(store, prof.id)["proxy"]["password"] in (None, "")
+
+
+# --- what a client is told, and what a bulk write may not do ---------------
+
+def test_the_api_answers_a_divergence_with_409(store):
+    """The store's refusals had no HTTP meaning, so a request it deliberately
+    declined came back as a 500 - which tells a client that Numera broke."""
+    client = api(store)
+    prof = diverged(store)
+
+    for call in (lambda: client.put(f"/api/profiles/{prof.id}", json={"notes": "x"}),
+                 lambda: client.post("/api/profiles/bulk",
+                                     json={"ids": [prof.id], "patch": {"notes": "x"}})):
+        answer = call()
+        assert answer.status_code == 409, answer.text
+        assert "proxy password" in answer.json()["detail"]
+    assert engine_raw(store, prof.id)["proxy"]["password"] == "engine"
+    assert dash_raw(store, prof.id)["proxy"]["pass"] == "dashboard"
+    assert ProfileStore(store.root).get(prof.id).notes == ""
+
+
+def test_the_api_answers_a_locked_clear_with_423(store):
+    pytest.importorskip("cryptography")
+    prof = repo(store).create(
+        made("alpha", proxy=Proxy(server="http://h:1", username="u", password="kept")))
+    store.enable_vault("master")
+    before = engine_raw(store, prof.id)["proxy"]["password"]
+    client = api(store)                       # no password: locked
+
+    answer = client.put(f"/api/profiles/{prof.id}",
+                        json={"proxy": {"type": "HTTP", "host": "h", "port": "1",
+                                        "user": "u", "pass": ""}})
+
+    assert answer.status_code == 423, answer.text
+    assert engine_raw(store, prof.id)["proxy"]["password"] == before
+
+
+def test_a_bulk_edit_cannot_settle_a_conflict_and_stays_atomic(store):
+    """`POST /api/profiles/bulk` went through a second write path that had none
+    of the single write's safeguards - so a notes edit across a selection could
+    do what one profile at a time could not."""
+    healthy = repo(store).create(made("healthy", seed=3))
+    prof = diverged(store)
+    client = api(store)
+
+    answer = client.post("/api/profiles/bulk",
+                         json={"ids": [healthy.id, prof.id], "patch": {"tags": ["t"]}})
+
+    assert answer.status_code == 409, answer.text
+    assert ProfileStore(store.root).get(healthy.id).tags == [], \
+        "a refused bulk edit still changed another profile in the selection"
+    assert engine_raw(store, prof.id)["proxy"]["password"] == "engine"
+    assert dash_raw(store, prof.id)["proxy"]["pass"] == "dashboard"
+
+
+def test_a_locked_bulk_edit_leaves_each_ciphertext_alone(store):
+    pytest.importorskip("cryptography")
+    from numera import crypto
+
+    prof = repo(store).create(
+        made("alpha", proxy=Proxy(server="http://h:1", username="u", password="first")))
+    store.enable_vault("master")
+    opened = ProfileStore(store.root, password="master")
+    raw = dash_raw(store, prof.id)
+    raw["proxy"] = {**raw["proxy"],
+                    "pass": crypto.encrypt("master", opened.vault()["salt"], "second")}
+    write_dash(store, prof.id, raw)
+    before = (engine_raw(store, prof.id)["proxy"]["password"],
+              dash_raw(store, prof.id)["proxy"]["pass"])
+
+    answer = api(store).post("/api/profiles/bulk",
+                             json={"ids": [prof.id], "patch": {"notes": "bulk"}})
+
+    assert answer.status_code == 200, answer.text
+    assert (engine_raw(store, prof.id)["proxy"]["password"],
+            dash_raw(store, prof.id)["proxy"]["pass"]) == before, \
+        "a bulk edit normalised the two copies to one blob"
+    assert ProfileStore(store.root).get(prof.id).notes == "bulk"
+
+
+def test_a_bulk_edit_cannot_erase_a_one_sided_secret_either(store):
+    """The bulk path has to refuse everything the single path refuses. Here the
+    engine copy is the only one holding a working credential, and mirroring the
+    empty side across is how it would have been lost."""
+    prof = one_sided(store, "working-secret", "")
+    before = (engine_raw(store, prof.id)["proxy"]["password"],
+              dash_raw(store, prof.id)["proxy"]["pass"])
+
+    answer = api(store).post("/api/profiles/bulk",
+                             json={"ids": [prof.id], "patch": {"notes": "bulk"}})
+
+    assert answer.status_code == 409, answer.text
+    assert (engine_raw(store, prof.id)["proxy"]["password"],
+            dash_raw(store, prof.id)["proxy"]["pass"]) == before
+    assert ProfileStore(store.root).get(prof.id).notes == ""
+
+
+def test_a_healthy_bulk_edit_still_works(store):
+    a = repo(store).create(made("a", seed=1))
+    b = repo(store).create(made("b", seed=2))
+
+    answer = api(store).post("/api/profiles/bulk",
+                             json={"ids": [a.id, b.id], "patch": {"tags": ["ok"]}})
+
+    assert answer.status_code == 200, answer.text
+    assert ProfileStore(store.root).get(a.id).tags == ["ok"]
+    assert ProfileStore(store.root).get(b.id).tags == ["ok"]
+
+
+def test_either_side_of_a_conflict_can_be_chosen_explicitly(store):
+    """The value alone cannot say whether a caller chose it or echoed it, so
+    the model records the assignment. Before, choosing the password one of the
+    copies already held was indistinguishable from an unrelated edit and was
+    refused - the conflict could only be resolved with a third password."""
+    for chosen in ("engine", "dashboard"):
+        prof = diverged(store, name=f"pick-{chosen}")
+
+        repo(ProfileStore(store.root)).edit(
+            prof.id, lambda p: setattr(p.proxy, "password", chosen) or p)
+
+        assert engine_raw(store, prof.id)["proxy"]["password"] == chosen
+        assert dash_raw(store, prof.id)["proxy"]["pass"] == chosen
+        assert repo(ProfileStore(store.root)).divergence(prof.id) == []
+
+
+def test_the_api_can_choose_a_side_too(store):
+    prof = diverged(store)
+
+    answer = api(store).put(f"/api/profiles/{prof.id}",
+                            json={"proxy": {"type": "HTTP", "host": "h", "port": "1",
+                                            "user": "u", "pass": "dashboard"}})
+
+    assert answer.status_code == 200, answer.text
+    assert engine_raw(store, prof.id)["proxy"]["password"] == "dashboard"
+    assert dash_raw(store, prof.id)["proxy"]["pass"] == "dashboard"

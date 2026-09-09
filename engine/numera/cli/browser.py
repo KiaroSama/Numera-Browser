@@ -161,6 +161,8 @@ def cmd_attach(args, store: ProfileStore) -> int:
 
 
 def _attached(args, store, prof, attach, snippets) -> int:
+    from ..drivers import _closed
+
     (pw, context, page), info = attach(prof, store, port=args.port, engine=args.engine,
                                        headless=args.headless)
     ws = info.get("webSocketDebuggerUrl", "")
@@ -183,6 +185,9 @@ def _attached(args, store, prof, attach, snippets) -> int:
         finally:
             if pw:
                 pw.stop()
+        # Both are down, so this session is holding nothing - which is what
+        # lets `open_session` give the claim up even if the wait above raised.
+        _closed()
     return 0
 
 

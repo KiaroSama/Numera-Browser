@@ -515,6 +515,7 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         return {"ok": True, "service": "numera-browser", "version": __version__,
                 "authRequired": auth_required()}
 
+    _register_domain_errors(app)
     routes_config.register(app, ctx)
     routes_profiles.register(app, ctx)
     routes_browser.register(app, ctx)
@@ -526,6 +527,38 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         setattr(app.state, _name, _store)
     return app
 
+
+
+def _register_domain_errors(app) -> None:
+    """Answer the store's refusals as themselves, on every route.
+
+    Two of them exist now and neither had an HTTP meaning, so a request that
+    the store deliberately refused came back as a 500 - which tells a client
+    that Numera broke, when in fact it declined for a reason the client can act
+    on. `NameTaken` has had a handler since 0.21; these two are the same shape
+    of answer and belong beside it.
+
+    App-level rather than per-route because five route modules write profiles
+    and more than one of them can raise these: a `try`/`except` per route is a
+    list that the next route forgets to join.
+    """
+    from fastapi.responses import JSONResponse
+
+    from ..crypto import VaultLocked
+    from ..repo import ProfileDiverged
+
+    @app.exception_handler(ProfileDiverged)
+    def diverged(request, exc: ProfileDiverged):
+        # 409: the request is well formed and the server refuses because the
+        # stored state conflicts with itself. Retrying is pointless until a
+        # person settles which credential is right.
+        return JSONResponse({"detail": str(exc)}, status_code=409)
+
+    @app.exception_handler(VaultLocked)
+    def locked(request, exc: VaultLocked):
+        # 423: the resource is there and locked. The same code `/launch`
+        # already answers for a profile whose proxy password cannot be read.
+        return JSONResponse({"detail": str(exc)}, status_code=423)
 
 
 # `""` is deliberately NOT here. An empty host binds every interface - the exact

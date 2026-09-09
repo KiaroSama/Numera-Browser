@@ -148,7 +148,10 @@ def cmd_pool(args, store: ProfileStore) -> int:
         except ValueError as e:
             say(_c(str(e), C.RED))
             return emit({"ok": False, "error": str(e)}, 1)
-        for field in ("type", "host", "port", "user", "pass", "country"):
+        # `pass` is left as the caller gave it: `normalize` maps `""` to None,
+        # which is the right canonical data and the wrong intent for a secret -
+        # `""` clears, None preserves. The same collapse was in the HTTP route.
+        for field in ("type", "host", "port", "user", "country"):
             if field in patch:
                 patch[field] = clean[field]
         # A changed address means the stored verdict describes somewhere else.
