@@ -76,18 +76,36 @@ class TargetMoved(RuntimeError):
 PRESERVE, CLEAR, REPLACE = Proxy.PRESERVE, Proxy.CLEAR, Proxy.REPLACE
 
 
-def secret_intent(incoming_proxy) -> str:
-    """What a request body said about the secret.
+#: Taking the proxy away entirely. It is not a fourth flavour of "what did
+#: this write say about the password" - it is a different act, which is exactly
+#: why it needed its own word. `proxy: null` was read as PRESERVE, so removing
+#: a proxy whose two copies disagreed was refused as a conflict the user had
+#: just resolved by deleting it; and under a locked vault it slipped past the
+#: rule that says a stored credential may not be destroyed unread, because
+#: there was no password field left for that rule to look at.
+REMOVE = "remove"
 
-    Key absent or null - it said nothing, so preserve. Empty - an explicit
-    clear. Anything else - a replacement, *including* a value that happens to
-    equal one of the stored copies: a client that sends a password is choosing
-    it, and refusing that made resolving a two-password conflict impossible
-    without inventing a third one.
+
+def secret_intent(record, key: str = "proxy") -> str:
+    """What a request body said about the proxy and its secret.
+
+    Takes the whole record, not the proxy, because *absent* and *null* are two
+    different statements and the proxy alone cannot tell them apart. No key -
+    the write says nothing, so preserve. `null` - remove the proxy. Otherwise:
+    no `pass` key or a null one preserves, empty clears, and anything else is a
+    replacement, *including* a value that happens to equal one of the stored
+    copies. A client that sends a password is choosing it, and refusing that
+    made resolving a two-password conflict impossible without inventing a
+    third one.
     """
-    if not isinstance(incoming_proxy, dict) or "pass" not in incoming_proxy:
+    if not isinstance(record, dict) or key not in record:
         return PRESERVE
-    value = incoming_proxy["pass"]
+    proxy = record[key]
+    if proxy is None:
+        return REMOVE
+    if not isinstance(proxy, dict) or "pass" not in proxy:
+        return PRESERVE
+    value = proxy["pass"]
     if value is None:
         return PRESERVE
     return CLEAR if value == "" else REPLACE
@@ -438,10 +456,17 @@ class ProfileRepo:
         A write that *does* speak - a replacement or an explicit clear - is one
         decision and both copies take it.
         """
-        if profile.proxy is None:
-            return None, None
         stored = ((self._engine_raw(profile.id) or {}).get("proxy") or {}).get("password")
         twin = ((previous or {}).get("proxy") or {}).get("pass")
+        if profile.proxy is None:
+            # Taking the proxy away takes its credential with it, so it answers
+            # to the same rule as an explicit clear: under a locked vault a
+            # stored secret may not be destroyed by a process that cannot read
+            # it. This used to return before asking, which is how removing a
+            # proxy became the way round that rule.
+            for sealed in (stored, twin):
+                vault.encrypt_for_write(self.store, "", sealed)
+            return None, None
         intent = profile.proxy.password_intent
         if intent == PRESERVE:
             # Nothing was said about the secret, so nothing is decided: each

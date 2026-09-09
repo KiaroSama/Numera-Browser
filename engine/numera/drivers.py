@@ -250,6 +250,42 @@ def _live():
     return stack[-1] if stack else None
 
 
+def _cloak_programs(cloakbrowser) -> list:
+    """Every program CloakBrowser might start its browser from.
+
+    It exposes a Playwright `BrowserContext`, so it drives a Playwright-family
+    node driver - but which one is its own business, and it may ship a bundled
+    binary instead. So every candidate this machine can name is offered and the
+    first spawn that matches one wins; an empty list means the launch is
+    refused, because guessing would be the silent downgrade this replaced.
+    """
+    programs = []
+    for attribute in ("executable_path", "EXECUTABLE_PATH", "browser_path"):
+        value = getattr(cloakbrowser, attribute, None)
+        try:
+            value = value() if callable(value) else value
+        except Exception:            # noqa: BLE001    # pragma: no cover
+            value = None
+        if value:
+            programs.append(str(value))
+    for package in ("patchright", "playwright"):
+        found = _package_driver(package)
+        if found:
+            programs.append(found)
+    return programs
+
+
+def _package_driver(package: str) -> Optional[str]:
+    """The node driver a Playwright-family package would spawn, or None."""
+    try:
+        import importlib
+
+        driver = importlib.import_module(f"{package}._impl._driver")
+        return str(driver.compute_driver_executable()[0])
+    except Exception:            # noqa: BLE001 - not installed, or moved
+        return None
+
+
 def _playwright_program() -> Optional[str]:
     """Playwright's own driver, for the backends that do not hand us a module."""
     try:
@@ -263,19 +299,12 @@ def _driver_program(sync_playwright) -> Optional[str]:
     """The executable Playwright will start its driver from, or None.
 
     Asked of the package the caller handed us, because `patchright` ships its
-    own driver and Camoufox rides on Playwright's. None means this session
-    keeps the host tree - a narrower guarantee, never a wrong one.
+    own driver and Camoufox rides on Playwright's. None means the launch is
+    refused: a driver this process cannot name is one whose browser it could
+    never prove had stopped.
     """
     package = (getattr(sync_playwright, "__module__", "") or "").split(".")[0]
-    if not package:                                          # pragma: no cover
-        return None
-    try:
-        import importlib
-
-        driver = importlib.import_module(f"{package}._impl._driver")
-        return str(driver.compute_driver_executable()[0])
-    except Exception:            # noqa: BLE001 - any failure means "host tree"
-        return None              # pragma: no cover
+    return _package_driver(package) if package else None
 
 
 @contextmanager
@@ -287,15 +316,61 @@ def _own_driver_tree(program):
     tree that contains this session and nothing else, and the claim is narrowed
     to it: that is what lets `release` prove emptiness with the OS instead of
     trusting what this process reports about its own cleanup.
+
+    **The narrowing happens inside the spawn**, not after this body returns.
+    Playwright starts its browser well after `start()`, but Camoufox opens one
+    inside `__enter__` - so a launcher hard-killed in that window used to leave
+    a running browser whose only durable record still named the host tree, and
+    a later opener had nothing pointing at the group it was actually in.
+
+    **And it fails closed.** A driver that cannot be identified, a job object
+    that cannot be created or assigned, a claim that cannot be narrowed: each
+    of those used to fall back to the host tree, which quietly made the whole
+    guarantee optional. The browser is refused instead, and anything already
+    started is ended.
     """
-    with proctree.spawning_own_tree(program) as adopted:
-        yield
     state = _live()
-    if state is None or adopted.tree is None:
-        return                          # a backend outside a session, or no tree
-    state["tree"] = adopted.tree
-    sessions.narrow(state["root"], state["profile_id"], state["session"],
-                    adopted.tree)
+    if state is None:
+        # No session, so no claim and nothing to own: a driver called directly
+        # (a test, an internal probe) is not a browser open this has to answer
+        # for. Ownership is the claim's, and the claim only exists in here.
+        with proctree.spawning_own_tree(program):
+            yield
+        return
+    if not program:
+        raise proctree.TreeUnavailable(
+            "this browser's driver could not be identified, so no tree could "
+            "be made to own what it starts - and a browser nothing owns is "
+            "one nothing can prove has stopped. The launch was refused.")
+
+    def record(tree):
+        state["tree"] = tree
+        if not sessions.narrow(state["root"], state["profile_id"],
+                               state["session"], tree):
+            raise proctree.TreeUnavailable(
+                "the session's claim could not be pointed at the tree its "
+                "browser was starting in, so the browser was stopped: an "
+                "unrecorded tree is one nothing could find again.")
+
+    with proctree.spawning_own_tree(program, on_tree=record) as adopted:
+        yield
+    if adopted.tree is None:
+        _abandon_tree(adopted.proc)
+        raise proctree.TreeUnavailable(
+            "this browser's driver did not start in a tree of its own, so "
+            "nothing could prove its browser had stopped. The launch was "
+            "refused and anything it had started was ended.")
+
+
+def _abandon_tree(proc) -> None:
+    """End a driver we have decided not to keep. Quiet: we are already failing."""
+    if proc is None:
+        return
+    try:
+        proc.kill()
+        proc.wait(timeout=10)
+    except Exception:            # noqa: BLE001                # pragma: no cover
+        pass
 
 
 def _opened() -> None:
@@ -847,25 +922,32 @@ def _driver_cloak(profile, store, headless=False, keep_open=True, extra_args=Non
     relay = context = None
     try:
         proxy_cfg, relay = _browser_proxy(profile)
-        context = cloakbrowser.launch_persistent_context(
-            user_data_dir=str(store.user_data_path(profile.id)),
-            headless=headless,
-            proxy=proxy_cfg,
-            user_agent=fp.user_agent,
-            viewport={"width": fp.viewport_width, "height": fp.viewport_height},
-            locale=fp.locale,
-            timezone=fp.timezone,
-            geoip=bool(profile.proxy),   # align timezone/locale to the proxy exit IP
-            # CloakBrowser launches with --no-sandbox (its stealth args), which makes
-            # Chromium show a local "unsupported command-line flag" infobar. --test-type
-            # hides that purely-cosmetic bar; it isn't visible to websites (JS can't
-            # read command-line flags), so it doesn't affect the fingerprint.
-            args=["--test-type", "--no-first-run", "--no-default-browser-check",
-                  *_webrtc_arg(profile), *_extension_args(profile),
-                  *_dns_args(profile), *_switched_off_args(profile),
-                  *(profile.launch_args or []),
-                  *(extra_args or [])],
-        )
+        # The same seam the other engines use. CloakBrowser hands back a
+        # Playwright context, so it drives a Playwright-family node driver, and
+        # that driver's spawn is where this session's tree is decided. If the
+        # program cannot be named, or the tree cannot be made, the launch is
+        # refused rather than quietly falling back to the host tree - a browser
+        # nothing owns is one nothing can prove has stopped.
+        with _own_driver_tree(_cloak_programs(cloakbrowser)):
+            context = cloakbrowser.launch_persistent_context(
+                user_data_dir=str(store.user_data_path(profile.id)),
+                headless=headless,
+                proxy=proxy_cfg,
+                user_agent=fp.user_agent,
+                viewport={"width": fp.viewport_width, "height": fp.viewport_height},
+                locale=fp.locale,
+                timezone=fp.timezone,
+                geoip=bool(profile.proxy),   # align timezone/locale to the proxy exit IP
+                # CloakBrowser launches with --no-sandbox (its stealth args), which makes
+                # Chromium show a local "unsupported command-line flag" infobar. --test-type
+                # hides that purely-cosmetic bar; it isn't visible to websites (JS can't
+                # read command-line flags), so it doesn't affect the fingerprint.
+                args=["--test-type", "--no-first-run", "--no-default-browser-check",
+                      *_webrtc_arg(profile), *_extension_args(profile),
+                      *_dns_args(profile), *_switched_off_args(profile),
+                      *(profile.launch_args or []),
+                      *(extra_args or [])],
+            )
         if relay:
             context.on("close", lambda *_: relay.close())
         page = context.pages[0] if context.pages else context.new_page()
