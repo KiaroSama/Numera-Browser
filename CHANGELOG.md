@@ -4,6 +4,40 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.30.1] - 2026-09-09
+
+Closing what 0.30.0 left open. No engine behaviour changed: this is the
+verification catching up with the code, plus one dependency.
+
+### Changed
+
+- **Every launch backend is now exercised for real.** `patchright`, `camoufox`
+  and `cloakbrowser` were absent from this machine and from CI, so those three
+  engines were covered by a wiring assertion and nothing else. They are
+  installed, and `test_session_tree_live.py` opens a real browser on each
+  installed engine and proves it lands in a tree of its own - parametrised over
+  what is present, so an engine that is missing is visibly absent from the
+  report rather than silently unclaimed. All four pass on Windows.
+
+- **A leaked handle fails the suite.** `error::ResourceWarning` is on. It was
+  measured before it was turned on - the suite already passed with it - so
+  nothing is being suppressed to keep it green. It found two real leaks
+  immediately: an unreaped child in an ownership test, and the SOCKS4 fake
+  leaving both ends of a completed tunnel to the garbage collector. Warnings
+  raised from `__del__` on a daemon thread can still only warn, which is
+  Python's limit, not a policy choice.
+
+- **The test process is confined to this machine.** A new `tests/conftest.py`
+  scrubs `NUMERA_DATA_DIR`, `NUMERA_API_TOKEN` and the proxy environment
+  variables before any test module loads - a data dir pointing at real
+  profiles, or an inherited `HTTP_PROXY`, changes what a test operates on and
+  reaches - and refuses outbound sockets to anything that is not this machine.
+  It found a live one: the SOCKS check test counted its tunnel only after the
+  upstream dial succeeded, so an assertion its own docstring called independent
+  of the internet in fact required it.
+
+- `lucide-react` 1.41.0 -> 1.43.0.
+
 ## [0.30.0] - 2026-09-09
 
 The twenty-first audit brief. The session tree stops being best-effort: every
