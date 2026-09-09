@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "numera-engine"
-version = "0.30.0"
+version = "0.30.1"
 description = "Coherent browser fingerprint & profile engine for Numera Browser."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -69,3 +69,22 @@ markers = ["slow: needs a real browser; excluded from the offline run"]
 timeout = 120
 timeout_method = "thread"
 addopts = "--strict-markers"
+
+# A leaked handle is a failed run, not a note at the bottom of one. This suite
+# spawns browsers, drivers, relays and servers, and "no leaked process, port or
+# handle" is already a requirement the guarded runner checks structurally - but
+# an unclosed socket or pipe inside the test process is invisible to it, and a
+# ResourceWarning that is merely printed is a signal nobody reads. Measured
+# before it was turned on: the suite passes with it, so nothing here is being
+# suppressed to make it green.
+#
+# It only bites while pytest's warnings plugin is loaded, so do NOT add
+# `-p no:warnings` to a run whose result is meant to prove anything.
+filterwarnings = [
+    "error::ResourceWarning",
+    # Deliberate, and the tests that provoke it assert on the behaviour behind
+    # it - see `store._reconciled`.
+    "ignore:the two stored copies of profile:RuntimeWarning",
+    # Starlette's own notice about its httpx dependency; not this project's.
+    "ignore:Using .httpx. with .starlette.testclient. is deprecated",
+]

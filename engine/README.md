@@ -473,3 +473,28 @@ Add your own backend by registering a function in `drivers.py`.
 pip install -e ".[dev]"
 python -m pytest
 ```
+
+The suite is confined to this machine: `tests/conftest.py` scrubs
+`NUMERA_DATA_DIR`, `NUMERA_API_TOKEN` and the proxy environment variables
+before any test module loads, and refuses outbound sockets to anything that is
+not this host. This project handles proxy credentials and browser identities,
+so a test that reaches a real site is a defect even when it works. A test that
+genuinely needs the internet takes the `allow_outbound` fixture, which puts the
+exception in its own signature rather than in a shared edit.
+
+A leaked handle fails the run — `filterwarnings` turns `ResourceWarning` into
+an error — so do not add `-p no:warnings` to a run whose result is meant to
+prove anything.
+
+The live suites (`test_*_live.py`) need real browsers, and each engine is
+exercised only if its package is present. Install the ones you want covered:
+
+```bash
+pip install patchright cloakbrowser "camoufox[geoip]"
+python -m patchright install chromium
+python -m camoufox fetch
+python -c "from cloakbrowser.download import ensure_binary; ensure_binary()"
+```
+
+That last line matters: CloakBrowser downloads its binary on first launch, and
+the network guard refuses that from inside a test. Fetch it once, up front.

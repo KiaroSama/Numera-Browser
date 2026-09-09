@@ -55,6 +55,7 @@ class Socks5:
             threading.Thread(target=self._handle, args=(conn,), daemon=True).start()
 
     def _handle(self, c):
+        up = None
         try:
             greeting = c.recv(2)
             if len(greeting) < 2:
@@ -87,14 +88,22 @@ class Socks5:
             if self.refuse_connect:
                 c.sendall(b"\x05\x05\x00\x01" + b"\0" * 6)   # connection refused
                 return
-            up = socket.create_connection((host, port), timeout=20)
+            # Counted when the tunnel is *asked for*, not when the upstream
+            # answers. The claim this test makes is that the check routed
+            # through this proxy, and a SOCKS CONNECT arriving settles that;
+            # whether the far side is reachable is a fact about the internet.
+            # Counting after the dial made the assertion depend on the network
+            # the docstring says it does not need.
             self.connects += 1
+            up = socket.create_connection((host, port), timeout=20)
             c.sendall(b"\x05\x00\x00\x01" + b"\0" * 6)
             threading.Thread(target=self._pipe, args=(c, up), daemon=True).start()
             self._pipe(up, c)
         except Exception:                             # noqa: BLE001 - a test server
             pass
         finally:
+            if up is not None:
+                up.close()
             c.close()
 
     @staticmethod

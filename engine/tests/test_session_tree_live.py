@@ -42,6 +42,40 @@ def _tree_of(record) -> proctree.Tree:
     return sessions._tree_of(record)
 
 
+INSTALLED = sorted(name for name, ok in __import__(
+    "numera.drivers", fromlist=["available"]).available().items() if ok)
+
+
+@pytest.mark.parametrize("engine", INSTALLED)
+def test_every_installed_engine_gets_a_tree_of_its_own(store, engine):
+    """Each backend, launched for real, in a tree containing only its browser.
+
+    The wiring assertion in `test_session_tree_mandatory.py` checks that every
+    backend *calls* `_own_driver_tree`; this checks that doing so works, which
+    is a different claim and only a real browser can settle it. Parametrised
+    over what is installed rather than a fixed list, so an engine that is
+    present is exercised and one that is absent is visibly absent from the
+    report instead of silently unclaimed.
+
+    Camoufox is included through `drivers.session()`, which is the path that
+    knows it is launch-and-wait only.
+    """
+    from numera.drivers import session as browser_session
+
+    prof = made(store, engine, seed=abs(hash(engine)) % 1000)
+    host = proctree.own_tree()
+
+    with browser_session(store.get(prof.id), store, engine=engine, headless=True):
+        tree = _tree_of(sessions.read(store.root, prof.id))
+        assert tree is not None, f"{engine} opened without a usable tree"
+        assert str(tree.group) != str(host.group), \
+            f"{engine} named the whole host process"
+        assert proctree.alive_tree(tree), f"{engine}'s own tree read as empty"
+
+    assert sessions.read(store.root, prof.id) is None, \
+        f"{engine} did not give its claim up"
+
+
 def test_a_session_names_a_tree_that_is_not_the_hosts(store):
     """The claim used to name the host job or process group verbatim."""
     from numera.drivers import session as browser_session

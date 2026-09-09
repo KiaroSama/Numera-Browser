@@ -83,6 +83,12 @@ class FakeSocks4:
             threading.Thread(target=self._one, args=(client,), daemon=True).start()
 
     def _one(self, client):
+        # Both ends are closed on the way out, including the path where the
+        # tunnel ran to completion. They used to be left to the garbage
+        # collector, which emits a ResourceWarning from a daemon thread - the
+        # one leak signal this suite's `filterwarnings` cannot turn into a
+        # failure, because Python cannot raise inside `__del__`.
+        upstream = None
         try:
             head = _recv(client, 8)
             self.seen["version"] = head[0]
@@ -104,10 +110,14 @@ class FakeSocks4:
             # ended cut the response between its headers and its body.
             _tunnel(client, upstream)
         except Exception:                                       # noqa: BLE001
-            try:
-                client.close()
-            except OSError:
-                pass
+            pass
+        finally:
+            for sock in (client, upstream):
+                if sock is not None:
+                    try:
+                        sock.close()
+                    except OSError:
+                        pass
 
 
 def _recv(sock, n):

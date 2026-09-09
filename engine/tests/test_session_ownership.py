@@ -753,7 +753,7 @@ def test_a_claim_is_not_released_while_its_own_tree_holds_something(tmp_path, pr
         assert sessions.read(tmp_path, profile.id) is None
     finally:
         if proc.poll() is None:                              # pragma: no cover
-            _kill(proc.pid)
+            _end(proc)
 
 
 def test_a_session_tree_that_outlives_a_clean_exit_keeps_the_profile(tmp_path, profile):
@@ -788,7 +788,7 @@ def test_a_session_tree_that_outlives_a_clean_exit_keeps_the_profile(tmp_path, p
             pass
     finally:
         if proc.poll() is None:                              # pragma: no cover
-            _kill(proc.pid)
+            _end(proc)
 
 
 def test_two_sessions_in_one_host_get_distinct_trees(tmp_path):
@@ -833,7 +833,7 @@ def test_two_sessions_in_one_host_get_distinct_trees(tmp_path):
     finally:
         for proc in procs:
             if proc.poll() is None:
-                _kill(proc.pid)
+                _end(proc)
 
 
 def test_an_unrelated_host_child_belongs_to_neither_session(tmp_path, profile):
@@ -858,9 +858,12 @@ def test_an_unrelated_host_child_belongs_to_neither_session(tmp_path, profile):
         assert sessions.settle(tmp_path, profile.id) is True, \
             "an unrelated host child kept a session owned"
     finally:
+        # Killed *and reaped*: an unwaited child stays a zombie, and its
+        # `Popen.__del__` then raises ResourceWarning - which this suite now
+        # treats as a failure, correctly.
         for victim in (proc, stranger):
             if victim.poll() is None:
-                _kill(victim.pid)
+                _end(victim)
 
 
 # --- adopting is a decision the whole process makes once -------------------
@@ -972,7 +975,7 @@ def test_a_current_claim_is_recoverable_once_its_tree_is_empty(tmp_path, profile
             pass
     finally:
         if proc.poll() is None:                              # pragma: no cover
-            _kill(proc.pid)
+            _end(proc)
 
 
 def test_an_unevaluable_claim_says_it_is_the_record_that_is_wrong(tmp_path, profile):
