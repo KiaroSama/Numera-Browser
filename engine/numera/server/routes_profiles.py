@@ -280,7 +280,7 @@ def register(app, ctx):
         # a request that returned an error.
         saved = dash.save(profile, config_change=(
             {"default_engine": profile["engine"]} if chose_engine else None),
-            secret_intent=secret_intent(profile.get("proxy")))
+            secret_intent=secret_intent(profile))
         return decorate(saved)
 
     @app.put("/api/profiles/{pid}")
@@ -334,7 +334,7 @@ def register(app, ctx):
             # for every field it is not changing, and reading that as a choice
             # is how an unrelated edit used to settle a credential conflict.
             saved = dash.patch(pid, merge, expect_rev=sent_rev,
-                               secret_intent=secret_intent(profile.get("proxy")))
+                               secret_intent=secret_intent(profile))
         except StaleProfile as e:
             raise HTTPException(409, str(e)) from None
         if saved is None:
@@ -503,7 +503,7 @@ def register(app, ctx):
         saved = dash.patch_many(
             ids, merge, config_change=(
                 {"default_engine": patch["engine"]} if patch.get("engine") else None),
-            secret_intent=secret_intent(patch.get("proxy")))
+            secret_intent=secret_intent(patch))
         return [decorate(p) for p in saved]
 
     @app.post("/api/fingerprint/validate")

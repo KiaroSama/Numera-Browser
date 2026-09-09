@@ -324,7 +324,7 @@ class DashboardStore:
         `intent` is what the *request* said about the secret, not what the
         merged record happens to hold - see `secret_intent`.
         """
-        from ..repo import PRESERVE, repo as _repo, secret_intent
+        from ..repo import PRESERVE, REMOVE, repo as _repo, secret_intent
 
         if intent is None:
             # No caller said. Read it from the record being written, which is
@@ -332,12 +332,48 @@ class DashboardStore:
             # and is why a request path must pass its own: a patch built on the
             # stored profile echoes the stored password, and that is not a
             # decision about it.
-            intent = secret_intent(prof.get(self.SECRET[0]))
+            intent = secret_intent(prof, self.SECRET[0])
         if self._engine is not None:
             _repo(self._engine).refuse_conflicting_write(prof["id"], intent)
+        if intent == REMOVE:
+            self._refuse_unmeant_removal(prof.get("id", ""))
         prof = self._guard_secrets(prof, intent)
         prof = self._resolve_folder(prof)
         return prof, self._twin(prof, keep_engine_secret=intent == PRESERVE)
+
+    def _refuse_unmeant_removal(self, pid: str) -> None:
+        """The two ways `proxy: null` can destroy something nobody chose.
+
+        **A credential this process cannot read.** Removing the proxy removes
+        the password with it, so it is the same destructive act as an explicit
+        clear and takes the same rule: under a locked vault a stored secret is
+        not destroyed by a process that cannot tell what it is.
+        `_guard_secrets` cannot enforce that here - a write that removes the
+        proxy carries no password field for it to look at - so this asks the
+        one primitive that owns the rule, once per stored copy.
+
+        **A proxy the caller was never shown.** A removal settles a readable
+        two-password divergence, because the client saw a proxy and chose to
+        delete it. It settles nothing when only the *engine* copy has one: the
+        listing shows no proxy at all in that case, so a client sending the
+        whole record back sends `null` for a proxy it never knew about - and
+        reading that as a decision would erase a credential on an unrelated
+        edit. That is the same defect as the password echo, and it gets the
+        same answer: this is not a decision, so it is refused.
+        """
+        a, b = self.SECRET
+        dash = (self._raw(pid).get(a) or {})
+        sealed = [dash.get(b)]
+        if self._engine is not None:
+            from ..repo import repo as _repo
+
+            engine = ((_repo(self._engine)._engine_raw(pid) or {}).get(a) or {})
+            sealed.append(engine.get("password"))
+            if engine.get("password") and not dash:
+                _repo(self._engine).refuse_unresolved_secret(
+                    pid, engine.get("password"), None)
+        for stored in sealed:
+            vault.encrypt_for_write(self._engine, "", stored)
 
     def _twin(self, prof: dict, keep_engine_secret: bool = False):
         """`(path, data)` for the engine's copy of `prof`, or None.

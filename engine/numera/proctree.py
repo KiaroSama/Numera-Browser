@@ -495,16 +495,16 @@ def spawn(argv, **kwargs) -> tuple:
 class Adopted:
     """The tree one browser session's driver was started into.
 
-    `tree` is None until that spawn happens, and stays None when the session
-    could not be given one - which is not a failure, only a narrower guarantee:
-    the claim then names the host tree, exactly as it did before, and refuses
-    more rather than less.
+    `tree` is None until that spawn happens, and a `tree` still None when the
+    window closes means the driver was never caught - which is a *failure*, not
+    a narrower guarantee. `proc` is what was started, so a caller that has to
+    refuse the launch can end it rather than leave a browser nothing owns.
     """
 
-    __slots__ = ("tree",)
+    __slots__ = ("tree", "proc")
 
     def __init__(self):
-        self.tree = None
+        self.tree = self.proc = None
 
 
 #: Serialises `spawning_own_tree`. The interception below is process-global for
@@ -514,7 +514,7 @@ _SPAWNING = threading.Lock()
 
 
 @contextmanager
-def spawning_own_tree(executable):
+def spawning_own_tree(executable, on_tree=None):
     """Start the next process launched from `executable` as its own tree.
 
     **Why this exists.** `own_tree()` gives the whole host process one tree, so
@@ -537,19 +537,29 @@ def spawning_own_tree(executable):
     * it holds `_SPAWNING`, so two sessions in one host cannot interleave;
     * it restores the original only if nothing else replaced it meanwhile.
 
-    Yields an `Adopted`. Read `.tree` after the block: None means this session
-    kept the host tree, which is the pre-0.29 guarantee, not a broken one.
+    `on_tree(tree)` is called **from inside the spawn**, the instant the tree
+    exists and while the driver is still only a driver - before anything can
+    ask it to open a browser. That ordering is the point: recording the tree
+    after the launch call returned left a window where a hard kill lost the
+    only pointer to a browser that was already running, and Camoufox starts one
+    inside its `__enter__`. If it raises, the driver is ended and the failure
+    propagates, because a tree nothing recorded is worth no more than no tree.
+
+    Yields an `Adopted`. `.tree` still None after the block means the driver
+    was never caught, which callers treat as a failed launch.
     """
     holder = Adopted()
     if not executable:
-        yield holder                    # nothing to match on; host tree it is
+        yield holder                    # nothing to match on; the caller refuses
         return
-    target = str(executable)
+    targets = tuple(str(one) for one in
+                    (executable if isinstance(executable, (list, tuple))
+                     else [executable]) if one)
     with _SPAWNING:
         installed = []
         for module, attr in _spawn_points():
             original = getattr(module, attr)
-            setattr(module, attr, _capture(holder, target, original))
+            setattr(module, attr, _capture(holder, targets, original, on_tree))
             installed.append((module, attr, original, getattr(module, attr)))
         try:
             yield holder
@@ -580,24 +590,34 @@ def _spawn_points():
     return points
 
 
-def _capture(holder, target: str, original):
-    """`original`, except that the first spawn of `target` leads a new tree."""
+def _capture(holder, targets, original, on_tree):
+    """`original`, except that the first spawn of a target leads a new tree."""
     def popen(args, *rest, **kwargs):
-        if holder.tree is not None or not _is_target(args, target):
+        if holder.tree is not None or not _is_target(args, targets):
             return original(args, *rest, **kwargs)
         proc, tree = _spawn_leader(original, args, rest, kwargs)
+        holder.proc = proc
+        try:
+            if on_tree is not None:
+                on_tree(tree)
+        except BaseException:
+            # Recorded nowhere, so nothing could ever prove it empty. End it
+            # here rather than hand back a browser with no owner on disk.
+            _abandon(proc)
+            raise
         holder.tree = tree
         return proc
     return popen
 
 
-def _is_target(args, target: str) -> bool:
+def _is_target(args, targets) -> bool:
     """Is this the driver we are waiting for, and not some other spawn?"""
     program = args[0] if isinstance(args, (list, tuple)) and args else args
     try:
-        return os.path.normcase(str(program)) == os.path.normcase(target)
+        name = os.path.normcase(str(program))
     except Exception:            # noqa: BLE001 - a program we cannot name is not ours
         return False             # pragma: no cover
+    return any(name == os.path.normcase(one) for one in targets)
 
 
 def _spawn_leader(original, args, rest, kwargs) -> tuple:
@@ -612,16 +632,27 @@ def _spawn_leader(original, args, rest, kwargs) -> tuple:
     if _WINDOWS:
         name = f"numera-session-{uuid.uuid4().hex}"
         job = _job_open(name)
-        if job is None:                                      # pragma: no cover
-            return original(args, *rest, **kwargs), None
+        if job is None:
+            raise TreeUnavailable(
+                "this session could not be given a job object to own the "
+                "browser it starts, so it was not started: without one, "
+                "nothing could prove the browser had stopped.")
         # `close_fds=False` for the same reason `spawn()` uses it: the job
         # handle is inheritable, and the child holding its own copy is what
         # keeps the job's *name* resolvable after `_job_assign` closes ours.
         # Without it the last handle went with that call, kill-on-close fired,
         # and the driver died the moment it was adopted.
         proc = original(args, *rest, **{**kwargs, "close_fds": False})
-        if not _job_assign(job, proc):                       # pragma: no cover
-            return proc, None           # host tree, as before - never a lie
+        if not _job_assign(job, proc):
+            # It is running and it cannot be owned. Ending it here is the only
+            # answer that leaves nothing behind; falling back to the host tree
+            # made the guarantee optional, which is the defect the tree exists
+            # to close.
+            _abandon(proc)
+            raise TreeUnavailable(
+                f"the browser driver could not be put in its job object, so "
+                f"it was stopped rather than left owning a browser nothing "
+                f"could account for (pid {proc.pid}).")
         return proc, Tree(pid=proc.pid, token=identify(proc),
                           group=name, kind="job")
     kwargs = {**kwargs, "start_new_session": True}

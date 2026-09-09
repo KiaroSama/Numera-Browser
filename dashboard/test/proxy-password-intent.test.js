@@ -58,3 +58,50 @@ test("a profile with no proxy is passed through untouched", () => {
 
   expect(forWrite(p)).toEqual(p);
 });
+
+/* The lifecycle, state transition by state transition. Each of these is a
+ * thing the editor can do between loading a profile and saving it, and each
+ * has to reach the server as the intent the user expressed - never as one
+ * inferred from what the value happens to be. */
+
+test("turning the proxy off sends the removal, not a password statement", () => {
+  // `proxy: null` is REMOVE server-side: the endpoint, the username and the
+  // password go together. It must survive whether or not the password control
+  // was ever touched, so neither branch of the omission may swallow it.
+  for (const marker of [{}, { _passwordSet: true }]) {
+    const sent = forWrite({ ...loaded(), ...marker, proxy: null });
+
+    expect(sent.proxy).toBe(null);
+    expect("_passwordSet" in sent).toBe(false);
+  }
+});
+
+test("turning it off and on again sends what the form now holds", () => {
+  // The toggle builds a fresh proxy with an empty password and marks it, so
+  // the new endpoint gets no credential rather than silently inheriting the
+  // old one. Only the final state is sent; there is no history to replay.
+  const on = { ...loaded(), proxy: { type: "HTTP", host: "", port: "", user: "", pass: "" }, _passwordSet: true };
+
+  expect(forWrite(on).proxy.pass).toBe("");
+});
+
+test("picking a saved pooled proxy sends its password explicitly", () => {
+  const picked = {
+    ...loaded(), _passwordSet: true,
+    proxy: { type: "SOCKS5", host: "pool.example", port: "1080", user: "pu", pass: "pool-secret" },
+  };
+
+  expect(forWrite(picked).proxy.pass).toBe("pool-secret");
+});
+
+test("a profile refetched after a save carries no dirty marker", () => {
+  // The marker is stripped on the way out and never stored, so what the server
+  // hands back on the next load has none - and the next unrelated edit is a
+  // preserve again. A marker that survived one save would make every later
+  // edit a replacement.
+  const saved = forWrite({ ...loaded(), _passwordSet: true });
+  const refetched = { ...saved, proxy: { ...saved.proxy, pass: "dashboard-secret" } };
+
+  expect("_passwordSet" in refetched).toBe(false);
+  expect("pass" in forWrite({ ...refetched, notes: "later" }).proxy).toBe(false);
+});

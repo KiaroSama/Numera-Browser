@@ -33,6 +33,7 @@ import subprocess
 import sys
 import textwrap
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -1002,11 +1003,26 @@ class _StubCamoufox:
         return self.suppress
 
 
-def _camoufox_run(monkeypatch, tmp_path, profile, stub, body):
-    """One session whose backend is camoufox-shaped, and what its claim did."""
+def _camoufox_run(monkeypatch, tmp_path, profile, stub, body, tree=None):
+    """One session whose backend is camoufox-shaped, and what its claim did.
+
+    The stub opens no real driver, so it stands in for the tree as well: a
+    session inside `open_session` may not reach a browser without one, which is
+    the invariant `test_a_session_may_not_open_a_browser_it_cannot_own` covers.
+    """
     from numera import drivers
 
+    @contextmanager
+    def owned_tree(program):
+        state = drivers._live()
+        if state is not None and tree is not None:
+            state["tree"] = tree
+            sessions.narrow(state["root"], state["profile_id"],
+                            state["session"], tree)
+        yield
+
     monkeypatch.setattr(drivers, "_camoufox", lambda kwargs: stub)
+    monkeypatch.setattr(drivers, "_own_driver_tree", owned_tree)
     store = ProfileStore(tmp_path)
     with drivers.open_session(store.get(profile.id), store):
         with drivers._camoufox_session({}):

@@ -4,6 +4,48 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-09-09
+
+The twenty-first audit brief. The session tree stops being best-effort: every
+browser this project opens either owns one, or is refused. And taking a proxy
+away becomes an act with a name, instead of a statement about a password that
+was no longer there.
+
+### Fixed
+
+- **A session's own tree was optional in practice.** 0.29 captured one when it
+  could and fell back to the whole host process when it could not - a package
+  that moved, a job object that would not be created or assigned, a backend
+  with a different launcher. A correctness primitive that degrades silently is
+  not one: the fallback is exactly the state it was built to end. Each of those
+  is now a refusal, and any driver already started is stopped. The `cloak`
+  engine joins the same seam rather than sitting outside it.
+
+- **The tree was recorded only after the launch call returned.** Playwright
+  starts its browser well after `start()`, so the window was invisible there -
+  but Camoufox opens one inside `__enter__`. A launcher hard-killed in that
+  window left a running browser whose only durable record still named the host
+  tree, with nothing pointing at the group it was actually in. The claim is
+  narrowed from inside the spawn now, while the driver is still only a driver;
+  a claim that cannot be narrowed stops the driver instead.
+
+- **Removing a proxy was read as preserving its password.** `proxy: null` is
+  neither preserve, clear nor replace - it takes the proxy and the credential
+  together - and reading it as "said nothing" was wrong twice over. It refused
+  what the user had just decided: with two readable passwords the copies
+  disagree, and deleting the proxy settles that, yet the write came back 409.
+  And it let through what it should have refused: under a locked vault an
+  explicit clear raises `VaultLocked`, but a removal carries no password field
+  for that rule to look at, so the same destruction went through unread.
+  `REMOVE` is that act, named, and the HTTP and Python surfaces answer it
+  identically. A proxy only the engine copy holds is still refused: the listing
+  never showed it, so `null` was not a decision about it.
+
+- **The Dashboard's password marker gained lifecycle coverage** across the
+  transitions it has to survive - toggling the proxy off, off and on again,
+  picking a pooled proxy, and the edit after a save - so the omission rule
+  cannot regress to inferring intent from value equality.
+
 ## [0.29.0] - 2026-09-09
 
 The twentieth audit brief. A browser session now owns an OS tree that holds it

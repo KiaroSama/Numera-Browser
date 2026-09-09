@@ -93,9 +93,13 @@ A claim names the OS tree that holds *that session's* browser and nothing
 else - a process group on POSIX, a job object on Windows - and it is given up
 only once the OS says that tree is empty. So a browser left running past a
 clean exit keeps its profile, and a session that raised over a browser it had
-already closed does not. (The `cloak` engine is the exception: its binary is
-not started through Playwright's driver, so those sessions still name the host
-process tree, which refuses more than it must rather than less.)
+already closed does not.
+
+Every engine goes through that, with no fallback: a driver this process cannot
+identify, a tree it cannot create, and a claim it cannot point at that tree are
+each a refused launch, and anything already started is stopped. A browser
+nothing owns is one nothing can prove has stopped, which is the whole reason
+the tree exists.
 
 A claim that cannot be *evaluated* counts as owned, not as absent. That covers
 a file that will not parse, and also one written by an older version or by
@@ -303,9 +307,9 @@ any *content*:
 * **The failure modes are undocumented.** The `409` from launching or stopping
   a profile whose session someone else holds and from a write over two stored
   copies whose proxy passwords disagree, the `423` from a profile whose proxy
-  password the vault cannot read and from clearing a secret while locked, the
-  `404`s, the `400` from an unparseable proxy list — none appear. Only the
-  automatic `422` does.
+  password the vault cannot read and from clearing *or removing* a secret while
+  locked, the `404`s, the `400` from an unparseable proxy list or a proxy
+  password that is not text — none appear. Only the automatic `422` does.
 * **Bearer auth is invisible.** `NUMERA_API_TOKEN` - or any named token - adds a
   middleware that answers `401`; no security scheme or `401` response is
   declared, so a generated client will not send the header.
