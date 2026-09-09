@@ -122,7 +122,10 @@ def test_the_claim_names_the_new_tree_before_the_launch_returns(tmp_path, profil
         kid = int(kid)
 
         record = sessions.read(tmp_path, profile.id)
-        assert record["tree"]["group"] == group, \
+        # Compared as text: a job name is a string and a pgid is a number, so
+        # the raw comparison passed on Windows and failed on POSIX for a claim
+        # that was in fact narrowed correctly.
+        assert str(record["tree"]["group"]) == group, \
             "the claim did not name the new tree until the launch returned"
 
         _kill(owner.pid)
