@@ -75,6 +75,30 @@ function headers(body) {
   return Object.keys(h).length ? h : undefined;
 }
 
+// The editor's marker never goes to the server: it is a UI fact, not a field.
+export const withoutMarker = ({ _passwordSet, ...rest }) => rest;
+
+/** What a profile write may say about the proxy password.
+ *
+ * The dashboard loads profiles with their passwords decrypted, so PUTting the
+ * whole object back sent the stored password again - and the server reads a
+ * password in a write as REPLACE. An ordinary notes or name edit therefore
+ * *chose* the dashboard's credential, which on a profile whose two stored
+ * copies disagree converged them silently instead of answering 409.
+ *
+ * Omitting the field is how a caller says "leave it alone", so that is what an
+ * untouched password control sends. `_passwordSet` is set by the editor when
+ * the user actually enters one (see setProxy in Editor.jsx) - never inferred
+ * from the value, because retyping the same password and never touching the
+ * field look identical and mean opposite things.
+ */
+export const forWrite = (p) => {
+  const rest = withoutMarker(p);
+  if (p._passwordSet || !rest.proxy || !("pass" in rest.proxy)) return rest;
+  const { pass, ...proxy } = rest.proxy;
+  return { ...rest, proxy };
+};
+
 async function req(method, path, body) {
   const res = await fetch(BASE + path, {
     method,
@@ -135,8 +159,8 @@ export const api = {
   renameFolder: (from, to) => req("POST", "/api/folders/rename", { from, to }),
   deleteFolder: (name, reassignTo) => req("POST", "/api/folders/delete", { name, reassignTo }),
   list: () => req("GET", "/api/profiles"),
-  create: (p) => req("POST", "/api/profiles", p),
-  update: (p) => req("PUT", `/api/profiles/${p.id}`, p),
+  create: (p) => req("POST", "/api/profiles", withoutMarker(p)),
+  update: (p) => req("PUT", `/api/profiles/${p.id}`, forWrite(p)),
   remove: (id) => req("DELETE", `/api/profiles/${id}`),
   // One request for a selection. Deleting M profiles used to be M round trips,
   // while creating and editing in bulk were both batched.

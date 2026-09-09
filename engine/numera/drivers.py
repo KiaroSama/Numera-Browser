@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sys
 import warnings
 from contextlib import contextmanager
 import threading
@@ -45,6 +46,7 @@ from typing import Callable, Optional
 
 from . import fingerprint as fp_mod
 from . import paths as paths_mod
+from . import proctree, sessions
 from .models import Profile
 from .stealth import build_init_script
 
@@ -248,6 +250,54 @@ def _live():
     return stack[-1] if stack else None
 
 
+def _playwright_program() -> Optional[str]:
+    """Playwright's own driver, for the backends that do not hand us a module."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:                                      # pragma: no cover
+        return None
+    return _driver_program(sync_playwright)
+
+
+def _driver_program(sync_playwright) -> Optional[str]:
+    """The executable Playwright will start its driver from, or None.
+
+    Asked of the package the caller handed us, because `patchright` ships its
+    own driver and Camoufox rides on Playwright's. None means this session
+    keeps the host tree - a narrower guarantee, never a wrong one.
+    """
+    package = (getattr(sync_playwright, "__module__", "") or "").split(".")[0]
+    if not package:                                          # pragma: no cover
+        return None
+    try:
+        import importlib
+
+        driver = importlib.import_module(f"{package}._impl._driver")
+        return str(driver.compute_driver_executable()[0])
+    except Exception:            # noqa: BLE001 - any failure means "host tree"
+        return None              # pragma: no cover
+
+
+@contextmanager
+def _own_driver_tree(program):
+    """Start this session's driver in a tree that holds only its browser.
+
+    The claim was taken before any of this - it has to be, or two openers race
+    - so it names the host tree until now. Once the driver exists there is a
+    tree that contains this session and nothing else, and the claim is narrowed
+    to it: that is what lets `release` prove emptiness with the OS instead of
+    trusting what this process reports about its own cleanup.
+    """
+    with proctree.spawning_own_tree(program) as adopted:
+        yield
+    state = _live()
+    if state is None or adopted.tree is None:
+        return                          # a backend outside a session, or no tree
+    state["tree"] = adopted.tree
+    sessions.narrow(state["root"], state["profile_id"], state["session"],
+                    adopted.tree)
+
+
 def _opened() -> None:
     """Tell a parent that spawned this session that its browser is now open.
 
@@ -293,6 +343,63 @@ def _closed() -> None:
     state = _live()
     if state is not None:
         state["closed"] = True
+
+
+def _camoufox(kwargs):
+    """Camoufox's own context manager. A seam: the exit protocol below is the
+    part worth testing, and it needs a stand-in that can fail on close."""
+    from camoufox.sync_api import Camoufox
+
+    return Camoufox(**kwargs)
+
+
+@contextmanager
+def _camoufox_session(kwargs):
+    """`with Camoufox(...)`, plus the one fact a plain `with` throws away.
+
+    Camoufox closes the browser from `__exit__`, and when the body raised, the
+    exception carries straight past every line after the `with` - including the
+    one that would have said the browser is down. So the session kept its claim
+    for a browser that had closed cleanly, and in a long-lived host the profile
+    stayed busy until somebody deleted the claim file.
+
+    The protocol is driven by hand for exactly that reason: `__exit__` is given
+    the exception the way `with` would give it and still decides whether to
+    suppress it, but *returning* from it is now observable. An `__exit__` that
+    raises never reaches `_closed()`, which is right - that is the case where
+    something may still be holding the profile.
+    """
+    cam = _camoufox(kwargs)
+    # Camoufox drives Playwright's own Firefox driver, so the same seam works:
+    # `__enter__` is where its driver is spawned.
+    with _own_driver_tree(_playwright_program()):
+        browser = cam.__enter__()
+    try:
+        yield browser
+    except BaseException:
+        suppressed = cam.__exit__(*sys.exc_info())
+        _closed()                       # it returned, so the browser is down
+        if not suppressed:
+            raise
+    else:
+        cam.__exit__(None, None, None)
+        _closed()
+
+
+def _may_release(state) -> bool:
+    """May this session's claim go, given how its body ended?
+
+    Only consulted when the session has no tree of its own. With one, `release`
+    asks the OS - `tree` proved empty - and neither of these flags is needed.
+
+    Without one the only tree available is the host's, which holds sibling
+    sessions and every unrelated child of an embedding application, so the
+    answer comes from what the backends reported: a claim is kept for a browser
+    that was opened and not closed again. "The yield happened" was the older
+    test, and it is true both of a caller that raises before opening anything
+    and of one that raises after its own `finally` closed the browser.
+    """
+    return not state["opened"] or state["closed"]
 
 
 @contextmanager
@@ -348,7 +455,9 @@ def open_session(profile: Profile, store):
     from .paths import session_lease, transaction_lock
     from .repo import repo
 
-    session, state = None, {"opened": False, "closed": False}
+    session, state = None, {"opened": False, "closed": False, "tree": None,
+                            "root": store.root, "profile_id": profile.id,
+                            "session": None}
     try:
         # The tree this process owns, established *before* anything is claimed
         # or opened. A foreground CLI adopts one for itself here; a spawned
@@ -367,6 +476,7 @@ def open_session(profile: Profile, store):
             # the state it exists for: a browser that may still be running.
             session = sessions.take(store.root, profile.id, tree,
                                     "a browser session")["session"]
+            state["session"] = session
             # Short, and released before the browser starts.
             with transaction_lock(store.root):
                 # The coherence gate, for every opener rather than only the
@@ -402,15 +512,10 @@ def open_session(profile: Profile, store):
                 yield current
             finally:
                 stack.pop()
-        sessions.release(store.root, profile.id, session)
+        sessions.release(store.root, profile.id, session, tree=state["tree"])
     except BaseException as failure:
-        # The claim is kept only when this session opened a browser that is
-        # still open. "The yield happened" was the old test, and it is true of
-        # both a caller that raises before opening anything - which left the
-        # profile owned by nothing - and one that raises after its `finally`
-        # already closed the browser.
-        if session is not None and (not state["opened"] or state["closed"]):
-            sessions.release(store.root, profile.id, session)
+        if session is not None and _may_release(state):
+            sessions.release(store.root, profile.id, session, tree=state["tree"])
         # Only if nothing has been reported yet. Once a backend has said the
         # browser is open the parent has acted on it, and overwriting that with
         # a failure raised on the way out would be a second lie.
@@ -438,7 +543,6 @@ def session(profile: Profile, store, engine: Optional[str] = None,
 
         if name == "camoufox":
             # Camoufox's driver is launch-and-wait only, so open it directly.
-            from camoufox.sync_api import Camoufox
             # Exactly the options a real launch uses. The proxy matters most - without
             # it the leak test and the trust report measured the host's own
             # connection and called it clean, which is worse than no check - but so
@@ -446,14 +550,9 @@ def session(profile: Profile, store, engine: Optional[str] = None,
             # does not have.
             kwargs, relay = _camoufox_kwargs(quiet, store, headless)
             try:
-                with Camoufox(**kwargs) as browser:
+                with _camoufox_session(kwargs) as browser:
                     _opened()
                     yield browser
-                # Only on the clean path: Camoufox closes from `__exit__`, and
-                # an exception on the way out carries past this line without
-                # saying whether that close succeeded. Erring towards "keep the
-                # claim" is the safe half of that, so it is left unsaid.
-                _closed()
             finally:
                 if relay:
                     relay.close()
@@ -556,7 +655,11 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
         # driver launches. A portable build ships its own Chromium and there is no
         # developer cache to fall back on.
         paths_mod.use_bundled_browsers()
-        pw = sync_playwright().start()
+        # Started inside the session's own tree, which is the only moment it
+        # can be decided: everything this driver goes on to start - the
+        # browser, its renderers - inherits the group or job it was born in.
+        with _own_driver_tree(_driver_program(sync_playwright)):
+            pw = sync_playwright().start()
         context = pw.chromium.launch_persistent_context(
             user_data_dir=str(store.user_data_path(profile.id)),
             headless=headless,
@@ -708,12 +811,10 @@ def _driver_camoufox(profile, store, headless=False, keep_open=True, extra_args=
             "The camoufox engine supports launch-and-wait only (keep_open=False), "
             "which is what `numera launch` and the dashboard use."
         )
-    from camoufox.sync_api import Camoufox
-
     kwargs, relay = _camoufox_kwargs(profile, store, headless)
 
     try:
-        with Camoufox(**kwargs) as browser:
+        with _camoufox_session(kwargs) as browser:
             page = browser.pages[0] if getattr(browser, "pages", None) else browser.new_page()
             _opened()
             _open_startup_urls(browser, page, profile)

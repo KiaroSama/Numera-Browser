@@ -43,6 +43,7 @@ import subprocess
 import threading
 import time
 import uuid
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -153,7 +154,7 @@ def started_at(pid: int) -> "Optional[int]":
             import ctypes.wintypes as wt
 
             PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
-            k32 = ctypes.windll.kernel32
+            k32 = _kernel32()
             handle = k32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, int(pid))
             if not handle:
                 return None
@@ -210,7 +211,7 @@ def alive(pid: int, token=None) -> bool:
 
         SYNCHRONIZE = 0x00100000
         WAIT_TIMEOUT = 0x00000102
-        k32 = ctypes.windll.kernel32
+        k32 = _kernel32()
         handle = k32.OpenProcess(SYNCHRONIZE, False, int(pid))
         if not handle:
             return False
@@ -251,14 +252,50 @@ def identify(proc: subprocess.Popen,
 
 
 # ---- Windows job objects -------------------------------------------------
+#: The one bound `kernel32`. Cached because `WinDLL` returns a NEW object every
+#: call and ctypes caches signatures *per object*, so a fresh instance per call
+#: re-binds nothing that any other call site can see.
+_K32 = []
+
+
 def _kernel32():
+    """`kernel32` with every signature this module uses declared.
+
+    ctypes defaults an unbound argument and return value to `c_int` - 32 bits -
+    and a Windows `HANDLE` is pointer-sized. An unbound `OpenProcess` therefore
+    hands back a truncated, sign-extended handle, and the `CloseHandle` or
+    `WaitForSingleObject` that follows acts on whatever that value names. It
+    looked like it worked because handle values are small; that is luck, not a
+    guarantee, and `alive()` and `started_at()` - the two liveness checks the
+    whole durable claim rests on - were the call sites reaching for the
+    unbound `ctypes.windll.kernel32`.
+    """
+    if _K32:
+        return _K32[0]
     import ctypes
     import ctypes.wintypes as wt
 
     k32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    k32.CreateJobObjectW.restype = wt.HANDLE
-    k32.OpenJobObjectW.restype = wt.HANDLE
-    k32.OpenProcess.restype = wt.HANDLE
+    for fn, restype, argtypes in (
+        ("CreateJobObjectW", wt.HANDLE, (ctypes.c_void_p, wt.LPCWSTR)),
+        ("OpenJobObjectW", wt.HANDLE, (wt.DWORD, wt.BOOL, wt.LPCWSTR)),
+        ("OpenProcess", wt.HANDLE, (wt.DWORD, wt.BOOL, wt.DWORD)),
+        ("CloseHandle", wt.BOOL, (wt.HANDLE,)),
+        ("WaitForSingleObject", wt.DWORD, (wt.HANDLE, wt.DWORD)),
+        ("GetProcessTimes", wt.BOOL, (wt.HANDLE, ctypes.c_void_p, ctypes.c_void_p,
+                                      ctypes.c_void_p, ctypes.c_void_p)),
+        ("AssignProcessToJobObject", wt.BOOL, (wt.HANDLE, wt.HANDLE)),
+        ("TerminateJobObject", wt.BOOL, (wt.HANDLE, ctypes.c_uint)),
+        ("SetInformationJobObject", wt.BOOL, (wt.HANDLE, ctypes.c_int,
+                                              ctypes.c_void_p, wt.DWORD)),
+        ("QueryInformationJobObject", wt.BOOL, (wt.HANDLE, ctypes.c_int,
+                                                ctypes.c_void_p, wt.DWORD,
+                                                ctypes.c_void_p)),
+    ):
+        handle = getattr(k32, fn)
+        handle.restype = restype
+        handle.argtypes = argtypes
+    _K32.append(k32)
     return k32
 
 
@@ -451,6 +488,144 @@ def spawn(argv, **kwargs) -> tuple:
     # engine down with the browser.
     kwargs["start_new_session"] = True
     proc = subprocess.Popen(argv, **kwargs)
+    return proc, Tree(pid=proc.pid, token=identify(proc),
+                      group=proc.pid, kind="pgid")
+
+
+class Adopted:
+    """The tree one browser session's driver was started into.
+
+    `tree` is None until that spawn happens, and stays None when the session
+    could not be given one - which is not a failure, only a narrower guarantee:
+    the claim then names the host tree, exactly as it did before, and refuses
+    more rather than less.
+    """
+
+    __slots__ = ("tree",)
+
+    def __init__(self):
+        self.tree = None
+
+
+#: Serialises `spawning_own_tree`. The interception below is process-global for
+#: the length of one driver startup, so two sessions in one host must not have
+#: their windows overlap - the second would capture the first's driver.
+_SPAWNING = threading.Lock()
+
+
+@contextmanager
+def spawning_own_tree(executable):
+    """Start the next process launched from `executable` as its own tree.
+
+    **Why this exists.** `own_tree()` gives the whole host process one tree, so
+    every in-process session in one program named the same one - siblings and
+    unrelated children of an embedding application included. A claim over that
+    tree cannot answer "is *this* session's browser gone", which is the only
+    question that makes a profile safe to reuse.
+
+    A browser is started by a driver process (the Playwright node driver, which
+    Camoufox also uses), and every process that driver starts inherits its
+    group or job. So the tree has to be decided at the driver's `Popen`, and
+    nothing in Playwright's API reaches that call - hence the interception,
+    kept as small and as specific as it can be:
+
+    * it is installed for the length of one `start()` call and removed in a
+      `finally`;
+    * it fires only for `executable`, so an embedding application spawning
+      something of its own on another thread in that window is untouched;
+    * it captures once - a driver that respawns is not a second session;
+    * it holds `_SPAWNING`, so two sessions in one host cannot interleave;
+    * it restores the original only if nothing else replaced it meanwhile.
+
+    Yields an `Adopted`. Read `.tree` after the block: None means this session
+    kept the host tree, which is the pre-0.29 guarantee, not a broken one.
+    """
+    holder = Adopted()
+    if not executable:
+        yield holder                    # nothing to match on; host tree it is
+        return
+    target = str(executable)
+    with _SPAWNING:
+        installed = []
+        for module, attr in _spawn_points():
+            original = getattr(module, attr)
+            setattr(module, attr, _capture(holder, target, original))
+            installed.append((module, attr, original, getattr(module, attr)))
+        try:
+            yield holder
+        finally:
+            for module, attr, original, ours in installed:
+                if getattr(module, attr) is ours:
+                    setattr(module, attr, original)
+
+
+def _spawn_points():
+    """Every name a driver spawn can come through, on this platform.
+
+    `subprocess.Popen` alone is not enough. asyncio - which is how Playwright
+    starts its driver - uses `subprocess.Popen` directly on POSIX but a
+    *subclass* of it on Windows, `asyncio.windows_utils.Popen`, bound at import
+    time. Replacing the base class does not touch a subclass that already
+    exists, so patching one name caught the driver on Linux and missed it on
+    Windows entirely - and a seam that works on one platform is the failure
+    this project has hit before.
+    """
+    points = [(subprocess, "Popen")]
+    if _WINDOWS:
+        try:
+            import asyncio.windows_utils as windows_utils
+        except ImportError:                                  # pragma: no cover
+            return points
+        points.append((windows_utils, "Popen"))
+    return points
+
+
+def _capture(holder, target: str, original):
+    """`original`, except that the first spawn of `target` leads a new tree."""
+    def popen(args, *rest, **kwargs):
+        if holder.tree is not None or not _is_target(args, target):
+            return original(args, *rest, **kwargs)
+        proc, tree = _spawn_leader(original, args, rest, kwargs)
+        holder.tree = tree
+        return proc
+    return popen
+
+
+def _is_target(args, target: str) -> bool:
+    """Is this the driver we are waiting for, and not some other spawn?"""
+    program = args[0] if isinstance(args, (list, tuple)) and args else args
+    try:
+        return os.path.normcase(str(program)) == os.path.normcase(target)
+    except Exception:            # noqa: BLE001 - a program we cannot name is not ours
+        return False             # pragma: no cover
+
+
+def _spawn_leader(original, args, rest, kwargs) -> tuple:
+    """`original(...)`, with the child made the leader of a new tree.
+
+    Windows assigns after the fact, the same way `spawn()` does and for the
+    same reason: `Popen` gives no way to hand a job in at creation. The window
+    is the microseconds between the call returning and the assignment, and a
+    browser driver spends the first of its life reading its own arguments - it
+    starts a browser only when asked, which is a message away.
+    """
+    if _WINDOWS:
+        name = f"numera-session-{uuid.uuid4().hex}"
+        job = _job_open(name)
+        if job is None:                                      # pragma: no cover
+            return original(args, *rest, **kwargs), None
+        # `close_fds=False` for the same reason `spawn()` uses it: the job
+        # handle is inheritable, and the child holding its own copy is what
+        # keeps the job's *name* resolvable after `_job_assign` closes ours.
+        # Without it the last handle went with that call, kill-on-close fired,
+        # and the driver died the moment it was adopted.
+        proc = original(args, *rest, **{**kwargs, "close_fds": False})
+        if not _job_assign(job, proc):                       # pragma: no cover
+            return proc, None           # host tree, as before - never a lie
+        return proc, Tree(pid=proc.pid, token=identify(proc),
+                          group=name, kind="job")
+    kwargs = {**kwargs, "start_new_session": True}
+    proc = original(args, *rest, **kwargs)
     return proc, Tree(pid=proc.pid, token=identify(proc),
                       group=proc.pid, kind="pgid")
 

@@ -216,7 +216,19 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
    * catching up. */
   const changeOS = (os) => set({ os, userAgent: uaFor(os), screen: SCREENS[os][0], cores: CORES[os][1], memory: RAM[os][1], webglRenderer: GPUS[os][0], webglVendor: vendorFor(GPUS[os][0]) });
   const changeLocale = (locale) => set({ locale, timezone: LOCALES[locale] });
-  const setProxy = (patch) => set({ proxy: { ...(p.proxy || { type: "HTTP", host: "", port: "", user: "", pass: "", country: "" }), ...patch } });
+  /* A profile loaded from the server carries its decrypted proxy password, and
+   * PUTting the whole object back told the server to REPLACE it - so editing
+   * only the notes of a profile whose two stored copies disagree silently chose
+   * the dashboard's credential instead of returning the 409 it owes. The
+   * password is now sent only when the user actually set one, and `_passwordSet`
+   * is how api.js knows (see forWrite there). It is marked here rather than
+   * guessed from value equality, because "typed the same password again" and
+   * "never touched the field" produce identical values and mean opposite
+   * things. */
+  const setProxy = (patch) => set({
+    proxy: { ...(p.proxy || { type: "HTTP", host: "", port: "", user: "", pass: "", country: "" }), ...patch },
+    ...("pass" in patch ? { _passwordSet: true } : {}),
+  });
 
   // The saved proxy pool (live only), so attaching one doesn't mean retyping
   // host/port/user/pass by hand. Matched back by host:port so reopening the
@@ -487,7 +499,7 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
             <>
               <div className="ps-proxy-toggle">
                 <span style={{ fontSize: 13, fontWeight: 600 }}>Use proxy for this profile</span>
-                <button className={"ps-toggle" + (p.proxy ? " on" : "")} onClick={() => set({ proxy: p.proxy ? null : { type: "HTTP", host: "", port: "", user: "", pass: "", country: "US" } })}>
+                <button className={"ps-toggle" + (p.proxy ? " on" : "")} onClick={() => set(p.proxy ? { proxy: null } : { proxy: { type: "HTTP", host: "", port: "", user: "", pass: "", country: "US" }, _passwordSet: true })}>
                   <span className="knob" /> <em>{p.proxy ? "On" : "Off"}</em>
                 </button>
               </div>
