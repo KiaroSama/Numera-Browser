@@ -84,35 +84,54 @@ def read(root, profile_id: str):
     return data if isinstance(data, dict) else UNREADABLE
 
 
-def _tree_of(record: dict) -> Optional[proctree.Tree]:
-    """The tree a claim names, or None when the record does not describe one.
+#: The tree kinds a browser-session claim may name, and the platform that can
+#: answer for each. A claim naming the other platform's kind is not "probably
+#: fine" - this machine has no way to ask whether that tree still holds a
+#: browser, and `state` calls that `unknown`.
+_EVALUABLE = {"job": True, "pgid": False}       # kind -> needs Windows
 
-    Defensive about every field, because this reads a file that another process
-    wrote and that a person may have edited: a pid that is not a number, a kind
-    that is not a string, a group of the wrong shape. None means "cannot tell",
-    which `state` turns into `unknown`, never into free.
+
+def _tree_of(record: dict) -> Optional[proctree.Tree]:
+    """The tree a claim names, or None when it does not name a usable one.
+
+    Strict on purpose, because this reads a file another process wrote and a
+    person may have edited, and because the leader-only fall-through it used to
+    allow is the exact shape that outlives its own guarantee:
+
+    * a claim with `kind: ""` and a token is a **0.26-era leader-only** record.
+      `alive_tree` falls back to "is the leader alive" for it, so an older
+      launcher killed while its Chromium survived reads as free and the next
+      opener takes the profile - the corruption the claim exists to prevent,
+      reached by upgrading.
+    * a `kind` this build does not know, or one belonging to the other platform
+      (a POSIX `pgid` read on Windows), cannot be evaluated here at all.
+
+    Both are `None`, which `state` turns into `unknown`, which every caller
+    treats as owned. Recovering one is a deliberate act by a person who knows
+    no browser is running - not something the next opener does by accident.
     """
-    tree = (record or {}).get("tree")
-    if tree is not None and not isinstance(tree, dict):
+    record = record or {}
+    tree = record.get("tree")
+    if not isinstance(tree, dict):
         return None
-    tree = tree or {}
-    try:
-        pid = int((record or {}).get("pid") or 0)
-    except (TypeError, ValueError):
-        return None
-    kind = tree.get("kind") or ""
-    if not isinstance(kind, str):
+    kind = tree.get("kind")
+    if kind not in _EVALUABLE or _EVALUABLE[kind] is not proctree._WINDOWS:
         return None
     group = tree.get("group")
     if kind == "pgid":
-        try:
-            group = int(group)
-        except (TypeError, ValueError):
+        # `bool` is an `int`; `True` is not a process group.
+        if isinstance(group, bool) or not isinstance(group, int) or group <= 0:
             return None
-    elif kind == "job" and not isinstance(group, str):
+    elif not isinstance(group, str) or not group:
         return None
-    return proctree.Tree(pid=pid, token=(record or {}).get("token"),
-                         group=group, kind=kind)
+    token = record.get("token")
+    if token is not None and (isinstance(token, bool)
+                              or not isinstance(token, (int, float, str))):
+        return None
+    pid = record.get("pid")
+    if isinstance(pid, bool) or not isinstance(pid, int) or pid < 0:
+        return None
+    return proctree.Tree(pid=pid, token=token, group=group, kind=kind)
 
 
 def state(record: Optional[dict]) -> str:
@@ -129,15 +148,12 @@ def state(record: Optional[dict]) -> str:
         return "free"
     if record.get("host") and record["host"] != platform.node():
         return "unknown"
-    if not isinstance(record.get("session", ""), str):
-        return "unknown"
+    session = record.get("session")
+    if not isinstance(session, str) or not session:
+        return "unknown"                # a claim nothing can be released by
     tree = _tree_of(record)
     if tree is None:
-        return "unknown"                # a record whose tree makes no sense
-    if not tree.pid and not tree.group:
-        return "unknown"
-    if tree.kind == "" and tree.token is None:
-        return "unknown"                # a bare pid is not an identity
+        return "unknown"                # no durable tree this machine can ask
     return "busy" if proctree.alive_tree(tree) else "free"
 
 
@@ -179,10 +195,18 @@ def describe(record) -> str:
         return "no session"
     what = record.get("what") or "a session"
     pid = record.get("pid")
-    if state(record) == "unknown":
-        return (f"{what} claimed by pid {pid} on {record.get('host') or 'another machine'}, "
-                f"which this process cannot verify")
-    return f"{what} started by pid {pid}, whose browser is still running"
+    if state(record) != "unknown":
+        return f"{what} started by pid {pid}, whose browser is still running"
+    host = record.get("host")
+    if host and host != platform.node():
+        return (f"{what} claimed by pid {pid} on {host}, which this process "
+                f"cannot verify")
+    # Same machine, so the record itself is the problem: an older or
+    # hand-edited claim that names no tree this build can ask about. Saying
+    # "cannot verify" alone leaves a person with nothing to do about it.
+    return (f"{what} claimed by pid {pid} in a form this version cannot check "
+            f"- remove `sessions/<id>.json` by hand once you know no browser "
+            f"is using this profile")
 
 
 @contextmanager
@@ -236,28 +260,57 @@ def take(root, profile_id: str, tree: proctree.Tree, what: str = "a session") ->
         return record
 
 
-def release(root, profile_id: str, session: str) -> bool:
+def narrow(root, profile_id: str, session: str, tree) -> bool:
+    """Point this session's claim at the tree its browser actually landed in.
+
+    The claim has to exist before a browser can be opened - that ordering is
+    what stops two openers racing - so it is taken naming the *host* tree, the
+    only one that exists at that moment. It is over-broad, which is the safe
+    direction: it refuses more than it must, never less.
+
+    Once the driver is running there is a better answer: a group or job holding
+    that session's browser and nothing else. Narrowing to it is what lets
+    `release` ask the OS whether this browser is gone instead of believing a
+    report, and what lets a *different* process see the same exact tree.
+    """
+    if tree is None:
+        return False
+    with transaction_lock(root):
+        current = read(root, profile_id)
+        if not current or current is UNREADABLE or current.get("session") != session:
+            return False                # not this session's to change
+        write_json(_path(root, profile_id),
+                   {**current, "pid": tree.pid or current.get("pid"),
+                    "token": tree.token, "tree": tree.as_record()})
+        return True
+
+
+def release(root, profile_id: str, session: str, tree=None) -> bool:
     """Give up one session's claim. True when it was removed.
 
-    Only the claim with this session's id, and only on a clean end - `owned`
-    keeps it when the body raised, because a browser whose close failed is
-    exactly the thing the claim is for.
+    Only the claim with this session's id, and - when `tree` is given - only
+    once the OS says that tree holds nothing. That is the whole invariant:
 
-    It deliberately does *not* ask whether anything else is alive in the
-    process tree. That tree is per process, not per session: with two profiles
-    open here the other one's browser is in it, and so is every unrelated child
-    of an application embedding this API - and treating either as "my browser
-    survived" kept a profile owned until the host exited.
+        this session's own tree, proved empty, then the claim goes
 
-    What that gives up is the case where this session's own browser leaked
-    while the process lives on. Nothing can distinguish it from a sibling in a
-    shared tree, so it is answered by the clean-exit rule above instead of by
-    guessing.
+    `tree` is the one `narrow()` recorded, which contains this session's
+    browser and nothing else. With it, a browser that survived a nominally
+    clean exit keeps the profile owned, and a body that raised over an already
+    closed browser does not - both answered by asking the OS rather than by
+    what any part of this process reported.
+
+    Without one - the host could not give this session a tree of its own - it
+    falls back to the caller's report, because the only tree available holds
+    sibling sessions and every unrelated child of an embedding application, and
+    treating those as "my browser survived" kept a profile owned until the host
+    exited.
     """
     with transaction_lock(root):
         current = read(root, profile_id)
         if not current or current is UNREADABLE                 or current.get("session") != session:
             return False                # not this session's to remove
+        if tree is not None and proctree.alive_tree(tree):
+            return False                # its browser is still in there
         try:
             _path(root, profile_id).unlink(missing_ok=True)
         except OSError:                                      # pragma: no cover

@@ -204,6 +204,17 @@ def normalize(entry) -> dict:
     if not 1 <= port <= 65535:
         raise ValueError(f"port {port} is outside 1-65535")
 
+    # The secret is the one field that is not coerced. `text()` below runs
+    # `str()` over whatever it is given, so `{"pass": 123}` was stored as the
+    # password "123" on create - and on edit it is deliberately not normalised
+    # at all (an empty string has to survive as an explicit clear), so a
+    # non-string reached the vault writer raw and failed there, or without a
+    # vault landed on disk as a number. A password is text or it is a refusal.
+    secret = entry.get("pass")
+    if secret is not None and not isinstance(secret, str):
+        raise ValueError(f"a proxy password must be text, got "
+                         f"{type(secret).__name__}")
+
     def text(key):
         value = entry.get(key)
         return str(value) if value not in (None, "") else None

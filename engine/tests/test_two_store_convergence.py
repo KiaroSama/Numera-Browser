@@ -711,6 +711,56 @@ def test_either_side_of_a_conflict_can_be_chosen_explicitly(store):
         assert repo(ProfileStore(store.root)).divergence(prof.id) == []
 
 
+def test_the_shape_the_dashboard_sends_preserves_the_secret(store):
+    """GET -> change notes -> PUT the whole object back, as the GUI does.
+
+    The dashboard loads profiles with the proxy password decrypted, so PUTting
+    the object it was given sent that password again - and a password in a
+    write means REPLACE. An ordinary notes edit therefore *chose* the dashboard
+    copy of a divergent credential and converged both files, where the server
+    owes a 409. It is a client-side defect by construction: the server cannot
+    tell "the user retyped the same password" from "the field was never
+    touched", which is why `api.js` omits the field unless the editor says the
+    user set one (`forWrite`, and its own tests).
+
+    This mirrors that payload, so a regression in the boundary fails here too.
+    """
+    client = api(store)
+    prof = diverged(store)
+
+    # The GUI has no single-profile GET; it lists, and edits one of those.
+    loaded = next(x for x in client.get("/api/profiles").json()
+                  if x["id"] == prof.id)
+    assert loaded["proxy"]["pass"] == "dashboard",         "the listing stopped handing out a readable divergent credential"
+    edited = {**loaded, "notes": "just a note"}
+    edited["proxy"] = {k: v for k, v in edited["proxy"].items() if k != "pass"}
+
+    answer = client.put(f"/api/profiles/{prof.id}", json=edited)
+
+    assert answer.status_code == 409, answer.text
+    assert engine_raw(store, prof.id)["proxy"]["password"] == "engine"
+    assert dash_raw(store, prof.id)["proxy"]["pass"] == "dashboard"
+    assert ProfileStore(store.root).get(prof.id).notes == ""
+
+
+def test_the_dashboards_other_proxy_edits_still_go_through(store):
+    """Omitting the password must not cost the user the rest of the form."""
+    client = api(store)
+    prof = repo(store).create(
+        made("alpha", proxy=Proxy(server="http://h:1", username="u", password="kept")))
+
+    loaded = next(x for x in client.get("/api/profiles").json()
+                  if x["id"] == prof.id)
+    edited = {**loaded, "proxy": {**loaded["proxy"], "host": "moved.example"}}
+    edited["proxy"] = {k: v for k, v in edited["proxy"].items() if k != "pass"}
+
+    assert client.put(f"/api/profiles/{prof.id}", json=edited).status_code == 200
+
+    after = ProfileStore(store.root).get(prof.id)
+    assert "moved.example" in after.proxy.server, after.proxy.server
+    assert after.proxy.password == "kept", "the address edit took the password with it"
+
+
 def test_the_api_can_choose_a_side_too(store):
     prof = diverged(store)
 

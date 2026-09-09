@@ -303,3 +303,50 @@ def test_a_finished_job_that_left_something_running_is_not_called_finished(tmp_p
     after = jobs.get(tmp_path, "j1")
     assert after["orphaned"] is True, "a surviving browser was not reported"
     assert after["running"] is True, "the record would have been pruned away"
+
+
+# --- ctypes signatures are part of the correctness, not decoration ----------
+
+def test_every_kernel32_call_is_bound_and_the_library_is_one_object():
+    """An unbound ctypes call truncates a 64-bit Windows handle to `c_int`.
+
+    `OpenProcess` returns a pointer-sized HANDLE; unbound, ctypes takes it as a
+    32-bit signed int and sign-extends it, and the `CloseHandle` or
+    `WaitForSingleObject` that follows then acts on whatever that value names.
+    It looked like it worked because handle values are small - luck, not a
+    guarantee - and the two call sites that reached for the *unbound*
+    `ctypes.windll.kernel32` were `alive()` and `started_at()`, which is the
+    liveness check the entire durable claim rests on.
+
+    The second half matters as much: `WinDLL` returns a NEW object every call
+    and ctypes caches signatures per object, so binding a throwaway instance
+    leaves every other call site unbound. One cached library, or none of this
+    holds.
+    """
+    from pathlib import Path
+
+    from numera import proctree
+
+    source = Path(proctree.__file__).read_text(encoding="utf-8")
+    assert "ctypes.windll" not in source.replace("`ctypes.windll.kernel32`", ""), \
+        "a call site is back on the unbound library"
+
+    if not proctree._WINDOWS:
+        pytest.skip("kernel32 exists only on Windows")
+
+    import ctypes.wintypes as wt
+
+    k32 = proctree._kernel32()
+    assert proctree._kernel32() is k32, "a fresh WinDLL per call binds nothing"
+    for name in ("CreateJobObjectW", "OpenJobObjectW", "OpenProcess",
+                 "CloseHandle", "WaitForSingleObject", "GetProcessTimes",
+                 "AssignProcessToJobObject", "TerminateJobObject",
+                 "SetInformationJobObject", "QueryInformationJobObject"):
+        call = getattr(k32, name)
+        # `argtypes is None` is ctypes' "never bound", and every handle this
+        # module passes in goes through one of these.
+        assert call.argtypes is not None, f"{name} takes ctypes' default types"
+    # The three that hand a handle *back* are where truncation actually bites;
+    # a `BOOL` return is `c_long` either way, so only these can be asserted on.
+    for name in ("CreateJobObjectW", "OpenJobObjectW", "OpenProcess"):
+        assert getattr(k32, name).restype is wt.HANDLE,             f"{name} returns ctypes' 32-bit default, so a handle is truncated"

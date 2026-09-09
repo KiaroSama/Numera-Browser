@@ -116,3 +116,54 @@ def test_a_locked_clear_is_refused_rather_than_guessed(store):
 
     assert answer.status_code == 423, answer.text
     assert raw(store) == before, "a refused clear still wrote to the pool"
+
+
+# --- intent is one question, the value's type is another --------------------
+#
+# The route keeps a raw `pass` so an explicit `""` survives normalisation as a
+# CLEAR - but it kept every other raw value too, so `{"pass": 123}` reached the
+# vault writer as an int. Without a vault it landed on disk as a number; with
+# one it failed inside the encryptor rather than as a controlled 400.
+
+BAD_SECRETS = {"a number": 123, "a boolean": True, "an object": {"a": 1},
+               "a list": ["x"], "a float": 1.5}
+
+
+@pytest.mark.parametrize("shape", sorted(BAD_SECRETS))
+def test_an_edit_refuses_a_password_that_is_not_text(store, shape):
+    client = api(store)
+    pid = added(client)
+    before = raw(store)
+
+    answer = client.put(f"/api/proxies/{pid}", json={"pass": BAD_SECRETS[shape]})
+
+    assert answer.status_code == 400, answer.text
+    assert "password must be text" in answer.json()["detail"]
+    assert raw(store) == before, "a malformed password reached the file"
+
+
+@pytest.mark.parametrize("shape", sorted(BAD_SECRETS))
+def test_create_refuses_the_same_shapes(store, shape):
+    """Parity: the two ways a proxy gets a password answer alike."""
+    client = api(store)
+
+    answer = client.post("/api/proxies", json={"proxies": [
+        {"type": "HTTP", "host": "h.example", "port": 8080,
+         "user": "u", "pass": BAD_SECRETS[shape]}]})
+
+    assert answer.status_code == 400, answer.text
+    assert not (store.root / "proxies.json").exists() or raw(store) == [], \
+        "a malformed password was stored on create"
+
+
+def test_the_shapes_that_are_meant_to_work_still_do(store):
+    """The control: refusing a type must not refuse an intent."""
+    client = api(store)
+    pid = added(client)
+
+    for body, expected in (({"pass": "other"}, "other"),
+                           ({"label": "renamed"}, "other"),
+                           ({"pass": ""}, None)):
+        assert client.put(f"/api/proxies/{pid}", json=body).status_code == 200
+        got = client.get("/api/proxies").json()[0]["pass"]
+        assert (got or None) == expected, f"{body} gave {got!r}"

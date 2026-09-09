@@ -94,6 +94,23 @@ def _kill(pid) -> None:
                    else ["kill", "-9", str(pid)], capture_output=True)
 
 
+def _end(proc) -> bool:
+    """Kill a child *this* process owns, and reap it. True once it is gone.
+
+    Reaping is not tidiness here. A killed child that nobody waits on stays a
+    zombie, and a zombie still answers `os.kill(pid, 0)` - so `proctree.alive`
+    reports it running and a test that only killed it waited fifteen seconds
+    and then failed. The other tests in this file kill *grandchildren*, which
+    init reaps for them; these own theirs.
+    """
+    _kill(proc.pid)
+    try:
+        proc.wait(timeout=30)
+    except Exception:            # noqa: BLE001 - already gone, or not ours
+        pass                     # pragma: no cover
+    return _gone(proc.pid)
+
+
 # --- the claim outlives the process that made it ---------------------------
 
 def test_a_killed_launcher_does_not_release_the_profile(tmp_path, profile):
@@ -533,16 +550,44 @@ def test_an_inner_session_does_not_answer_for_the_one_around_it(tmp_path):
 # launcher died, was simply overwritten by the next opener. Three states now,
 # and the third fails closed.
 
+#: `<kind for this platform>` is substituted per case so each shape is tested
+#: against the kind this machine would otherwise accept.
+_OURS = "job" if proctree._WINDOWS else "pgid"
+_GROUP = '"numera-tree-x"' if proctree._WINDOWS else "4242"
+_THEIRS = "pgid" if proctree._WINDOWS else "job"
+_THEIR_GROUP = "4242" if proctree._WINDOWS else '"numera-tree-x"'
+
 BAD_CLAIMS = {
     "truncated json": '{"session": "abc", "pid": 1',
     "a list, not a record": '[]',
-    "a pid that is not a number": '{"session": "a", "pid": "many", "tree": {"kind": "pgid", "group": 3}}',
+    "a pid that is not a number":
+        '{"session": "a", "pid": "many", "tree": {"kind": "%s", "group": %s}}' % (_OURS, _GROUP),
     "a tree that is not an object": '{"session": "a", "pid": 3, "tree": "nonsense"}',
     "a kind that is not a string": '{"session": "a", "pid": 3, "tree": {"kind": 42}}',
     "a pgid that is not a number": '{"session": "a", "pid": 3, "tree": {"kind": "pgid", "group": "x"}}',
     "a job whose name is a number": '{"session": "a", "pid": 3, "tree": {"kind": "job", "group": 7}}',
-    "a session id that is not a string": '{"session": 17, "pid": 3, "tree": {"kind": "pgid", "group": 3}}',
+    "a session id that is not a string":
+        '{"session": 17, "pid": 3, "tree": {"kind": "%s", "group": %s}}' % (_OURS, _GROUP),
     "no identity at all": '{"what": "a browser session"}',
+    # The forms brief 20 named, all of which used to fall through to
+    # "is the leader alive" - which is exactly the answer a killed launcher
+    # with a surviving Chromium gives wrongly.
+    "a 0.26-era leader-only claim":
+        '{"session": "a", "pid": 3, "token": 99, "tree": {"kind": "", "group": null}}',
+    "a leader-only claim with no tree key at all":
+        '{"session": "a", "pid": 3, "token": 99}',
+    "a kind this build does not know":
+        '{"session": "a", "pid": 3, "tree": {"kind": "cgroup", "group": "/x"}}',
+    "the other platform's kind":
+        '{"session": "a", "pid": 3, "tree": {"kind": "%s", "group": %s}}' % (_THEIRS, _THEIR_GROUP),
+    "an empty session id":
+        '{"session": "", "pid": 3, "tree": {"kind": "%s", "group": %s}}' % (_OURS, _GROUP),
+    "a token of the wrong shape":
+        '{"session": "a", "pid": 3, "token": {"t": 1}, "tree": {"kind": "%s", "group": %s}}' % (_OURS, _GROUP),
+    "a pgid that is a boolean":
+        '{"session": "a", "pid": 3, "tree": {"kind": "pgid", "group": true}}',
+    "a job with an empty name":
+        '{"session": "a", "pid": 3, "tree": {"kind": "job", "group": ""}}',
 }
 
 
@@ -665,3 +710,353 @@ def test_a_tree_that_cannot_be_taken_leaves_the_host_where_it_was(tmp_path):
     assert outcome == "refused", \
         f"a tree that could not be taken was reported as {outcome}"
     assert unmoved == "True", "the host was left in a group it never asked for"
+
+
+# --- one session, one tree, proved empty before the claim goes --------------
+#
+# The claim named `own_tree()`, which is the whole *host* process: sibling
+# sessions and every unrelated child of an embedding application are in it, so
+# it could never answer "is this session's browser gone". Release therefore
+# asked the session how its body ended instead. A browser is started by a
+# driver process and everything that driver starts inherits its group or job,
+# so the tree is decided at that spawn - `proctree.spawning_own_tree` - and
+# the claim is narrowed to it as soon as it exists.
+
+
+def _sleeper(seconds=60):
+    """A process in a tree of its own, standing in for a session's browser."""
+    proc, tree = proctree.spawn(
+        [sys.executable, "-c", f"import time; time.sleep({seconds})"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return proc, tree
+
+
+def test_a_claim_is_not_released_while_its_own_tree_holds_something(tmp_path, profile):
+    """The invariant, at the level release enforces it."""
+    proc, tree = _sleeper()
+    try:
+        record = sessions.take(tmp_path, profile.id, proctree.own_tree(),
+                               "a browser session")
+        assert sessions.narrow(tmp_path, profile.id, record["session"], tree)
+        assert sessions.read(tmp_path, profile.id)["tree"] == tree.as_record(), \
+            "the claim was not narrowed to the session's own tree"
+
+        assert sessions.release(tmp_path, profile.id, record["session"],
+                                tree=tree) is False, \
+            "a claim was released while its own tree still held a process"
+        assert sessions.held(tmp_path, profile.id) is True
+
+        assert _end(proc)
+        assert sessions.release(tmp_path, profile.id, record["session"],
+                                tree=tree) is True
+        assert sessions.read(tmp_path, profile.id) is None
+    finally:
+        if proc.poll() is None:                              # pragma: no cover
+            _kill(proc.pid)
+
+
+def test_a_session_tree_that_outlives_a_clean_exit_keeps_the_profile(tmp_path, profile):
+    """The brief's sequence, without a browser: a long-lived host opens A, A's
+    tree keeps something alive past a nominally clean exit, and another opener
+    must be refused until that exact tree is empty."""
+    from numera import drivers
+
+    proc, tree = _sleeper()
+    store = ProfileStore(tmp_path)
+    try:
+        with drivers.open_session(store.get(profile.id), store):
+            # What a backend does: opens, records the tree its driver was
+            # spawned into, and reports a cleanup that went fine.
+            drivers._opened()
+            state = drivers._live()
+            state["tree"] = tree
+            sessions.narrow(state["root"], state["profile_id"],
+                            state["session"], tree)
+            drivers._closed()
+
+        assert sessions.held(tmp_path, profile.id) is True, \
+            "a clean exit released a claim whose tree still held a process"
+        with pytest.raises(SessionBusy):
+            with drivers.open_session(store.get(profile.id), store):
+                pass                                         # pragma: no cover
+
+        assert _end(proc)
+        assert sessions.settle(tmp_path, profile.id) is True, \
+            "the claim could not be recovered once its tree was empty"
+        with drivers.open_session(store.get(profile.id), store):
+            pass
+    finally:
+        if proc.poll() is None:                              # pragma: no cover
+            _kill(proc.pid)
+
+
+def test_two_sessions_in_one_host_get_distinct_trees(tmp_path):
+    """Each names its own, and neither names the host's."""
+    from numera import drivers
+
+    store = ProfileStore(tmp_path)
+    a = repo(store).create(Profile(name="a", fingerprint=generate(seed=1)))
+    b = repo(store).create(Profile(name="b", fingerprint=generate(seed=2)))
+    host = proctree.own_tree()
+    trees, procs = {}, []
+    try:
+        for pid in (a.id, b.id):
+            proc, tree = _sleeper()
+            procs.append(proc)
+            trees[pid] = tree
+        with drivers.open_session(store.get(a.id), store):
+            drivers._opened()
+            sa = drivers._live()
+            sa["tree"] = trees[a.id]
+            sessions.narrow(tmp_path, a.id, sa["session"], trees[a.id])
+            with drivers.open_session(store.get(b.id), store):
+                drivers._opened()
+                sb = drivers._live()
+                sb["tree"] = trees[b.id]
+                sessions.narrow(tmp_path, b.id, sb["session"], trees[b.id])
+                drivers._closed()
+
+                ra = sessions.read(tmp_path, a.id)
+                rb = sessions.read(tmp_path, b.id)
+                assert ra["tree"] != rb["tree"], "two sessions, one tree"
+                assert host.group not in (ra["tree"]["group"], rb["tree"]["group"]), \
+                    "a session claim still names the whole host"
+            # B's tree is still alive, so B stays owned - and A is untouched.
+            assert sessions.held(tmp_path, b.id) is True
+            assert sessions.held(tmp_path, a.id) is True
+            assert _end(procs[1])
+            assert sessions.settle(tmp_path, b.id) is True
+            assert sessions.held(tmp_path, a.id) is True, \
+                "B's tree emptying released A"
+            drivers._closed()
+    finally:
+        for proc in procs:
+            if proc.poll() is None:
+                _kill(proc.pid)
+
+
+def test_an_unrelated_host_child_belongs_to_neither_session(tmp_path, profile):
+    """A child of the embedding application is in the *host* tree, and no
+    session claim may be answered from it."""
+    from numera import drivers
+
+    store = ProfileStore(tmp_path)
+    stranger = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    proc, tree = _sleeper()
+    try:
+        with drivers.open_session(store.get(profile.id), store):
+            drivers._opened()
+            state = drivers._live()
+            state["tree"] = tree
+            sessions.narrow(tmp_path, profile.id, state["session"], tree)
+            drivers._closed()
+        assert sessions.held(tmp_path, profile.id) is True
+
+        assert _end(proc)
+        assert stranger.poll() is None, "the stranger died on its own"
+        assert sessions.settle(tmp_path, profile.id) is True, \
+            "an unrelated host child kept a session owned"
+    finally:
+        for victim in (proc, stranger):
+            if victim.poll() is None:
+                _kill(victim.pid)
+
+
+# --- adopting is a decision the whole process makes once -------------------
+
+def test_only_one_thread_ever_adopts_a_tree(monkeypatch):
+    """`own_tree()` caches, but the check and the adoption were two steps.
+
+    Two threads whose first browser open lands together both ran `_adopt_tree`:
+    on Windows that is two job objects, on POSIX two `setpgrp` calls, and the
+    two callers then hold two different answers to a question with one answer.
+
+    The barrier is on the *first* thread and the second is expected to block on
+    the lock, so the load-bearing assertions are the adoption count and the
+    identity of the two results - not a timeout. Without the lock the second
+    thread reaches `slow()` too and both fail.
+    """
+    import threading
+
+    from numera import proctree
+
+    was = list(proctree._SELF_TREE)
+    proctree._SELF_TREE.clear()
+    inside, proceed, adopted, results = (threading.Event(), threading.Event(),
+                                         [], {})
+    real = proctree._adopt_tree
+
+    def slow():
+        adopted.append(1)
+        inside.set()
+        assert proceed.wait(15), "the first thread was never released"
+        return real()
+
+    monkeypatch.setattr(proctree, "_adopt_tree", slow)
+    # Under pytest on POSIX the runner may already lead its own group, so
+    # `own_tree` would answer from `_inherited_tree` and never adopt at all.
+    monkeypatch.setattr(proctree, "_inherited_tree", lambda: None)
+    first = threading.Thread(target=lambda: results.__setitem__("a", proctree.own_tree()))
+    first.start()
+    try:
+        assert inside.wait(15), "the first thread never reached adoption"
+        second = threading.Thread(target=lambda: results.__setitem__("b", proctree.own_tree()))
+        second.start()
+        proceed.set()
+        first.join(30)
+        second.join(30)
+        assert not first.is_alive() and not second.is_alive(), "a thread hung"
+    finally:
+        proceed.set()
+        first.join(30)
+        proctree._SELF_TREE.clear()
+        proctree._SELF_TREE.extend(was)
+
+    assert len(adopted) == 1, \
+        f"the process adopted {len(adopted)} trees for one question"
+    assert results["a"] is results["b"], "two threads, two different trees"
+
+
+def test_a_legacy_leader_only_claim_survives_the_death_of_its_leader(tmp_path, profile):
+    """The upgrade case, and the reason `kind: ""` had to stop being evaluable.
+
+    A 0.26-era launcher writes a claim naming only its leader. It is killed and
+    its Chromium keeps running. 0.28 read that claim, asked whether the leader
+    was alive, got "no", and called the profile free - handing a live browser
+    directory to the next opener. There is no tree in that record to ask about,
+    so the only correct answer is that this build cannot tell.
+    """
+    from numera.drivers import open_session
+
+    dead = subprocess.Popen([sys.executable, "-c", "import sys; sys.exit(0)"])
+    dead.wait(timeout=30)
+    _write_claim(tmp_path, profile.id, json.dumps({
+        "session": "legacy", "pid": dead.pid, "token": 12345,
+        "tree": {"kind": "", "group": None}, "host": os.environ.get("COMPUTERNAME") or "",
+        "what": "a browser session"}))
+    # No host recorded that matches, so the host check cannot be what saves it.
+    record = sessions.read(tmp_path, profile.id)
+    record.pop("host")
+    _write_claim(tmp_path, profile.id, json.dumps(record))
+
+    assert proctree.alive(dead.pid) is False, "the leader is supposed to be dead"
+    assert sessions.state(sessions.read(tmp_path, profile.id)) == "unknown", \
+        "a dead leader made a leader-only claim read as free"
+    assert sessions.held(tmp_path, profile.id) is True
+
+    store = ProfileStore(tmp_path)
+    with pytest.raises(SessionBusy):
+        with open_session(store.get(profile.id), store):
+            pass                                             # pragma: no cover
+    assert sessions.settle(tmp_path, profile.id) is False, \
+        "a claim nothing can evaluate was recovered automatically"
+
+
+def test_a_current_claim_is_recoverable_once_its_tree_is_empty(tmp_path, profile):
+    """The control for the two above: fail-closed on what cannot be read must
+    not mean fail-closed on a valid claim whose browser really has gone."""
+    from numera.drivers import open_session
+
+    proc, tree = _sleeper()
+    record = sessions.take(tmp_path, profile.id, proctree.own_tree(), "a browser session")
+    sessions.narrow(tmp_path, profile.id, record["session"], tree)
+    try:
+        assert sessions.state(sessions.read(tmp_path, profile.id)) == "busy"
+        assert sessions.settle(tmp_path, profile.id) is False
+        assert _end(proc)
+        assert sessions.state(sessions.read(tmp_path, profile.id)) == "free"
+        assert sessions.settle(tmp_path, profile.id) is True
+        store = ProfileStore(tmp_path)
+        with open_session(store.get(profile.id), store):
+            pass
+    finally:
+        if proc.poll() is None:                              # pragma: no cover
+            _kill(proc.pid)
+
+
+def test_an_unevaluable_claim_says_it_is_the_record_that_is_wrong(tmp_path, profile):
+    """"cannot verify" pointed at another machine, which is misleading when the
+    record was written right here."""
+    _write_claim(tmp_path, profile.id, BAD_CLAIMS["a 0.26-era leader-only claim"])
+    with pytest.raises(SessionBusy) as refused:
+        sessions.refuse_if_busy(tmp_path, profile.id)
+    assert "sessions/<id>.json" in str(refused.value)
+
+
+# --- camoufox closes from __exit__, which a plain `with` cannot report ------
+
+class _StubCamoufox:
+    """Camoufox's shape: a context manager that closes the browser on exit."""
+
+    def __init__(self, fail_on_close=False, suppress=False):
+        self.fail_on_close, self.suppress = fail_on_close, suppress
+        self.closed = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        if self.fail_on_close:
+            raise RuntimeError("the browser would not close")
+        self.closed = True
+        return self.suppress
+
+
+def _camoufox_run(monkeypatch, tmp_path, profile, stub, body):
+    """One session whose backend is camoufox-shaped, and what its claim did."""
+    from numera import drivers
+
+    monkeypatch.setattr(drivers, "_camoufox", lambda kwargs: stub)
+    store = ProfileStore(tmp_path)
+    with drivers.open_session(store.get(profile.id), store):
+        with drivers._camoufox_session({}):
+            drivers._opened()
+            body()
+    return sessions.read(tmp_path, profile.id)
+
+
+def test_a_camoufox_body_that_raises_over_a_clean_close_frees_the_profile(
+        monkeypatch, tmp_path, profile):
+    """`_closed()` sat after the `with`, so an exception in the body carried
+    straight past it: the browser had closed and the claim stayed anyway. In a
+    long-lived host that left the profile busy indefinitely."""
+    stub = _StubCamoufox()
+
+    with pytest.raises(ValueError, match="the caller's own bug"):
+        def body():
+            raise ValueError("the caller's own bug")
+        _camoufox_run(monkeypatch, tmp_path, profile, stub, body)
+
+    assert stub.closed is True, "the stub never saw a close"
+    assert sessions.read(tmp_path, profile.id) is None, \
+        "a browser that closed cleanly kept the profile owned"
+
+
+def test_a_camoufox_close_that_fails_keeps_the_profile(monkeypatch, tmp_path, profile):
+    """The other half: `__exit__` raised, so nothing may say the browser is
+    down - and it is the exception a caller has to see."""
+    stub = _StubCamoufox(fail_on_close=True)
+
+    with pytest.raises(RuntimeError, match="would not close"):
+        _camoufox_run(monkeypatch, tmp_path, profile, stub, lambda: None)
+
+    assert sessions.held(tmp_path, profile.id) is True, \
+        "a browser that would not close lost its claim"
+
+
+def test_a_camoufox_exit_that_swallows_the_error_still_ends_the_session(
+        monkeypatch, tmp_path, profile):
+    """`__exit__` may suppress, and driving the protocol by hand has to honour
+    that rather than re-raising over it."""
+    stub = _StubCamoufox(suppress=True)
+
+    def body():
+        raise ValueError("swallowed by the context manager")
+
+    assert _camoufox_run(monkeypatch, tmp_path, profile, stub, body) is None
+    assert stub.closed is True
+
+
+def test_a_clean_camoufox_session_still_releases(monkeypatch, tmp_path, profile):
+    assert _camoufox_run(monkeypatch, tmp_path, profile,
+                         _StubCamoufox(), lambda: None) is None

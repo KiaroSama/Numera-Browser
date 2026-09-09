@@ -89,16 +89,21 @@ death) but does leave the claim, so another process is refused the profile
 until that browser is gone. `numera stop` reports exactly that state instead of
 "nothing running".
 
-A claim is kept for a browser that opened and did not close again. A session
-that fails before it starts one, or whose own cleanup closed it successfully,
-leaves nothing behind; a close that itself failed keeps the profile owned,
-because that is the state the claim exists for.
+A claim names the OS tree that holds *that session's* browser and nothing
+else - a process group on POSIX, a job object on Windows - and it is given up
+only once the OS says that tree is empty. So a browser left running past a
+clean exit keeps its profile, and a session that raised over a browser it had
+already closed does not. (The `cloak` engine is the exception: its binary is
+not started through Playwright's driver, so those sessions still name the host
+process tree, which refuses more than it must rather than less.)
 
-A claim file that cannot be read counts as owned, not as absent — it may be
-the only surviving record of a browser whose launcher died, so opening,
-deleting, backing up and restoring the profile all refuse. Repairing it is a
-deliberate act: once you know no browser is using that profile, remove
-`<data-dir>/sessions/<id>.json` by hand.
+A claim that cannot be *evaluated* counts as owned, not as absent. That covers
+a file that will not parse, and also one written by an older version or by
+another platform - anything that does not name a durable tree this machine can
+ask about. It may be the only surviving record of a browser whose launcher
+died, so opening, deleting, backing up and restoring the profile all refuse.
+Repairing it is a deliberate act: once you know no browser is using that
+profile, remove `<data-dir>/sessions/<id>.json` by hand.
 
 The HTTP API has its own equivalent and it is not this one: `POST /launch`
 returns immediately, the profile then reads `"status": "running"` in

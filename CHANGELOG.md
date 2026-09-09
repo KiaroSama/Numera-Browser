@@ -4,6 +4,69 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-09-09
+
+The twentieth audit brief. A browser session now owns an OS tree that holds it
+and nothing else, so a profile is released from proof rather than from a report
+— and the claim, the Dashboard and the proxy pool each stop guessing at
+something they can be told.
+
+### Fixed
+
+- **A session's ownership unit was the whole host process.** `own_tree()`
+  caches one tree per process, so every in-process session named the same one
+  — sibling profiles and every unrelated child of an embedding application
+  included — and it could not answer the only question that makes a profile
+  safe to reuse. A browser is started by a driver process and everything that
+  driver starts inherits its group or job, so the tree is decided at that
+  spawn: each session gets its own (a POSIX session, a Windows job object), the
+  claim is narrowed to it as soon as it exists, and the claim is given up only
+  once the OS says that tree is empty. A browser left running past a clean exit
+  now keeps its profile; a body that raised over an already-closed one does
+  not. The `cloak` engine still uses the host tree — its driver is not
+  Playwright's — and says so.
+
+- **Two threads could adopt a tree at once.** `own_tree()` cached, but the check
+  and the adoption were separate steps: two first-opens landing together made
+  two job objects or two `setpgrp` calls, and the callers then held two answers
+  to a question with one.
+
+- **The Dashboard turned every edit into a password replacement.** It loads
+  profiles with the proxy password decrypted and PUT the whole object back, and
+  a password in a write means REPLACE — so editing only the notes of a
+  profile whose two stored copies disagree silently chose the Dashboard's
+  credential instead of the 409 the server owes. The field is now sent only
+  when the password control was actually used; never inferred from the value,
+  because retyping the same password and never touching the field look
+  identical and mean opposite things.
+
+- **A claim naming no checkable tree read as free.** A 0.26-era leader-only
+  record (`kind: ""`), a kind this build does not know, or the other platform's
+  kind all fell through to "is the leader alive" — so an older launcher
+  killed while its Chromium survived handed a live profile directory to the
+  next opener. A browser-session claim is now evaluated only when it names a
+  durable tree *this* platform can ask about; anything else is unknown, which
+  every caller treats as owned, and the message says the record is the thing to
+  repair. Empty session ids and malformed tokens and groups are unknown too.
+
+- **Camoufox left a claim standing after a clean close.** It closes from
+  `__exit__`, and an exception in the body carried past the line that recorded
+  the close — so a browser that had shut down cleanly kept its profile
+  busy. The exit protocol is driven explicitly now: `__exit__` still decides
+  whether to suppress, and an `__exit__` that raises still keeps the claim.
+
+- **A pooled proxy accepted a password that was not text.** `{"pass": 123}`
+  was stringified on create and passed through raw on edit, reaching the vault
+  writer as an int. Type and intent are separate questions: omitted preserves,
+  `""` clears, a string replaces, anything else is a 400 — on both routes.
+
+- **Windows handle calls went through unbound ctypes signatures.** `OpenProcess`
+  returns a pointer-sized handle and ctypes defaults an unbound return to 32
+  bits, so `alive()` and `started_at()` — the liveness checks the durable
+  claim rests on — truncated it. Every `kernel32` call this project makes
+  now declares its own types, from one cached library rather than a fresh one
+  per call that binds nothing anyone else can see.
+
 ## [0.28.0] - 2026-09-09
 
 The nineteenth audit brief. What a session leaves behind is now answered from
