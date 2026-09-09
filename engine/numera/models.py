@@ -77,12 +77,52 @@ class Fingerprint:
 
 @dataclass
 class Proxy:
-    """Proxy configuration for a profile."""
+    """Proxy configuration for a profile.
+
+    The password carries *intent*, not just a value, and the two are different
+    questions a write has to answer: "leave the stored secret alone" and "store
+    exactly this" can both arrive as the same string. They did: `resolve()`
+    hands out the stored password and a caller passes the whole object back, so
+    an unrelated edit looked identical to a deliberate one - and comparing the
+    value to the stored copy, which is what the code did instead, cannot tell a
+    user who *chose* the value it already has from a caller who touched
+    nothing. With two copies holding different passwords that made choosing
+    either one impossible.
+
+    So an assignment is recorded. A proxy built from storage is untouched until
+    somebody writes to `password`; anything a caller constructs itself is a
+    deliberate value from the start.
+    """
 
     server: str  # e.g. "http://host:port" or "socks5://host:port"
     username: Optional[str] = None
     password: Optional[str] = None
     country: Optional[str] = None  # ISO code, used to align locale/timezone
+
+    #: PRESERVE / CLEAR / REPLACE, derived from what happened to `password`.
+    PRESERVE, CLEAR, REPLACE = "preserve", "clear", "replace"
+
+    def __setattr__(self, name, value):
+        if name == "password":
+            object.__setattr__(self, "_password_chosen", True)
+        object.__setattr__(self, name, value)
+
+    def from_storage(self) -> "Proxy":
+        """Mark this proxy's password as the stored one, untouched. Returns self."""
+        object.__setattr__(self, "_password_chosen", False)
+        return self
+
+    @property
+    def password_intent(self) -> str:
+        """What a write should do with the secret: preserve, clear or replace.
+
+        `None` means preserve however it arrived - a locked read yields it, and
+        so does a caller that has nothing to say. `""` assigned on purpose is a
+        clear. Anything else assigned on purpose is a replacement.
+        """
+        if not getattr(self, "_password_chosen", True) or self.password is None:
+            return self.PRESERVE
+        return self.CLEAR if self.password == "" else self.REPLACE
 
     def to_playwright(self) -> dict:
         cfg: dict = {"server": self.server}
@@ -103,7 +143,9 @@ class Proxy:
         # TypeError inside `ProfileStore.get()`, turning one odd record into a
         # 500 for the whole request.
         known = {f.name for f in fields(cls)}
-        return cls(**{k: v for k, v in d.items() if k in known})
+        # From storage, so the password is the stored one until something
+        # assigns to it - see the class docstring.
+        return cls(**{k: v for k, v in d.items() if k in known}).from_storage()
 
 
 @dataclass

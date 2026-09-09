@@ -39,6 +39,7 @@ import importlib.util
 import json
 import warnings
 from contextlib import contextmanager
+import threading
 from dataclasses import replace
 from typing import Callable, Optional
 
@@ -231,6 +232,22 @@ def _abandon(context=None, driver=None, relay=None, cause=None):
     return failures
 
 
+#: What each session running on this thread has learned about its browser:
+#: whether one was ever opened, and whether it was shut again. `open_session`
+#: reads it to answer a question it was previously guessing at - whether there
+#: is anything left to keep a claim for.
+#:
+#: A stack, because one thread can open a second profile inside the first
+#: session's body, and the inner session's answers are not the outer one's.
+_LOCAL = threading.local()
+
+
+def _live():
+    """The innermost session on this thread, or None outside `open_session`."""
+    stack = getattr(_LOCAL, "sessions", None)
+    return stack[-1] if stack else None
+
+
 def _opened() -> None:
     """Tell a parent that spawned this session that its browser is now open.
 
@@ -242,12 +259,40 @@ def _opened() -> None:
     the child and advanced a schedule for a session about to die on a missing
     browser executable or a backend that would not import. See handshake.py.
 
+    It also records, for `open_session`, that a browser exists at all. That was
+    inferred from "the yield happened", which is true of every caller body -
+    including one that raises before it opens anything, and that left a claim
+    standing for a browser there was never any of.
+
     Called before the startup URLs rather than after: the browser is open
     either way, and a site that will not load is not a failed launch.
     """
     from .handshake import announce
 
+    state = _live()
+    if state is not None:               # first: the browser is open either way
+        state["opened"] = True
     announce(True)
+
+
+def _closed() -> None:
+    """Record that this session's browser is shut and its driver stopped.
+
+    The other half of `_opened`, and the reason `open_session` no longer keeps
+    a claim for every exception that reaches it. A body can raise *after* its
+    browser has been closed - `session()` and `numera attach` both close in a
+    `finally`, so the user's own exception passes through here with nothing
+    left running - and holding the profile for that locked it out until a
+    person went and deleted the claim by hand.
+
+    Every close this module owns calls it, and calls it *after* the close
+    returned: a close that raised never reaches this, which is the one case
+    where something may still be holding `user-data/<id>` and the claim has to
+    stand.
+    """
+    state = _live()
+    if state is not None:
+        state["closed"] = True
 
 
 @contextmanager
@@ -303,7 +348,7 @@ def open_session(profile: Profile, store):
     from .paths import session_lease, transaction_lock
     from .repo import repo
 
-    session, started = None, False
+    session, state = None, {"opened": False, "closed": False}
     try:
         # The tree this process owns, established *before* anything is claimed
         # or opened. A foreground CLI adopts one for itself here; a spawned
@@ -316,11 +361,10 @@ def open_session(profile: Profile, store):
             # first: a delete that commits in the window before it must be the
             # one that wins, not one this claim refuses.
             #
-            # The claim is given up on a clean end, and kept when the failure
-            # happened *after* the caller took over - the one case where a
-            # browser may be left running. A refusal on the way in (a locked
-            # credential, a divergent one) started nothing, so keeping it would
-            # lock the profile out of this process for no reason.
+            # The claim is given up on a clean end, and on a failure that left
+            # no browser behind - one raised before anything opened, or after
+            # the caller's own `finally` closed it again. It is kept only for
+            # the state it exists for: a browser that may still be running.
             session = sessions.take(store.root, profile.id, tree,
                                     "a browser session")["session"]
             # Short, and released before the browser starts.
@@ -349,12 +393,23 @@ def open_session(profile: Profile, store):
                         f"so the browser would start without it and browse from your own "
                         f"IP. Unlock the vault first: numera --password ... <command>")
             # Owned and revalidated. The caller opens the browser next, and
-            # the backend is what says it opened - see `_opened`.
-            started = True
-            yield current
+            # the backend is what says it opened - see `_opened`/`_closed`.
+            stack = getattr(_LOCAL, "sessions", None)
+            if stack is None:
+                stack = _LOCAL.sessions = []
+            stack.append(state)
+            try:
+                yield current
+            finally:
+                stack.pop()
         sessions.release(store.root, profile.id, session)
     except BaseException as failure:
-        if session is not None and not started:
+        # The claim is kept only when this session opened a browser that is
+        # still open. "The yield happened" was the old test, and it is true of
+        # both a caller that raises before opening anything - which left the
+        # profile owned by nothing - and one that raises after its `finally`
+        # already closed the browser.
+        if session is not None and (not state["opened"] or state["closed"]):
             sessions.release(store.root, profile.id, session)
         # Only if nothing has been reported yet. Once a backend has said the
         # browser is open the parent has acted on it, and overwriting that with
@@ -394,6 +449,11 @@ def session(profile: Profile, store, engine: Optional[str] = None,
                 with Camoufox(**kwargs) as browser:
                     _opened()
                     yield browser
+                # Only on the clean path: Camoufox closes from `__exit__`, and
+                # an exception on the way out carries past this line without
+                # saying whether that close succeeded. Erring towards "keep the
+                # claim" is the safe half of that, so it is left unsaid.
+                _closed()
             finally:
                 if relay:
                     relay.close()
@@ -407,6 +467,7 @@ def session(profile: Profile, store, engine: Optional[str] = None,
             context.close()
             if pw:
                 pw.stop()
+            _closed()
 
 
 # --------------------------------------------------------------------------
@@ -531,6 +592,7 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
     finally:
         context.close()
         pw.stop()
+        _closed()
     return None
 
 
@@ -720,4 +782,5 @@ def _driver_cloak(profile, store, headless=False, keep_open=True, extra_args=Non
         _wait_until_closed(page)
     finally:
         context.close()
+        _closed()
     return None

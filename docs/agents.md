@@ -89,6 +89,17 @@ death) but does leave the claim, so another process is refused the profile
 until that browser is gone. `numera stop` reports exactly that state instead of
 "nothing running".
 
+A claim is kept for a browser that opened and did not close again. A session
+that fails before it starts one, or whose own cleanup closed it successfully,
+leaves nothing behind; a close that itself failed keeps the profile owned,
+because that is the state the claim exists for.
+
+A claim file that cannot be read counts as owned, not as absent — it may be
+the only surviving record of a browser whose launcher died, so opening,
+deleting, backing up and restoring the profile all refuse. Repairing it is a
+deliberate act: once you know no browser is using that profile, remove
+`<data-dir>/sessions/<id>.json` by hand.
+
 The HTTP API has its own equivalent and it is not this one: `POST /launch`
 returns immediately, the profile then reads `"status": "running"` in
 `GET /api/profiles`, and `POST /stop` ends it. That registry lives in the
@@ -285,9 +296,11 @@ any *content*:
 * **Every 200 response is `{}`.** The handlers have no return annotation, so
   generated clients get `Any` everywhere.
 * **The failure modes are undocumented.** The `409` from launching or stopping
-  a profile whose session someone else holds, the `423` from one whose proxy
-  password the vault cannot read, the `404`s, the `400` from an unparseable
-  proxy list — none appear. Only the automatic `422` does.
+  a profile whose session someone else holds and from a write over two stored
+  copies whose proxy passwords disagree, the `423` from a profile whose proxy
+  password the vault cannot read and from clearing a secret while locked, the
+  `404`s, the `400` from an unparseable proxy list — none appear. Only the
+  automatic `422` does.
 * **Bearer auth is invisible.** `NUMERA_API_TOKEN` - or any named token - adds a
   middleware that answers `401`; no security scheme or `401` response is
   declared, so a generated client will not send the header.

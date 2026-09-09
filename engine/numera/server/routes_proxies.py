@@ -67,7 +67,13 @@ def register(app, ctx):
                 clean = pp.normalize(merged)
             except ValueError as e:
                 raise HTTPException(400, str(e)) from None
-            for field in ("type", "host", "port", "user", "pass", "country"):
+            # `pass` is deliberately not written back. Normalisation is about
+            # the canonical *data* shape and it maps `""` to None, which for a
+            # secret is the wrong *intent*: `""` is an explicit clear and None
+            # means "unchanged". Copying the normalised value over the caller's
+            # made `PUT {"pass": ""}` answer 200 and leave the old password in
+            # place. Nothing about `pass` is validated here anyway.
+            for field in ("type", "host", "port", "user", "country"):
                 if field in patch:
                     patch[field] = clean[field]
         if not patch:

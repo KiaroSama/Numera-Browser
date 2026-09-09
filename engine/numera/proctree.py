@@ -40,6 +40,7 @@ import hashlib
 import os
 import signal
 import subprocess
+import threading
 import time
 import uuid
 from dataclasses import dataclass
@@ -674,6 +675,11 @@ TREE_ENV = "NUMERA_TREE"
 _SELF_JOB = []
 _SELF_TREE = []
 
+#: Serialises adoption. Adopting is not a pure read: on Windows it creates a
+#: job object and on POSIX it moves the whole process into a new group, and two
+#: threads opening their first browser at the same moment did both.
+_ADOPTING = threading.Lock()
+
 
 def _with_tree_env(kwargs: dict, tree: "Tree") -> dict:
     """Put the tree in the child's environment without disturbing the rest."""
@@ -718,9 +724,12 @@ def own_tree() -> "Tree":
     """
     if _SELF_TREE:
         return _SELF_TREE[0]
-    tree = _inherited_tree() or _adopt_tree()
-    _SELF_TREE.append(tree)
-    return tree
+    with _ADOPTING:
+        if _SELF_TREE:                  # another thread got here first
+            return _SELF_TREE[0]
+        tree = _inherited_tree() or _adopt_tree()
+        _SELF_TREE.append(tree)
+        return tree
 
 
 def _inherited_tree() -> "Optional[Tree]":
@@ -781,7 +790,18 @@ def _adopt_group() -> bool:
     `tcsetpgrp` from a process that is not currently the foreground group
     raises SIGTTOU at itself, which would stop us; it is ignored across the
     call and restored afterwards.
+
+    **All of it or none of it.** This moves the *embedding* process, so a half
+    finished adoption is not a failed launch, it is a host left somewhere it
+    never asked to be. `signal.signal` raises `ValueError` off the main thread,
+    and it did so after `setpgrp()` had already moved the process: an
+    application opening its first browser from a worker thread ended up in a
+    group of its own, out of the terminal's foreground group and therefore deaf
+    to Ctrl+C, and the `ValueError` was not even the refusal `own_tree` knows
+    how to report. Anything that cannot be finished is now put back, and the
+    caller is told it has no tree.
     """
+    was = os.getpgrp()
     try:
         os.setpgrp()
     except OSError:                                          # pragma: no cover
@@ -792,14 +812,31 @@ def _adopt_group() -> bool:
     try:
         previous = os.tcgetpgrp(fd)
         handler = signal.signal(signal.SIGTTOU, signal.SIG_IGN)
-        try:
-            os.tcsetpgrp(fd, os.getpgrp())
-        finally:
-            signal.signal(signal.SIGTTOU, handler)
-        atexit.register(_restore_terminal, fd, previous)
     except OSError:                                          # pragma: no cover
-        pass                            # no controlling terminal after all
+        return True                     # no controlling terminal after all
+    except ValueError:
+        # Not the main thread, so signals cannot be touched here and the
+        # terminal cannot be taken safely. Leaving the group change standing
+        # would silence Ctrl+C for the whole host.
+        _rejoin(was)
+        return False
+    try:
+        os.tcsetpgrp(fd, os.getpgrp())
+    except OSError:                                          # pragma: no cover
+        _rejoin(was)
+        return False
+    finally:
+        signal.signal(signal.SIGTTOU, handler)
+    atexit.register(_restore_terminal, fd, previous)
     return True
+
+
+def _rejoin(group: int) -> None:
+    """Undo `setpgrp`, back into the group this process started in."""
+    try:
+        os.setpgid(0, group)
+    except OSError:                                          # pragma: no cover
+        pass
 
 
 def _terminal() -> "Optional[int]":
