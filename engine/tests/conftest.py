@@ -47,8 +47,12 @@ for _name in SCRUBBED:
     os.environ.pop(_name, None)
 
 
-class NetworkAccessDenied(RuntimeError):
-    """A test tried to reach something that is not on this machine."""
+class NetworkAccessDenied(OSError):
+    """A denied socket operation still follows the socket cleanup contract.
+
+    create_connection and HTTP clients close failed sockets on OSError.
+    A RuntimeError escaped that cleanup and leaked each refused connection.
+    """
 
 
 def _this_machine() -> frozenset:

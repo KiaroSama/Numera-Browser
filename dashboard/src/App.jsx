@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, Blocks, Boxes, Command, Download, FolderTree, Globe, KeyRound, Layers, Moon, Plus, Puzzle, RefreshCw, Server, Settings, ShieldAlert, ShieldCheck, Sun, Users, X, Zap } from "lucide-react";
-import { api, auth, setAuthLostHandler } from "./api";
+import { api, auth, setAuthLostHandler, withoutMarker } from "./api";
 import { DARK, FONT, LIGHT, T, makeCss } from "./theme";
 import { FOLDERS, seed } from "./demoData";
 import { ENGINE_META, LOCALES, coherence, nid } from "./deviceData";
@@ -301,9 +301,16 @@ export default function App() {
       // rejected save still moved the engine every *new* profile would use -
       // and the profile refresh does not repair config state, so the wrong
       // value stayed on screen until a reload.
+      let saved;
       try {
         const exists = profiles.some(x => x.id === p.id) && !p._new;
-        await (exists ? api.update(p) : api.create({ ...p, id: undefined }));
+        saved = await (exists ? api.update(p) : api.create({ ...p, id: undefined }));
+      } catch (e) { toast.error("Save failed: " + e.message); await refreshConfig(); return false; }
+      // The write committed. Keep its authoritative response even if the next
+      // read fails, so retrying a new profile cannot accidentally create twice.
+      setProfiles(ps => ps.some(x => x.id === saved.id)
+        ? ps.map(x => x.id === saved.id ? saved : x) : [...ps, saved]);
+      try {
         // Refetched, never inferred from `p.engine`. The server changes the
         // default only when the profile's engine actually changed, so editing
         // the notes of a Playwright profile under a Camoufox default used to
@@ -311,14 +318,16 @@ export default function App() {
         // alone - and the next new profile then sent Playwright explicitly and
         // made the server wrong too.
         await Promise.all([refresh(), refreshConfig()]);
-      } catch (e) { toast.error("Save failed: " + e.message); await refreshConfig(); }
-      return;
+      } catch (e) { toast.error("Profile saved, but refresh failed: " + e.message); }
+      return true;
     }
     // Demo mode has no server, so it applies the server's rule itself: a
     // default moves only when this profile's engine really changed.
     const before = profiles.find(x => x.id === p.id);
     if (p.engine && p.engine !== before?.engine) setDefaultEngine(p.engine);
-    setProfiles(ps => ps.some(x => x.id === p.id) ? ps.map(x => x.id === p.id ? p : x) : [...ps, p]);
+    const saved = withoutMarker(p);
+    setProfiles(ps => ps.some(x => x.id === p.id) ? ps.map(x => x.id === p.id ? saved : x) : [...ps, saved]);
+    return true;
   };
 
   // ---- folder management (used by the Folders tab) ----
@@ -537,7 +546,7 @@ export default function App() {
 
       {editor && (
         <ErrorBoundary overlay title="This profile couldn't be opened" onReset={() => setEditor(null)}>
-          <Editor profile={editor} live={live} folders={folderList} onClose={() => setEditor(null)} onSave={(p) => { save(p); setEditor(null); }} />
+          <Editor profile={editor} live={live} folders={folderList} onClose={() => setEditor(null)} onSave={async (p) => { if (await save(p)) setEditor(null); }} />
         </ErrorBoundary>
       )}
       {sync && <SyncModal ids={[...sel]} folders={folderList} onClose={() => setSync(false)} onApply={async (patch) => {

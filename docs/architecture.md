@@ -49,6 +49,7 @@ pick OS ──▶ archetype (devices.py) ──▶ Fingerprint ──▶ validat
 | `logs.py` | Per-run log file, UTC. Credentials are redacted by a filter on the *handler*, so a library logging under its own name cannot bypass it |
 | `relay.py` | Loopback proxy that terminates upstream authentication, so engines that cannot authenticate a proxy still use one |
 | `sessions.py` | The durable session claim: which tree owns a profile's browser, kept on disk so it survives the launcher, and identified per session so two profiles open in one process do not hold each other. Every browser open goes through `drivers.open_session`, which takes it, and every status, stop and delete surface consults it. Three read states, not two: no claim, a claim to evaluate, and one this build cannot evaluate - unparseable, or naming a tree kind from an older version or another platform - which counts as owned, because it may be the only record of a browser whose launcher died |
+| `driver_capture.py` | Per-thread driver-spawn interception. Preparation can overlap across profiles; only creation of the exact OS tree and its durable claim callback are serialized. `proctree` retains the public capture imports |
 | `proctree.py` | One session and everything it starts, owned as a unit — a job object on Windows, its own session and process group on POSIX. A spawned session is born into one; an in-process session gets one at its *driver's* spawn, which is the last moment it can be decided, because everything that driver starts inherits it — and a session that cannot be given one is refused rather than downgraded. Every "is it stopped?" answer goes through it, because the process Numera holds a handle to is a launcher and the browser holding the profile directory is three processes further down |
 | `stealth.py` | Builds the per-fingerprint JS patch injected via `add_init_script` |
 | `launcher.py` | Thin dispatcher — resolves `profile.engine` and hands off to a driver |
@@ -69,6 +70,9 @@ delegates. Built-ins:
   `webdriver`/CDP leaks at the runtime level.
 - **camoufox** — a patched Firefox with C++-level fingerprint spoofing and its own
   coherent fingerprint generator.
+- **cloak** — CloakBrowser's patched Chromium, launched through the same mandatory
+  driver-tree capture contract. Binary and proxy preparation do not hold the
+  process-wide capture mutex.
 
 Drivers share the same signature and either return launch handles
 (`keep_open=True`) or block until the window closes (`keep_open=False`). Register
@@ -226,6 +230,19 @@ one way — `App` → views → primitives → leaf, with no cycles:
 
 A component used by exactly one view lives in that view's file; `ui.jsx` is for
 the genuinely shared ones.
+
+The profile editor stays open after a rejected save, including conflict, locked
+vault, validation and network failures. Pending saves disable editing and
+duplicate submissions. A confirmed write updates local state from the server's
+response and refreshes profiles/config before closing. If that refresh fails,
+the write remains committed and is not offered as an unsaved retry. Password
+intent is local to the editor and is cleared between successful edit sessions.
+
+A Dashboard record that omits a proxy does not authorize deletion of a proxy
+held only by its engine twin. Both listing-time derivation and Dashboard saves
+refuse that loss, including passwordless endpoints. Explicit removal remains
+available when the Dashboard shows the proxy; encrypted credentials still
+require the existing vault-unlock policy.
 
 ```
  Dashboard (React)                     Engine API (FastAPI)              Engine core
