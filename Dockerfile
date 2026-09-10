@@ -11,7 +11,7 @@
 # Run:    see docker-compose.yml, or the Docker section of the README.
 
 # --- 1. the dashboard -------------------------------------------------------
-FROM node:24-slim AS dashboard
+FROM node:26-slim AS dashboard
 
 WORKDIR /src
 # Copy the manifests alone first so `npm ci` is cached until they change.
