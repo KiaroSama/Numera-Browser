@@ -8,6 +8,17 @@
 .kiro
 .codex
 .cursor
+.agents
+.cline
+.codebase-memory
+.playwright-mcp
+AGENTS.md
+CLAUDE.md
+reference.md
+data
+logs
+.env
+.env.*
 .ignoreme
 **/.ignoreme
 secrets.md
