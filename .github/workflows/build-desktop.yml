@@ -62,15 +62,32 @@ jobs:
       # Installing and starting it is the only proof the artifact actually works;
       # a wheel that builds and cannot serve is the failure worth catching.
       - name: Install it and check it serves
+        timeout-minutes: 5
         run: |
-          python -m venv /tmp/v
-          /tmp/v/bin/pip install --quiet "$(ls build/server/*.whl)[api]"
-          /tmp/v/bin/numera serve --port 8788 &
-          for i in $(seq 1 40); do
-            curl -sf http://127.0.0.1:8788/api/health && break || sleep 0.5
+          set -euo pipefail
+          smoke_root="$(mktemp -d)"
+          server_pid=""
+          cleanup() {
+            if [ -n "$server_pid" ]; then
+              kill "$server_pid" 2>/dev/null || true
+              wait "$server_pid" 2>/dev/null || true
+            fi
+            rm -rf "$smoke_root"
+          }
+          trap cleanup EXIT
+          python -m venv "$smoke_root/venv"
+          "$smoke_root/venv/bin/pip" install --quiet "$(ls build/server/*.whl)[api]"
+          mkdir "$smoke_root/data"
+          printf 'ci smoke\n' > "$smoke_root/data/.imported"
+          timeout --signal=TERM --kill-after=10 120 "$smoke_root/venv/bin/numera" \
+            --data-dir "$smoke_root/data" serve --port 8788 &
+          server_pid=$!
+          for _ in $(seq 1 30); do
+            if curl -sf --max-time 3 http://127.0.0.1:8788/api/health; then break; fi
+            sleep 0.5
           done
-          curl -sf http://127.0.0.1:8788/api/health
-          curl -sf http://127.0.0.1:8788/ | grep -q Numera
+          curl -sf --max-time 3 http://127.0.0.1:8788/api/health
+          curl -sf --max-time 3 http://127.0.0.1:8788/ | grep -q Numera
           echo "server artifact serves both the API and the dashboard"
 
       - uses: actions/upload-artifact@v7
@@ -134,9 +151,7 @@ jobs:
       # and destination are separated by `:` here and `;` there.
       - name: Freeze the engine
         run: |
-          python -m pip install --quiet pyinstaller ".[api,launch,secure]" --prefix /tmp/eng || true
-          python -m pip install --quiet pyinstaller
-          python -m pip install --quiet ./engine[api,launch,secure]
+          python -m pip install --quiet pyinstaller "./engine[api,launch,secure]"
           # `scripts/engine_entry.py`, not `engine/numera/__main__.py`. PyInstaller
           # runs the entry as top-level `__main__` with no package, so the
           # relative import in `__main__.py` raised "attempted relative import
