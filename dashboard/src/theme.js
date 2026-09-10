@@ -432,6 +432,13 @@ input[type=checkbox] { accent-color: var(--violet); width: 15px; height: 15px; c
 .ps-summary-row dt { flex: 0 0 108px; color: var(--text-tertiary); }
 .ps-summary-row dd { margin: 0; flex: 1; min-width: 0; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ${FONT.mono}; font-size: 11px; }
 .ps-summary-iss { margin-top: 14px; font-size: 11.5px; line-height: 1.7; color: var(--amber); }
+@media (max-width: 760px) {
+  .ps-editor .ps-summary { display: none; }
+  .ps-editor-id { flex: 1; min-width: 0; }
+  .ps-editor-name { width: 100%; min-width: 0; }
+  .ps-editor-folder { max-width: 90px; }
+  .ps-editor-body { min-width: 0; }
+}
 .ps-drawer { width: 580px; max-width: 96vw; height: 100%; background: var(--bg2); border-left: 1px solid var(--line); display: flex; flex-direction: column; animation: slidein .24s cubic-bezier(.2,.7,.3,1); }
 .ps-modal { width: 520px; max-width: 94vw; background: var(--bg2); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
 .ps-pop { animation: pop .2s cubic-bezier(.2,.7,.3,1); }

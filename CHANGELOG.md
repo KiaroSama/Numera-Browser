@@ -1,7 +1,16 @@
 # Changelog
 
-## Unreleased
+Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+- Close entered Camoufox backends when driver ownership is refused before the
+  browser is yielded, retaining both failures and the claim if cleanup fails.
+- Recover stale Dashboard revisions by rebasing only local edits onto the latest
+  profile, with explicit choices for overlapping changes and preserved proxy
+  password/removal intent. API conflicts now carry a domain `kind`.
+- Require all four launch engines on Windows and Linux in CI, reject missing or
+  skipped live coverage, and gate tagged releases on successful verification.
 - Preserve engine-only proxies, including passwordless endpoints, when a
   Dashboard listing or unrelated edit carries no visible proxy.
 - Allow independent profile preparation while serializing actual driver
@@ -13,10 +22,6 @@
   libraries close refused sockets, with a regression that verifies cleanup.
 - Include shared test helpers and the network guard in the source distribution.
 - Isolate portable smoke data from automatic imports of existing profiles.
-
-Format based on [Keep a Changelog](https://keepachangelog.com/).
-
-## [Unreleased]
 
 ## [0.30.1] - 2026-09-09
 

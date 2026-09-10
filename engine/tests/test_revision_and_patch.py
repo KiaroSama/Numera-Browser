@@ -95,6 +95,7 @@ def test_a_revision_held_from_before_a_bulk_edit_is_refused(tmp_path):
     c.post("/api/profiles/bulk", json={"ids": [pid], "patch": {"notes": "moved on"}})
     r = c.put(f"/api/profiles/{pid}", json={**before, "notes": "mine"})
     assert r.status_code == 409, f"a stale full-profile write was accepted: {r.text}"
+    assert r.json()["kind"] == "StaleProfile"
     assert served(c, pid)["notes"] == "moved on"
 
 

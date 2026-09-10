@@ -447,14 +447,24 @@ def _camoufox_session(kwargs):
     cam = _camoufox(kwargs)
     # Camoufox drives Playwright's own Firefox driver, so the same seam works:
     # `__enter__` is where its driver is spawned.
-    with _own_driver_tree(_playwright_program()):
-        browser = cam.__enter__()
+    entered = yielded = False
     try:
+        with _own_driver_tree(_playwright_program()):
+            browser = cam.__enter__()
+            entered = True
+        yielded = True
         yield browser
-    except BaseException:
-        suppressed = cam.__exit__(*sys.exc_info())
+    except BaseException as failure:
+        if not entered:
+            raise
+        try:
+            suppressed = cam.__exit__(*sys.exc_info())
+        except BaseException as cleanup:
+            raise StartupRecoveryFailed(failure, [("the browser", cleanup)]) from failure
         _closed()                       # it returned, so the browser is down
-        if not suppressed:
+        # Ownership refusal happens after enter but before yield. Cleanup may
+        # suppress a caller's error; it may never make an unowned launch valid.
+        if not yielded or not suppressed:
             raise
     else:
         cam.__exit__(None, None, None)
@@ -589,7 +599,10 @@ def open_session(profile: Profile, store):
                 stack.pop()
         sessions.release(store.root, profile.id, session, tree=state["tree"])
     except BaseException as failure:
-        if session is not None and _may_release(state):
+        # A backend can acquire resources and fail cleanup before readiness,
+        # so opened=False alone does not prove that startup left nothing live.
+        if (session is not None and not isinstance(failure, StartupRecoveryFailed)
+                and _may_release(state)):
             sessions.release(store.root, profile.id, session, tree=state["tree"])
         # Only if nothing has been reported yet. Once a backend has said the
         # browser is open the parent has acted on it, and overwriting that with

@@ -238,6 +238,22 @@ response and refreshes profiles/config before closing. If that refresh fails,
 the write remains committed and is not offered as an unsaved retry. Password
 intent is local to the editor and is cleared between successful edit sessions.
 
+`ApiError` preserves the HTTP status and domain `kind`: a `409 StaleProfile`
+triggers an authoritative reload, while `409 ProfileDiverged` retains its separate
+storage-conflict meaning. `profileEdits.js` compares the loaded base and current
+draft to form a dirty-field patch, retaining `_rev`. It rebases those edits onto
+the latest profile; arrays are atomic fields and proxy members can be independent.
+Overlapping changes require explicit "Keep my edit" or "Use latest" choices.
+Draft controls pause until those choices are resolved. Secret values stay hidden
+in conflict previews, and password preserve/clear/replace and proxy removal intent
+survive rebasing. An unavailable refresh keeps the draft and explains the retry.
+
+Camoufox's manual context protocol pairs every successful backend enter with
+exactly one exit, including failure of the ownership check before yielding the
+browser. A cleanup failure preserves the original failure in
+`StartupRecoveryFailed` and retains the session claim; successful cleanup releases
+only through the existing ownership/emptiness policy.
+
 A Dashboard record that omits a proxy does not authorize deletion of a proxy
 held only by its engine twin. Both listing-time derivation and Dashboard saves
 refuse that loss, including passwordless endpoints. Explicit removal remains

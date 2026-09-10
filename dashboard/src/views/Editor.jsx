@@ -3,7 +3,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Blocks, Bookmark, Camera, Database, Type, Volume2, Check, Clock, Cookie, Cpu, Download, Fingerprint, Globe, MapPin, Mic, MonitorSmartphone, RefreshCw, ShieldAlert, ShieldCheck, Sparkles, Terminal, Upload, Wifi, X } from "lucide-react";
-import { api } from "../api";
+import { ApiError, api } from "../api";
+import { fieldValue, profileWrite, rebaseProfile, withField } from "../profileEdits";
 import { T } from "../theme";
 import { CORES, COUNTRY_LOCALE, ENGINE_META, ENGINE_ORDER, GPUS, LOCALES, MODES, OS_LIST, RAM, SCREENS, WARMUP_PRESETS, coherence, uaFor, vendorFor } from "../deviceData";
 import { Field, Pick, Row, SectionLabel } from "../ui";
@@ -72,6 +73,15 @@ function IpSwitch({ p, set, signal }) {
 
 const lines = v => Array.isArray(v) ? v.length
   : String(v || "").split(/\r?\n/).filter(l => l.trim()).length;
+
+const conflictValue = (profile, path) => {
+  let value = fieldValue(profile, path);
+  if (path[0] === "proxy") {
+    if (path[1] === "pass") return "(hidden)";
+    if (path.length === 1 && value) value = { ...value, pass: "(hidden)" };
+  }
+  return JSON.stringify(value) ?? "(empty)";
+};
 
 function ProfileSummary({ p, issues, score }) {
   const rows = [
@@ -201,18 +211,52 @@ function ProbePanel({ probe, kind }) {
 
 function Editor({ profile, live, folders = [], onClose, onSave }) {
   const [p, setP] = useState(profile);
+  const [base, setBase] = useState(profile);
+  const [conflicts, setConflicts] = useState([]);
+  const [saveMessage, setSaveMessage] = useState("");
   const [tab, setTab] = useState("general");
   const [saving, setSaving] = useState(false);
   const pending = useRef(false);
   const close = () => { if (!pending.current) onClose(); };
   const submit = async () => {
-    if (pending.current) return;
+    if (pending.current || conflicts.length) return;
     pending.current = true;
     setSaving(true);
-    try { await onSave({ ...p, _new: false }); }
+    setSaveMessage("");
+    try { await onSave(live && !p._new ? profileWrite(base, p) : { ...p, _new: false }); }
+    catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 409 || error.kind !== "StaleProfile") {
+        setSaveMessage("Save failed: " + error.message);
+        return;
+      }
+      try {
+        const latest = (await api.list()).find(x => x.id === p.id);
+        if (!latest) throw new Error("This profile was removed. Your draft is still open.", { cause: error });
+        const rebased = rebaseProfile(base, p, latest);
+        setBase(latest);
+        setP(rebased.profile);
+        setConflicts(rebased.conflicts);
+        setSaveMessage(rebased.conflicts.length
+          ? "You and another writer both changed these fields. Choose which edits to keep before saving."
+          : "Your edits were rebased onto the latest profile. Review them and save again.");
+      } catch (refreshError) {
+        setSaveMessage("Could not load the latest profile: " + refreshError.message + " Your draft is preserved; retry when it is available.");
+      }
+    }
     finally { pending.current = false; setSaving(false); }
   };
-  const set = (patch) => setP(x => ({ ...x, ...patch }));
+  const resolve = (path, useLatest) => {
+    if (useLatest) setP(current => {
+      const next = withField(current, path, fieldValue(base, path));
+      if (path[0] === "proxy" && (path.length === 1 || path[1] === "pass")) next._passwordSet = false;
+      return next;
+    });
+    setConflicts(current => current.filter(p => p !== path));
+    if (conflicts.length === 1) setSaveMessage("Conflict resolved. Review your edits and save again.");
+  };
+  const set = (patch) => {
+    if (!pending.current && !conflicts.length) setP(x => ({ ...x, ...patch }));
+  };
   /* Switching the OS rewrites the whole device, not just the label.
    *
    * The vendor is in here because it used to be the one field left behind. The
@@ -340,7 +384,7 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
     // a side panel on a wide screen was the wrong shape for the job.
     <div className="ps-overlay ps-page" onClick={close}>
       <div className="ps-editor" aria-busy={saving} onClick={e => e.stopPropagation()}>
-        <div className="ps-editor-h" inert={saving}>
+        <div className="ps-editor-h" inert={saving || conflicts.length > 0}>
           <div className="ps-editor-id">
             <div className="ps-eyebrow">{p._new ? "New profile" : "Edit profile"}</div>
             <input className="ps-in ps-editor-name" value={p.name}
@@ -371,13 +415,13 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
             : <div className="ps-coh-ok">All signals agree — this identity reads like one real device.</div>}
         </div>
 
-        <div className="ps-tabs" inert={saving}>
+        <div className="ps-tabs" inert={saving || conflicts.length > 0}>
           {["general", "fingerprint", "proxy", "bookmarks", "advanced"].map(t => (
             <button key={t} className={"ps-tab" + (tab === t ? " active" : "")} onClick={() => setTab(t)}>{t}</button>
           ))}
         </div>
 
-        <div className="ps-editor-main" inert={saving}>
+        <div className="ps-editor-main" inert={saving || conflicts.length > 0}>
           <div className="ps-editor-body">
           {tab === "general" && (
             <>
@@ -727,9 +771,26 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
           <ProfileSummary p={p} issues={iss} score={score} />
         </div>
 
+        {saveMessage && (
+          <div role="status" style={{ padding: "12px 24px", borderTop: `1px solid ${T.line}`, fontSize: 13,
+            maxHeight: "35vh", overflowY: "auto", flexShrink: 0 }}>
+            <div>{saveMessage}</div>
+            {conflicts.map(path => (
+              <div key={path.join(".")} role="group" aria-label={`Resolve ${path.join(".")} conflict`}
+                style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                <strong>{path.join(".")}</strong>
+                <span style={{ flex: "1 1 160px", overflowWrap: "anywhere" }}>
+                  My edit: {conflictValue(p, path)} · Latest: {conflictValue(base, path)}
+                </span>
+                <button className="ps-btn ghost sm" onClick={() => resolve(path, false)}>Keep my edit</button>
+                <button className="ps-btn ghost sm" onClick={() => resolve(path, true)}>Use latest</button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="ps-drawer-foot">
           <button className="ps-btn ghost" disabled={saving} onClick={close}>Cancel</button>
-          <button className="ps-btn primary" disabled={!p.name || saving} onClick={submit}>
+          <button className="ps-btn primary" disabled={!p.name || saving || conflicts.length > 0} onClick={submit}>
             <Check size={15} /> {saving ? "Saving…" : p._new ? "Create profile" : "Save changes"}
           </button>
         </div>

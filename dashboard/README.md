@@ -70,6 +70,13 @@ client uses directly and so bypasses the proxy. The API client lives in
 
 ## Tech
 
+Saving a stale profile keeps your draft and reloads the latest revision. Edits to
+different fields are combined; choose **Keep my edit** or **Use latest** for fields
+both writers changed, then save again. Editing pauses while those choices are
+pending. Proxy password intent is preserved, and conflict previews hide secrets.
+A failed refresh keeps the draft with an explicit retry message. Other storage
+conflicts retain their own error and are not automatically rebased.
+
 Plain React 19 + Vite. Icons from `lucide-react`. Styling is a single scoped
 `<style>` block — no CSS framework dependency.
 

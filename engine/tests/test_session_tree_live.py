@@ -29,7 +29,15 @@ from numera.paths import SessionBusy
 from numera.repo import repo
 from numera.store import ProfileStore
 
-requires_browser()
+REQUIRED_ENGINE = os.environ.get("NUMERA_TEST_ENGINE")
+AVAILABILITY = __import__("numera.drivers", fromlist=["available"]).available()
+if REQUIRED_ENGINE:
+    if REQUIRED_ENGINE not in AVAILABILITY:
+        pytest.fail(f"Unknown required live engine: {REQUIRED_ENGINE}")
+    if not AVAILABILITY[REQUIRED_ENGINE]:
+        pytest.fail(f"Required live engine package is missing: {REQUIRED_ENGINE}")
+else:
+    requires_browser()
 
 
 @pytest.fixture
@@ -45,8 +53,8 @@ def _tree_of(record) -> proctree.Tree:
     return sessions._tree_of(record)
 
 
-INSTALLED = sorted(name for name, ok in __import__(
-    "numera.drivers", fromlist=["available"]).available().items() if ok)
+INSTALLED = ([REQUIRED_ENGINE] if REQUIRED_ENGINE else
+             sorted(name for name, ok in AVAILABILITY.items() if ok))
 
 
 @pytest.mark.parametrize("engine", INSTALLED)
@@ -55,10 +63,9 @@ def test_every_installed_engine_gets_a_tree_of_its_own(store, engine):
 
     The wiring assertion in `test_session_tree_mandatory.py` checks that every
     backend *calls* `_own_driver_tree`; this checks that doing so works, which
-    is a different claim and only a real browser can settle it. Parametrised
-    over what is installed rather than a fixed list, so an engine that is
-    present is exercised and one that is absent is visibly absent from the
-    report instead of silently unclaimed.
+    is a different claim and only a real browser can settle it. Local runs
+    exercise installed engines. CI requires one explicit engine per matrix
+    job; its missing package or browser is a failure, never a skip.
 
     Camoufox is included through `drivers.session()`, which is the path that
     knows it is launch-and-wait only.

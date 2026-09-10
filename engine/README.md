@@ -324,6 +324,13 @@ open twice.
 
 ## HTTP API
 
+Rejected stale-revision writes return HTTP 409 with a string `detail` and
+`kind: "StaleProfile"`. Conflicts between stored copies also return 409, with
+`kind: "ProfileDiverged"`. Clients should distinguish these: reload the current
+profile and rebase locally dirty fields for a stale revision, retaining the latest
+`_rev` and explicitly resolving overlaps. Replacing `_rev` on a complete stale
+snapshot can overwrite another writer's edits.
+
 `numera serve` (needs `pip install -e ".[api]"`) starts a small FastAPI app the
 dashboard uses to manage and launch profiles for real. It listens on
 `http://127.0.0.1:8787` by default (`--host` / `--port` to change).
@@ -498,3 +505,26 @@ python -c "from cloakbrowser.download import ensure_binary; ensure_binary()"
 
 That last line matters: CloakBrowser downloads its binary on first launch, and
 the network guard refuses that from inside a test. Fetch it once, up front.
+
+CI additionally requires an explicit Windows/Linux matrix for `playwright`,
+`patchright`, `camoufox`, and `cloak`. `NUMERA_TEST_ENGINE` selects one engine;
+an absent selected package or binary is an error. `scripts/live_engine.py`
+checks prerequisites and requires JUnit evidence for both real launch ownership
+and hard-killed-owner cleanup, with zero skipped cases. Ordinary unit jobs omit
+live files; the existing Chromium live job retains broader browser behavior tests.
+The `Required verification` job fails if any required job fails or skips. Tagged
+release publication depends on that verification; this does not configure remote
+branch protection or prove a hosted workflow has executed.
+
+For this lifecycle matrix Cloak is deliberately pinned to the official key-free
+`146.0.7680.177.5` build with wrapper `0.5.10`, `CLOAKBROWSER_VERSION` set explicitly
+and `CLOAKBROWSER_AUTO_UPDATE=false`. Internal CI use is allowed by the vendor's
+[binary license](https://github.com/CloakHQ/CloakBrowser/blob/main/BINARY-LICENSE.md).
+License keys and custom binary/download overrides are refused by this contract,
+so it cannot silently switch builds. The matrix neither redistributes that binary
+nor certifies newer licensed builds. The other package pins and install steps live
+in `.github/workflows/ci.yml`.
+
+The helper writes diagnostic UTF-8 logs under `build/live-engine/logs`, using the
+engine's UTC filename/entry format, redaction and 20-run retention. CI retains its
+JUnit report and these logs for seven days; generated browser binaries are excluded.
