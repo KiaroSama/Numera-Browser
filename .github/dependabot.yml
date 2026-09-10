@@ -36,3 +36,15 @@ updates:
     schedule:
       interval: weekly
     labels: [dependencies, ci]
+
+  - package-ecosystem: cargo
+    directory: /desktop/src-tauri
+    schedule:
+      interval: daily
+    labels: [dependencies, desktop]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, container]
