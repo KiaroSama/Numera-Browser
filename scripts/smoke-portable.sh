@@ -54,6 +54,8 @@ step "Bundled browser: $(ls -d "$browsers"/chromium-* | head -n 1)"
 # A data directory of its own, and no inherited Playwright cache: this has to
 # pass the way it would on a machine that has never seen this project.
 data="$(mktemp -d "${TMPDIR:-/tmp}/numera-smoke.XXXXXX")"
+# Migration has its own tests; the smoke fixture must not copy personal data.
+printf '%s\n' 'Smoke fixture: skip legacy import.' > "$data/.imported"
 unset PLAYWRIGHT_BROWSERS_PATH
 serve_pid=""
 cleanup() {

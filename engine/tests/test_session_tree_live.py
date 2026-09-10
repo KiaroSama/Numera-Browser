@@ -12,6 +12,8 @@ tests that need a real one, because the seam is inside Playwright: nothing
 about it can be proved with a stub.
 """
 
+import os
+import signal
 import subprocess
 import sys
 import time
@@ -19,6 +21,7 @@ import time
 import pytest
 
 from _live import requires_browser
+from _rendezvous import Rendezvous, start
 
 from numera import generate, proctree, sessions
 from numera.models import Profile
@@ -95,6 +98,68 @@ def test_a_session_names_a_tree_that_is_not_the_hosts(store):
 
     assert sessions.read(store.root, prof.id) is None, \
         "a closed session did not give its claim up"
+
+
+@pytest.mark.parametrize("engine", INSTALLED)
+def test_hard_killed_owner_releases_only_an_empty_real_browser_tree(store, engine):
+    from numera.drivers import open_session
+
+    prof = made(store, "killed-" + engine)
+    bar = Rendezvous()
+    owner = None
+    tree = None
+    body = f"""
+from numera.drivers import session
+from numera.store import ProfileStore
+import os
+store = ProfileStore(ROOT)
+with session(store.get({prof.id!r}), store, engine=WHO, headless=True):
+    say("browser-open " + str(os.getpid()))
+    wait()
+"""
+    try:
+        owner = start(body, store.root, engine, bar.port)
+        owner_pid = int(bar.expect(engine, "browser-open ").split()[-1])
+        record = sessions.read(store.root, prof.id)
+        tree = _tree_of(record)
+        assert tree is not None and proctree.alive_tree(tree)
+        assert tree.pid != owner_pid, "claim named the launcher rather than its driver"
+        with pytest.raises(SessionBusy):
+            with open_session(store.get(prof.id), store):
+                pass
+
+        # A Windows venv executable can be a redirector with a different PID.
+        # Kill the interpreter that actually owns the claim, reported by it.
+        os.kill(owner_pid, signal.SIGTERM if os.name == "nt" else signal.SIGKILL)
+        owner.wait(timeout=15)
+        # Some backends close on driver-pipe EOF; others survive. A released
+        # claim is safe only if its exact browser tree has already emptied.
+        if not sessions.busy(store.root, prof.id):
+            assert not proctree.alive_tree(tree)
+        if proctree.alive_tree(tree):
+            assert proctree.end_tree(tree, grace=1, kill_grace=10)
+        assert proctree.prove_empty(tree, deadline=15)
+        sessions.settle(store.root, prof.id)
+        # Windows can report process exit before releasing its file locks;
+        # use the same bounded recovery check as the lease crash regression.
+        deadline = time.monotonic() + 20
+        while True:
+            try:
+                with open_session(store.get(prof.id), store):
+                    pass
+                break
+            except SessionBusy:
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.05)
+    finally:
+        if tree is not None and proctree.alive_tree(tree):
+            proctree.signal_tree(tree, force=True)
+        if owner is not None:
+            if owner.poll() is None:
+                owner.kill()
+            owner.communicate(timeout=15)
+        bar.close()
 
 
 def test_a_browser_left_running_keeps_the_profile_after_a_clean_exit(store):

@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Preserve engine-only proxies, including passwordless endpoints, when a
+  Dashboard listing or unrelated edit carries no visible proxy.
+- Allow independent profile preparation while serializing actual driver
+  creation and durable ownership recording.
+- Keep rejected profile edits open with their draft and password intent;
+  prevent duplicate pending saves and distinguish committed writes from failed
+  post-save refreshes.
+- Keep denied test connections within the socket error contract so client
+  libraries close refused sockets, with a regression that verifies cleanup.
+- Include shared test helpers and the network guard in the source distribution.
+- Isolate portable smoke data from automatic imports of existing profiles.
+
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]

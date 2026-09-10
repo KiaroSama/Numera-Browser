@@ -228,7 +228,9 @@ def test_the_python_path_removes_a_divergent_proxy_too(store):
 
 # --- the payload the Dashboard's toggle actually sends ----------------------
 
-def test_a_proxy_the_caller_never_saw_may_not_be_removed(store):
+@pytest.mark.parametrize("username,password", [(None, None), ("u", None),
+                                               ("u", "secret")])
+def test_a_proxy_the_caller_never_saw_may_not_be_removed(store, username, password):
     """The trap making removal explicit opens, and where it has to stop.
 
     A one-sided proxy - engine copy only - is not shown by the listing at all.
@@ -238,26 +240,35 @@ def test_a_proxy_the_caller_never_saw_may_not_be_removed(store):
     echo, and the same answer: not a decision, so not honoured.
     """
     client = api(store)
-    prof = with_proxy(store)
+    prof = repo(store).create(made(
+        "alpha", proxy=Proxy(server="http://h:1", username=username,
+                             password=password)))
     raw = dash_raw(store, prof.id)
     raw.pop("proxy", None)
     write_dash(store, prof.id, raw)
+    paths = [store.root / folder / f"{prof.id}.json"
+             for folder in ("profiles", "dashboard")]
+    before = [path.read_bytes() for path in paths]
 
     loaded = next(x for x in client.get("/api/profiles").json()
                   if x["id"] == prof.id)
     assert not loaded.get("proxy"), "the listing started showing it after all"
+    assert [path.read_bytes() for path in paths] == before, \
+        "listing erased the hidden engine proxy before the save"
 
-    answer = client.put(f"/api/profiles/{prof.id}", json={**loaded, "notes": "hi"})
+    answer = client.put(f"/api/profiles/{prof.id}",
+                        json={**loaded, "notes": "hi", "proxy": None})
 
     assert answer.status_code == 409, answer.text
-    assert engine_raw(store, prof.id)["proxy"]["password"] == "secret", \
-        "an edit removed a proxy the caller was never shown"
+    assert [path.read_bytes() for path in paths] == before, \
+        "an edit changed a proxy the caller was never shown"
 
 
-def test_the_dashboard_toggle_off_removes_the_proxy(store):
+@pytest.mark.parametrize("password", [None, "secret"])
+def test_the_dashboard_toggle_off_removes_the_proxy(store, password):
     """List, turn the proxy off, PUT the whole object - what the GUI does."""
     client = api(store)
-    prof = with_proxy(store)
+    prof = with_proxy(store, password=password)
 
     loaded = next(x for x in client.get("/api/profiles").json()
                   if x["id"] == prof.id)

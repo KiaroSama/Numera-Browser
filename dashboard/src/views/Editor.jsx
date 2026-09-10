@@ -1,7 +1,7 @@
 /* The fingerprint editor - every field of one profile, plus the live probe
  * results (proxy test and trust grade) that come back from a real browser. */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Blocks, Bookmark, Camera, Database, Type, Volume2, Check, Clock, Cookie, Cpu, Download, Fingerprint, Globe, MapPin, Mic, MonitorSmartphone, RefreshCw, ShieldAlert, ShieldCheck, Sparkles, Terminal, Upload, Wifi, X } from "lucide-react";
 import { api } from "../api";
 import { T } from "../theme";
@@ -202,6 +202,16 @@ function ProbePanel({ probe, kind }) {
 function Editor({ profile, live, folders = [], onClose, onSave }) {
   const [p, setP] = useState(profile);
   const [tab, setTab] = useState("general");
+  const [saving, setSaving] = useState(false);
+  const pending = useRef(false);
+  const close = () => { if (!pending.current) onClose(); };
+  const submit = async () => {
+    if (pending.current) return;
+    pending.current = true;
+    setSaving(true);
+    try { await onSave({ ...p, _new: false }); }
+    finally { pending.current = false; setSaving(false); }
+  };
   const set = (patch) => setP(x => ({ ...x, ...patch }));
   /* Switching the OS rewrites the whole device, not just the label.
    *
@@ -328,9 +338,9 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
     // several of them only make sense read together (UA against platform, screen
     // against the GPU, locale against the proxy's country) - squeezing that into
     // a side panel on a wide screen was the wrong shape for the job.
-    <div className="ps-overlay ps-page" onClick={onClose}>
-      <div className="ps-editor" onClick={e => e.stopPropagation()}>
-        <div className="ps-editor-h">
+    <div className="ps-overlay ps-page" onClick={close}>
+      <div className="ps-editor" aria-busy={saving} onClick={e => e.stopPropagation()}>
+        <div className="ps-editor-h" inert={saving}>
           <div className="ps-editor-id">
             <div className="ps-eyebrow">{p._new ? "New profile" : "Edit profile"}</div>
             <input className="ps-in ps-editor-name" value={p.name}
@@ -344,7 +354,7 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
               .map(f => <option key={f} value={f}>{f}</option>)}
           </select>
           <div style={{ flex: 1 }} />
-          <button className="ps-x" onClick={onClose}><X size={18} /></button>
+          <button className="ps-x" disabled={saving} aria-label="Close editor" onClick={close}><X size={18} /></button>
         </div>
 
         <div className="ps-coh">
@@ -361,13 +371,13 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
             : <div className="ps-coh-ok">All signals agree — this identity reads like one real device.</div>}
         </div>
 
-        <div className="ps-tabs">
+        <div className="ps-tabs" inert={saving}>
           {["general", "fingerprint", "proxy", "bookmarks", "advanced"].map(t => (
             <button key={t} className={"ps-tab" + (tab === t ? " active" : "")} onClick={() => setTab(t)}>{t}</button>
           ))}
         </div>
 
-        <div className="ps-editor-main">
+        <div className="ps-editor-main" inert={saving}>
           <div className="ps-editor-body">
           {tab === "general" && (
             <>
@@ -718,9 +728,9 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
         </div>
 
         <div className="ps-drawer-foot">
-          <button className="ps-btn ghost" onClick={onClose}>Cancel</button>
-          <button className="ps-btn primary" disabled={!p.name} onClick={() => onSave({ ...p, _new: false })}>
-            <Check size={15} /> {p._new ? "Create profile" : "Save changes"}
+          <button className="ps-btn ghost" disabled={saving} onClick={close}>Cancel</button>
+          <button className="ps-btn primary" disabled={!p.name || saving} onClick={submit}>
+            <Check size={15} /> {saving ? "Saving…" : p._new ? "Create profile" : "Save changes"}
           </button>
         </div>
       </div>

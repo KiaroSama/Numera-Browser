@@ -45,7 +45,7 @@ def profile(tmp_path):
 
 def _kill(pid) -> None:
     subprocess.run(["taskkill", "/F", "/PID", str(pid)] if proctree._WINDOWS
-                   else ["kill", "-9", str(pid)], capture_output=True)
+                   else ["kill", "-9", str(pid)], capture_output=True, timeout=15)
 
 
 def _gone(pid, deadline=15.0) -> bool:
@@ -114,7 +114,7 @@ def test_the_claim_names_the_new_tree_before_the_launch_returns(tmp_path, profil
     """The Camoufox interleaving, made deterministic and hard-killed."""
     script = NARROWED.format(engine=ENGINE, root=str(tmp_path), pid=profile.id)
     owner = subprocess.Popen([sys.executable, "-c", textwrap.dedent(script)],
-                             stdout=subprocess.PIPE, text=True,
+                             stdout=subprocess.PIPE, text=True, encoding="utf-8",
                              **({} if proctree._WINDOWS else {"start_new_session": True}))
     kid = None
     try:
@@ -149,6 +149,8 @@ def test_the_claim_names_the_new_tree_before_the_launch_returns(tmp_path, profil
             _kill(kid)
         if owner.poll() is None:                             # pragma: no cover
             _kill(owner.pid)
+        owner.wait(timeout=30)
+        owner.stdout.close()
 
 
 def test_a_session_may_not_open_a_browser_it_cannot_own(tmp_path, profile):

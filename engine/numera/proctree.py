@@ -49,6 +49,7 @@ from pathlib import Path
 from typing import Optional
 
 from .handshake import ChildTerminationFailed, end_child
+from .driver_capture import Adopted, spawning_own_tree  # public capture API
 
 _WINDOWS = os.name == "nt"
 _POLL_SECONDS = 0.05
@@ -490,134 +491,6 @@ def spawn(argv, **kwargs) -> tuple:
     proc = subprocess.Popen(argv, **kwargs)
     return proc, Tree(pid=proc.pid, token=identify(proc),
                       group=proc.pid, kind="pgid")
-
-
-class Adopted:
-    """The tree one browser session's driver was started into.
-
-    `tree` is None until that spawn happens, and a `tree` still None when the
-    window closes means the driver was never caught - which is a *failure*, not
-    a narrower guarantee. `proc` is what was started, so a caller that has to
-    refuse the launch can end it rather than leave a browser nothing owns.
-    """
-
-    __slots__ = ("tree", "proc")
-
-    def __init__(self):
-        self.tree = self.proc = None
-
-
-#: Serialises `spawning_own_tree`. The interception below is process-global for
-#: the length of one driver startup, so two sessions in one host must not have
-#: their windows overlap - the second would capture the first's driver.
-_SPAWNING = threading.Lock()
-
-
-@contextmanager
-def spawning_own_tree(executable, on_tree=None):
-    """Start the next process launched from `executable` as its own tree.
-
-    **Why this exists.** `own_tree()` gives the whole host process one tree, so
-    every in-process session in one program named the same one - siblings and
-    unrelated children of an embedding application included. A claim over that
-    tree cannot answer "is *this* session's browser gone", which is the only
-    question that makes a profile safe to reuse.
-
-    A browser is started by a driver process (the Playwright node driver, which
-    Camoufox also uses), and every process that driver starts inherits its
-    group or job. So the tree has to be decided at the driver's `Popen`, and
-    nothing in Playwright's API reaches that call - hence the interception,
-    kept as small and as specific as it can be:
-
-    * it is installed for the length of one `start()` call and removed in a
-      `finally`;
-    * it fires only for `executable`, so an embedding application spawning
-      something of its own on another thread in that window is untouched;
-    * it captures once - a driver that respawns is not a second session;
-    * it holds `_SPAWNING`, so two sessions in one host cannot interleave;
-    * it restores the original only if nothing else replaced it meanwhile.
-
-    `on_tree(tree)` is called **from inside the spawn**, the instant the tree
-    exists and while the driver is still only a driver - before anything can
-    ask it to open a browser. That ordering is the point: recording the tree
-    after the launch call returned left a window where a hard kill lost the
-    only pointer to a browser that was already running, and Camoufox starts one
-    inside its `__enter__`. If it raises, the driver is ended and the failure
-    propagates, because a tree nothing recorded is worth no more than no tree.
-
-    Yields an `Adopted`. `.tree` still None after the block means the driver
-    was never caught, which callers treat as a failed launch.
-    """
-    holder = Adopted()
-    if not executable:
-        yield holder                    # nothing to match on; the caller refuses
-        return
-    targets = tuple(str(one) for one in
-                    (executable if isinstance(executable, (list, tuple))
-                     else [executable]) if one)
-    with _SPAWNING:
-        installed = []
-        for module, attr in _spawn_points():
-            original = getattr(module, attr)
-            setattr(module, attr, _capture(holder, targets, original, on_tree))
-            installed.append((module, attr, original, getattr(module, attr)))
-        try:
-            yield holder
-        finally:
-            for module, attr, original, ours in installed:
-                if getattr(module, attr) is ours:
-                    setattr(module, attr, original)
-
-
-def _spawn_points():
-    """Every name a driver spawn can come through, on this platform.
-
-    `subprocess.Popen` alone is not enough. asyncio - which is how Playwright
-    starts its driver - uses `subprocess.Popen` directly on POSIX but a
-    *subclass* of it on Windows, `asyncio.windows_utils.Popen`, bound at import
-    time. Replacing the base class does not touch a subclass that already
-    exists, so patching one name caught the driver on Linux and missed it on
-    Windows entirely - and a seam that works on one platform is the failure
-    this project has hit before.
-    """
-    points = [(subprocess, "Popen")]
-    if _WINDOWS:
-        try:
-            import asyncio.windows_utils as windows_utils
-        except ImportError:                                  # pragma: no cover
-            return points
-        points.append((windows_utils, "Popen"))
-    return points
-
-
-def _capture(holder, targets, original, on_tree):
-    """`original`, except that the first spawn of a target leads a new tree."""
-    def popen(args, *rest, **kwargs):
-        if holder.tree is not None or not _is_target(args, targets):
-            return original(args, *rest, **kwargs)
-        proc, tree = _spawn_leader(original, args, rest, kwargs)
-        holder.proc = proc
-        try:
-            if on_tree is not None:
-                on_tree(tree)
-        except BaseException:
-            # Recorded nowhere, so nothing could ever prove it empty. End it
-            # here rather than hand back a browser with no owner on disk.
-            _abandon(proc)
-            raise
-        holder.tree = tree
-        return proc
-    return popen
-
-
-def _is_target(args, targets) -> bool:
-    """Is this the driver we are waiting for, and not some other spawn?"""
-    program = args[0] if isinstance(args, (list, tuple)) and args else args
-    try:
-        name = os.path.normcase(str(program))
-    except Exception:            # noqa: BLE001 - a program we cannot name is not ours
-        return False             # pragma: no cover
-    return any(name == os.path.normcase(one) for one in targets)
 
 
 def _spawn_leader(original, args, rest, kwargs) -> tuple:

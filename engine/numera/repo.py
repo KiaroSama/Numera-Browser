@@ -131,6 +131,13 @@ class ProfileDiverged(RuntimeError):
 
     def __init__(self, profile_id: str, field: str = "proxy.password"):
         self.profile_id, self.field = profile_id, field
+        if field == "proxy":
+            super().__init__(
+                f"the two stored copies of profile {profile_id} differ: the "
+                "engine has a proxy that the Dashboard did not show, so this "
+                "operation cannot remove it. "
+                "Set the profile's proxy explicitly before removing it.")
+            return
         super().__init__(
             f"the two stored copies of profile {profile_id} hold different "
             f"proxy passwords, and neither can be shown to be the one you "
@@ -827,11 +834,11 @@ class ProfileRepo:
                 engine_data["proxy"]["password"] = self._for_derivation(
                     profile_id, ((current or {}).get("proxy") or {}).get("password"),
                     self._seal(profile, raw))
-            elif ((current or {}).get("proxy") or {}).get("password"):
+            elif (current or {}).get("proxy"):
                 # The dashboard says there is no proxy at all while the engine
-                # copy holds a credential. Writing the derivation would delete
-                # it, and there is nowhere to keep it either.
-                raise ProfileDiverged(profile_id)
+                # copy holds one. Even without a password, deriving here would
+                # erase an endpoint the user never saw or chose to remove.
+                raise ProfileDiverged(profile_id, "proxy")
             if current == engine_data:
                 return profile
             engine_path = self.store._path(profile_id)

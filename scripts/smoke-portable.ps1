@@ -58,6 +58,9 @@ Step "Bundled browser: $($chrome.FullName)"
 # pass the way it would on a machine that has never seen this project.
 $data = Join-Path ([System.IO.Path]::GetTempPath()) ("numera-smoke-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force -Path $data | Out-Null
+# Migration has its own tests. Never import a developer's legacy profiles into
+# this disposable fixture (which is deleted after the smoke run).
+[IO.File]::WriteAllText((Join-Path $data '.imported'), "Smoke fixture: skip legacy import.`n", [Text.UTF8Encoding]::new($false))
 $savedCache = $env:PLAYWRIGHT_BROWSERS_PATH
 $env:PLAYWRIGHT_BROWSERS_PATH = $null
 $server = $null

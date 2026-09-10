@@ -365,13 +365,12 @@ class DashboardStore:
         dash = (self._raw(pid).get(a) or {})
         sealed = [dash.get(b)]
         if self._engine is not None:
-            from ..repo import repo as _repo
+            from ..repo import ProfileDiverged, repo as _repo
 
             engine = ((_repo(self._engine)._engine_raw(pid) or {}).get(a) or {})
             sealed.append(engine.get("password"))
-            if engine.get("password") and not dash:
-                _repo(self._engine).refuse_unresolved_secret(
-                    pid, engine.get("password"), None)
+            if engine and not dash:
+                raise ProfileDiverged(pid, "proxy")
         for stored in sealed:
             vault.encrypt_for_write(self._engine, "", stored)
 
