@@ -552,7 +552,7 @@ def _register_domain_errors(app) -> None:
         # 409: the request is well formed and the server refuses because the
         # stored state conflicts with itself. Retrying is pointless until a
         # person settles which credential is right.
-        return JSONResponse({"detail": str(exc)}, status_code=409)
+        return JSONResponse({"detail": str(exc), "kind": "ProfileDiverged"}, status_code=409)
 
     @app.exception_handler(VaultLocked)
     def locked(request, exc: VaultLocked):

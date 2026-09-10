@@ -336,7 +336,7 @@ def register(app, ctx):
             saved = dash.patch(pid, merge, expect_rev=sent_rev,
                                secret_intent=secret_intent(profile))
         except StaleProfile as e:
-            raise HTTPException(409, str(e)) from None
+            return JSONResponse({"detail": str(e), "kind": "StaleProfile"}, status_code=409)
         if saved is None:
             raise HTTPException(404, "profile not found")
         return decorate(saved)

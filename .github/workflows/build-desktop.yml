@@ -21,6 +21,11 @@ permissions:
   contents: read
 
 jobs:
+  verify-release:
+    name: Verify the release source
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: ./.github/workflows/ci.yml
+
   server:
     name: Server wheel (any OS)
     runs-on: ubuntu-latest
@@ -262,7 +267,7 @@ jobs:
   # reaches a user: the repository never carries one.
   release:
     name: Publish to the release
-    needs: [server, desktop, desktop-windows]
+    needs: [verify-release, server, desktop, desktop-windows]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:

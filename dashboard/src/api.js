@@ -48,11 +48,19 @@ export const auth = {
 /* Thrown for a 401 so callers can tell "you need a token" apart from "the
  * engine is not there". Conflating the two is what put fabricated demo
  * profiles on screen in front of a perfectly healthy locked engine. */
-export class AuthError extends Error {
+export class ApiError extends Error {
+  constructor(message, status, kind = null) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.kind = kind;
+  }
+}
+
+export class AuthError extends ApiError {
   constructor(detail) {
-    super(detail || "This engine requires an API token.");
+    super(detail || "This engine requires an API token.", 401);
     this.name = "AuthError";
-    this.status = 401;
   }
 }
 
@@ -111,16 +119,18 @@ async function req(method, path, body) {
     // left the UI showing "PUT /api/config → 400", which is a status code, not a
     // reason someone can act on.
     let detail = "";
+    let kind = null;
     try {
       const body = await res.json();
       detail = typeof body?.detail === "string" ? body.detail : "";
+      kind = typeof body?.kind === "string" ? body.kind : null;
     } catch { /* not JSON, or empty — fall back to the status line */ }
     if (res.status === 401) {
       const lost = new AuthError(detail);
       onAuthLost?.(lost);
       throw lost;
     }
-    throw new Error(detail || `${method} ${path} → ${res.status}`);
+    throw new ApiError(detail || `${method} ${path} → ${res.status}`, res.status, kind);
   }
   return res.status === 204 ? null : res.json();
 }

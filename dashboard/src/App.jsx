@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, Blocks, Boxes, Command, Download, FolderTree, Globe, KeyRound, Layers, Moon, Plus, Puzzle, RefreshCw, Server, Settings, ShieldAlert, ShieldCheck, Sun, Users, X, Zap } from "lucide-react";
-import { api, auth, setAuthLostHandler, withoutMarker } from "./api";
+import { ApiError, api, auth, setAuthLostHandler, withoutMarker } from "./api";
 import { DARK, FONT, LIGHT, T, makeCss } from "./theme";
 import { FOLDERS, seed } from "./demoData";
 import { ENGINE_META, LOCALES, coherence, nid } from "./deviceData";
@@ -305,7 +305,10 @@ export default function App() {
       try {
         const exists = profiles.some(x => x.id === p.id) && !p._new;
         saved = await (exists ? api.update(p) : api.create({ ...p, id: undefined }));
-      } catch (e) { toast.error("Save failed: " + e.message); await refreshConfig(); return false; }
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 409 && e.kind === "StaleProfile") throw e;
+        toast.error("Save failed: " + e.message); await refreshConfig(); return false;
+      }
       // The write committed. Keep its authoritative response even if the next
       // read fails, so retrying a new profile cannot accidentally create twice.
       setProfiles(ps => ps.some(x => x.id === saved.id)
