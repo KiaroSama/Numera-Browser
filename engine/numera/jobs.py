@@ -28,7 +28,7 @@ import time
 import uuid
 from pathlib import Path
 
-from . import proctree
+from . import proctree, selfexec
 # Re-exported: the identity primitives moved to `proctree` with the rest of
 # process ownership, and both names are part of this module's surface.
 from .proctree import alive, started_at   # noqa: F401
@@ -147,7 +147,7 @@ def spawn(root: Path, argv: list[str], command: str = "",
         # this record has to be able to end from a completely different
         # process, and the leader's pid is not a handle on it. See proctree.
         proc, tree = proctree.spawn(
-            [sys.executable, "-m", "numera", *argv],
+            selfexec.self_command(*argv),
             stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
             env=env,
         )

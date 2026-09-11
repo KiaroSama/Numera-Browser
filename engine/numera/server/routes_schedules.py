@@ -17,6 +17,7 @@ def register(app, ctx):
     """
     from fastapi import HTTPException
 
+    from .. import selfexec
     from ..scheduler import due_schedules, next_run_at, validate_schedule
 
     engine_store, dash, sched, running, is_running, start_scheduler = ctx.engine_store, ctx.dash, ctx.sched, ctx.running, ctx.is_running, ctx.start_scheduler
@@ -37,8 +38,9 @@ def register(app, ctx):
         occurrence and no other. The reaper used to match on `profileId`, so a
         profile with two schedules had both rows written by one warm-up.
         """
-        cli = [sys.executable, "-m", "numera", "--data-dir", str(engine_store.root),
-               "warmup", pid, "--minutes", str(minutes), "--headless"]
+        cli = selfexec.self_command("--data-dir", str(engine_store.root),
+                                    "warmup", pid, "--minutes", str(minutes),
+                                    "--headless")
         if preset:
             cli += ["--preset", str(preset)]
         return spawn_owner(pid, cli, kind="scheduled_warmup", schedule_id=sid)

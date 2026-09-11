@@ -24,7 +24,7 @@ import subprocess
 import sys
 from typing import Any, Iterator, Optional
 
-from . import __version__, cli
+from . import __version__, cli, selfexec
 from .paths import child_env
 
 # Bounded, because a tool call that never returns is indistinguishable from a
@@ -162,7 +162,7 @@ def call(name: str, arguments: dict, data_dir: Optional[str] = None,
         return _result({"error": f"no such tool '{name}'"}, is_error=True)
     path, parser = found
 
-    cmd = [sys.executable, "-m", "numera"]
+    cmd = selfexec.self_command()
     if data_dir:
         cmd += ["--data-dir", str(data_dir)]
     cmd += _argv(path, parser, arguments or {})
