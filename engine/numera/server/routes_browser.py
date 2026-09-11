@@ -17,10 +17,67 @@ import time
 from pathlib import Path
 from typing import Optional
 from .. import cookies as cookies_mod
+from .. import proctree, selfexec
 from .convert import OS_TO_DASH
 from ..handshake import ChildTerminationFailed, StartupFailed
 from .. import sessions
 from ..paths import child_env, session_lease
+
+
+class HelperTimeout(RuntimeError):
+    """A finite browser-backed helper outran its deadline and was ended."""
+
+
+#: How long one browser-backed helper may take before it is ended.
+#:
+#: These are the *finite* probes - cookies export, proxy test, trust, tls, dns,
+#: align - not a session. Each starts a browser, so the budget has to cover a
+#: cold start on a slow machine; five minutes is far above anything healthy and
+#: only fires on a real stall. A long-lived session is not routed through here:
+#: it goes to `spawn_owner` and keeps its own managed lifecycle, which is why
+#: this is not a blanket timeout that could kill a browsing session.
+#:
+#: Overridable because "slow machine" is not a fixed quantity, and a user whose
+#: probe legitimately takes longer should raise the budget rather than lose the
+#: deadline entirely.
+HELPER_TIMEOUT = float(os.environ.get("NUMERA_HELPER_TIMEOUT") or 300)
+
+
+def run_helper(cli, timeout: float = None, env=None):
+    """Run a finite helper command, bounded, and end its whole tree if it stalls.
+
+    `subprocess.run(timeout=...)` would bound the *wait* and not the work: it
+    kills the direct child, and the browser that child started is three
+    processes further down and survives it. So the helper is spawned into a
+    tree it owns (`proctree.spawn`) and, on timeout, that tree is ended - which
+    is the same primitive a session stop uses, and the only one that can say
+    the browser is actually gone.
+
+    Returns a `CompletedProcess`, including for a non-zero exit: a failing
+    proxy test is a result its caller reads, not a broken command.
+    """
+    budget = HELPER_TIMEOUT if timeout is None else timeout
+    proc, tree = proctree.spawn(
+        cli, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        stdin=subprocess.DEVNULL, text=True, env=env,
+    )
+    try:
+        out, err = proc.communicate(timeout=budget)
+    except subprocess.TimeoutExpired:
+        # The wait is over; the work may not be. End the tree before reporting,
+        # so the caller is told about a helper that is really finished.
+        try:
+            proctree.end_session(proc, tree)
+        except ChildTerminationFailed as stuck:
+            raise HelperTimeout(
+                f"a browser helper did not finish within {budget:.0f}s and "
+                f"could not be fully stopped: {stuck}") from None
+        raise HelperTimeout(
+            f"a browser helper did not finish within {budget:.0f}s and was "
+            f"stopped. Raise NUMERA_HELPER_TIMEOUT if this machine needs "
+            f"longer, or check whether the profile's proxy is answering."
+        ) from None
+    return subprocess.CompletedProcess(cli, proc.returncode, out or "", err or "")
 
 
 def register(app, ctx):
@@ -75,8 +132,8 @@ def register(app, ctx):
         headless = (body or {}).get("headless")
         if headless is None:
             headless = engine_store.get_headless_launch()
-        cli = [sys.executable, "-m", "numera", "--data-dir", str(engine_store.root),
-               "launch", pid]
+        cli = selfexec.self_command("--data-dir", str(engine_store.root),
+                                    "launch", pid)
         if headless:
             cli.append("--headless")
         try:
@@ -123,15 +180,19 @@ def register(app, ctx):
         asked about is unhealthy", not "the command broke" — a failing proxy test
         still has a result worth showing.
         """
-        proc = subprocess.run(
-            [sys.executable, "-m", "numera", "--data-dir", str(engine_store.root), *cli_args],
-            capture_output=True, text=True,
-            # The unlock reaches the child by environment, never argv: a
-            # password on a command line is readable by every local process.
-            # Without this a server unlocked with --password spawned locked
-            # children, so probes and cookie exports silently lost the proxy.
-            env=child_env(engine_store._password),
-        )
+        try:
+            proc = run_helper(
+                selfexec.self_command("--data-dir", str(engine_store.root), *cli_args),
+                # The unlock reaches the child by environment, never argv: a
+                # password on a command line is readable by every local process.
+                # Without this a server unlocked with --password spawned locked
+                # children, so probes and cookie exports silently lost the proxy.
+                env=child_env(engine_store._password),
+            )
+        except HelperTimeout as stalled:
+            # 504: the helper, not this server, is what ran out of time - and
+            # it has been stopped, so the answer is truthful about the state.
+            raise HTTPException(504, str(stalled)) from None
         if proc.returncode != 0 and not (allow_fail and proc.stdout.strip()):
             raise HTTPException(500, (proc.stdout + proc.stderr).strip() or "command failed")
         return proc.stdout
@@ -234,8 +295,8 @@ def register(app, ctx):
                                      f"to — use one of: {', '.join(CHROMIUM_ENGINES)}")
         materialize_current(pid)
         port = _free_port()
-        cli = [sys.executable, "-m", "numera", "--data-dir", str(engine_store.root),
-               "attach", pid, "--port", str(port)]
+        cli = selfexec.self_command("--data-dir", str(engine_store.root),
+                                    "attach", pid, "--port", str(port))
         if (body or {}).get("headless"):
             cli.append("--headless")
         # Same protocol as launch, with the CDP wait layered on top: the child
@@ -274,8 +335,9 @@ def register(app, ctx):
         except WarmupInvalid as e:
             raise HTTPException(400, str(e)) from None
         d = _prepare(pid)
-        cli = [sys.executable, "-m", "numera", "--data-dir", str(engine_store.root),
-               "warmup", pid, "--minutes", str(minutes), "--headless"]
+        cli = selfexec.self_command("--data-dir", str(engine_store.root),
+                                    "warmup", pid, "--minutes", str(minutes),
+                                    "--headless")
         if body.get("preset"):
             cli += ["--preset", str(body["preset"])]
         # Warm-up runs for minutes, so it goes in the background exactly like a
