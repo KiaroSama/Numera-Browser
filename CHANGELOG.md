@@ -4,6 +4,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+- Include all four launch backends in desktop builds, with separate Playwright
+  and Patchright binaries, Camoufox resources and GeoIP data. Local/internal
+  builds can additionally include the Cloak binary explicitly.
+- Preserve an explicitly cleared password in the pooled-proxy editor.
+- Restore known proxy credentials when explicitly keeping a whole-proxy conflict
+  after remote removal; refuse restoration when the credential is unavailable.
+- Limit release downloads and publication to the four required product artifacts,
+  failing when one is missing and excluding diagnostic artifacts.
 - Close entered Camoufox backends when driver ownership is refused before the
   browser is yielded, retaining both failures and the claim if cleanup fails.
 - Recover stale Dashboard revisions by rebasing only local edits onto the latest

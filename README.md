@@ -101,7 +101,7 @@ Numera/
 | 🖥️ **Real browser** | Launches a real browser, per-profile isolation |
 | 🔌 **Pluggable engines** | Swap the stealth backend: CloakBrowser, Camoufox, Patchright, Playwright |
 | 🔗 **Startup URLs** | Each profile opens the pages you want, in its own tabs |
-| 🖱️ **Portable desktop app** | A ~590 MB folder you copy and double-click. No Python, no Node, no installer, no browser download - the engine and its Chromium are both inside the window |
+| 🖱️ **Portable desktop app** | A folder you copy and double-click, with all four backends and bundled Playwright, Patchright and Camoufox browsers. Local/internal builds can also include the Cloak binary. No Python or Node installation on the target machine. |
 | ⌨️ **CLI + Python API** | Script it or drive it by hand |
 | 🤖 **Built for agents** | `--json` on every command an agent would drive, `--detach` for long jobs with pollable handles, and an MCP surface. A parity test asserts the GUI has no capability the CLI lacks, and it currently passes at 44/44 — see [docs/agents.md](docs/agents.md) |
 
@@ -145,14 +145,24 @@ Two artifacts, two scripts. Pick the one that matches how you will run it.
 pwsh -File scripts/build-desktop.ps1
 ```
 
-Produces `build/windows/Numera Browser/` (~565 MB): a native window, the engine frozen
-inside it, the dashboard, and a Chromium build. Nearly all of that size is the
-browser - it is bundled so the folder can launch a profile on a machine that has
-never run Playwright, which is the whole point of a portable build. Copy that
-folder anywhere — another drive, a flash drive, another machine — and run
-`numera.exe`. **No Python, no Node, no installer, no browser download**;
-Windows 11 already has the only dependency (WebView2). It picks a free port at
-runtime and shuts the engine down with the window.
+Produces `build/windows/Numera Browser/`: a native window, the frozen engine,
+the dashboard, and built-in Playwright, Patchright, Camoufox and CloakBrowser
+Python backends. Playwright and Patchright each have their own Chromium binary;
+Camoufox includes its Firefox binary and default addons. GeoIP data is included.
+Copy the folder and run `numera.exe`; Python and Node are not required on the
+target machine. Windows 11 supplies WebView2. The app picks a free port and
+shuts the engine down with the window.
+
+The distributable build lets CloakBrowser download its browser directly from
+the vendor on first use. For a local/internal folder containing that binary too:
+
+```powershell
+pwsh -File scripts/build-desktop.ps1 -IncludeCloakBinary
+```
+
+That option requires no separate Python installation for the resulting app,
+but its output must not be distributed to third parties without the separate
+rights required by [CloakBrowser's binary license](https://github.com/CloakHQ/CloakBrowser/blob/main/BINARY-LICENSE.md).
 
 Because it is portable it keeps its profiles, sessions, proxies and logs in
 `data/` **beside the executable**. Rebuilding on top of an existing folder
@@ -332,7 +342,7 @@ choose per profile:
 
 | Engine | Strength | Notes |
 |---|---|---|
-| `cloak` | Patched Chromium binary | CloakBrowser — C++-level fingerprint/TLS/CDP patches; reaches Cloudflare/DataDome/reCAPTCHA-v3-grade evasion. **Requires a paid CloakBrowser subscription** and its licence forbids redistribution, so Numera Browser cannot bundle it — you install it yourself. |
+| `cloak` | Patched Chromium binary | Built-in desktop backend. Distributable builds obtain the binary directly from the vendor; local/internal builds can include it explicitly. The latest major binary requires a subscription; third-party redistribution requires separate rights. |
 | `camoufox` ⭐ | Patched Firefox (C++-level) | **Recommended** — the strongest engine that is actually free and open. Brings its own coherent fingerprint. |
 | `patchright` | Runtime-patched Playwright | Drop-in; fixes `webdriver`/CDP leaks the stock engine can't. |
 | `playwright` | Built-in, always available | Stock Chromium + injected stealth script. Passes basic bot tests (BrowserScan, sannysoft); can't beat TLS/CDP-level detection. |
@@ -343,12 +353,11 @@ numera create acct-01 --engine camoufox # pick a backend per profile
 numera default-engine camoufox          # set the default for new profiles
 ```
 
-`cloak` is still the built-in default (`ProfileStore.DEFAULT_ENGINE`), which is a
-leftover from before its licence was checked — **if you have no CloakBrowser
-subscription, switch to `camoufox` or `patchright` on first run.** The last engine
-you choose anywhere becomes the default for the next profile you create.
+`playwright` is the initial default. The last engine you choose becomes the
+default for the next profile you create.
 
-\* Cloak is not bundled and is not free; Camoufox is both.
+\* CloakBrowser's wrapper and its proprietary browser binary have different
+licenses. See the desktop build options above.
 
 Being honest about limits: pure JavaScript injection (the `playwright` engine)
 has a ceiling — for Cloudflare / DataDome / reCAPTCHA-v3-grade evasion, pair a

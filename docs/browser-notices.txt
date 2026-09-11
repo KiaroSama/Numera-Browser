@@ -1,0 +1,29 @@
+Third-party browser components
+
+The included third-party software keeps its own license terms. Vendor copyright,
+license and component notices remain in the browser folders and package metadata.
+Numera's project license does not replace or restrict those licenses.
+
+Playwright and Patchright: Apache-2.0.
+Source: https://github.com/microsoft/playwright
+Source: https://github.com/Kaliiiiiiiiii-Vinyzu/patchright
+Their Chromium distributions also retain Chromium's component notices.
+
+Camoufox: Mozilla Public License 2.0.
+Corresponding source and release versions: https://github.com/daijro/camoufox
+License: https://github.com/daijro/camoufox/blob/main/LICENSE
+The default uBlock Origin addon is GPL-3.0; source and release versions:
+https://github.com/gorhill/uBlock
+
+CloakBrowser's Python wrapper is MIT-licensed. Its browser binary has separate
+proprietary terms: https://github.com/CloakHQ/CloakBrowser/blob/main/BINARY-LICENSE.md
+Standard builds obtain that binary directly from the vendor. An internal build
+may include the unmodified binary; distributing it to third parties requires
+separate vendor rights. Source: https://github.com/CloakHQ/CloakBrowser
+
+This product includes GeoLite Data created by MaxMind, available from
+https://www.maxmind.com . The databases are unmodified.
+Terms: https://www.maxmind.com/en/geolite/eula
+License: https://creativecommons.org/licenses/by-sa/4.0/
+The included data retains its attribution and applicable terms. Use current
+database updates as required by the GeoLite terms; geolocation is approximate.

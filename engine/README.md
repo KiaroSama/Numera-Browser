@@ -457,7 +457,15 @@ with `numera engines`.
 | `cloak` | **Recommended.** CloakBrowser — a patched Chromium binary (C++-level fingerprint/TLS/CDP patches). Beats Cloudflare/DataDome-grade detection. | `pip install cloakbrowser` |
 | `camoufox` | **Recommended.** Patched Firefox with C++-level fingerprint spoofing and its own coherent fingerprint. | `pip install "camoufox[geoip]" && camoufox fetch` |
 | `patchright` | Drop-in **patched** Playwright — fixes `webdriver`/CDP leaks at runtime. | `pip install patchright && patchright install chromium` |
-| `playwright` | Stock Chromium + Numera Browser's injected stealth script. Built-in, always available. | included in `[launch]` |
+| `playwright` | Stock Chromium + Numera Browser's injected stealth script. | included in `[launch]` |
+
+Portable desktop builds freeze all four backends through the `desktop` extra and
+bundle Playwright, Patchright and Camoufox browsers separately. The server's
+`api` and `launch` extras remain opt-in and do not download every browser.
+For a local/internal Windows build including Cloak's official binary too, use
+`pwsh -File scripts/build-desktop.ps1 -IncludeCloakBinary` from the repository
+root. Standard release builds let the Cloak wrapper download directly from the
+vendor. See the [desktop build and license notes](../README.md#build-it).
 
 ```bash
 numera engines                              # list engines + install status

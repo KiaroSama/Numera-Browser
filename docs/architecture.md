@@ -45,6 +45,7 @@ pick OS ──▶ archetype (devices.py) ──▶ Fingerprint ──▶ validat
 | `models.py` | `Fingerprint`, `Proxy`, `Profile` dataclasses + (de)serialization |
 | `store.py` | `ProfileStore` — one JSON file per profile, plus a `user-data/<id>` dir per profile for the browser session. Where that lives is decided by `paths.py`, not here |
 | `paths.py` | The one place that decides the data directory. Order: explicit argument, `NUMERA_DATA_DIR`, a **writable** `data/` beside the app, `~/.numera`, then the pre-rename `~/.persona` |
+| `bundled.py` | Resolves the portable manifest to each backend's own executable, addon and GeoIP resources, keeping Playwright and Patchright caches separate |
 | `firstrun.py` | Copies an older install's profiles, pool, config and browser sessions into a new root once. Copy, never move; never overwrites |
 | `logs.py` | Per-run log file, UTC. Credentials are redacted by a filter on the *handler*, so a library logging under its own name cannot bypass it |
 | `relay.py` | Loopback proxy that terminates upstream authentication, so engines that cannot authenticate a proxy still use one |
@@ -137,7 +138,7 @@ that is never continued hangs the page for good.
 Numera Browser/
   numera.exe      the Tauri shell
   engine/         the frozen Python engine (PyInstaller onedir)
-  browsers/       Chromium, shipped with the app
+  browsers/       per-engine binaries, addons, GeoIP data and manifest.json
   data/           profiles, sessions, proxies, logs - written in place
 ```
 
@@ -145,10 +146,18 @@ Numera Browser/
 installs the *package*; the browser is a separate download into a per-user
 cache, which a machine that has never run Playwright does not have. Without it
 the app starts, serves the dashboard and fails at the first launch with
-"Executable doesn't exist". `paths.use_bundled_browsers()` points Playwright at
-this directory unless `PLAYWRIGHT_BROWSERS_PATH` is already set, and
-`scripts/smoke-portable.ps1` proves an assembled folder can actually open a
-browser rather than merely containing the files.
+"Executable doesn't exist". `scripts/bundle-browsers.py` downloads into separate
+vendor caches and assembles a manifest with relative executable paths and hashes.
+`bundled.launch_options()` selects the backend's binary explicitly; equal Chromium
+revision labels never cause Patchright to use Playwright's stock binary.
+Camoufox receives its packaged addons and GeoIP paths. Explicit user browser-path
+overrides remain supported. Older flat Playwright bundles retain their fallback.
+`scripts/smoke-portable.ps1` verifies an assembled folder can open a browser.
+
+All four Python backends are frozen. The standard release includes three browser
+binaries and lets the Cloak wrapper download directly from its vendor. The
+Windows `-IncludeCloakBinary` option additionally packages the official unmodified
+Cloak binary for local/internal use, subject to its separate license.
 
 The 272MB `chromium_headless_shell` is deliberately **not** shipped: the
 launcher passes `channel="chromium"` for headless runs precisely to avoid it,
@@ -247,6 +256,11 @@ Overlapping changes require explicit "Keep my edit" or "Use latest" choices.
 Draft controls pause until those choices are resolved. Secret values stay hidden
 in conflict previews, and password preserve/clear/replace and proxy removal intent
 survive rebasing. An unavailable refresh keeps the draft and explains the retry.
+When a nested proxy edit conflicts with a remotely removed proxy, keeping the
+whole local proxy explicitly restores its known password. Dashboard reads use
+empty text for a known passwordless proxy and null for a withheld credential;
+the latter cannot be silently restored as passwordless. Choosing the latest
+version accepts the removal without replaying any credential.
 
 Camoufox's manual context protocol pairs every successful backend enter with
 exactly one exit, including failure of the ownership check before yielding the
@@ -309,17 +323,22 @@ Key points:
 
 ## Bundling a browser engine
 
-No browser engine is committed to this repository - the portable build downloads
-one at build time. Before a proprietary build bundles a *different* engine,
-check that engine's own licence for redistribution terms. Some copyleft licences
-survive being wrapped in a proprietary product:
+Browser binaries are downloaded at build time. Vendor resources and notices
+remain with their binaries; the project license does not replace their terms.
 
 | Engine | Licence | Redistribution |
 |---|---|---|
 | `fingerprint-chromium` | BSD-3-Clause | permissive, redistributable as-is |
 | `patchright` | Apache-2.0 | permissive, redistributable as-is |
-| `camoufox` | MPL-2.0 expected | file-level copyleft - **verify the repo licence before bundling** |
-| `cloakbrowser` | proprietary | **not redistributable** - must not be bundled |
+| `camoufox` | [MPL-2.0](https://github.com/daijro/camoufox/blob/main/LICENSE) | retain notices and make the corresponding [upstream source](https://github.com/daijro/camoufox) available under MPL-2.0 |
+| `cloakbrowser` | MIT wrapper; [proprietary binary](https://github.com/CloakHQ/CloakBrowser/blob/main/BINARY-LICENSE.md) | local/internal unmodified use allowed; third-party binary redistribution requires a separate license |
+
+GeoIP resources include GeoLite Data created by MaxMind, available from
+[MaxMind](https://www.maxmind.com), under its
+[GeoLite terms](https://www.maxmind.com/en/geolite/eula) and
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+Retain attribution and applicable terms with distributed data, and refresh old
+databases as required by those terms. IP geolocation is approximate.
 
 This lived in `LICENSE` until it was trimmed to licence terms only. It is
 engineering guidance about what may ship, not a term of the licence itself.

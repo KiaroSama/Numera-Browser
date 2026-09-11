@@ -47,6 +47,7 @@ from typing import Callable, Optional
 from . import fingerprint as fp_mod
 from . import paths as paths_mod
 from . import proctree, sessions
+from . import bundled
 from .models import Profile
 from .stealth import build_init_script
 
@@ -140,6 +141,7 @@ def _camoufox_kwargs(profile: Profile, store, headless: bool) -> tuple:
         "locale": fp.locale,
         "persistent_context": True,
         "user_data_dir": str(store.user_data_path(profile.id)),
+        **bundled.launch_options("camoufox", store.root),
     }
     proxy_cfg, relay = _browser_proxy(profile)
     if proxy_cfg:
@@ -661,7 +663,7 @@ def session(profile: Profile, store, engine: Optional[str] = None,
 # Shared Playwright-style launch (used by both playwright and patchright).
 # --------------------------------------------------------------------------
 def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: bool,
-                            keep_open: bool, extra_args=None):
+                            keep_open: bool, extra_args=None, backend="playwright"):
     profile = _resolve_ip_based(profile)
     _clear_unkept(profile, store.user_data_path(profile.id))
     _seed_bookmarks(profile, store.user_data_path(profile.id))
@@ -742,7 +744,9 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
         # Before Playwright starts, not after: it reads the browsers path when the
         # driver launches. A portable build ships its own Chromium and there is no
         # developer cache to fall back on.
-        paths_mod.use_bundled_browsers()
+        browser_options = bundled.launch_options(backend, store.root)
+        if not browser_options and backend == "playwright":
+            paths_mod.use_bundled_browsers()
         # Started inside the session's own tree, which is the only moment it
         # can be decided: everything this driver goes on to start - the
         # browser, its renderers - inherits the group or job it was born in.
@@ -761,6 +765,7 @@ def _launch_playwright_like(sync_playwright, profile: Profile, store, headless: 
             # Drop Playwright's automation switch so Chrome doesn't show the
             # "controlled by automated test software" infobar.
             ignore_default_args=["--enable-automation"],
+            **browser_options,
             **context_opts,
         )
         if relay:
@@ -887,7 +892,8 @@ def _driver_playwright(profile, store, headless=False, keep_open=True, extra_arg
 def _driver_patchright(profile, store, headless=False, keep_open=True, extra_args=None):
     # Patchright is an API-compatible, patched drop-in for Playwright.
     from patchright.sync_api import sync_playwright
-    return _launch_playwright_like(sync_playwright, profile, store, headless, keep_open, extra_args)
+    return _launch_playwright_like(sync_playwright, profile, store, headless, keep_open, extra_args,
+                                   backend="patchright")
 
 
 @register("camoufox", requires="camoufox")
@@ -943,6 +949,7 @@ def _driver_cloak(profile, store, headless=False, keep_open=True, extra_args=Non
         # nothing owns is one nothing can prove has stopped.
         with _own_driver_tree(_cloak_programs(cloakbrowser)):
             context = cloakbrowser.launch_persistent_context(
+                **bundled.launch_options("cloak", store.root),
                 user_data_dir=str(store.user_data_path(profile.id)),
                 headless=headless,
                 proxy=proxy_cfg,
