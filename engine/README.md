@@ -394,6 +394,14 @@ in place of the bearer header.
 | GET | `/api/config` | Default engine, default extensions, headless-launch flag, folders, data dir |
 | PUT | `/api/config` | Change any of them (`default_engine`, `default_extensions`, `headless_launch`) |
 
+The routes that open a browser to answer a question — cookie export and the
+proxy, trust, TLS, DNS and align probes — run a helper process with a deadline.
+It defaults to 300 seconds and `NUMERA_HELPER_TIMEOUT` overrides it (seconds).
+A helper that outruns it is stopped along with the whole process tree it
+started, including the browser, and the route answers `504` rather than holding
+the request open. Long-running sessions — launch, attach, warm-up — are not
+covered by this: they keep their own managed lifecycle.
+
 ## Python API
 
 ```python
