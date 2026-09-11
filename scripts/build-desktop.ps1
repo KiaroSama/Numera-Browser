@@ -26,13 +26,18 @@
     Reuse the engine already frozen in the build cache. Saves a couple of
     minutes when only the Rust side changed.
 
+.PARAMETER IncludeCloakBinary
+    Include the unmodified Cloak browser for local/internal use. Do not distribute
+    this output without the vendor license required for third-party redistribution.
+
 .EXAMPLE
     pwsh -File scripts/build-desktop.ps1
 #>
 [CmdletBinding()]
 param(
     [string]$OutDir,
-    [switch]$SkipFreeze
+    [switch]$SkipFreeze,
+    [switch]$IncludeCloakBinary
 )
 
 $ErrorActionPreference = 'Stop'
@@ -128,28 +133,17 @@ if ($SkipFreeze) {
     # cannot ask the user to pip-install into its embedded runtime - so shipping
     # without it meant `numera vault enable` was unavailable in exactly the build
     # where the encrypted vault is advertised as built in.
-    & $py -m pip install --quiet --upgrade pip pyinstaller "$repo\engine[api,launch,secure]"
+    & $py -m pip install --quiet --upgrade --upgrade-strategy eager pip pyinstaller "$repo\engine[api,launch,secure,desktop]"
     if ($LASTEXITCODE -ne 0) { throw 'could not install the build dependencies' }
 
-    # `pip install playwright` installs the package, not the browser: that is a
-    # separate download into a per-user cache. A portable build has no such
-    # cache on a machine that has never run Playwright, so without this the app
-    # starts, serves the dashboard and fails at the first launch with
-    # "Executable doesn't exist". Cached in the build folder, so a rebuild does
-    # not re-download it.
-    Step 'Fetching the Playwright browser'
-    $browsers = Join-Path $build 'browsers'
-    $previousBrowsers = $env:PLAYWRIGHT_BROWSERS_PATH
-    $env:PLAYWRIGHT_BROWSERS_PATH = $browsers
-    try {
-        & $py -m playwright install chromium
-        if ($LASTEXITCODE -ne 0) { throw 'could not download the Playwright browser' }
-    } finally { $env:PLAYWRIGHT_BROWSERS_PATH = $previousBrowsers }
-    $chromium = Get-ChildItem -Path $browsers -Filter 'chromium-*' -Directory -ErrorAction SilentlyContinue
-    if (-not $chromium) { throw "playwright install reported success but $browsers has no chromium-* folder" }
-    $chromeExe = Get-ChildItem -Path $browsers -Filter 'chrome.exe' -Recurse -File -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-    if (-not $chromeExe) { throw "the downloaded browser has no chrome.exe - the bundle would not launch" }
+    Step 'Preparing the desktop browsers and GeoIP data'
+    # bundle-browsers.py runs playwright install chromium and Patchright's own
+    # installer with separate PLAYWRIGHT_BROWSERS_PATH caches.
+    $bundleArgs = @('--output', (Join-Path $build 'all-browsers'),
+                    '--cache', (Join-Path $build 'browser-downloads'))
+    if ($IncludeCloakBinary) { $bundleArgs += '--include-cloak-binary' }
+    & $py (Join-Path $repo 'scripts\bundle-browsers.py') @bundleArgs
+    if ($LASTEXITCODE -ne 0) { throw 'could not prepare the desktop browser bundle' }
 
     # The committed one, shared with the POSIX job. Generating it here meant two
     # definitions of the same thing, and the other one was wrong - it froze
@@ -168,6 +162,13 @@ if ($SkipFreeze) {
         --specpath $build `
         --add-data "$repo\dashboard\dist;numera/web" `
         --collect-all uvicorn `
+        --collect-all playwright --collect-all patchright `
+        --collect-all camoufox --collect-all cloakbrowser `
+        --collect-all browserforge --collect-all apify_fingerprint_datapoints `
+        --collect-all language_tags --collect-all ua_parser `
+        --collect-all screeninfo --collect-all maxminddb `
+        --recursive-copy-metadata camoufox --recursive-copy-metadata cloakbrowser `
+        --copy-metadata patchright --copy-metadata playwright `
         --collect-submodules numera `
         $entry
     if ($LASTEXITCODE -ne 0) { throw 'PyInstaller failed' }
@@ -265,33 +266,31 @@ if ($dataKeep) {
 }
 Copy-Item $shell -Destination $stage
 Copy-Item $frozen -Destination (Join-Path $stage 'engine') -Recurse
+Copy-Item -LiteralPath (Join-Path $repo 'docs/browser-notices.txt') -Destination (Join-Path $stage 'BROWSER-NOTICES.txt')
 
-# A sibling of `engine`, not a child: `paths.use_bundled_browsers()` looks in
-# both, and keeping the 150MB out of the frozen folder means re-freezing the
-# engine does not mean re-copying the browser.
+# The manifest selects each vendor's executable, including when Chromium revision
+# labels collide. Never ship a cached internal Cloak binary by accident.
 $stageBrowsers = Join-Path $stage 'browsers'
-$cachedBrowsers = Join-Path $build 'browsers'
-# The cache survives -SkipFreeze, which is the point of caching it there.
-if (Test-Path $cachedBrowsers) {
-    New-Item -ItemType Directory -Force -Path $stageBrowsers | Out-Null
-    # Everything except the headless shell. `playwright install chromium` also
-    # fetches `chromium_headless_shell`, 272MB that this app never runs: the
-    # launcher passes channel="chromium" for headless precisely to avoid it -
-    # the shell cannot load extensions and announces itself as HeadlessChrome
-    # over CDP. Shipping it would be a third of the download for a binary the
-    # product refuses to use.
-    Get-ChildItem -Path $cachedBrowsers -Directory |
-        Where-Object { $_.Name -notlike 'chromium_headless_shell-*' } |
-        ForEach-Object { Copy-Item $_.FullName -Destination $stageBrowsers -Recurse }
+$cachedBrowsers = Join-Path $build 'all-browsers'
+$manifestPath = Join-Path $cachedBrowsers 'manifest.json'
+if (-not (Test-Path $manifestPath)) { throw 'Browser manifest missing; build without -SkipFreeze' }
+$manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+if (-not $IncludeCloakBinary) { $manifest.PSObject.Properties.Remove('cloak') }
+if ($IncludeCloakBinary -and -not $manifest.PSObject.Properties['cloak']) {
+    throw 'The cached bundle has no Cloak binary; build without -SkipFreeze'
 }
-if (-not (Test-Path $stageBrowsers)) {
-    throw ("$stageBrowsers is missing - the portable build cannot launch a browser. " +
-           "Build once without -SkipFreeze to download it.")
+New-Item -ItemType Directory -Force -Path $stageBrowsers | Out-Null
+$folders = @('playwright', 'patchright', 'camoufox', 'cloak-data')
+if ($IncludeCloakBinary) { $folders += 'cloak' }
+foreach ($folder in $folders) {
+    Copy-Item -LiteralPath (Join-Path $cachedBrowsers $folder) -Destination $stageBrowsers -Recurse
 }
-if (-not (Get-ChildItem -Path $stageBrowsers -Filter 'chrome.exe' -Recurse -File -ErrorAction SilentlyContinue |
-          Select-Object -First 1)) {
-    throw "$stageBrowsers has no chrome.exe - the portable build cannot launch a browser"
+[IO.File]::WriteAllText((Join-Path $stageBrowsers 'manifest.json'), ($manifest | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+foreach ($engineName in @('playwright', 'patchright', 'camoufox')) {
+    $browserExe = Join-Path $stageBrowsers $manifest.$engineName.executable
+    if (-not (Test-Path -LiteralPath $browserExe)) { throw "Bundled $engineName executable is missing" }
 }
+# The Chromium executables are chrome.exe; the manifest also validates Camoufox.
 
 # The shell resolves <its own dir>/engine/numera-engine.exe. If that moved,
 # every build would silently fall back to a source checkout's .venv instead.

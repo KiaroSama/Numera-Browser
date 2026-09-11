@@ -187,6 +187,7 @@ def test_the_profiles_own_flags_are_on_the_command_line(monkeypatch, tmp_path):
     p = profile(launch_args=["--mute-audio"], dns="9.9.9.9")
 
     class Store:
+        root = tmp_path
         def user_data_path(self, _id): return tmp_path
 
     with pytest.raises(RuntimeError):

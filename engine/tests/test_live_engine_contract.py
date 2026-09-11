@@ -1,11 +1,16 @@
 """A green required engine job must contain real, selected, unskipped tests."""
 
 from contextlib import contextmanager
+import fnmatch
 import importlib.util
+import os
 from pathlib import Path
 import re
+import subprocess
+import textwrap
 from types import SimpleNamespace
 import xml.etree.ElementTree as ET
+import zipfile
 
 import pytest
 
@@ -89,3 +94,65 @@ def test_every_supported_engine_is_required_on_both_platforms():
     build = _jobs(ROOT / ".github/workflows/build-desktop.yml")
     assert "uses: ./.github/workflows/ci.yml" in build["verify-release"]
     assert "needs: [verify-release," in build["release"]
+
+
+PRODUCT_ARTIFACTS = (
+    "numera-server-wheel", "numera-desktop-Linux", "numera-desktop-macOS",
+    "numera-desktop-Windows",
+)
+DIAGNOSTIC_ARTIFACTS = (
+    "live-engine-ubuntu-latest-playwright", "future-diagnostics",
+    "numera-desktop-debug",
+)
+
+
+def _release_steps():
+    release = _jobs(ROOT / ".github/workflows/build-desktop.yml")["release"]
+    return release.split("\n      - ")[1:]
+
+
+def test_release_downloads_and_publishes_only_product_artifacts():
+    steps = _release_steps()
+    downloads = [step for step in steps if "uses: actions/download-artifact@" in step]
+    selected = []
+    for step in downloads:
+        inputs = dict(re.findall(r"(?m)^          ([\w-]+): (.+)$", step))
+        assert inputs.get("name") in PRODUCT_ARTIFACTS
+        assert inputs["path"] == "artifacts/" + inputs["name"]
+        selected.append(inputs["name"])
+    assert sorted(selected) == sorted(PRODUCT_ARTIFACTS)
+
+    publish = next(step for step in steps if "uses: softprops/action-gh-release@" in step)
+    files = re.search(r"files: (.+?)\n          fail_on_unmatched_files:", publish, re.S)[1]
+    patterns = [line.strip() for line in files.strip().strip('"').removeprefix("|").splitlines()
+                if line.strip()]
+    candidates = [name + ".zip" for name in PRODUCT_ARTIFACTS + DIAGNOSTIC_ARTIFACTS]
+    selected = {name for name in candidates if any(fnmatch.fnmatchcase(name, pattern)
+                                                  for pattern in patterns)}
+    assert selected == {name + ".zip" for name in PRODUCT_ARTIFACTS}
+    assert set(patterns) == selected  # Publication must also reject future, unknown artifacts.
+    assert "fail_on_unmatched_files: true" in publish
+
+
+@pytest.mark.skipif(os.name == "nt", reason="The release packaging step runs on Ubuntu")
+@pytest.mark.parametrize("missing", [None, *PRODUCT_ARTIFACTS])
+def test_release_packaging_excludes_diagnostics_and_requires_every_product(tmp_path, missing):
+    for name in PRODUCT_ARTIFACTS + DIAGNOSTIC_ARTIFACTS:
+        if name != missing:
+            artifact = tmp_path / "artifacts" / name
+            artifact.mkdir(parents=True)
+            (artifact / "payload.txt").write_text(name, encoding="utf-8")
+    package = next(step for step in _release_steps() if "name: Zip each platform folder" in step)
+    script = textwrap.dedent(package.split("run: |\n", 1)[1])
+    result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script], cwd=tmp_path,
+                            stdin=subprocess.DEVNULL, capture_output=True, encoding="utf-8",
+                            timeout=10)
+    if missing:
+        assert result.returncode != 0, result.stdout
+        assert missing in result.stderr
+    else:
+        assert result.returncode == 0, result.stderr
+        assert {p.name for p in tmp_path.glob("*.zip")} == {n + ".zip" for n in PRODUCT_ARTIFACTS}
+        for name in PRODUCT_ARTIFACTS:
+            with zipfile.ZipFile(tmp_path / (name + ".zip")) as archive:
+                assert archive.read(name + "/payload.txt").decode("utf-8") == name

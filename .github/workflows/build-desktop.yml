@@ -151,7 +151,7 @@ jobs:
       # and destination are separated by `:` here and `;` there.
       - name: Freeze the engine
         run: |
-          python -m pip install --quiet pyinstaller "./engine[api,launch,secure]"
+          python -m pip install --quiet pyinstaller "./engine[api,launch,secure,desktop]"
           # `scripts/engine_entry.py`, not `engine/numera/__main__.py`. PyInstaller
           # runs the entry as top-level `__main__` with no package, so the
           # relative import in `__main__.py` raised "attempted relative import
@@ -161,6 +161,13 @@ jobs:
           pyinstaller --noconfirm --name numera-engine --distpath desktop/dist/.build \
                       --add-data "dashboard/dist:numera/web" \
                       --collect-all uvicorn --collect-submodules numera \
+                      --collect-all playwright --collect-all patchright \
+                      --collect-all camoufox --collect-all cloakbrowser \
+                      --collect-all browserforge --collect-all apify_fingerprint_datapoints \
+                      --collect-all language_tags --collect-all ua_parser \
+                      --collect-all screeninfo --collect-all maxminddb \
+                      --recursive-copy-metadata camoufox --recursive-copy-metadata cloakbrowser \
+                      --copy-metadata patchright --copy-metadata playwright \
                       scripts/engine_entry.py
 
       - name: Build the shell
@@ -174,34 +181,19 @@ jobs:
           mkdir -p "build/$plat/Numera Browser"
           cp desktop/src-tauri/target/release/numera "build/$plat/Numera Browser/numera"
           cp -r desktop/dist/.build/numera-engine "build/$plat/Numera Browser/engine"
+          cp docs/browser-notices.txt "build/$plat/Numera Browser/BROWSER-NOTICES.txt"
           du -sh "build/$plat/Numera Browser"
 
-      # `pip install playwright` installs the package, not the browser: that is a
-      # separate download into a per-user cache. A release artifact lands on
-      # machines that have never run Playwright, so without this the app starts,
-      # serves the dashboard and fails at the first launch with "Executable
-      # doesn't exist". Installed straight into the folder that gets uploaded,
-      # which saves a copy: paths.use_bundled_browsers() looks for `browsers/`
-      # beside the engine directory as well as inside it.
-      - name: Bundle the Playwright browser
+      # Each Chromium backend gets its own cache. Cloak's Python wrapper ships;
+      # the vendor binary is downloaded directly by the end user, never released here.
+      - name: Bundle desktop browsers and GeoIP data
+        timeout-minutes: 15
         run: |
-          dest="$PWD/build/$PLAT/Numera Browser/browsers"
           if [ "$RUNNER_OS" = "Linux" ]; then
-            # Chromium wants system libraries the WebKitGTK set above does not
-            # cover, and that list changes with the runner image. --with-deps is
-            # the only version of it anyone maintains; it is Debian/Ubuntu-only,
-            # which is what the branch is for.
-            PLAYWRIGHT_BROWSERS_PATH="$dest" python -m playwright install --with-deps chromium
-          else
-            PLAYWRIGHT_BROWSERS_PATH="$dest" python -m playwright install chromium
+            python -m playwright install-deps chromium
           fi
-          # `playwright install chromium` also fetches `chromium_headless_shell`,
-          # a few hundred MB this app never runs: drivers.py passes
-          # channel="chromium" for headless precisely to avoid it, because the
-          # shell cannot load extensions and announces itself as HeadlessChrome
-          # over CDP. Same exclusion as the Windows build.
-          rm -rf "$dest"/chromium_headless_shell-*
-          du -sh "$dest"
+          python scripts/bundle-browsers.py --output "$PWD/build/$PLAT/Numera Browser/browsers" \
+            --cache "$RUNNER_TEMP/numera-browser-downloads"
 
       # Proof the binary is for the runner it was built on. A silently
       # mis-targeted artifact would upload happily and fail on a user's machine.
@@ -278,8 +270,7 @@ jobs:
           name: numera-desktop-Windows
           path: "build/windows/Numera Browser"
 
-  # Attach everything to the tag that triggered the run. This is how a build
-  # reaches a user: the repository never carries one.
+  # Reusable CI also uploads diagnostics into this run; only products are assets.
   release:
     name: Publish to the release
     needs: [verify-release, server, desktop, desktop-windows]
@@ -289,13 +280,33 @@ jobs:
       contents: write
     steps:
       - uses: actions/download-artifact@v8
-        with: { path: artifacts }
+        with:
+          name: numera-server-wheel
+          path: artifacts/numera-server-wheel
+      - uses: actions/download-artifact@v8
+        with:
+          name: numera-desktop-Linux
+          path: artifacts/numera-desktop-Linux
+      - uses: actions/download-artifact@v8
+        with:
+          name: numera-desktop-macOS
+          path: artifacts/numera-desktop-macOS
+      - uses: actions/download-artifact@v8
+        with:
+          name: numera-desktop-Windows
+          path: artifacts/numera-desktop-Windows
       - name: Zip each platform folder
         run: |
           cd artifacts
-          for d in */; do zip -rq "../${d%/}.zip" "$d"; done
-          ls -la ../*.zip
+          for name in numera-server-wheel numera-desktop-Linux numera-desktop-macOS numera-desktop-Windows; do
+            test -d "$name" || { echo "Missing release artifact: $name" >&2; exit 1; }
+            zip -rq "../$name.zip" "$name"
+          done
       - uses: softprops/action-gh-release@v3
         with:
-          files: "*.zip"
+          files: |
+            numera-server-wheel.zip
+            numera-desktop-Linux.zip
+            numera-desktop-macOS.zip
+            numera-desktop-Windows.zip
           fail_on_unmatched_files: true

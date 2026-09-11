@@ -47,9 +47,11 @@ engine="$stage/engine/numera-engine"
 # and Playwright's own "Executable doesn't exist" names the file if it cannot.
 browsers="$stage/browsers"
 [ -d "$browsers" ] || fail "no bundled browser at $browsers"
-ls -d "$browsers"/chromium-* >/dev/null 2>&1 \
+stock_browsers="$browsers"
+if [ -d "$browsers/playwright" ]; then stock_browsers="$browsers/playwright"; fi
+ls -d "$stock_browsers"/chromium-* >/dev/null 2>&1 \
     || fail "$browsers has no chromium-* build - the portable folder cannot launch a browser"
-step "Bundled browser: $(ls -d "$browsers"/chromium-* | head -n 1)"
+step "Bundled browser: $(ls -d "$stock_browsers"/chromium-* | head -n 1)"
 
 # A data directory of its own, and no inherited Playwright cache: this has to
 # pass the way it would on a machine that has never seen this project.
