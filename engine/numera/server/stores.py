@@ -163,11 +163,13 @@ class DashboardStore:
         return {**prof, a: {**node, b: kept}}
 
     def _decrypted(self, prof: dict) -> dict:
-        """The record as a caller should see it: the secret, or nothing."""
+        """Readable text, empty for no password, or null for a withheld secret."""
         a, b = self.SECRET
         node = prof.get(a)
-        if not isinstance(node, dict) or not node.get(b):
+        if not isinstance(node, dict):
             return prof
+        if node.get(b) is None:
+            return {**prof, a: {**node, b: ""}}
         return {**prof, a: {**node, b: vault.decrypt_for_read(self._engine, node[b])}}
 
     REVISION = "_rev"

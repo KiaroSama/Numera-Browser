@@ -279,3 +279,58 @@ def test_the_dashboard_toggle_off_removes_the_proxy(store, password):
     assert answer.status_code == 200, answer.text
     engine, dash = both_raw(store, prof.id)
     assert not engine.get("proxy") and not dash.get("proxy")
+
+
+@pytest.mark.parametrize("field,value", [("host", "other"), ("port", "8082"),
+                                         ("user", "other-user")])
+@pytest.mark.parametrize("password", [None, "secret"])
+def test_explicit_proxy_restore_after_stale_revision_commits_both_copies(
+        store, field, value, password):
+    client = api(store)
+    prof = with_proxy(store, password=password)
+    loaded = next(p for p in client.get("/api/profiles").json() if p["id"] == prof.id)
+    local = {**loaded["proxy"], field: value}
+    removed = client.put(f"/api/profiles/{prof.id}",
+                         json={"id": prof.id, "_rev": loaded["_rev"], "proxy": None})
+    assert removed.status_code == 200, removed.text
+    before = both_raw(store, prof.id)
+    # The first ordinary endpoint edit withholds its echoed password.
+    stale_proxy = {k: v for k, v in local.items() if k != "pass"}
+    stale = client.put(f"/api/profiles/{prof.id}", json={
+        "id": prof.id, "_rev": loaded["_rev"], "proxy": stale_proxy})
+    assert stale.status_code == 409 and stale.json()["kind"] == "StaleProfile"
+    assert both_raw(store, prof.id) == before
+    # Keep my edit is an explicit whole-proxy choice, including known absence.
+    restored = client.put(f"/api/profiles/{prof.id}", json={
+        "id": prof.id, "_rev": removed.json()["_rev"], "proxy": local})
+    assert restored.status_code == 200, restored.text
+    engine, dash = both_raw(store, prof.id)
+    assert dash["proxy"][field] == value
+    assert dash["proxy"].get("pass") == (password or "")
+    assert engine["proxy"].get("password") == password
+    assert ProfileStore(store.root).get(prof.id).proxy.password == password
+
+
+@pytest.mark.parametrize("representation", ["missing", "null", "empty"])
+def test_read_distinguishes_known_passwordless_proxy_from_withheld(store, representation):
+    client = api(store)
+    prof = with_proxy(store, password=None)
+    raw = dash_raw(store, prof.id)
+    raw["proxy"].pop("pass", None)
+    if representation != "missing":
+        raw["proxy"]["pass"] = None if representation == "null" else ""
+    write_dash(store, prof.id, raw)
+    before = both_raw(store, prof.id)
+    loaded = next(p for p in client.get("/api/profiles").json() if p["id"] == prof.id)
+    assert loaded["proxy"]["pass"] == ""
+    assert both_raw(store, prof.id) == before, "read normalization wrote to disk"
+
+
+def test_a_withheld_password_stays_null_on_read(store):
+    prof = with_proxy(store)
+    store.enable_vault("master")
+    before = both_raw(store, prof.id)
+    client = api(store)
+    loaded = next(p for p in client.get("/api/profiles").json() if p["id"] == prof.id)
+    assert loaded["proxy"]["pass"] is None
+    assert both_raw(store, prof.id) == before

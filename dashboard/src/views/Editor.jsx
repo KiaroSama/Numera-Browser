@@ -246,6 +246,15 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
     finally { pending.current = false; setSaving(false); }
   };
   const resolve = (path, useLatest) => {
+    if (!useLatest && path[0] === "proxy" && path.length === 1 && p.proxy) {
+      if (typeof p.proxy.pass !== "string") {
+        setSaveMessage("The proxy password is unavailable. Use latest, or cancel and reload after unlocking the vault before restoring this proxy.");
+        return;
+      }
+      // Choosing the whole proxy restores its known credential, even when only
+      // its endpoint was edited. An unavailable credential is never a clear.
+      setP(current => ({ ...current, _passwordSet: true }));
+    }
     if (useLatest) setP(current => {
       const next = withField(current, path, fieldValue(base, path));
       if (path[0] === "proxy" && (path.length === 1 || path[1] === "pass")) next._passwordSet = false;
@@ -584,7 +593,7 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
                   </Row>
                   <Row>
                     <Field label="Username"><input className="ps-in mono" value={p.proxy.user} onChange={e => setProxy({ user: e.target.value })} /></Field>
-                    <Field label="Password"><input className="ps-in mono" type="password" value={p.proxy.pass} onChange={e => setProxy({ pass: e.target.value })} /></Field>
+                    <Field label="Password"><input className="ps-in mono" type="password" value={p.proxy.pass ?? ""} onChange={e => setProxy({ pass: e.target.value })} /></Field>
                   </Row>
                   <div className="ps-cookie-actions" style={{ marginTop: 4 }}>
                     <button className="ps-btn ghost sm"

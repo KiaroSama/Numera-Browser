@@ -74,6 +74,10 @@ Saving a stale profile keeps your draft and reloads the latest revision. Edits t
 different fields are combined; choose **Keep my edit** or **Use latest** for fields
 both writers changed, then save again. Editing pauses while those choices are
 pending. Proxy password intent is preserved, and conflict previews hide secrets.
+If another writer removed the proxy, **Keep my edit** restores the whole local
+proxy with its known password (including an intentionally empty password).
+An unavailable password blocks that choice; unlock and reload before restoring
+the proxy, or choose **Use latest** to accept the removal.
 A failed refresh keeps the draft with an explicit retry message. Other storage
 conflicts retain their own error and are not automatically rebased.
 
