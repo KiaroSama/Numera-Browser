@@ -18,5 +18,5 @@ export default defineConfig({
   },
   // The regression tests render the real app against a fake engine, so they
   // need a DOM.
-  test: { environment: "jsdom" },
+  test: { environment: "jsdom", setupFiles: ["./test/setup.js"] },
 });

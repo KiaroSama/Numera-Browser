@@ -72,7 +72,7 @@ function EditProxyModal({ proxy, onClose, onSave }) {
     try {
       await onSave({
         label: p.label || null, type: p.type, host: p.host.trim(), port: p.port,
-        user: p.user || null, pass: p.pass || null, country: (p.country || "").toUpperCase() || null,
+        user: p.user || null, pass: p.pass ?? null, country: (p.country || "").toUpperCase() || null,
         rotateUrl: (p.rotateUrl || "").trim() || null,
       });
       onClose();

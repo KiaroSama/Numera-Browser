@@ -11,12 +11,12 @@ const proxyTab = () => fireEvent.click(screen.getByRole("button", { name: "proxy
 const password = () => document.querySelector('.ps-editor input[type="password"]');
 const toggleProxy = () => fireEvent.click(document.querySelector(".ps-proxy-toggle button"));
 
-async function open() {
+async function open(secret = "original") {
   auth.clear();
   const state = {
     profile: { ...newProfile("Facebook Ads", "playwright"), id: "p1", _new: false,
       name: "One", _rev: 5, notes: "", proxy: {
-        type: "HTTP", host: "localhost", port: "8080", user: "u", pass: "original", country: "US",
+        type: "HTTP", host: "localhost", port: "8080", user: "u", pass: secret, country: "US",
       } },
     writes: [], failure: null, failureKind: null, pending: false, finish: null, reads: 0, failRefresh: false,
   };
@@ -148,6 +148,60 @@ test("a proxy conflict locks draft controls until its explicit resolution", asyn
   await waitFor(() => expect(document.querySelector(".ps-editor")).toBeNull());
   expect(state.profile.proxy.pass).toBe("remote secret");
   expect(state.writes[1]).not.toHaveProperty("proxy");
+});
+
+test.each([
+  ["host", "host.proxy.io", "127.0.0.2", "original"],
+  ["port", "8080", "8082", "original"],
+  ["user", null, "other-user", "original"],
+  ["host", "host.proxy.io", "127.0.0.2", ""],
+])("keeping a remotely removed proxy restores its credential after editing %s", async (field, placeholder, value, secret) => {
+  const state = await open(secret);
+  proxyTab();
+  const input = placeholder ? screen.getByPlaceholderText(placeholder) : screen.getByDisplayValue("u");
+  fireEvent.change(input, { target: { value } });
+  state.profile = { ...state.profile, proxy: null, _rev: 6 };
+  fireEvent.click(save());
+  await screen.findByText(/both changed/i);
+  expect(document.querySelector(".ps-editor").textContent).not.toContain("original");
+  fireEvent.click(screen.getByRole("button", { name: "Keep my edit", exact: true }));
+  fireEvent.click(save());
+  await waitFor(() => expect(document.querySelector(".ps-editor")).toBeNull());
+  expect(state.writes.map(p => p._rev)).toEqual([5, 6]);
+  expect(state.writes[1]).not.toHaveProperty("_passwordSet");
+  expect(state.writes[1].proxy).toMatchObject({ [field]: value, pass: secret });
+  expect(state.profile.proxy.pass).toBe(secret);
+});
+
+test.each(["original", null])("using the latest whole proxy accepts removal without replaying credentials (%s)", async secret => {
+  const state = await open(secret);
+  proxyTab();
+  fireEvent.change(screen.getByPlaceholderText("host.proxy.io"), { target: { value: "127.0.0.2" } });
+  state.profile = { ...state.profile, proxy: null, _rev: 6 };
+  fireEvent.click(save());
+  await screen.findByText(/both changed/i);
+  fireEvent.click(screen.getByRole("button", { name: "Use latest", exact: true }));
+  fireEvent.click(save());
+  await waitFor(() => expect(document.querySelector(".ps-editor")).toBeNull());
+  expect(state.writes[1]).not.toHaveProperty("proxy");
+  expect(state.profile.proxy).toBeNull();
+});
+
+test("keeping a whole proxy with an unavailable password refuses safely and retains the draft", async () => {
+  const state = await open(null);
+  proxyTab();
+  fireEvent.change(screen.getByPlaceholderText("host.proxy.io"), { target: { value: "127.0.0.2" } });
+  state.profile = { ...state.profile, proxy: null, _rev: 6 };
+  fireEvent.click(save());
+  await screen.findByText(/both changed/i);
+  fireEvent.click(screen.getByRole("button", { name: "Keep my edit", exact: true }));
+  await screen.findByText(/password is unavailable/i);
+  expect(save().disabled).toBe(true);
+  expect(screen.getByPlaceholderText("host.proxy.io").value).toBe("127.0.0.2");
+  expect(state.writes).toHaveLength(1);
+  expect(state.profile.proxy).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Use latest", exact: true }));
+  expect(save().disabled).toBe(false);
 });
 
 test("ProfileDiverged is not mistaken for a stale revision", async () => {
