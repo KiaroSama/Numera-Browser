@@ -4,6 +4,56 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+A recheck of 0.32.0 kept four findings open. Each was closed at the boundary the
+previous fix did not reach, and each moved to a module of its own rather than
+growing a file already past the size this project holds itself to.
+
+- Tell a damaged recovery record from an absent one. A `vault-migration.json`
+  holding invalid JSON, `[]`, `{}` or a salt that is not a string was read as
+  "nothing to recover", so a data root with an unresolved migration opened as
+  though nothing had happened — and calling recovery on one deleted it,
+  destroying the only record of the salt its ciphertext is under. Four states
+  now: absent, valid, unreadable and written-by-a-newer-build. The last two
+  refuse, keep every byte, and say what to do.
+- Stop inferring complete encryption from a scanner that skips what it cannot
+  read. A corrupt `proxies.json` made an interrupted `vault enable` look
+  finished, and the descriptor was committed over it. A secret-bearing file
+  that will not parse now blocks completion by name.
+- Propagate real disk errors while syncing, and sync in order. A failing volume
+  was swallowed, so a migration could report success with nothing durably
+  written; only the journal was ever synced, never the ciphertext it describes
+  nor the descriptor before the journal was removed. Journal, then data, then
+  descriptor, then cleanup — and only the documented "this platform cannot sync
+  this object" errors are tolerated.
+- Refuse an already-open store whose data root was left mid-migration by
+  another process. The check at construction cannot see that; every secret read
+  and write now does.
+- Read the protection policy strictly. `null`, `0`, `""`, `[]` and `{}` are all
+  falsey and every one of them used to open the API. Only an unambiguous JSON
+  `false` does, and a credential file that is already damaged at startup is
+  adopted into the policy like a healthy one — without that, deleting it
+  afterwards turned an upgraded installation anonymous.
+- Apply one write contract at every door. The API had a field schema and the
+  core had a name check, so `tags: [{}]` was refused over HTTP and accepted by
+  `numera import-from`. Text fields, list elements and numeric bounds are now
+  the same question wherever it is asked, in a module with no optional
+  dependency so the engine carries it without the server extra.
+- Render a profile stored by an older build instead of blanking the page.
+  Refusing new writes never repaired the installations that already held
+  `name: 123` or `name: null`. The view renders what it finds; the stored bytes
+  are untouched and no record disappears.
+- Treat a helper as finished only when its process tree is provably empty. A
+  helper that exited cleanly was accepted without asking whether the browser it
+  started had exited too, a tree that refused to die was dropped by the only
+  thing tracking it, and the shutdown hook discarded the list of what it could
+  not stop. Stragglers are kept, named and reported, and no new helper may
+  start once shutdown has begun.
+- Compare API credentials as bytes. `compare_digest` on two `str` raises unless
+  both are ASCII, so a hand-edited `tokens.json` could turn every authenticated
+  request into an exception instead of a refusal.
+- Pin Node explicitly in the Rust CI job, which was building the dashboard with
+  whatever version the runner image happened to ship.
+
 ## [0.32.0] - 2026-09-12
 
 Seven of the seventeen findings `0.31.0` reported closed were only partly

@@ -44,7 +44,7 @@ def test_a_profile_name_that_is_not_text_is_refused(tmp_path, bad):
     """The guard itself, at the primitive every door reaches."""
     store = ProfileStore(tmp_path)
 
-    with pytest.raises(ValueError, match="name must be text"):
+    with pytest.raises(ValueError, match=r"'name' must be text"):
         store.save(Profile(name=bad, fingerprint=generate(seed=1)))
 
     assert list((tmp_path / "profiles").glob("*.json")) == [], \

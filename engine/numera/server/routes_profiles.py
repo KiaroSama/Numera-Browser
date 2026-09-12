@@ -12,7 +12,7 @@ from ..handshake import ChildTerminationFailed
 import json
 import math
 import os
-from .. import devices
+from .. import devices, write_contract
 from ..fingerprint import validate
 from .stores import StaleProfile, UnconvertibleProfile
 from ..models import Fingerprint
@@ -192,16 +192,18 @@ def readable(profile: dict) -> dict:
     list keeps the entries that are strings. A write that would carry the
     original value onward is refused by `check_fields`, which names the field.
     """
-    fixed = {}
-    for key, value in profile.items():
-        if isinstance(value, float) and not math.isfinite(value):
-            fixed[key] = None
-        elif key in LIST_FIELDS and isinstance(value, list) and \
-                not all(isinstance(v, str) for v in value):
-            fixed[key] = [v for v in value if isinstance(v, str)]
-        elif key in LIST_FIELDS and not isinstance(value, list):
-            fixed[key] = []
-    return {**profile, **fixed} if fixed else profile
+    # One implementation, in `write_contract`, with this shape's vocabulary.
+    # A third repair lived here and did not cover the text fields, so a record
+    # already holding `name: 123` or `name: null` still reached the dashboard,
+    # which calls `p.name.toLowerCase()` on it. Refusing new writes never
+    # repaired the installations that already had one.
+    return write_contract.readable(
+        profile,
+        text_fields=("name", "notes", "folder", "engine", "os", "userAgent",
+                     "screen", "locale", "timezone", "browserVersion",
+                     "startupUrls", "extensions", "bookmarks", "launchArgs",
+                     "dns"),
+        list_fields=LIST_FIELDS)
 
 
 def engine_view(profile: dict):

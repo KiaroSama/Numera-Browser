@@ -188,9 +188,23 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         shutdown_done.append(True)
         for fn in shutdown_hooks:
             try:
-                fn()
+                left = fn()
             except Exception:   # noqa: BLE001 - one bad hook must not strand the rest
-                pass
+                continue
+            # A hook that reports what it could NOT clean up is reporting a
+            # failure, and dropping the return value made that indistinguishable
+            # from success. `end_helpers` returns the browser trees it could not
+            # prove gone; they stay in its registry, and they are said out loud
+            # here so a shutdown that left processes behind is visible rather
+            # than silent.
+            if left:
+                try:
+                    print("numera: shutdown could not confirm "
+                          + ", ".join(getattr(h, "describe", lambda: str(h))()
+                                      for h in left),
+                          file=sys.stderr, flush=True)
+                except Exception:                   # noqa: BLE001
+                    pass
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -267,7 +281,14 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         # The env var stays valid alongside named tokens: it is the credential
         # the dashboard and any existing script already use, and pulling it out
         # from under them the moment a named token is created would be a trap.
-        ok = bool(api_token) and secrets.compare_digest(sent, api_token)
+        # Bytes, not str. `compare_digest` on two strings requires both to be
+        # ASCII and raises `TypeError` otherwise, so a bearer header carrying
+        # any non-ASCII character turned a clean 401 into an unhandled
+        # exception in the middleware. Encoding both sides compares the same
+        # values in constant time and cannot raise on the input.
+        ok = bool(api_token) and secrets.compare_digest(
+            sent.encode("utf-8", "surrogateescape"),
+            api_token.encode("utf-8", "surrogateescape"))
         if not ok:
             ok = tokens.verify(sent) is not None
         if not ok:

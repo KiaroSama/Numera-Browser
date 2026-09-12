@@ -18,6 +18,7 @@ from typing import Optional
 from .. import vault
 from ..proxypool import identity as vault_identity
 from ..paths import _lock_for, id_path, transaction_lock, write_json
+from . import auth_policy
 from ..repo import NameTaken
 from ..store import name_clash, stored_names
 from .convert import to_engine_profile
@@ -808,15 +809,16 @@ class TokenStore:
             # truncated write or a hand-edit used to reach the marker lookup
             # below and, on a store that predates the marker, answer False.
             return True
-        if not self.policy_path.exists():
-            return False               # no credential has ever existed here
-        try:
-            marker = json.loads(self.policy_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return True                # a damaged marker is damage, not a decision
-        if not isinstance(marker, dict) or "protected" not in marker:
-            return True                # same
-        return bool(marker.get("protected"))
+        # Strictly, and in one place: `bool(marker["protected"])` read `null`,
+        # `0`, `""`, `[]` and `{}` as a decision to open the service. Every one
+        # of those means the document is damaged or was written by something
+        # that did not understand it. Only an unambiguous JSON `false` opens it.
+        # `in`, not `!= OPEN`: `ABSENT` is a fresh loopback install that has
+        # made no decision and must stay open, while `AMBIGUOUS` is a document
+        # that exists and cannot be read - those two are the pair this whole
+        # module exists to keep apart.
+        return auth_policy.read(self.path.parent) in (
+            auth_policy.PROTECTED, auth_policy.AMBIGUOUS)
 
     def adopt(self) -> bool:
         """Record protection for a store that was protected before markers existed.
@@ -833,7 +835,14 @@ class TokenStore:
         that reliably precedes anything being able to remove the credentials.
         An explicit `{"protected": false}` is a decision and is left alone.
         """
-        if self.policy_path.exists() or self.state() != "tokens":
+        if auth_policy.read(self.path.parent) != auth_policy.ABSENT:
+            return False               # a decision already exists; leave it
+        # `unreadable` as well as `tokens`: a legacy credential file that is
+        # *already* damaged at startup still says this installation had
+        # credentials. Adopting only the healthy case left such a store
+        # protected by the unreadable-state fallback alone, so deleting the
+        # damaged file afterwards made a markerless root anonymous.
+        if self.state() not in ("tokens", "unreadable"):
             return False
         self.set_protected(True)
         return True
@@ -845,11 +854,7 @@ class TokenStore:
         only recovery from a fail-closed API is editing application state by
         hand, which is worse than the problem it solves.
         """
-        write_json(self.policy_path, {"protected": bool(on), "since": time.time()})
-        try:
-            self.policy_path.chmod(0o600)
-        except OSError:
-            pass
+        auth_policy.write(self.path.parent, on)
 
     def _save(self, items: list[dict]):
         write_json(self.path, items)
@@ -924,8 +929,12 @@ class TokenStore:
             for t in items:
                 # compare_digest on the hashes: the stored value is not secret,
                 # but the comparison still should not leak timing about a
-                # near-miss.
-                if secrets.compare_digest(str(t.get("hash", "")), digest):
+                # near-miss. Encoded first, because `compare_digest` on two
+                # strings raises `TypeError` unless both are ASCII - our own
+                # digest always is, a hand-edited `tokens.json` need not be.
+                if secrets.compare_digest(
+                        str(t.get("hash", "")).encode("utf-8", "surrogateescape"),
+                        digest.encode("utf-8", "surrogateescape")):
                     now = time.time()
                     # Only persist when the stamp actually moves. Every
                     # authenticated request used to rewrite the whole token file
