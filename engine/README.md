@@ -268,7 +268,18 @@ secrets (the proxy password), leaving everything else readable:
 pip install -e ".[secure]"                 # one-time: the crypto backend
 numera vault enable                        # prompts for a master password
 numera vault status                        # off / locked / unlocked
+numera vault change                        # rotate the master password
+numera vault resume                        # finish a rotation that was interrupted
 ```
+
+**If a migration is interrupted** — a power cut, a closed lid, `kill -9` — the
+next open finishes it or refuses, and never reports an enabled vault over
+credentials that are still readable. Enabling resumes on its own: open the
+store with the master password and it completes. A *rotation* cannot, because
+both the old and the new secrets are ciphertext and only a trial decryption
+tells them apart — so `numera vault resume` asks for both passwords. Until it
+runs, that data root is not served; the record of the new salt is kept, never
+discarded.
 
 Enabling re-writes existing proxy passwords as `enc:v2:…` tokens
 (`enc:v1:` tokens written by an older build keep opening; the version travels

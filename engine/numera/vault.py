@@ -128,7 +128,7 @@ class _Migration:
         return converted
 
     def rekey_all(self, old_password: str, old_salt: str,
-                  new_password: str, new_salt: str) -> int:
+                  new_password: str, new_salt: str, resume: bool = False) -> int:
         """Re-encrypt every secret under a new key. Returns how many moved.
 
         Decrypt-then-encrypt, file by file, through the same batch as
@@ -141,6 +141,12 @@ class _Migration:
         A record this build cannot decrypt (a foreign key, a newer version)
         stops the rotation rather than being dropped: rotating past it would
         leave a secret nothing can ever open.
+
+        `resume` is for finishing a rotation a crash interrupted. Records
+        already moved are indistinguishable from records still waiting - both
+        are ciphertext - so each is tried against the new key first and skipped
+        if it opens. Without that, a resume would hand an already-rotated value
+        to the old password and refuse the whole thing.
         """
         moved = 0
         for path, site in secret_files(self.root):
@@ -155,6 +161,13 @@ class _Migration:
                     # Plaintext under an enabled vault should not happen; leaving
                     # it alone is right - `enable` is what encrypts.
                     continue
+                if resume:
+                    try:
+                        crypto.decrypt(new_password, new_salt, value)
+                    except Exception:                           # noqa: BLE001
+                        pass            # still under the old key; move it below
+                    else:
+                        continue        # already moved by the interrupted run
                 try:
                     plain = crypto.decrypt(old_password, old_salt, value)
                 except Exception as e:                          # noqa: BLE001
@@ -184,7 +197,33 @@ def journal_path(root) -> Path:
     return Path(root) / "vault-migration.json"
 
 
-def begin_journal(root, op: str, salt: str, verifier: str) -> None:
+class VaultRecoveryRequired(RuntimeError):
+    """An unfinished migration is on disk and cannot be resolved unattended.
+
+    Raised instead of opening the store, because a store whose config and disk
+    disagree cannot answer honestly: half its credentials are under one key and
+    half under another, or under none. Committing the descriptor anyway is what
+    the first version of this journal did, and it reported an enabled vault
+    over readable passwords.
+
+    Finishing needs the key material, which is deliberately not on disk. So the
+    store refuses and says which password it needs.
+    """
+
+
+def descriptors(record: dict) -> tuple:
+    """`(new, old)` for a journal record; `old` is None for an enable.
+
+    0.31.0 wrote the salt and verifier at the top level with no `new`/`old`
+    pair, because it only ever journalled an enable. Those journals are still
+    readable here - a store upgraded mid-crash is exactly when this matters.
+    """
+    new = record.get("new") or {"salt": record.get("salt"),
+                                "verifier": record.get("verifier")}
+    return new, record.get("old")
+
+
+def begin_journal(root, op: str, *, new: dict, old: Optional[dict] = None) -> None:
     """Record the commit *before* the first destructive write.
 
     `_Batch` keeps its undo bytes in memory and `migration()` rolls back from
@@ -202,15 +241,56 @@ def begin_journal(root, op: str, salt: str, verifier: str) -> None:
     plaintext secret. Rolling backward would need the plaintext on disk, which
     is a worse bug than the one this fixes. The salt and verifier are the same
     two values `config.json` holds openly once the vault is on.
+
+    A rotation records `old` as well. Both keys are then on disk at once, which
+    is the only way a resume can tell an already-rotated record from one still
+    waiting - they are both ciphertext, and nothing but a trial decryption
+    distinguishes them.
     """
-    write_json(journal_path(root),
-               {"op": op, "salt": salt, "verifier": verifier,
-                "started": time.time(),
-                # Who is doing it, so a *concurrent* reader can tell a
-                # migration in flight from one that was abandoned. Without
-                # this, opening a store during a live migration "recovered" it
-                # - committing a descriptor the migration had not reached yet.
-                "pid": os.getpid(), "token": proctree.started_at(os.getpid())})
+    record = {"op": op,
+              # Kept at the top level as well as inside `new`, because
+              # `needs_recovery` sanity-checks `salt` and a 0.31.0 journal on
+              # disk has only this form.
+              "salt": new["salt"], "verifier": new.get("verifier"),
+              "new": {"salt": new["salt"], "verifier": new.get("verifier")},
+              "old": ({"salt": old["salt"], "verifier": old.get("verifier")}
+                      if old else None),
+              "started": time.time(),
+              # Who is doing it, so a *concurrent* reader can tell a
+              # migration in flight from one that was abandoned. Without
+              # this, opening a store during a live migration "recovered" it
+              # - committing a descriptor the migration had not reached yet.
+              "pid": os.getpid(), "token": proctree.started_at(os.getpid())}
+    write_json(journal_path(root), record)
+    _fsync(journal_path(root))
+
+
+def _fsync(path: Path) -> None:
+    """Push a file and its directory entry to the platform's stable storage.
+
+    `write_json` is atomic against a *failed write* - it serialises, writes a
+    temporary file and replaces. It is not durable against a *power loss*: the
+    replace can still be sitting in the OS cache. For ordinary profile writes
+    that trade is right. For the one file whose whole purpose is to survive the
+    machine stopping, it is not.
+    """
+    try:
+        fd = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    except (OSError, AttributeError):       # pragma: no cover - platform-dependent
+        return
+    if hasattr(os, "O_DIRECTORY"):          # POSIX: the rename needs syncing too
+        try:                                # pragma: no cover - not Windows
+            dfd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(dfd)
+            finally:
+                os.close(dfd)
+        except OSError:
+            pass
 
 
 def end_journal(root) -> None:
@@ -241,20 +321,36 @@ def needs_recovery(root) -> bool:
     return True
 
 
-def recover(root, get_config, save_config) -> bool:
-    """Finish a migration that was killed before it could commit.
+def recover(root, get_config, save_config,
+            password: Optional[str] = None,
+            old_password: Optional[str] = None) -> bool:
+    """Finish an abandoned migration, or refuse to serve the store.
 
     True when something was recovered. Called on every store open, which is
     the only moment that reliably follows a crash.
 
-    Three states, and only one of them is a repair:
+    The first version of this function answered one question - "is there a
+    vault in the config?" - and committed the journal's descriptor when there
+    was not. That is correct for exactly one crash point: after the last secret
+    file was written. Anywhere earlier it marks the vault enabled over
+    credentials still sitting in plaintext, which is a false claim of
+    protection rather than the unreadable data it replaced.
 
-    * no journal - nothing happened, or everything finished;
-    * a journal and the config already names a vault - the commit landed and
-      the process died before cleaning up, so only the journal goes;
-    * a journal and no vault in the config - the descriptor never committed.
-      The secret files already hold ciphertext under the journal's salt, so
-      writing that descriptor is what makes them openable. That is the repair.
+    So the disk is consulted, not just the config:
+
+    * **enable, every secret already ciphertext** - the files all made it and
+      only the commit was missed. Write the descriptor. No password needed,
+      and this is the case the earlier version handled.
+    * **enable, plaintext left** - genuinely unfinished. With the password,
+      encrypt what remains and commit; `encrypt_all` skips what is already
+      done, so this is a resume rather than a restart. Without it, refuse.
+    * **rotation, config already names the new descriptor** - the commit landed
+      and only the cleanup was missed. Drop the journal.
+    * **rotation, anything else** - some records are under the new key and some
+      under the old, and both are ciphertext: nothing but a trial decryption
+      can tell them apart, so both passwords are required. Without them,
+      refuse - and keep the journal, because it holds the only record of the
+      new salt.
     """
     path = journal_path(root)
     try:
@@ -270,19 +366,75 @@ def recover(root, get_config, save_config) -> bool:
     owner = record.get("pid")
     if owner and owner != os.getpid() and proctree.alive(owner, record.get("token")):
         return False
+
+    new, old = descriptors(record)
     cfg = get_config()
-    if cfg.get("vault"):
+    if record.get("op") == "rotate":
+        return _finish_rotation(root, cfg, new, old, save_config,
+                                password, old_password)
+    return _finish_enable(root, cfg, new, save_config, password)
+
+
+def _finish_enable(root, cfg, new, save_config, password) -> bool:
+    leftover = plaintext_secrets(root)
+    if not leftover:
+        if not cfg.get("vault"):
+            save_config({**cfg, "vault": dict(new)})
         end_journal(root)
-        return False
-    save_config({**cfg, "vault": {"salt": record["salt"],
-                                  "verifier": record.get("verifier")}})
-    end_journal(root)
+        return True
+    if not password:
+        raise VaultRecoveryRequired(
+            f"A `vault enable` was interrupted with {len(leftover)} credential(s) "
+            f"still unencrypted, so this data root is half migrated. Open it with "
+            f"the master password that migration was using (NUMERA_PASSWORD, or "
+            f"`--password`) and it will be finished. Nothing is lost; the vault is "
+            f"not on until it is complete.")
+    if not crypto.check_password(password, new["salt"], new.get("verifier")):
+        raise crypto.VaultLocked(
+            "that is not the master password the interrupted migration was using, "
+            "so it cannot be finished with it")
+    with migration(root, keep_journal=True) as step:
+        step.encrypt_all(password, new["salt"])
+        save_config({**cfg, "vault": dict(new)})
+    return True
+
+
+def _finish_rotation(root, cfg, new, old, save_config, password, old_password) -> bool:
+    current = cfg.get("vault") or {}
+    if current.get("salt") == new["salt"]:
+        # The descriptor committed; only `end_journal` was missed.
+        end_journal(root)
+        return True
+    if not (password and old_password):
+        raise VaultRecoveryRequired(
+            "A master-password rotation was interrupted, so some secrets are "
+            "under the new password and some under the old one. Finish it with "
+            "`numera vault resume`, which needs both passwords - they are the "
+            "only way to tell the two apart, because both are ciphertext. This "
+            "data root is not served until then, and the record of the new salt "
+            "is kept.")
+    if not crypto.check_password(password, new["salt"], new.get("verifier")):
+        raise crypto.VaultLocked(
+            "that is not the new master password the rotation was moving to")
+    if old and not crypto.check_password(old_password, old["salt"], old.get("verifier")):
+        raise crypto.VaultLocked(
+            "that is not the master password the rotation was moving away from")
+    with migration(root, keep_journal=True) as step:
+        step.rekey_all(old_password, (old or {}).get("salt"),
+                       password, new["salt"], resume=True)
+        save_config({**cfg, "vault": dict(new)})
     return True
 
 
 @contextmanager
-def migration(root: Path):
+def migration(root: Path, keep_journal: bool = False):
     """Run a migration that undoes itself if anything inside the block fails.
+
+    `keep_journal` is set when the block is *resuming* an interrupted
+    migration. Rolling back a resume does not restore a clean store - it
+    restores the half-migrated state the crash left, whose ciphertext opens
+    only with the journal's salt. Clearing the journal there would destroy the
+    last copy of it for a store that still needs it.
 
     The config write belongs *inside* the block: the vault becoming visible is
     the last step, and if it fails the encryption has to come back off.
@@ -296,13 +448,19 @@ def migration(root: Path):
         yield step
     except BaseException as exc:
         failures = step.rollback()
-        end_journal(root)
         if failures:
             # Worse here than anywhere else: a half-restored migration leaves
             # some secrets under the new key and some under the old, and the
             # config says one password opens them all. The caller has to be
             # told which files, not just that the migration failed.
+            #
+            # The journal stays. It is the only record of the salt those
+            # half-restored files are encrypted under, and clearing it here -
+            # which this did - threw that away at the exact moment it was the
+            # last copy.
             raise RollbackFailed(exc, failures) from exc
+        if not keep_journal:
+            end_journal(root)
         raise
     end_journal(root)
 

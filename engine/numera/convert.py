@@ -93,6 +93,12 @@ def _num(value, default, cast=int):
         out = cast(value)
     except (TypeError, ValueError, OverflowError):
         return default
+    # `math.isfinite` converts to float first, so it raises on an int too large
+    # for one - and it raises *here*, outside the guard above, because the cast
+    # itself succeeded. An int has no infinities to test for, so asking is both
+    # unnecessary and the thing that breaks.
+    if isinstance(out, int):
+        return out
     return out if math.isfinite(out) else default
 
 
@@ -122,17 +128,20 @@ def _parse_bookmarks(raw) -> list[dict]:
 def _split_legacy_commas(line: str) -> list[str]:
     """Split one line only where a comma cannot belong to the URL before it.
 
-    Two cases are unambiguous: the chunk after the comma names a scheme of its
-    own (``...,https://next``), or the entry so far has not reached a path,
-    query or fragment yet - and no host name contains a comma. Every other
-    comma is inside a path or a query string and stays there.
+    There is exactly one such place: the entry so far is still a scheme and a
+    host, because no host name contains a comma. Past that point the URL is
+    opaque - a comma in a path, query or fragment is data, and so is a colon,
+    which is why what the *next* chunk looks like decides nothing. Reading a
+    scheme-shaped chunk as a separator truncated every URL carrying another URL
+    in its query (``...?targets=https://a.test,https://b.test``) and opened its
+    tail as a second tab, and made a host out of the path segment in
+    ``/red,blue:green``.
     """
     entries: list[str] = []
     for chunk in line.split(","):
-        names_a_scheme = ":" in chunk.strip().split("/")[0]
         still_a_host = entries and not any(
             c in entries[-1].split("://", 1)[-1] for c in "/?#")
-        if entries and not (names_a_scheme or still_a_host):
+        if entries and not still_a_host:
             entries[-1] += "," + chunk
         else:
             entries.append(chunk)
@@ -148,16 +157,23 @@ def _parse_startup_urls(raw) -> list[str]:
     carrying a comma of its own: ``?q=red,blue`` became two startup tabs, the
     second of them ``https://blue``. The legacy form still splits where it
     cannot be one URL; see :func:`_split_legacy_commas`.
+
+    That legacy form belongs to the textarea alone. A caller that sent a *list*
+    has already said where each entry ends, so its elements are taken whole -
+    splitting one overrides an answer this function was given rather than
+    filling in one it was not.
     """
+    lines = _parse_lines(raw)
+    if isinstance(raw, str):
+        lines = [u for line in lines for u in _split_legacy_commas(line)]
     urls = []
-    for line in _parse_lines(raw):
-        for u in _split_legacy_commas(line):
-            u = u.strip()
-            if not u:
-                continue
-            if "://" not in u and not u.startswith("about:"):
-                u = "https://" + u
-            urls.append(u)
+    for u in lines:
+        u = u.strip()
+        if not u:
+            continue
+        if "://" not in u and not u.startswith("about:"):
+            u = "https://" + u
+        urls.append(u)
     return urls
 
 

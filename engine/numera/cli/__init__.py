@@ -32,7 +32,8 @@ Command-line interface for Numera.
     numera engines                               (list launch engines + install status)
     numera default-engine [name]                 (show/set the engine new profiles use)
     numera import-from <file>                    (import from GoLogin/AdsPower/Multilogin)
-    numera vault enable|status                   (encrypt proxy passwords at rest)
+    numera vault enable|status|change|resume     (encrypt proxy passwords at rest;
+                                                  `resume` finishes an interrupted rotation)
     numera serve [--host] [--port]               (run the HTTP API for the dashboard)
     numera mcp                                   (speak MCP on stdio; every command a tool)
 
@@ -52,7 +53,7 @@ import json
 import os
 import sys
 from typing import Optional
-from .. import jobs
+from .. import crypto, jobs, vault
 from ..store import ProfileStore
 from .out import C, _c, emit, say, set_json_mode
 from .parser import build_parser
@@ -63,13 +64,51 @@ from .parser import build_parser
 from .out import C, _c, emit, say
 
 
+def _open_store(args) -> ProfileStore:
+    """The store for this command, finishing an interrupted migration if asked.
+
+    Every command but one opens the store the same way. `vault resume` cannot:
+    a rotation that was killed partway leaves half the secrets under each key,
+    both of them ciphertext, so telling them apart needs *both* passwords -
+    and the constructor takes one. Without this branch the refusal would be
+    unescapable, which turns failing closed into a trap.
+    """
+    if getattr(args, "vault_command", None) != "resume":
+        return ProfileStore(args.data_dir, password=args.password)
+
+    from .setup import _prompt_password
+
+    old_pw = args.password or _prompt_password()
+    new_pw = getattr(args, "new_password", None)
+    if not new_pw:
+        if getattr(args, "json", False):
+            raise RuntimeError("this needs the password the rotation was moving "
+                               "to - pass --new-password (a --json run never prompts)")
+        import getpass
+        new_pw = getpass.getpass("The password the rotation was moving TO: ")
+    return ProfileStore.resume_vault(args.data_dir, old_password=old_pw,
+                                     new_password=new_pw)
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     parser = build_parser()
     args = parser.parse_args(argv)
     set_json_mode(getattr(args, "json", False))
     try:
-        store = ProfileStore(args.data_dir, password=args.password)
+        store = _open_store(args)
+    except vault.VaultRecoveryRequired as e:
+        # Opening the store is where an interrupted migration is finished or
+        # refused, and a refusal is not a crash: the message names the password
+        # it needs and the command that supplies it. Printing a traceback over
+        # it would bury the one line that says what to do.
+        say(_c(str(e), C.YEL))
+        return emit({"ok": False, "error": str(e)}, 1)
+    except (crypto.VaultLocked, ValueError, RuntimeError) as e:
+        # RuntimeError last: `VaultRecoveryRequired` is one, and it is
+        # handled above with its own wording.
+        say(_c(str(e), C.RED))
+        return emit({"ok": False, "error": str(e)}, 1)
     except OSError as e:
         # Constructing the store is where the data directory is created, so this
         # is the first thing that fails on an unwritable one - and it happens
