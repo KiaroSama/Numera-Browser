@@ -757,12 +757,12 @@ class ProfileRepo:
         out of the uniqueness check rather than being refused by name.
 
         The rule itself is `write_contract`, shared with the API. It used to be
-        the name and nothing else, so `tags: [{}]` was refused over HTTP and
-        accepted by `numera import-from`: two doors into one store disagreeing
-        about what a profile is. Text fields, list elements and numeric bounds
-        are now the same question wherever it is asked, and the module carries
-        no optional dependency so the engine can import it with no server extra
-        installed.
+        the name alone (`tags: [{}]` refused over HTTP, accepted by `numera
+        import-from`), then the dashboard's flat names read off a `Profile`
+        that keeps those numbers in `fingerprint` and `proxy` - so the same two
+        doors disagreed about `seed = inf`. Text, lists, nested numbers and the
+        proxy are one question wherever asked now, over a module with no
+        optional dependency so the engine imports it with no server extra.
 
         Not in `Profile.__post_init__`, deliberately: that would also refuse to
         *load* a record written before this check existed, which turns one bad

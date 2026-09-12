@@ -290,6 +290,16 @@ tells them apart — so `numera vault resume` asks for both passwords. Until it
 runs, that data root is not served; the record of the new salt is kept, never
 discarded.
 
+A migration commits its data and its descriptor together. The secret files
+reach stable storage first, the descriptor is written inside the same unit that
+would undo them, and the recovery record is dropped only after that descriptor
+is durable — so an interruption anywhere leaves one consistent generation or an
+explicit refusal, never a config naming a key the files are not under. A
+descriptor already naming the new generation is **not** taken as proof the
+migration finished: the records are opened with it first, because both
+generations are ciphertext and a matching salt says nothing about which one is
+on disk.
+
 Enabling re-writes existing proxy passwords as `enc:v2:…` tokens
 (`enc:v1:` tokens written by an older build keep opening; the version travels
 in the prefix because it is part of what the key derives from)

@@ -353,9 +353,13 @@ class ProfileStore(ConfigStore):
                                 new={"salt": salt, "verifier": verifier})
             with vault.migration(self.root) as step:
                 converted = step.encrypt_all(password, salt)
-                cfg = self.get_config()
-                cfg["vault"] = {"salt": salt, "verifier": verifier}
-                self._save_config_locked(cfg)
+                # The same commit point recovery uses. This path had the
+                # journal's guarantee and none of the rest: it synced the plan
+                # and neither the ciphertext nor the descriptor, and it wrote
+                # the descriptor outside the batch that would have to undo it.
+                vault.commit(self.root, step, self.get_config(),
+                             {"salt": salt, "verifier": verifier},
+                             self._save_config_locked)
             self._password = password
             return converted
 
@@ -395,9 +399,9 @@ class ProfileStore(ConfigStore):
                                 old={"salt": v["salt"], "verifier": v.get("verifier")})
             with vault.migration(self.root) as step:
                 moved = step.rekey_all(old_password, v["salt"], new_password, new_salt)
-                cfg = self.get_config()
-                cfg["vault"] = {"salt": new_salt, "verifier": new_verifier}
-                self._save_config_locked(cfg)
+                vault.commit(self.root, step, self.get_config(),
+                             {"salt": new_salt, "verifier": new_verifier},
+                             self._save_config_locked)
             self._password = new_password
             return moved
 

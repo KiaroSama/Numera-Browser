@@ -32,8 +32,11 @@ from ..paths import child_env, session_lease
 # `live_helpers` and `end_helpers` are the names the routes and the suites use.
 from .helpers import (                                          # noqa: E402,F401
     Helper,
+    HelperFailed,
+    HelperManager,
     HelperShuttingDown,
     HelperTimeout,
+    HelperUnsettled,
     close_pipes,
     end_helpers,
     live_helpers,
@@ -56,10 +59,17 @@ from . import helpers as _helpers                               # noqa: E402
 HELPER_TIMEOUT = float(os.environ.get("NUMERA_HELPER_TIMEOUT") or 300)
 
 
-def run_helper(cli, timeout: float = None, env=None):
-    """Run a finite helper command under the module deadline. See `helpers`."""
+def run_helper(cli, timeout: float = None, env=None, manager=None):
+    """Run a finite helper command under the module deadline. See `helpers`.
+
+    `manager` is the app that owns the helper. Without one the process-level
+    manager is used, which is what the CLI and the suites want; a server always
+    passes its own, so its shutdown sweep reaches its own helpers and nobody
+    else's.
+    """
     return _helpers.run_helper(
-        cli, HELPER_TIMEOUT if timeout is None else timeout, env=env)
+        cli, HELPER_TIMEOUT if timeout is None else timeout, env=env,
+        manager=manager)
 
 
 def register(app, ctx):
@@ -73,15 +83,18 @@ def register(app, ctx):
     engine_store, dash, running, attached, is_running, decorate, stop_session = ctx.engine_store, ctx.dash, ctx.running, ctx.attached, ctx.is_running, ctx.decorate, ctx.stop_session
     spawn_owner, materialize_current = ctx.spawn_owner, ctx.materialize_current
 
-    # A new app is a new server lifetime, so the shutdown latch a previous one
-    # left closed does not apply to it. Opening here pairs with the hook below:
-    # the same object opens the door and closes it.
-    reopen()
+    # A new app is a new server lifetime, and it owns its helpers outright.
+    # This used to be a module-global registry with a flag the app reopened on
+    # the way in: one process builds more than one app, so one app's sweep
+    # reached another's helpers and the first shutdown anywhere closed the door
+    # on everybody. A manager per app needs no reopening - a swept one is
+    # finished, and a restart simply gets a new one.
+    helpers = app.state.helpers = HelperManager()
 
     # Beside the hook that stops sessions. A probe holds a browser exactly as a
     # session does, and until this existed the server could exit while one was
     # mid-flight and leave it running with nothing tracking it.
-    app.state.add_shutdown(end_helpers)
+    app.state.add_shutdown(helpers.end_all)
 
     # A session that never started, reported as the status that says why. 423
     # for a locked vault is the literal answer - the profile is there and the
@@ -180,11 +193,18 @@ def register(app, ctx):
                 # Without this a server unlocked with --password spawned locked
                 # children, so probes and cookie exports silently lost the proxy.
                 env=child_env(engine_store._password),
+                manager=helpers,
             )
         except HelperTimeout as stalled:
             # 504: the helper, not this server, is what ran out of time - and
             # it has been stopped, so the answer is truthful about the state.
             raise HTTPException(504, str(stalled)) from None
+        except HelperUnsettled as stranded:
+            # The command may well have answered, but something it started is
+            # still running and still holding the profile. Returning its output
+            # as an ordinary result is what let a probe report success over a
+            # browser nothing was tracking.
+            raise HTTPException(500, str(stranded)) from None
         if proc.returncode != 0 and not (allow_fail and proc.stdout.strip()):
             raise HTTPException(500, (proc.stdout + proc.stderr).strip() or "command failed")
         return proc.stdout
