@@ -743,15 +743,67 @@ class TokenStore:
 
     def __init__(self, root: Path):
         self.path = Path(root) / "tokens.json"
+        #: Whether this API is protected is a *policy*, and policy does not
+        #: live in the credential list. It used to be inferred from that list
+        #: being non-empty, so revoking the last token, deleting the file or
+        #: corrupting it each turned a locked API anonymous while it ran.
+        self.policy_path = Path(root) / "auth-policy.json"
 
-    def list(self) -> list[dict]:
+    def state(self) -> str:
+        """`"empty"`, `"tokens"` or `"unreadable"` - three different facts.
+
+        `list()` answered `[]` for all three, which is this codebase's recurring
+        defect: "there is nothing" and "I could not look" arriving as one value.
+        Here it decided whether requests needed a credential at all, so a
+        truncated write or a hand-edit authorised everyone.
+        """
         if not self.path.exists():
-            return []
+            return "empty"
         try:
             items = json.loads(self.path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
+        except (OSError, json.JSONDecodeError):
+            return "unreadable"
+        if not isinstance(items, list):
+            return "unreadable"
+        return "tokens" if items else "empty"
+
+    def list(self) -> list[dict]:
+        """The tokens, or an empty list when there are none *or* none readable.
+
+        Callers that render a table are fine with that. Callers deciding whether
+        to demand a credential are not - they ask `state()` or `protected()`.
+        """
+        if self.state() != "tokens":
             return []
-        return items if isinstance(items, list) else []
+        return json.loads(self.path.read_text(encoding="utf-8"))
+
+    def protected(self) -> bool:
+        """Has this API ever been protected, and not deliberately opened since?
+
+        Sticky on purpose. Losing the credentials is not a decision to stop
+        requiring them, and all three ways of losing them happen without anyone
+        choosing.
+        """
+        if self.state() == "tokens":
+            return True
+        try:
+            marker = json.loads(self.policy_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return False
+        return bool(isinstance(marker, dict) and marker.get("protected"))
+
+    def set_protected(self, on: bool) -> None:
+        """Turn the policy on or off explicitly.
+
+        Off is the documented way out of a corrupt token file: without it the
+        only recovery from a fail-closed API is editing application state by
+        hand, which is worse than the problem it solves.
+        """
+        write_json(self.policy_path, {"protected": bool(on), "since": time.time()})
+        try:
+            self.policy_path.chmod(0o600)
+        except OSError:
+            pass
 
     def _save(self, items: list[dict]):
         write_json(self.path, items)
@@ -789,14 +841,30 @@ class TokenStore:
                 raise DuplicateToken(f"a token called {wanted!r} already exists")
             items.append(entry)
             self._save(items)
+            # Protection starts the instant a credential exists, and is
+            # recorded separately so losing that credential cannot undo it.
+            self.set_protected(True)
         return {**entry, "token": token}
 
-    def revoke(self, tid: str) -> bool:
+    def revoke(self, tid: str, refuse_lockout: bool = False) -> bool:
+        """Remove one token. True when it was there to remove.
+
+        `refuse_lockout` is what the HTTP route passes: removing the *last*
+        credential from a protected API locks its owner out of their own
+        server, and saying so while the token still exists is more use than
+        failing closed afterwards. Off by default so internal callers and
+        migrations are unchanged.
+        """
         with self._lock:
             items = self.list()
             keep = [t for t in items if t.get("id") != tid]
             if len(keep) == len(items):
                 return False
+            if refuse_lockout and not keep:
+                raise ValueError(
+                    "this is the last API token, and removing it would lock "
+                    "this server to nobody. Create another token first, or set "
+                    "NUMERA_API_TOKEN, or turn protection off deliberately.")
             self._save(keep)
         return True
 

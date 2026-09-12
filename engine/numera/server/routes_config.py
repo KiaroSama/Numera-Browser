@@ -235,6 +235,20 @@ def register(app, ctx):
 
     @app.delete("/api/tokens/{tid}")
     def revoke_token(tid: str):
-        if not tokens.revoke(tid):
+        """Remove one token, unless it is the only way into this server.
+
+        Removing the last credential used to reopen the API to everyone, which
+        is the opposite of what the person clicking "revoke" is asking for.
+        The environment token counts as an alternative, because it still
+        authenticates after this one is gone.
+        """
+        import os
+
+        env_token = bool((os.environ.get("NUMERA_API_TOKEN") or "").strip())
+        try:
+            removed = tokens.revoke(tid, refuse_lockout=not env_token)
+        except ValueError as locked_out:
+            raise HTTPException(409, str(locked_out)) from None
+        if not removed:
             raise HTTPException(404, "token not found")
         return {"ok": True, "remaining": len(tokens.list())}

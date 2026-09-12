@@ -42,15 +42,42 @@ def test_minting_the_first_token_protects_the_running_app(tmp_path, monkeypatch)
     assert c.get("/api/health", headers=auth(made["token"])).status_code == 200
 
 
-def test_revoking_the_last_token_reopens_the_same_running_app(tmp_path, monkeypatch):
-    """The mirror image: the state has to be read, not remembered."""
+def test_revoking_the_last_token_is_refused_rather_than_reopening(tmp_path, monkeypatch):
+    """This test used to assert the defect.
+
+    It required that revoking the last token reopen the running API - which is
+    the N03 vulnerability written down as expected behaviour. A user clicking
+    "revoke" is removing an integration's access, not publishing their profile
+    manager to anyone who can reach the port.
+
+    So the revocation is refused while it can still be acted on, and the API
+    stays protected either way.
+    """
     monkeypatch.delenv("NUMERA_API_TOKEN", raising=False)
     c = client(tmp_path)
     made = c.post("/api/tokens", json={"name": "CI"}).json()
     assert c.get("/api/health").status_code == 401
 
-    c.delete(f"/api/tokens/{made['id']}", headers=auth(made["token"]))
-    assert c.get("/api/health").status_code == 200
+    refused = c.delete(f"/api/tokens/{made['id']}", headers=auth(made["token"]))
+
+    assert refused.status_code == 409, refused.text
+    assert "last API token" in refused.json()["detail"]
+    assert c.get("/api/health").status_code == 401, "the API reopened anyway"
+    assert c.get("/api/health", headers=auth(made["token"])).status_code == 200,         "the refused revocation took the token with it"
+
+
+def test_the_env_token_makes_the_last_named_token_revocable(tmp_path, monkeypatch):
+    """The alternative that makes it safe: something else still authenticates."""
+    monkeypatch.setenv("NUMERA_API_TOKEN", "env-secret")
+    c = client(tmp_path)
+    made = c.post("/api/tokens", json={"name": "CI"},
+                  headers=auth("env-secret")).json()
+
+    gone = c.delete(f"/api/tokens/{made['id']}", headers=auth("env-secret"))
+
+    assert gone.status_code == 200, gone.text
+    assert c.get("/api/health").status_code == 401
+    assert c.get("/api/health", headers=auth("env-secret")).status_code == 200
 
 
 def test_a_revoked_token_stops_working_immediately(tmp_path, monkeypatch):
