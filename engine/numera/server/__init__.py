@@ -210,8 +210,15 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         named token protected nothing until the process restarted, while the UI
         said the API now required one. The token store is a small JSON file; a
         read per request is cheaper than being wrong about this.
+
+        It also used to read `bool(tokens.list())`, which is a count and not a
+        policy. Revoking the last token, deleting `tokens.json` or corrupting
+        it each made that count zero, and a running protected API went
+        anonymous with no restart and nothing said. `protected()` is sticky and
+        stored apart from the credentials, so losing them is not mistaken for a
+        decision to stop requiring them.
         """
-        return bool(api_token) or bool(tokens.list())
+        return bool(api_token) or tokens.protected()
 
     # Same-origin by default, and no wildcard unless someone asks for one.
     #
