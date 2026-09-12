@@ -124,11 +124,19 @@ def _value_problems(key: str, value, where: str) -> list:
                  f"got {bad[0]}"] if bad else [])
     if key in NUMBER_RANGES:
         low, high = NUMBER_RANGES[key]
-        if not math.isfinite(value):
+        # `math.isfinite` converts its argument to a float first, so it is not
+        # a question an arbitrary JSON integer can answer: `math.isfinite(10 **
+        # 400)` raises `OverflowError: int too large to convert to float` and
+        # took the whole validator with it - a 500 where `cores: -4` already
+        # gets a named 4xx. A Python `int` is exact and unbounded, so it is
+        # compared against the bounds directly and only a `float` is asked
+        # whether it is finite. Truncated in the message because the value
+        # being quoted back is the client's.
+        if isinstance(value, float) and not math.isfinite(value):
             return [f"{where}: {key!r} must be a finite number"]
         if not low <= value <= high:
             return [f"{where}: {key!r} must be between {low} and {high}, "
-                    f"got {value}"]
+                    f"got {str(value)[:40]}"]
         return []
     if key == "proxy":
         # Keys only - a message is not a place to quote a password back.
@@ -607,9 +615,21 @@ def register(app, ctx):
         strip_server_owned(patch)
         problems = check_fields(patch, where="patch",
                                 extra=("addTags", "removeTags"))
+        # `extra=` tells the preflight to *allow* these two keys, which is not
+        # the same as checking them - so they arrived untyped and only their
+        # list-ness was looked at here. Their elements reach a set and a sort
+        # in `merge` below: `addTags: [{}]` raised `unhashable type: 'dict'`
+        # and `["a", 1]` raised inside `sorted`, both out of the store's lock
+        # and both a 500 over a field the schema already knows how to refuse.
+        # `_value_problems` is that answer - the same "every entry must be a
+        # string" every other list field gets.
         for key in ("addTags", "removeTags"):
-            if key in patch and not isinstance(patch[key], list):
+            if key not in patch:
+                continue
+            if not isinstance(patch[key], list):
                 problems.append(f"patch: {key!r} must be a list")
+            else:
+                problems += _value_problems(key, patch[key], "patch")
         if problems:
             raise HTTPException(400, "; ".join(problems))
         # Built inside the store's lock, for the same reason the single patch
@@ -772,15 +792,44 @@ def register(app, ctx):
                      "vendor importer would drop its fingerprint seed, signal "
                      "modes, startup URLs, extensions and folder. Re-export it "
                      "from the install that wrote it.")
-        results, pending, explicit = [], [], None
-        for exp in exports:
-            prof, issues = importers.profile_from_export(exp)
-            d = to_dashboard_profile(prof)
+        results, pending, explicit, problems = [], [], None, []
+        for i, exp in enumerate(exports):
+            try:
+                prof, issues = importers.profile_from_export(exp)
+                d = to_dashboard_profile(prof)
+            except Exception as exc:                            # noqa: BLE001
+                # A vendor file is arbitrary JSON from outside this install.
+                # Being tolerant about the *name* a value hides under is this
+                # importer's whole job; a traceback because the value under
+                # that name had a type the conversion could not survive is not
+                # tolerance, it is a 500 over a file the user merely opened.
+                problems.append(
+                    f"profiles[{i}]: this export cannot be read: {exc}")
+                continue
             # `_new` is a dashboard form flag. Persisted, the imported profile
             # reloads as a create form and saves as a duplicate instead of an
             # update, with its cookie actions disabled.
             d.pop("_new", None)
             d.pop("id", None)                  # server-minted, like any create
+            # The same contract every other write route holds, over the record
+            # this one builds for itself. This branch had none at all: it went
+            # straight from the importer to `save_many`, so `{"name": 123}`
+            # reached disk with a numeric name - `readable()` repairs non-finite
+            # numbers and list fields, not `name` - and the profile list calls
+            # `p.name.toLowerCase()` on it, which throws and blanks the page for
+            # every profile, not just that one.
+            #
+            # Refused by field rather than quietly rewritten: a vendor may call
+            # a value whatever it likes, but there is no honest guess at what a
+            # name that is not text was meant to say, and a record the write
+            # contract refuses is a profile that can be opened and never saved
+            # again. The same filter `_validate_profile(strip=False)` uses -
+            # `status` and `lastActive` are the converter's own output, not the
+            # file's claim.
+            problems += check_fields(
+                {k: v for k, v in d.items()
+                 if k not in CLIENT_MAY_NOT_SET and not k.startswith("_")},
+                where=f"profiles[{i}]")
             # The importer fills the engine in from the current default when the
             # export named none. Remembering that as "last engine wins" lets an
             # import silently change the user's default to something nobody
@@ -791,6 +840,12 @@ def register(app, ctx):
                 explicit = chosen              # last explicit choice wins
             pending.append(d)
             results.append({"name": prof.name, "issues": issues})
+        # After the whole file, not at the entry that failed: the refusal has to
+        # name which entry, and an import that stops at the first bad one tells
+        # the user nothing about the rest of their file. Nothing has been
+        # written at this point either way - `save_many` is below.
+        if problems:
+            raise HTTPException(400, "; ".join(problems[:8]))
         # Same contract as batch create: an import either lands whole or not at
         # all. Saving as it went left a partial import that a retry duplicated.
         dash.save_many(pending, config_change=(

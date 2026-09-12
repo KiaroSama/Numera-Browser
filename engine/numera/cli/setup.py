@@ -148,6 +148,14 @@ def cmd_vault(args, store: ProfileStore) -> int:
         say(_c("The old password no longer opens anything. Update NUMERA_PASSWORD.", C.YEL))
         return emit({"ok": True, "rotated": n})
 
+    if args.vault_command == "resume":
+        # Reaching here at all means the store opened, which means the rotation
+        # was already finished - by `main`, which had to build the store with
+        # both passwords before this function could be called. Saying so is the
+        # whole output; the work happened one layer up.
+        return emit({"ok": True, "resumed": True,
+                     "enabled": store.vault_enabled()})
+
     return emit({"ok": False, "error": f"unknown vault command '{args.vault_command}'"}, 1)
 
 

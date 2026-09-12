@@ -152,6 +152,12 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
     dash = DashboardStore(engine_store.root, engine_store)
     pool = ProxyPool(engine_store.root, engine_store)
     tokens = TokenStore(engine_store.root)
+    # A data root whose tokens were minted before the policy marker existed is
+    # protected only for as long as those tokens are readable. Writing the
+    # marker now - before a single request can be served, and so before
+    # anything can delete or corrupt that file - is what makes an upgraded
+    # installation as durable as a new one.
+    tokens.adopt()
     sched = ScheduleStore(engine_store.root)
     # Reachable for tests and introspection: whether this app's store is
     # unlocked is otherwise invisible from outside, and that is exactly the

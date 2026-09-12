@@ -460,6 +460,23 @@ export default function App() {
   const toggleSel = (id) => setSel(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const allSel = filtered.length > 0 && filtered.every(p => sel.has(p.id));
 
+  /* THE SELECTION, RESOLVED - once, here, for everything that acts on it.
+   *
+   * `sel` holds ids and nothing prunes it, so it outlives the profiles it
+   * names: another client deletes one, the poll brings the shorter list in, and
+   * the id stays selected. ProfilesView resolved that for its own counter and
+   * buttons, while App handed the raw set to the "Edit all" modal - the one
+   * bulk action App owns. So the toolbar read "1 selected" above a modal
+   * offering "Apply to 2", and the request carried the ghost. Resolving in one
+   * place is what makes the count, the modal and the request the same answer.
+   *
+   * Against `profiles`, never `filtered`: a filter changes what is shown and
+   * never what is selected. */
+  const selected = useMemo(() => {
+    const byId = new Map(profiles.map(p => [p.id, p]));
+    return [...sel].map(id => byId.get(id)).filter(Boolean);
+  }, [sel, profiles]);
+
   // .ps-root is styled from tokens rather than T: the app root is the one
   // surface that must follow a theme switch even if a re-render is skipped,
   // because everything else is painted on top of it.
@@ -543,7 +560,7 @@ export default function App() {
               and toolbar live outside, so navigation survives a bad profile. */}
           <ErrorBoundary resetKey={view}>
           {view === "profiles" && (
-            <ProfilesView {...{ filtered, profiles, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, remove, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }} />
+            <ProfilesView {...{ filtered, selected, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, remove, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }} />
           )}
           {view === "health" && <HealthView profiles={profiles} live={live} refresh={refresh} setEditor={setEditor} />}
           {view === "engines" && <EnginesView engines={engines} live={live} />}
@@ -574,11 +591,25 @@ export default function App() {
           <Editor profile={editor} live={live} folders={folderList} onClose={() => setEditor(null)} onSave={async (p) => { if (await save(p)) setEditor(null); }} />
         </ErrorBoundary>
       )}
-      {sync && <SyncModal ids={[...sel]} folders={folderList} onClose={() => setSync(false)} onApply={async (patch) => {
-        const ids = [...sel];
+      {sync && <SyncModal ids={selected.map(p => p.id)} folders={folderList} onClose={() => setSync(false)} onApply={async (patch) => {
+        const ids = selected.map(p => p.id);
         if (live) {
           // Same rule as `save`: the default comes back from the server.
-          try { await api.bulkUpdate(ids, patch); await Promise.all([refresh(), refreshConfig()]); }
+          try {
+            const saved = await api.bulkUpdate(ids, patch);
+            await Promise.all([refresh(), refreshConfig()]);
+            // "Apply to N" is the last number the user read, and polling is
+            // suspended while the modal is up - so a profile deleted in that
+            // window is still in the request. The route patches the ones it
+            // finds and returns them; reporting that count is the difference
+            // between a partial edit and a silent one.
+            const done = Array.isArray(saved) ? saved.length : ids.length;
+            if (done < ids.length) {
+              toast.error(`Edited ${done} of ${ids.length}. ${ids.length - done} no longer existed.`);
+            } else {
+              toast.success(`Edited ${done} profile${done === 1 ? "" : "s"}.`);
+            }
+          }
           catch (e) { toast.error("Bulk edit failed: " + e.message); await refreshConfig(); }
         } else {
           const { addTags, ...fields } = patch;

@@ -404,6 +404,16 @@ def build_parser() -> argparse.ArgumentParser:
     v.add_argument("--new-password", dest="new_password", default=None,
                    help="The new master password (prompted for when omitted)")
     v.set_defaults(func=cmd_vault)
+    # The way out of an interrupted rotation. It needs both passwords because
+    # both keys are on disk as ciphertext and nothing but a trial decryption
+    # tells an already-moved secret from a waiting one - so this cannot be
+    # folded into the ordinary `--password`.
+    r = vt.add_parser("resume", parents=[_AGENT],
+                      help="Finish a master-password rotation that was interrupted")
+    r.add_argument("--new-password", dest="new_password", default=None,
+                   help="The password the rotation was moving TO (prompted for "
+                        "when omitted)")
+    r.set_defaults(func=cmd_vault)
 
     c = add("folder", help="Folders: list, create, rename, delete")
     fs = c.add_subparsers(dest="folder_command", required=True)

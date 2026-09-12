@@ -803,13 +803,40 @@ class TokenStore:
         requiring them, and all three ways of losing them happen without anyone
         choosing.
         """
-        if self.state() == "tokens":
+        if self.state() in ("tokens", "unreadable"):
+            # "I could not read the credentials" is not "there are none". A
+            # truncated write or a hand-edit used to reach the marker lookup
+            # below and, on a store that predates the marker, answer False.
             return True
+        if not self.policy_path.exists():
+            return False               # no credential has ever existed here
         try:
             marker = json.loads(self.policy_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
+            return True                # a damaged marker is damage, not a decision
+        if not isinstance(marker, dict) or "protected" not in marker:
+            return True                # same
+        return bool(marker.get("protected"))
+
+    def adopt(self) -> bool:
+        """Record protection for a store that was protected before markers existed.
+
+        True when something was adopted.
+
+        The marker is only ever written by `create`, so every data root whose
+        tokens were minted by an earlier build arrives with credentials and no
+        policy. It *looks* protected, because `protected()` falls back to "are
+        there tokens" - and that fallback disappears with the tokens. Deleting
+        or corrupting the file then turned an upgraded installation anonymous.
+
+        Called when the store is put into service, which is the last moment
+        that reliably precedes anything being able to remove the credentials.
+        An explicit `{"protected": false}` is a decision and is left alone.
+        """
+        if self.policy_path.exists() or self.state() != "tokens":
             return False
-        return bool(isinstance(marker, dict) and marker.get("protected"))
+        self.set_protected(True)
+        return True
 
     def set_protected(self, on: bool) -> None:
         """Turn the policy on or off explicitly.

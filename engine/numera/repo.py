@@ -257,6 +257,7 @@ class ProfileRepo:
         write the global default *before* the profile, so a failed save left
         the default changed by a command that reported failure.
         """
+        self._require_writable([profile])
         with transaction_lock(self.root):
             if unique_name and profile.name:
                 self._refuse_taken_names([profile])
@@ -746,6 +747,33 @@ class ProfileRepo:
             ((self._engine_raw(profile_id) or {}).get("proxy") or {}).get("password"),
             ((self._dash_raw(profile_id) or {}).get("proxy") or {}).get("pass"))
 
+    @staticmethod
+    def _require_writable(profiles) -> None:
+        """Refuse a profile the rest of the product cannot read back.
+
+        The two public write entries both come through here, before the name is
+        used for anything - because it is used as a dictionary key three lines
+        later, and a list or a dict name raised `TypeError: unhashable type`
+        out of the uniqueness check rather than being refused by name.
+
+        Only the name, and only on write. A name is the profile's identity on
+        every surface - `resolve(name)`, the uniqueness check, the GUI's
+        `p.name.toLowerCase()` - and all of them assume text; the API import
+        route validates the whole writable schema, but `numera import-from`
+        reaches this code with whatever the vendor file said.
+
+        Not in `Profile.__post_init__`, deliberately: that would also refuse to
+        *load* a record written before this check existed, which turns one bad
+        stored profile into an unreadable store. Reading stays tolerant and is
+        repaired by `routes_profiles.readable`; writing is what refuses.
+        """
+        for profile in profiles:
+            if not isinstance(getattr(profile, "name", None), str):
+                raise ValueError(
+                    f"a profile name must be text, not "
+                    f"{type(getattr(profile, 'name', None)).__name__} "
+                    f"({getattr(profile, 'name', None)!r}). Nothing was written.")
+
     def _records(self, profile: Profile) -> tuple:
         """The exact contents both copies of one profile are about to get.
 
@@ -893,6 +921,7 @@ class ProfileRepo:
         purpose - and an unrelated bulk edit does not fail on a duplicate it
         did not create.
         """
+        self._require_writable(profiles)
         with transaction_lock(self.root):
             return self._write_batch(profiles, config_change, on_name_clash)
 

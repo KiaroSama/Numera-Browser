@@ -156,15 +156,46 @@ def _as_int(value, fallback: int) -> int:
     return int(number)
 
 
+def _usable(value, fallback, field: str, issues: list):
+    """A vendor value this field can be read as, or the coherent fallback.
+
+    The rule ``_as_int`` already applies to the numbers, for the three fields
+    whose *type* the parsing below cannot survive at all: the user agent goes
+    through a regex, the language is looked up as a dictionary key, and the tag
+    list is iterated - so a number, an object and an integer respectively raised
+    ``TypeError`` straight out of the import route as a 500.
+
+    Falling back rather than refusing, because each of these three already has a
+    coherent generated value computed on the line above for the case where the
+    export simply omitted the field, and a value of the wrong type is a value
+    this field does not have. Said out loud on the profile, because a silently
+    replaced field is the part of a bad import nobody notices.
+
+    Every *other* field keeps its value and is refused by name if the dashboard
+    cannot render it - there is no honest guess at what a name that is not text
+    was meant to say.
+    """
+    if isinstance(value, type(fallback)):
+        return value
+    issues.append(f"{field} in this export was {type(value).__name__}, not "
+                  f"{type(fallback).__name__}; the generated value was used "
+                  f"instead - check it")
+    return fallback
+
+
 def profile_from_export(d: dict) -> tuple[Profile, list[str]]:
     """Map one exported profile dict to a Numera :class:`Profile`.
 
     Returns the profile plus the list of coherence issues ``validate()`` found,
-    so the caller can surface what needs a look.
+    so the caller can surface what needs a look - plus anything ``_usable``
+    could not read, for the same reason.
     """
-    ua = _first(d, "navigator.userAgent", "navigator.user_agent", "user_agent",
-                "ua", "useragent", "fingerprint.ua", "fingerprint.userAgent",
-                "browser.userAgent", "userAgent", default="") or ""
+    issues: list[str] = []
+    ua = _usable(_first(d, "navigator.userAgent", "navigator.user_agent",
+                        "user_agent", "ua", "useragent", "fingerprint.ua",
+                        "fingerprint.userAgent", "browser.userAgent",
+                        "userAgent", default="") or "",
+                 "", "the user agent", issues)
     os_key = _norm_os(_first(d, "os", "os_type", "osType", "navigator.platform"), ua)
 
     # Start from a coherent base for this OS, then overlay whatever the export
@@ -173,7 +204,9 @@ def profile_from_export(d: dict) -> tuple[Profile, list[str]]:
 
     sw, sh = _parse_resolution(_first(d, "navigator.resolution", "screen_resolution",
                                       "resolution", "screen", default=""))
-    locale = _first(d, "navigator.language", "language", "locale", default=base.locale)
+    locale = _usable(_first(d, "navigator.language", "language", "locale",
+                            default=base.locale),
+                     base.locale, "the language", issues)
     if locale not in devices.LOCALES:
         locale = base.locale
     tz = _first(d, "timezone.timezone", "timezone", "time_zone",
@@ -220,6 +253,10 @@ def profile_from_export(d: dict) -> tuple[Profile, list[str]]:
     tags = _first(d, "tags", default=[]) or []
     if isinstance(tags, str):
         tags = [t.strip() for t in tags.split(",") if t.strip()]
+    # After the string branch, so a comma-separated list is still read as one.
+    # A tag list that is not a list is not iterable, and the `group not in tags`
+    # below iterated it.
+    tags = _usable(tags, [], "the tag list", issues)
     group = _first(d, "group_name", "group", "folder")
     if group and group not in tags:
         tags.append(str(group))
@@ -231,7 +268,7 @@ def profile_from_export(d: dict) -> tuple[Profile, list[str]]:
         notes=_first(d, "notes", "description", default="") or "",
         tags=tags,
     )
-    return prof, validate(fp)
+    return prof, issues + validate(fp)
 
 
 # --------------------------------------------------------------------------

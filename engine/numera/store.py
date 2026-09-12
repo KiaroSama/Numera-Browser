@@ -211,7 +211,8 @@ class AmbiguousProfile(RuntimeError):
 
 class ProfileStore(ConfigStore):
     def __init__(self, root: Optional[str | Path] = None,
-                 password: Optional[str] = None):
+                 password: Optional[str] = None,
+                 _resume_from: Optional[str] = None):
         # Where the data lives is one decision, made in paths.py - see the order
         # it resolves. The stopgap that read ~/.persona in place is gone: the
         # first run now imports it into the portable root instead (firstrun.py).
@@ -237,10 +238,20 @@ class ProfileStore(ConfigStore):
         # a lock. The lock is required for the repair itself: replacing the
         # config wholesale outside the transaction that read it is exactly what
         # `_save_config_locked` refuses, and rightly.
+        #
+        # The password goes in. Recovery now *finishes* a half-done migration
+        # rather than committing a descriptor over whatever happens to be on
+        # disk, and finishing needs the key material - which is deliberately
+        # not journalled. With no password and a genuinely unfinished
+        # migration, `recover` raises `VaultRecoveryRequired` and this
+        # constructor fails closed: a store whose config and disk disagree has
+        # no honest answer to give.
         if vault.needs_recovery(self.root):
             with transaction_lock(self.root):
                 vault.recover(self.root, self.get_config,
-                              self._save_config_locked)
+                              self._save_config_locked,
+                              password=self._password,
+                              old_password=_resume_from)
 
     # ---- vault (encrypt-at-rest for secrets) -----------------------------
     # The fields worth encrypting: anything that grants access if leaked. Cookies
@@ -301,7 +312,8 @@ class ProfileStore(ConfigStore):
             # from an `except`, which a hard kill never reaches - and the
             # window between "files encrypted" and "config names the salt" is
             # where that used to strand ciphertext nothing could ever open.
-            vault.begin_journal(self.root, "enable", salt, verifier)
+            vault.begin_journal(self.root, "enable",
+                                new={"salt": salt, "verifier": verifier})
             with vault.migration(self.root) as step:
                 converted = step.encrypt_all(password, salt)
                 cfg = self.get_config()
@@ -335,14 +347,38 @@ class ProfileStore(ConfigStore):
             if not crypto.check_password(old_password, v["salt"], v["verifier"]):
                 raise crypto.VaultLocked("that is not the current master password")
             new_salt = crypto.new_salt()
+            new_verifier = crypto.make_verifier(new_password, new_salt)
+            # A rotation journals both descriptors before it touches anything.
+            # `enable` has done this since 0.31.0; rotation did not, and it is
+            # the operation that needs it more: every record it leaves behind
+            # is ciphertext under a salt held nowhere else, so a kill used to
+            # destroy the only copy of it on the next open.
+            vault.begin_journal(self.root, "rotate",
+                                new={"salt": new_salt, "verifier": new_verifier},
+                                old={"salt": v["salt"], "verifier": v.get("verifier")})
             with vault.migration(self.root) as step:
                 moved = step.rekey_all(old_password, v["salt"], new_password, new_salt)
                 cfg = self.get_config()
-                cfg["vault"] = {"salt": new_salt,
-                                "verifier": crypto.make_verifier(new_password, new_salt)}
+                cfg["vault"] = {"salt": new_salt, "verifier": new_verifier}
                 self._save_config_locked(cfg)
             self._password = new_password
             return moved
+
+    @staticmethod
+    def resume_vault(root, old_password: str, new_password: str) -> "ProfileStore":
+        """Finish a rotation a crash interrupted, and return the opened store.
+
+        Rotation is the one migration that cannot be resumed from a single
+        password. Both keys are on disk as ciphertext, and the only way to tell
+        an already-moved record from a waiting one is to try to decrypt it - so
+        both passwords are needed, and neither is ever stored.
+
+        Enable resumes on its own: opening the store with the master password
+        is enough, because plaintext and ciphertext are distinguishable without
+        a key.
+        """
+        return ProfileStore(root, password=new_password,
+                            _resume_from=old_password)
 
     def _secret_values(self, profile: Profile) -> list:
         vals = []
@@ -437,6 +473,19 @@ class ProfileStore(ConfigStore):
         # the stored record to carry a withheld secret across, so this is a real
         # read-modify-write and was running outside any lock. Two saves of the
         # same profile could interleave and drop one's preserved ciphertext.
+        # The dashboard mirror's door. It is the one write that does *not* go
+        # through `repo` - `ProfileRepo._write_both` writes `profiles/<id>.json`
+        # straight through its batch and never calls this - so the guard
+        # `repo._require_writable` applies to the API and CLI paths has to be
+        # repeated here rather than shared. Same rule, same reason: a name is
+        # the profile's identity on every surface (`resolve(name)`, the
+        # uniqueness check, the GUI's `p.name.toLowerCase()`) and all of them
+        # assume text.
+        if not isinstance(profile.name, str):
+            raise ValueError(
+                f"a profile name must be text, not "
+                f"{type(profile.name).__name__} ({profile.name!r}). Nothing "
+                f"was written.")
         path = self._path(profile.id)
         # Transaction lock first, per-file lock second - the same order every
         # profile mutation uses, so a batch and a single save can never

@@ -1,6 +1,6 @@
 /* The profile list: search, filter, select, run, edit. */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Copy, Download, Filter, Flame, FolderTree, Layers, Pencil, Play, Plus, Search, ShieldAlert, ShieldCheck, Square, Trash2, Wifi, WifiOff, X } from "lucide-react";
 import { api } from "../api";
 import { T } from "../theme";
@@ -107,7 +107,7 @@ async function pool(items, limit, task) {
   return out;
 }
 
-function ProfilesView({ filtered, profiles, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }) {
+function ProfilesView({ filtered, selected, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }) {
   const [filterOpen, setFilterOpen] = useState(false);
   // Deleting a profile destroys its browser session too, so it asks first -
   // it used to go the moment the bin was clicked, with no way back.
@@ -121,9 +121,12 @@ function ProfilesView({ filtered, profiles, query, setQuery, folder, sel, setSel
    * is selected, and every action resolves the whole selection against the full
    * list. Export and Delete used to resolve against `filtered` while Launch and
    * Warm-up used the raw selection, so "3 selected" could export two profiles
-   * and - with no undo and no explanation - delete one. */
-  const byId = useMemo(() => new Map(profiles.map(p => [p.id, p])), [profiles]);
-  const selected = useMemo(() => [...sel].map(id => byId.get(id)).filter(Boolean), [sel, byId]);
+   * and - with no undo and no explanation - delete one.
+   *
+   * `selected` arrives already resolved, from App. It used to be resolved here,
+   * which left "Edit all" - the one bulk action App owns - reading the raw id
+   * set instead: the toolbar counted what still existed while the modal counted
+   * the ghosts too. */
 
   /* Say what actually happened, and leave the failures selected so the action
    * can simply be pressed again. Reporting nothing was the warm-up bug. */
