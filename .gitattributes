@@ -1,0 +1,41 @@
+# Line endings belong to the repository, not to whoever cloned it.
+#
+# Until this file existed, the only thing keeping the index pure LF was one
+# machine's `core.autocrlf=true`. A clone without it would have committed CRLF,
+# and scripted edits make that likely rather than theoretical: writing a file
+# from Python rewrites every line ending in it, so a one-line change can arrive
+# as a whole-file diff.
+#
+# `eol=lf` covers the working tree deliberately, and it does override
+# `core.autocrlf`. Matching bytes on both sides is the point: a stray rewrite
+# then shows up as a diff instead of hiding behind the clean filter. Before this
+# landed, 89 tracked files were CRLF on disk against LF blobs and six more held
+# a mix of both within one file.
+* text=auto eol=lf
+
+# The exception, for files that do not exist here yet. CMD.EXE mis-parses
+# LF-only labels and multi-line `if` blocks, so a `.bat` checked out with LF is
+# broken in a way that is hard to see. Declaring it now means adding one later
+# cannot break it.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Belt and braces. `text=auto` already classifies these correctly - it looks for
+# a NUL byte in the first 8000 - but saying so explicitly means the answer never
+# depends on what happens to sit in a file's header.
+*.png binary
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.zst binary
+*.zip binary
+*.gz binary
+*.whl binary
+*.exe binary
+*.dll binary
