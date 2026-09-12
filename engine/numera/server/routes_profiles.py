@@ -10,10 +10,11 @@ from ..paths import safe_id
 from ..handshake import ChildTerminationFailed
 
 import json
+import math
 import os
 from .. import devices
 from ..fingerprint import validate
-from .stores import StaleProfile
+from .stores import StaleProfile, UnconvertibleProfile
 from ..models import Fingerprint
 from .convert import _rel_time, dashboard_coherence, to_dashboard_profile, to_engine_profile
 
@@ -70,18 +71,74 @@ def client_fields() -> frozenset:
     """
     return frozenset(to_dashboard_profile(to_engine_profile({})))
 
-# Types the dashboard dereferences. A string where a list belongs is not a
-# cosmetic problem: `p.tags.map(...)` takes the whole page down.
+# One schema for every field a client may write, because half a schema is how
+# `tags: [{}]` and `fontList: 17` both reached disk. A string where a list
+# belongs is not a cosmetic problem - `p.tags.map(...)` takes the whole page
+# down - and neither is a list whose *elements* are the wrong shape.
+#
+# Every key `client_fields()` exposes appears here, so adding a field to the
+# converter and forgetting to type it is a visible omission rather than a
+# silent hole. `test_the_schema_covers_every_writable_field` holds that line.
 FIELD_TYPES = {
     "name": str, "notes": str, "folder": str, "engine": str, "os": str,
     "userAgent": str, "screen": str, "locale": str, "timezone": str,
     "browserVersion": str, "startupUrls": str, "extensions": str,
     "bookmarks": str, "launchArgs": str, "dns": str,
+    "browser": str, "webglVendor": str, "webglRenderer": str, "canvas": str,
+    "webrtc": str, "audio": str, "fonts": str, "clientRects": str,
+    "webglImage": str, "mediaDevices": str, "geo": str, "fontList": str,
+    "osVersion": str, "deviceModel": str,
     "tags": list, "ipBased": list, "clearOnStart": list, "switchedOff": list,
     "cores": (int, float), "memory": (int, float),
-    "mediaVideo": (int, float), "mediaAudio": (int, float), "seed": (int, float),
+    "mediaVideo": (int, float), "mediaAudio": (int, float),
+    "mediaSpeakers": (int, float), "maxTouchPoints": (int, float),
+    "devicePixelRatio": (int, float), "seed": (int, float),
     "dnt": bool, "proxy": dict,
 }
+
+# What each number is allowed to *be*, beyond being a number. `NaN` and
+# `Infinity` pass `isinstance(x, (int, float))`, are not JSON, and made
+# `int(...)` raise inside the converter - which the write path then swallowed.
+# The bounds are generous: they exist to refuse a value no device has, not to
+# curate hardware.
+NUMBER_RANGES = {
+    "cores": (1, 512), "memory": (0, 1024),
+    "mediaVideo": (0, 64), "mediaAudio": (0, 64), "mediaSpeakers": (0, 64),
+    "maxTouchPoints": (0, 32), "devicePixelRatio": (0.05, 20),
+    "seed": (0, 2 ** 53),
+}
+
+# The proxy is the one nested object a client sends, and it carries the
+# credential - so its own fields are typed too. Unknown keys inside it are
+# left alone: the pool adds its own bookkeeping and refusing that would be a
+# guess about a shape this module does not own.
+PROXY_TYPES = {"type": str, "host": str, "port": (str, int), "user": str,
+               "pass": str, "country": str}
+
+
+def _value_problems(key: str, value, where: str) -> list:
+    """Everything a correctly *typed* value can still be wrong about."""
+    if isinstance(value, list):
+        bad = [type(v).__name__ for v in value if not isinstance(v, str)]
+        return ([f"{where}: every entry in {key!r} must be a string, "
+                 f"got {bad[0]}"] if bad else [])
+    if key in NUMBER_RANGES:
+        low, high = NUMBER_RANGES[key]
+        if not math.isfinite(value):
+            return [f"{where}: {key!r} must be a finite number"]
+        if not low <= value <= high:
+            return [f"{where}: {key!r} must be between {low} and {high}, "
+                    f"got {value}"]
+        return []
+    if key == "proxy":
+        # Keys only - a message is not a place to quote a password back.
+        return [f"{where}: proxy {k!r} must be "
+                f"{getattr(t, '__name__', None) or ' or '.join(x.__name__ for x in t)}"
+                f", got {type(value[k]).__name__}"
+                for k, t in PROXY_TYPES.items()
+                if value.get(k) is not None
+                and (not isinstance(value[k], t) or isinstance(value[k], bool))]
+    return []
 
 
 def check_fields(patch: dict, *, where: str, extra=()) -> "list[str]":
@@ -98,14 +155,60 @@ def check_fields(patch: dict, *, where: str, extra=()) -> "list[str]":
     for key, want in FIELD_TYPES.items():
         if key not in patch or patch[key] is None:
             continue
-        if want is bool and isinstance(patch[key], bool):
+        value = patch[key]
+        if want is bool and isinstance(value, bool):
             continue
-        if want is not bool and isinstance(patch[key], want) and not isinstance(patch[key], bool):
+        if want is not bool and isinstance(value, want) and not isinstance(value, bool):
+            problems += _value_problems(key, value, where)
             continue
         names = getattr(want, "__name__", None) or " or ".join(t.__name__ for t in want)
         problems.append(f"{where}: {key!r} must be {names}, got "
-                        f"{type(patch[key]).__name__}")
+                        f"{type(value).__name__}")
     return problems
+
+
+def readable(profile: dict) -> dict:
+    """A stored record the API can actually answer with.
+
+    Two corruptions a record written before this schema existed can carry, and
+    the only two that break a *reader* rather than a writer:
+
+    * a non-finite number cannot be serialised at all - `NaN` and `Infinity`
+      are not JSON - so one profile holding one made `GET /api/profiles` fail
+      to serialise and took every other profile down with it;
+    * a non-string entry in a list field reaches `p.tags.map(...)` and blanks
+      the page, which is the poisoning this schema exists to stop.
+
+    The stored file is not touched and no field disappears: the number comes
+    back as `null` - the same "not set" every other absent field uses - and the
+    list keeps the entries that are strings. A write that would carry the
+    original value onward is refused by `check_fields`, which names the field.
+    """
+    fixed = {}
+    for key, value in profile.items():
+        if isinstance(value, float) and not math.isfinite(value):
+            fixed[key] = None
+        elif key in LIST_FIELDS and isinstance(value, list) and \
+                not all(isinstance(v, str) for v in value):
+            fixed[key] = [v for v in value if isinstance(v, str)]
+        elif key in LIST_FIELDS and not isinstance(value, list):
+            fixed[key] = []
+    return {**profile, **fixed} if fixed else profile
+
+
+def engine_view(profile: dict):
+    """The engine shape of a stored profile, or None when it has none.
+
+    For the read-only overviews only. `profiles_health` and
+    `profiles_collisions` convert every stored profile, and one record the
+    converter could not model raised straight out of the route - so a single
+    bad profile made both pages unreachable for all of them. The write paths do
+    the opposite and refuse; see `_validate_profile`.
+    """
+    try:
+        return to_engine_profile(profile)
+    except Exception:                                        # noqa: BLE001
+        return None
 
 
 def register(app, ctx):
@@ -137,8 +240,21 @@ def register(app, ctx):
         """
         return JSONResponse(status_code=409, content={"detail": str(exc)})
 
+    @app.exception_handler(UnconvertibleProfile)
+    def unconvertible(request, exc: UnconvertibleProfile):
+        """A record with no engine shape is a bad request, not a server fault.
+
+        The store refuses it rather than writing the dashboard copy alone, and
+        that refusal has to reach every write route - including the import,
+        which builds its records from the vendor importer and never passes
+        through `_validate_profile`. A handler rather than a `try` per route,
+        for the same reason `NameTaken` has one.
+        """
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
     def _validate_profile(profile: dict, *, pid: "str | None" = None,
-                          strip: bool = True) -> dict:
+                          strip: bool = True,
+                          default_engine: "str | None" = None) -> dict:
         """Reject shapes the dashboard cannot render, before they reach disk.
 
         An unrenderable profile used to be stored happily and then take the
@@ -163,13 +279,10 @@ def register(app, ctx):
             if not isinstance(eng, str) or eng not in drivers.names():
                 raise HTTPException(
                     422, f"unknown engine {eng!r}; known: {', '.join(drivers.names())}")
-        for key in ("cores", "memory", "mediaVideo", "mediaAudio"):
-            val = profile.get(key)
-            if val is not None and not isinstance(val, (int, float)):
-                raise HTTPException(422, f"'{key}' must be a number")
-        px = profile.get("proxy")
-        if px is not None and not isinstance(px, dict):
-            raise HTTPException(422, "'proxy' must be an object or null")
+        # The per-field type checks that used to sit here - four numbers and
+        # the proxy - are `check_fields`' job and were only ever a subset of
+        # it. Two half-schemas in one function is how the other half came to be
+        # missing seventeen fields.
 
         # Type checks alone did not deliver what the docstring promises. A body
         # like {"name": "alpha"} passed every check above and was stored with no
@@ -194,15 +307,34 @@ def register(app, ctx):
                 profile["id"] = safe_id(pid)
             except ValueError as exc:
                 raise HTTPException(422, str(exc)) from None
+        # The saved creation default, applied *before* the conversion below.
+        # `to_engine_profile` answers `playwright` for a profile that names no
+        # engine, so filling from `complete` got there first and the create
+        # route's own fallback - `if not profile.get("engine")` - was never
+        # reached: a request omitting the engine produced a Playwright profile
+        # while the config said Camoufox. Only the creation paths pass this;
+        # an update must not reset the engine a profile already has.
+        if default_engine and not profile.get("engine"):
+            profile["engine"] = default_engine
         try:
             complete = to_dashboard_profile(to_engine_profile(profile))
-        except Exception:  # noqa: BLE001 - a shape too odd to convert keeps the
-            complete = {}  # explicit list below; never refuse the write for this
+        except Exception as exc:  # noqa: BLE001 - the message is the client's
+            # Swallowed, this was the missing-mirror bug: the dashboard copy
+            # was written from the fallback lists below and the engine copy -
+            # which `_twin` could not build either - was silently skipped. The
+            # two stores must move together, so a profile the engine cannot
+            # model is refused rather than half-written.
+            raise HTTPException(
+                422, f"this profile cannot be converted for the engine: {exc}"
+            ) from None
         for key, value in complete.items():
             if profile.get(key) is None:
                 profile[key] = value
-        # Belt and braces for the handful the view calls a method on, in case the
-        # conversion above could not run at all.
+        # Belt and braces for the handful the view calls a method on. The
+        # conversion above can no longer fail quietly, so these should never
+        # fire; they stay because a blank profile list is the failure this
+        # whole function exists to stop, and the cost of holding the line twice
+        # is two loops over a dozen keys.
         for key in LIST_FIELDS:
             if not isinstance(profile.get(key), list):
                 profile[key] = []
@@ -257,7 +389,7 @@ def register(app, ctx):
             # a store adopts either wholly or not at all.
             if adopting:
                 profiles += dash.save_many(adopting)
-        return [decorate(p) for p in profiles]
+        return [decorate(readable(p)) for p in profiles]
 
     def _apply_default_extensions(profile: dict) -> dict:
         # The dashboard keeps extensions as newline-separated text. Only fill it
@@ -270,11 +402,14 @@ def register(app, ctx):
 
     @app.post("/api/profiles")
     def create_profile(profile: dict):
-        chose_engine = bool(profile.get("engine"))
-        _validate_profile(profile)
+        chose_engine = bool(isinstance(profile, dict) and profile.get("engine"))
+        # The stored default goes in before normalisation, not after it: by the
+        # time this route ran, `_validate_profile` had already filled the
+        # converter's own `playwright` in and `not profile.get("engine")` was
+        # false for every request.
+        _validate_profile(profile,
+                          default_engine=engine_store.get_default_engine())
         _apply_default_extensions(profile)
-        if not profile.get("engine"):
-            profile["engine"] = engine_store.get_default_engine()
         # One commit. `_remember_engine` wrote `config.json` *before* the
         # profile, so a failed profile write left the global default changed by
         # a request that returned an error.
@@ -293,8 +428,11 @@ def register(app, ctx):
             raise HTTPException(404, "profile not found")
 
         # Read explicitness *before* normalisation: `_validate_profile` fills a
-        # missing engine in from the current default, so asking afterwards can
-        # never tell what the caller actually sent.
+        # missing engine in from the conversion, so asking afterwards can never
+        # tell what the caller actually sent. (It does not fill in the saved
+        # *creation* default here - only the create and batch routes pass that,
+        # because applying it on a patch would re-engine every profile edited
+        # after the setting changed.)
         #
         # This used to remember on every PUT, so renaming a `playwright`
         # profile silently switched the global default away from whatever the
@@ -436,11 +574,14 @@ def register(app, ctx):
         # batch an entry that named nothing could override an explicit choice
         # made earlier in the same request.
         chosen = [p.get("engine") for p in incoming if p.get("engine")]
+        # Read once, not per entry: every implicit entry in one request should
+        # get the same default even if something else changes it mid-batch.
+        # And applied *before* normalisation, for the reason `create_profile`
+        # gives - afterwards the converter's `playwright` was already there.
+        fallback = engine_store.get_default_engine()
         for p in incoming:
-            _validate_profile(p)
+            _validate_profile(p, default_engine=fallback)
             _apply_default_extensions(p)
-            if not p.get("engine"):
-                p["engine"] = engine_store.get_default_engine()
         last_engine = chosen[-1] if chosen else None
         # One transaction. A sequential loop left the profiles written before a
         # failing one on disk while the request reported failure.
@@ -536,11 +677,75 @@ def register(app, ctx):
 
     @app.post("/api/profiles/import")
     def import_profiles(body: dict):
-        """Import profiles exported from GoLogin / AdsPower / Multilogin.
+        """Import profiles, from a Numera export or from a vendor's.
 
-        Runs the engine's tolerant importer, converts each result to the
-        dashboard shape and saves it, flagging any coherence issues for review."""
+        Two formats, read two different ways, because they are two different
+        things. A vendor file goes through the tolerant importer: it is
+        somebody else's schema, so fields are looked for under every name they
+        are known by and whatever is missing is generated coherently.
+
+        Numera's own export is *configuration this install wrote*, and running
+        it through those heuristics was destruction dressed as tolerance -
+        `profile_from_export` reads no `seed`, no per-signal mode, no startup
+        URLs, extensions, launch arguments, bookmarks, DNS or clear-on-start
+        list, and reads `folder` only to append it to the tags. A user's own
+        file came back as a different device in the wrong folder, reported as a
+        successful import. So it is versioned, and read field for field.
+
+        What is deliberately not preserved: the id and the store's own
+        bookkeeping. The id is what the session directory, proxy assignments
+        and revisions hang off, and a file cannot claim one.
+
+        What cannot be preserved is said out loud rather than implied: a file
+        from before the format was versioned is refused by name, and a proxy
+        password the vault was holding when the file was written comes back as
+        an issue on that profile, not as a silent blank.
+
+        This is configuration, not a session backup: the browser profile
+        directory - cookies, logins, local storage - is not in this file.
+        """
         from .. import importers
+
+        def read_native(entries: list) -> dict:
+            """Save a versioned Numera export, field for field."""
+            # The whole file is checked before any of it is written, exactly as
+            # batch create does: half a rejected import on disk is worse than
+            # none, because nothing tells the user which half.
+            problems = []
+            for i, entry in enumerate(entries):
+                strip_server_owned(entry)     # `id` too: every entry is re-minted
+                problems += check_fields(entry, where=f"profiles[{i}]")
+            if problems:
+                raise HTTPException(400, "; ".join(problems[:8]))
+            results = []
+            for entry in entries:
+                px = entry.get("proxy")
+                # `null` is how the listing reports a password the vault was holding
+                # - an absent one reads as `""` - so this is the file saying "that
+                # credential was not mine to write", not a profile without one.
+                redacted = (isinstance(px, dict) and px.get("host")
+                            and px.get("pass") is None)
+                # Whether this entry *named* an engine, before normalisation fills
+                # one in: an engine we supplied is not the file's choice.
+                chose_engine = bool(entry.get("engine"))
+                _validate_profile(entry)
+                if not chose_engine:
+                    entry["engine"] = engine_store.get_default_engine()
+                # Not `_apply_default_extensions`: an export carries its own list,
+                # and an empty one means this profile has no extensions.
+                issues = dashboard_coherence(entry)
+                if redacted:
+                    issues.append("the proxy password was not in this file - the "
+                                  "vault was holding it when the export was written; "
+                                  "set it again on this profile")
+                results.append({"name": entry.get("name"), "issues": issues})
+            # No `config_change`. A native export names an engine on every profile,
+            # so "last one wins" would reset the default on every import - the same
+            # defect `_named_engine` exists to keep out of the vendor path. Opening
+            # a file is not choosing an engine for the next new profile.
+            dash.save_many(entries)
+            return {"imported": len(results), "format": "numera", "results": results}
+
         text = body.get("text") or ""
         if not isinstance(text, str):
             raise HTTPException(400, f"'text' must be a string, got {type(text).__name__}")
@@ -548,9 +753,25 @@ def register(app, ctx):
             raw = json.loads(text)
         except json.JSONDecodeError:
             raise HTTPException(400, "that file isn't valid JSON")
+        try:
+            native = importers.native_export(raw)
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from None
+        if native is not None:
+            return read_native(native)
         exports = importers._unwrap(raw)
         if not exports:
             raise HTTPException(400, "no profiles found in that file")
+        # An unversioned Numera export - the shape 0.30 and earlier wrote. The
+        # vendor importer would accept it and quietly drop most of it, so it is
+        # named and refused instead.
+        if any(importers.looks_native(e) for e in exports):
+            raise HTTPException(
+                400, "this looks like a Numera profile export written before "
+                     "the format carried a version, and reading it with the "
+                     "vendor importer would drop its fingerprint seed, signal "
+                     "modes, startup URLs, extensions and folder. Re-export it "
+                     "from the install that wrote it.")
         results, pending, explicit = [], [], None
         for exp in exports:
             prof, issues = importers.profile_from_export(exp)
@@ -574,7 +795,7 @@ def register(app, ctx):
         # all. Saving as it went left a partial import that a retry duplicated.
         dash.save_many(pending, config_change=(
             {"default_engine": explicit} if explicit else None))
-        return {"imported": len(results), "results": results}
+        return {"imported": len(results), "format": "vendor", "results": results}
 
     # ---- Fingerprint collisions -----------------------------------------
     @app.get("/api/profiles/collisions")
@@ -584,7 +805,10 @@ def register(app, ctx):
         Converts each stored dashboard profile to its engine fingerprint and
         groups the ones that look like the same device."""
         from ..collision import find_collisions
-        profs = [to_engine_profile(d) for d in dash.list()]
+        # A record the converter cannot model has no fingerprint, so it cannot
+        # collide with anything - but raising here made one such profile hide
+        # the collisions of every other one.
+        profs = [p for p in (engine_view(d) for d in dash.list()) if p]
         return {"total": len(profs), "groups": find_collisions(profs)}
 
     # ---- Health overview -------------------------------------------------
@@ -607,8 +831,11 @@ def register(app, ctx):
         colliding: set[str] = set()
         # Convert once and reuse. `dashboard_coherence(d)` converts internally
         # too, so every profile was mapped to engine shape twice per page load.
-        engine_shaped = {d["id"]: to_engine_profile(d) for d in profiles}
-        for g in find_collisions(list(engine_shaped.values())):
+        # `None` for a record this converter cannot model. One of those used to
+        # raise out of the route and make the whole Health page unreachable;
+        # the row below reports it as needing attention instead.
+        engine_shaped = {d["id"]: engine_view(d) for d in profiles}
+        for g in find_collisions([p for p in engine_shaped.values() if p]):
             colliding.update(m["id"] for m in g["members"])
 
         rows = []
@@ -616,8 +843,11 @@ def register(app, ctx):
                    "scheduled": 0, "graded": 0, "colliding": 0, "needsAttention": 0}
         for d in profiles:
             pid = d["id"]
-            issues = validate(engine_shaped[pid].fingerprint)
-            px = d.get("proxy") or {}
+            eng = engine_shaped[pid]
+            issues = (validate(eng.fingerprint) if eng else
+                      ["this profile cannot be read; open it, correct the "
+                       "highlighted field and save it again"])
+            px = d.get("proxy") if isinstance(d.get("proxy"), dict) else {}
             has_proxy = bool(px.get("host"))
             trust = d.get("_trust")
             sc = by_profile.get(pid)

@@ -247,14 +247,36 @@ function ProfilesView({ filtered, profiles, query, setQuery, folder, sel, setSel
     await refresh();
   };
 
-  // Export the selected profiles as one JSON file (config: fingerprint, proxy,
-  // tags — not the browser session; use `numera backup` for a full session).
+  /* Export the selected profiles as one versioned Numera file.
+   *
+   * The version is the whole point. This wrote a bare array of dashboard
+   * profiles, which is indistinguishable from a vendor export - so Import fed
+   * it to the engine's *tolerant* importer, whose job is to guess at a schema
+   * it has never seen. That importer reads no seed, no signal modes, no
+   * startup URLs, extensions or launch arguments, and reads `folder` only to
+   * append it to the tags: a user's own file came back as a different device
+   * in the wrong folder, reported as a successful import. Naming the format is
+   * what lets the engine read it as configuration instead.
+   *
+   * Configuration, and it says so: the browser session - cookies, logins,
+   * local storage - lives in the profile directory, and `numera backup` is
+   * what copies that. */
   const exportSelected = () => {
-    const blob = new Blob([JSON.stringify(selected, null, 2)], { type: "application/json" });
+    // `pass: null` is how the listing reports a credential the vault is
+    // holding; an absent one reads as "". It cannot be written to the file, so
+    // the file must not be handed over as if it were complete.
+    const withheld = selected.filter(p => p.proxy && p.proxy.pass === null).length;
+    const file = { numeraProfiles: 1, profiles: selected };
+    const blob = new Blob([JSON.stringify(file, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = `numera-profiles-${selected.length}.json`; a.click();
     URL.revokeObjectURL(url);
+    toast.success(
+      `Exported ${selected.length} profile configuration${selected.length === 1 ? "" : "s"}. `
+      + "Browser sessions — cookies and logins — are not included; use `numera backup` for those."
+      + (withheld ? ` ${withheld} proxy password${withheld === 1 ? " is" : "s are"} `
+                    + "locked in the vault and not in the file." : ""));
   };
 
   // Pagination keeps the grid responsive when there are thousands of profiles.

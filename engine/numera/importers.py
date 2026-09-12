@@ -234,6 +234,79 @@ def profile_from_export(d: dict) -> tuple[Profile, list[str]]:
     return prof, validate(fp)
 
 
+# --------------------------------------------------------------------------
+# Numera's own export format
+# --------------------------------------------------------------------------
+# Everything above reads *somebody else's* file, and being tolerant about a
+# format you have never seen is the right rule for that. Fed Numera's own
+# export it is the wrong one: the heuristics read a fraction of the dashboard
+# shape, generate a fresh fingerprint for the rest, and report a faithful
+# import. So a native file says what it is, and is read as configuration
+# instead of guessed at.
+#
+# Configuration, not a session: the browser profile directory - cookies,
+# logins, local storage - is not in this file. `numera backup` is that.
+
+#: The key that marks a Numera export, and the version this build writes.
+NATIVE_KEY = "numeraProfiles"
+NATIVE_VERSION = 1
+
+#: How many markers below make an unversioned file a Numera export.
+#:
+#: A native export carries every one of them at the top level; a vendor export
+#: nests its fingerprint under `navigator`, `fingerprint` or `webGLMetadata` -
+#: which is why `_first` reads dotted paths - so its top level has almost none.
+#: A few of the markers are ordinary DOM property names (`mediaDevices`,
+#: `maxTouchPoints`, `devicePixelRatio`) that a flat vendor dump could plausibly
+#: use, and refusing somebody's real vendor export is the worse mistake here, so
+#: the bar is well above a coincidence and well below a native file's 19.
+_NATIVE_MARKERS_NEEDED = 6
+
+#: Keys a Numera dashboard profile has at its top level. Used only to recognise
+#: an *unversioned* native file - one written before the format was versioned -
+#: so it can be refused by name rather than silently mangled by the heuristics
+#: above.
+_NATIVE_MARKERS = frozenset({
+    "webglVendor", "webglRenderer", "clientRects", "webglImage",
+    "mediaDevices", "mediaVideo", "mediaAudio", "mediaSpeakers", "fontList",
+    "startupUrls", "launchArgs", "clearOnStart", "switchedOff", "ipBased",
+    "devicePixelRatio", "maxTouchPoints", "osVersion", "deviceModel",
+    "lastActive",
+})
+
+
+def native_export(data) -> Optional[list]:
+    """The profile list from a versioned Numera export, or None if it is not one.
+
+    Raises ``ValueError`` when the file *claims* to be one and this build
+    cannot read it - a version from the future or a broken envelope. Refusing
+    is the point: the alternative is reading a newer file with older rules and
+    reporting that as success.
+    """
+    if not isinstance(data, dict) or NATIVE_KEY not in data:
+        return None
+    version = data.get(NATIVE_KEY)
+    if version != NATIVE_VERSION:
+        raise ValueError(
+            f"this file says it is Numera export format {version!r}; this build "
+            f"reads format {NATIVE_VERSION}. "
+            + ("It was written by a newer Numera - update this install, or "
+               "re-export from that one."
+               if isinstance(version, int) and version > NATIVE_VERSION else
+               "Re-export it from the install that wrote it."))
+    profiles = data.get("profiles")
+    if not isinstance(profiles, list) or not all(isinstance(p, dict) for p in profiles):
+        raise ValueError("a Numera export must carry 'profiles' as a list of objects")
+    return profiles
+
+
+def looks_native(entry) -> bool:
+    """Is this a Numera dashboard profile with no format version on it?"""
+    if not isinstance(entry, dict):
+        return False
+    return len(_NATIVE_MARKERS & set(entry)) >= _NATIVE_MARKERS_NEEDED
+
+
 def _unwrap(data) -> list[dict]:
     """Pull the list of profiles out of whatever the export wraps them in."""
     if isinstance(data, list):
@@ -248,7 +321,23 @@ def _unwrap(data) -> list[dict]:
 
 
 def load_export(path: str | Path) -> list[dict]:
-    return _unwrap(json.loads(Path(path).read_text(encoding="utf-8")))
+    """The vendor profiles in ``path``.
+
+    Refuses Numera's own export, versioned or not. This is the door the CLI's
+    `import-from` uses, and without the check it read a native file with the
+    heuristics above and reported a lossy reinterpretation as a successful
+    import - the same defect the API import route had, through a different
+    door. `cmd_import_from` turns this into "Couldn't read <file>: ...".
+    """
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    entries = _unwrap(data)
+    if native_export(data) is not None or any(looks_native(e) for e in entries):
+        raise ValueError(
+            "this is a Numera profile export, not a vendor one, and reading it "
+            "with the vendor importer would drop its fingerprint seed, signal "
+            "modes, startup URLs, extensions and folder. Import it from the "
+            "dashboard, which reads the native format field for field.")
+    return entries
 
 
 def import_file(path: str | Path, store) -> tuple:

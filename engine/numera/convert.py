@@ -9,6 +9,7 @@ single most repeated bug in this project."""
 from __future__ import annotations
 
 import hashlib
+import math
 import os
 import time
 from typing import Optional
@@ -51,11 +52,48 @@ def _engine_webgl(os_key: str, dash_renderer: str, dash_vendor: str = "") -> tup
 
 
 def _parse_lines(raw) -> list[str]:
-    """Accept a newline-separated string (or a list) and return clean entries."""
-    if not raw:
+    """Accept a newline-separated string (or a list) and return clean entries.
+
+    Anything else is *no* entries rather than an exception. The API refuses a
+    `fontList: 17` on the way in, but a record written before it did is still
+    on disk, and this function is what every read of that record runs through -
+    the Health page, the collision report and the launcher all called it and
+    all raised `AttributeError` on the same record, so one bad profile made
+    those pages unreachable for every other profile too.
+    """
+    if isinstance(raw, str):
+        parts = raw.splitlines()
+    elif isinstance(raw, list):
+        parts = raw
+    else:
         return []
-    parts = raw if isinstance(raw, list) else raw.splitlines()
-    return [p.strip() for p in parts if p.strip()]
+    return [p.strip() for p in parts if isinstance(p, str) and p.strip()]
+
+
+def _str_list(raw) -> list[str]:
+    """The string entries of a list field, and nothing else.
+
+    Same reason as `_parse_lines`: `k in raw` raises for a legacy `ipBased: 17`
+    and `list(tags)` over `[{}]` carries an object into every consumer.
+    """
+    return [v for v in raw if isinstance(v, str)] if isinstance(raw, list) else []
+
+
+def _num(value, default, cast=int):
+    """A finite number of the wanted kind, or `default`.
+
+    `int(None)`, `int("")` and `int(float("nan"))` all raise, and
+    `int(float("inf"))` raises `OverflowError` - which the one `try` in this
+    module did not catch. Non-finite values get the default rather than a
+    conversion, because `NaN` is not JSON and cannot be written back out.
+    """
+    if isinstance(value, bool) or value is None:
+        return default
+    try:
+        out = cast(value)
+    except (TypeError, ValueError, OverflowError):
+        return default
+    return out if math.isfinite(out) else default
 
 
 # Kept in step with drivers.CLEARABLE by test_launch_extras, so an unknown key
@@ -156,7 +194,7 @@ def to_engine_profile(d: dict) -> Profile:
     vendor, renderer = _engine_webgl(os_key, d.get("webglRenderer", ""), d.get("webglVendor", ""))
     os_version = str(d.get("osVersion") or devices.OS_VERSIONS[os_key][0][0])
     # iOS has no navigator.deviceMemory to report, whatever the profile says.
-    memory = 0 if os_key == "ios" else int(d.get("memory", 16))
+    memory = 0 if os_key == "ios" else _num(d.get("memory"), 16)
 
     fp = Fingerprint(
         os=os_key,
@@ -170,14 +208,14 @@ def to_engine_profile(d: dict) -> Profile:
         screen_height=sh,
         viewport_width=vw,
         viewport_height=vh,
-        hardware_concurrency=int(d.get("cores", 8)),
+        hardware_concurrency=_num(d.get("cores"), 8),
         device_memory=memory,
         # An edited font list is the profile's own; only fall back to the whole
         # OS set when the dashboard sent nothing.
         fonts=_parse_lines(d.get("fontList")) or devices.FONTS.get(os_key, []),
-        cameras=int(d.get("mediaVideo", 1)),
-        microphones=int(d.get("mediaAudio", 1)),
-        speakers=int(d.get("mediaSpeakers", 1)),
+        cameras=_num(d.get("mediaVideo"), 1),
+        microphones=_num(d.get("mediaAudio"), 1),
+        speakers=_num(d.get("mediaSpeakers"), 1),
         # These pickers used to be cosmetic - every one is carried through now.
         webrtc=str(d.get("webrtc") or "Altered").strip().lower(),
         canvas=str(d.get("canvas") or "Noise").strip().lower(),
@@ -196,16 +234,17 @@ def to_engine_profile(d: dict) -> Profile:
         is_mobile=is_mobile,
         os_version=os_version,
         device_model=str(d.get("deviceModel") or ""),
-        max_touch_points=int(d.get("maxTouchPoints",
-                                   devices.TOUCH_POINTS[os_key][0])),
-        device_pixel_ratio=float(d.get("devicePixelRatio")
-                                 or devices.PIXEL_RATIOS[os_key][0]),
-        seed=int(d.get("seed") or 0) or _stable_seed(str(d.get("id") or "unsaved")),
+        max_touch_points=_num(d.get("maxTouchPoints"),
+                              devices.TOUCH_POINTS[os_key][0]),
+        device_pixel_ratio=_num(d.get("devicePixelRatio"),
+                                devices.PIXEL_RATIOS[os_key][0], float)
+        or devices.PIXEL_RATIOS[os_key][0],
+        seed=_num(d.get("seed"), 0) or _stable_seed(str(d.get("id") or "unsaved")),
     )
 
     proxy = None
     px = d.get("proxy")
-    if px and px.get("host"):
+    if isinstance(px, dict) and px.get("host"):
         # One mapping, and it refuses rather than guesses. The old dict had no
         # SOCKS4 entry and fell back to "http", so a SOCKS4 profile launched a
         # browser speaking a different protocol than the profile claimed.
@@ -227,7 +266,7 @@ def to_engine_profile(d: dict) -> Profile:
         fingerprint=fp,
         proxy=proxy,
         notes=d.get("notes", ""),
-        tags=d.get("tags", []),
+        tags=_str_list(d.get("tags")),
         engine=d.get("engine", "playwright"),
         startup_urls=_parse_startup_urls(d.get("startupUrls")),
         extensions=_parse_lines(d.get("extensions")),
@@ -235,9 +274,11 @@ def to_engine_profile(d: dict) -> Profile:
         bookmarks=_parse_bookmarks(d.get("bookmarks")),
         dns=str(d.get("dns") or "").strip(),
         ip_based=[k for k in ("timezone", "geolocation", "languages")
-                  if k in (d.get("ipBased") or [])],
-        clear_on_start=[k for k in CLEARABLE_KEYS if k in (d.get("clearOnStart") or [])],
-        switched_off=[k for k in SWITCHABLE_KEYS if k in (d.get("switchedOff") or [])],
+                  if k in _str_list(d.get("ipBased"))],
+        clear_on_start=[k for k in CLEARABLE_KEYS
+                        if k in _str_list(d.get("clearOnStart"))],
+        switched_off=[k for k in SWITCHABLE_KEYS
+                      if k in _str_list(d.get("switchedOff"))],
     )
 
 
