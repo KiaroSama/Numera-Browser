@@ -4,6 +4,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-09-12
+
+Seventeen findings from one audit, closed together. Four of them could lose
+data or open a door on their own: a portable build that could not launch
+anything, a vault migration whose salt died with the process, an API that went
+anonymous when it lost its tokens, and a profile listing one bad record could
+take down. Each fix landed with the test that failed before it.
+
 - Build every self-spawn through one frozen-aware command builder. A frozen
   build's `sys.executable` is the application, not a Python interpreter, so
   `-m numera` reached Numera's own CLI and every launch, stop, attach, warm-up,
@@ -49,6 +57,34 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   libraries close refused sockets, with a regression that verifies cleanup.
 - Include shared test helpers and the network guard in the source distribution.
 - Isolate portable smoke data from automatic imports of existing profiles.
+- Journal a vault migration before it writes, and roll it forward on the next
+  open. A migration killed between encrypting the secrets and committing the
+  descriptor left ciphertext whose salt existed only in the dead process's
+  memory. The journal holds the salt and verifier — never the password and
+  never a plaintext secret — and is cleared once recovery commits.
+- Keep a protected API protected when its credentials are lost. Revoking the
+  last token, deleting `tokens.json` or corrupting it turned a locked API
+  anonymous with no restart and no warning, because the policy question was
+  being answered with a credential count. Protection is now its own marker,
+  turned off only deliberately, and revoking a lone token is refused with a
+  409 rather than silently opening the door.
+- Keep a portable build's data beside the application instead of overriding an
+  explicit `NUMERA_DATA_DIR`.
+- Type every field a client may write, not half of them. Wrong-shaped list
+  entries and non-finite numbers reached disk, where `NaN` broke serialisation
+  for the whole profile listing and a non-string tag blanked the page. Writes
+  are refused by field name; the two read-only overviews survive a record
+  written before the schema existed.
+- Refuse a profile the engine cannot model instead of storing the dashboard
+  copy alone. Such a write answered 200, showed the profile in the GUI and
+  left `numera list` with nothing; it now answers 422 naming the reason.
+- Answer a bulk proxy check whose targets are all skipped, instead of 500.
+- Read Numera's own profile export as Numera's own format. A native file fed
+  through the vendor importers lost its fingerprint seed, signal modes,
+  startup URLs, extensions and folder, and reported the result as a faithful
+  import. Exports now carry a format version, the import route reads it field
+  for field, and an unversioned native file is refused by name on both the API
+  and the CLI door rather than quietly reinterpreted.
 
 ## [0.30.1] - 2026-09-09
 
