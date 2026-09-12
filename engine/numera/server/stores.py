@@ -47,6 +47,17 @@ class StaleProfile(RuntimeError):
     """A full-profile write carried a revision older than the stored one."""
 
 
+class UnconvertibleProfile(ValueError):
+    """This dashboard record has no engine shape, so it was not written.
+
+    The two stores are meant to hold the same set of profiles. `_twin` used to
+    swallow a conversion failure and return `None`, which wrote the dashboard
+    copy on its own: the API answered 200, the GUI showed the profile and
+    `numera list` had never heard of it. Refusing is the honest answer, and the
+    API turns it into a 422 naming the reason.
+    """
+
+
 class DashboardStore:
     """Persists dashboard-shaped profile dicts, one JSON file per profile.
 
@@ -377,12 +388,16 @@ class DashboardStore:
             vault.encrypt_for_write(self._engine, "", stored)
 
     def _twin(self, prof: dict, keep_engine_secret: bool = False):
-        """`(path, data)` for the engine's copy of `prof`, or None.
+        """`(path, data)` for the engine's copy of `prof`, or None with no engine.
 
-        A profile the dashboard can hold but the engine cannot *model* still
-        saves - refusing would take the UI down for a reason the user cannot
-        see. A failure to *write* one it modelled fine is a different thing and
-        the caller's batch raises it.
+        A profile the engine cannot *model* is refused, not stored alone. The
+        opposite used to be the rule - "refusing would take the UI down for a
+        reason the user cannot see" - and what it actually produced was a
+        dashboard record with no engine copy: a 200, a profile visible in the
+        GUI, and nothing at all for the CLI or a launch. The reason the user
+        could not see is now in the refusal, and the API routes validate the
+        same shape before they get here, so the honest failure arrives as a 422
+        on the field rather than as a store that quietly holds half a profile.
 
         `keep_engine_secret` is set when the write said nothing about the proxy
         password. The engine copy then keeps its own stored value instead of
@@ -394,10 +409,14 @@ class DashboardStore:
             return None
         try:
             twin = to_engine_profile(prof)
-        except Exception:                       # pragma: no cover - see `_mirror`
-            return None
-        if twin is None:
-            return None
+        except Exception as exc:                # noqa: BLE001 - reported, not hidden
+            raise UnconvertibleProfile(
+                f"profile {prof.get('id') or prof.get('name') or '?'} cannot be "
+                f"converted for the engine, so neither copy was written: {exc}"
+            ) from exc
+        if twin is None:                        # pragma: no cover - defensive
+            raise UnconvertibleProfile(
+                f"profile {prof.get('id') or '?'} has no engine shape")
         data = self._engine._apply_secrets(twin.to_dict(), "enc")
         if keep_engine_secret and isinstance(data.get("proxy"), dict):
             from ..repo import repo as _repo

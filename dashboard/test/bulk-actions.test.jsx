@@ -254,7 +254,9 @@ test("export writes every selected profile, not only the visible ones", async ()
   fireEvent.click(bulk(/Export/));
 
   expect(objectUrls).toHaveLength(1);
-  const written = JSON.parse(await objectUrls[0].text());
+  // The file is the versioned Numera envelope (N08); this test is about which
+  // profiles are inside it, which is unchanged.
+  const written = JSON.parse(await objectUrls[0].text()).profiles;
   // The counter and the file have to agree; they used to differ by however many
   // selected profiles the current filter happened to hide.
   expect(written.map(p => p.id)).toEqual(["alpha", "bravo"]);
@@ -271,7 +273,7 @@ test("Launch and Export resolve the identical set of ids", async () => {
   await waitFor(() => expect(screen.queryByText("bravo")).toBeNull());
 
   fireEvent.click(bulk(/Export/));
-  const exported = JSON.parse(await objectUrls[0].text()).map(p => p.id);
+  const exported = JSON.parse(await objectUrls[0].text()).profiles.map(p => p.id);
   fireEvent.click(bulk(/Launch/));
   await waitFor(() => expect(called(state, "launch")).toHaveLength(2));
 

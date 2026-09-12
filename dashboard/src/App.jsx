@@ -427,7 +427,14 @@ export default function App() {
     toast.info("Connect the engine (numera serve) to save this setting.");
   };
 
-  // Import profiles exported from GoLogin / AdsPower / Multilogin.
+  /* Import profiles: a Numera export, or one from GoLogin / AdsPower / Multilogin.
+   *
+   * The engine decides which of those it was given, and says so in `format` -
+   * and this reports that, because the two are not the same import. A vendor
+   * file is read by heuristics over somebody else's schema, so every field
+   * they cannot find is generated fresh; a Numera file is read field for
+   * field. Reporting both as "Imported N profiles" is how a lossy
+   * reinterpretation of the user's own export looked like a round-trip. */
   const importProfiles = () => {
     if (!live) { toast.info("Start the engine (numera serve) to import profiles."); return; }
     const inp = document.createElement("input");
@@ -439,8 +446,12 @@ export default function App() {
         const res = await api.importProfiles(await f.text());
         await refresh();
         const flagged = (res.results || []).filter(r => r.issues?.length).length;
-        toast.success(`Imported ${res.imported} profile${res.imported === 1 ? "" : "s"}.`
-          + (flagged ? ` ${flagged} flagged for review — open them to see the coherence notes.` : ""));
+        const how = res.format === "vendor"
+          ? " Read as a vendor export, so each fingerprint was regenerated from"
+            + " the fields that file did carry."
+          : "";
+        toast.success(`Imported ${res.imported} profile${res.imported === 1 ? "" : "s"}.${how}`
+          + (flagged ? ` ${flagged} flagged for review — open them to see the notes.` : ""));
       } catch (e) { toast.error("Import failed: " + e.message); }
     };
     inp.click();

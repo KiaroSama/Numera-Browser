@@ -198,9 +198,19 @@ def _reap(procs) -> None:
 @pytest.mark.usefixtures("no_browsers")
 def test_a_launch_whose_browser_never_opens_is_not_a_success(app_and_client, spawned):
     """The API case: the child takes the lease, passes the vault check, then
-    fails to start a browser. It used to answer 200 and register the child."""
+    fails to start a browser. It used to answer 200 and register the child.
+
+    `engine` is named because `no_browsers` empties `PLAYWRIGHT_BROWSERS_PATH`,
+    which is a Playwright-family lever and nothing else's. This used to rely on
+    a create that named no engine producing `playwright` - which it did only
+    because the route's own "use the saved default" fallback was unreachable
+    (it ran *after* normalisation had already filled the converter's default
+    in). With that fixed the profile gets whatever default the machine has, and
+    a Camoufox one would sail past the fixture and open a real browser.
+    """
     app, client = app_and_client
-    pid = client.post("/api/profiles", json={"name": "no-chromium"}).json()["id"]
+    pid = client.post("/api/profiles",
+                      json={"name": "no-chromium", "engine": "playwright"}).json()["id"]
 
     answer = client.post(f"/api/profiles/{pid}/launch")
     try:
@@ -223,9 +233,14 @@ def test_a_scheduled_warm_up_that_never_opens_does_not_advance_the_occurrence(
     """And the scheduler case, through a second command: `numera warmup` opens
     its browser through `drivers.session()`, so the same failure arrives by a
     different route. `lastRun` moving here would silence the schedule for a
-    full interval on the strength of a browser that never started."""
+    full interval on the strength of a browser that never started.
+
+    Explicit `engine` for the reason the test above gives: `no_browsers` only
+    takes Chromium away from the Playwright family.
+    """
     app, client = app_and_client
-    pid = client.post("/api/profiles", json={"name": "cold"}).json()["id"]
+    pid = client.post("/api/profiles",
+                      json={"name": "cold", "engine": "playwright"}).json()["id"]
     client.post("/api/schedules", json={"profileId": pid, "everyHours": 1,
                                         "minutes": 1, "preset": "general"})
 

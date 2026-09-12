@@ -147,8 +147,14 @@ def register(app, ctx):
             status = "ok" if res.get("ok") else ("skipped" if res.get("ok") is None else "failed")
             return {"id": proxy["id"], "status": status, **res}
 
-        with ThreadPoolExecutor(max_workers=min(8, len(targets))) as ex:
-            results = list(ex.map(run, targets))
+        # Only when there is something to run. `min(8, 0)` is 0 and
+        # `ThreadPoolExecutor(max_workers=0)` raises, so a selection whose
+        # credentials are all withheld answered 500 - and it raised *before* the
+        # skipped results below, which are the whole answer to that request.
+        results = []
+        if targets:
+            with ThreadPoolExecutor(max_workers=min(8, len(targets))) as ex:
+                results = list(ex.map(run, targets))
         # One write for the whole sweep. Updating per proxy meant N locked
         # read-modify-write cycles over the entire pool file for one button.
         pool.update_many({r["id"]: {"status": r["status"],

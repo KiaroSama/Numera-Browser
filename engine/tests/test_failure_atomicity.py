@@ -111,18 +111,33 @@ def test_a_failed_engine_write_does_not_leave_the_dashboard_copy_ahead(tmp_path,
     assert on_disk["name"] == "before", "the dashboard copy moved on without the engine"
 
 
-def test_a_profile_the_engine_cannot_model_still_saves(tmp_path, monkeypatch):
-    """The tolerated case, and the reason `_mirror` swallowed in the first
-    place: refusing here would take the UI down for something the user cannot
-    see or fix. A conversion failure is not a storage failure."""
+def test_a_profile_the_engine_cannot_model_is_refused_not_half_written(
+        tmp_path, monkeypatch):
+    """This test used to assert the opposite, and the opposite was the bug.
+
+    The tolerance was argued as kindness - "refusing here would take the UI
+    down for something the user cannot see or fix" - but what it actually
+    produced was a dashboard record with no engine copy at all: the API
+    answered 200, the GUI listed the profile, and `numera list` had never heard
+    of it. That is the same half-written state every other test in this file
+    exists to prevent, reached through the one door that was left open.
+
+    What made the old behaviour defensible was the second half: the user could
+    not see the reason. They can now. The API validates the whole dashboard
+    shape before it gets here and answers 422 naming the field, and this
+    refusal is what guarantees the two copies are written together or not at
+    all.
+    """
     from numera.server import stores as stores_mod
-    from numera.server.stores import DashboardStore
+    from numera.server.stores import DashboardStore, UnconvertibleProfile
 
     dash = DashboardStore(tmp_path, engine_store=ProfileStore(tmp_path))
     monkeypatch.setattr(stores_mod, "to_engine_profile",
                         lambda d: (_ for _ in ()).throw(ValueError("unconvertible")))
-    saved = dash.save({"name": "odd"})
-    assert (tmp_path / "dashboard" / f"{saved['id']}.json").is_file()
+    with pytest.raises(UnconvertibleProfile):
+        dash.save({"name": "odd"})
+    assert not list((tmp_path / "dashboard").glob("*.json")), \
+        "the dashboard copy was written without an engine twin"
 
 
 # --- restore keeps the old session until the new one is in place ------------

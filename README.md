@@ -95,7 +95,7 @@ Numera/
 | ✨ **Warm-up + schedule** | Human-paced browsing (per-vertical presets) so a fresh profile isn't obviously fresh — and a recurring schedule so it never goes cold |
 | 🤖 **Automation attach** | Drive a live profile from Selenium, Puppeteer or Playwright over CDP |
 | 🔁 **Bulk edit** | One change applied to hundreds of profiles, coherently |
-| 📥 **Migrate in** | Import profiles from GoLogin, AdsPower or Multilogin exports |
+| 📥 **Migrate in** | Import profiles from GoLogin, AdsPower or Multilogin exports — and re-import Numera's own export field for field, fingerprint seed and all |
 | 📦 **Bulk create at scale** | Generate thousands of coherent profiles — mixed OS, country, browser, per-profile hardware |
 | 🗂️ **Folders, tags, search** | Organize hundreds of accounts |
 | 🖥️ **Real browser** | Launches a real browser, per-profile isolation |
@@ -402,6 +402,11 @@ stays the same manager over all of them.
       profiles (aligning each profile's locale to its proxy country)
 - [x] Dashboard-side import (GoLogin / AdsPower / Multilogin) — an Import button
       that maps each export to a coherent profile
+- [x] Native re-import — a Numera export carries a format version and comes back
+      field for field, so a profile survives a move between installs. The vendor
+      importers refuse it by name rather than guessing at it. Configuration
+      only: the browser session (cookies, logins, local storage) is `numera
+      backup`, not this
 
 - [x] DNS leak checker (`numera dns`) — reads which resolvers actually saw the
       lookups and fails if any escaped the proxy's country
