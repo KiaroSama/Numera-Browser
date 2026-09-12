@@ -99,14 +99,12 @@ FIELD_TYPES = {
 # What each number is allowed to *be*, beyond being a number. `NaN` and
 # `Infinity` pass `isinstance(x, (int, float))`, are not JSON, and made
 # `int(...)` raise inside the converter - which the write path then swallowed.
-# The bounds are generous: they exist to refuse a value no device has, not to
-# curate hardware.
-NUMBER_RANGES = {
-    "cores": (1, 512), "memory": (0, 1024),
-    "mediaVideo": (0, 64), "mediaAudio": (0, 64), "mediaSpeakers": (0, 64),
-    "maxTouchPoints": (0, 32), "devicePixelRatio": (0.05, 20),
-    "seed": (0, 2 ** 53),
-}
+#
+# The table belongs to `write_contract`, which both write doors share. This was
+# a second copy of the same eight ranges, character for character: they agreed,
+# which is the only reason nobody noticed that editing one changed nothing at
+# the other door. The message stays this surface's own, as that module says.
+NUMBER_RANGES = write_contract.NUMBER_RANGES
 
 # The proxy is the one nested object a client sends, and it carries the
 # credential - so its own fields are typed too. Unknown keys inside it are
@@ -917,7 +915,10 @@ def register(app, ctx):
 
             rows.append({
                 "id": pid,
-                "name": d.get("name", pid),
+                # Through the listing's repair: reading the stored value
+                # directly handed the one page that exists to show you a
+                # damaged profile the very value that breaks a row.
+                "name": readable(d).get("name") or pid,
                 "engine": d.get("engine", "playwright"),
                 "os": d.get("os", "Windows"),
                 "status": "running" if run_now else "stopped",

@@ -181,6 +181,19 @@ class _Migration:
                 moved += changed
         return moved
 
+    def commit_config(self, cfg: dict, save_config) -> None:
+        """Write the descriptor as part of *this* transaction.
+
+        `save_config` is the store's own writer - it takes the config file lock
+        and asserts the root transaction, neither of which the batch knows
+        about - so the batch remembers the file rather than writing it. What
+        that buys is the thing the split protocol lacked: a failure after this
+        point restores the config together with the secret files, instead of
+        leaving one half of a rotation committed over the other half's data.
+        """
+        self._batch.remember(self.root / "config.json")
+        save_config(cfg)
+
     def rollback(self) -> list:
         """Restore every file this migration wrote, newest first.
 
@@ -200,17 +213,23 @@ class _Migration:
 # existing suites already use.
 from .vault_recovery import (                                   # noqa: E402,F401
     JOURNAL_VERSION,
+    KNOWN_JOURNAL_VERSIONS,
     JournalUnreadable,
     SUPPORTED_OPS,
     VaultRecoveryRequired,
     begin_journal,
     classify,
+    commit,
     descriptors,
     end_journal,
     fsync_path,
     journal_path,
     needs_recovery,
     recover,
+    sync_config,
+    sync_data,
+    sync_dir,
+    unconverted,
     unreadable_secret_files,
 )
 
@@ -237,6 +256,16 @@ def migration(root: Path, keep_journal: bool = False):
         yield step
     except BaseException as exc:
         failures = step.rollback()
+        if not failures:
+            # The restored state has to reach the disk before the journal that
+            # describes it is allowed to go, for the same reason the forward
+            # direction does: a rollback sitting in the page cache and a
+            # deleted journal is the one combination nothing can repair.
+            try:
+                sync_data(root)
+                sync_config(root)
+            except OSError as sync_exc:
+                failures = [(Path(root), sync_exc)]
         if failures:
             # Worse here than anywhere else: a half-restored migration leaves
             # some secrets under the new key and some under the old, and the

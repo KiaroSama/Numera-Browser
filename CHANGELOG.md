@@ -54,6 +54,51 @@ growing a file already past the size this project holds itself to.
 - Pin Node explicitly in the Rust CI job, which was building the dashboard with
   whatever version the runner image happened to ship.
 
+A further recheck kept three of those open. Each had been closed at one
+boundary and left reachable at another.
+
+- Commit a vault migration's data and its descriptor as one transaction. The
+  descriptor was written through a callback that sat outside the migration's
+  undo batch, so a failure after it landed rolled the secret *files* back to
+  the old generation and left the config naming the new one. The retry then
+  read the matching salt as a finished job, deleted the journal and reported
+  success — over three credentials that no password in existence could open.
+  There is now one commit point, used by `enable`, by rotation and by the
+  resume of either, and a salt that matches is no longer accepted as evidence:
+  the records are opened before the journal is allowed to go.
+- Actually sync on Windows. `os.fsync` there needs a handle opened for writing
+  and answers `EBADF` on a read-only one, and `EBADF` was on the tolerated
+  list — so every sync the recovery protocol performed on Windows opened the
+  file, was refused, and returned as though the data were on the platter. The
+  durability the whole protocol rests on was not being delivered at all on the
+  platform the product ships for. A directory handle keeps the wider tolerance
+  it genuinely needs; an ordinary file no longer does.
+- Refuse a journal that carries a salt and nothing else, and a secret file
+  whose container is the wrong shape. A descriptor with no verifier produced a
+  vault no password could be checked against; `proxies.json = null` parses,
+  holds no secrets to find, and read as a finished migration.
+- Validate the shape a profile is actually written in. The shared contract
+  checked `cores`, `memory` and `seed` at the top level, where an engine
+  profile keeps them one level down under the browser's own names — so
+  `fingerprint.seed = inf` was written by the core path while the flat
+  equivalent was refused over HTTP. The proxy block had no core check at all.
+  One set of bounds, three shapes, and the write intent a proxy carries is read
+  and never reassigned.
+- Give a record with no `name` at all something to render. The repair helped a
+  name that was present and wrong; a missing one still reached
+  `p.name.toLowerCase()`, which blanks the page for every profile rather than
+  the one.
+- Give each server its own helper registry. It was a module global, so one
+  app's shutdown sweep reached another app's helpers and the first sweep
+  anywhere closed the door on every later one. Admission is now reserved before
+  a child is spawned rather than checked after, a clean exit with an unproved
+  cleanup is reported as a failure instead of a result, and a browser driver in
+  its own session — which on POSIX is not in the helper's process group at all
+  — is ended along with the tree it left.
+- Bound the read as well as the wait. A driver that inherits the helper's pipe
+  writers keeps them open after the helper exits, so waiting for end-of-file
+  made a finite probe's deadline the browser's lifetime.
+
 ## [0.32.0] - 2026-09-12
 
 Seven of the seventeen findings `0.31.0` reported closed were only partly

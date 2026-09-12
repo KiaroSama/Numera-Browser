@@ -52,6 +52,16 @@ SUPPORTED_OPS = ("enable", "rotate")
 #: whose fields it would misread.
 JOURNAL_VERSION = 1
 
+#: The formats this build can act on, listed rather than bounded. `version > 1`
+#: as the only test accepted `0`, `-3` and - because `True == 1` in Python -
+#: `version: true`, none of which is a format anybody wrote. A record naming a
+#: format that is not in this tuple is refused by name.
+#:
+#: A 0.31.0 journal carries no `version` key at all; it is version 1 in
+#: everything but the key being written down, and `descriptors()` reads its
+#: flat salt/verifier pair, so an absent version resolves to 1 here.
+KNOWN_JOURNAL_VERSIONS = (1,)
+
 
 class VaultRecoveryRequired(RuntimeError):
     """An unresolved migration is on disk and cannot be settled unattended.
@@ -97,8 +107,22 @@ def descriptors(record: dict) -> tuple:
     return new, record.get("old")
 
 
+def _text(value) -> bool:
+    return isinstance(value, str) and bool(value)
+
+
 def _descriptor_ok(desc) -> bool:
-    return isinstance(desc, dict) and isinstance(desc.get("salt"), str) and desc["salt"]
+    """Is this a descriptor, or just a salt someone wrote down?
+
+    Both halves are load-bearing. The salt says which key the ciphertext is
+    under; the verifier is the only way to tell a correct password from one
+    that will decrypt every record into noise. A journal carrying only the
+    first let recovery commit a vault whose password could never be checked -
+    and `crypto.check_password(pw, salt, None)` answers False for every
+    password, so the store it produced could not be unlocked by anyone.
+    """
+    return (isinstance(desc, dict)
+            and _text(desc.get("salt")) and _text(desc.get("verifier")))
 
 
 def classify(root) -> tuple:
@@ -131,7 +155,9 @@ def classify(root) -> tuple:
 
     version = record.get("version", JOURNAL_VERSION)
     op = record.get("op", "enable")
-    if not isinstance(version, int) or version > JOURNAL_VERSION:
+    # `bool` first: `True in (1,)` is True, so a journal with `version: true`
+    # would otherwise pass as version 1.
+    if isinstance(version, bool) or version not in KNOWN_JOURNAL_VERSIONS:
         return "unsupported", record
     if op not in SUPPORTED_OPS:
         return "unsupported", record
@@ -176,16 +202,67 @@ def begin_journal(root, op: str, *, new: dict, old: Optional[dict] = None) -> No
     fsync_path(journal_path(root))
 
 
-#: `fsync` is not defined for every object on every platform. These are the
-#: documented "this cannot be synced here" answers - a directory handle on
-#: Windows, a filesystem that does not implement the call - and only these are
-#: tolerated. Anything else is a real I/O failure: a full disk, a disconnected
-#: volume, a failing drive. Swallowing those was the durability equivalent of
-#: an empty `except`.
-_UNSUPPORTED_SYNC = frozenset(
+#: A filesystem that does not implement `fsync` for this object at all. The
+#: only answer that is genuinely "not applicable here" for an ordinary file.
+#: Everything else - a full disk, a disconnected volume, a failing drive,
+#: permission denied - is a real I/O failure, and swallowing those was the
+#: durability equivalent of an empty `except`.
+_UNSUPPORTED_FILE_SYNC = frozenset(
     e for e in (getattr(errno, name, None)
-                for name in ("EINVAL", "ENOTSUP", "EOPNOTSUPP", "EBADF", "EACCES"))
+                for name in ("EINVAL", "ENOTSUP", "EOPNOTSUPP"))
     if e is not None)
+
+#: A *directory handle* is a different object with different rules. Windows
+#: will not open one for reading at all, and several filesystems refuse the
+#: sync on one, so the same codes that mean "this disk is failing" on a regular
+#: file mean "not available on this platform" here. They were tolerated on both,
+#: which is how `EACCES` on a config file read as a successful sync.
+_UNSUPPORTED_DIR_SYNC = _UNSUPPORTED_FILE_SYNC | frozenset(
+    e for e in (getattr(errno, name, None)
+                for name in ("EACCES", "EBADF", "EPERM", "EISDIR"))
+    if e is not None)
+
+#: A file is opened **read-write** to sync it. Windows maps `os.fsync` to
+#: `_commit`, which needs a writable handle and answers `EBADF` on a read-only
+#: one - and `EBADF` used to be tolerated, so on Windows every single call here
+#: opened the file, was refused, and returned as though the data were on the
+#: platter. The durability the protocol is built on was not being delivered at
+#: all on the platform the product ships for. `O_RDWR` does not truncate and
+#: writes nothing; it only asks for a handle `_commit` will accept.
+_SYNC_FILE_FLAGS = os.O_RDWR | getattr(os, "O_BINARY", 0)
+
+
+def _sync_handle(path, flags: int, tolerated: frozenset) -> None:
+    try:
+        fd = os.open(path, flags)
+    except OSError as e:
+        if e.errno in tolerated:
+            return
+        raise
+    try:
+        os.fsync(fd)
+    except OSError as e:
+        if e.errno not in tolerated:
+            raise
+    finally:
+        os.close(fd)
+
+
+def sync_dir(path) -> None:
+    """Push a directory entry to stable storage, where that is a thing.
+
+    `write_json` replaces rather than overwrites, so the durable object is not
+    only the file's contents but the *name* pointing at them. Without this a
+    power cut can leave the old entry and the new bytes.
+
+    Windows has no directory handle to open, so this is a no-op there rather
+    than an error - which is why the tolerated set for a directory is wider
+    than the one for a file.
+    """
+    if not hasattr(os, "O_DIRECTORY"):                # Windows
+        return
+    _sync_handle(Path(path), os.O_RDONLY | os.O_DIRECTORY,   # pragma: no cover
+                 _UNSUPPORTED_DIR_SYNC)
 
 
 def fsync_path(path: Path, *, directory: bool = True) -> None:
@@ -202,33 +279,9 @@ def fsync_path(path: Path, *, directory: bool = True) -> None:
     with nothing durably on it.
     """
     path = Path(path)
-    try:
-        fd = os.open(path, os.O_RDONLY)
-    except OSError as e:
-        if e.errno in _UNSUPPORTED_SYNC:
-            return
-        raise
-    try:
-        os.fsync(fd)
-    except OSError as e:
-        if e.errno not in _UNSUPPORTED_SYNC:
-            raise
-    finally:
-        os.close(fd)
-    if directory and hasattr(os, "O_DIRECTORY"):   # POSIX: sync the rename too
-        try:                                       # pragma: no cover - not Windows
-            dfd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
-        except OSError as e:
-            if e.errno in _UNSUPPORTED_SYNC:
-                return
-            raise
-        try:
-            os.fsync(dfd)
-        except OSError as e:
-            if e.errno not in _UNSUPPORTED_SYNC:
-                raise
-        finally:
-            os.close(dfd)
+    _sync_handle(path, _SYNC_FILE_FLAGS, _UNSUPPORTED_FILE_SYNC)
+    if directory:
+        sync_dir(path.parent)
 
 
 def end_journal(root) -> None:
@@ -240,6 +293,7 @@ def end_journal(root) -> None:
     """
     try:
         journal_path(root).unlink(missing_ok=True)
+        sync_dir(Path(root))     # the removal itself, durable - last in the order
     except OSError:                                          # pragma: no cover
         pass
 
@@ -267,8 +321,20 @@ def needs_recovery(root) -> bool:
     return True
 
 
+def _container_ok(data, site) -> bool:
+    """Does this document have the shape its site declares?
+
+    Parsing is not reading. `proxies.json = null` is valid JSON, so a scan
+    walks it, finds no holders and reports nothing left to encrypt - which
+    recovery took as "the migration finished" over a file whose contents nobody
+    could establish. A pool is a list and a profile is an object; anything else
+    is a file this build cannot say anything about.
+    """
+    return isinstance(data, list) if site.many else isinstance(data, dict)
+
+
 def unreadable_secret_files(root) -> list:
-    """Secret-bearing files under `root` that will not parse, as paths.
+    """Secret-bearing files under `root` this build cannot read, as paths.
 
     `plaintext_secrets` skips these, because for its original job - "prove
     nothing readable is left" - a file it cannot read contributes nothing to
@@ -279,12 +345,45 @@ def unreadable_secret_files(root) -> list:
     from . import vault
 
     bad = []
-    for path, _site in vault.secret_files(Path(root)):
+    for path, site in vault.secret_files(Path(root)):
         try:
-            json.loads(path.read_text(encoding="utf-8"))
+            data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             bad.append(path)
+            continue
+        if not _container_ok(data, site):
+            bad.append(path)
     return bad
+
+
+def unconverted(root, password: str, salt: str) -> list:
+    """Secret-bearing files holding ciphertext that this key does not open.
+
+    The question a matching salt cannot answer. Both generations of a rotation
+    are ciphertext and nothing but a trial decryption tells them apart, so
+    "config already names the new descriptor" was never evidence that the data
+    reached it - and taking it as evidence is what let a retry drop the journal
+    over records no password in existence could open.
+    """
+    from . import vault
+
+    stale = []
+    for path, site in vault.secret_files(Path(root)):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            stale.append(path)
+            continue
+        for holder in vault.holders(data, site):
+            value = holder[site.field]
+            if not crypto.is_encrypted(value):
+                continue                 # plaintext is `enable`'s business
+            try:
+                crypto.decrypt(password, salt, value)
+            except Exception:                                # noqa: BLE001
+                stale.append(path)
+                break
+    return stale
 
 
 def recover(root, get_config, save_config,
@@ -331,7 +430,7 @@ def recover(root, get_config, save_config,
     return _finish_enable(root, cfg, new, save_config, password)
 
 
-def _sync_config(root) -> None:
+def sync_config(root) -> None:
     """The committed descriptor, durably on disk before the journal goes.
 
     Only when the file is there: `save_config` is a caller-supplied callback
@@ -342,6 +441,60 @@ def _sync_config(root) -> None:
     path = Path(root) / "config.json"
     if path.exists():
         fsync_path(path)
+
+
+def sync_data(root) -> None:
+    """Every secret-bearing file, and the directory entries naming them.
+
+    The middle step of the order the protocol promises. Syncing the journal
+    alone proved the *plan* survived a power cut, not the work it described:
+    without this the descriptor could be committed while the ciphertext it
+    refers to was still in the page cache.
+
+    Each directory is synced once rather than once per file - a pool of sixty
+    proxies lives beside sixty profiles in two directories, and paying for the
+    entry sixty times buys nothing.
+    """
+    from . import vault
+
+    directories = set()
+    for path, _site in vault.secret_files(Path(root)):
+        fsync_path(path, directory=False)
+        directories.add(path.parent)
+    for directory in sorted(directories):
+        sync_dir(directory)
+
+
+def commit(root, step, cfg: dict, new: dict, save_config) -> None:
+    """Move this data root into the generation `new` names. **The commit point.**
+
+    Every migration goes through here - `enable`, `rotate`, and the resumes of
+    both - because the defect this replaces was two paths disagreeing about
+    where the transaction ended.
+
+    `0.32.0` wrote the descriptor through a bare `save_config` callback, which
+    sits outside the migration's undo batch. So the two halves of one
+    transaction could be rolled back separately: a failure after the descriptor
+    landed put the *files* back to the old generation and left the *config*
+    naming the new one. Nothing on disk opened afterwards, and the retry read
+    the matching salt as a finished job and deleted the journal.
+
+    Ordering, and what each step buys:
+
+    1. the data, durable - so a crash after the descriptor commits cannot find
+       ciphertext still in cache;
+    2. the descriptor, written **through the batch** - so a failure here, or in
+       step 3, restores the config alongside the files rather than instead of
+       them;
+    3. the descriptor, durable - after this the new generation is the one the
+       store will serve, and the caller may drop the journal.
+
+    Before this returns, the root is in the old generation; after it, the new
+    one. The journal is what covers the gap between.
+    """
+    sync_data(root)
+    step.commit_config({**cfg, "vault": dict(new)}, save_config)
+    sync_config(root)
 
 
 def _finish_enable(root, cfg, new, save_config, password) -> bool:
@@ -359,9 +512,14 @@ def _finish_enable(root, cfg, new, save_config, password) -> bool:
 
     leftover = vault.plaintext_secrets(root)
     if not leftover:
+        # Enable is the one migration whose completion is decidable without a
+        # key: plaintext and ciphertext are distinguishable by looking. With
+        # every file readable and nothing readable left in them, the data is in
+        # the new generation and only the descriptor is outstanding.
+        sync_data(root)
         if not cfg.get("vault"):
             save_config({**cfg, "vault": dict(new)})
-            _sync_config(root)
+        sync_config(root)
         end_journal(root)
         return True
     if not password:
@@ -377,20 +535,13 @@ def _finish_enable(root, cfg, new, save_config, password) -> bool:
             "so it cannot be finished with it")
     with vault.migration(root, keep_journal=True) as step:
         step.encrypt_all(password, new["salt"])
-        _sync_secret_files(root)
-        save_config({**cfg, "vault": dict(new)})
-        _sync_config(root)
+        commit(root, step, cfg, new, save_config)
     return True
 
 
 def _finish_rotation(root, cfg, new, old, save_config, password, old_password) -> bool:
     from . import vault
 
-    current = cfg.get("vault") or {}
-    if current.get("salt") == new["salt"]:
-        # The descriptor committed; only `end_journal` was missed.
-        end_journal(root)
-        return True
     damaged = unreadable_secret_files(root)
     if damaged:
         raise VaultRecoveryRequired(
@@ -398,6 +549,24 @@ def _finish_rotation(root, cfg, new, old, save_config, password, old_password) -
             f"{len(damaged)} secret-bearing file(s) cannot be read: "
             f"{', '.join(p.name for p in damaged)}. The rotation is not finished "
             f"and its record is kept. Repair or restore those files first.")
+
+    current = cfg.get("vault") or {}
+    if (current.get("salt") == new["salt"] and password
+            and crypto.check_password(password, new["salt"], new.get("verifier"))):
+        # The descriptor names the new generation. Whether the *data* reached
+        # it is a different question, and this used to assume the answer: it
+        # dropped the journal on the matching salt alone. A rotation that was
+        # rolled back after the descriptor landed leaves exactly this state
+        # with every record still under the old key, so the only honest test is
+        # to open them.
+        if not unconverted(root, password, new["salt"]):
+            sync_data(root)
+            sync_config(root)
+            end_journal(root)               # nothing left but the cleanup
+            return True
+        # Some records are still behind. Fall through and finish the rotation
+        # properly - which needs the old password as well, because telling a
+        # moved record from a waiting one is a trial decryption.
     if not (password and old_password):
         raise VaultRecoveryRequired(
             "A master-password rotation was interrupted, so some secrets are "
@@ -415,25 +584,5 @@ def _finish_rotation(root, cfg, new, old, save_config, password, old_password) -
     with vault.migration(root, keep_journal=True) as step:
         step.rekey_all(old_password, (old or {}).get("salt"),
                        password, new["salt"], resume=True)
-        _sync_secret_files(root)
-        save_config({**cfg, "vault": dict(new)})
-        _sync_config(root)
+        commit(root, step, cfg, new, save_config)
     return True
-
-
-def _sync_secret_files(root) -> None:
-    """Every file the migration just rewrote, durably on disk.
-
-    The ordering the protocol promises is journal → data → descriptor →
-    journal removal. Syncing the journal alone proved only that the *plan*
-    survived a power cut, not the work it described: without this the
-    descriptor could be committed while the ciphertext it refers to was still
-    in the page cache.
-    """
-    from . import vault
-
-    for path, _site in vault.secret_files(Path(root)):
-        try:
-            fsync_path(path, directory=False)
-        except OSError:
-            raise

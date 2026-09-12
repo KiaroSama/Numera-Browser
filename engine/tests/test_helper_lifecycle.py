@@ -123,7 +123,10 @@ def test_an_unexpected_exception_still_ends_the_helper(wedged, watch, monkeypatc
         def spawn_then_break(argv, **kwargs):
             proc, tree = real_spawn(argv, **kwargs)
             watch["proc"], watch["tree"] = proc, tree
-            monkeypatch.setattr(proc, "communicate", explode)
+            # `wait`, not `communicate`: the wait that bounds a helper is the
+            # process's now, and draining its pipes is a separate bounded step
+            # - a grandchild holding the writers must not extend the deadline.
+            monkeypatch.setattr(proc, "wait", explode)
             return proc, tree
 
         monkeypatch.setattr(routes_browser.proctree, "spawn", spawn_then_break)

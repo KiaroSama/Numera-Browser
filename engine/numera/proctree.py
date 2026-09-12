@@ -493,6 +493,36 @@ def spawn(argv, **kwargs) -> tuple:
                       group=proc.pid, kind="pgid")
 
 
+#: Where a process records the separately sessioned leaders it creates, so
+#: whoever started *it* can end them. A driver started inside a helper gets its
+#: own job or session - on POSIX it leaves the helper's process group outright
+#: - so an empty outer tree proves nothing about the browser. Descendant
+#: walking cannot find it either: it is no longer a descendant of anything the
+#: owner can enumerate. A written record is what closes that.
+UNITS_ENV = "NUMERA_HELPER_UNITS"
+
+
+def _report_unit(tree: "Tree") -> None:
+    """Append this tree's durable identity to the owner's units file.
+
+    Best-effort by necessity - this runs in the middle of starting a browser
+    and must not be able to fail that - but the file is opened in append mode
+    and one record is one line, so a reader sees whole records or a partial
+    final line it can drop.
+    """
+    import json                    # local, as `_with_tree_env` does
+
+    path = os.environ.get(UNITS_ENV)
+    if not path:
+        return
+    try:
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"pid": tree.pid, "pidToken": tree.token,
+                                 "tree": tree.as_record()}) + "\n")
+    except OSError:                                           # pragma: no cover
+        pass
+
+
 def _spawn_leader(original, args, rest, kwargs) -> tuple:
     """`original(...)`, with the child made the leader of a new tree.
 
@@ -501,6 +531,9 @@ def _spawn_leader(original, args, rest, kwargs) -> tuple:
     is the microseconds between the call returning and the assignment, and a
     browser driver spends the first of its life reading its own arguments - it
     starts a browser only when asked, which is a message away.
+
+    The new tree is reported to whoever started this process, because it is not
+    reachable from theirs: it is its own session by construction.
     """
     if _WINDOWS:
         name = f"numera-session-{uuid.uuid4().hex}"
@@ -526,12 +559,15 @@ def _spawn_leader(original, args, rest, kwargs) -> tuple:
                 f"the browser driver could not be put in its job object, so "
                 f"it was stopped rather than left owning a browser nothing "
                 f"could account for (pid {proc.pid}).")
-        return proc, Tree(pid=proc.pid, token=identify(proc),
-                          group=name, kind="job")
+        tree = Tree(pid=proc.pid, token=identify(proc), group=name, kind="job")
+        _report_unit(tree)
+        return proc, tree
     kwargs = {**kwargs, "start_new_session": True}
     proc = original(args, *rest, **kwargs)
-    return proc, Tree(pid=proc.pid, token=identify(proc),
-                      group=proc.pid, kind="pgid")
+    tree = Tree(pid=proc.pid, token=identify(proc),
+                group=proc.pid, kind="pgid")
+    _report_unit(tree)
+    return proc, tree
 
 
 def _abandon(proc) -> None:

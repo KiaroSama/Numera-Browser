@@ -694,8 +694,21 @@ class _Batch:
 
     def write(self, path, data) -> None:
         path = Path(path)
-        self._undo.append((path, path.read_bytes() if path.exists() else None))
+        self.remember(path)
         write_json(path, data)
+
+    def remember(self, path) -> None:
+        """Join this file to the batch without writing it through the batch.
+
+        For a file some other code owns the writing of. The vault's descriptor
+        is the case: it is persisted by a caller-supplied `save_config`, which
+        takes its own lock and enforces its own transaction rule, so the batch
+        must not write it - but it is half of one transaction with the secret
+        files, and rolling only the other half back is what left a config
+        naming a generation the disk was not in.
+        """
+        path = Path(path)
+        self._undo.append((path, path.read_bytes() if path.exists() else None))
 
     def rollback(self) -> list:
         """Undo every write, and report the ones that could not be undone."""
