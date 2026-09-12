@@ -180,3 +180,163 @@ def test_a_mobile_import_does_not_get_desktop_browser_chrome():
     fp = profile_from_export(d)[0].fingerprint
     assert fp.is_mobile
     assert fp.viewport_height == 915 - 80, fp.viewport_height
+
+
+# --- an iPhone export is an iPhone profile ---------------------------------
+
+IPHONE_UA = ("Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) "
+             "AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/126.0.0.0 "
+             "Mobile/15E148 Safari/604.1")
+IPAD_UA = ("Mozilla/5.0 (iPad; CPU OS 17_6 like Mac OS X) "
+           "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 "
+           "Mobile/15E148 Safari/604.1")
+ANDROID_UA = ("Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36")
+
+
+def test_a_bare_ios_export_is_not_imported_as_windows():
+    """`_norm_os` had no iOS branch at all, so an export that says plainly
+    `"os": "iOS"` fell through to the Windows default: the imported profile
+    claimed Win32 and a desktop UA for a phone the user is trying to clone."""
+    prof, _ = profile_from_export({"name": "ip", "os": "iOS"})
+    assert prof.fingerprint.os == "ios", prof.fingerprint.os
+    assert prof.fingerprint.platform == "iPhone"
+
+
+def test_an_iphone_user_agent_is_not_imported_as_a_mac():
+    """Every iOS user agent says "like Mac OS X", which the macOS test matched
+    first - so an iPhone export became a desktop Mac, 88px of desktop browser
+    chrome and all."""
+    prof, _ = profile_from_export({"name": "i", "user_agent": IPHONE_UA,
+                                   "screen_resolution": "390x844"})
+    fp = prof.fingerprint
+    assert fp.os == "ios", fp.os
+    assert fp.is_mobile
+    assert fp.viewport_height == 844 - 113, fp.viewport_height
+
+
+def test_an_ipad_export_is_not_imported_as_a_desktop_mac():
+    """Same string, different device: "iPad" has to be recognised on its own."""
+    prof, _ = profile_from_export({"name": "t", "user_agent": IPAD_UA})
+    assert prof.fingerprint.os == "ios", prof.fingerprint.os
+
+
+def test_a_conflicting_os_field_does_not_turn_an_iphone_into_a_desktop():
+    """Exports disagree with themselves. Whichever side names iOS, the answer
+    is iOS - substituting Windows or macOS hands back a profile whose platform
+    contradicts the user agent it carries."""
+    ua_says = profile_from_export({"name": "c", "os": "Windows",
+                                   "user_agent": IPHONE_UA})[0].fingerprint
+    assert ua_says.os == "ios", ua_says.os
+    field_says = profile_from_export({"name": "c", "os": "iOS", "user_agent":
+                                      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                                      "Chrome/120.0.0.0 Safari/537.36"})[0].fingerprint
+    assert field_says.os == "ios", field_says.os
+
+
+def test_the_desktop_and_android_classifications_still_hold():
+    """The iOS branch sits in front of the others, so this pins every path it
+    could have swallowed - including the Android UA, which also says "Linux",
+    and a `navigator.platform` of "Linux armv8l" on an Android handset."""
+    cases = [
+        ({"os": "win"}, "windows"),
+        ({"user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36"},
+         "windows"),
+        ({"os": "mac"}, "macos"),
+        ({"os": "Darwin"}, "macos"),
+        ({"user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/128 Safari/537.36"},
+         "macos"),
+        ({"os_type": "linux"}, "linux"),
+        ({"os": "android"}, "android"),
+        ({"user_agent": ANDROID_UA}, "android"),
+        ({"navigator": {"platform": "Linux armv8l", "userAgent": ANDROID_UA}}, "android"),
+        ({}, "windows"),
+    ]
+    for payload, expected in cases:
+        got = profile_from_export({"name": "x", **payload})[0].fingerprint.os
+        assert got == expected, (payload, got)
+
+
+def test_an_imported_phone_is_a_coherent_phone():
+    """`is_mobile` was set from the OS but `maxTouchPoints` and
+    `devicePixelRatio` kept the dataclass defaults - 0 and 1.0 - so every
+    imported handset reported a touch screen it did not have and a 1x display.
+    Both values are stored and reach the launch, so this is what the site sees.
+    """
+    from numera.fingerprint import validate as coherence
+
+    for payload in ({"name": "a", "user_agent": ANDROID_UA, "screen_resolution": "412x915"},
+                    {"name": "i", "os": "iOS", "screen_resolution": "390x844"}):
+        fp = profile_from_export(payload)[0].fingerprint
+        assert fp.is_mobile, payload["name"]
+        assert fp.max_touch_points >= 1, payload["name"]
+        assert coherence(fp) == [], (payload["name"], coherence(fp))
+
+
+# --- a number a vendor invented must not abort the import ------------------
+
+def test_a_non_finite_number_falls_back_instead_of_raising():
+    """`_as_int` catches TypeError and ValueError, but `int(float("inf"))`
+    raises OverflowError - so "inf", "-inf" and "1e309" walked straight out of
+    the tolerant parser the module's whole contract rests on."""
+    from numera.importers import _as_int
+
+    for junk in ("inf", "-inf", "Infinity", "1e309", "nan", "9" * 400, "-5"):
+        assert _as_int(junk, 8) == 8, junk
+    assert _as_int(True, 8) == 8, "a flag is not a core count"
+    assert _as_int("8 cores", 8) == 8    # ordinary vendor junk, unchanged
+    assert _as_int("N/A", 8) == 8
+    assert _as_int("12", 8) == 12        # and the values that do parse still do
+    assert _as_int("8.9", 8) == 8
+    assert _as_int(0, 8) == 0
+
+
+def test_an_infinite_core_count_yields_a_plausible_profile():
+    """The fallback is the generated base for that OS, so the profile stays
+    coherent rather than carrying whatever survived the cast."""
+    from numera import devices
+
+    fp = profile_from_export({"name": "x", "os": "win",
+                              "navigator": {"hardwareConcurrency": "1e309",
+                                            "deviceMemory": "inf"}})[0].fingerprint
+    assert fp.hardware_concurrency in devices.HARDWARE["windows"]["cores"]
+    assert fp.device_memory in devices.HARDWARE["windows"]["memory"]
+
+
+def test_one_impossible_number_does_not_cost_the_whole_file(tmp_path):
+    """Import is whole-file or nothing, so the OverflowError did not leave a
+    partial import - it refused all forty-nine good profiles because of the
+    fiftieth. The tolerant path keeps the file importable."""
+    from numera.importers import import_file
+
+    src = tmp_path / "export.json"
+    src.write_text(json.dumps([GOLOGIN,
+                               {"name": "odd", "cores": "1e309"},
+                               MULTILOGIN]), encoding="utf-8")
+    store = ProfileStore(tmp_path / "store")
+
+    imported, skipped = import_file(src, store)
+
+    assert len(imported) == 3, [p.name for p, _ in imported]
+    assert skipped == []
+    assert len(store.list()) == 3
+
+
+def test_the_api_import_survives_the_same_number(tmp_path):
+    """The route runs the same parser, and an uncaught OverflowError there is a
+    500 with nothing written - the CLI and the API have to agree."""
+    import pytest
+
+    pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+    from numera.server import create_app
+
+    c = TestClient(create_app(data_dir=str(tmp_path), start_scheduler=False))
+    payload = json.dumps([{"name": "first"},
+                          {"name": "second", "navigator": {"deviceMemory": "1e309"}}])
+
+    r = c.post("/api/profiles/import", json={"text": payload})
+
+    assert r.status_code == 200, r.text
+    assert r.json()["imported"] == 2
+    assert {p["name"] for p in c.get("/api/profiles").json()} == {"first", "second"}

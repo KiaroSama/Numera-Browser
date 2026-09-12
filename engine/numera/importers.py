@@ -15,9 +15,9 @@ review, not a black box.
 
 from __future__ import annotations
 
-import re
-
 import json
+import math
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -60,14 +60,30 @@ def _chrome_from_ua(ua: str) -> str:
     return ".".join(parts[:4])
 
 
+# Tested in this order, and the order is the whole point: every iOS user agent
+# says "like Mac OS X" and every Android one says "Linux", so each device has to
+# be recognised before the family whose wording it borrows. Windows is the
+# answer for an export that names nothing recognisable.
+_OS_TOKENS = (
+    ("ios", ("ios", "iphone", "ipad", "ipod")),
+    ("android", ("android",)),
+    ("macos", ("mac", "os x", "darwin")),
+    ("linux", ("linux",)),
+)
+
+
 def _norm_os(value: Optional[str], ua: str = "") -> str:
+    """Which OS an export means, from its own field and its user agent.
+
+    iOS had no branch: a bare ``"os": "iOS"`` fell through to the Windows
+    default, and an iPhone or iPad user agent matched the macOS test first - so
+    a phone was imported as a desktop, with a platform contradicting the user
+    agent stored beside it.
+    """
     text = f"{value or ''} {ua}".lower()
-    if "mac" in text or "os x" in text or "darwin" in text:
-        return "macos"
-    if "android" in text:
-        return "android"
-    if "linux" in text and "android" not in text:
-        return "linux"
+    for key, tokens in _OS_TOKENS:
+        if any(token in text for token in tokens):
+            return key
     return "windows"
 
 
@@ -110,6 +126,12 @@ def _parse_proxy(d: dict) -> Optional[Proxy]:
     )
 
 
+# The only numbers this parser reads are CPU threads and RAM in gigabytes. No
+# browser reports either anywhere near this, so past it the export is holding
+# something that is not a hardware count.
+_MAX_HARDWARE = 4096
+
+
 def _as_int(value, fallback: int) -> int:
     """An int from whatever a vendor export happened to put there.
 
@@ -118,14 +140,20 @@ def _as_int(value, fallback: int) -> int:
     profiles before it already written. The module's contract is to be tolerant
     (see the header) and `_parse_resolution` already is; this is the same rule
     for the numeric fields.
+
+    The catch used to be `TypeError, ValueError`, which `int(float("inf"))`
+    is not: it raises `OverflowError`, so `"inf"`, `"-inf"`, `"1e309"` and a
+    400-digit integer went straight through the tolerant path and aborted the
+    import. One check now covers every shape of that - non-finite, negative or
+    past what hardware reports - and lands on the caller's coherent fallback.
     """
     try:
-        return int(str(value).strip())
+        number = float(str(value).strip())
     except (TypeError, ValueError):
-        try:
-            return int(float(str(value).strip()))
-        except (TypeError, ValueError):
-            return fallback
+        return fallback
+    if not math.isfinite(number) or not 0 <= number <= _MAX_HARDWARE:
+        return fallback
+    return int(number)
 
 
 def profile_from_export(d: dict) -> tuple[Profile, list[str]]:
@@ -179,9 +207,14 @@ def profile_from_export(d: dict) -> tuple[Profile, list[str]]:
         locale=locale,
         timezone=tz,
         languages=devices.LOCALES[locale][1],
-        is_mobile=os_key == "android",
+        is_mobile=os_key in devices.MOBILE_OS,
         seed=base.seed,
         fonts=base.fonts, cameras=base.cameras, microphones=base.microphones,
+        # A phone whose touch and pixel-ratio fields keep the dataclass
+        # defaults (0 and 1.0) reports a touch screen it does not have on a
+        # display no handset ships. Both are stored and reach the launch.
+        max_touch_points=base.max_touch_points,
+        device_pixel_ratio=base.device_pixel_ratio,
     )
 
     tags = _first(d, "tags", default=[]) or []

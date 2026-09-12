@@ -81,16 +81,45 @@ def _parse_bookmarks(raw) -> list[dict]:
     return out
 
 
+def _split_legacy_commas(line: str) -> list[str]:
+    """Split one line only where a comma cannot belong to the URL before it.
+
+    Two cases are unambiguous: the chunk after the comma names a scheme of its
+    own (``...,https://next``), or the entry so far has not reached a path,
+    query or fragment yet - and no host name contains a comma. Every other
+    comma is inside a path or a query string and stays there.
+    """
+    entries: list[str] = []
+    for chunk in line.split(","):
+        names_a_scheme = ":" in chunk.strip().split("/")[0]
+        still_a_host = entries and not any(
+            c in entries[-1].split("://", 1)[-1] for c in "/?#")
+        if entries and not (names_a_scheme or still_a_host):
+            entries[-1] += "," + chunk
+        else:
+            entries.append(chunk)
+    return entries
+
+
 def _parse_startup_urls(raw) -> list[str]:
-    """Accept a newline/comma/space-separated string (or list) of URLs and
-    return a clean list, adding a scheme where one is missing."""
-    if isinstance(raw, str):
-        raw = raw.replace(",", "\n")
+    """One URL per line (or per list entry), with a scheme added where one is
+    missing.
+
+    Every comma used to become a newline before splitting. That reads the
+    legacy ``a.test,b.test`` this field once accepted, and corrupts every URL
+    carrying a comma of its own: ``?q=red,blue`` became two startup tabs, the
+    second of them ``https://blue``. The legacy form still splits where it
+    cannot be one URL; see :func:`_split_legacy_commas`.
+    """
     urls = []
-    for u in _parse_lines(raw):
-        if "://" not in u and not u.startswith("about:"):
-            u = "https://" + u
-        urls.append(u)
+    for line in _parse_lines(raw):
+        for u in _split_legacy_commas(line):
+            u = u.strip()
+            if not u:
+                continue
+            if "://" not in u and not u.startswith("about:"):
+                u = "https://" + u
+            urls.append(u)
     return urls
 
 
