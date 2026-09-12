@@ -107,7 +107,14 @@ export const forWrite = (p) => {
   return { ...rest, proxy };
 };
 
-async function req(method, path, body) {
+/* The request itself, with this app's credential and this app's error
+ * reporting, returning the raw Response.
+ *
+ * Split out of `req` because not every protected route answers with JSON: an
+ * extension icon is image bytes. A second fetch written next to that one caller
+ * would be a second place for the token, the 401 handler and the `detail`
+ * unwrapping to drift out of step with this one. */
+async function send(method, path, body) {
   const res = await fetch(BASE + path, {
     method,
     headers: headers(body),
@@ -132,6 +139,11 @@ async function req(method, path, body) {
     }
     throw new ApiError(detail || `${method} ${path} → ${res.status}`, res.status, kind);
   }
+  return res;
+}
+
+async function req(method, path, body) {
+  const res = await send(method, path, body);
   return res.status === 204 ? null : res.json();
 }
 
@@ -160,9 +172,20 @@ export const api = {
   // What has been fetched from the store, with each one's real name. A folder
   // path ending in a 32-character id says nothing about which extension it is.
   installedExtensions: () => req("GET", "/api/extensions/installed"),
-  // The extension's own icon, straight out of its manifest. A URL rather than a
-  // fetch: <img> handles the loading and the failure, and the browser caches it.
-  extensionIcon: (path) => `${BASE}/api/extensions/icon?path=${encodeURIComponent(path)}`,
+  /* The extension's own icon, straight out of its manifest.
+   *
+   * Fetched, not handed to `<img src>`. That endpoint is protected, and the
+   * request an `<img>` makes is the browser's own - it carries no Authorization
+   * header and cannot be given one, so against any engine holding a token every
+   * icon came back 401 and fell back to the grey glyph while every other
+   * request on the same page authenticated. Putting the token in the query
+   * string would "work" and write the credential into every access log on the
+   * way, so it is a blob instead. The caller owns the object URL and revokes
+   * it; there is nothing else that can. */
+  extensionIcon: async (path) => {
+    const res = await send("GET", `/api/extensions/icon?path=${encodeURIComponent(path)}`);
+    return URL.createObjectURL(await res.blob());
+  },
   // Folders: a persisted list the sidebar and editor share. Rename/delete also
   // reassign the profiles that live in the folder.
   createFolder: (name) => req("POST", "/api/folders", { name }),

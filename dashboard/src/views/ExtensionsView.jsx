@@ -25,15 +25,36 @@ import { SectionHead } from "../ui";
  * The icon comes from the engine, which reads it out of the unpacked manifest -
  * so it is the real thing the browser shows, not a stand-in. It can still be
  * missing (no manifest yet, a folder that moved, an extension that declares no
- * usable icon), and a broken image is worse than a glyph, so `bad` falls back. */
+ * usable icon), and a broken image is worse than a glyph, so it falls back.
+ *
+ * The image is fetched through the API client rather than linked, because the
+ * route needs this app's bearer token and an `<img>` request cannot carry one
+ * (see api.js:extensionIcon). What comes back is an object URL this row owns:
+ * dropping it without revoking leaks the decoded image for the life of the
+ * document, so the effect frees it on unmount and before fetching another. */
 function ExtensionRow({ path, meta, index, busy, onRemove }) {
-  const [bad, setBad] = useState(false);
+  const [icon, setIcon] = useState("");
   const label = meta?.name || path;
+  const wanted = !!meta?.icon;
+
+  useEffect(() => {
+    if (!wanted) return undefined;
+    let url = "";
+    let live = true;
+    api.extensionIcon(path).then(made => {
+      // Unmounted while the bytes were in flight: free them and draw nothing.
+      if (!live) { URL.revokeObjectURL(made); return; }
+      url = made;
+      setIcon(made);
+    }).catch(() => { /* no icon, a moved folder, a dead token: the glyph stands in */ });
+    return () => { live = false; setIcon(""); if (url) URL.revokeObjectURL(url); };
+  }, [path, wanted]);
+
   return (
     <div className="ps-ext-row ps-rise" style={{ animationDelay: `${index * 45}ms` }}>
       <span className="ps-ext-ic">
-        {meta?.icon && !bad
-          ? <img className="ps-ext-logo" src={api.extensionIcon(path)} alt="" onError={() => setBad(true)} />
+        {icon
+          ? <img className="ps-ext-logo" src={icon} alt="" onError={() => setIcon("")} />
           : <Puzzle size={15} color={T.violet} />}
       </span>
       <span className="ps-ext-named" title={path}>

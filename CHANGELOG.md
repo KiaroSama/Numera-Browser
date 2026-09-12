@@ -4,6 +4,25 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+- Build every self-spawn through one frozen-aware command builder. A frozen
+  build's `sys.executable` is the application, not a Python interpreter, so
+  `-m numera` reached Numera's own CLI and every launch, stop, attach, warm-up,
+  probe, schedule and detached job failed in a portable build.
+- Give the finite browser-backed helpers an operation deadline
+  (`NUMERA_HELPER_TIMEOUT`, default 300s). A stalled helper is ended together
+  with the browser tree it started and the route answers 504, instead of
+  holding the request open indefinitely.
+- Bulk Launch no longer stops already-running profiles: it is launch-only and
+  treats a running session as skipped.
+- Fetch extension icons through the authenticated client and render them from a
+  managed blob URL, so they appear when the API requires a bearer token.
+- Report per-profile outcomes from bulk warm-up instead of swallowing every
+  failure and reporting success.
+- Resolve every bulk action, the selected counter and the delete confirmation
+  against the same global selection, so a filtered view can no longer delete
+  fewer profiles than the confirmation named.
+- Match tag search case-insensitively on both sides, and survive a non-string
+  legacy tag.
 - Include all four launch backends in desktop builds, with separate Playwright
   and Patchright binaries, Camoufox resources and GeoIP data. Local/internal
   builds can additionally include the Cloak binary explicitly.
