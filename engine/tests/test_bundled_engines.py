@@ -33,7 +33,15 @@ def bundle(tmp_path, monkeypatch):
     (root / 'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
     # The resolver mutates these directly. Register their original state even
     # when absent, so teardown cannot retain a fixture's browser/cache path.
-    for name in ('CLOAKBROWSER_BINARY_PATH', 'CLOAKBROWSER_CACHE_DIR'):
+    #
+    # `PLAYWRIGHT_BROWSERS_PATH` is here because these assertions are about
+    # what the *bundle* resolves to, and an explicit cache path always wins
+    # over it by design. Leaving it to the ambient environment made the
+    # result depend on how the suite was invoked: a run that exports it -
+    # which the live browser matrix needs on this machine - silently turned
+    # 'the bundle is broken, refuse' into 'the override is fine'.
+    for name in ('CLOAKBROWSER_BINARY_PATH', 'CLOAKBROWSER_CACHE_DIR',
+                 'PLAYWRIGHT_BROWSERS_PATH'):
         monkeypatch.setenv(name, '')
         monkeypatch.delenv(name)
     # The contract test needs the wrapper's enum shape, not a network-capable

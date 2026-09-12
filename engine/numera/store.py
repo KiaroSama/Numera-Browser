@@ -246,12 +246,17 @@ class ProfileStore(ConfigStore):
         # migration, `recover` raises `VaultRecoveryRequired` and this
         # constructor fails closed: a store whose config and disk disagree has
         # no honest answer to give.
+        self._recovering = False
         if vault.needs_recovery(self.root):
-            with transaction_lock(self.root):
-                vault.recover(self.root, self.get_config,
-                              self._save_config_locked,
-                              password=self._password,
-                              old_password=_resume_from)
+            self._recovering = True
+            try:
+                with transaction_lock(self.root):
+                    vault.recover(self.root, self.get_config,
+                                  self._save_config_locked,
+                                  password=self._password,
+                                  old_password=_resume_from)
+            finally:
+                self._recovering = False
 
     # ---- vault (encrypt-at-rest for secrets) -----------------------------
     # The fields worth encrypting: anything that grants access if leaked. Cookies
@@ -261,7 +266,39 @@ class ProfileStore(ConfigStore):
 
     def vault(self) -> Optional[dict]:
         """The vault descriptor ({salt, verifier}) if a password was ever set."""
+        self._refuse_unresolved()
         return self.get_config().get("vault")
+
+    def _refuse_unresolved(self) -> None:
+        """Stop an already-open store from using a root left mid-migration.
+
+        Opening is not the only moment that matters. A server that was already
+        running when *another* process started a migration and died would keep
+        reading and writing secrets under a descriptor that no longer describes
+        the disk - the constructor check cannot see that, because this store was
+        constructed before it happened.
+
+        Every secret read and write reaches `vault()`, which makes this the one
+        place that covers both. The cost on the ordinary path is a single
+        `exists()`: no journal is the normal state, and the full classification
+        runs only when the file is actually there.
+        """
+        # `getattr`, not the attribute: `vault()` is reachable from the
+        # constructor before the flag is assigned, and "still being built" is
+        # exactly the case this guard must not fire in.
+        if getattr(self, "_recovering", True):
+            return                       # this store *is* the one settling it
+        try:
+            if not vault.journal_path(self.root).exists():
+                return
+        except OSError:                                      # pragma: no cover
+            return
+        if vault.needs_recovery(self.root):
+            raise vault.VaultRecoveryRequired(
+                "another process left a vault migration unresolved under this "
+                "data root while this store was open, so its secrets can no "
+                "longer be read or written safely. Reopen the store (or restart "
+                "the server) to finish or refuse that migration.")
 
     def vault_enabled(self) -> bool:
         return self.vault() is not None

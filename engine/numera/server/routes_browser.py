@@ -25,8 +25,23 @@ from .. import sessions
 from ..paths import child_env, session_lease
 
 
-class HelperTimeout(RuntimeError):
-    """A finite browser-backed helper outran its deadline and was ended."""
+# The finite-helper lifecycle lives in `helpers`: spawning, the deadline, the
+# proof that the tree ended, and the registry of what could not be proved. It
+# is one responsibility and a large one, and this module is the routes.
+# Re-exported because `routes_browser.run_helper`, `HelperTimeout`,
+# `live_helpers` and `end_helpers` are the names the routes and the suites use.
+from .helpers import (                                          # noqa: E402,F401
+    Helper,
+    HelperShuttingDown,
+    HelperTimeout,
+    close_pipes,
+    end_helpers,
+    live_helpers,
+    reopen,
+    settle,
+    stragglers,
+)
+from . import helpers as _helpers                               # noqa: E402
 
 
 #: How long one browser-backed helper may take before it is ended.
@@ -35,135 +50,16 @@ class HelperTimeout(RuntimeError):
 #: align - not a session. Each starts a browser, so the budget has to cover a
 #: cold start on a slow machine; five minutes is far above anything healthy and
 #: only fires on a real stall. A long-lived session is not routed through here:
-#: it goes to `spawn_owner` and keeps its own managed lifecycle, which is why
-#: this is not a blanket timeout that could kill a browsing session.
+#: it goes to `spawn_owner` and keeps its own managed lifecycle.
 #:
-#: Overridable because "slow machine" is not a fixed quantity, and a user whose
-#: probe legitimately takes longer should raise the budget rather than lose the
-#: deadline entirely.
+#: Overridable because "slow machine" is not a fixed quantity.
 HELPER_TIMEOUT = float(os.environ.get("NUMERA_HELPER_TIMEOUT") or 300)
-
-#: Every helper tree started by this process and not yet proved finished.
-#:
-#: Sessions have `running`, which the shutdown hook walks; helpers had nothing.
-#: A helper that was mid-probe when the server stopped therefore left its
-#: browser behind - a process nothing was accounting for, which is the one
-#: condition `proctree` exists to prevent. They cannot share `running`: that
-#: maps a session pid to a `stop_session` that stamps `_last_active` and closes
-#: a scheduled occurrence, none of which is true of a probe.
-_LIVE: set = set()
-_LIVE_LOCK = threading.Lock()
-
-
-def live_helpers() -> list:
-    """The helper trees currently running. For shutdown and for tests."""
-    with _LIVE_LOCK:
-        return list(_LIVE)
-
-
-def _release(entry) -> None:
-    with _LIVE_LOCK:
-        _LIVE.discard(entry)
-
-
-def _close_pipes(proc) -> None:
-    """Close what `communicate` would have closed had it returned.
-
-    On the timeout path it does not return, so both pipes stayed open: one pair
-    of file objects and OS handles per wedged helper, held until the garbage
-    collector happened to run. Closing them directly is bounded; a second
-    `communicate` to drain them is not - it would block again on the same
-    child that just failed to finish.
-    """
-    for pipe in (proc.stdin, proc.stdout, proc.stderr):
-        if pipe is None:
-            continue
-        try:
-            if not pipe.closed:
-                pipe.close()
-        except OSError:                                  # pragma: no cover
-            pass
-
-
-def _end_quietly(proc, tree) -> bool:
-    """End a helper tree, reporting whether it could be proved gone."""
-    try:
-        proctree.end_session(proc, tree)
-    except ChildTerminationFailed:
-        return False
-    except Exception:                                    # noqa: BLE001
-        return False                                     # pragma: no cover
-    return True
-
-
-def end_helpers() -> list:
-    """End every helper still running. Returns those that could not be ended.
-
-    Registered as an application shutdown hook, beside the one that stops
-    sessions. Returning the stragglers rather than raising keeps a single stuck
-    probe from stranding the ones after it, while still letting the caller say
-    something truthful about what is left.
-    """
-    stuck = []
-    for proc, tree in live_helpers():
-        if not _end_quietly(proc, tree):
-            stuck.append(getattr(proc, "pid", None))
-        _close_pipes(proc)
-        _release((proc, tree))
-    return stuck
 
 
 def run_helper(cli, timeout: float = None, env=None):
-    """Run a finite helper command, bounded, and end its whole tree if it stalls.
-
-    `subprocess.run(timeout=...)` would bound the *wait* and not the work: it
-    kills the direct child, and the browser that child started is three
-    processes further down and survives it. So the helper is spawned into a
-    tree it owns (`proctree.spawn`) and, on timeout, that tree is ended - which
-    is the same primitive a session stop uses, and the only one that can say
-    the browser is actually gone.
-
-    Returns a `CompletedProcess`, including for a non-zero exit: a failing
-    proxy test is a result its caller reads, not a broken command.
-    """
-    budget = HELPER_TIMEOUT if timeout is None else timeout
-    proc, tree = proctree.spawn(
-        cli, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        stdin=subprocess.DEVNULL, text=True, env=env,
-    )
-    entry = (proc, tree)
-    with _LIVE_LOCK:
-        _LIVE.add(entry)
-    try:
-        try:
-            out, err = proc.communicate(timeout=budget)
-        except subprocess.TimeoutExpired:
-            # The wait is over; the work may not be. End the tree before
-            # reporting, so the caller is told about a helper that is really
-            # finished.
-            if not _end_quietly(proc, tree):
-                raise HelperTimeout(
-                    f"a browser helper did not finish within {budget:.0f}s and "
-                    f"could not be fully stopped; its browser may still be "
-                    f"running") from None
-            raise HelperTimeout(
-                f"a browser helper did not finish within {budget:.0f}s and was "
-                f"stopped. Raise NUMERA_HELPER_TIMEOUT if this machine needs "
-                f"longer, or check whether the profile's proxy is answering."
-            ) from None
-        return subprocess.CompletedProcess(cli, proc.returncode, out or "", err or "")
-    except BaseException:
-        # Everything that is neither "finished" nor "timed out": a cancelled
-        # request, a KeyboardInterrupt, a failure inside the branch above. None
-        # of them ran any cleanup before, so the browser the helper started was
-        # simply left running.
-        _end_quietly(proc, tree)
-        raise
-    finally:
-        # `communicate` closes the pipes when it returns and not when it
-        # raises, so this is the only path that covers both.
-        _close_pipes(proc)
-        _release(entry)
+    """Run a finite helper command under the module deadline. See `helpers`."""
+    return _helpers.run_helper(
+        cli, HELPER_TIMEOUT if timeout is None else timeout, env=env)
 
 
 def register(app, ctx):
@@ -176,6 +72,11 @@ def register(app, ctx):
 
     engine_store, dash, running, attached, is_running, decorate, stop_session = ctx.engine_store, ctx.dash, ctx.running, ctx.attached, ctx.is_running, ctx.decorate, ctx.stop_session
     spawn_owner, materialize_current = ctx.spawn_owner, ctx.materialize_current
+
+    # A new app is a new server lifetime, so the shutdown latch a previous one
+    # left closed does not apply to it. Opening here pairs with the hook below:
+    # the same object opens the door and closes it.
+    reopen()
 
     # Beside the hook that stops sessions. A probe holds a browser exactly as a
     # session does, and until this existed the server could exit while one was

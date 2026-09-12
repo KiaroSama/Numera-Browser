@@ -203,6 +203,18 @@ jobs:
         with:
           workspaces: desktop/src-tauri
 
+      # Explicit, and the same version the dashboard job pins. This step used
+      # the runner's ambient Node, so the Rust job's dashboard build ran on
+      # whatever the image happened to ship - a different toolchain from the
+      # one that actually gates the dashboard, and one that changes under us
+      # when the image is updated.
+      - uses: actions/setup-node@v7
+        with:
+          # vite 8 needs ^20.19 || >=22.12; 22 keeps real headroom.
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
       # The shell reads the dashboard from a directory Tauri expects to exist.
       - name: Build the dashboard
         working-directory: dashboard

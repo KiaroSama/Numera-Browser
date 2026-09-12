@@ -272,6 +272,15 @@ numera vault change                        # rotate the master password
 numera vault resume                        # finish a rotation that was interrupted
 ```
 
+**If the recovery record itself is damaged** — `vault-migration.json` unreadable,
+or written by a newer Numera — the store refuses to open and **nothing is
+deleted**. That file is the only record of the salt the ciphertext beside it is
+under, so it is never cleared automatically. Restore the data directory from a
+backup, or, if the secrets are known to be intact, remove that one file
+deliberately to accept the config as it stands. The same applies when a
+secret-bearing file will not parse: whether the migration finished cannot be
+established, so it is not declared finished.
+
 **If a migration is interrupted** — a power cut, a closed lid, `kill -9` — the
 next open finishes it or refuses, and never reports an enabled vault over
 credentials that are still readable. Enabling resumes on its own: open the

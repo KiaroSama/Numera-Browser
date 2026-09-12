@@ -36,7 +36,7 @@ import time
 import uuid
 from typing import Callable, Optional
 
-from . import vault
+from . import vault, write_contract
 from .convert import to_dashboard_profile, to_engine_profile
 from .models import Profile, Proxy
 from .paths import _lock_for, transaction_lock, write_batch
@@ -756,23 +756,22 @@ class ProfileRepo:
         later, and a list or a dict name raised `TypeError: unhashable type`
         out of the uniqueness check rather than being refused by name.
 
-        Only the name, and only on write. A name is the profile's identity on
-        every surface - `resolve(name)`, the uniqueness check, the GUI's
-        `p.name.toLowerCase()` - and all of them assume text; the API import
-        route validates the whole writable schema, but `numera import-from`
-        reaches this code with whatever the vendor file said.
+        The rule itself is `write_contract`, shared with the API. It used to be
+        the name and nothing else, so `tags: [{}]` was refused over HTTP and
+        accepted by `numera import-from`: two doors into one store disagreeing
+        about what a profile is. Text fields, list elements and numeric bounds
+        are now the same question wherever it is asked, and the module carries
+        no optional dependency so the engine can import it with no server extra
+        installed.
 
         Not in `Profile.__post_init__`, deliberately: that would also refuse to
         *load* a record written before this check existed, which turns one bad
         stored profile into an unreadable store. Reading stays tolerant and is
         repaired by `routes_profiles.readable`; writing is what refuses.
         """
-        for profile in profiles:
-            if not isinstance(getattr(profile, "name", None), str):
-                raise ValueError(
-                    f"a profile name must be text, not "
-                    f"{type(getattr(profile, 'name', None)).__name__} "
-                    f"({getattr(profile, 'name', None)!r}). Nothing was written.")
+        for i, profile in enumerate(profiles):
+            write_contract.require(
+                profile, where=f"profiles[{i}]" if len(profiles) > 1 else "profile")
 
     def _records(self, profile: Profile) -> tuple:
         """The exact contents both copies of one profile are about to get.
