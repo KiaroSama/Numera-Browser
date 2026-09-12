@@ -242,17 +242,28 @@ export default function App() {
     return () => { cancelled = true; clearInterval(id); };
   }, [live, editor, bulk, sync, pollEvery, refresh]);
 
-  const filtered = useMemo(() =>
-    profiles.filter(p =>
+  // `q` is lowered once, and so is each tag it is compared against. Only the
+  // query used to be lowered, so a profile tagged "Work" could not be found by
+  // typing work, Work or WORK - the first two missed on case and the third
+  // missed because the query itself had already been lowered. The stored tag
+  // keeps its own capitalisation; only the copy being compared is normalised.
+  //
+  // A tag that is not a string is skipped rather than matched. Legacy records
+  // can hold a number there, and `t.includes` threw - inside this memo, which
+  // runs above the error boundary, so one bad record blanked the application
+  // instead of degrading a view.
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase();
+    return profiles.filter(p =>
       (folder === "All profiles" || p.folder === folder) &&
-      (p.name.toLowerCase().includes(query.toLowerCase()) ||
-       p.tags.some(t => t.includes(query.toLowerCase()))) &&
+      (p.name.toLowerCase().includes(q) ||
+       (p.tags || []).some(t => typeof t === "string" && t.toLowerCase().includes(q))) &&
       (!filters.status || p.status === filters.status) &&
       (!filters.engine || (p.engine || "playwright") === filters.engine) &&
       (!filters.os || p.os === filters.os) &&
       (!filters.tag || (p.tags || []).includes(filters.tag)) &&
-      (!filters.proxy || (filters.proxy === "with" ? !!p.proxy : !p.proxy))),
-    [profiles, folder, query, filters]);
+      (!filters.proxy || (filters.proxy === "with" ? !!p.proxy : !p.proxy)));
+  }, [profiles, folder, query, filters]);
 
   // Every distinct tag in use, for the filter popover.
   const allTags = useMemo(
@@ -521,7 +532,7 @@ export default function App() {
               and toolbar live outside, so navigation survives a bad profile. */}
           <ErrorBoundary resetKey={view}>
           {view === "profiles" && (
-            <ProfilesView {...{ filtered, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, remove, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }} />
+            <ProfilesView {...{ filtered, profiles, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, remove, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }} />
           )}
           {view === "health" && <HealthView profiles={profiles} live={live} refresh={refresh} setEditor={setEditor} />}
           {view === "engines" && <EnginesView engines={engines} live={live} />}

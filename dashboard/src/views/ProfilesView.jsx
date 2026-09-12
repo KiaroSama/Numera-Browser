@@ -1,6 +1,6 @@
 /* The profile list: search, filter, select, run, edit. */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Copy, Download, Filter, Flame, FolderTree, Layers, Pencil, Play, Plus, Search, ShieldAlert, ShieldCheck, Square, Trash2, Wifi, WifiOff, X } from "lucide-react";
 import { api } from "../api";
 import { T } from "../theme";
@@ -81,12 +81,63 @@ function FilterRow({ label, options, value, onPick }) {
   );
 }
 
-function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }) {
+/* How many sessions a bulk action opens at once.
+ *
+ * Each one is a real browser, so `Promise.all` over a selection was not
+ * concurrency, it was a fork bomb with a progress bar: 200 selected profiles
+ * meant 200 Chromiums starting in the same instant. Four keeps a large
+ * selection moving without the machine going under. */
+const AT_ONCE = 4;
+
+/* Run `task` over every item, at most `limit` in flight, settling all of them.
+ *
+ * `Promise.all` also abandons the remaining results the moment one rejects,
+ * which is half of why a partial failure could be reported as a success. */
+async function pool(items, limit, task) {
+  const out = [];
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      try { await task(items[i]); out[i] = { ok: true, id: items[i] }; }
+      catch (error) { out[i] = { ok: false, id: items[i], error }; }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+function ProfilesView({ filtered, profiles, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }) {
   const [filterOpen, setFilterOpen] = useState(false);
   // Deleting a profile destroys its browser session too, so it asks first -
   // it used to go the moment the bin was clicked, with no way back.
   const [confirm, setConfirm] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [busy, setBusy] = useState(false);   // a bulk session action is in flight
+
+  /* SELECTION SCOPE - one policy, every bulk action.
+   *
+   * The selection is global: filtering changes what is *shown* and never what
+   * is selected, and every action resolves the whole selection against the full
+   * list. Export and Delete used to resolve against `filtered` while Launch and
+   * Warm-up used the raw selection, so "3 selected" could export two profiles
+   * and - with no undo and no explanation - delete one. */
+  const byId = useMemo(() => new Map(profiles.map(p => [p.id, p])), [profiles]);
+  const selected = useMemo(() => [...sel].map(id => byId.get(id)).filter(Boolean), [sel, byId]);
+
+  /* Say what actually happened, and leave the failures selected so the action
+   * can simply be pressed again. Reporting nothing was the warm-up bug. */
+  const reportBulk = (verb, results, skipped, skipNote) => {
+    const failed = results.filter(r => !r.ok);
+    const done = results.length - failed.length;
+    setSel(new Set(failed.map(r => r.id)));
+    const note = skipped ? ` ${skipped} ${skipNote}.` : "";
+    if (failed.length) {
+      toast.error(`${verb} ${done} of ${results.length}. ${failed.length} failed: ${failed[0].error.message}.${note}`);
+    } else {
+      toast.success(`${verb} ${done} profile${done === 1 ? "" : "s"}.${note}`);
+    }
+  };
   const activeFilters = Object.values(filters).filter(Boolean).length;
   const setFilter = (key, value) => setFilters(f => ({ ...f, [key]: f[key] === value ? "" : value }));
   const clearFilters = () => setFilters({ status: "", engine: "", os: "", proxy: "", tag: "" });
@@ -150,23 +201,59 @@ function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSe
     });
   };
 
+  /* Launch, and only launch.
+   *
+   * This called the row's toggle for every selected id, and the row toggle
+   * *stops* a profile that is running - so pressing Launch on a mixed selection
+   * started some sessions and killed the rest, losing whatever they held. An
+   * already-running profile is now a skip: launching is idempotent. */
+  const launchSelected = async () => {
+    if (busy) return;
+    if (!selected.length) { toast.info("Those profiles are no longer in the list."); return; }
+    const idle = selected.filter(p => p.status !== "running");
+    const skipped = selected.length - idle.length;
+    if (!idle.length) {
+      toast.info(`All ${skipped} selected profile${skipped === 1 ? " is" : "s are"} already running.`);
+      return;
+    }
+    if (!live) {
+      const ids = new Set(idle.map(p => p.id));
+      setProfiles(ps => ps.map(p => ids.has(p.id) ? { ...p, status: "running", lastActive: "now" } : p));
+      setSel(new Set());
+      return;
+    }
+    setBusy(true);
+    try {
+      reportBulk("Launched", await pool(idle.map(p => p.id), AT_ONCE, id => api.launch(id)),
+                 skipped, "already running");
+    } finally { setBusy(false); }
+    await refresh();
+  };
+
   // Warm up every selected profile (live only — it opens real headless browsers).
+  // Each rejection used to go into an empty catch while the selection was
+  // cleared up front, so a run in which every profile failed - a busy session, a
+  // locked credential, a missing engine - finished looking exactly like success,
+  // with nothing left selected to retry.
   const warmSelected = async () => {
-    const ids = [...sel];
+    if (busy) return;
     if (!live) { toast.info("Warm-up runs against the live engine — start `numera serve` first."); return; }
-    setSel(new Set());
-    await Promise.all(ids.map(id => api.warmup(id, 5, "general").catch(() => {})));
+    if (!selected.length) { toast.info("Those profiles are no longer in the list."); return; }
+    setBusy(true);
+    try {
+      reportBulk("Warmed up", await pool(selected.map(p => p.id), AT_ONCE, id => api.warmup(id, 5, "general")),
+                 sel.size - selected.length, "no longer exist");
+    } finally { setBusy(false); }
     await refresh();
   };
 
   // Export the selected profiles as one JSON file (config: fingerprint, proxy,
   // tags — not the browser session; use `numera backup` for a full session).
   const exportSelected = () => {
-    const chosen = filtered.filter(p => sel.has(p.id));
-    const blob = new Blob([JSON.stringify(chosen, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(selected, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `numera-profiles-${chosen.length}.json`; a.click();
+    a.href = url; a.download = `numera-profiles-${selected.length}.json`; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -187,14 +274,16 @@ function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSe
         </div>
         <div className="ps-crumb"><FolderTree size={13} /> {folder}</div>
         <div style={{ flex: 1 }} />
-        {sel.size > 0 && (
+        {selected.length > 0 && (
           <div className="ps-bulkbar">
-            <span>{sel.size} selected</span>
-            <button onClick={() => { sel.forEach(toggleRun); setSel(new Set()); }}><Play size={13} /> Launch</button>
-            <button onClick={warmSelected}><Flame size={13} /> Warm up</button>
+            {/* The count is what every button below acts on - the same resolved
+                selection, filter or no filter. */}
+            <span>{selected.length} selected</span>
+            <button disabled={busy} onClick={launchSelected}><Play size={13} /> Launch</button>
+            <button disabled={busy} onClick={warmSelected}><Flame size={13} /> Warm up</button>
             <button onClick={() => setSync(true)}><Copy size={13} /> Edit all</button>
             <button onClick={exportSelected}><Download size={13} /> Export</button>
-            <button className="danger" onClick={() => askDelete([...sel].map(id => filtered.find(p => p.id === id)).filter(Boolean))}><Trash2 size={13} /> Delete</button>
+            <button className="danger" onClick={() => askDelete(selected)}><Trash2 size={13} /> Delete</button>
           </div>
         )}
         <div className="ps-filter-wrap">
@@ -250,7 +339,15 @@ function ProfilesView({ filtered, query, setQuery, folder, sel, setSel, toggleSe
             <thead>
               <tr>
                 <th style={{ width: 34 }}>
-                  <input type="checkbox" checked={allSel} onChange={() => setSel(allSel ? new Set() : new Set(filtered.map(p => p.id)))} />
+                  {/* Adds or removes the rows on screen and leaves the rest of
+                      the selection alone, because a filter never decides what is
+                      selected - replacing the whole set here silently dropped
+                      every selected profile the current filter was hiding. */}
+                  <input type="checkbox" checked={allSel} onChange={() => setSel(s => {
+                    const next = new Set(s);
+                    for (const p of filtered) allSel ? next.delete(p.id) : next.add(p.id);
+                    return next;
+                  })} />
                 </th>
                 <th>Profile</th><th>Environment</th><th>Engine</th><th>Proxy</th>
                 <th>Coherence</th><th>Last active</th><th style={{ width: 150, textAlign: "right" }}>Actions</th>
