@@ -18,13 +18,15 @@ Adding a secret-bearing file to the product means adding a line to ``SITES``.
 from __future__ import annotations
 
 import json
+import os
+import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator, Optional
 
-from . import crypto
-from .paths import RollbackFailed, _Batch
+from . import crypto, proctree
+from .paths import RollbackFailed, _Batch, write_json
 
 
 @dataclass(frozen=True)
@@ -174,18 +176,127 @@ class _Migration:
         return self._batch.rollback()
 
 
+def journal_path(root) -> Path:
+    """Where a migration records what it is about to do.
+
+    Next to the config it commits into, so the two are lost or kept together.
+    """
+    return Path(root) / "vault-migration.json"
+
+
+def begin_journal(root, op: str, salt: str, verifier: str) -> None:
+    """Record the commit *before* the first destructive write.
+
+    `_Batch` keeps its undo bytes in memory and `migration()` rolls back from
+    an `except` clause. Neither exists after `kill -9`, a power cut or a closed
+    lid - and the window between "every secret file now holds new ciphertext"
+    and "the config names the salt" is exactly where that leaves an
+    unrecoverable store: the bytes are encrypted and the only key material was
+    in RAM.
+
+    So the salt and verifier go to disk first. Recovery then rolls *forward* -
+    the files are already encrypted under this salt, and committing the
+    descriptor is what makes them readable again.
+
+    What is deliberately NOT written here: the master password, and any
+    plaintext secret. Rolling backward would need the plaintext on disk, which
+    is a worse bug than the one this fixes. The salt and verifier are the same
+    two values `config.json` holds openly once the vault is on.
+    """
+    write_json(journal_path(root),
+               {"op": op, "salt": salt, "verifier": verifier,
+                "started": time.time(),
+                # Who is doing it, so a *concurrent* reader can tell a
+                # migration in flight from one that was abandoned. Without
+                # this, opening a store during a live migration "recovered" it
+                # - committing a descriptor the migration had not reached yet.
+                "pid": os.getpid(), "token": proctree.started_at(os.getpid())})
+
+
+def end_journal(root) -> None:
+    """Drop the journal. The migration either committed or was rolled back."""
+    try:
+        journal_path(root).unlink(missing_ok=True)
+    except OSError:                                          # pragma: no cover
+        pass
+
+
+def needs_recovery(root) -> bool:
+    """Is there an abandoned migration to finish? Asked before taking any lock.
+
+    The liveness check has to happen out here. A migration holds the root
+    transaction for its whole run, so a reader that took that lock first and
+    asked afterwards would simply block in its constructor until the migration
+    finished - which is not recovery, it is a stall on every concurrent read.
+    """
+    try:
+        record = json.loads(journal_path(root).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    if not isinstance(record, dict) or not record.get("salt"):
+        return False                                         # pragma: no cover
+    owner = record.get("pid")
+    if owner and owner != os.getpid() and proctree.alive(owner, record.get("token")):
+        return False                    # still running; nothing to repair
+    return True
+
+
+def recover(root, get_config, save_config) -> bool:
+    """Finish a migration that was killed before it could commit.
+
+    True when something was recovered. Called on every store open, which is
+    the only moment that reliably follows a crash.
+
+    Three states, and only one of them is a repair:
+
+    * no journal - nothing happened, or everything finished;
+    * a journal and the config already names a vault - the commit landed and
+      the process died before cleaning up, so only the journal goes;
+    * a journal and no vault in the config - the descriptor never committed.
+      The secret files already hold ciphertext under the journal's salt, so
+      writing that descriptor is what makes them openable. That is the repair.
+    """
+    path = journal_path(root)
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    if not isinstance(record, dict) or not record.get("salt"):
+        end_journal(root)                                    # pragma: no cover
+        return False
+    # Still running? Then this is not a crash and there is nothing to repair.
+    # A reader that opened the store mid-migration used to commit the
+    # descriptor out from under the process still doing the work.
+    owner = record.get("pid")
+    if owner and owner != os.getpid() and proctree.alive(owner, record.get("token")):
+        return False
+    cfg = get_config()
+    if cfg.get("vault"):
+        end_journal(root)
+        return False
+    save_config({**cfg, "vault": {"salt": record["salt"],
+                                  "verifier": record.get("verifier")}})
+    end_journal(root)
+    return True
+
+
 @contextmanager
 def migration(root: Path):
     """Run a migration that undoes itself if anything inside the block fails.
 
     The config write belongs *inside* the block: the vault becoming visible is
     the last step, and if it fails the encryption has to come back off.
+
+    The journal is separate from that rollback and covers the case rollback
+    cannot: a kill that runs no `except` at all. It is cleared on both exits,
+    so a rolled-back migration leaves nothing for `recover()` to act on.
     """
     step = _Migration(root)
     try:
         yield step
     except BaseException as exc:
         failures = step.rollback()
+        end_journal(root)
         if failures:
             # Worse here than anywhere else: a half-restored migration leaves
             # some secrets under the new key and some under the old, and the
@@ -193,6 +304,7 @@ def migration(root: Path):
             # told which files, not just that the migration failed.
             raise RollbackFailed(exc, failures) from exc
         raise
+    end_journal(root)
 
 
 # --------------------------------------------------------------------------

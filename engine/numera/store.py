@@ -228,6 +228,19 @@ class ProfileStore(ConfigStore):
         # The master password comes from the caller or the environment, so a
         # launched subprocess inherits it without it ever hitting disk.
         self._password = password or os.environ.get("NUMERA_PASSWORD") or None
+        # A migration killed before it committed leaves encrypted files and a
+        # config that says there is no vault. Opening the store is the first
+        # moment after a crash that reliably runs, so the repair happens here.
+        #
+        # The existence check comes first so the ordinary open - no journal,
+        # which is every open but the one after a crash - costs a stat and not
+        # a lock. The lock is required for the repair itself: replacing the
+        # config wholesale outside the transaction that read it is exactly what
+        # `_save_config_locked` refuses, and rightly.
+        if vault.needs_recovery(self.root):
+            with transaction_lock(self.root):
+                vault.recover(self.root, self.get_config,
+                              self._save_config_locked)
 
     # ---- vault (encrypt-at-rest for secrets) -----------------------------
     # The fields worth encrypting: anything that grants access if leaked. Cookies
@@ -283,11 +296,16 @@ class ProfileStore(ConfigStore):
                 raise RuntimeError("A vault is already set up. Use `numera vault change` "
                                    "to rotate the master password.")
             salt = crypto.new_salt()
+            verifier = crypto.make_verifier(password, salt)
+            # Before a single secret file is touched. `migration()` rolls back
+            # from an `except`, which a hard kill never reaches - and the
+            # window between "files encrypted" and "config names the salt" is
+            # where that used to strand ciphertext nothing could ever open.
+            vault.begin_journal(self.root, "enable", salt, verifier)
             with vault.migration(self.root) as step:
                 converted = step.encrypt_all(password, salt)
                 cfg = self.get_config()
-                cfg["vault"] = {"salt": salt,
-                                "verifier": crypto.make_verifier(password, salt)}
+                cfg["vault"] = {"salt": salt, "verifier": verifier}
                 self._save_config_locked(cfg)
             self._password = password
             return converted
