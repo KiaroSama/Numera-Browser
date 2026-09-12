@@ -110,6 +110,32 @@ fn free_port() -> std::io::Result<u16> {
     Ok(TcpListener::bind(("127.0.0.1", 0))?.local_addr()?.port())
 }
 
+/// Where the portable build should keep its data, or `None` to let the engine
+/// decide for itself.
+///
+/// `None` in two cases, and both of them are the engine being better informed
+/// than the shell:
+///
+/// * `NUMERA_DATA_DIR` is set - the user has already answered this question,
+///   and an explicit `--data-dir` would quietly overrule them;
+/// * the portable location cannot be written - an install under Program Files,
+///   a read-only mount - where the engine falls back to per-user storage and
+///   the shell forcing an unwritable path would just fail to start.
+///
+/// Nothing is migrated or removed here; this only chooses what to pass.
+fn portable_data_dir(dir: &std::path::Path) -> Option<PathBuf> {
+    if std::env::var_os("NUMERA_DATA_DIR").is_some() {
+        return None;
+    }
+    let data = dir.join("data");
+    // Creating it is the writability test: `metadata().permissions()` does not
+    // answer this on Windows, where the ACL and not the read-only bit decides.
+    match std::fs::create_dir_all(&data) {
+        Ok(()) => Some(data),
+        Err(_) => None,
+    }
+}
+
 fn engine_command(port: u16) -> Result<Command, String> {
     let port = port.to_string();
     let serve = ["serve", "--host", "127.0.0.1", "--port"];
@@ -130,11 +156,21 @@ fn engine_command(port: u16) -> Result<Command, String> {
         // Data goes beside the shell, not inside engine/. Left to its own
         // default it lands next to the engine binary, so replacing engine/ on
         // an update would take the user's profiles with it.
+        //
+        // But this used to be passed UNCONDITIONALLY, and an explicit argument
+        // outranks everything in the engine's own resolution order. That made
+        // NUMERA_DATA_DIR silently ineffective from the desktop app, and it
+        // removed the engine's fallback for an install location it cannot
+        // write - so a copy under Program Files could fail to start with
+        // nowhere else to go. `portable_data_dir` decides instead: nothing is
+        // passed when the user has already said where data lives, or when the
+        // portable spot is not writable and the engine's per-user fallback is
+        // the better answer.
         // --data-dir is a global flag, so it has to precede the subcommand.
-        cmd.arg("--data-dir")
-            .arg(dir.join("data"))
-            .args(serve)
-            .arg(&port);
+        if let Some(data) = portable_data_dir(dir) {
+            cmd.arg("--data-dir").arg(data);
+        }
+        cmd.args(serve).arg(&port);
         return Ok(cmd);
     }
 
@@ -444,6 +480,60 @@ mod tests {
         }
         let _ = child.kill();
         panic!("the child outlived the job");
+    }
+
+    /// The shell used to pass `--data-dir` unconditionally, and an explicit
+    /// argument outranks `NUMERA_DATA_DIR` in the engine's resolution order -
+    /// so a user who set it from the desktop app was quietly ignored.
+    #[test]
+    fn an_environment_override_is_left_to_the_engine() {
+        let tmp = std::env::temp_dir().join("numera-n15-env");
+        let _ = std::fs::create_dir_all(&tmp);
+        // SAFETY: single-threaded test process; restored immediately below.
+        unsafe { std::env::set_var("NUMERA_DATA_DIR", tmp.join("elsewhere")) };
+        let chosen = portable_data_dir(&tmp);
+        unsafe { std::env::remove_var("NUMERA_DATA_DIR") };
+
+        assert!(
+            chosen.is_none(),
+            "the shell overruled the user's own NUMERA_DATA_DIR"
+        );
+    }
+
+    /// The ordinary portable case: data beside the shell, never inside
+    /// engine/, which an update replaces wholesale.
+    #[test]
+    fn a_writable_portable_root_keeps_data_beside_the_shell() {
+        let tmp = std::env::temp_dir().join("numera-n15-writable");
+        let _ = std::fs::create_dir_all(&tmp);
+        unsafe { std::env::remove_var("NUMERA_DATA_DIR") };
+
+        let chosen = portable_data_dir(&tmp).expect("a writable root got no data dir");
+
+        assert_eq!(chosen, tmp.join("data"));
+        assert!(chosen.is_dir(), "the chosen directory was not created");
+        assert!(
+            !chosen.starts_with(tmp.join("engine")),
+            "data was placed inside the replaceable engine directory"
+        );
+    }
+
+    /// An install the user cannot write - Program Files, a read-only mount.
+    /// Forcing the path there is what turned "fall back to per-user storage"
+    /// into "fail to start with nowhere to go".
+    #[test]
+    fn an_unwritable_root_defers_to_the_engines_own_fallback() {
+        unsafe { std::env::remove_var("NUMERA_DATA_DIR") };
+        // A path under a FILE cannot be created as a directory on any platform.
+        let tmp = std::env::temp_dir().join("numera-n15-file");
+        let _ = std::fs::write(&tmp, b"not a directory");
+
+        let chosen = portable_data_dir(&tmp.join("under-a-file"));
+
+        assert!(
+            chosen.is_none(),
+            "the shell forced a data dir it could not create"
+        );
     }
 
     #[test]
