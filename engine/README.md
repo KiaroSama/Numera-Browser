@@ -64,8 +64,17 @@ releases, so Numera Browser looks for each value under any of the names it's kno
 fills gaps from a coherent generated base, and runs `validate()` on the result.
 Anything that didn't line up is flagged for review; run `numera check <name>`
 to see the details. Treat an import as a reviewed starting point, not a
-guaranteed one-to-one copy. (Lands in the engine store / CLI; dashboard-side
-import isn't wired yet.)
+guaranteed one-to-one copy. (Lands in the engine store / CLI. The dashboard has
+its own Import button over the same importers.)
+
+**`import-from` refuses Numera's own export.** Being tolerant about a format you
+have never seen is right for somebody else's file and wrong for your own: fed a
+Numera export, the heuristics above read a fraction of it, generate a fresh
+fingerprint for the rest, and report a faithful import. So a native file is
+recognised and rejected by name — with or without a format version on it — and
+the message points at the dashboard, which reads it field for field. What comes
+back that way is the *configuration*, fingerprint seed included; the browser
+session is `numera backup`.
 
 ### Inspecting a profile
 
@@ -373,7 +382,7 @@ in place of the bearer header.
 | POST | `/api/profiles/bulk` | Apply one `patch` to many `ids` |
 | POST | `/api/profiles/batch` | Save many generated `profiles` at once (bulk create) |
 | POST | `/api/profiles/delete` | Delete many `ids` in one call; reports `removed`, `missing`, `failed` |
-| POST | `/api/profiles/import` | Import GoLogin/AdsPower/Multilogin export `text` |
+| POST | `/api/profiles/import` | Import a GoLogin/AdsPower/Multilogin export `text`, or a Numera export (`{"numeraProfiles": 1, "profiles": [...]}`), read field for field. An unversioned native file is refused rather than reinterpreted |
 | GET | `/api/proxies` | List the proxy pool, each entry with how many profiles use it |
 | POST | `/api/proxies` | Import proxies from `text` (or a `proxies` list) |
 | PUT | `/api/proxies/{id}` | Change one in place. A changed address resets its health status - the old verdict describes somewhere else |
