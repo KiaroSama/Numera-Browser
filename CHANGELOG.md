@@ -2,7 +2,13 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.33.0] - 2026-09-13
+
+Two rechecks of 0.32.0. The first kept four findings open; the second kept three
+of those still reachable at a boundary the repair had not covered. Every claim
+was reproduced at the real project boundary before anything changed, and the
+durability work turned up a defect neither recheck had found: on Windows the
+protocol had never synced anything at all.
 
 A recheck of 0.32.0 kept four findings open. Each was closed at the boundary the
 previous fix did not reach, and each moved to a module of its own rather than
