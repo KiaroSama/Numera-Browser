@@ -4,13 +4,84 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-09-12
+
+Seven of the seventeen findings `0.31.0` reported closed were only partly
+closed. A recheck found each of them still reachable at a boundary the first
+fix did not cover; every one was reproduced here before anything changed.
+
+- Finish an interrupted vault migration, or refuse to serve the store — never
+  commit the descriptor over whatever happens to be on disk. The journal
+  covered one crash point: a kill after the *last* secret file. A kill anywhere
+  earlier left credentials in plaintext and the next open marked the vault
+  enabled over them, which claims a protection that is not there. Recovery now
+  reads the disk: an enable whose files all landed still completes unattended,
+  one with plaintext left is finished with the master password or refused.
+- Journal the master-password rotation too, with both descriptors. It recorded
+  nothing at all, and the old `recover` deleted any journal whenever the config
+  named a vault — which during a rotation it always does — so a kill destroyed
+  the only copy of the new salt. `numera vault resume` finishes one; it needs
+  both passwords, because both states are ciphertext and nothing short of a
+  trial decryption tells them apart.
+- Keep the journal when a *resume* fails. Rolling back a resume restores the
+  half-migrated state a crash left, not a clean one, and that state still needs
+  the salt.
+- Record the authentication policy for data roots created before it existed.
+  Only minting a token wrote the marker, so an installation upgraded from
+  0.30.1 was protected only while its `tokens.json` stayed readable — deleting,
+  emptying or corrupting it turned the API anonymous. Existing credentials are
+  adopted into durable policy before the first request is served, and an
+  unreadable credential list or marker now means protected, not open.
+- Apply one write contract at every entry point. Three still bypassed it: an
+  integer too large for a float crashed the validator instead of being refused
+  by field, bulk tag operations raised on a non-string element before anything
+  checked it, and the vendor import wrote converted records with no schema
+  check at all — so `{"name": 123}` reached the dashboard, which calls
+  `.toLowerCase()` on it. Imports are refused whole, before either store is
+  written, naming the profile and the field.
+- Close the CLI import door as well. `numera import-from` is a fourth way in
+  and had no guard; the check now sits at the single primitive every engine
+  profile write reaches, so all four doors close at once.
+- Stop splitting a valid URL at an embedded comma. A scheme appearing after a
+  comma was read as a separator wherever the comma sat, so
+  `?targets=https://a,https://b` became two startup tabs and the path segment
+  `red,blue:green` became a second host. A comma now separates entries only
+  while the text before it is still a scheme and a host. An explicit list is
+  taken whole: a caller that sent a list already said where each entry ends.
+- Finish cleaning up after a browser helper, not just bound its wait. A timed
+  out helper left both pipes open, every other failure path ran no cleanup at
+  all, and nothing tracked a running helper — so a server that stopped
+  mid-probe left its browser behind. Helpers have their own registry and their
+  own shutdown hook now, beside the one that stops sessions.
+- Probe the portable data directory by writing to it. `create_dir_all` returns
+  success for a directory that already exists and cannot take a new file, so a
+  read-only or ACL-denied location was passed to the engine as an explicit
+  `--data-dir` it accepts verbatim. An unavailable portable location now falls
+  back to the per-user one by name, never into the engine directory an update
+  replaces.
+- Resolve the selection once for every bulk action. Edit all used the raw
+  selection while the toolbar used the resolved one, so a profile deleted in
+  another client left the toolbar reading "1 selected" above a modal offering
+  "Apply to 2". A partial edit is now reported as one.
+
 ## [0.31.0] - 2026-09-12
 
-Seventeen findings from one audit, closed together. Four of them could lose
-data or open a door on their own: a portable build that could not launch
-anything, a vault migration whose salt died with the process, an API that went
-anonymous when it lost its tokens, and a profile listing one bad record could
-take down. Each fix landed with the test that failed before it.
+Seventeen findings from one audit. Four of them could lose data or open a door
+on their own: a portable build that could not launch anything, a vault
+migration whose salt died with the process, an API that went anonymous when it
+lost its tokens, and a profile listing one bad record could take down. Each fix
+landed with the test that failed before it.
+
+> **Correction.** This entry originally said the seventeen were "closed
+> together". A recheck of this release found seven of them only partly closed:
+> the vault journal covered one crash boundary of several and no rotation at
+> all, the authentication policy was never recorded for data roots created
+> before it existed, three write paths still bypassed the field schema, valid
+> URLs were still split at embedded commas, the helper deadline ended the wait
+> without ending the helper's pipes or ownership, the portable data directory
+> was probed with a call that cannot detect an unwritable one, and one bulk
+> edit still used an unresolved selection. See the next release for what
+> closing them actually took.
 
 - Build every self-spawn through one frozen-aware command builder. A frozen
   build's `sys.executable` is the application, not a Python interpreter, so
