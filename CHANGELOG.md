@@ -35,7 +35,9 @@ shape as the vault defect above.
   again, read an ownership report the winner had already consumed, called the
   absent file lost evidence — and reported a browser whose process had
   demonstrably exited as unaccounted for. Settling one helper is now one
-  operation, and a second caller gets the first one's answer.
+  operation at a time, and a caller arriving after a proven one takes its
+  answer instead of looking again. A helper that could *not* be proved clean is
+  still retried by a later sweep, because the reason may since have gone.
 - Stop asserting which of two correct refusals arrives. A launch whose browser
   cannot start is refused with the child's own reason, and that reason is "no
   executable" or "the package isn't installed" depending on what the machine

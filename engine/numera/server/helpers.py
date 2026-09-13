@@ -268,11 +268,17 @@ class HelperManager:
         with helper.finish:
             with self._lock:
                 if helper.state == SETTLED:
+                    # The only state that may not be re-entered: the success
+                    # path consumes the ownership report, so a second pass
+                    # would read an absent one and call it lost evidence.
+                    #
+                    # STRANDED deliberately is *not* short-circuited here. A
+                    # stranded record is never dropped, which is about keeping
+                    # it - not about refusing to try again. Nothing was
+                    # consumed on that path, and a later sweep runs under
+                    # different conditions: the reason it could not be proved
+                    # may simply have gone away.
                     return True
-                if helper.state == STRANDED:
-                    # Already decided, and a stranded record is never retried
-                    # into a cleaner answer than the evidence supports.
-                    return False
                 helper.state = STOPPING
             return self._settle_locked(helper, deadline)
 
