@@ -28,7 +28,7 @@ jobs:
 
   server:
     name: Server wheel (any OS)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -97,7 +97,10 @@ jobs:
 
   desktop:
     name: Desktop app (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    # `matrix.os` stays the plain label so the job name and the matrix read the
+    # way they did; only where the Linux leg *runs* changes. macOS has no
+    # self-hosted runner and keeps the hosted one.
+    runs-on: ${{ matrix.os == 'ubuntu-latest' && fromJSON('["self-hosted", "Linux", "X64"]') || matrix.os }}
     # Same ceiling as the Windows job below, because it now does the same work:
     # a Chromium download and a real browser launch on top of the Rust build.
     timeout-minutes: 60
@@ -275,7 +278,7 @@ jobs:
     name: Publish to the release
     needs: [verify-release, server, desktop, desktop-windows]
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     permissions:
       contents: write
     steps:
