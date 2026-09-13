@@ -144,12 +144,12 @@ jobs:
       - name: Preserve the test report
         if: always()
         uses: actions/upload-artifact@v7
-        # Retention, not a verdict. The artifact service is an account-level
-        # condition - "Artifact storage quota has been hit" failed this step on
-        # 905c204 after every real step had passed, including the smoke that
-        # proves the artifact runs. A job whose work succeeded must not report
-        # failure because a quota that recalculates every 6-12 hours was full.
-        continue-on-error: true
+        # No softening flag here, unlike the uploads in build-desktop.yml.
+        # `test_live_engine_contract.py` asserts that no step of this job
+        # carries one, by plain substring - so not even a comment may name it.
+        # Every supported engine is *required* on both platforms, and the guard
+        # keeps the whole job strict rather than trusting a reader to tell a
+        # retention step from a verification one.
         with:
           name: live-engine-${{ matrix.os }}-${{ matrix.engine }}
           path: |
