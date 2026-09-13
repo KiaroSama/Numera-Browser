@@ -18,5 +18,20 @@ export default defineConfig({
   },
   // The regression tests render the real app against a fake engine, so they
   // need a DOM.
-  test: { environment: "jsdom", setupFiles: ["./test/setup.js"] },
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./test/setup.js"],
+    // A ceiling, not an expected duration. Warm, every test in this suite
+    // finishes in 0.4-1.7 s; the first one to render `<App/>` in a cold worker
+    // pays the module graph and the first jsdom layout inside its own measured
+    // window, and vitest's 5 s default left that no margin. Measured 2026-09-13:
+    // the same two tests were 5103 ms (timeout) and 1632 ms in one scheduling,
+    // and 1451 ms / 1632 ms in another where the cost landed elsewhere - so the
+    // suite was passing on how the run happened to be scheduled. It failed in
+    // CI on a fresh `npm ci`, which is the coldest case there is.
+    //
+    // 15 s is ~9x the warm median and still far inside the job's own 15 min
+    // bound, so a genuine hang still fails rather than hiding here.
+    testTimeout: 15000,
+  },
 });

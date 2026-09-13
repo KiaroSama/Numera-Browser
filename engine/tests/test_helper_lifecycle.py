@@ -270,3 +270,86 @@ def test_the_finite_deadline_does_not_reach_a_persistent_session():
     for fn in session_starters:
         assert "run_helper" not in calls[fn], \
             f"{fn} starts a persistent session through the finite-helper deadline"
+
+
+def test_a_second_settle_arriving_mid_settle_does_not_strand_the_helper():
+    """The overlap `end_all` and `run_helper` have by construction.
+
+    Both callers are ordinary: `run_helper` settles the helper it started and a
+    shutdown settles every live one, so the two meet whenever a shutdown lands
+    while a helper is finishing - the common case, not a rare one.
+
+    A state check alone did not close it. The first caller sets `STOPPING` and
+    releases the manager lock *before* the slow part, so a second arriving
+    inside that window saw "not settled yet" and ran the whole of `settle`
+    again. One of them then reached `read_units` after the other had succeeded
+    and cleared `units_path`, read the absent report as lost evidence, and
+    reported **stranded** a helper whose process had demonstrably exited.
+
+    The window is microseconds wide with a trivial child - a first version of
+    this test synchronised only the two starts and passed against the unfixed
+    code, proving nothing. So the window is held open here: the first settle
+    blocks inside `end_session` until the second has reached the point that
+    used to misread the cleared path. On the fixed code the second never gets
+    there, and the rendezvous is bounded so that is not a hang.
+    """
+    import threading
+
+    from numera.server import helpers as helpers_mod
+
+    manager = helpers_mod.HelperManager()
+    helper = manager.admit((sys.executable, "-c", "pass"))
+    manager.child_env(helper, {})                 # gives it a units report path
+
+    proc, tree = proctree.spawn([sys.executable, "-c", "pass"],
+                                stdin=subprocess.DEVNULL,
+                                stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL)
+    manager.attach(helper, proc, tree)
+    proc.wait(timeout=30)            # settling is about cleanup, not about exit
+
+    inside = threading.Event()       # the first settle is in the slow part
+    proceed = threading.Event()      # ... and may now leave it
+    real_end, real_read = helpers_mod.proctree.end_session, helpers_mod.read_units
+    calls = []
+
+    def held_end(*a, **kw):
+        calls.append(1)
+        if len(calls) == 1:
+            inside.set()
+            # Bounded: on the fixed code the second settle blocks on the
+            # helper's lock and never signals, so this is a deadline, not a
+            # wait for something that is coming.
+            proceed.wait(timeout=2.0)
+        return real_end(*a, **kw)
+
+    def watched_read(path):
+        if threading.current_thread().name == "second":
+            proceed.set()            # only the broken interleave reaches here
+        return real_read(path)
+
+    helpers_mod.proctree.end_session = held_end
+    helpers_mod.read_units = watched_read
+    verdicts = {}
+    try:
+        first = threading.Thread(name="first",
+                                 target=lambda: verdicts.__setitem__(
+                                     "first", manager.settle(helper)))
+        first.start()
+        assert inside.wait(timeout=30), "the first settle never reached cleanup"
+
+        second = threading.Thread(name="second",
+                                  target=lambda: verdicts.__setitem__(
+                                      "second", manager.settle(helper)))
+        second.start()
+        for t in (first, second):
+            t.join(timeout=30)
+            assert not t.is_alive(), f"the {t.name} settle never returned"
+    finally:
+        helpers_mod.proctree.end_session = real_end
+        helpers_mod.read_units = real_read
+
+    assert verdicts == {"first": True, "second": True}, (
+        f"concurrent settles disagreed: {verdicts} - state={helper.state!r} "
+        f"straggler={helper.straggler!r} units_problem={helper.units_problem!r}")
+    assert helper.state == helpers_mod.SETTLED, helper.straggler
