@@ -334,10 +334,22 @@ def test_canvas_measure_text_agrees_with_the_same_list(tmp_path):
 @pytest.mark.slow
 def test_a_font_the_profile_does_claim_is_still_measurable(tmp_path):
     """Masking that hides everything is its own signal: a machine with no fonts
-    at all does not exist."""
+    at all does not exist.
+
+    The whole claimed list, not a slice of it. `fp.fonts` is alphabetical and a
+    Windows profile's first six are almost always Windows-only - `Bahnschrift`,
+    `Calibri`, `Candara`, `Cambria` - so on a Linux runner the outcome came down
+    to whether plain `Arial`, which fontconfig substitutes, happened to land
+    inside those six. It does in 38 of 40 generated profiles, which is exactly
+    the failure rate this test had in CI: green on Windows, ~5% red on Linux,
+    for a reason that has nothing to do with the control it guards.
+
+    Probing all ~34 is no weaker. If masking hid everything, none of them would
+    be found either - and it is the *only* way to state "a machine with no fonts
+    does not exist" without also asserting which fonts the host happens to have.
+    """
     from numera import generate
 
-    fp = generate(os="windows")
-    have = [f for f in fp.fonts[:6]]
+    have = list(generate(os="windows").fonts)
     found, _ = probe_fonts(tmp_path, "masked", WIDTH_PROBE, have)
     assert found, f"none of the profile's own fonts could be detected: {have}"
