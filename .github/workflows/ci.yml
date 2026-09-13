@@ -71,7 +71,13 @@ jobs:
 
   engine-live:
     name: Required live engine (${{ matrix.os }}, ${{ matrix.engine }})
-    runs-on: ${{ matrix.os }}
+    # `matrix.os` stays the plain label - the contract test pins both platforms
+    # as required, and the artifact name interpolates it - while the Linux half
+    # runs on the self-hosted runner. Without this all eight legs sat at
+    # `steps: 0` under the account billing block, so four jobs the workflow
+    # calls *required* had never once executed. The Windows half still cannot
+    # start; that needs a Windows runner, not a workflow change.
+    runs-on: ${{ matrix.os == 'ubuntu-latest' && fromJSON('["self-hosted", "Linux", "X64"]') || matrix.os }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
