@@ -91,6 +91,13 @@ jobs:
           echo "server artifact serves both the API and the dashboard"
 
       - uses: actions/upload-artifact@v7
+        # Retention, not a verdict. The artifact service is an account-level
+        # condition - "Artifact storage quota has been hit" failed this step on
+        # 905c204 after every real step had passed, including the smoke that
+        # proves the assembled artifact runs. A job whose work succeeded must
+        # not report failure because a quota that recalculates every 6-12
+        # hours was full.
+        continue-on-error: true
         with:
           name: numera-server-wheel
           path: build/server/*
@@ -212,6 +219,13 @@ jobs:
         run: bash scripts/smoke-portable.sh "build/$PLAT/Numera Browser"
 
       - uses: actions/upload-artifact@v7
+        # Retention, not a verdict. The artifact service is an account-level
+        # condition - "Artifact storage quota has been hit" failed this step on
+        # 905c204 after every real step had passed, including the smoke that
+        # proves the assembled artifact runs. A job whose work succeeded must
+        # not report failure because a quota that recalculates every 6-12
+        # hours was full.
+        continue-on-error: true
         with:
           name: numera-desktop-${{ runner.os }}
           path: "build/${{ env.PLAT }}/Numera Browser"
@@ -269,6 +283,13 @@ jobs:
         run: ./scripts/smoke-portable.ps1 -Stage 'build/windows/Numera Browser'
 
       - uses: actions/upload-artifact@v7
+        # Retention, not a verdict. The artifact service is an account-level
+        # condition - "Artifact storage quota has been hit" failed this step on
+        # 905c204 after every real step had passed, including the smoke that
+        # proves the assembled artifact runs. A job whose work succeeded must
+        # not report failure because a quota that recalculates every 6-12
+        # hours was full.
+        continue-on-error: true
         with:
           name: numera-desktop-Windows
           path: "build/windows/Numera Browser"

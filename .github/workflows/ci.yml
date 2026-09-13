@@ -144,6 +144,12 @@ jobs:
       - name: Preserve the test report
         if: always()
         uses: actions/upload-artifact@v7
+        # Retention, not a verdict. The artifact service is an account-level
+        # condition - "Artifact storage quota has been hit" failed this step on
+        # 905c204 after every real step had passed, including the smoke that
+        # proves the artifact runs. A job whose work succeeded must not report
+        # failure because a quota that recalculates every 6-12 hours was full.
+        continue-on-error: true
         with:
           name: live-engine-${{ matrix.os }}-${{ matrix.engine }}
           path: |
