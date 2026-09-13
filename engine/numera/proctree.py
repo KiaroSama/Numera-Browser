@@ -493,34 +493,13 @@ def spawn(argv, **kwargs) -> tuple:
                       group=proc.pid, kind="pgid")
 
 
-#: Where a process records the separately sessioned leaders it creates, so
-#: whoever started *it* can end them. A driver started inside a helper gets its
-#: own job or session - on POSIX it leaves the helper's process group outright
-#: - so an empty outer tree proves nothing about the browser. Descendant
-#: walking cannot find it either: it is no longer a descendant of anything the
-#: owner can enumerate. A written record is what closes that.
-UNITS_ENV = "NUMERA_HELPER_UNITS"
-
-
-def _report_unit(tree: "Tree") -> None:
-    """Append this tree's durable identity to the owner's units file.
-
-    Best-effort by necessity - this runs in the middle of starting a browser
-    and must not be able to fail that - but the file is opened in append mode
-    and one record is one line, so a reader sees whole records or a partial
-    final line it can drop.
-    """
-    import json                    # local, as `_with_tree_env` does
-
-    path = os.environ.get(UNITS_ENV)
-    if not path:
-        return
-    try:
-        with open(path, "a", encoding="utf-8") as fh:
-            fh.write(json.dumps({"pid": tree.pid, "pidToken": tree.token,
-                                 "tree": tree.as_record()}) + "\n")
-    except OSError:                                           # pragma: no cover
-        pass
+# The ownership report - the format, the writing and the reading - lives in
+# `unit_report`. It is one responsibility and it was split across two
+# modules, which is how the two halves came to disagree about what an absent
+# record means. Re-exported because `proctree.UNITS_ENV` and
+# `proctree.UnitReportFailed` are the names the server and the suites use.
+from .unit_report import UNITS_ENV, UnitReportFailed  # noqa: E402,F401
+from .unit_report import record as _report_unit       # noqa: E402
 
 
 def _spawn_leader(original, args, rest, kwargs) -> tuple:
@@ -560,14 +539,28 @@ def _spawn_leader(original, args, rest, kwargs) -> tuple:
                 f"it was stopped rather than left owning a browser nothing "
                 f"could account for (pid {proc.pid}).")
         tree = Tree(pid=proc.pid, token=identify(proc), group=name, kind="job")
-        _report_unit(tree)
-        return proc, tree
+        return proc, _reported(proc, tree)
     kwargs = {**kwargs, "start_new_session": True}
     proc = original(args, *rest, **kwargs)
     tree = Tree(pid=proc.pid, token=identify(proc),
                 group=proc.pid, kind="pgid")
-    _report_unit(tree)
-    return proc, tree
+    return proc, _reported(proc, tree)
+
+
+def _reported(proc, tree: "Tree") -> "Tree":
+    """Record the tree, or end the process it describes.
+
+    The same fail-closed rule `spawn()` applies to a missing job object: a
+    child that cannot be *owned* is stopped rather than left running, and a
+    child whose ownership cannot be *communicated* to whoever started this
+    process is in exactly that position.
+    """
+    try:
+        _report_unit(tree)
+    except UnitReportFailed:
+        _abandon(proc)
+        raise
+    return tree
 
 
 def _abandon(proc) -> None:

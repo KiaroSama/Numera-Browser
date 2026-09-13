@@ -164,7 +164,10 @@ def test_a_clean_exit_with_failed_cleanup_is_not_a_result(
     with pytest.raises(helpers.HelperUnsettled) as caught:
         run(scripts["quick"], manager=manager)
 
-    assert "could not be fully stopped" in str(caught.value)
+    # Wording widened deliberately in 0.34.0: the same refusal now also covers
+    # a helper whose ownership *evidence* was lost, not only one whose process
+    # refused to die, so "stopped" became "accounted for".
+    assert "could not be fully accounted for" in str(caught.value)
     left = manager.stragglers()
     assert len(left) == 1 and left[0].state == helpers.STRANDED
 
@@ -198,17 +201,28 @@ def test_a_driver_in_its_own_session_is_ended_too(scripts, manager):
         helpers.read_units = monkey
 
     assert out.returncode == 0 and "spawned" in out.stdout
-    assert seen["units"], "the driver's own session was never reported"
-    for tree in seen["units"]:
+    report = seen["units"]
+    assert report.trees, "the driver's own session was never reported"
+    assert report.complete, f"the report was not trustworthy: {report.problem}"
+    for tree in report.trees:
         assert proctree.prove_empty(tree, deadline=5.0), \
             f"a separately sessioned driver survived helper cleanup: {tree}"
     assert manager.live() == []
 
 
-def test_an_unreported_session_does_not_block_an_ordinary_helper(manager):
-    """The control for the reporting channel: no units file, no units."""
-    assert helpers.read_units(None) == []
-    assert helpers.read_units(Path("does-not-exist.jsonl")) == []
+def test_a_missing_report_is_not_a_helper_that_owned_nothing(manager):
+    """This assertion used to say the opposite, and the opposite was the bug.
+
+    It read `read_units(None) == []` and `read_units(<missing>) == []` as the
+    control proving "no units file, no units" - which is exactly how lost
+    evidence came to mean "nothing to clean up". The control that is actually
+    worth having is an *empty but present* report, and it lives in
+    `test_helper_ownership.py::test_an_empty_report_is_a_real_answer`; what
+    belongs here is the refusal.
+    """
+    assert helpers.read_units(None).complete is False
+    missing = helpers.read_units(Path("does-not-exist.jsonl"))
+    assert missing.complete is False and "missing" in missing.problem
 
 
 # ---------------------------------------------------------------------------

@@ -720,7 +720,8 @@ class ProfileRepo:
         """
         from .store import name_clash, stored_names
 
-        stored = stored_names(self.store.profiles_dir, self.dash_dir)
+        stored = write_contract.readable_names(   # a stored name may not be
+            stored_names(self.store.profiles_dir, self.dash_dir))  # hashable
         stored += [(p.id, p.name) for p in accepted if p.name]
         return name_clash(stored, [(profile.id, profile.name)]) is not None
 

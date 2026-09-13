@@ -252,11 +252,18 @@ export default function App() {
   // can hold a number there, and `t.includes` threw - inside this memo, which
   // runs above the error boundary, so one bad record blanked the application
   // instead of degrading a view.
+  //
+  // The name got the same treatment for the same reason, a release later. The
+  // engine refuses to write a name that is not text and repairs the view of
+  // one already stored, so this should never arrive - but `p.name` is read on
+  // every keystroke in the one memo the whole page depends on, and the cost of
+  // being wrong about "should never" here is a blank application, not a blank
+  // row. An older engine behind a newer dashboard is enough to be wrong.
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
     return profiles.filter(p =>
       (folder === "All profiles" || p.folder === folder) &&
-      (p.name.toLowerCase().includes(q) ||
+      (String(p.name ?? "").toLowerCase().includes(q) ||
        (p.tags || []).some(t => typeof t === "string" && t.toLowerCase().includes(q))) &&
       (!filters.status || p.status === filters.status) &&
       (!filters.engine || (p.engine || "playwright") === filters.engine) &&

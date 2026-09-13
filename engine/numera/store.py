@@ -357,9 +357,14 @@ class ProfileStore(ConfigStore):
                 # journal's guarantee and none of the rest: it synced the plan
                 # and neither the ciphertext nor the descriptor, and it wrote
                 # the descriptor outside the batch that would have to undo it.
-                vault.commit(self.root, step, self.get_config(),
-                             {"salt": salt, "verifier": verifier},
-                             self._save_config_locked)
+                # The same commit-and-prove call recovery makes. An ordinary
+                # enable is the path most likely to be trusted unchecked, and
+                # "the scan found no plaintext" was never proof that what it
+                # did find opens with this key.
+                vault.commit_and_verify(
+                    self.root, step, self.get_config(),
+                    {"salt": salt, "verifier": verifier},
+                    self._save_config_locked, password, "`vault enable`")
             self._password = password
             return converted
 
@@ -399,9 +404,11 @@ class ProfileStore(ConfigStore):
                                 old={"salt": v["salt"], "verifier": v.get("verifier")})
             with vault.migration(self.root) as step:
                 moved = step.rekey_all(old_password, v["salt"], new_password, new_salt)
-                vault.commit(self.root, step, self.get_config(),
-                             {"salt": new_salt, "verifier": new_verifier},
-                             self._save_config_locked)
+                vault.commit_and_verify(
+                    self.root, step, self.get_config(),
+                    {"salt": new_salt, "verifier": new_verifier},
+                    self._save_config_locked, new_password,
+                    "master-password rotation")
             self._password = new_password
             return moved
 

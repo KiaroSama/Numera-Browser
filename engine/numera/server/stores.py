@@ -15,7 +15,7 @@ import uuid
 from pathlib import Path
 from contextlib import contextmanager
 from typing import Optional
-from .. import vault
+from .. import vault, write_contract
 from ..proxypool import identity as vault_identity
 from ..paths import _lock_for, id_path, transaction_lock, write_json
 from . import auth_policy
@@ -286,7 +286,13 @@ class DashboardStore:
         # a repo write mirrors back, so either copy may be the one carrying a
         # name, and a name held in only one of them is still held.
         known = [self.dir] + ([self._engine.profiles_dir] if self._engine else [])
-        clash = name_clash(stored_names(*known),
+        # Through the same repair the engine write path uses. `name_clash`
+        # builds a `{id: {names}}` map, which puts every stored name in a set -
+        # so one legacy record holding `name: ["a"]` raised
+        # `TypeError: unhashable type: 'list'` out of it and made *every* HTTP
+        # edit a 500, for every profile, not just the damaged one. One
+        # unreadable record must not cost the whole store its write path.
+        clash = name_clash(write_contract.readable_names(stored_names(*known)),
                            [(p.get("id"), p.get("name")) for p in profiles])
         if clash:
             raise NameTaken(f"a profile called {clash[1]!r} already exists")

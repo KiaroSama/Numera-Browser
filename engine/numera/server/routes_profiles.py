@@ -144,7 +144,7 @@ def _value_problems(key: str, value, where: str) -> list:
                 for k, t in PROXY_TYPES.items()
                 if value.get(k) is not None
                 and (not isinstance(value[k], t) or isinstance(value[k], bool))]
-    return []
+    return write_contract.packed_problems(key, value, where)
 
 
 def check_fields(patch: dict, *, where: str, extra=()) -> "list[str]":
