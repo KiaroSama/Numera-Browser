@@ -44,6 +44,21 @@ from typing import Optional
 
 from . import crypto, proctree
 from .paths import write_json
+from .vault_problems import (
+    DESCRIPTOR_UNUSABLE,
+    JournalUnreadable,
+    NEEDS_BOTH_PASSWORDS,
+    NO_PASSWORD,
+    PLAINTEXT_LEFT,
+    Problem,
+    UNREADABLE_FILES,
+    VERIFIER_MISMATCH,
+    VaultIncomplete,
+    VaultRecoveryRequired,
+    WRONG_GENERATION,
+    codes,
+    locked,
+)
 
 #: The journal shapes this build knows how to finish.
 SUPPORTED_OPS = ("enable", "rotate")
@@ -62,30 +77,6 @@ JOURNAL_VERSION = 1
 #: everything but the key being written down, and `descriptors()` reads its
 #: flat salt/verifier pair, so an absent version resolves to 1 here.
 KNOWN_JOURNAL_VERSIONS = (1,)
-
-
-class VaultRecoveryRequired(RuntimeError):
-    """An unresolved migration is on disk and cannot be settled unattended.
-
-    Raised instead of opening the store, because a store whose config and disk
-    disagree cannot answer honestly: some credentials are under one key, some
-    under another, or some still in plaintext. Committing the descriptor anyway
-    is what the first version of this journal did, and it reported an enabled
-    vault over readable passwords.
-
-    Finishing needs the key material, which is deliberately not on disk. So the
-    store refuses and the message names what it needs.
-    """
-
-
-class JournalUnreadable(VaultRecoveryRequired):
-    """The journal exists but cannot be trusted, so nothing may be assumed.
-
-    Its own class because the recovery *action* differs: an unreadable journal
-    can never be finished by supplying a password - the salt it was protecting
-    is what is missing - so the only honest outcomes are a restore from backup
-    or a deliberate local decision. It is never deleted automatically.
-    """
 
 
 def journal_path(root) -> Path:
@@ -489,20 +480,22 @@ def structural_problems(root, descriptor: dict) -> list:
 
     problems = []
     if not _descriptor_ok(descriptor):
-        problems.append("the descriptor has no usable salt and verifier")
-        return problems
+        return [Problem(DESCRIPTOR_UNUSABLE,
+                        "the descriptor has no usable salt and verifier")]
 
     damaged = unreadable_secret_files(root)
     if damaged:
-        problems.append(
+        problems.append(Problem(
+            UNREADABLE_FILES,
             f"{len(damaged)} secret-bearing file(s) cannot be read: "
-            f"{', '.join(p.name for p in damaged)}")
+            f"{', '.join(p.name for p in damaged)}"))
 
     leftover = vault.plaintext_secrets(root)
     if leftover:
-        problems.append(
+        problems.append(Problem(
+            PLAINTEXT_LEFT,
             f"{len(leftover)} credential(s) are still unencrypted in "
-            f"{', '.join(sorted({p.name for p, _ in leftover}))}")
+            f"{', '.join(sorted({p.name for p, _ in leftover}))}"))
     return problems
 
 
@@ -530,40 +523,55 @@ def completion_problems(root, descriptor: dict, password: Optional[str]) -> list
     password this returns the reason it cannot decide rather than a cheap yes.
     """
     problems = structural_problems(root, descriptor)
-    if problems and not _descriptor_ok(descriptor):
+    if codes(problems) & {DESCRIPTOR_UNUSABLE}:
         return problems                       # nothing below can be evaluated
 
     if password is None:
-        problems.append(
+        problems.append(Problem(
+            NO_PASSWORD,
             "no master password was supplied, so whether the stored secrets "
-            "open with this descriptor cannot be established")
+            "open with this descriptor cannot be established"))
         return problems
 
     if not crypto.check_password(password, descriptor["salt"],
                                  descriptor.get("verifier")):
-        problems.append(
+        problems.append(Problem(
+            VERIFIER_MISMATCH,
             "the descriptor's verifier does not open with this password, so "
-            "the descriptor does not describe this data")
+            "the descriptor does not describe this data"))
         return problems                       # the key is wrong; stop here
 
     stale = unconverted(root, password, descriptor["salt"])
     if stale:
-        problems.append(
+        problems.append(Problem(
+            WRONG_GENERATION,
             f"{len(stale)} file(s) hold secrets this descriptor does not "
-            f"open: {', '.join(sorted({p.name for p in stale}))}")
+            f"open: {', '.join(sorted({p.name for p in stale}))}"))
     return problems
 
 
 def _refuse_incomplete(root, what: str, problems: list) -> None:
-    """Raise with what is wrong and what to do, keeping the journal."""
-    raise VaultRecoveryRequired(
+    """Raise with what is wrong and what to do, keeping the journal.
+
+    What to do differs by cause, and one sentence for all of them is wrong for
+    most: telling someone whose `proxies.json` will not parse to supply the
+    master password is an instruction that cannot work, and it reads as though
+    the tool does not know which of the two problems it has. A password helps
+    exactly where the missing thing *is* the key.
+    """
+    fixable = codes(problems) & {NO_PASSWORD, NEEDS_BOTH_PASSWORDS,
+                                 VERIFIER_MISMATCH, WRONG_GENERATION}
+    remedy = ("Open the store with the master password that migration was "
+              "using (NUMERA_PASSWORD, or --password), or restore the data "
+              "directory from a backup." if fixable else
+              "Repair or restore the files named above, then open the store "
+              "again.")
+    raise VaultIncomplete(
         f"A {what} cannot be completed against this data root: "
-        + "; ".join(problems)
+        + "; ".join(p.detail for p in problems)
         + f". Nothing has been committed and {journal_path(root).name} is "
-          f"kept - it holds the descriptor those secrets belong to. Open the "
-          f"store with the master password that migration was using "
-          f"(NUMERA_PASSWORD, or --password), or restore the data directory "
-          f"from a backup.")
+          f"kept - it holds the descriptor those secrets belong to. " + remedy,
+        problems)
 
 
 def commit_and_verify(root, step, cfg: dict, new: dict, save_config,
@@ -617,15 +625,16 @@ def commit(root, step, cfg: dict, new: dict, save_config) -> None:
 def _finish_enable(root, cfg, new, save_config, password) -> bool:
     from . import vault
 
-    damaged = unreadable_secret_files(root)
-    if damaged:
-        raise VaultRecoveryRequired(
-            f"A `vault enable` was interrupted, and {len(damaged)} secret-bearing "
-            f"file(s) under this data root cannot be read: "
-            f"{', '.join(p.name for p in damaged)}. Whether the migration "
-            f"finished cannot be established, so the vault is not switched on "
-            f"and the recovery record is kept. Repair or restore those files, "
-            f"then open the store again.")
+    # Refuse an unreadable root before attempting anything, rather than after.
+    # This is not a second opinion about the same question - it is the same
+    # check the completion rule runs, hoisted, because an enable over a file
+    # nobody can parse cannot be proved finished *or* safely finished. It was
+    # a hand-written sentence until 0.35.0, which meant the one refusal that
+    # fired first was the one carrying no cause a caller could match.
+    blocked = [p for p in structural_problems(root, new)
+               if p.code in (DESCRIPTOR_UNUSABLE, UNREADABLE_FILES)]
+    if blocked:
+        _refuse_incomplete(root, "`vault enable`", blocked)
 
     leftover = vault.plaintext_secrets(root)
     if not leftover:
@@ -705,19 +714,25 @@ def _finish_rotation(root, cfg, new, old, save_config, password, old_password) -
         # properly - which needs the old password as well, because telling a
         # moved record from a waiting one is a trial decryption.
     if not (password and old_password):
-        raise VaultRecoveryRequired(
+        raise VaultIncomplete(
             "A master-password rotation was interrupted, so some secrets are "
             "under the new password and some under the old one. Finish it with "
             "`numera vault resume`, which needs both passwords - they are the "
             "only way to tell the two apart, because both are ciphertext. This "
             "data root is not served until then, and the record of the new salt "
-            "is kept.")
+            "is kept.",
+            [Problem(NEEDS_BOTH_PASSWORDS,
+                     "a resumed rotation needs both the old and the new "
+                     "master password")])
+    # `role` says which password was rejected, as data. The two messages read
+    # differently and a caller that told them apart by their wording would be
+    # matching prose that exists to be readable, not to be parsed.
     if not crypto.check_password(password, new["salt"], new.get("verifier")):
-        raise crypto.VaultLocked(
-            "that is not the new master password the rotation was moving to")
+        raise locked("new", "that is not the new master password the "
+                            "rotation was moving to")
     if old and not crypto.check_password(old_password, old["salt"], old.get("verifier")):
-        raise crypto.VaultLocked(
-            "that is not the master password the rotation was moving away from")
+        raise locked("old", "that is not the master password the rotation "
+                            "was moving away from")
     with vault.migration(root, keep_journal=True) as step:
         step.rekey_all(old_password, (old or {}).get("salt"),
                        password, new["salt"], resume=True)

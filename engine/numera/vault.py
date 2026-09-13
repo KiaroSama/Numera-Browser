@@ -214,9 +214,7 @@ class _Migration:
 from .vault_recovery import (                                   # noqa: E402,F401
     JOURNAL_VERSION,
     KNOWN_JOURNAL_VERSIONS,
-    JournalUnreadable,
     SUPPORTED_OPS,
-    VaultRecoveryRequired,
     begin_journal,
     classify,
     commit,
@@ -234,6 +232,25 @@ from .vault_recovery import (                                   # noqa: E402,F40
     sync_dir,
     unconverted,
     unreadable_secret_files,
+)
+
+# The words a refusal is made of - the exception types and the cause codes -
+# live one module further down, in `vault_problems`, so that matching on *why*
+# a migration refused never means importing the protocol that produced it.
+from .vault_problems import (                                   # noqa: E402,F401
+    DESCRIPTOR_UNUSABLE,
+    JournalUnreadable,
+    NEEDS_BOTH_PASSWORDS,
+    NO_PASSWORD,
+    PLAINTEXT_LEFT,
+    Problem,
+    UNREADABLE_FILES,
+    VERIFIER_MISMATCH,
+    VaultIncomplete,
+    VaultRecoveryRequired,
+    WRONG_GENERATION,
+    codes,
+    locked,
 )
 
 
