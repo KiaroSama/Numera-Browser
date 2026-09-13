@@ -17,10 +17,35 @@ one the rest of the product can read back.
 Each surface adapts the result to its own error type: the API turns it into a
 422 naming the field, the CLI into a refusal on stderr. Neither of them decides
 *whether* it is a problem.
+
+**Which fields** are checked is not decided here either - it is `field_policy`,
+one entry per model field, diffed against the dataclasses by a coverage test.
+This module is the rule; that one is the list. They were the same thing once,
+and the result was a validator that checked twelve fields of a fifty-six-field
+record and could not say which forty-four it had skipped.
+
+Three shapes arrive, and telling them apart is the point of `shape()`:
+
+* a **complete engine object** - a `Profile`, what the CLI and the store hold;
+* a **complete engine record** - `to_dict()` output, what a batch or a backup
+  carries;
+* a **partial dashboard patch** - flat dashboard vocabulary, what an API
+  caller `PUT`s, where an absent field means "not changing this one".
+
+The first two are complete, so a missing required field is a missing field. The
+third is not, so it is checked for what it *states* and nothing else; the API
+merges it over the stored record, and the merged result is what reaches the
+complete check through the converter. Conflating the two is how `seed = None`
+came to be stored: absent and null were the same answer to a validator that
+only ever saw one of the shapes.
 """
 from __future__ import annotations
 
 import math
+
+from . import field_policy
+from .field_policy import NUMBER_RANGES        # noqa: F401 - re-export; the API
+from .models import Fingerprint, Profile, Proxy  # reads it off this module
 
 #: Fields whose elements the product dereferences as text. `p.tags.map(...)`
 #: and `", ".join(profile.tags)` both assume strings; one dict in the list
@@ -40,40 +65,6 @@ TEXT_FIELDS = ("name", "notes", "engine", "dns")
 #: unset field, and is refused like any other non-text value.
 REQUIRED_TEXT_FIELDS = ("name",)
 
-#: Numeric bounds shared by both write paths. Generous by design: they exist to
-#: refuse a value no device has, not to curate hardware.
-NUMBER_RANGES = {
-    "cores": (1, 512), "memory": (0, 1024),
-    "mediaVideo": (0, 64), "mediaAudio": (0, 64), "mediaSpeakers": (0, 64),
-    "maxTouchPoints": (0, 32), "devicePixelRatio": (0.05, 20),
-    "seed": (0, 2 ** 53),
-}
-
-#: Where those same numbers live on an engine `Profile`: one level down, under
-#: the names the browser APIs use. The bounds above are keyed by the
-#: dashboard's vocabulary and were read off the *top level* of whatever
-#: arrived - which is `None` for every one of them on the shape the core write
-#: path actually carries. So `fingerprint.seed = float("inf")` was written by
-#: `ProfileStore.save` while the flat `{"seed": inf}` was refused over HTTP:
-#: the advertised numeric contract held only on the shape that already had a
-#: second schema in front of it. This map is the one place the two vocabularies
-#: meet, so there is still exactly one set of bounds to disagree about.
-FINGERPRINT_NUMBERS = {
-    "cores": "hardware_concurrency",
-    "memory": "device_memory",
-    "mediaVideo": "cameras",
-    "mediaAudio": "microphones",
-    "mediaSpeakers": "speakers",
-    "maxTouchPoints": "max_touch_points",
-    "devicePixelRatio": "device_pixel_ratio",
-    "seed": "seed",
-}
-
-#: Fingerprint collections the product joins or iterates - `", ".join(langs)`
-#: reaches the launch layer and one integer in the list stops a browser
-#: starting.
-FINGERPRINT_LIST_FIELDS = ("languages", "fonts")
-
 #: Proxy fields that must be text, in both vocabularies at once: an engine
 #: `Proxy` calls them `server`/`username`/`password`, a stored dashboard record
 #: `host`/`user`/`pass`. Absent is not wrong, so one table covers either shape
@@ -82,25 +73,42 @@ FINGERPRINT_LIST_FIELDS = ("languages", "fonts")
 PROXY_TEXT_FIELDS = ("server", "username", "password", "country",
                      "type", "host", "user", "pass")
 
+#: Never quoted back in a refusal, under either vocabulary. The message says
+#: what the field must be; a validator is not a place to print a credential,
+#: and these messages reach stderr, the API response body and the logs.
+SECRET_FIELDS = ("password", "pass")
+
 
 def _name(value) -> str:
     return type(value).__name__
 
 
-def text_problem(field: str, value, where: str):
-    """Why `value` cannot be stored as `field`'s text, or None."""
-    if value is None and field not in REQUIRED_TEXT_FIELDS:
+def text_problem(field: str, value, where: str, *, optional=None, quote=True):
+    """Why `value` cannot be stored as `field`'s text, or None.
+
+    `optional` overrides the module-level `REQUIRED_TEXT_FIELDS` answer, which
+    only knows the dashboard's flat names; a policy entry states requiredness
+    per field and passes it in. `quote` is off for a credential - see
+    `SECRET_FIELDS`.
+    """
+    if optional is None:
+        optional = field.rsplit(".", 1)[-1] not in REQUIRED_TEXT_FIELDS
+    if value is None and optional:
         return None                      # absent is not wrong; empty is text
     if not isinstance(value, str):
-        return (f"{where}: {field!r} must be text, not {_name(value)} "
-                f"({value!r}). Nothing was written.")
+        shown = f" ({value!r})" if quote else ""
+        return (f"{where}: {field!r} must be text, not {_name(value)}"
+                f"{shown}. Nothing was written.")
     return None
 
 
-def list_problem(field: str, value, where: str):
+def list_problem(field: str, value, where: str, *, optional=True):
     """Why `value` cannot be stored as `field`'s list of text, or None."""
     if value is None:
-        return None
+        if optional:
+            return None
+        return (f"{where}: {field!r} must be a list, not None. "
+                f"Nothing was written.")
     if not isinstance(value, (list, tuple)):
         return (f"{where}: {field!r} must be a list, not {_name(value)}. "
                 f"Nothing was written.")
@@ -111,7 +119,8 @@ def list_problem(field: str, value, where: str):
     return None
 
 
-def number_problem(field: str, value, where: str, *, label=None):
+def number_problem(field: str, value, where: str, *, label=None, bounds=None,
+                   whole=False, optional=True):
     """Why `value` cannot be stored as `field`'s number, or None.
 
     `field` selects the bounds, `label` names the field in the message. They
@@ -122,17 +131,32 @@ def number_problem(field: str, value, where: str, *, label=None):
     one first, and `10**400` raises `OverflowError` out of the check rather
     than being refused by it. An `int` is exact and unbounded in Python, so the
     bounds compare directly and only a genuine `float` is asked about infinity.
+
+    `whole` is the difference between a count and a ratio. `navigator`
+    reports `hardwareConcurrency` and `deviceMemory` as whole numbers and a
+    screen has a whole number of pixels, while `devicePixelRatio` is 1.5 on a
+    real display - so "is this a number in range" was the wrong question for
+    every field but that one, and `hardware_concurrency = 8.5` passed it.
     """
-    if value is None or field not in NUMBER_RANGES:
-        return None
     shown = label or field
+    if value is None:
+        if optional:
+            return None
+        return f"{where}: {shown!r} is required. Nothing was written."
+    if bounds is None:
+        if field not in NUMBER_RANGES:
+            return None
+        bounds = NUMBER_RANGES[field]
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return (f"{where}: {shown!r} must be a number, not {_name(value)}. "
                 f"Nothing was written.")
     if isinstance(value, float) and not math.isfinite(value):
         return f"{where}: {shown!r} must be a finite number. Nothing was written."
-    low, high = NUMBER_RANGES[field]
-    if not low <= value <= high:
+    if whole and not isinstance(value, int) and value != int(value):
+        return (f"{where}: {shown!r} must be a whole number, got "
+                f"{str(value)[:40]}. Nothing was written.")
+    low, high = bounds
+    if low is not None and high is not None and not low <= value <= high:
         # Truncated: the value being quoted back is the caller's, and CPython
         # decodes an integer of up to 4300 digits before refusing one. The API
         # copy of this check already bounded its message; this one did not, so
@@ -142,87 +166,218 @@ def number_problem(field: str, value, where: str, *, label=None):
     return None
 
 
-def _reader(container):
-    """Read fields off a mapping or an object with one call, or None.
+def bool_problem(field: str, value, where: str, *, label=None):
+    """Why `value` cannot be stored as `field`'s boolean, or None.
 
-    All three shapes a write arrives in reach this: the CLI holds an engine
-    `Profile`, a batch or a backup holds `to_dict()` output, the API holds a
-    dashboard payload. Adapting the *access* is the whole difference between
-    them, so the rule below it stays single.
+    `is_mobile = 2` is truthy, so every branch behaved and nothing complained -
+    then `to_dict()` wrote `2`, JSON round-tripped it as `2`, and the field
+    stayed an integer in a record that claims to hold a flag.
     """
-    if container is None:
+    shown = label or field
+    if isinstance(value, bool):
         return None
+    return (f"{where}: {shown!r} must be true or false, not {_name(value)}. "
+            f"Nothing was written.")
+
+
+def screen_problem(value, where: str, *, field: str = "screen"):
+    """Why `value` cannot be stored as the dashboard's packed resolution, or None.
+
+    `screen` is the dashboard's single name for two engine fields: `convert`
+    writes `f"{screen_width}x{screen_height}"` and parses it back with `int()`,
+    falling back to 1920x1080 when that raises. So every dimension rule this
+    module applies to the engine record could be walked straight past by
+    sending the pair as text - `"0x0"` produced an engine twin with a zero
+    screen, and `"potato"` silently replaced the caller's resolution with a
+    default while the request reported success.
+
+    The bounds are the engine field's own, read off the policy rather than
+    repeated, so the packed form and the nested form cannot come to disagree.
+    """
+    if value is None:
+        return None
+    problem = text_problem(field, value, where)
+    if problem:
+        return problem
+    parts = value.lower().split("x")
+    low, high = field_policy.FINGERPRINT["screen_width"].bounds()
+    try:
+        sides = [int(part) for part in parts]
+    except ValueError:
+        sides = []
+    if len(sides) != 2 or not all(low <= side <= high for side in sides):
+        return (f"{where}: {field!r} must be two whole numbers between {low} "
+                f"and {high} as '<width>x<height>', got {value[:40]!r}. "
+                f"Nothing was written.")
+    return None
+
+
+#: Dashboard keys that carry an engine field in a packed form of their own, so
+#: the nested rule cannot see them. Each one is a way round a check the engine
+#: record already has, which is why they are listed rather than left to the
+#: generic type table.
+PACKED_FIELDS = ("screen",)
+
+
+def packed_problems(field: str, value, where: str) -> list:
+    """What a packed dashboard field is still wrong about, if anything.
+
+    The API's schema types `screen` as a string and stops there, so this is the
+    hook that lets the one contract finish the sentence for the keys where
+    "a string" is not the whole rule. Empty for every other key.
+    """
+    if field == "screen":
+        problem = screen_problem(value, where)
+        return [problem] if problem else []
+    return []
+
+
+def bookmarks_problem(field: str, value, where: str):
+    """Why `value` cannot be stored as the bookmark list, or None.
+
+    The dashboard converter reads `b.get("name")` and `b["url"]` off every
+    entry, so a bare string or number in the list raised `AttributeError` out
+    of the write path, and `{"name": 1}` was formatted into the stored text as
+    though the number had been a title.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, (list, tuple)):
+        return (f"{where}: {field!r} must be a list, not {_name(value)}. "
+                f"Nothing was written.")
+    for entry in value:
+        if not hasattr(entry, "get"):
+            return (f"{where}: every entry in {field!r} must be a "
+                    f"{{'name', 'url'}} object, got {_name(entry)}. "
+                    f"Nothing was written.")
+        for key, optional in (("url", False), ("name", True)):
+            problem = text_problem(f"{field}[].{key}", entry.get(key), where,
+                                   optional=optional)
+            if problem:
+                return problem
+    return None
+
+
+# --------------------------------------------------------------------------
+# Shapes
+# --------------------------------------------------------------------------
+ENGINE_OBJECT, ENGINE_RECORD, DASHBOARD_PATCH = (
+    "engine object", "engine record", "dashboard patch")
+
+
+def shape(profile) -> str:
+    """Which of the three shapes this is. See the module docstring.
+
+    Nesting is the tell, and it is a reliable one: an engine record keeps its
+    fingerprint one level down under `fingerprint`, and the dashboard's payload
+    is flat by construction - `cores` and `seed` sit at the top or not at all.
+    """
+    if isinstance(profile, Profile):
+        return ENGINE_OBJECT
+    if hasattr(profile, "get") and profile.get("fingerprint") is not None:
+        return ENGINE_RECORD
+    return DASHBOARD_PATCH
+
+
+def _reader(container, table):
+    """Read fields off a mapping or a matching object, or None if it is neither.
+
+    Returning `None` for anything else is the whole fix for one of the two
+    halves of this defect. The generic version was
+    `lambda name: getattr(container, name, None)`, which answers `None` for
+    every lookup on an object that has no such attribute - so `fingerprint =
+    123` produced a reader that reported all thirty-five fields absent, the
+    checks found nothing to say about any of them, and the record was passed as
+    valid. It then crashed in `Fingerprint.to_dict()` a few frames later with
+    `AttributeError: 'int' object has no attribute 'to_dict'`, which is a
+    traceback where a refusal naming the field belongs - and, over HTTP, a 500
+    where a 422 belongs.
+
+    An object qualifies by carrying the fields the table names, not by its
+    class: `Fingerprint` and `Proxy` do, and so does a stand-in built for a
+    test, while an int, a string, a list and `None` do not.
+    """
     if hasattr(container, "get"):
         return container.get
-    return lambda name: getattr(container, name, None)
+    if all(hasattr(container, name) for name in table):
+        return lambda name: getattr(container, name, None)
+    return None
 
 
-def _fingerprint_problems(fingerprint, where: str) -> list:
-    """The numbers and collections an engine profile keeps one level down."""
-    read = _reader(fingerprint)
+def _rule_problem(rule, field: str, value, where: str, label: str):
+    """One field's verdict, applied. `None` means the value may be stored."""
+    if rule.kind in field_policy.EXEMPT:
+        return None                      # server-owned or reshaped; see `why`
+    if rule.kind == "text":
+        return text_problem(label, value, where, optional=rule.optional,
+                            quote=field not in SECRET_FIELDS)
+    if rule.kind == "texts":
+        return list_problem(label, value, where, optional=rule.optional)
+    if rule.kind in ("int", "number"):
+        return number_problem(field, value, where, label=label,
+                              bounds=rule.bounds(), whole=rule.kind == "int",
+                              optional=rule.optional)
+    if rule.kind == "bool":
+        return bool_problem(field, value, where, label=label)
+    if rule.kind == "bookmarks":
+        return bookmarks_problem(label, value, where)
+    if rule.kind == "fingerprint":
+        return _nested(value, field_policy.FINGERPRINT, Fingerprint,
+                       "fingerprint", where, rule)
+    if rule.kind == "proxy":
+        return _nested(value, field_policy.PROXY, Proxy, "proxy", where, rule)
+    raise AssertionError(f"field_policy has no rule kind {rule.kind!r}")
+
+
+def _nested(container, table, model, label: str, where: str, rule):
+    """A nested block's own verdict, or the first problem inside it.
+
+    Returns a list so the caller can flatten one level; a container that is not
+    one at all yields a single refusal naming the field, which is the answer
+    `fingerprint = 123` should have had all along.
+    """
+    if container is None:
+        if rule.optional:
+            return []
+        return [f"{where}: {label!r} is required and must be a "
+                f"{model.__name__.lower()}. Nothing was written."]
+    read = _reader(container, table)
     if read is None:
-        return []
+        return [f"{where}: {label!r} must be a {model.__name__.lower()} or "
+                f"absent, not {_name(container)}. Nothing was written."]
+    return _table_problems(read, table, where, prefix=f"{label}.")
+
+
+def _table_problems(read, table, where: str, prefix: str = "") -> list:
+    """Every field of one table, in table order."""
     found = []
-    for field, engine_name in FINGERPRINT_NUMBERS.items():
-        problem = number_problem(field, read(engine_name), where,
-                                 label=f"fingerprint.{engine_name}")
-        if problem:
-            found.append(problem)
-    for name in FINGERPRINT_LIST_FIELDS:
-        problem = list_problem(f"fingerprint.{name}", read(name), where)
-        if problem:
+    for field, rule in table.items():
+        problem = _rule_problem(rule, field, read(field), where,
+                                f"{prefix}{field}")
+        if isinstance(problem, list):
+            found += problem
+        elif problem:
             found.append(problem)
     return found
 
 
-def _proxy_problems(proxy, where: str) -> list:
-    """The credential block, under whichever set of names it arrived with.
+def _dashboard_problems(patch, where: str) -> list:
+    """A partial dashboard payload, checked for what it states.
 
-    This had no core check at all: `Proxy.server = 123` reached the driver's
-    `to_playwright()` and a list password reached the vault. A proxy that is
-    not a proxy did not even get that far - `repo._secrets_for` asks it for
-    `password_intent` and a string raised `AttributeError` out of the writer,
-    where a refusal naming the field belongs.
-
-    Read, never assigned. `Proxy.__setattr__` records that `password` was
-    *chosen*, and that flag is what tells a write to preserve, clear or replace
-    the stored secret; a validator that wrote the value back - even the value
-    already there - would turn every untouched proxy into a replacement.
+    Requiredness deliberately does not apply: an absent key here means "not
+    changing this one", and the API merges the patch over the stored record
+    before anything complete is built from it. The flat names are this shape's
+    own - `cores`, `seed`, `startupUrls` - and the numbers resolve to the same
+    `NUMBER_RANGES` the nested fields use, so there is still one set of bounds.
     """
-    if proxy is None:
-        return []
-    if not hasattr(proxy, "get") and not hasattr(proxy, "server"):
-        return [f"{where}: 'proxy' must be a proxy or absent, not "
-                f"{_name(proxy)}. Nothing was written."]
-    read = _reader(proxy)
-    found = []
-    for name in PROXY_TEXT_FIELDS:
-        problem = text_problem(f"proxy.{name}", read(name), where)
-        if problem:
-            found.append(problem)
-    return found
-
-
-def profile_problems(profile, *, where: str = "profile") -> list:
-    """Every reason this profile may not be persisted. Empty means it may.
-
-    Accepts an engine `Profile` (attributes), a serialized engine mapping
-    (`to_dict()` keys) or a dashboard payload, because the CLI holds the first,
-    the batch paths hold the second and the API holds the third - and
-    duplicating the rule per shape is how the two doors drifted apart in the
-    first place.
-
-    The top-level pass is the dashboard's flat vocabulary; `fingerprint` and
-    `proxy` are where an engine profile keeps the same values. Both passes run
-    over whatever arrives: a shape that has no such block reads `None` and is
-    charged nothing for the lookup.
-    """
-    get = _reader(profile)
+    get = patch.get
     found = []
     for field in TEXT_FIELDS:
-        problem = text_problem(field, get(field), where)
-        if problem:
-            found.append(problem)
+        if field not in patch:
+            continue        # absent means "not changing this one" - `name`
+        problem = text_problem(field, get(field), where)   # included, which is
+        if problem:                                        # the whole point of
+            found.append(problem)                          # a patch shape
     for field in TEXT_LIST_FIELDS:
         problem = list_problem(field, get(field), where)
         if problem:
@@ -231,9 +386,45 @@ def profile_problems(profile, *, where: str = "profile") -> list:
         problem = number_problem(field, get(field), where)
         if problem:
             found.append(problem)
-    found += _fingerprint_problems(get("fingerprint"), where)
-    found += _proxy_problems(get("proxy"), where)
+    for field in PACKED_FIELDS:
+        found += packed_problems(field, get(field), where)
+    proxy = get("proxy")
+    if proxy is None:
+        return found
+    if not hasattr(proxy, "get") and not hasattr(proxy, "server"):
+        found.append(f"{where}: 'proxy' must be a proxy or absent, not "
+                     f"{_name(proxy)}. Nothing was written.")
+        return found
+    read = _reader(proxy, PROXY_TEXT_FIELDS) or (lambda n: getattr(proxy, n, None))
+    for name in PROXY_TEXT_FIELDS:
+        problem = text_problem(f"proxy.{name}", read(name), where,
+                               quote=name not in SECRET_FIELDS)
+        if problem:
+            found.append(problem)
     return found
+
+
+def profile_problems(profile, *, where: str = "profile") -> list:
+    """Every reason this profile may not be persisted. Empty means it may.
+
+    Dispatches on `shape()`, because the three shapes disagree about what an
+    absent field means and a single pass over all of them had to pick one
+    answer. It picked "absent", which is right for a patch and wrong for a
+    record - so a complete engine profile carrying `seed = None` was stored.
+    """
+    kind = shape(profile)
+    if kind is DASHBOARD_PATCH:
+        if not hasattr(profile, "get"):
+            # Not a record, not a patch, not a `Profile`. The generic reader
+            # used to answer `None` to every lookup here too, so an integer
+            # handed to this function came back reported as a profile whose
+            # name was unset rather than as something that is not a profile.
+            return [f"{where}: a profile must be a record or a patch, not "
+                    f"{_name(profile)}. Nothing was written."]
+        return _dashboard_problems(profile, where)
+    read = (profile.get if kind is ENGINE_RECORD
+            else lambda name: getattr(profile, name, None))
+    return _table_problems(read, field_policy.PROFILE, where)
 
 
 class WriteRefused(ValueError):
@@ -284,6 +475,26 @@ def readable_value(field: str, value, *,
     if isinstance(value, float) and not math.isfinite(value):
         return None                      # not JSON; `null` is the honest answer
     return value
+
+
+def readable_names(pairs) -> list:
+    """`(id, name)` pairs with every name repaired to the text a reader sees.
+
+    The uniqueness check builds a `{id: {names}}` map out of what is on disk,
+    which puts every stored name into a `set` - so one legacy record holding
+    `name: ["a"]` raised `TypeError: unhashable type: 'list'` out of
+    `name_clash`, and the store stopped accepting *any* new profile. A record
+    an older build wrote cannot be allowed to make the store unwritable for
+    everything else; refusing new damage and repairing the view of old damage
+    are the two halves of the same rule, and this is the second one applied at
+    the one read the write path performs.
+
+    Repairing rather than dropping is deliberate: a stored `123` is shown as
+    `"123"` by every surface, so a new profile asking for that name is asking
+    for one that is already visibly taken, and `resolve("123")` would be
+    ambiguous forever if this let it through.
+    """
+    return [(pid, readable_value("name", name)) for pid, name in pairs]
 
 
 def readable(record: dict, *,

@@ -34,6 +34,7 @@ next begins. A sync failure is a real failure and is raised; only the documented
 """
 from __future__ import annotations
 
+import base64
 import errno
 import json
 import os
@@ -121,8 +122,18 @@ def _descriptor_ok(desc) -> bool:
     and `crypto.check_password(pw, salt, None)` answers False for every
     password, so the store it produced could not be unlocked by anyone.
     """
-    return (isinstance(desc, dict)
-            and _text(desc.get("salt")) and _text(desc.get("verifier")))
+    if not (isinstance(desc, dict)
+            and _text(desc.get("salt")) and _text(desc.get("verifier"))):
+        return False
+    # The salt has to be the encoding the key derivation will feed to
+    # `b64decode`. Checking only that it is a nonempty string let a damaged
+    # descriptor through to `binascii.Error`, raised out of what every caller
+    # asks as a yes/no question.
+    try:
+        base64.b64decode(desc["salt"], validate=True)
+    except (ValueError, TypeError):
+        return False
+    return True
 
 
 def classify(root) -> tuple:
@@ -465,6 +476,112 @@ def sync_data(root) -> None:
         sync_dir(directory)
 
 
+def structural_problems(root, descriptor: dict) -> list:
+    """What is wrong with this root that can be seen **without a key**.
+
+    A usable descriptor, files whose containers have the shape their site
+    declares, and no credential still readable. Plaintext and ciphertext are
+    distinguishable by looking, which is what makes this a real proof for an
+    *enable* - and not one for a rotation, where both generations are
+    ciphertext and only a trial decryption tells them apart.
+    """
+    from . import vault
+
+    problems = []
+    if not _descriptor_ok(descriptor):
+        problems.append("the descriptor has no usable salt and verifier")
+        return problems
+
+    damaged = unreadable_secret_files(root)
+    if damaged:
+        problems.append(
+            f"{len(damaged)} secret-bearing file(s) cannot be read: "
+            f"{', '.join(p.name for p in damaged)}")
+
+    leftover = vault.plaintext_secrets(root)
+    if leftover:
+        problems.append(
+            f"{len(leftover)} credential(s) are still unencrypted in "
+            f"{', '.join(sorted({p.name for p, _ in leftover}))}")
+    return problems
+
+
+def completion_problems(root, descriptor: dict, password: Optional[str]) -> list:
+    """Why this data root is **not** in the generation `descriptor` names.
+
+    The one completion rule, used by ordinary enable, ordinary rotation, both
+    resumes and every early-return shortcut - because the defects it replaces
+    were each a different path deciding "finished" its own cheap way:
+
+    * the enable shortcut asked only "is any plaintext left". Three secrets
+      re-encrypted under a *foreign* descriptor answered no, so it committed a
+      descriptor that opened none of them and deleted the journal - destroying
+      the record of the salt they were actually under. Measured: `recover()`
+      returned True and nothing on disk opened with any password afterwards.
+    * a nonempty but damaged verifier passed the shape check and was committed
+      without ever being used, leaving a vault whose password could not be
+      checked by anyone.
+    * a resumed rotation skipped a plaintext pool password - `rekey_all` moves
+      ciphertext and leaves plaintext alone - and still reported success.
+
+    An `enc:vN:` prefix is not proof of a generation, and neither is a matching
+    salt: both generations of a rotation are ciphertext. The only proof is
+    opening the records with the key the descriptor names, so without a
+    password this returns the reason it cannot decide rather than a cheap yes.
+    """
+    problems = structural_problems(root, descriptor)
+    if problems and not _descriptor_ok(descriptor):
+        return problems                       # nothing below can be evaluated
+
+    if password is None:
+        problems.append(
+            "no master password was supplied, so whether the stored secrets "
+            "open with this descriptor cannot be established")
+        return problems
+
+    if not crypto.check_password(password, descriptor["salt"],
+                                 descriptor.get("verifier")):
+        problems.append(
+            "the descriptor's verifier does not open with this password, so "
+            "the descriptor does not describe this data")
+        return problems                       # the key is wrong; stop here
+
+    stale = unconverted(root, password, descriptor["salt"])
+    if stale:
+        problems.append(
+            f"{len(stale)} file(s) hold secrets this descriptor does not "
+            f"open: {', '.join(sorted({p.name for p in stale}))}")
+    return problems
+
+
+def _refuse_incomplete(root, what: str, problems: list) -> None:
+    """Raise with what is wrong and what to do, keeping the journal."""
+    raise VaultRecoveryRequired(
+        f"A {what} cannot be completed against this data root: "
+        + "; ".join(problems)
+        + f". Nothing has been committed and {journal_path(root).name} is "
+          f"kept - it holds the descriptor those secrets belong to. Open the "
+          f"store with the master password that migration was using "
+          f"(NUMERA_PASSWORD, or --password), or restore the data directory "
+          f"from a backup.")
+
+
+def commit_and_verify(root, step, cfg: dict, new: dict, save_config,
+                      password: Optional[str], what: str) -> None:
+    """Commit this generation and prove the root reached it, or undo both.
+
+    The single call every migration path makes, because the defect underneath
+    all of this was four paths each deciding "finished" their own way. Inside
+    the caller's `migration` block on purpose: a root that is still not in this
+    generation rolls the whole transaction back and keeps its journal, rather
+    than committing a descriptor half the files do not answer to.
+    """
+    commit(root, step, cfg, new, save_config)
+    problems = completion_problems(root, new, password)
+    if problems:
+        _refuse_incomplete(root, what, problems)
+
+
 def commit(root, step, cfg: dict, new: dict, save_config) -> None:
     """Move this data root into the generation `new` names. **The commit point.**
 
@@ -512,16 +629,31 @@ def _finish_enable(root, cfg, new, save_config, password) -> bool:
 
     leftover = vault.plaintext_secrets(root)
     if not leftover:
-        # Enable is the one migration whose completion is decidable without a
-        # key: plaintext and ciphertext are distinguishable by looking. With
-        # every file readable and nothing readable left in them, the data is in
-        # the new generation and only the descriptor is outstanding.
-        sync_data(root)
-        if not cfg.get("vault"):
-            save_config({**cfg, "vault": dict(new)})
-        sync_config(root)
-        end_journal(root)
-        return True
+        # Two different situations reach here, and only one of them is a
+        # decision.
+        #
+        # If the config already names this descriptor, the commit landed and
+        # only `end_journal` was missed. Nothing is being chosen: the store was
+        # already serving under this key. What can be checked without one -
+        # readable containers, nothing left in the clear - is checked, and the
+        # record goes.
+        #
+        # If the config names no vault, committing this descriptor *is* the
+        # decision, and the old shortcut made it on "is any plaintext left".
+        # Three secrets re-encrypted under a foreign descriptor answer no just
+        # as readily, so it committed a descriptor opening none of them and
+        # then deleted the only record of the right one. That now needs the key.
+        already = (cfg.get("vault") or {}).get("salt") == new["salt"]
+        problems = (structural_problems(root, new) if already
+                    else completion_problems(root, new, password))
+        if not problems:
+            sync_data(root)
+            if not already:
+                save_config({**cfg, "vault": dict(new)})
+            sync_config(root)
+            end_journal(root)
+            return True
+        _refuse_incomplete(root, "`vault enable`", problems)
     if not password:
         raise VaultRecoveryRequired(
             f"A `vault enable` was interrupted with {len(leftover)} credential(s) "
@@ -535,8 +667,9 @@ def _finish_enable(root, cfg, new, save_config, password) -> bool:
             "so it cannot be finished with it")
     with vault.migration(root, keep_journal=True) as step:
         step.encrypt_all(password, new["salt"])
-        commit(root, step, cfg, new, save_config)
-    return True
+        commit_and_verify(root, step, cfg, new, save_config, password,
+                          "`vault enable`")
+    return True                    # `migration`'s clean exit drops the journal
 
 
 def _finish_rotation(root, cfg, new, old, save_config, password, old_password) -> bool:
@@ -557,14 +690,18 @@ def _finish_rotation(root, cfg, new, old, save_config, password, old_password) -
         # it is a different question, and this used to assume the answer: it
         # dropped the journal on the matching salt alone. A rotation that was
         # rolled back after the descriptor landed leaves exactly this state
-        # with every record still under the old key, so the only honest test is
-        # to open them.
-        if not unconverted(root, password, new["salt"]):
+        # with every record still under the old key.
+        #
+        # The full completion rule rather than `unconverted` alone: that call
+        # walks ciphertext and steps over plaintext, so a pool password the
+        # enable never reached passed it and the rotation "finished" over an
+        # unencrypted credential.
+        if not completion_problems(root, new, password):
             sync_data(root)
             sync_config(root)
             end_journal(root)               # nothing left but the cleanup
             return True
-        # Some records are still behind. Fall through and finish the rotation
+        # Something is still behind. Fall through and finish the rotation
         # properly - which needs the old password as well, because telling a
         # moved record from a waiting one is a trial decryption.
     if not (password and old_password):
@@ -584,5 +721,13 @@ def _finish_rotation(root, cfg, new, old, save_config, password, old_password) -
     with vault.migration(root, keep_journal=True) as step:
         step.rekey_all(old_password, (old or {}).get("salt"),
                        password, new["salt"], resume=True)
-        commit(root, step, cfg, new, save_config)
-    return True
+        # `rekey_all` moves ciphertext and steps over plaintext, which is right
+        # for a rotation and wrong for a *resume*: an enable that never reached
+        # the pool leaves a readable password behind, and rotating around it
+        # finished with that credential still in the clear. The recovery
+        # contract permits encrypting it here - we hold the target key and are
+        # inside the transaction that would undo it.
+        step.encrypt_all(password, new["salt"])
+        commit_and_verify(root, step, cfg, new, save_config, password,
+                          "master-password rotation")
+    return True                    # `migration`'s clean exit drops the journal

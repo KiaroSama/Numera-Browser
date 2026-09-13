@@ -1,0 +1,61 @@
+{
+  "schema": "numera.closure-ledger/1",
+  "release": "0.34.0",
+  "baseline": "d40415b648f854178b88eb8aa88551e9e6ea5979",
+  "candidate_branch": "fix/brief29-remediation",
+  "executed_on": {
+    "os": "Windows 11 26200",
+    "python": "3.13.15",
+    "pytest": "9.1.1",
+    "node": "24.18.0",
+    "npm": "12.0.2",
+    "rust": "1.98.0"
+  },
+  "prior_diagnostics": {
+    "count": 19,
+    "mapping": "by acceptance group",
+    "reason": "the per-diagnostic identifiers live in Numera-Browser_d40415b_Evidence.zip, which is not present in this repository or in the attachment",
+    "groups": {"N14": 9, "N02": 8, "N04": 6}
+  },
+  "items": [
+    {"id": "N14.A-1", "entry_point": "helpers.run_helper", "baseline_evidence": "helper wrote TRAILING-NO-NEWLINE and exited 0; caller received returncode=0 with stdout=''; 6.89s against a 3s budget", "regression": "engine/tests/test_helper_ownership.py::test_a_driver_holding_both_writers_does_not_truncate_the_answer", "os": "windows", "backend": "real child processes", "result": "VERIFIED"},
+    {"id": "N14.A-2", "entry_point": "proctree + OS", "baseline_evidence": "settle() return value used as evidence about a process", "regression": "engine/tests/test_helper_ownership.py::test_the_driver_is_gone_according_to_the_operating_system", "os": "windows", "backend": "real child processes", "result": "VERIFIED"},
+    {"id": "N14.A-3", "entry_point": "helpers.run_helper", "baseline_evidence": "same-group pipe holder control", "regression": "engine/tests/test_helper_ownership.py::test_a_grandchild_in_the_same_group_is_the_control", "os": "windows", "backend": "real child processes", "result": "VERIFIED"},
+    {"id": "N14.A-4", "entry_point": "helpers.run_helper", "baseline_evidence": "timeout path with a separately sessioned driver", "regression": "engine/tests/test_helper_ownership.py::test_a_wedged_helper_with_a_driver_times_out_within_the_declared_bound", "os": "windows", "backend": "real child processes", "result": "VERIFIED"},
+    {"id": "N14.A-5", "entry_point": "helpers.run_helper", "baseline_evidence": "normal and non-zero exits with a trailing body and no newline", "regression": "engine/tests/test_helper_ownership.py::test_a_plain_helper_returns_its_whole_output", "os": "windows", "backend": "real child processes", "result": "VERIFIED"},
+    {"id": "N14.A-6", "entry_point": "helper_streams.Streams", "baseline_evidence": "a reader still waiting on an open writer reported completion", "regression": "engine/tests/test_helper_ownership.py::test_a_reader_that_cannot_reach_the_end_says_so", "os": "windows+posix", "backend": "real OS pipe", "result": "VERIFIED"},
+    {"id": "N14.A-7", "entry_point": "helpers.run_helper", "baseline_evidence": "daemon reader threads outlived the call still holding output", "regression": "engine/tests/test_helper_ownership.py::test_no_reader_thread_outlives_the_call", "os": "windows", "backend": "real child processes", "result": "VERIFIED"},
+    {"id": "N14.B-1", "entry_point": "HelperManager", "baseline_evidence": "admit then end_all released a starting record: live 1->0, state=settled, and the caller then spawned an untracked child", "regression": "engine/tests/test_helper_admission.py::test_a_shutdown_does_not_release_a_reservation_that_has_not_spawned", "os": "windows", "backend": "none", "result": "VERIFIED"},
+    {"id": "N14.B-2", "entry_point": "helpers.run_helper", "baseline_evidence": "shutdown raced against pause points before spawn, during spawn and before attach", "regression": "engine/tests/test_helper_admission.py::test_a_shutdown_racing_a_start_never_loses_the_outcome", "repeats": 20, "os": "windows", "backend": "real child processes", "result": "VERIFIED"},
+    {"id": "N14.B-3", "entry_point": "helpers.run_helper", "baseline_evidence": "an attach failure propagated with two BufferedReaders open (ResourceWarning)", "regression": "engine/tests/test_helper_admission.py::test_an_attach_failure_does_not_lose_the_process_it_created", "os": "windows", "backend": "real child processes", "result": "VERIFIED"},
+    {"id": "N14.B-4", "entry_point": "HelperManager.end_all", "baseline_evidence": "repeated, concurrent and two-app shutdown; another app's sentinel must survive", "regression": "engine/tests/test_helper_admission.py::test_one_app_s_shutdown_leaves_another_app_s_helper_alone", "os": "windows", "backend": "real child processes", "result": "VERIFIED"},
+    {"id": "N14.C-1", "entry_point": "unit_report.read", "baseline_evidence": "missing, unreadable, truncated, malformed and no-path reports all returned [] like a helper that owned nothing", "regression": "engine/tests/test_helper_ownership.py::test_a_damaged_report_is_not_an_empty_one", "os": "windows+posix", "backend": "none", "result": "VERIFIED"},
+    {"id": "N14.C-2", "entry_point": "unit_report.read", "baseline_evidence": "valid zero units had to stay distinguishable from lost evidence", "regression": "engine/tests/test_helper_ownership.py::test_an_empty_report_is_a_real_answer", "os": "windows+posix", "backend": "none", "result": "VERIFIED"},
+    {"id": "N14.C-3", "entry_point": "HelperManager.settle", "baseline_evidence": "lost evidence cleared the registry", "regression": "engine/tests/test_helper_ownership.py::test_a_damaged_report_strands_the_helper_rather_than_clearing_it", "os": "windows", "backend": "none", "result": "VERIFIED"},
+    {"id": "N14.C-4", "entry_point": "proctree._spawn_leader", "baseline_evidence": "_report_unit swallowed OSError, so a driver whose ownership could not be recorded started anyway", "regression": "engine/tests/test_helper_ownership.py::test_a_report_that_cannot_be_written_ends_the_launch", "os": "windows", "backend": "real child process", "result": "VERIFIED"},
+
+    {"id": "N02.A-1", "entry_point": "vault.recover", "baseline_evidence": "three credentials under a foreign descriptor: recover() returned True, committed the wrong descriptor, deleted the journal, and nothing opened under any password afterwards", "regression": "engine/tests/test_vault_completion_invariant.py::test_ciphertext_from_a_foreign_descriptor_is_refused", "os": "windows", "backend": "real cryptography", "result": "VERIFIED"},
+    {"id": "N02.A-2", "entry_point": "vault.recover", "baseline_evidence": "a refusal must not be destructive", "regression": "engine/tests/test_vault_completion_invariant.py::test_the_foreign_data_is_still_recoverable_afterwards", "os": "windows", "backend": "real cryptography", "result": "VERIFIED"},
+    {"id": "N02.A-3", "entry_point": "vault.recover", "baseline_evidence": "control: a healthy enable must still complete", "regression": "engine/tests/test_vault_completion_invariant.py::test_an_enable_whose_data_really_is_ours_completes", "os": "windows", "backend": "real cryptography", "result": "VERIFIED"},
+    {"id": "N02.A-4", "entry_point": "vault.recover", "baseline_evidence": "no key must give an actionable refusal with the evidence kept", "regression": "engine/tests/test_vault_completion_invariant.py::test_without_a_password_an_interrupted_enable_refuses", "os": "windows", "backend": "real cryptography", "result": "VERIFIED"},
+    {"id": "N02.B-1", "entry_point": "vault.recover", "baseline_evidence": "a nonempty damaged verifier was committed without being used; check_password then rejected the committed value", "regression": "engine/tests/test_vault_completion_invariant.py::test_a_damaged_verifier_is_never_committed", "os": "windows", "backend": "real cryptography", "result": "VERIFIED"},
+    {"id": "N02.B-2", "entry_point": "crypto.check_password", "baseline_evidence": "a non-base64 salt raised binascii.Error out of a yes/no question", "regression": "engine/tests/test_vault_completion_invariant.py::test_an_unusable_descriptor_is_refused", "os": "windows", "backend": "real cryptography", "result": "VERIFIED"},
+    {"id": "N02.C-1", "entry_point": "vault.recover", "baseline_evidence": "a plaintext pool password survived a resumed rotation in both shapes and recover() returned True", "regression": "engine/tests/test_vault_completion_invariant.py::test_a_resume_does_not_finish_over_a_readable_credential", "os": "windows", "backend": "real cryptography", "result": "VERIFIED"},
+    {"id": "N02.C-2", "entry_point": "vault.recover", "baseline_evidence": "new config over old data, malformed containers, wrong and missing passwords, empty control, reopen twice", "regression": "engine/tests/test_vault_completion_invariant.py", "os": "windows", "backend": "real cryptography", "result": "VERIFIED"},
+
+    {"id": "N04.A-1", "entry_point": "ProfileStore.save", "baseline_evidence": "fingerprint=None, list, int or str became 'all optional fields absent' through generic attribute lookup", "regression": "engine/tests/test_write_contract_complete_record.py", "os": "windows", "backend": "none", "result": "VERIFIED"},
+    {"id": "N04.B-1", "entry_point": "ProfileStore.save", "baseline_evidence": "screen_width=inf was written to disk as the non-JSON token Infinity", "regression": "engine/tests/test_write_contract_complete_record.py", "os": "windows", "backend": "none", "result": "VERIFIED"},
+    {"id": "N04.B-2", "entry_point": "ProfileStore.save", "baseline_evidence": "user_agent=123, timezone=[], viewport_height=-1, seed and languages None were listed by no rule", "regression": "engine/tests/test_write_contract_complete_record.py", "os": "windows", "backend": "none", "result": "VERIFIED"},
+    {"id": "N04.B-3", "entry_point": "models vs field_policy", "baseline_evidence": "a model field with no policy was undetectable", "regression": "engine/tests/test_model_policy_coverage.py", "os": "windows", "backend": "none", "result": "VERIFIED"},
+    {"id": "N04.B-4", "entry_point": "API / CLI / batch", "baseline_evidence": "a bad later batch entry, partial writes, revision conflicts and secret intent", "regression": "engine/tests/test_write_contract_boundaries.py", "os": "windows", "backend": "none", "result": "VERIFIED"},
+    {"id": "N04.B-5", "entry_point": "API listing and dashboard", "baseline_evidence": "legacy missing, numeric and null names through list, health and search, and a rendered dashboard", "regression": "engine/tests/test_write_contract_boundaries.py; dashboard/test/legacy-name-render.test.jsx", "os": "windows", "backend": "jsdom", "result": "VERIFIED"},
+
+    {"id": "N04.extra-1", "entry_point": "server/stores.py:_claim_names", "baseline_evidence": "stored_names() went straight into name_clash, which sets every name, so one legacy record with name: ['a'] made every API edit a 500 for every profile", "regression": "engine/tests/test_write_contract_boundaries.py::test_the_healthy_record_is_still_editable_alongside_the_damaged_ones", "os": "windows", "backend": "none", "result": "VERIFIED", "note": "found while closing N04; the xfail tripwire that recorded it was removed because the defect is fixed"}
+  ],
+  "not_executed_here": [
+    {"what": "Linux legs of every N14 and N02 row", "reason": "single Windows host; CI cannot run - see execution manifest"},
+    {"what": "four-backend live lifecycle matrix beyond bundled Chromium", "reason": "only the project's bundled Playwright Chromium is installed on this host"},
+    {"what": "authenticated Docker startup/persistence, source-free portable build", "reason": "CI-only gates; no run executed at the candidate SHA"},
+    {"what": "physical power-loss durability", "reason": "process-kill tests are not proof of it and no such claim is made"}
+  ]
+}

@@ -2,6 +2,48 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.34.0] - 2026-09-13
+
+A third recheck kept N14, N02 and N04 open. Each was reproduced at the real
+project boundary with real processes and real cryptography before anything
+changed, and two of the three reproductions were worse than the report.
+
+- Stop truncating a helper's answer in silence. A probe whose browser driver
+  inherited its pipe writers — the ordinary shape on Windows, where the driver
+  is handed its own job handle and the standard handles come with it — wrote
+  its last bytes without a newline, exited 0, and returned `stdout=''` to its
+  caller alongside a successful exit code. Draining by line never yields a
+  trailing write, the reader threads were daemons nobody joined, and the pipes
+  were closed while a live process still held the other end so end-of-file was
+  never reachable. Streams are owned now, every unit is ended before anything
+  is closed, and output that could not be read to the end is an error rather
+  than a shorter string. The same reordering took a measured 6.9s case to 3.8s.
+- Never release a helper reservation that has not spawned yet. Shutdown settled
+  a `starting` record, found no process on it and dropped it — after which the
+  spawn went ahead and produced a child nothing tracked, behind a shutdown that
+  had already reported success. Admission, spawn and attach are one state
+  machine: a reservation is cancelled and waited for, and if it does not resolve
+  it is reported stranded rather than forgotten.
+- Tell lost ownership evidence from a helper that owned nothing. A missing
+  report, an unreadable one and a truncated final record all read as "nothing to
+  clean up", and a failure to *write* the report was swallowed in the child, so
+  a browser whose ownership could never be communicated started anyway. A report
+  that cannot be trusted now strands its helper, and a driver that cannot be
+  recorded is stopped instead of started.
+- Apply one completion rule to every vault path. Three separate shortcuts each
+  decided "finished" their own cheap way: the enable path asked only whether any
+  plaintext was left, so three credentials re-encrypted under a **foreign**
+  descriptor answered no — it committed a descriptor that opened none of them
+  and deleted the journal naming the right one, after which nothing on disk
+  opened with any password. A nonempty but damaged verifier was committed
+  without ever being used. A resumed rotation stepped over a plaintext pool
+  password and reported success. Ordinary enable, ordinary rotation and both
+  resumes now commit and then prove the root reached that generation, or roll
+  back and keep the evidence.
+- Answer, rather than crash, on a malformed descriptor. A salt that is not valid
+  base64 reached the key derivation and raised `binascii.Error` straight through
+  `check_password`, which every caller asks as a yes/no question.
+
 ## [0.33.0] - 2026-09-13
 
 Two rechecks of 0.32.0. The first kept four findings open; the second kept three

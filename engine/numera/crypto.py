@@ -144,8 +144,19 @@ def make_verifier(password: str, salt_b64: str) -> str:
 
 
 def check_password(password: str, salt_b64: str, verifier: str) -> bool:
-    """Does ``password`` match the one the vault was set up with?"""
+    """Does ``password`` match the one the vault was set up with?
+
+    A boolean question, answered for every input. It used to let a malformed
+    descriptor out as an exception: a salt that is not valid base64 reached
+    `b64decode` and raised `binascii.Error` straight through the caller, so a
+    damaged `config.json` or journal crashed the check instead of failing it.
+    Nothing downstream wanted a third answer - every caller is asking whether to
+    trust this password, and "the descriptor is unusable" is a no.
+    """
+    if not isinstance(salt_b64, str) or not isinstance(verifier, str):
+        return False
     try:
         return decrypt(password, salt_b64, verifier) == "numera-vault-ok"
-    except VaultLocked:
+    except (VaultLocked, ValueError, TypeError):
+        # `binascii.Error` is a `ValueError`; so is a bad envelope shape.
         return False

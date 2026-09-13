@@ -132,6 +132,22 @@ def test_an_unexpected_exception_still_ends_the_helper(wedged, watch, monkeypatc
         monkeypatch.setattr(routes_browser.proctree, "spawn", spawn_then_break)
         routes_browser.run_helper(wedged, timeout=30.0)
 
+    # The strong oracle first, and it is deterministic: the tree primitive is
+    # what "provably gone" means, and the OS answers it from the job's live
+    # process count.
+    assert not proctree.alive_tree(watch["tree"]), \
+        "an unexpected failure left the helper's process tree running"
+
+    # `poll()` is the weaker signal and it lags. On Windows `GetExitCodeProcess`
+    # can still report STILL_ACTIVE for a moment after `TerminateJobObject`
+    # returns, because the process object transitions asynchronously - measured
+    # here as about 0.1s, on one run in five. Sampling it with no tolerance made
+    # this test fail three times in five for a helper that was already dead, so
+    # it is read with a bounded wait rather than instantly. The assertion is
+    # unchanged: the process must be gone.
+    deadline = time.monotonic() + 5.0
+    while watch["proc"].poll() is None and time.monotonic() < deadline:
+        time.sleep(0.05)
     assert watch["proc"].poll() is not None, \
         "an unexpected failure left the helper process running"
     assert _pipes_open(watch["proc"]) == [], \

@@ -169,17 +169,51 @@ def test_an_unreadable_secret_file_blocks_completion(tmp_path):
     assert vault.journal_path(tmp_path).exists(), "the evidence was cleared anyway"
 
 
-def test_a_readable_root_still_completes(tmp_path):
-    """The control. The stricter check must not refuse a healthy finish."""
+def test_a_readable_root_whose_descriptor_already_committed_still_completes(
+        tmp_path):
+    """The control, narrowed in 0.34.0 to the case it actually proves.
+
+    It used to commit this descriptor with no password at all, on the strength
+    of "every value starts with `enc:`". That is what let recovery adopt a
+    descriptor for ciphertext written under a *different* key and then delete
+    the journal naming the right one - see
+    `test_vault_completion_invariant.py::test_ciphertext_from_a_foreign_descriptor_is_refused`,
+    which measures the loss.
+
+    Here the config *already names* this descriptor, so nothing is being
+    chosen: the store was serving under this key before the crash and the only
+    outstanding step is dropping the record. What can be established without a
+    key - readable containers, nothing left in the clear - still is.
+    """
+    (tmp_path / "profiles").mkdir()
+    (tmp_path / "profiles" / "a.json").write_text(json.dumps(
+        {"id": "a", "proxy": {"password": "enc:v2:abc"}}), encoding="utf-8")
+    journal(tmp_path, {"version": 1, "op": "enable", "salt": GOOD["salt"], "new": GOOD})
+    cfg = {"vault": dict(GOOD)}
+
+    assert vault.recover(tmp_path, lambda: cfg, lambda c: cfg.update(c)) is True
+    assert cfg["vault"]["salt"] == GOOD["salt"]
+    assert not vault.journal_path(tmp_path).exists()
+
+
+def test_an_uncommitted_descriptor_is_not_adopted_without_a_key(tmp_path):
+    """The other half of the narrowing, kept here beside its control.
+
+    No vault in the config means committing this descriptor is a decision, and
+    "everything looks encrypted" does not establish that it is encrypted under
+    *this* key.
+    """
     (tmp_path / "profiles").mkdir()
     (tmp_path / "profiles" / "a.json").write_text(json.dumps(
         {"id": "a", "proxy": {"password": "enc:v2:abc"}}), encoding="utf-8")
     journal(tmp_path, {"version": 1, "op": "enable", "salt": GOOD["salt"], "new": GOOD})
     cfg = {}
 
-    assert vault.recover(tmp_path, lambda: cfg, lambda c: cfg.update(c)) is True
-    assert cfg["vault"]["salt"] == GOOD["salt"]
-    assert not vault.journal_path(tmp_path).exists()
+    with pytest.raises(vault.VaultRecoveryRequired, match="no master password"):
+        vault.recover(tmp_path, lambda: cfg, lambda c: cfg.update(c))
+
+    assert "vault" not in cfg
+    assert vault.journal_path(tmp_path).exists()
 
 
 # ---------------------------------------------------------------------------

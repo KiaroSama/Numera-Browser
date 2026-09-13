@@ -34,10 +34,10 @@ from .helpers import (                                          # noqa: E402,F40
     Helper,
     HelperFailed,
     HelperManager,
+    HelperOutputIncomplete,
     HelperShuttingDown,
     HelperTimeout,
     HelperUnsettled,
-    close_pipes,
     end_helpers,
     live_helpers,
     reopen,
@@ -199,12 +199,13 @@ def register(app, ctx):
             # 504: the helper, not this server, is what ran out of time - and
             # it has been stopped, so the answer is truthful about the state.
             raise HTTPException(504, str(stalled)) from None
-        except HelperUnsettled as stranded:
-            # The command may well have answered, but something it started is
-            # still running and still holding the profile. Returning its output
-            # as an ordinary result is what let a probe report success over a
-            # browser nothing was tracking.
-            raise HTTPException(500, str(stranded)) from None
+        except (HelperUnsettled, HelperOutputIncomplete) as broken:
+            # The command may well have answered. Something it started is still
+            # unaccounted for, or its answer could not be read to the end -
+            # and half a probe's JSON is a different answer, not a smaller one.
+            # Returning either as an ordinary result is what let a probe report
+            # success over a browser nothing was tracking.
+            raise HTTPException(500, str(broken)) from None
         if proc.returncode != 0 and not (allow_fail and proc.stdout.strip()):
             raise HTTPException(500, (proc.stdout + proc.stderr).strip() or "command failed")
         return proc.stdout

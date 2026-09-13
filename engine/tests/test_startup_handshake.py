@@ -390,6 +390,20 @@ def _edit_once_on_read(app, client, pid, monkeypatch, name="after"):
     return once
 
 
+#: This one starts a real browser through the probe route, and the project-wide
+#: pytest ceiling of 120s is sized for tests that do not. Measured on the
+#: reference machine: 19.7s warm, 33.9s cold, and 82s cold while sharing the
+#: machine with another suite - so the margin at 120s is nothing, and a loaded
+#: run turned a passing test into a suite failure.
+#:
+#: 330s rather than a round number on purpose: it is just above
+#: `routes_browser.HELPER_TIMEOUT` (300s), so if the helper really does hang it
+#: is the *product's* deadline that fires and the product's error that surfaces.
+#: With pytest's ceiling below it, a genuine helper timeout was reported as a
+#: pytest timeout instead - the wrong bound winning, and the wrong diagnosis.
+#: The whole run stays bounded by the guarded runner's wall and idle ceilings
+#: regardless, so this widens one test's margin, not the suite's safety net.
+@pytest.mark.timeout(330)
 def test_a_probe_does_not_materialise_a_stale_snapshot(app_and_client, monkeypatch):
     """Every probe route goes through `_prepare`, which used to write
     `to_engine_profile()` of the record it had just read - so an edit landing
