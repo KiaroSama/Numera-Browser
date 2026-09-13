@@ -2,6 +2,28 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.35.0] - 2026-09-13
+
+A refused vault migration now says *why* in a form something can act on, and
+the refusals stopped disagreeing with each other.
+
+- Give a refusal a cause, not only a sentence. `VaultIncomplete` carries the
+  list of reasons the migration is not complete, each a stable code beside the
+  text a person reads, so a route, the CLI or a test can ask which problem
+  occurred without matching prose. A wrong password during a resumed rotation
+  likewise reports which of the two was rejected.
+- Stop answering "can this data root be read" in two places. An interrupted
+  `vault enable` had its own check for unreadable secret files, written before
+  the completion rule existed and still deciding first — so the one refusal a
+  caller actually met was the one carrying nothing to match on. Both are now
+  the same check, and it names its cause.
+- Say something that can work. The refusal used to end by suggesting the master
+  password whatever was wrong, including for a file that will not parse, where
+  a password cannot help. The remedy now follows the cause.
+- The exception types and cause codes moved to their own module, so matching on
+  why a migration refused no longer means importing the protocol that produced
+  the refusal.
+
 ## [0.34.0] - 2026-09-13
 
 A third recheck kept N14, N02 and N04 open. Each was reproduced at the real

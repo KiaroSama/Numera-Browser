@@ -158,6 +158,42 @@ def drop_vault(root) -> None:
     write_json(root / "config.json", cfg)
 
 
+
+def assert_refused(call, *, cause, root):
+    """Run `call`, and assert the refusal by its **cause**, not its sentence.
+
+    Pinning wording is the defect this replaces. `completion_problems` can
+    return several reasons and which one surfaces first depends on the order
+    they are appended, so a test that matches a phrase passes wherever that
+    phrase happens to be produced and fails where an equally correct refusal
+    arrives by another route - and the routes differ by what is on disk. That
+    is green exactly where it is least useful.
+
+    What is asserted instead is the contract: it refused, it named this cause,
+    it committed nothing, and it kept the evidence.
+
+    "Committed nothing" is the config being *unchanged*, not the config having
+    no vault. A resumed rotation starts from a root that is legitimately
+    serving under the old descriptor, so "no vault in the config" is an
+    invariant only an interrupted enable has, and asserting it here would have
+    made the rotation cases pass for the wrong reason - or, as it did, fail for
+    one.
+    """
+    before = config_of(root)
+
+    with pytest.raises(vault.VaultIncomplete) as caught:
+        call()
+
+    assert cause in caught.value.codes, (
+        f"expected cause {cause!r}, got {sorted(caught.value.codes)} - "
+        f"{caught.value}")
+    assert config_of(root) == before, \
+        "a refused migration changed the config it promised not to touch"
+    assert vault.journal_path(root).exists(), \
+        "the refusal deleted the record of the descriptor"
+    return caught.value
+
+
 # ---------------------------------------------------------------------------
 # N02.A - an envelope prefix is not a generation
 # ---------------------------------------------------------------------------
@@ -213,12 +249,8 @@ def test_without_a_password_an_interrupted_enable_refuses(root, bench):
     drop_vault(root)
     journal(root, "enable", new=bench["a"])
 
-    with pytest.raises(vault.VaultRecoveryRequired) as caught:
-        recover(root)
-
-    assert "no master password" in str(caught.value)
-    assert vault.journal_path(root).exists()
-    assert config_of(root).get("vault") is None
+    assert_refused(lambda: recover(root),
+                   cause=vault.NO_PASSWORD, root=root)
 
 
 # ---------------------------------------------------------------------------
@@ -235,11 +267,8 @@ def test_a_damaged_verifier_is_never_committed(root, bench):
     assert not crypto.check_password(PW_A, damaged["salt"], damaged["verifier"])
     journal(root, "enable", new=damaged)
 
-    with pytest.raises(vault.VaultRecoveryRequired, match="verifier"):
-        recover(root, password=PW_A)
-
-    assert config_of(root).get("vault") is None
-    assert vault.journal_path(root).exists()
+    assert_refused(lambda: recover(root, password=PW_A),
+                   cause=vault.VERIFIER_MISMATCH, root=root)
 
 
 @pytest.mark.parametrize("mutate,why", [
@@ -249,16 +278,36 @@ def test_a_damaged_verifier_is_never_committed(root, bench):
     (lambda d: d.update(salt="not-base64!!"), "a salt that is not base64"),
 ])
 def test_an_unusable_descriptor_is_refused(root, bench, mutate, why):
+    """Refused before the completion check, and refused *harder*.
+
+    `classify` rejects these while reading the journal, so `recover` never
+    reaches the key check and raises `JournalUnreadable` rather than
+    `VaultIncomplete`. That is the stronger refusal and the right one: a
+    descriptor with no usable salt or verifier cannot be finished by supplying
+    a password - the thing that is missing is not the key - so offering one is
+    the wrong instruction to give.
+    """
     drop_vault(root)
     descriptor = dict(bench["a"])
     mutate(descriptor)
     journal(root, "enable", new=descriptor)
+    before = config_of(root)
 
-    with pytest.raises(vault.VaultRecoveryRequired):
+    with pytest.raises(vault.JournalUnreadable):
         recover(root, password=PW_A)
 
-    assert config_of(root).get("vault") is None, f"{why} was committed"
-    assert vault.journal_path(root).exists()
+    assert config_of(root) == before, f"{why} was committed anyway"
+    assert vault.journal_path(root).exists(), \
+        f"{why} had its evidence deleted"
+
+    # The cause code still has to exist and name itself, because
+    # `structural_problems` is public: a caller holding a descriptor from
+    # somewhere other than a journal reaches this branch without `classify`
+    # having filtered it first, and everything below it would otherwise run
+    # `check_password` against a salt that does not decode.
+    problems = vault.completion_problems(root, descriptor, PW_A)
+    assert vault.codes(problems) == {vault.DESCRIPTOR_UNUSABLE}, \
+        f"{why} produced {problems}"
 
 
 # ---------------------------------------------------------------------------
@@ -299,16 +348,21 @@ def test_a_clean_resume_moves_every_site(root, bench):
     assert_fully_recovered(root, PW_B)
 
 
-@pytest.mark.parametrize("password,old_password,fragment", [
-    (PW_B, "wrong-old", "moving away from"),
-    ("wrong-new", PW_A, "new master password"),
+@pytest.mark.parametrize("password,old_password,role", [
+    (PW_B, "wrong-old", "old"),
+    ("wrong-new", PW_A, "new"),
 ])
 def test_a_wrong_password_refuses_and_changes_nothing(
-        root, bench, password, old_password, fragment):
+        root, bench, password, old_password, role):
+    """Which password was rejected is read off the error, not its sentence."""
     journal(root, "rotate", new=bench["b"], old=bench["a"])
 
-    with pytest.raises(crypto.VaultLocked, match=fragment):
+    with pytest.raises(crypto.VaultLocked) as caught:
         recover(root, password=password, old_password=old_password)
+
+    assert getattr(caught.value, "role", None) == role, (
+        f"expected the {role!r} password to be the rejected one, got "
+        f"{getattr(caught.value, 'role', None)!r}: {caught.value}")
 
     assert vault.journal_path(root).exists()
     assert_fully_recovered(root, PW_A)      # still the old generation, intact
@@ -317,10 +371,10 @@ def test_a_wrong_password_refuses_and_changes_nothing(
 def test_a_resume_with_no_passwords_refuses_and_keeps_the_salt(root, bench):
     journal(root, "rotate", new=bench["b"], old=bench["a"])
 
-    with pytest.raises(vault.VaultRecoveryRequired, match="resume"):
-        recover(root)
-
-    assert vault.journal_path(root).exists()
+    error = assert_refused(lambda: recover(root),
+                           cause=vault.NEEDS_BOTH_PASSWORDS, root=root)
+    assert "resume" in str(error), \
+        "the refusal does not tell the user which command finishes it"
 
 
 # ---------------------------------------------------------------------------
@@ -352,11 +406,8 @@ def test_a_malformed_holder_container_blocks_completion(root, bench, name, body)
     (root / name).write_text(body, encoding="utf-8")
     journal(root, "enable", new=bench["a"])
 
-    with pytest.raises(vault.VaultRecoveryRequired):
-        recover(root, password=PW_A)
-
-    assert config_of(root).get("vault") is None
-    assert vault.journal_path(root).exists()
+    assert_refused(lambda: recover(root, password=PW_A),
+                   cause=vault.UNREADABLE_FILES, root=root)
 
 
 def test_a_root_with_no_secrets_at_all_completes(tmp_path, bench):
