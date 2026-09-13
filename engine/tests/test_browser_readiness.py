@@ -215,9 +215,19 @@ def test_a_launch_whose_browser_never_opens_is_not_a_success(app_and_client, spa
     answer = client.post(f"/api/profiles/{pid}/launch")
     try:
         assert answer.status_code == 500, answer.text
-        # The child's own reason, not "it exited 1" - that is what makes a
-        # startup failure actionable.
-        assert "executable" in answer.json()["detail"].lower(), answer.text
+        # The child's own reason, not the route's placeholder - that is what
+        # makes a startup failure actionable, and `"command failed"` is what
+        # the route falls back to when the child said nothing at all.
+        #
+        # Which reason arrives is a property of the machine, not of the
+        # behaviour under test: with `playwright` importable but its browser
+        # binaries absent it is "no executable"; on a runner that never
+        # installed the package it is "the package isn't installed". Both are
+        # the child diagnosing itself, so pinning either one made this test
+        # pass on two of three CI matrix legs and fail on the third.
+        detail = answer.json()["detail"].lower()
+        assert detail != "command failed", answer.text
+        assert "playwright" in detail, answer.text
         assert app.state.running == {}, "a session that never opened stayed registered"
         assert spawned, "no child was started - the test proves nothing"
         assert spawned[0].poll() is not None, "the failed child was left running"

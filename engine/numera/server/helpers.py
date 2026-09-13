@@ -120,6 +120,10 @@ class Helper:
     #: Set once the reservation has become a process or been proved not to be
     #: one. A shutdown waits on this rather than assuming either.
     resolved: threading.Event = field(default_factory=threading.Event)
+    #: Held for the whole of `settle`, so two callers cannot end the same
+    #: helper at once. `run_helper` settles its own helper and a shutdown
+    #: settles every live one; that overlap is ordinary, not rare.
+    finish: threading.Lock = field(default_factory=threading.Lock)
 
     @property
     def pid(self) -> Optional[int]:
@@ -249,17 +253,31 @@ class HelperManager:
         units are gone. One shared deadline covers every unit, rather than each
         unit getting the whole of it.
         """
-        with self._lock:
-            if helper.state == SETTLED:
-                # Already proved finished by another caller. Settling is not
-                # idempotent by nature - the success path clears the ownership
-                # report - so a second pass would read `units_path=None`, call
-                # that lost evidence and strand a helper that is demonstrably
-                # done. Exactly what a shutdown racing `run_helper`'s own
-                # settle produces, which is the ordinary case rather than a
-                # rare one.
-                return True
-            helper.state = STOPPING
+        # One settle at a time for this helper, and the second caller gets the
+        # first one's verdict rather than a second opinion.
+        #
+        # Checking the state alone was not enough, and the gap is the whole
+        # defect: the first caller sets STOPPING and releases the lock before
+        # doing the slow part, so a second caller arriving *during* that window
+        # saw "not SETTLED yet", ran the whole of settle again, and reached
+        # `read_units` after the winner had already succeeded and cleared
+        # `units_path`. An absent report reads as lost evidence, so a helper
+        # that had demonstrably been ended - SIGTERM delivered, returncode -15 -
+        # was reported STRANDED. Found on Linux in CI; the same race exists on
+        # Windows and simply lost more often there.
+        with helper.finish:
+            with self._lock:
+                if helper.state == SETTLED:
+                    return True
+                if helper.state == STRANDED:
+                    # Already decided, and a stranded record is never retried
+                    # into a cleaner answer than the evidence supports.
+                    return False
+                helper.state = STOPPING
+            return self._settle_locked(helper, deadline)
+
+    def _settle_locked(self, helper: Helper, deadline: float) -> bool:
+        """The body of `settle`, with this helper's `finish` lock already held."""
         reason = None
         left_at = time.monotonic() + deadline
         remaining = lambda: max(0.0, left_at - time.monotonic())   # noqa: E731

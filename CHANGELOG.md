@@ -24,6 +24,30 @@ the refusals stopped disagreeing with each other.
   why a migration refused no longer means importing the protocol that produced
   the refusal.
 
+Then CI ran for the first time in a long while — on a self-hosted runner, which
+a billing block does not reach — and found three more, two of them the same
+shape as the vault defect above.
+
+- Never report a helper stranded because something else already cleaned it up.
+  A server shutdown and the helper's own completion settle the same record by
+  construction, and the guard against that only caught the second one arriving
+  *after* the first had finished. One arriving *during* it ran the whole cleanup
+  again, read an ownership report the winner had already consumed, called the
+  absent file lost evidence — and reported a browser whose process had
+  demonstrably exited as unaccounted for. Settling one helper is now one
+  operation, and a second caller gets the first one's answer.
+- Stop asserting which of two correct refusals arrives. A launch whose browser
+  cannot start is refused with the child's own reason, and that reason is "no
+  executable" or "the package isn't installed" depending on what the machine
+  has. The test pinned one, so it passed on two CI matrix legs and failed on the
+  third; it now asserts what actually matters — that the answer is the child's
+  diagnosis rather than the bare placeholder.
+- Give the dashboard suite a timeout with real margin. Every test in it finishes
+  well inside two seconds warm, but the first one to render the app in a cold
+  worker pays the module graph inside its own measured window, and the 5-second
+  default left nothing spare. Three tests were passing on how the run happened
+  to be scheduled, and failed on a fresh install.
+
 ## [0.34.0] - 2026-09-13
 
 A third recheck kept N14, N02 and N04 open. Each was reproduced at the real
