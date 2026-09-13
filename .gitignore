@@ -52,6 +52,12 @@ node_modules/
 # build/ is produced by scripts/, never edited, and published through Releases.
 /build/
 
+# The self-hosted CI runner and everything it checks out or builds. Kept inside
+# the project on purpose - one folder to delete - and never tracked: it holds a
+# runner credential, a second copy of this repository, and multi-gigabyte build
+# output. Its prerequisites are installed once in the WSL distro and shared.
+/.ci-runner/
+
 # Icon sizes derived from docs/brand/Logo.png by scripts/make-icons.py.
 # The source, the 1024 master and the size the README embeds are tracked; these
 # are intermediates that nothing references and that regenerate in a second.
