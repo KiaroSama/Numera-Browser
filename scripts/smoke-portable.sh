@@ -170,10 +170,27 @@ step '6/9 the API launches and stops a browser - the frozen self-spawn path'
 # before - `numera/__main__.py` used a relative import, so the artifact died on
 # `--version` - and nothing in this script would have noticed, because the CLI
 # path does not self-spawn.
+# `curl -sf` collapses every HTTP error into an empty string, which is how the
+# first version of this step reported a real failure as "<none>" and named
+# nothing. Keep the body AND the status, and put the server's own log beside
+# them: a 500 here is a traceback in `serve`, and that traceback is the answer.
+api_status=""
 api() {
-    local method="$1" path="$2"
-    curl -sf --max-time 60 -X "$method" "http://127.0.0.1:$port$path" || true
+    local method="$1" path="$2" body="${3:-}"
+    local out
+    if [ -n "$body" ]; then
+        out="$(curl -s --max-time 60 -w '\n%{http_code}' \
+               -H 'Content-Type: application/json' -d "$body" \
+               -X "$method" "http://127.0.0.1:$port$path" || true)"
+    else
+        out="$(curl -s --max-time 60 -w '\n%{http_code}' \
+               -X "$method" "http://127.0.0.1:$port$path" || true)"
+    fi
+    api_status="${out##*$'\n'}"
+    printf '%s' "${out%$'\n'*}"
 }
+serve_tail() { printf '\n--- last 40 lines of serve log ---\n%s\n' \
+                      "$(tail -n 40 "$data.serve.log" 2>/dev/null)"; }
 
 pid_json="$(curl -sf --max-time 10 "http://127.0.0.1:$port/api/profiles" || true)"
 prof_id="$(python3 -c "
@@ -183,8 +200,15 @@ print(rows[0]['id'] if rows else '')
 " "$pid_json")"
 [ -n "$prof_id" ] || fail "the API lists no profile to launch: ${pid_json:-<none>}"
 
-launched="$(api POST "/api/profiles/$prof_id/launch")"
-grep -q '"ok" *: *true\|"status"' <<<"$launched"     || fail "the API launch did not answer with a result: ${launched:-<none>}"
+# `{"headless": true}` is not a weakening of the test - it is the documented way
+# to open a profile where there is no display, and this runner is a systemd
+# service inside WSL with no DISPLAY at all, where a windowed launch cannot
+# start. The self-spawn is unchanged either way: the frozen engine still has to
+# re-execute itself, which is the whole point of the step, and step 3 does not
+# cover it because the CLI path never spawns a second copy of the binary.
+launched="$(api POST "/api/profiles/$prof_id/launch" '{"headless": true}')"
+grep -q '"ok" *: *true\|"status"' <<<"$launched" \
+    || fail "the API launch answered HTTP $api_status: ${launched:-<empty body>}$(serve_tail)"
 
 # Ownership, from the product's own surface rather than a guess: the profile
 # has to read back as running, and its session directory has to exist.
@@ -195,11 +219,13 @@ while [ "$(date +%s)" -lt "$until" ] && [ "$(remaining)" -gt 1 ]; do
     if grep -q '"status" *: *"running"' <<<"$running"; then break; fi
     sleep 0.25   # bounded poll
 done
-grep -q '"status" *: *"running"' <<<"$running"     || fail "the API launched a browser and the profile never read back as running"
-ls -d "$data"/user-data/"$prof_id"/ >/dev/null 2>&1     || fail "the API launch created no session directory for $prof_id"
+grep -q '"status" *: *"running"' <<<"$running" \
+    || fail "the API launched a browser and the profile never read back as running$(serve_tail)"
+ls -d "$data"/user-data/"$prof_id"/ >/dev/null 2>&1 \
+    || fail "the API launch created no session directory for $prof_id$(serve_tail)"
 
 stopped="$(api POST "/api/profiles/$prof_id/stop")"
-[ -n "$stopped" ] || fail "the API stop returned nothing"
+[ -n "$stopped" ] || fail "the API stop answered HTTP $api_status with no body$(serve_tail)"
 idle=""
 until=$(( $(date +%s) + 60 ))
 while [ "$(date +%s)" -lt "$until" ] && [ "$(remaining)" -gt 1 ]; do
