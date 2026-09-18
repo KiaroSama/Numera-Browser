@@ -56,7 +56,15 @@ node_modules/
 # the project on purpose - one folder to delete - and never tracked: it holds a
 # runner credential, a second copy of this repository, and multi-gigabyte build
 # output. Its prerequisites are installed once in the WSL distro and shared.
+#
+# The Linux runner now lives at the workstation's canonical /srv/ci roots, so
+# /.ci-runner/ is kept only so an older checkout stays ignored. The Windows
+# runner has no /srv, so it stays project-owned: installation, job workspace
+# and download cache all inside this folder, one directory to delete.
 /.ci-runner/
+/.ci-runner-win/
+/.ci-work/
+/.ci-cache/
 
 # Icon sizes derived from docs/brand/Logo.png by scripts/make-icons.py.
 # The source, the 1024 master and the size the README embeds are tracked; these
