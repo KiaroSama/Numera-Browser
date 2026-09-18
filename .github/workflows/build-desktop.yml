@@ -101,6 +101,14 @@ jobs:
         with:
           name: numera-server-wheel
           path: build/server/*
+          # Every artifact this workflow stores, capped. The desktop folders
+          # are the expensive ones - roughly 700 MB each, produced on every
+          # push to main - and letting them accumulate is what filled the
+          # account's artifact storage, after which uploads failed for *every*
+          # workflow, including the small JUnit reports a failure diagnosis
+          # needs. Seven days is long enough to download a build someone is
+          # looking at and short enough that ordinary pushes stop piling up.
+          retention-days: 7
 
   desktop:
     name: Desktop app (${{ matrix.os }})
@@ -229,6 +237,7 @@ jobs:
         with:
           name: numera-desktop-${{ runner.os }}
           path: "build/${{ env.PLAT }}/Numera Browser"
+          retention-days: 7
 
   # Windows has its own script: it proves the static CRT took, which the POSIX
   # steps above have no equivalent of, and it is the same script a maintainer
@@ -293,6 +302,7 @@ jobs:
         with:
           name: numera-desktop-Windows
           path: "build/windows/Numera Browser"
+          retention-days: 7
 
   # Reusable CI also uploads diagnostics into this run; only products are assets.
   release:
