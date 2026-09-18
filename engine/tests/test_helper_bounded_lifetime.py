@@ -229,6 +229,51 @@ def test_a_failure_before_attach_still_owns_the_spawned_child(manager, tmp_path)
 # C. Repeated shutdown must not release an unresolved reservation
 # ---------------------------------------------------------------------------
 
+#: The brief asks for the startup/shutdown race repeated, because a race that
+#: is only run once is a coin toss reported as a result. Twenty is enough to
+#: make a one-in-four flake a one-in-a-million pass, and the case costs
+#: milliseconds - no process, no browser, just the registry and two events.
+RACE_REPEATS = 20
+
+
+@pytest.mark.parametrize("attempt", range(RACE_REPEATS))
+def test_the_startup_shutdown_race_holds_every_time(manager, attempt):
+    """The same race as below, repeated, with every attempt kept.
+
+    No rerun-on-failure and no flake masking: a single red attempt fails the
+    parametrization, which is the point. The reservation resolves *while* the
+    shutdown is cancelling it, which is the interleave that decides whether a
+    spawn can complete behind a finished sweep.
+    """
+    helper = manager.admit(("python", "-c", "pass"))
+    manager.child_env(helper, {})
+
+    ready = threading.Barrier(2)
+
+    def resolve_mid_shutdown():
+        ready.wait(timeout=SLACK)
+        helper.resolved.set()          # the spawner finishing, concurrently
+
+    racer = threading.Thread(target=resolve_mid_shutdown, name="late-spawn")
+    racer.start()
+    try:
+        ready.wait(timeout=SLACK)
+        left = manager.end_all(deadline=1.0)
+    finally:
+        racer.join(timeout=SLACK)
+        assert not racer.is_alive(), "the racing thread never returned"
+
+    # Whichever side won, the record must be accounted for: either settled
+    # cleanly or reported. What it may never be is silently released while
+    # still able to produce a process.
+    if helper in manager.live():
+        assert helper in left, (
+            f"attempt {attempt}: a live record was not reported by the sweep")
+    else:
+        assert helper.state == helpers.SETTLED, (
+            f"attempt {attempt}: released in state {helper.state!r}")
+
+
 def test_a_second_shutdown_does_not_release_a_still_unresolved_reservation(manager):
     """The first shutdown wrote STRANDED; the second asked "is it STARTING?".
 

@@ -100,17 +100,17 @@ run_engine() {
     allow_failure=0
 }
 
-step '1/7 the engine runs at all'
+step '1/9 the engine runs at all'
 run_engine 30 --version
 [ -n "$output" ] || fail '--version printed nothing'
 printf '    %s\n' "$output"
 
-step '2/7 it creates a profile'
+step '2/9 it creates a profile'
 run_engine 60 create smoke
 run_engine 60 list
 grep -q smoke <<<"$output" || fail "the profile is not in \`list\`: $output"
 
-step '3/7 it launches the bundled browser'
+step '3/9 it launches the bundled browser'
 # `trust` opens a real browser and reads back what the page shows. Nothing short
 # of launching proves the bundle resolves.
 # A non-zero exit here means the *profile* scored imperfectly, which is not what
@@ -124,7 +124,7 @@ grep -q '\[PASS\]' <<<"$output" \
     || fail "\`trust\` reported no passing check - the page was never inspected: $output"
 grep -m1 -i 'trust score' <<<"$output"
 
-step '4/7 serve comes up and answers /api/ready'
+step '4/9 serve comes up and answers /api/ready'
 # Ask the kernel for a free port rather than hoping a fixed one is idle: two
 # jobs on one runner would otherwise collide and read as a flaky build.
 port="$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')"
@@ -143,7 +143,7 @@ done
 grep -q '"ok": *true' <<<"$ready" || fail "/api/ready answered but not ok: $ready"
 printf '    %s\n' "$ready"
 
-step '5/7 the dashboard is served, not just the API'
+step '5/9 the dashboard is served, not just the API'
 # `/api/ready` says nothing about the UI. The engine serves the dashboard out of
 # `numera/web`, and a freeze that collects the Python modules but forgets that
 # directory answers every API route while `/` 404s - an artifact that passes a
@@ -162,7 +162,89 @@ curl -sf --max-time 5 -o /dev/null "http://127.0.0.1:$port$asset" \
     || fail "the page references $asset and the build does not serve it"
 printf '    dashboard served, %s resolves\n' "$asset"
 
-step '6/7 the profile and its session survive a restart'
+step '6/9 the API launches and stops a browser - the frozen self-spawn path'
+# The one path a packaged build has that a source checkout does not. Step 3
+# proved the bundle launches from the CLI; this proves the *server* can do it,
+# and the only difference between them is that the frozen engine has to
+# re-execute itself. That is exactly where the PyInstaller entry point broke
+# before - `numera/__main__.py` used a relative import, so the artifact died on
+# `--version` - and nothing in this script would have noticed, because the CLI
+# path does not self-spawn.
+api() {
+    local method="$1" path="$2"
+    curl -sf --max-time 60 -X "$method" "http://127.0.0.1:$port$path" || true
+}
+
+pid_json="$(curl -sf --max-time 10 "http://127.0.0.1:$port/api/profiles" || true)"
+prof_id="$(python3 -c "
+import json, sys
+rows = json.loads(sys.argv[1] or '[]')
+print(rows[0]['id'] if rows else '')
+" "$pid_json")"
+[ -n "$prof_id" ] || fail "the API lists no profile to launch: ${pid_json:-<none>}"
+
+launched="$(api POST "/api/profiles/$prof_id/launch")"
+grep -q '"ok" *: *true\|"status"' <<<"$launched"     || fail "the API launch did not answer with a result: ${launched:-<none>}"
+
+# Ownership, from the product's own surface rather than a guess: the profile
+# has to read back as running, and its session directory has to exist.
+running=""
+until=$(( $(date +%s) + 60 ))
+while [ "$(date +%s)" -lt "$until" ] && [ "$(remaining)" -gt 1 ]; do
+    running="$(curl -sf --max-time 5 "http://127.0.0.1:$port/api/profiles" || true)"
+    if grep -q '"status" *: *"running"' <<<"$running"; then break; fi
+    sleep 0.25   # bounded poll
+done
+grep -q '"status" *: *"running"' <<<"$running"     || fail "the API launched a browser and the profile never read back as running"
+ls -d "$data"/user-data/"$prof_id"/ >/dev/null 2>&1     || fail "the API launch created no session directory for $prof_id"
+
+stopped="$(api POST "/api/profiles/$prof_id/stop")"
+[ -n "$stopped" ] || fail "the API stop returned nothing"
+idle=""
+until=$(( $(date +%s) + 60 ))
+while [ "$(date +%s)" -lt "$until" ] && [ "$(remaining)" -gt 1 ]; do
+    idle="$(curl -sf --max-time 5 "http://127.0.0.1:$port/api/profiles" || true)"
+    if ! grep -q '"status" *: *"running"' <<<"$idle"; then break; fi
+    sleep 0.25
+done
+grep -q '"status" *: *"running"' <<<"$idle"     && fail "the API stop returned and the profile is still running - the tree outlived it"
+printf '    launched and stopped through the API, session %s
+' "$prof_id"
+
+step '7/9 a finite helper runs to completion through the API'
+# `run_helper` in the frozen artifact. A probe starts its own browser, writes an
+# ownership report and re-executes this binary to do it - the same self-spawn as
+# above, on the finite path. Its answer is only usable if the stream was read to
+# the end, and the failure this guards against is a *complete-looking* reply
+# that stops halfway: asserting the body parses and carries the report's own
+# keys is the stream assertion, because half a JSON document does not.
+probe="$(curl -sf --max-time 240 -X POST          "http://127.0.0.1:$port/api/profiles/$prof_id/trust" || true)"
+[ -n "$probe" ] || fail "the API trust probe returned nothing - the helper never answered"
+python3 -c "
+import json, sys
+body = sys.argv[1]
+try:
+    data = json.loads(body)
+except ValueError as e:
+    raise SystemExit(f'the helper answer is not whole JSON ({e}): {body[:400]}')
+if not isinstance(data, dict):
+    raise SystemExit(f'the helper answered {type(data).__name__}, not a report')
+# The two keys the route itself reads back off the report. If the stream was
+# cut, the body either fails to parse or arrives without them.
+for key in ('grade', 'score'):
+    if key not in data:
+        raise SystemExit(f'the helper report has no {key!r}: {body[:400]}')
+" "$probe" || fail 'the finite helper did not return a complete answer'
+
+# Nothing it owned may outlive it. `/api/ready` does not report stragglers, so
+# the assertion is made against what the product does expose: the probe opened a
+# browser, and once it has answered nothing may still be running.
+after="$(curl -sf --max-time 10 "http://127.0.0.1:$port/api/profiles" || true)"
+grep -q '"status" *: *"running"' <<<"$after"     && fail "the finite helper answered and left a browser running: $after"
+printf '    finite helper answered whole, nothing left running
+'
+
+step '8/9 the profile and its session survive a restart'
 kill "$serve_pid" 2>/dev/null || true
 for _ in $(seq 1 40); do
     kill -0 "$serve_pid" 2>/dev/null || break
@@ -175,7 +257,7 @@ run_engine 60 list
 grep -q smoke <<<"$output" || fail "the profile did not survive the restart: $output"
 ls -d "$data"/user-data/*/ >/dev/null 2>&1 || fail 'the launch left no session directory behind'
 
-step '7/7 the vault encrypts a real secret and reopens it'
+step '9/9 the vault encrypts a real secret and reopens it'
 # `cryptography` lives in the `secure` extra, and a frozen app cannot
 # pip-install into its own embedded runtime - so a build without that extra
 # fails here and nowhere earlier. The product advertises an encrypted vault;
