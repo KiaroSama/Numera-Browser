@@ -387,6 +387,18 @@ def test_a_crash_after_the_commit_only_clears_the_journal(tmp_path):
     died before `end_journal`. There is nothing to repair, and the repair must
     not run - re-committing a descriptor over a finished store is how a
     concurrent reader used to corrupt one.
+
+    **The key is part of the precondition, and that is not a concession.** This
+    on-disk shape - a config and a journal naming one identical descriptor - is
+    byte-for-byte what `test_an_already_committed_descriptor_is_not_a_receipt_
+    without_a_key` and both `test_same_salt_foreign_ciphertext_is_refused_*` in
+    `test_vault_completion_everywhere.py` construct over *foreign* ciphertext.
+    Nothing on disk separates the two, which is exactly the N02 finding: a
+    prior config write is a receipt for nothing. Opening without the password
+    was tried and it re-opened that hole, so the crash-after-commit case pays
+    the same price as every other completion - the key - and what this test
+    still pins is the part that is its own: the descriptor is not rewritten and
+    the journal goes.
     """
     from numera import vault
     from numera.store import ProfileStore
@@ -398,7 +410,7 @@ def test_a_crash_after_the_commit_only_clears_the_journal(tmp_path):
     # Exactly the state a kill between the commit and the cleanup leaves.
     vault.begin_journal(tmp_path, "enable", new=before)
 
-    reopened = ProfileStore(tmp_path)
+    reopened = ProfileStore(tmp_path, password="master")
 
     assert not vault.journal_path(tmp_path).exists(), "the stale journal was kept"
     assert json.loads((tmp_path / "config.json").read_text("utf-8"))["vault"] == before, \
