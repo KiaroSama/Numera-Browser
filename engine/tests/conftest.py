@@ -29,6 +29,7 @@ real site will still do so.
 
 import os
 import socket
+import subprocess
 
 import pytest
 
@@ -125,6 +126,68 @@ def _guarded_connect_ex(self, address):
 
 socket.socket.connect = _guarded_connect
 socket.socket.connect_ex = _guarded_connect_ex
+
+
+def _reap(proc) -> None:
+    """End one child and close the handles it owns, in that order.
+
+    Killing without waiting leaves a zombie whose `Popen.__del__` warns later;
+    closing a pipe the child is still writing to can raise. Both are ignored
+    here on purpose - this runs after the test's assertions, and a failure to
+    clean up must not rewrite a passing test's result into an error from this
+    file.
+    """
+    try:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait(timeout=10)
+    except Exception:                                        # pragma: no cover
+        pass
+    for pipe in (proc.stdin, proc.stdout, proc.stderr):
+        try:
+            if pipe is not None and not pipe.closed:
+                pipe.close()
+        except Exception:                                    # pragma: no cover
+            pass
+
+
+@pytest.fixture(autouse=True)
+def _reaped_children():
+    """Every child a test spawns is ended and closed when that test ends.
+
+    This suite starts real processes - leaders, strangers, shells, lock holders
+    - and most of them are meant to be killed, not waited on. Relying on
+    garbage collection for that is what made `pyproject.toml`'s
+    `error::pytest.PytestUnraisableExceptionWarning` fire in thirteen tests at
+    once: `Popen.__del__` and an unclosed `FileIO` raise a `ResourceWarning`
+    with no frame to propagate into, so pytest re-emits it under a class that
+    `error::ResourceWarning` never matched. The leaks predate the filter; the
+    filter is what made them visible.
+
+    Doing it here rather than in thirteen `finally` blocks is deliberate. It is
+    the same contract the test rules state - the runner that spawns a child
+    owns its whole tree and its handles - applied once, where the next test
+    that spawns a process inherits it instead of having to remember it.
+
+    `subprocess.Popen` is rebound for the duration of one test, so a module
+    that imported the name directly keeps the original: production code reaps
+    its own children and is not this fixture's business.
+    """
+    started = []
+    real = subprocess.Popen
+
+    class _Tracked(real):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            started.append(self)
+
+    subprocess.Popen = _Tracked
+    try:
+        yield
+    finally:
+        subprocess.Popen = real
+        for proc in started:
+            _reap(proc)
 
 
 @pytest.fixture
