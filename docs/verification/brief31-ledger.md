@@ -77,4 +77,31 @@ above; they are not part of the verification either.
 | 20× startup/shutdown race repeats | **Linux only, via CI** | The repeat is in the suite and runs on every platform CI executes. Windows is not one of them while its jobs cannot start, so the repeat has Linux evidence and no Windows evidence |
 | Packaged self-spawn on Windows | **BLOCKED** | `desktop-windows` is release-path only *and* hosted, so the new steps 6-7 have Linux evidence only until Windows CI can run |
 | `test_rotate_still_allows_a_real_provider_url` | **open** | Asserts a guard's logic by resolving `example.com` for real; fails when DNS is unavailable. Pre-existing, out of this brief's scope, recorded in `.ai/BUGS.md` |
-| Rust dependency freshness | **UNKNOWN** | `cargo-outdated` is not installed; not run, so not claimed |
+
+## Dependency freshness, checked 2026-09-19
+
+Three checks had stood at UNKNOWN. Two are now answered and one is a deliberate
+defer; none of them changes a manifest in this brief.
+
+| Ecosystem | Result | Decision |
+|---|---|---|
+| Rust (`desktop/src-tauri`) | `cargo outdated --root-deps-only` → **no outdated root dependencies** | nothing to do |
+| npm (`dashboard`) | 5 behind their own caret ranges: `@testing-library/dom` 10.4.1→10.4.2, `eslint` 10.10.0→10.11.0, `jsdom` 30.0.1→30.1.0, `lucide-react` 1.44.0→1.47.0, `vitest` 5.0.0→5.0.1. Every range in `package.json` already admits the latest, so this is a lockfile refresh, not a manifest change | **defer to Dependabot**, which is configured here and merged #16/#17 the same way. A hand bump is a new tree that would invalidate the heavy pass now running |
+| Python (`engine`) | Every engine dependency is a `>=` floor; the only pins are the live-matrix ones in `ci.yml`. `playwright` 1.63.0 is out against the pinned `1.62.0` | **defer**: a live-matrix pin bump needs its own four-engine verified run, not a ride on this one |
+
+## The Windows blocker, and exactly where it stopped
+
+`engine-windows` and the four `windows-latest` `engine-live` legs remain the
+only jobs the account billing block still stops - `runner_name` empty,
+`steps: 0`, two seconds, no log. Confirmed again on this run, not assumed.
+
+A Windows self-hosted runner is the only fix that does not weaken the gate, and
+it is now one command from existing: runner `2.337.0` is unpacked into the
+git-ignored `.ci-runner-win\`, beside `.ci-work\windows\` and `.ci-cache\`, the
+project-owned layout `global-environment-rules.md` requires on Windows.
+**Registering it was refused by the agent sandbox** - standing up a persistent
+service that runs CI on the workstation is not something it may do unattended -
+so the exact command, and the four Windows-only failures to expect on the first
+run, are written down in `.ai/COMMANDS.md`. `ci.yml` is deliberately *not*
+rerouted until that runner reports online: a job whose label nobody carries
+queues forever, which is a worse gate than one that fails in two seconds.
