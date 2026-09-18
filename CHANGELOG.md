@@ -2,6 +2,60 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.36.0] - 2026-09-19
+
+The bound a caller declares now holds when something goes wrong, which is the
+only time a bound matters. Every fix here is the same shape: a rule that was
+correct while nothing failed.
+
+- End a helper's readers, reports and processes under **one** deadline. The
+  serialization lock was acquired outside it, so a cleanup given fifty
+  milliseconds could wait indefinitely for another one to finish; each nested
+  termination took a fresh full budget rather than a share of the declared one;
+  and when a unit could not be ended, closing its pipes waited for the writer
+  that failure had just left running. What cannot be closed is now retained and
+  named on the record instead of waited on.
+- Own a spawned child from the instant it exists. An exception between the
+  spawn and the attach left the process in local variables only, so cleanup
+  found a record with nothing on it, released it, and then blocked closing the
+  pipes of the child it had just written off.
+- Read whether a reservation resolved, not the label on its record. A second
+  shutdown asked whether a helper was still "starting" - which the first
+  shutdown had already changed - and released a reservation that could still
+  produce a browser.
+- Validate an ownership report instead of trusting it. A bare number, a list, a
+  non-numeric pid, an unsupported tree kind or invalid UTF-8 either raised out
+  of cleanup entirely - leaving the reader threads alive outside it - or were
+  accepted as a complete account of what a helper started.
+- End the **tree** when its ownership cannot be recorded, not just its leader.
+  The driver is in its own job or session by then, so killing the immediate
+  process left its browser running under a message that said otherwise.
+- Apply the vault completion rule to every path, including "already committed".
+  A matching salt used to be enough to confirm a descriptor without the key,
+  which accepted ciphertext written under a different key with the same salt -
+  measured at **0 of 3** credentials openable afterwards - and left a config
+  verifier that opens nothing in place while deleting the journal carrying the
+  good one. Finishing a migration now needs the master password, on every path;
+  a config and a journal that disagree are reported rather than guessed
+  between.
+- Look inside a secret-bearing container, not just at its shape. A proxy pool of
+  `[1, 2, "x"]` is a list, so it passed - and the walker skips every element it
+  cannot read, so the file reported no secrets at all and a migration completed
+  over records nobody had examined.
+- Choose the validation context from the caller, never from the field under
+  test. A complete engine record whose fingerprint was null or missing was
+  routed to the *partial* validator, which exists to permit exactly that
+  omission.
+- Store the device memory that was sent. `navigator.deviceMemory` is a double
+  and real browsers report 0.25 and 0.5; the converter cast with `int`, so both
+  became 0 - a legal amount, so nothing downstream noticed the value had been
+  replaced. Those two are now preserved and anything else fractional is refused
+  by name.
+- Make the leak gate a gate. `error::ResourceWarning` had never failed a run:
+  an unclosed file collected after a test, or a warning raised in a thread, is
+  re-emitted by pytest under a different class that the filter did not name.
+  Both wrappers are now errors, and a planted leak of each kind is a test.
+
 ## [0.35.0] - 2026-09-13
 
 A refused vault migration now says *why* in a form something can act on, and

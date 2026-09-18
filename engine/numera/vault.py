@@ -249,7 +249,9 @@ from .vault_problems import (                                   # noqa: E402,F40
     VaultIncomplete,
     VaultRecoveryRequired,
     WRONG_GENERATION,
+    DESCRIPTOR_DISAGREEMENT,
     codes,
+    same_descriptor,
     locked,
 )
 

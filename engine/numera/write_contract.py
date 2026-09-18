@@ -120,7 +120,7 @@ def list_problem(field: str, value, where: str, *, optional=True):
 
 
 def number_problem(field: str, value, where: str, *, label=None, bounds=None,
-                   whole=False, optional=True):
+                   whole=False, optional=True, fractions=()):
     """Why `value` cannot be stored as `field`'s number, or None.
 
     `field` selects the bounds, `label` names the field in the message. They
@@ -152,8 +152,11 @@ def number_problem(field: str, value, where: str, *, label=None, bounds=None,
                 f"Nothing was written.")
     if isinstance(value, float) and not math.isfinite(value):
         return f"{where}: {shown!r} must be a finite number. Nothing was written."
-    if whole and not isinstance(value, int) and value != int(value):
-        return (f"{where}: {shown!r} must be a whole number, got "
+    if (whole and not isinstance(value, int) and value != int(value)
+            and value not in fractions):
+        allowed = (f" (or one of {', '.join(str(f) for f in fractions)})"
+                   if fractions else "")
+        return (f"{where}: {shown!r} must be a whole number{allowed}, got "
                 f"{str(value)[:40]}. Nothing was written.")
     low, high = bounds
     if low is not None and high is not None and not low <= value <= high:
@@ -265,16 +268,35 @@ ENGINE_OBJECT, ENGINE_RECORD, DASHBOARD_PATCH = (
     "engine object", "engine record", "dashboard patch")
 
 
-def shape(profile) -> str:
+def shape(profile, *, kind: str = None) -> str:
     """Which of the three shapes this is. See the module docstring.
 
-    Nesting is the tell, and it is a reliable one: an engine record keeps its
-    fingerprint one level down under `fingerprint`, and the dashboard's payload
-    is flat by construction - `cores` and `seed` sit at the top or not at all.
+    `kind` is how a caller that *knows* says so, and it wins outright. A
+    serialized engine record is an engine record because of where it came from
+    - a batch, a backup, an import - not because of what happens to be in it,
+    and an entry point holding one should never have to hope the guess lands.
+
+    Without it, nesting is the tell. It is a reliable one for a well-formed
+    record and was read the wrong way for a malformed one: the test used to be
+    `profile.get("fingerprint") is not None`, so a complete engine record whose
+    fingerprint was `null` - or missing outright - answered "dashboard patch",
+    and the partial validator accepted the omission it exists to allow. A
+    required field being *absent or null* is the thing under test; it cannot
+    also be the thing that decides which test runs.
+
+    So the guess now turns on the key being **present**, which malformation
+    does not erase. A record with no `fingerprint` key at all is genuinely
+    ambiguous from the value alone - it is also what an ordinary patch looks
+    like - and that is exactly the case `kind` exists for.
     """
+    if kind is not None:
+        if kind not in (ENGINE_OBJECT, ENGINE_RECORD, DASHBOARD_PATCH):
+            raise ValueError(f"unknown profile shape {kind!r}")
+        return kind
     if isinstance(profile, Profile):
         return ENGINE_OBJECT
-    if hasattr(profile, "get") and profile.get("fingerprint") is not None:
+    if hasattr(profile, "__contains__") and hasattr(profile, "get") \
+            and "fingerprint" in profile:
         return ENGINE_RECORD
     return DASHBOARD_PATCH
 
@@ -316,6 +338,7 @@ def _rule_problem(rule, field: str, value, where: str, label: str):
     if rule.kind in ("int", "number"):
         return number_problem(field, value, where, label=label,
                               bounds=rule.bounds(), whole=rule.kind == "int",
+                              fractions=rule.fractions,
                               optional=rule.optional)
     if rule.kind == "bool":
         return bool_problem(field, value, where, label=label)
@@ -404,15 +427,19 @@ def _dashboard_problems(patch, where: str) -> list:
     return found
 
 
-def profile_problems(profile, *, where: str = "profile") -> list:
+def profile_problems(profile, *, where: str = "profile", kind: str = None) -> list:
     """Every reason this profile may not be persisted. Empty means it may.
 
     Dispatches on `shape()`, because the three shapes disagree about what an
     absent field means and a single pass over all of them had to pick one
     answer. It picked "absent", which is right for a patch and wrong for a
     record - so a complete engine profile carrying `seed = None` was stored.
+
+    `kind` is passed straight through: an entry point holding a serialized
+    engine record declares it rather than letting the contents decide, because
+    a malformed record is exactly the one the guess gets wrong.
     """
-    kind = shape(profile)
+    kind = shape(profile, kind=kind)
     if kind is DASHBOARD_PATCH:
         if not hasattr(profile, "get"):
             # Not a record, not a patch, not a `Profile`. The generic reader
@@ -435,9 +462,9 @@ class WriteRefused(ValueError):
     """
 
 
-def require(profile, *, where: str = "profile") -> None:
+def require(profile, *, where: str = "profile", kind: str = None) -> None:
     """Raise `WriteRefused` unless this profile may be persisted."""
-    found = profile_problems(profile, where=where)
+    found = profile_problems(profile, where=where, kind=kind)
     if found:
         raise WriteRefused("; ".join(found))
 

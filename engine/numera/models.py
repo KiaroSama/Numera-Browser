@@ -27,7 +27,7 @@ class Fingerprint:
     viewport_width: int
     viewport_height: int
     hardware_concurrency: int
-    device_memory: int
+    device_memory: float
     webgl_vendor: str
     webgl_renderer: str
     locale: str

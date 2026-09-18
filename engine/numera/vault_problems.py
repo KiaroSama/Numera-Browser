@@ -109,3 +109,23 @@ class VaultIncomplete(VaultRecoveryRequired):
     @property
     def codes(self) -> set:
         return {p.code for p in self.problems}
+
+
+#: The config and the journal name different generations. Its own code because
+#: the action differs from every other refusal here: no password resolves it,
+#: and the fix is a person deciding which descriptor the data is actually
+#: under - so a caller must be able to tell it apart from "wrong key".
+DESCRIPTOR_DISAGREEMENT = "descriptor_disagreement"
+
+
+def same_descriptor(a, b) -> bool:
+    """Do these describe the same generation? Salt **and** verifier.
+
+    Comparing salts alone is what let a config verifier that opens nothing
+    survive a migration: the salts matched, so the descriptors were called
+    equal and the journal carrying the good verifier was deleted.
+    """
+    if not (isinstance(a, dict) and isinstance(b, dict)):
+        return False
+    return (a.get("salt") == b.get("salt")
+            and a.get("verifier") == b.get("verifier"))

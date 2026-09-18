@@ -133,24 +133,65 @@ class Streams:
         return [r.name for r in self.readers if not r.ended.is_set()]
 
     def close(self, budget: float = 2.0) -> list:
-        """Close the pipes and let the readers finish. Returns what did not.
+        """Close what is safe to close. Returns the readers still running.
 
-        Only safe once every process that could hold a writer has been ended -
-        which is why `run_helper` settles the ownership units first. Closing
-        under a live writer is the blocking close this module is built to
-        avoid, and a reader thread left alive afterwards is a leak with the
-        helper's output still inside it.
+        Only a reader that has **already ended** gets its pipe closed. That
+        condition is the whole of this method, and it is not caution: a reader
+        blocked in `read1` holds the `BufferedReader`'s own lock, and
+        `close()` flushes under that same lock, so closing beneath a live
+        reader waits for the writer to go - the exact blocking close this
+        module exists to avoid, reached from the other side.
+
+        It used to close unconditionally, which was safe only while settlement
+        was guaranteed to have ended every writer first. When settlement
+        *fails* - a separately sessioned child that could not be terminated,
+        still holding both writers - that guarantee is gone, and the close
+        blocked past the caller's deadline until an outer supervisor
+        intervened. A bound that only holds when nothing went wrong is not a
+        bound.
+
+        So a reader that cannot be closed is **retained and named** rather than
+        waited on. Its pipe stays open and its thread stays alive, which is a
+        real cost and the honest one: the helper is unsettled, its output is
+        incomplete, and both facts stay visible on the record instead of being
+        traded for a tidy return.
         """
+        # Join first, then close what ended. The order matters both ways: a
+        # reader whose writers have gone is already finishing, and asking
+        # `is_alive()` before giving it the budget reports a race as a
+        # retention - which made an ordinary clean run claim it had leaked a
+        # pipe. Joining cannot block past the budget, because that is what a
+        # budgeted join is.
+        deadline = _deadline(budget)
         for reader in self.readers:
+            reader.thread.join(max(0.0, deadline()))
+        for reader in self.readers:
+            if reader.thread.is_alive():
+                continue
             try:
                 if not reader.pipe.closed:
                     reader.pipe.close()
             except OSError:                              # pragma: no cover
                 pass
-        deadline = _deadline(budget)
-        for reader in self.readers:
-            reader.thread.join(max(0.0, deadline()))
         return [r.name for r in self.readers if r.thread.is_alive()]
+
+    def retained(self) -> list:
+        """Readers still holding a pipe, as `name(fd)` for the record.
+
+        Named rather than counted so an unresolved helper carries identities a
+        person can act on - which file descriptor is still open, on which
+        stream - rather than the fact that something is.
+        """
+        out = []
+        for reader in self.readers:
+            if not reader.thread.is_alive():
+                continue
+            try:
+                fd = reader.pipe.fileno()
+            except (OSError, ValueError):                # pragma: no cover
+                fd = "?"
+            out.append(f"{reader.name}(fd {fd})")
+        return out
 
 
 def _deadline(budget: float):

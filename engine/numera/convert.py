@@ -79,6 +79,22 @@ def _str_list(raw) -> list[str]:
     return [v for v in raw if isinstance(v, str)] if isinstance(raw, list) else []
 
 
+def _exact(value):
+    """`int` when the number is whole, `float` when it genuinely is not.
+
+    For a field that is a number rather than a count. `int` was the only cast
+    here, and `int(0.25)` is `0` - so a dashboard reporting a quarter-gigabyte
+    device stored zero, passed every later guard because zero is a legal
+    amount, and round-tripped as zero. Silent truncation to a value the caller
+    never sent is not normalization.
+
+    Whole values stay `int` so nothing that already round-trips starts writing
+    `16.0` where it wrote `16`.
+    """
+    out = float(value)
+    return int(out) if out.is_integer() else out
+
+
 def _num(value, default, cast=int):
     """A finite number of the wanted kind, or `default`.
 
@@ -210,7 +226,10 @@ def to_engine_profile(d: dict) -> Profile:
     vendor, renderer = _engine_webgl(os_key, d.get("webglRenderer", ""), d.get("webglVendor", ""))
     os_version = str(d.get("osVersion") or devices.OS_VERSIONS[os_key][0][0])
     # iOS has no navigator.deviceMemory to report, whatever the profile says.
-    memory = 0 if os_key == "ios" else _num(d.get("memory"), 16)
+    # `_exact`, not `int`: `navigator.deviceMemory` is a `double` and the
+    # values a real browser reports include 0.25 and 0.5. Casting to `int`
+    # turned both into 0.
+    memory = 0 if os_key == "ios" else _num(d.get("memory"), 16, cast=_exact)
 
     fp = Fingerprint(
         os=os_key,
