@@ -75,6 +75,10 @@ class Rule:
     high: float | None = None
     optional: bool = False          # None is a legitimate "not set"
     why: str = ""                   # required for OWNED / NORMALIZED
+    #: Sub-integer values this field accepts despite being a whole number
+    #: otherwise. A narrow, documented compatibility list - not a licence to
+    #: be fractional. See `device_memory`.
+    fractions: tuple = ()
 
     def bounds(self):
         """The numeric range this rule polices."""
@@ -143,7 +147,16 @@ FINGERPRINT: dict[str, Rule] = {
     # reports - and `hardware_concurrency = 8.5` passed the range check that
     # was the only thing asked of it.
     "hardware_concurrency": Rule("int", dash="cores"),
-    "device_memory": Rule("int", dash="memory"),
+    # Whole, **except** for the two values the API it imitates actually
+    # reports below 1. The Device Memory draft defines the value as a power of
+    # two, so 0.25 and 0.5 are real readings from small devices and 3.5 is not
+    # a reading at all. Requiring a whole number refused the first two; calling
+    # the field an open number would have accepted the third.
+    #
+    # The converter used to settle the argument by casting with `int`, which
+    # turned 0.25 into 0 - a legal amount, so nothing downstream noticed the
+    # value had been replaced.
+    "device_memory": Rule("int", dash="memory", fractions=(0.25, 0.5)),
     "cameras": Rule("int", dash="mediaVideo"),
     "microphones": Rule("int", dash="mediaAudio"),
     "speakers": Rule("int", dash="mediaSpeakers"),

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "numera-engine"
-version = "0.35.0"
+version = "0.36.0"
 description = "Coherent browser fingerprint & profile engine for Numera Browser."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -83,6 +83,19 @@ addopts = "--strict-markers"
 # `-p no:warnings` to a run whose result is meant to prove anything.
 filterwarnings = [
     "error::ResourceWarning",
+    # `error::ResourceWarning` alone never failed a run, and the CI logs of a
+    # *passing* job proved it: they carry unclosed `BufferedReader`s and
+    # still-running subprocesses, every one of them wrapped.
+    #
+    # The wrapping is why. A `ResourceWarning` raised during garbage collection
+    # or inside a thread cannot propagate to the test that caused it - there is
+    # no frame left to raise into - so pytest catches it and re-emits it as one
+    # of these instead. The original filter then does not match, because the
+    # warning reaching the filter is no longer a `ResourceWarning`.
+    #
+    # Gating the wrappers is what makes the first line mean what it says.
+    "error::pytest.PytestUnraisableExceptionWarning",
+    "error::pytest.PytestUnhandledThreadExceptionWarning",
     # Deliberate, and the tests that provoke it assert on the behaviour behind
     # it - see `store._reconciled`.
     "ignore:the two stored copies of profile:RuntimeWarning",

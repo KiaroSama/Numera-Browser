@@ -56,8 +56,10 @@ from .vault_problems import (
     VaultIncomplete,
     VaultRecoveryRequired,
     WRONG_GENERATION,
+    DESCRIPTOR_DISAGREEMENT,
     codes,
     locked,
+    same_descriptor as _same_descriptor,
 )
 
 #: The journal shapes this build knows how to finish.
@@ -324,15 +326,46 @@ def needs_recovery(root) -> bool:
 
 
 def _container_ok(data, site) -> bool:
-    """Does this document have the shape its site declares?
+    """Does this document have the shape its site declares, **all the way down**?
 
     Parsing is not reading. `proxies.json = null` is valid JSON, so a scan
     walks it, finds no holders and reports nothing left to encrypt - which
     recovery took as "the migration finished" over a file whose contents nobody
     could establish. A pool is a list and a profile is an object; anything else
     is a file this build cannot say anything about.
+
+    Checking only the outer shape left the same hole one level in. A pool of
+    `[1, 2, "x"]` *is* a list, so this returned True - and `vault.holders`
+    skips every element that is not a dict, so the walk found nothing and the
+    file read as "no secrets here". Parsing the container does not prove every
+    participating record was inspected; the elements the walker would silently
+    skip are exactly the ones nobody can account for.
+
+    Absent and empty stay legitimate: a pool entry with no proxy node, or a
+    node with no password, is a record with nothing to protect. What is refused
+    is data whose *shape* stops it from being examined at all.
     """
-    return isinstance(data, list) if site.many else isinstance(data, dict)
+    if site.many:
+        if not isinstance(data, list):
+            return False
+        records = data
+    else:
+        if not isinstance(data, dict):
+            return False
+        records = [data]
+
+    for record in records:
+        if not isinstance(record, dict):
+            return False                     # the walker would skip this
+        holder = record.get(site.node) if site.node else record
+        if holder is None:
+            continue                         # legitimately absent
+        if not isinstance(holder, dict):
+            return False
+        value = holder.get(site.field)
+        if value is not None and not isinstance(value, str):
+            return False                     # a secret that is not a string
+    return True
 
 
 def unreadable_secret_files(root) -> list:
@@ -638,23 +671,36 @@ def _finish_enable(root, cfg, new, save_config, password) -> bool:
 
     leftover = vault.plaintext_secrets(root)
     if not leftover:
-        # Two different situations reach here, and only one of them is a
-        # decision.
+        # One rule, every path - including "already committed".
         #
-        # If the config already names this descriptor, the commit landed and
-        # only `end_journal` was missed. Nothing is being chosen: the store was
-        # already serving under this key. What can be checked without one -
-        # readable containers, nothing left in the clear - is checked, and the
-        # record goes.
+        # There used to be a shortcut here: when the config's salt matched the
+        # journal's, only `structural_problems` ran, on the reasoning that the
+        # store was already serving under this key so nothing was being chosen.
+        # The reasoning was wrong twice. A salt is not a descriptor - ciphertext
+        # written under a *different* key with the same salt passed, and the
+        # active descriptor opened 0 of 3 fixture credentials - and a config
+        # verifier that opens nothing survived untouched, because only salts
+        # were ever compared. Both ended by deleting the journal, which is the
+        # only record of the descriptor the data actually belongs to.
         #
-        # If the config names no vault, committing this descriptor *is* the
-        # decision, and the old shortcut made it on "is any plaintext left".
-        # Three secrets re-encrypted under a foreign descriptor answer no just
-        # as readily, so it committed a descriptor opening none of them and
-        # then deleted the only record of the right one. That now needs the key.
-        already = (cfg.get("vault") or {}).get("salt") == new["salt"]
-        problems = (structural_problems(root, new) if already
-                    else completion_problems(root, new, password))
+        # So the completion invariant is applied whole, and the price is
+        # explicit: finishing a migration needs the key. A prior config write
+        # is not a receipt for a generation, and neither is a matching salt or
+        # an `enc:` prefix.
+        active = cfg.get("vault") or None
+        if active and not _same_descriptor(active, new):
+            # The config names one generation and the journal another. Nothing
+            # here can choose between them - picking the journal overwrites a
+            # descriptor the store may be serving, picking the config discards
+            # the record of the one the data may be under - so the disagreement
+            # is stated and both are preserved.
+            _refuse_incomplete(root, "`vault enable`", [Problem(
+                DESCRIPTOR_DISAGREEMENT,
+                f"the config and {journal_path(root).name} name different "
+                f"vault descriptors, so which generation this data is in "
+                f"cannot be established from either one alone")])
+        problems = completion_problems(root, active or new, password)
+        already = bool(active)
         if not problems:
             sync_data(root)
             if not already:

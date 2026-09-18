@@ -206,6 +206,25 @@ class HelperManager:
                 "this server began shutting down before the helper was "
                 "started; it was not started")
 
+    def adopt(self, helper: Helper, proc, tree) -> None:
+        """Take ownership of a spawned child **before** anything else can throw.
+
+        Separate from `attach` because the two answer different questions.
+        `adopt` says "this record owns that process"; `attach` says "the
+        reservation is resolved, stop waiting for it". Between the spawn and
+        the attach there used to be real work - constructing the readers - and
+        an exception there left `proc` and `tree` in local variables only. The
+        cleanup that followed looked at a record with no process, found nothing
+        to end, released it, and then hung closing the pipes of a child it had
+        just decided did not exist.
+
+        Ownership is therefore recorded first and unconditionally, so that
+        *every* post-spawn exit - `Streams` raising, `attach` raising, anything
+        unexpected - ends or retains that exact unit.
+        """
+        with self._lock:
+            helper.proc, helper.tree = proc, tree
+
     def attach(self, helper: Helper, proc, tree) -> None:
         """Bind the process to its reservation, and resolve it.
 
@@ -265,7 +284,23 @@ class HelperManager:
         # that had demonstrably been ended - SIGTERM delivered, returncode -15 -
         # was reported STRANDED. Found on Linux in CI; the same race exists on
         # Windows and simply lost more often there.
-        with helper.finish:
+        # The clock starts here, not after the lock. `deadline` is what the
+        # caller is prepared to wait in total, and acquisition is part of the
+        # wait: a `settle(deadline=.05)` sat on `helper.finish` for over `.3s`
+        # until something external released it, because the budget only began
+        # once the lock was already held. A bound that excludes the blocking
+        # part is not the bound the caller asked for.
+        ends_at = time.monotonic() + deadline
+        if not helper.finish.acquire(
+                timeout=max(0.0, ends_at - time.monotonic())):
+            # Another settle is still running and this one is out of time.
+            # Nothing is touched, because that settle owns the record - but the
+            # caller is told, rather than blocked past its deadline.
+            helper.straggler = helper.straggler or (
+                "another cleanup of this helper was still running when this "
+                "one ran out of time; its outcome is unknown here")
+            return False
+        try:
             with self._lock:
                 if helper.state == SETTLED:
                     # The only state that may not be re-entered: the success
@@ -280,18 +315,26 @@ class HelperManager:
                     # may simply have gone away.
                     return True
                 helper.state = STOPPING
-            return self._settle_locked(helper, deadline)
+            return self._settle_locked(helper, ends_at)
+        finally:
+            helper.finish.release()
 
-    def _settle_locked(self, helper: Helper, deadline: float) -> bool:
-        """The body of `settle`, with this helper's `finish` lock already held."""
+    def _settle_locked(self, helper: Helper, ends_at: float) -> bool:
+        """The body of `settle`, with this helper's `finish` lock already held.
+
+        `ends_at` is absolute and shared by everything below: the session
+        termination, every reported unit, each nested grace and kill window.
+        Handing each nested call a fresh full budget is how a declared five
+        seconds became five per process - the caller states one deadline
+        because one deadline is what it can plan around.
+        """
         reason = None
-        left_at = time.monotonic() + deadline
-        remaining = lambda: max(0.0, left_at - time.monotonic())   # noqa: E731
+        remaining = lambda: max(0.0, ends_at - time.monotonic())   # noqa: E731
 
         if helper.proc is not None:
             try:
                 proctree.end_session(helper.proc, helper.tree,
-                                     grace=min(deadline, remaining()))
+                                     grace=remaining())
             except ChildTerminationFailed as stuck:
                 reason = str(stuck)
             except Exception as e:                       # noqa: BLE001
@@ -304,7 +347,8 @@ class HelperManager:
 
         left = []
         for tree in helper.owned_trees():
-            grace = remaining()
+            # Split, so one tree cannot spend the remainder twice over.
+            grace = remaining() / 2.0
             try:
                 if not proctree.end_tree(tree, grace=grace, kill_grace=grace):
                     left.append(tree)
@@ -350,9 +394,19 @@ class HelperManager:
 
         left = []
         for helper in self.live():
-            if helper.state == STARTING and not helper.resolved.is_set():
-                # Still unresolved: it may yet create a process, so it keeps its
+            if not helper.resolved.is_set():
+                # Unresolved: it may yet create a process, so it keeps its
                 # record and is reported rather than quietly forgotten.
+                #
+                # The test is `resolved`, not the state label, and that is the
+                # whole of the second defect here. The first shutdown wrote
+                # STRANDED onto exactly this record; a second one asking
+                # "is it STARTING?" got False, fell through to `settle`, found
+                # an empty record with no process - because there still is no
+                # process - and released a reservation that can *still* spawn.
+                # Whether a reservation resolved is a fact about the spawner;
+                # the label is a description of the record, and the two stopped
+                # agreeing the moment anything else wrote one.
                 helper.state = STRANDED
                 helper.straggler = (
                     "a helper was still starting when this server shut down, "
@@ -363,6 +417,26 @@ class HelperManager:
             if not self.settle(helper, deadline=deadline):
                 left.append(helper)
         return left
+
+
+def _retain(helper: Helper, alive: list, identities: list = ()) -> None:
+    """Record readers that outlived the close, and unsettle the helper.
+
+    A reader still running holds a pipe whose writer has not gone, which means
+    something this helper owns is still alive - so the record cannot be
+    `settled` however the process termination went. Written onto `straggler`
+    beside whatever cleanup already found, because a person looking at a stuck
+    helper needs both halves: what would not die, and what is still attached
+    to it.
+    """
+    if not alive:
+        return
+    named = ", ".join(identities) or ", ".join(alive)
+    note = (f"output reader(s) still holding a pipe after cleanup: {named} - "
+            f"a writer has not gone, so something this helper owns is running")
+    helper.straggler = f"{helper.straggler}; {note}" if helper.straggler else note
+    if helper.state == SETTLED:                          # pragma: no cover
+        helper.state = STRANDED
 
 
 def _forget_units(helper: Helper) -> None:
@@ -451,11 +525,13 @@ def run_helper(cli, timeout: float, env=None, manager: HelperManager = None,
         # failure path, and the steps before it start no process at all.
         manager.fail_start(helper)
         raise
-    # From here the child exists, so every exit has to end it and close its
-    # pipes - including an exception from `attach` itself, or any unexpected
-    # one. Without this the failure propagated with two `BufferedReader`s open,
-    # which surfaced as a `ResourceWarning` and is a leaked handle on a live
-    # pipe whatever the warning settings say.
+    # The child exists. Record ownership before anything that can throw, so the
+    # record names it even if the next line fails - constructing the readers
+    # opens file objects and starts threads, and when that raised, `proc` and
+    # `tree` existed only as locals. Cleanup then saw a record with no process,
+    # released it, and blocked closing the pipes of the child it had just
+    # written off.
+    manager.adopt(helper, proc, tree)
     streams = None
     timed_out = False
     try:
@@ -475,7 +551,17 @@ def run_helper(cli, timeout: float, env=None, manager: HelperManager = None,
     except BaseException:
         manager.settle(helper, deadline=cleanup)
         if streams is not None:
-            streams.close()
+            _retain(helper, streams.close())
+        else:
+            # `Streams` never got built, so the pipes are still raw handles on
+            # this record's child. Closing them is safe exactly because no
+            # reader thread exists to be blocked on one.
+            for pipe in (proc.stdout, proc.stderr):
+                if pipe is not None:
+                    try:
+                        pipe.close()
+                    except OSError:                      # pragma: no cover
+                        pass
         raise
 
     # Order matters: every owner of a pipe writer has to be gone before the
@@ -483,7 +569,11 @@ def run_helper(cli, timeout: float, env=None, manager: HelperManager = None,
     proved = manager.settle(helper, deadline=max(0.0, cleanup - DRAIN_SHARE))
     out, err, complete = streams.collect(DRAIN_SHARE)
     unfinished = streams.unfinished()
-    streams.close()
+    # Bounded whatever settlement decided. When a unit could not be ended it is
+    # still holding these writers, so a close that waits for them waits for the
+    # thing that just failed; what cannot be closed is retained and named on
+    # the record instead.
+    _retain(helper, streams.close(), streams.retained())
     done = subprocess.CompletedProcess(cli, proc.returncode, out, err)
 
     if timed_out:

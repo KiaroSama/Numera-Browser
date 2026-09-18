@@ -169,21 +169,23 @@ def test_an_unreadable_secret_file_blocks_completion(tmp_path):
     assert vault.journal_path(tmp_path).exists(), "the evidence was cleared anyway"
 
 
-def test_a_readable_root_whose_descriptor_already_committed_still_completes(
-        tmp_path):
-    """The control, narrowed in 0.34.0 to the case it actually proves.
+def test_an_already_committed_descriptor_is_not_a_receipt_without_a_key(tmp_path):
+    """0.36.0 removed the last shortcut, and this is what it cost.
 
-    It used to commit this descriptor with no password at all, on the strength
-    of "every value starts with `enc:`". That is what let recovery adopt a
-    descriptor for ciphertext written under a *different* key and then delete
-    the journal naming the right one - see
-    `test_vault_completion_invariant.py::test_ciphertext_from_a_foreign_descriptor_is_refused`,
-    which measures the loss.
+    The reasoning behind it was that when the config already names the
+    journal's descriptor nothing is being *chosen* - the store was serving
+    under this key before the crash, so only the record is outstanding. It was
+    wrong twice over, and both were measured:
 
-    Here the config *already names* this descriptor, so nothing is being
-    chosen: the store was serving under this key before the crash and the only
-    outstanding step is dropping the record. What can be established without a
-    key - readable containers, nothing left in the clear - still is.
+    * a salt is not a descriptor. Ciphertext written under a different key with
+      the same salt passed this path, and the descriptor it confirmed opened
+      **0 of 3** fixture credentials;
+    * only salts were compared, so a config verifier that opens nothing
+      survived while the journal carrying the good one was deleted.
+
+    So finishing needs the key, on every path. That is a real cost - this case
+    used to complete unattended - and it is the only version that does not
+    sometimes destroy the record of the generation the data is actually in.
     """
     (tmp_path / "profiles").mkdir()
     (tmp_path / "profiles" / "a.json").write_text(json.dumps(
@@ -191,9 +193,37 @@ def test_a_readable_root_whose_descriptor_already_committed_still_completes(
     journal(tmp_path, {"version": 1, "op": "enable", "salt": GOOD["salt"], "new": GOOD})
     cfg = {"vault": dict(GOOD)}
 
-    assert vault.recover(tmp_path, lambda: cfg, lambda c: cfg.update(c)) is True
-    assert cfg["vault"]["salt"] == GOOD["salt"]
-    assert not vault.journal_path(tmp_path).exists()
+    with pytest.raises(vault.VaultIncomplete) as caught:
+        vault.recover(tmp_path, lambda: cfg, lambda c: cfg.update(c))
+
+    assert vault.NO_PASSWORD in caught.value.codes, caught.value
+    assert vault.journal_path(tmp_path).exists(), \
+        "the record of the real descriptor was deleted on a refusal"
+    assert cfg["vault"] == GOOD, "a refused recovery rewrote the config"
+
+
+def test_a_config_that_disagrees_with_the_journal_is_named_not_guessed(tmp_path):
+    """Same salt, different verifier - which used to read as "the same".
+
+    Nothing here can choose between them: committing the journal's overwrites a
+    descriptor the store may be serving, and accepting the config's discards
+    the record of the one the data may be under. So the disagreement is stated
+    and both are preserved, under a cause of its own because no password
+    resolves it.
+    """
+    (tmp_path / "profiles").mkdir()
+    (tmp_path / "profiles" / "a.json").write_text(json.dumps(
+        {"id": "a", "proxy": {"password": "enc:v2:abc"}}), encoding="utf-8")
+    journal(tmp_path, {"version": 1, "op": "enable", "salt": GOOD["salt"], "new": GOOD})
+    stale = {"salt": GOOD["salt"], "verifier": "enc:v2:opens-nothing"}
+    cfg = {"vault": stale}
+
+    with pytest.raises(vault.VaultIncomplete) as caught:
+        vault.recover(tmp_path, lambda: cfg, lambda c: cfg.update(c))
+
+    assert vault.DESCRIPTOR_DISAGREEMENT in caught.value.codes, caught.value
+    assert vault.journal_path(tmp_path).exists()
+    assert cfg["vault"] == stale, "a refused recovery rewrote the config"
 
 
 def test_an_uncommitted_descriptor_is_not_adopted_without_a_key(tmp_path):

@@ -499,7 +499,8 @@ def spawn(argv, **kwargs) -> tuple:
 # record means. Re-exported because `proctree.UNITS_ENV` and
 # `proctree.UnitReportFailed` are the names the server and the suites use.
 from .unit_report import UNITS_ENV, UnitReportFailed  # noqa: E402,F401
-from .unit_report import record as _report_unit       # noqa: E402
+from .unit_report import record as report_unit        # noqa: E402
+from .disposal import abandon as _abandon, reported as _reported  # noqa: E402
 
 
 def _spawn_leader(original, args, rest, kwargs) -> tuple:
@@ -545,31 +546,6 @@ def _spawn_leader(original, args, rest, kwargs) -> tuple:
     tree = Tree(pid=proc.pid, token=identify(proc),
                 group=proc.pid, kind="pgid")
     return proc, _reported(proc, tree)
-
-
-def _reported(proc, tree: "Tree") -> "Tree":
-    """Record the tree, or end the process it describes.
-
-    The same fail-closed rule `spawn()` applies to a missing job object: a
-    child that cannot be *owned* is stopped rather than left running, and a
-    child whose ownership cannot be *communicated* to whoever started this
-    process is in exactly that position.
-    """
-    try:
-        _report_unit(tree)
-    except UnitReportFailed:
-        _abandon(proc)
-        raise
-    return tree
-
-
-def _abandon(proc) -> None:
-    """End a child we have decided not to keep, quietly."""
-    try:
-        proc.kill()
-        proc.wait(timeout=10)
-    except Exception:      # noqa: BLE001 - we are already failing            # pragma: no cover
-        pass
 
 
 # ---- asking whether it is gone -------------------------------------------
