@@ -4,7 +4,7 @@
  * A component used by exactly one view belongs in that view's file instead -
  * this is for the genuinely shared ones. */
 
-import { Boxes, RefreshCw, Users, X } from "lucide-react";
+import { Boxes, RefreshCw, X } from "lucide-react";
 import { toSvg } from "jdenticon";
 import { FONT, T } from "./theme";
 
@@ -44,18 +44,22 @@ function Stat({ icon, label, value, accent, pulse }) {
   );
 }
 
+// The fallback for a view name nothing renders. It used to carry one entry -
+// `team`, advertised as "Invite members, set roles" behind an "On the roadmap"
+// pill - for a nav button with no view, no backend, and no identity model
+// anywhere in the engine. Team/members is outside this product's scope by an
+// explicit decision, so the button is gone and the promise with it; what is
+// left is a fallback for a `view` that should be unreachable, saying so rather
+// than dressing a bug as a feature that is coming.
 function Placeholder({ view }) {
-  const map = {
-    team: [Users, "Team", "Invite members, set roles, and share profiles securely."],
-  };
-  const [Ic, title, desc] = map[view] || [Boxes, "Soon", ""];
   return (
     <div className="ps-scroll">
       <div className="ps-empty" style={{ marginTop: 48 }}>
-        <div className="ps-empty-ic"><Ic size={26} color={T.violet} /></div>
-        <div style={{ fontSize: 16, fontWeight: 600, fontFamily: FONT.display }}>{title}</div>
-        <div style={{ color: T.muted, fontSize: 13, maxWidth: 360, textAlign: "center", lineHeight: 1.6 }}>{desc}</div>
-        <span className="ps-pill" style={{ background: T.violetDim, color: T.lilac }}>On the roadmap</span>
+        <div className="ps-empty-ic"><Boxes size={26} color={T.violet} /></div>
+        <div style={{ fontSize: 16, fontWeight: 600, fontFamily: FONT.display }}>Nothing here</div>
+        <div style={{ color: T.muted, fontSize: 13, maxWidth: 360, textAlign: "center", lineHeight: 1.6 }}>
+          {`This window asked for "${view}", which no screen renders. Pick a section from the sidebar.`}
+        </div>
       </div>
     </div>
   );

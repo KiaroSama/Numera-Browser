@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Activity, Blocks, Boxes, Command, Download, FolderTree, Globe, KeyRound, Layers, Moon, Plus, Puzzle, RefreshCw, Server, Settings, ShieldAlert, ShieldCheck, Sun, Users, X, Zap } from "lucide-react";
+import { Activity, Blocks, Boxes, Command, Download, FolderTree, Globe, KeyRound, Layers, Moon, Plus, Puzzle, RefreshCw, Server, Settings, ShieldAlert, ShieldCheck, Sun, X, Zap } from "lucide-react";
 import { ApiError, api, auth, setAuthLostHandler, withoutMarker } from "./api";
 import { DARK, FONT, LIGHT, T, makeCss } from "./theme";
 import { FOLDERS, seed } from "./demoData";
@@ -514,7 +514,6 @@ export default function App() {
               ["proxies", Globe, "Proxies"],
               ["folders", FolderTree, "Folders"],
               ["automation", Zap, "Automation"],
-              ["team", Users, "Team"],
               ["settings", Settings, "Settings"],
             ].map(([k, Ic, label]) => (
               <button key={k} onClick={() => setView(k)} className={"ps-navitem" + (view === k ? " active" : "")}>
