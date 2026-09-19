@@ -33,14 +33,24 @@ const NAMED_BY_FIELD = new Set(["input", "select", "textarea"]);
 
 const Field = ({ label, children }) => {
   const id = useId();
-  const named = Children.map(children, child => (
-    isValidElement(child) && NAMED_BY_FIELD.has(child.type)
-      && !child.props["aria-label"] && !child.props["aria-labelledby"]
-      ? cloneElement(child, { "aria-labelledby": id })
-      : child
-  ));
+  let taken = false;
+  const named = Children.map(children, child => {
+    if (isValidElement(child) && NAMED_BY_FIELD.has(child.type)
+        && !child.props["aria-label"] && !child.props["aria-labelledby"]) {
+      taken = true;
+      return cloneElement(child, { "aria-labelledby": id });
+    }
+    return child;
+  });
+  /* The group is named only when no control took the name. Naming both was the
+   * first attempt and it announced the label twice - once entering the group,
+   * once on the control - and `getByLabelText` found two elements for one
+   * field, which is the same ambiguity a screen reader hears. A field that ends
+   * up with the name on a control needs no group; a field of buttons, which
+   * keep their own names, needs the group to carry the context. */
+  const group = taken ? {} : { role: "group", "aria-labelledby": id };
   return (
-    <div className="ps-field" role="group" aria-labelledby={id}>
+    <div className="ps-field" {...group}>
       <span className="ps-flabel" id={id}>{label}</span>{named}
     </div>
   );

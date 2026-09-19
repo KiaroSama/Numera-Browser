@@ -68,7 +68,21 @@ test("a control that brought its own name keeps it", () => {
   expect(screen.getByRole("textbox", { name: "Timezone search" })).toBeTruthy();
 });
 
-test("the group itself is still announced by its label", () => {
+test("a field of buttons is announced by its label, as a group", () => {
+  // Nothing here can take the name, and "Auto" alone says nothing about WHAT is
+  // automatic - so the group carries the context.
   render(<Field label="Screen"><div className="ps-seg"><button type="button">Auto</button></div></Field>);
   expect(screen.getByRole("group", { name: "Screen" })).toBeTruthy();
+});
+
+test("the label is announced once, never by the group AND the control", () => {
+  /* The first attempt at this fix named both, so `getByLabelText` found two
+   * elements for one field and a screen reader said "How many profiles" twice -
+   * entering the group, then on the input. Thirteen existing tests failed on
+   * exactly that ambiguity, which is the honest signal it was wrong. */
+  render(<Field label="How many profiles"><input className="ps-in" defaultValue="5" onChange={() => {}} /></Field>);
+  expect(screen.getAllByLabelText("How many profiles"),
+    "one field answers to its label twice").toHaveLength(1);
+  expect(screen.queryByRole("group", { name: "How many profiles" }),
+    "the control already carries the name; the group repeats it").toBeNull();
 });
