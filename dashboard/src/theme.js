@@ -427,6 +427,7 @@ input[type=checkbox] { accent-color: var(--violet); width: 15px; height: 15px; c
 }
 .ps-summary { width: 300px; flex-shrink: 0; border-left: 1px solid var(--line); background: var(--bg); overflow-y: auto; padding: 16px 18px; }
 .ps-summary-h { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 12px; }
+.ps-summary-note { font-size: 11.5px; line-height: 1.55; color: var(--text-tertiary); background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; }
 .ps-summary-list { margin: 0; }
 .ps-summary-row { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--lineSoft); font-size: 11.5px; }
 .ps-summary-row dt { flex: 0 0 108px; color: var(--text-tertiary); }

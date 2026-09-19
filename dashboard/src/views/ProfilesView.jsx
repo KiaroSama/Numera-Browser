@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Copy, Download, Filter, Flame, FolderTree, Layers, Pencil, Play, Plus, Search, ShieldAlert, ShieldCheck, Square, Trash2, Wifi, WifiOff, X } from "lucide-react";
 import { api } from "../api";
 import { T } from "../theme";
-import { ENGINE_META, ENGINE_ORDER, OS_LIST, coherence } from "../deviceData";
+import { ENGINE_META, ENGINE_ORDER, OS_LIST, coherence, generatesOwnIdentity } from "../deviceData";
 import { toast } from "../toast";
 import { ConfirmModal, Identicon, newProfile } from "../ui";
 
@@ -399,10 +399,18 @@ function ProfilesView({ filtered, selected, query, setQuery, folder, sel, setSel
                       </div>
                     </td>
                     <td>
+                      {/* An engine that builds its own identity never receives
+                          the browser, the version or the screen, so printing
+                          "Chrome 128 · 1920x1080" here states something that
+                          stops being true the moment the profile launches. */}
                       <div className="ps-env">
                         <span className="ps-os">{p.os}</span>
-                        <span className="ps-mono">{p.browser} {p.browserVersion.split(".")[0]}</span>
-                        <span className="ps-mono dim">{p.screen}</span>
+                        {generatesOwnIdentity(p.engine)
+                          ? <span className="ps-mono dim" title={`${ENGINE_META[p.engine]?.label || p.engine} builds its own Firefox fingerprint from the OS, language and proxy`}>Firefox · generated</span>
+                          : <>
+                              <span className="ps-mono">{p.browser} {p.browserVersion.split(".")[0]}</span>
+                              <span className="ps-mono dim">{p.screen}</span>
+                            </>}
                       </div>
                     </td>
                     <td><span className="ps-engine-chip">{ENGINE_META[p.engine]?.label || p.engine || "Playwright"}</span></td>
