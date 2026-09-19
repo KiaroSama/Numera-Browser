@@ -6,7 +6,8 @@ import { ArrowRight, Blocks, Bookmark, Camera, Database, Type, Volume2, Check, C
 import { ApiError, api } from "../api";
 import { fieldValue, profileWrite, rebaseProfile, withField } from "../profileEdits";
 import { T } from "../theme";
-import { CORES, COUNTRY_LOCALE, ENGINE_META, ENGINE_ORDER, GPUS, LOCALES, MODES, OS_LIST, RAM, SCREENS, WARMUP_PRESETS, coherence, uaFor, vendorFor } from "../deviceData";
+import { CORES, COUNTRIES, ENGINE_META, ENGINE_ORDER, GPUS, LOCALES, MODES, OS_LIST, RAM, SCREENS, WARMUP_PRESETS, coherence, generatesOwnIdentity, uaFor, vendorFor } from "../deviceData";
+import { ProfileSummary } from "./ProfileSummary";
 import { Field, Pick, Row, SectionLabel } from "../ui";
 import { TimezoneField } from "./TimezoneField";
 
@@ -72,9 +73,6 @@ function IpSwitch({ p, set, signal }) {
   );
 }
 
-const lines = v => Array.isArray(v) ? v.length
-  : String(v || "").split(/\r?\n/).filter(l => l.trim()).length;
-
 const conflictValue = (profile, path) => {
   let value = fieldValue(profile, path);
   if (path[0] === "proxy") {
@@ -83,64 +81,6 @@ const conflictValue = (profile, path) => {
   }
   return JSON.stringify(value) ?? "(empty)";
 };
-
-function ProfileSummary({ p, issues, score }) {
-  const rows = [
-    ["Profile name", p.name || "Untitled profile"],
-    ["Folder", p.folder || "None"],
-    ["Engine", ENGINE_META[p.engine]?.label || p.engine || "default"],
-    ["Proxy", p.proxy ? `${p.proxy.type} ${p.proxy.host}:${p.proxy.port}` : "Direct"],
-    ["OS", p.os],
-    ["Browser", `Chrome ${p.browserVersion || ""}`.trim()],
-    ["User-Agent", p.userAgent],
-    ["Resolution", p.screen],
-    ["Languages", p.locale],
-    ["Timezone", p.timezone],
-    ["Geolocation", p.geo],
-    ["WebRTC", p.webrtc],
-    ["Canvas", p.canvas],
-    ["Client Rects", p.clientRects || "noise"],
-    ["WebGL Image", p.webglImage || "noise"],
-    ["WebGL Vendor", p.webglVendor],
-    ["Audio Context", p.audio],
-    ["Fonts", p.fonts === "Real" || p.fonts === "real" ? "real"
-      : `masked (${String(p.fontList || "").split(/\r?\n/).filter(Boolean).length || "default"})`],
-    ["Media devices", p.mediaDevices === "real" ? "real"
-      : `${p.mediaVideo ?? 1}/${p.mediaAudio ?? 1}/${p.mediaSpeakers ?? 1}`],
-    ["CPU / RAM", `${p.cores} threads · ${p.memory} GB`],
-    ["Do Not Track", p.dnt ? "on" : "off"],
-    ["Extensions", lines(p.extensions) || "none"],
-    ["Startup URLs", lines(p.startupUrls) || "none"],
-    ["Bookmarks", lines(p.bookmarks) || "none"],
-    ["Launch args", lines(p.launchArgs) || "none"],
-    ["DNS", p.dns || "system default"],
-    ["Follows exit IP", (p.ipBased || []).join(", ") || "nothing"],
-    ["Cleared each launch", (p.clearOnStart || []).join(", ") || "nothing"],
-    ["Switched off", (p.switchedOff || []).join(", ") || "nothing"],
-  ];
-  return (
-    <aside className="ps-summary">
-      <div className="ps-summary-h">
-        <span>Profile summary</span>
-        <span style={{ color: issues.length ? T.amber : T.mint, fontWeight: 700 }}>{score}%</span>
-      </div>
-      <dl className="ps-summary-list">
-        {rows.map(([k, v]) => (
-          <div key={k} className="ps-summary-row">
-            <dt>{k}</dt>
-            <dd title={String(v ?? "")}>{v === "" || v == null ? "—" : String(v)}</dd>
-          </div>
-        ))}
-      </dl>
-      {issues.length > 0 && (
-        <div className="ps-summary-iss">
-          <ShieldAlert size={13} /> {issues.length} contradiction{issues.length === 1 ? "" : "s"}
-          {issues.map((i, k) => <div key={k}>· {i}</div>)}
-        </div>
-      )}
-    </aside>
-  );
-}
 
 /* ---- Probe result panel (proxy test / trust check) ---------------- */
 function ProbePanel({ probe, kind }) {
@@ -455,6 +395,15 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
 
           {tab === "fingerprint" && (
             <>
+              {/* Said once, at the top of the tab whose every control it
+                  affects - not repeated beside each field, and not hidden. */}
+              {generatesOwnIdentity(p.engine) && (
+                <div className="ps-hint"><Fingerprint size={12} />
+                  {" "}{ENGINE_META[p.engine]?.label || p.engine} generates its own Firefox
+                  fingerprint and is given only the OS, the language and the proxy below.
+                  The rest of this tab is stored and takes effect on a Chromium engine.
+                </div>
+              )}
               <SectionLabel icon={<MonitorSmartphone size={13} />} text="Operating system & browser" />
               <Row>
                 <Pick label="Operating system" opts={OS_LIST} val={p.os} on={changeOS} />
@@ -583,7 +532,15 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
                   )}
                   <Row>
                     <Field label="Type"><select className="ps-in" value={p.proxy.type} onChange={e => setProxy({ type: e.target.value })}>{["HTTP", "HTTPS", "SOCKS5"].map(t => <option key={t}>{t}</option>)}</select></Field>
-                    <Field label="Country"><select className="ps-in" value={p.proxy.country} onChange={e => setProxy({ country: e.target.value })}>{Object.keys(COUNTRY_LOCALE).map(c => <option key={c}>{c}</option>)}</select></Field>
+                    {/* `COUNTRIES`, not `Object.keys(COUNTRY_LOCALE)`: that map
+                        carries `UK` as an alias of `GB` so imported proxy lists
+                        resolve, and listing both put one country in the picker
+                        twice. Picking the alias stores a value every later
+                        comparison of `proxy.country` reads as a different place.
+                        The bulk dialog was fixed for this; this copy was not.
+                        A stored `UK` still shows, because the current value is
+                        added to the list below rather than snapping to `GB`. */}
+                    <Field label="Country"><select className="ps-in" value={p.proxy.country} onChange={e => setProxy({ country: e.target.value })}>{[...new Set([p.proxy.country, ...COUNTRIES].filter(Boolean))].map(c => <option key={c}>{c}</option>)}</select></Field>
                   </Row>
                   <Row>
                     <Field label="Host"><input className="ps-in mono" value={p.proxy.host} onChange={e => setProxy({ host: e.target.value })} placeholder="host.proxy.io" /></Field>

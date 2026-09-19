@@ -49,6 +49,71 @@ test("no two offered countries share a locale, and the alias is not offered", ()
     .toBe(COUNTRIES.length);
 });
 
+/* The same table, the same mistake, a second time.
+ *
+ * Found by opening the editor against a live engine: the proxy tab's Country
+ * select was still built from `Object.keys(COUNTRY_LOCALE)`, so `GB` and `UK`
+ * sat one above the other there long after the bulk dialog was fixed. One
+ * picker being right is not the rule holding. */
+test("the editor's proxy country select offers each country once", async () => {
+  const stored = {
+    id: "p1", name: "Has proxy", folder: "All profiles", status: "stopped",
+    os: "Windows", tags: [], engine: "playwright", browser: "Chrome",
+    browserVersion: "128.0.0.0", userAgent: "UA", screen: "1920x1080",
+    cores: 8, memory: 16, locale: "en-US", timezone: "America/New_York",
+    proxy: { type: "HTTP", host: "h", port: "1", user: "", pass: "", country: "US" },
+    ipBased: [], clearOnStart: [], switchedOff: [], lastActive: "never",
+  };
+  vi.stubGlobal("fetch", vi.fn(async (url) => {
+    const path = String(url).split("?")[0];
+    if (path === "/api/health") return response({ ok: true });
+    if (path === "/api/engines") return response({ playwright: true });
+    if (path === "/api/config") return response({ default_engine: "playwright", folders: [] });
+    if (path === "/api/profiles") return response([stored]);
+    return response([]);
+  }));
+  render(<App />);
+  await screen.findByText("Engine online");
+
+  fireEvent.click(await screen.findByTitle("Edit"));
+  fireEvent.click(await screen.findByText("proxy"));
+
+  const select = await screen.findByRole("combobox", { name: "Country" });
+  const offered = [...select.options].map(o => o.value);
+  expect(offered, "the alias is offered as a country").not.toContain("UK");
+  expect(offered).toContain("GB");
+  expect(new Set(offered).size, `a country is offered twice: ${offered.join(", ")}`)
+    .toBe(offered.length);
+});
+
+test("a profile that already stores the alias still shows it", async () => {
+  // Dropping `UK` from the LIST must not blank the field of every profile that
+  // was created back when the list offered it.
+  const stored = {
+    id: "p2", name: "Stored UK", folder: "All profiles", status: "stopped",
+    os: "Windows", tags: [], engine: "playwright", browser: "Chrome",
+    browserVersion: "128.0.0.0", userAgent: "UA", screen: "1920x1080",
+    cores: 8, memory: 16, locale: "en-GB", timezone: "Europe/London",
+    proxy: { type: "HTTP", host: "h", port: "1", user: "", pass: "", country: "UK" },
+    ipBased: [], clearOnStart: [], switchedOff: [], lastActive: "never",
+  };
+  vi.stubGlobal("fetch", vi.fn(async (url) => {
+    const path = String(url).split("?")[0];
+    if (path === "/api/health") return response({ ok: true });
+    if (path === "/api/engines") return response({ playwright: true });
+    if (path === "/api/config") return response({ default_engine: "playwright", folders: [] });
+    if (path === "/api/profiles") return response([stored]);
+    return response([]);
+  }));
+  render(<App />);
+  await screen.findByText("Engine online");
+  fireEvent.click(await screen.findByTitle("Edit"));
+  fireEvent.click(await screen.findByText("proxy"));
+
+  const select = await screen.findByRole("combobox", { name: "Country" });
+  expect(select.value, "the stored country silently changed").toBe("UK");
+});
+
 test("the bulk dialog offers each country once", async () => {
   engine();
   render(<App />);
