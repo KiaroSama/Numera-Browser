@@ -248,12 +248,31 @@ def test_no_unbounded_wait_for_settlement_owner():
         h.finish.release();manager.fail_start(h)
 
 
-def _assert_fixture_process_ended(pid, token):
+def _assert_fixture_process_ended(pid, token, deadline=5.0):
+    """The process is gone - polled to a deadline, not sampled once.
+
+    Two different questions are being asked and only one of them is answered
+    instantly. `end_tree` proves the *tree* empty through its ownership
+    primitive; this asks whether one *pid* still answers. On Windows a
+    terminated process keeps answering for a short interval after its job
+    reports empty - measured at 10-11 ms on an idle workstation - so a single
+    sample taken the moment `reported()` returns sees a live descendant and
+    fails a path that worked.
+
+    Polled rather than slept: the product's own `prove_empty` polls to a
+    deadline for the same reason, and a hard-coded delay measured on an idle
+    machine is not a bound for a loaded runner. The deadline is generous
+    against the measurement precisely so that a real survivor - one that never
+    goes away - still fails this assertion instead of being waited out.
+    """
     path = Path(f'/proc/{pid}/stat')
     if os.name != 'nt' and path.exists():
         assert path.read_text().rsplit(')', 1)[1].split()[0] == 'Z'
-    else:
-        assert not proctree.alive(pid, token)
+        return
+    end = time.monotonic() + deadline
+    while proctree.alive(pid, token) and time.monotonic() < end:
+        time.sleep(.01)
+    assert not proctree.alive(pid, token)
 
 
 def test_failed_report_after_a_descendant_exists_ends_the_whole_tree(tmp_path, monkeypatch):
