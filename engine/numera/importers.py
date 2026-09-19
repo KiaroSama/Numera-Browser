@@ -209,17 +209,17 @@ def profile_from_export(d: dict) -> tuple[Profile, list[str]]:
                      base.locale, "the language", issues)
     if locale not in devices.LOCALES:
         locale = base.locale
-    # `timezone.id` is a real vendor shape, and the guard is the same one the
-    # language above carries: a timezone has a coherent generated value sitting
-    # right here - the locale's own zone - so an export that puts an object
-    # under `timezone` is a field this profile does not have, not a file the
-    # importer should refuse. Unguarded, the dict travelled all the way to the
-    # route's `check_fields` as `'timezone' must be str, got dict` and took the
-    # WHOLE file down with it, including the profiles that were readable.
-    tz = _usable(_first(d, "timezone.timezone", "timezone.id", "timezone",
-                        "time_zone", "fingerprint.timezone",
-                        default=devices.LOCALES[locale][0]),
-                 devices.LOCALES[locale][0], "the timezone", issues)
+    # `timezone.id` is a real vendor shape and was the one nesting this list did
+    # not know, so `{"id": "Europe/Berlin"}` - a perfectly readable zone - fell
+    # through to the bare `timezone` name, came back as the dict itself, and the
+    # route refused the whole file over a value it could have read. Reading the
+    # nesting is the fix; NOT falling back, which would be the opposite bug.
+    # An object under `timezone` that names no zone this list knows stays
+    # unrenderable and is refused by field, exactly as `UNRENDERABLE_EXPORTS`
+    # in `test_write_contract_entry_points.py` requires - there is no honest
+    # guess at what it meant, and a half-written import is worse than none.
+    tz = _first(d, "timezone.timezone", "timezone.id", "timezone", "time_zone",
+                "fingerprint.timezone", default=devices.LOCALES[locale][0])
 
     fp = Fingerprint(
         os=os_key,
