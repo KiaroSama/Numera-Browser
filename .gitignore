@@ -19,6 +19,7 @@ node_modules/
 
 # local-only assistant / tooling state
 /.ai/
+/.specify/
 /secrets.md
 /explain-AI.md
 /reference.md
