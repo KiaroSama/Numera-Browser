@@ -161,7 +161,14 @@ jobs:
         timeout-minutes: 1
         run: python scripts/live_engine.py report --engine ${{ matrix.engine }} --report build/live-engine/results.xml
       - name: Preserve the test report
-        if: always()
+        # On failure only. The report is diagnostic material - it is read when a
+        # live engine breaks, never when it passes - and uploading it from every
+        # green run spent an account-wide artifact quota that is exhausted, so
+        # `Failed to CreateArtifact: Artifact storage quota has been hit` turned
+        # four jobs whose tests had all passed into failures. The step that
+        # actually enforces engine coverage is `Reject missing or skipped engine
+        # coverage` above, which keeps `if: always()`; nothing here is softened.
+        if: failure()
         uses: actions/upload-artifact@v7
         # No softening flag here, unlike the uploads in build-desktop.yml.
         # `test_live_engine_contract.py` asserts that no step of this job
