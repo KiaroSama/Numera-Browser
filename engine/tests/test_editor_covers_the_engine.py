@@ -76,9 +76,15 @@ def test_the_summary_panel_stays_in_step_with_the_editor():
     It is the panel a user reads to cross-check the identity, so a row showing a
     field nobody can set is worse than no row.
     """
-    editor = (SRC / "views" / "Editor.jsx").read_text(encoding="utf-8")
-    block = editor[editor.index("function ProfileSummary"):]
-    block = block[:block.index("\nfunction ")]
+    # The panel moved out of `Editor.jsx` into its own file when that file hit
+    # the 800-line ceiling. Located by where the component actually lives rather
+    # than by which file used to hold it: this assertion is about the panel, and
+    # `index()` raising `ValueError: substring not found` told us nothing about
+    # the summary at all.
+    panel = SRC / "views" / "ProfileSummary.jsx"
+    assert panel.is_file(), f"the summary panel is not at {panel}"
+    block = panel.read_text(encoding="utf-8")
+    assert "function ProfileSummary" in block, "ProfileSummary moved again"
     shown = set(re.findall(r"p\.(\w+)", block))
     known = editor_writes() | set(NOT_IN_EDITOR) | {
         "proxy", "extensions", "startupUrls", "tags", "notes", "engine", "os",
