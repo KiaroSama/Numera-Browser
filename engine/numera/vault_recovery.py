@@ -61,6 +61,11 @@ from .vault_problems import (
     locked,
     same_descriptor as _same_descriptor,
 )
+from .vault_active_descriptor import (
+    require_transition_config as _require_transition_config,
+    usable as _descriptor_ok,
+    verify_persisted_completion as _verify_persisted_completion,
+)
 
 #: The journal shapes this build knows how to finish.
 SUPPORTED_OPS = ("enable", "rotate")
@@ -105,30 +110,6 @@ def _text(value) -> bool:
     return isinstance(value, str) and bool(value)
 
 
-def _descriptor_ok(desc) -> bool:
-    """Is this a descriptor, or just a salt someone wrote down?
-
-    Both halves are load-bearing. The salt says which key the ciphertext is
-    under; the verifier is the only way to tell a correct password from one
-    that will decrypt every record into noise. A journal carrying only the
-    first let recovery commit a vault whose password could never be checked -
-    and `crypto.check_password(pw, salt, None)` answers False for every
-    password, so the store it produced could not be unlocked by anyone.
-    """
-    if not (isinstance(desc, dict)
-            and _text(desc.get("salt")) and _text(desc.get("verifier"))):
-        return False
-    # The salt has to be the encoding the key derivation will feed to
-    # `b64decode`. Checking only that it is a nonempty string let a damaged
-    # descriptor through to `binascii.Error`, raised out of what every caller
-    # asks as a yes/no question.
-    try:
-        base64.b64decode(desc["salt"], validate=True)
-    except (ValueError, TypeError):
-        return False
-    return True
-
-
 def classify(root) -> tuple:
     """`(state, record)` for the journal under `root`.
 
@@ -152,7 +133,7 @@ def classify(root) -> tuple:
         return "absent", None
     try:
         record = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except (OSError, ValueError, UnicodeError, RecursionError):
         return "unreadable", None
     if not isinstance(record, dict) or not record:
         return "unreadable", None
@@ -297,9 +278,12 @@ def end_journal(root) -> None:
     """
     try:
         journal_path(root).unlink(missing_ok=True)
-        sync_dir(Path(root))     # the removal itself, durable - last in the order
-    except OSError:                                          # pragma: no cover
-        pass
+        sync_dir(Path(root))
+    except OSError as error:
+        raise VaultRecoveryRequired(
+            "The data/config phase finished, but recovery-record cleanup "
+            "could not be completed. Preserve the data root and retry after "
+            "the filesystem problem is resolved.") from error
 
 
 def needs_recovery(root) -> bool:
@@ -383,7 +367,7 @@ def unreadable_secret_files(root) -> list:
     for path, site in vault.secret_files(Path(root)):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, ValueError, UnicodeError, RecursionError):
             bad.append(path)
             continue
         if not _container_ok(data, site):
@@ -406,7 +390,7 @@ def unconverted(root, password: str, salt: str) -> list:
     for path, site in vault.secret_files(Path(root)):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, ValueError, UnicodeError, RecursionError):
             stale.append(path)
             continue
         for holder in vault.holders(data, site):
@@ -458,7 +442,18 @@ def recover(root, get_config, save_config,
         return False
 
     new, old = descriptors(record)
-    cfg = get_config()
+    try:
+        cfg = get_config()
+        path = Path(root) / "config.json"
+        if path.exists():
+            persisted = json.loads(path.read_text(encoding="utf-8"))
+            _require_transition_config(root, persisted, new, old,
+                                       record.get("op", "enable"))
+    except (OSError, ValueError, UnicodeError, RecursionError) as error:
+        raise VaultIncomplete(
+            "The active config cannot be read; recovery evidence is retained.",
+            [Problem(UNREADABLE_FILES, "config.json cannot be read")]) from error
+    _require_transition_config(root, cfg, new, old, record.get("op", "enable"))
     if record.get("op") == "rotate":
         return _finish_rotation(root, cfg, new, old, save_config,
                                 password, old_password)
@@ -522,6 +517,9 @@ def structural_problems(root, descriptor: dict) -> list:
             UNREADABLE_FILES,
             f"{len(damaged)} secret-bearing file(s) cannot be read: "
             f"{', '.join(p.name for p in damaged)}"))
+
+    if damaged:
+        return problems
 
     leftover = vault.plaintext_secrets(root)
     if leftover:
@@ -618,9 +616,7 @@ def commit_and_verify(root, step, cfg: dict, new: dict, save_config,
     than committing a descriptor half the files do not answer to.
     """
     commit(root, step, cfg, new, save_config)
-    problems = completion_problems(root, new, password)
-    if problems:
-        _refuse_incomplete(root, what, problems)
+    _verify_persisted_completion(root, new, password, what)
 
 
 def commit(root, step, cfg: dict, new: dict, save_config) -> None:
@@ -700,13 +696,10 @@ def _finish_enable(root, cfg, new, save_config, password) -> bool:
                 f"vault descriptors, so which generation this data is in "
                 f"cannot be established from either one alone")])
         problems = completion_problems(root, active or new, password)
-        already = bool(active)
         if not problems:
-            sync_data(root)
-            if not already:
-                save_config({**cfg, "vault": dict(new)})
-            sync_config(root)
-            end_journal(root)
+            with vault.migration(root, keep_journal=True) as step:
+                commit_and_verify(root, step, cfg, new, save_config, password,
+                                  "`vault enable`")
             return True
         _refuse_incomplete(root, "`vault enable`", problems)
     if not password:
@@ -739,7 +732,7 @@ def _finish_rotation(root, cfg, new, old, save_config, password, old_password) -
             f"and its record is kept. Repair or restore those files first.")
 
     current = cfg.get("vault") or {}
-    if (current.get("salt") == new["salt"] and password
+    if (_same_descriptor(current, new) and password
             and crypto.check_password(password, new["salt"], new.get("verifier"))):
         # The descriptor names the new generation. Whether the *data* reached
         # it is a different question, and this used to assume the answer: it
@@ -754,6 +747,7 @@ def _finish_rotation(root, cfg, new, old, save_config, password, old_password) -
         if not completion_problems(root, new, password):
             sync_data(root)
             sync_config(root)
+            _verify_persisted_completion(root, new, password, "master-password rotation")
             end_journal(root)               # nothing left but the cleanup
             return True
         # Something is still behind. Fall through and finish the rotation
