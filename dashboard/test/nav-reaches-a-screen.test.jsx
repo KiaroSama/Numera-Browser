@@ -73,6 +73,24 @@ test("every nav button opens a screen, none falls through to the fallback", asyn
   }
 });
 
+test("the command palette can reach every section the sidebar can", async () => {
+  /* The other half of the same fault. `CommandPalette.jsx` keeps its own
+   * hardcoded list of destinations, and it had drifted the opposite way from
+   * the nav: Extensions was in the sidebar and missing from Ctrl-K, so one of
+   * the eight sections could not be reached from the palette at all. Nothing
+   * compared the two lists, which is why neither gap was visible. */
+  engine();
+  render(<App />);
+  await screen.findByText("Engine online");
+
+  const sections = navButtons().map(b => b.textContent.trim());
+  fireEvent.click(screen.getByTitle(/Command palette/i));
+  await screen.findByPlaceholderText(/Search commands/i);
+
+  const missing = sections.filter(s => !screen.queryByText(`Go to ${s}`));
+  expect(missing, `the palette cannot reach: ${missing.join(", ")}`).toEqual([]);
+});
+
 test("the fallback still answers a view name nothing renders", async () => {
   /* The guard above is only worth having if the fallback it looks for really
    * appears when a key has no screen - otherwise both assertions would pass on

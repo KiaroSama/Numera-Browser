@@ -2,12 +2,13 @@
  * results (proxy test and trust grade) that come back from a real browser. */
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Blocks, Bookmark, Camera, Database, Type, Volume2, Check, Clock, Cookie, Cpu, Download, Fingerprint, Globe, MapPin, Mic, MonitorSmartphone, RefreshCw, ShieldAlert, ShieldCheck, Sparkles, Terminal, Upload, Wifi, X } from "lucide-react";
+import { ArrowRight, Blocks, Bookmark, Camera, Database, Type, Volume2, Check, Cookie, Cpu, Download, Fingerprint, Globe, MapPin, Mic, MonitorSmartphone, RefreshCw, ShieldAlert, ShieldCheck, Sparkles, Terminal, Upload, Wifi, X } from "lucide-react";
 import { ApiError, api } from "../api";
 import { fieldValue, profileWrite, rebaseProfile, withField } from "../profileEdits";
 import { T } from "../theme";
 import { CORES, COUNTRY_LOCALE, ENGINE_META, ENGINE_ORDER, GPUS, LOCALES, MODES, OS_LIST, RAM, SCREENS, WARMUP_PRESETS, coherence, uaFor, vendorFor } from "../deviceData";
 import { Field, Pick, Row, SectionLabel } from "../ui";
+import { TimezoneField } from "./TimezoneField";
 
 /* Every resolved value of the profile, in one column beside the form.
  *
@@ -516,10 +517,7 @@ function Editor({ profile, live, folders = [], onClose, onSave }) {
                   <select className="ps-in" value={p.locale} disabled={(p.ipBased || []).includes("languages")}
                     onChange={e => changeLocale(e.target.value)}>{Object.keys(LOCALES).map(l => <option key={l}>{l}</option>)}</select>
                 </Field>
-                <Field label={<><Clock size={11} /> Timezone <IpSwitch p={p} set={set} signal="timezone" /></>}>
-                  <input className="ps-in mono" value={p.timezone} disabled={(p.ipBased || []).includes("timezone")}
-                    onChange={e => set({ timezone: e.target.value })} />
-                </Field>
+                <TimezoneField p={p} set={set} />
                 <Field label={<>Geolocation <IpSwitch p={p} set={set} signal="geolocation" /></>}>
                   <div className="ps-seg">{MODES.geo.map(o =>
                     <button key={o} className={p.geo === o ? "on" : ""} onClick={() => set({ geo: o })}>{o}</button>)}</div>
