@@ -58,7 +58,59 @@ const LOCALES = {
   "it-IT": "Europe/Rome", "nl-BE": "Europe/Brussels",
 };
 
+/* `UK` is an ALIAS, not a country. ISO 3166-1 alpha-2 spells the United
+ * Kingdom `GB`; `UK` is a reserved code that proxy lists and CSV exports use
+ * anyway, so the lookup accepts it - the engine's `devices.py` carries the same
+ * pair for the same reason. What it must not do is appear in a PICKER: the bulk
+ * dialog built its country chips from `Object.keys` here, so `GB` and `UK` sat
+ * side by side as if they were two places. Choosing both spread one country
+ * across two stored values, and every later comparison of `proxy.country` -
+ * the coherence rule below included - reads those as different. */
 const COUNTRY_LOCALE = { US: "en-US", GB: "en-GB", UK: "en-GB", PK: "en-PK", IN: "en-IN", DE: "de-DE", FR: "fr-FR", ES: "es-ES", TR: "tr-TR", IT: "it-IT", BE: "nl-BE" };
+
+//: The countries a user may CHOOSE - the canonical code for each place, once.
+const COUNTRIES = Object.keys(COUNTRY_LOCALE).filter(c => c !== "UK");
+
+/* Every IANA zone the runtime knows - 418 of them on current Chrome and Node,
+ * `Asia/Tehran` and the rest included.
+ *
+ * Asked from the platform rather than written down. A hardcoded list is wrong
+ * the first time a zone is added or renamed, and `LOCALES` above - the only
+ * timezone source this file used to have - knows ten, which is what the editor
+ * could offer while accepting any string typed into it.
+ *
+ * The fallback matters for old runtimes only: `supportedValuesOf` is Chrome 99
+ * and Firefox 93. Sorted so the picker reads alphabetically wherever it lands. */
+function knownTimezones() {
+  let zones = [];
+  try {
+    const got = Intl.supportedValuesOf?.("timeZone");
+    if (Array.isArray(got)) zones = got;
+  } catch { /* an older runtime: fall through to this project's own */ }
+  // The platform answers with CANONICAL names, which are not always the ones
+  // this project uses: Node and Chrome list `Asia/Calcutta`, while `LOCALES`
+  // here and `devices.py` both say `Asia/Kolkata`. Both are real and both
+  // resolve, so union them - otherwise the picker cannot offer the default
+  // that `en-IN` profiles are already created with.
+  return [...new Set([...zones, ...Object.values(LOCALES)])].sort();
+}
+
+const TIMEZONES = knownTimezones();
+
+/* Does the platform accept this zone? Membership in `TIMEZONES` is the wrong
+ * question - it answers "would we offer it", and the alias above is proof that
+ * a zone can be valid without being listed. `DateTimeFormat` throws on a zone
+ * that is not one, which is the only check that follows the runtime rather
+ * than a table someone has to maintain. */
+function validTimezone(zone) {
+  if (!zone) return false;
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const MODES = {
   canvas: ["Noise", "Block", "Real"], webrtc: ["Altered", "Disabled", "Real"],
@@ -162,6 +214,6 @@ function vendorFor(renderer) {
 let uid = 100;
 const nid = () => (++uid).toString(36) + Math.random().toString(36).slice(2, 6);
 
-export { nid, WARMUP_PRESETS, OS_LIST, GPUS, SCREENS, CORES, RAM, LOCALES, COUNTRY_LOCALE,
+export { nid, WARMUP_PRESETS, OS_LIST, GPUS, SCREENS, CORES, RAM, LOCALES, COUNTRY_LOCALE, COUNTRIES, TIMEZONES, validTimezone,
  MODES, ENGINE_ORDER, ENGINE_META, CHROME_VERSIONS, webglPlausible, screenPlausible,
  coherence, uaFor, vendorFor };

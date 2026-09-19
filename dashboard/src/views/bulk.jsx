@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Boxes, Check, Copy, Globe, Plus, RefreshCw, X } from "lucide-react";
 import { T } from "../theme";
-import { CHROME_VERSIONS, CORES, COUNTRY_LOCALE, ENGINE_META, ENGINE_ORDER, GPUS, LOCALES, OS_LIST, RAM, SCREENS, uaFor, vendorFor } from "../deviceData";
+import { CHROME_VERSIONS, CORES, COUNTRIES, COUNTRY_LOCALE, ENGINE_META, ENGINE_ORDER, GPUS, LOCALES, OS_LIST, RAM, SCREENS, uaFor, vendorFor } from "../deviceData";
 import { toast } from "../toast";
 import { Field, Row } from "../ui";
 
@@ -159,7 +159,7 @@ function BulkModal({ onClose, onCreate, folder, defaultEngine }) {
           </Row>
 
           <Field label="Operating systems (spread across)"><ChipPick options={OS_LIST} value={oses} onToggle={toggle(setOses)} /></Field>
-          <Field label="Countries / locales (spread across)"><ChipPick options={Object.keys(COUNTRY_LOCALE)} value={countries} onToggle={toggle(setCountries)} /></Field>
+          <Field label="Countries / locales (spread across)"><ChipPick options={COUNTRIES} value={countries} onToggle={toggle(setCountries)} /></Field>
           <Field label="Browser versions (Chrome)"><ChipPick options={CHROME_VERSIONS} value={browsers} onToggle={toggle(setBrowsers)} /></Field>
 
           <Row>

@@ -1,7 +1,7 @@
 /* Ctrl-K: jump to a view or act on a profile by name. */
 
 import { useEffect, useRef, useState } from "react";
-import { Activity, Blocks, FolderTree, Globe, Layers, Pencil, Play, Plus, Search, Settings, Square, Sun, Zap } from "lucide-react";
+import { Activity, Blocks, FolderTree, Globe, Layers, Pencil, Play, Plus, Puzzle, Search, Settings, Square, Sun, Zap } from "lucide-react";
 import { T } from "../theme";
 
 function CommandPalette({ onClose, profiles, setView, setEditor, toggleRun, toggleTheme, newProfile }) {
@@ -19,6 +19,11 @@ function CommandPalette({ onClose, profiles, setView, setEditor, toggleRun, togg
     ["Go to Profiles", () => setView("profiles"), Layers],
     ["Go to Health", () => setView("health"), Activity],
     ["Go to Engines", () => setView("engines"), Blocks],
+    // Extensions was missing here while the sidebar carried it, so one of the
+    // eight sections could not be reached from Ctrl-K at all. Two hand-kept
+    // lists drifting is the same fault as a nav key with no view behind it,
+    // pointing the other way; `nav-reaches-a-screen.test.jsx` now pins both.
+    ["Go to Extensions", () => setView("extensions"), Puzzle],
     ["Go to Proxies", () => setView("proxies"), Globe],
     ["Go to Automation", () => setView("automation"), Zap],
     ["Go to Folders", () => setView("folders"), FolderTree],
