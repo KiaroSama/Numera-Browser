@@ -2,6 +2,42 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+Three reviewed correctness fixes went in after 0.36.0, and the round of repairs
+that reviewing them found. The shape they share: a check that read a label
+instead of the thing the label described.
+
+- Choose a profile's validation context by the value the caller declared, and
+  refuse a declared container whose contents do not match that context as a
+  domain error rather than routing it to the validator that permits the gap.
+- Validate the **active persisted** vault descriptor on every recovery path,
+  and read back what actually reached `config.json` instead of trusting the
+  write that claimed to put it there.
+- End a helper's processes and streams under one deadline, and when a straggler
+  cannot be accounted for, retain it and say so by name - including when a
+  bounded settle gives up because another caller held the lock for the whole
+  budget.
+- Say which category a rejected ownership record fell into as well as what was
+  wrong with it, so a caller matching on the category still recognises the
+  refusal a person now has enough detail to debug.
+- Import a vendor profile whose timezone arrives nested under `id`. Everything
+  else unreadable is still refused by name.
+- Announce a field's label once. A labelled group around a labelled control
+  gave assistive technology two names for one field; the group is named only
+  when no control inside it took the name.
+- Mark what the engine generates rather than presenting it as something the
+  operator entered, and offer each country once.
+- Report what a health action actually did instead of only that it ran.
+- Reach every section from the command palette, and drop the sidebar entry that
+  had no screen behind it.
+- Let a registered self-hosted Windows runner take the Windows jobs, so the
+  platform gate is a deliberate run rather than a permanently red check.
+- Split `proctree` into the tree itself, the Windows job-object layer
+  (`winjob`) and the POSIX group and terminal layer (`posix_session`). Behaviour
+  is unchanged and every name is still reached through `proctree`; the file was
+  1016 lines, which is past the point where anything can be added to it safely.
+
 ## [0.36.0] - 2026-09-19
 
 The bound a caller declares now holds when something goes wrong, which is the
