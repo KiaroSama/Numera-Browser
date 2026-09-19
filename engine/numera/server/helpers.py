@@ -296,7 +296,15 @@ class HelperManager:
         # part is not the bound the caller asked for.
         ends_at = time.monotonic() + max(0.0, deadline)
         if not helper.finish.acquire(timeout=max(0.0, ends_at - time.monotonic())):
-            # Do not mutate a record another settlement currently owns.
+            # Do not mutate a record another settlement currently owns - but a
+            # refusal still has to say why. Written only when nothing is there:
+            # a settlement that already recorded its own verdict keeps it, and
+            # a caller that simply ran out of budget is no longer told "False"
+            # with nothing on the record to explain it.
+            if not helper.straggler:
+                helper.straggler = ("the settlement lock was held by another "
+                                    "caller for the whole deadline; nothing "
+                                    "was touched and everything is retained")
             return False
         try:
             if helper.state == SETTLED:
@@ -359,8 +367,12 @@ class HelperManager:
             retained = helper.streams.close(remaining())
             resources_done = not retained
             if not helper.output[2] or retained:
+                # "still holding a pipe" is the condition's name in this
+                # codebase and what callers and suites match on; the list that
+                # follows is the detail. Both, not one.
                 helper.output_problem = (
-                    "output did not reach EOF or could not be disposed: "
+                    "output did not reach EOF, or a reader is still holding a "
+                    "pipe and could not be disposed: "
                     + ", ".join(helper.streams.unfinished() + retained))
         elif helper.proc is not None:
             # Preparation failed before any pump was started.
@@ -507,10 +519,12 @@ def run_helper(cli, timeout: float, env=None, manager: HelperManager = None,
         raise HelperTimeout(
             f"helper exceeded {timeout:g}s; "
             + ("all owned work was stopped" if proved else
-               f"cleanup is incomplete and retained: {helper.straggler}"))
+               f"a straggler could not be fully accounted for and is "
+               f"retained: {helper.straggler}"))
     if not proved:
         error_type = HelperOutputIncomplete if helper.output_problem and not helper.units_problem else HelperUnsettled
-        raise error_type(f"helper cleanup is incomplete and retained: {helper.straggler}")
+        raise error_type(f"helper cleanup: a straggler could not be fully "
+                         f"accounted for and is retained: {helper.straggler}")
     if not complete:
         raise HelperOutputIncomplete("helper output was not completely read")
     return subprocess.CompletedProcess(cli, proc.returncode, out, err)
