@@ -31,17 +31,21 @@ import { CORES, GPUS, RAM, SCREENS, nid, uaFor } from "./deviceData";
  * alone, so a control with a better name of its own keeps it. */
 const NAMED_BY_FIELD = new Set(["input", "select", "textarea"]);
 
+//: Does this child take the field's name, rather than bringing its own?
+const takesTheName = (child) => isValidElement(child)
+  && NAMED_BY_FIELD.has(child.type)
+  && !child.props["aria-label"] && !child.props["aria-labelledby"];
+
 const Field = ({ label, children }) => {
   const id = useId();
-  let taken = false;
-  const named = Children.map(children, child => {
-    if (isValidElement(child) && NAMED_BY_FIELD.has(child.type)
-        && !child.props["aria-label"] && !child.props["aria-labelledby"]) {
-      taken = true;
-      return cloneElement(child, { "aria-labelledby": id });
-    }
-    return child;
-  });
+  // Asked of the children, not accumulated in a variable the map writes to:
+  // reassigning during render is what the compiler rule forbids, and the
+  // question "did anything take the name?" is a property of the list anyway.
+  const kids = Children.toArray(children);
+  const taken = kids.some(takesTheName);
+  const named = kids.map(child => (
+    takesTheName(child) ? cloneElement(child, { "aria-labelledby": id }) : child
+  ));
   /* The group is named only when no control took the name. Naming both was the
    * first attempt and it announced the label twice - once entering the group,
    * once on the control - and `getByLabelText` found two elements for one
