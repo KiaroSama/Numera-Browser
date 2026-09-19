@@ -499,11 +499,24 @@ def spawn(argv, **kwargs) -> tuple:
 # record means. Re-exported because `proctree.UNITS_ENV` and
 # `proctree.UnitReportFailed` are the names the server and the suites use.
 from .unit_report import UNITS_ENV, UnitReportFailed  # noqa: E402,F401
+from .unit_report import begin_spawn, cancel_spawn
 from .unit_report import record as report_unit        # noqa: E402
 from .disposal import abandon as _abandon, reported as _reported  # noqa: E402
 
 
 def _spawn_leader(original, args, rest, kwargs) -> tuple:
+    """Publish an intent before process creation and resolve it after ownership."""
+    attempt = begin_spawn()
+    try:
+        proc, tree = _spawn_unit(original, args, rest, kwargs)
+    except BaseException:
+        # No generic cancellation here: a failed OS ownership operation may
+        # have created a process. Leaving the intent pending is conservative.
+        raise
+    return proc, _reported(proc, tree, attempt=attempt)
+
+
+def _spawn_unit(original, args, rest, kwargs) -> tuple:
     """`original(...)`, with the child made the leader of a new tree.
 
     Windows assigns after the fact, the same way `spawn()` does and for the
@@ -540,12 +553,12 @@ def _spawn_leader(original, args, rest, kwargs) -> tuple:
                 f"it was stopped rather than left owning a browser nothing "
                 f"could account for (pid {proc.pid}).")
         tree = Tree(pid=proc.pid, token=identify(proc), group=name, kind="job")
-        return proc, _reported(proc, tree)
+        return proc, tree
     kwargs = {**kwargs, "start_new_session": True}
     proc = original(args, *rest, **kwargs)
     tree = Tree(pid=proc.pid, token=identify(proc),
                 group=proc.pid, kind="pgid")
-    return proc, _reported(proc, tree)
+    return proc, tree
 
 
 # ---- asking whether it is gone -------------------------------------------
@@ -638,7 +651,7 @@ def prove_empty(tree: Tree, *, deadline: float = 5.0) -> bool:
             return True
         if time.monotonic() >= end:
             return False
-        time.sleep(_POLL_SECONDS)
+        time.sleep(min(_POLL_SECONDS, max(0.0, end - time.monotonic())))
 
 
 def owned(tree: Tree) -> bool:
@@ -701,12 +714,22 @@ def signal_tree(tree: Tree, *, force: bool = False) -> bool:
         return False
 
 
-def end_tree(tree: Tree, *, grace: float = 5.0, kill_grace: float = 5.0) -> bool:
+def end_tree(tree: Tree, *, grace: float = 5.0, kill_grace: float = 5.0,
+             ends_at: Optional[float] = None) -> bool:
     """End every process in the tree and prove it. False means one survived.
 
     For a tree this process did not spawn - a detached job being stopped by a
     later CLI run - which is why it takes a `Tree` and no `Popen`.
     """
+    if ends_at is not None:
+        if not alive_tree(tree):
+            return True
+        signal_tree(tree)
+        left = max(0.0, ends_at - time.monotonic())
+        if prove_empty(tree, deadline=left / 2.0):
+            return True
+        signal_tree(tree, force=True)
+        return prove_empty(tree, deadline=max(0.0, ends_at - time.monotonic()))
     if not alive_tree(tree):
         return True
     if not signal_tree(tree) and not alive_tree(tree):
@@ -718,7 +741,7 @@ def end_tree(tree: Tree, *, grace: float = 5.0, kill_grace: float = 5.0) -> bool
 
 
 def end_session(proc: subprocess.Popen, tree: Tree, *, grace: float = 5.0,
-                kill_grace: float = 5.0) -> int:
+                kill_grace: float = 5.0, ends_at: Optional[float] = None) -> int:
     """End a session we spawned, and return the leader's exit code.
 
     The leader first, through `handshake.end_child`, which is what turns the
@@ -729,6 +752,18 @@ def end_session(proc: subprocess.Popen, tree: Tree, *, grace: float = 5.0,
     return - so a caller that drops its registry entry, releases the session
     or reports "stopped" is acting on the whole thing being gone.
     """
+    if ends_at is not None:
+        # Stop the owned group first. Waiting for its leader alone consumes
+        # time without stopping descendants that still hold output writers.
+        gone = end_tree(tree, ends_at=ends_at) if tree is not None else False
+        left = max(0.0, ends_at - time.monotonic())
+        try:
+            code = end_child(proc, grace=left / 2.0, kill_grace=left / 2.0)
+        except ChildTerminationFailed:
+            raise
+        if gone or tree is None:
+            return code
+        raise ChildTerminationFailed("owned processes remain after the cleanup deadline", proc.pid)
     code = end_child(proc, grace=grace, kill_grace=kill_grace)
     if prove_empty(tree, deadline=grace):
         return code

@@ -50,7 +50,7 @@ from typing import Optional
 
 from .. import proctree
 from ..handshake import ChildTerminationFailed
-from ..unit_report import UnitReport, read as read_units  # noqa: F401
+from ..unit_report import UnitReport, initialize, read as read_units  # noqa: F401
 from .helper_streams import Streams
 
 #: The states a helper record can be in. `starting` exists because admission is
@@ -111,6 +111,9 @@ class Helper:
     units: list = field(default_factory=list)
     units_path: Optional[Path] = None
     units_problem: Optional[str] = None
+    streams: Optional[Streams] = None
+    output: tuple = ("", "", True)
+    output_problem: Optional[str] = None
     state: str = STARTING
     started: float = field(default_factory=time.monotonic)
     straggler: Optional[str] = None
@@ -195,6 +198,7 @@ class HelperManager:
         handle, path = tempfile.mkstemp(prefix="numera-units-", suffix=".jsonl")
         os.close(handle)
         helper.units_path = Path(path)
+        initialize(helper.units_path)
         base = dict(env if env is not None else os.environ)
         base[proctree.UNITS_ENV] = str(helper.units_path)
         return base
@@ -215,7 +219,7 @@ class HelperManager:
         the attach there used to be real work - constructing the readers - and
         an exception there left `proc` and `tree` in local variables only. The
         cleanup that followed looked at a record with no process, found nothing
-        to end, released it, and then hung closing the pipes of a child it had
+        to end, released it, and then hung closing the pipes of the child it had
         just decided did not exist.
 
         Ownership is therefore recorded first and unconditionally, so that
@@ -238,19 +242,21 @@ class HelperManager:
         helper.resolved.set()
 
     def fail_start(self, helper: Helper, proc=None) -> None:
-        """A start that raised. Discard only with no process to account for.
-
-        `proctree.spawn` abandons the child on every failure path of its own,
-        so a raise from it leaves nothing running - but that is its guarantee
-        to make, not an assumption to bake in here. A caller that does have a
-        process passes it, and the record keeps it.
-        """
-        if proc is not None:                                  # pragma: no cover
-            self.attach(helper, proc, getattr(proc, "tree", None))
+        """Resolve a refused start without discarding a created process/report."""
+        proc = proc if proc is not None else helper.proc
+        if proc is not None:
+            helper.proc = proc
+            helper.tree = helper.tree or getattr(proc, "tree", None)
+            helper.state = STRANDED
+            helper.straggler = "startup failed after a process was created"
+            helper.resolved.set()
             return
-        _forget_units(helper)
-        self._release(helper)
-        helper.state = SETTLED
+        if _forget_units(helper):
+            helper.state = SETTLED
+            self._release(helper)
+        else:
+            helper.state = STRANDED
+            helper.straggler = "startup failed and its report could not be removed"
         helper.resolved.set()
 
     def _release(self, helper: Helper) -> None:
@@ -266,11 +272,9 @@ class HelperManager:
         below it, and on POSIX that browser is not even in the same process
         group - `_spawn_leader` gave it its own session.
 
-        The pipes are **not** closed here. Closing one while a live separately
-        sessioned process still holds the writer is the blocking close this
-        ordering exists to avoid; `run_helper` collects and closes once the
-        units are gone. One shared deadline covers every unit, rather than each
-        unit getting the whole of it.
+        Process termination, output collection and cancellable reader disposal
+        share one deadline. The registry is released only after all of them
+        finish. A failed reader is not silently replaced by partial output.
         """
         # One settle at a time for this helper, and the second caller gets the
         # first one's verdict rather than a second opinion.
@@ -290,164 +294,140 @@ class HelperManager:
         # until something external released it, because the budget only began
         # once the lock was already held. A bound that excludes the blocking
         # part is not the bound the caller asked for.
-        ends_at = time.monotonic() + deadline
-        if not helper.finish.acquire(
-                timeout=max(0.0, ends_at - time.monotonic())):
-            # Another settle is still running and this one is out of time.
-            # Nothing is touched, because that settle owns the record - but the
-            # caller is told, rather than blocked past its deadline.
-            helper.straggler = helper.straggler or (
-                "another cleanup of this helper was still running when this "
-                "one ran out of time; its outcome is unknown here")
+        ends_at = time.monotonic() + max(0.0, deadline)
+        if not helper.finish.acquire(timeout=max(0.0, ends_at - time.monotonic())):
+            # Do not mutate a record another settlement currently owns - but a
+            # refusal still has to say why. Written only when nothing is there:
+            # a settlement that already recorded its own verdict keeps it, and
+            # a caller that simply ran out of budget is no longer told "False"
+            # with nothing on the record to explain it.
+            if not helper.straggler:
+                helper.straggler = ("the settlement lock was held by another "
+                                    "caller for the whole deadline; nothing "
+                                    "was touched and everything is retained")
             return False
         try:
-            with self._lock:
-                if helper.state == SETTLED:
-                    # The only state that may not be re-entered: the success
-                    # path consumes the ownership report, so a second pass
-                    # would read an absent one and call it lost evidence.
-                    #
-                    # STRANDED deliberately is *not* short-circuited here. A
-                    # stranded record is never dropped, which is about keeping
-                    # it - not about refusing to try again. Nothing was
-                    # consumed on that path, and a later sweep runs under
-                    # different conditions: the reason it could not be proved
-                    # may simply have gone away.
-                    return True
-                helper.state = STOPPING
-            return self._settle_locked(helper, ends_at)
+            if helper.state == SETTLED:
+                return True
+            if not helper.resolved.is_set():
+                helper.cancel.set()
+                helper.resolved.wait(max(0.0, ends_at - time.monotonic()))
+                if not helper.resolved.is_set():
+                    helper.state = STRANDED
+                    helper.straggler = "startup has not resolved; its reservation is retained"
+                    return False
+            helper.state = STOPPING
+            try:
+                return self._settle_locked(helper, ends_at)
+            except BaseException:
+                helper.state = STRANDED
+                helper.straggler = "cleanup raised; ownership and remaining resources are retained"
+                if helper.streams is not None:
+                    helper.streams.close(max(0.0, ends_at - time.monotonic()))
+                raise
         finally:
             helper.finish.release()
 
     def _settle_locked(self, helper: Helper, ends_at: float) -> bool:
-        """The body of `settle`, with this helper's `finish` lock already held.
-
-        `ends_at` is absolute and shared by everything below: the session
-        termination, every reported unit, each nested grace and kill window.
-        Handing each nested call a fresh full budget is how a declared five
-        seconds became five per process - the caller states one deadline
-        because one deadline is what it can plan around.
-        """
-        reason = None
-        remaining = lambda: max(0.0, ends_at - time.monotonic())   # noqa: E731
-
+        """Processes, output and record disposal are one terminal operation."""
+        remaining = lambda: max(0.0, ends_at - time.monotonic())
+        # Leave a portion of the SAME budget for EOF/cancellation and joins.
+        drain_share = min(DRAIN_SHARE, remaining() / 2.0) if helper.streams else 0.0
+        process_end = ends_at - drain_share
+        reasons = []
         if helper.proc is not None:
             try:
                 proctree.end_session(helper.proc, helper.tree,
-                                     grace=remaining())
-            except ChildTerminationFailed as stuck:
-                reason = str(stuck)
-            except Exception as e:                       # noqa: BLE001
-                reason = f"{type(e).__name__}: {e}"      # pragma: no cover
+                                     ends_at=process_end)
+            except Exception as error:
+                reasons.append(f"{type(error).__name__}: {error}")
 
-        # After the helper has been ended, so nothing is still appending to it.
         report = read_units(helper.units_path)
-        helper.units = report.trees
+        # Retain earlier valid identities if a later read loses some evidence.
+        for tree in report.trees:
+            if tree not in helper.units:
+                helper.units.append(tree)
         helper.units_problem = report.problem
-
         left = []
         for tree in helper.owned_trees():
-            # Split, so one tree cannot spend the remainder twice over.
-            grace = remaining() / 2.0
             try:
-                if not proctree.end_tree(tree, grace=grace, kill_grace=grace):
+                if not proctree.end_tree(tree, ends_at=process_end):
                     left.append(tree)
-            except Exception as e:                       # noqa: BLE001
-                reason = reason or f"{type(e).__name__}: {e}"
+            except Exception as error:
+                reasons.append(f"{type(error).__name__}: {error}")
                 left.append(tree)
+        # A group may be empty while its leader has not yet been reaped.
+        leader_gone = helper.proc is None or helper.proc.poll() is not None
+        resources_done = True
+        if helper.streams is not None:
+            # Preserve a cancellation/join slice rather than spending it all
+            # waiting for EOF from an unaccounted writer.
+            reserve = min(0.1, remaining() / 2.0)
+            helper.output = helper.streams.collect(max(0.0, remaining() - reserve))
+            retained = helper.streams.close(remaining())
+            resources_done = not retained
+            if not helper.output[2] or retained:
+                # "still holding a pipe" is the condition's name in this
+                # codebase and what callers and suites match on; the list that
+                # follows is the detail. Both, not one.
+                helper.output_problem = (
+                    "output did not reach EOF, or a reader is still holding a "
+                    "pipe and could not be disposed: "
+                    + ", ".join(helper.streams.unfinished() + retained))
+        elif helper.proc is not None:
+            # Preparation failed before any pump was started.
+            for pipe in (helper.proc.stdout, helper.proc.stderr):
+                if pipe is not None and not pipe.closed:
+                    try:
+                        pipe.close()
+                    except OSError as error:
+                        resources_done = False
+                        reasons.append(f"pipe close: {error}")
 
-        if left or not report.complete:
+        if left or not leader_gone or not report.complete or not resources_done or helper.output_problem:
             helper.state = STRANDED
-            helper.straggler = reason or report.problem or (
-                "still running: "
-                + ", ".join(f"{t.kind}:{t.group}" for t in left))
+            helper.straggler = "; ".join(filter(None, [
+                report.problem, helper.output_problem, *reasons,
+                "owned processes remain" if left or not leader_gone else None]))
+            return False
+        # No release occurs until all process AND stream checks passed.
+        if not _forget_units(helper):
+            helper.state = STRANDED
+            helper.straggler = "the ownership report could not be removed"
             return False
         with self._lock:
             helper.straggler = None
-            helper.state = SETTLED           # under the lock, before the report
-            self._live.pop(id(helper), None)  # goes, so a racing settle sees it
-        _forget_units(helper)
+            helper.state = SETTLED
+            self._live.pop(id(helper), None)
         return True
 
     def end_all(self, *, deadline: float = CLEANUP_BUDGET) -> list:
-        """End every live helper, and close this manager for good.
-
-        Admission closes first, so a request arriving mid-shutdown cannot start
-        a browser behind the snapshot - and it stays closed, because this app is
-        ending. A restart builds a new manager rather than re-opening a shared
-        flag.
-
-        A reservation that has not spawned yet is **cancelled and waited for**,
-        never released: dropping it on the strength of having no process is
-        what let a spawn complete behind a finished shutdown. The wait is
-        bounded and happens with the lock released, because resolving it needs
-        that same lock.
-        """
+        """Cancel admission, then settle the snapshot under one total budget."""
+        ends_at = time.monotonic() + max(0.0, deadline)
         with self._lock:
             self._closed = True
-            pending = [h for h in self._live.values() if h.state == STARTING]
-        for helper in pending:
-            helper.cancel.set()
-        end = time.monotonic() + deadline
-        for helper in pending:
-            helper.resolved.wait(max(0.0, end - time.monotonic()))
-
+            snapshot = list(self._live.values())
+            for helper in snapshot:
+                if not helper.resolved.is_set():
+                    helper.cancel.set()
         left = []
-        for helper in self.live():
-            if not helper.resolved.is_set():
-                # Unresolved: it may yet create a process, so it keeps its
-                # record and is reported rather than quietly forgotten.
-                #
-                # The test is `resolved`, not the state label, and that is the
-                # whole of the second defect here. The first shutdown wrote
-                # STRANDED onto exactly this record; a second one asking
-                # "is it STARTING?" got False, fell through to `settle`, found
-                # an empty record with no process - because there still is no
-                # process - and released a reservation that can *still* spawn.
-                # Whether a reservation resolved is a fact about the spawner;
-                # the label is a description of the record, and the two stopped
-                # agreeing the moment anything else wrote one.
-                helper.state = STRANDED
-                helper.straggler = (
-                    "a helper was still starting when this server shut down, "
-                    "and did not resolve within the cleanup budget; whether it "
-                    "created a process is unknown")
-                left.append(helper)
-                continue
-            if not self.settle(helper, deadline=deadline):
+        for helper in snapshot:
+            if not self.settle(helper, deadline=max(0.0, ends_at - time.monotonic())):
                 left.append(helper)
         return left
 
 
-def _retain(helper: Helper, alive: list, identities: list = ()) -> None:
-    """Record readers that outlived the close, and unsettle the helper.
-
-    A reader still running holds a pipe whose writer has not gone, which means
-    something this helper owns is still alive - so the record cannot be
-    `settled` however the process termination went. Written onto `straggler`
-    beside whatever cleanup already found, because a person looking at a stuck
-    helper needs both halves: what would not die, and what is still attached
-    to it.
-    """
-    if not alive:
-        return
-    named = ", ".join(identities) or ", ".join(alive)
-    note = (f"output reader(s) still holding a pipe after cleanup: {named} - "
-            f"a writer has not gone, so something this helper owns is running")
-    helper.straggler = f"{helper.straggler}; {note}" if helper.straggler else note
-    if helper.state == SETTLED:                          # pragma: no cover
-        helper.state = STRANDED
-
-
-def _forget_units(helper: Helper) -> None:
-    """Drop the reporting file; its contents are on the record by now."""
-    path, helper.units_path = helper.units_path, None
+def _forget_units(helper: Helper) -> bool:
+    """Remove evidence only after completion; retain its path on failure."""
+    path = helper.units_path
     if path is None:
-        return
+        return True
     try:
         path.unlink(missing_ok=True)
-    except OSError:                                      # pragma: no cover
-        pass
+    except OSError:
+        return False
+    helper.units_path = None
+    return True
 
 
 # --------------------------------------------------------------------------
@@ -498,102 +478,53 @@ def end_helpers(*, deadline: float = CLEANUP_BUDGET) -> list:
 
 def run_helper(cli, timeout: float, env=None, manager: HelperManager = None,
                cleanup: float = CLEANUP_BUDGET):
-    """Run a finite helper command, bounded, and prove what it owned ended.
-
-    The declared bound is `timeout` for the operation plus `cleanup` for
-    everything afterwards - ending the units and draining the streams share
-    that one budget rather than each taking it in turn.
-
-    Returns a `CompletedProcess`, including for a non-zero exit: a failing
-    proxy test is a result its caller reads, not a broken command. It returns
-    only when the tree is provably gone **and** the output was read to the end;
-    either failure raises, because a result that looks finished while a browser
-    still holds the profile - or one whose JSON stops halfway - is worse than
-    an error.
-    """
+    """Return complete output only after the owned lifecycle has terminated."""
     manager = manager or default_manager()
-    helper = manager.admit(cli)               # before the spawn, not after
+    helper = manager.admit(cli)
     try:
         child_env = manager.child_env(helper, env)
-        manager.check_open(helper)            # shutdown may have arrived
-        proc, tree = proctree.spawn(
-            cli, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            stdin=subprocess.DEVNULL, env=child_env,
-        )
+        manager.check_open(helper)
+        proc, tree = proctree.spawn(cli, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, env=child_env)
     except BaseException:
-        # Nothing was created: `proctree.spawn` abandons its own child on every
-        # failure path, and the steps before it start no process at all.
         manager.fail_start(helper)
         raise
-    # The child exists. Record ownership before anything that can throw, so the
-    # record names it even if the next line fails - constructing the readers
-    # opens file objects and starts threads, and when that raised, `proc` and
-    # `tree` existed only as locals. Cleanup then saw a record with no process,
-    # released it, and blocked closing the pipes of the child it had just
-    # written off.
-    manager.adopt(helper, proc, tree)
-    streams = None
+    # This assignment has no external callback between spawn and ownership.
+    # A fallible adopt hook must not hide the already-created process.
+    helper.proc, helper.tree = proc, tree
     timed_out = False
     try:
-        streams = Streams(proc)               # reading from now, not after
+        manager.adopt(helper, proc, tree)
+        helper.streams = Streams(proc, start=False)
+        helper.streams.start()
         manager.attach(helper, proc, tree)
         if helper.cancelled:
-            # Shutdown landed while this was spawning. The child exists and is
-            # registered, so it is ended here rather than left to a sweep that
-            # has already taken its snapshot.
-            raise HelperShuttingDown(
-                "this server began shutting down while the helper was "
-                "starting; it was stopped rather than left running")
+            raise HelperShuttingDown("this server cancelled the helper during startup")
         try:
             proc.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
             timed_out = True
     except BaseException:
-        manager.settle(helper, deadline=cleanup)
-        if streams is not None:
-            _retain(helper, streams.close())
-        else:
-            # `Streams` never got built, so the pipes are still raw handles on
-            # this record's child. Closing them is safe exactly because no
-            # reader thread exists to be blocked on one.
-            for pipe in (proc.stdout, proc.stderr):
-                if pipe is not None:
-                    try:
-                        pipe.close()
-                    except OSError:                      # pragma: no cover
-                        pass
+        helper.resolved.set()
+        # Preserve the original error, and the record if cleanup also fails.
+        try:
+            manager.settle(helper, deadline=cleanup)
+        except Exception as error:
+            helper.state = STRANDED
+            helper.straggler = f"startup and cleanup failed: {type(error).__name__}"
         raise
-
-    # Order matters: every owner of a pipe writer has to be gone before the
-    # drain can reach end-of-file, and before a close can be safe.
-    proved = manager.settle(helper, deadline=max(0.0, cleanup - DRAIN_SHARE))
-    out, err, complete = streams.collect(DRAIN_SHARE)
-    unfinished = streams.unfinished()
-    # Bounded whatever settlement decided. When a unit could not be ended it is
-    # still holding these writers, so a close that waits for them waits for the
-    # thing that just failed; what cannot be closed is retained and named on
-    # the record instead.
-    _retain(helper, streams.close(), streams.retained())
-    done = subprocess.CompletedProcess(cli, proc.returncode, out, err)
-
+    proved = manager.settle(helper, deadline=cleanup)
+    out, err, complete = helper.output
     if timed_out:
         raise HelperTimeout(
-            f"a browser helper did not finish within {timeout:.0f}s and was "
-            f"stopped. Raise NUMERA_HELPER_TIMEOUT if this machine needs "
-            f"longer, or check whether the profile's proxy is answering."
-            if proved else
-            f"a browser helper did not finish within {timeout:.0f}s and could "
-            f"not be fully stopped: {helper.straggler}. Its browser may still "
-            f"be running; it is listed as a straggler.")
+            f"helper exceeded {timeout:g}s; "
+            + ("all owned work was stopped" if proved else
+               f"a straggler could not be fully accounted for and is "
+               f"retained: {helper.straggler}"))
     if not proved:
-        raise HelperUnsettled(
-            f"a browser helper exited with code {done.returncode} but could "
-            f"not be fully accounted for: {helper.straggler}. It is listed as "
-            f"a straggler.")
+        error_type = HelperOutputIncomplete if helper.output_problem and not helper.units_problem else HelperUnsettled
+        raise error_type(f"helper cleanup: a straggler could not be fully "
+                         f"accounted for and is retained: {helper.straggler}")
     if not complete:
-        raise HelperOutputIncomplete(
-            f"a browser helper exited with code {done.returncode} but its "
-            f"{' and '.join(unfinished)} could not be read to the end within "
-            f"{DRAIN_SHARE:.0f}s, so its answer is incomplete and has not been "
-            f"used. {len(out)} character(s) of stdout were collected.")
-    return done
+        raise HelperOutputIncomplete("helper output was not completely read")
+    return subprocess.CompletedProcess(cli, proc.returncode, out, err)
