@@ -342,20 +342,20 @@ def test_the_api_import_survives_the_same_number(tmp_path):
     assert {p["name"] for p in c.get("/api/profiles").json()} == {"first", "second"}
 
 
-def test_a_timezone_object_is_read_or_stood_down_from(tmp_path):
-    """An object under `timezone` must not take the whole file down.
+def test_a_timezone_nested_under_id_is_read_not_refused(tmp_path):
+    """`{"id": "Europe/Berlin"}` is a zone this importer can read.
 
-    Found by driving the dashboard's own Import button with a vendor file whose
-    timezone was `{"id": "Europe/Berlin"}`. `timezone.id` was not among the
-    aliases, so `_first` returned the dict itself, it reached the route's
-    `check_fields` as `'timezone' must be str, got dict`, and the import was
-    refused ENTIRELY - the profile with that field and the profile without it.
+    Found by driving the dashboard's own Import button with a vendor file shaped
+    that way. `timezone.id` was not among the aliases, so `_first` fell through
+    to the bare `timezone` name, returned the dict itself, and the route refused
+    the WHOLE file - `'timezone' must be str, got dict` - over a value it could
+    have read perfectly well, taking the readable profiles beside it down too.
 
-    Two things are pinned. `timezone.id` is read, because it is a shape vendors
-    write. And a timezone this importer cannot read falls back to the locale's
-    own zone with the issue said out loud, the same guard the language beside it
-    has always had - a field with a coherent generated value is a field a bad
-    value cannot destroy.
+    The refusal itself is NOT the bug and is not softened here: an object that
+    names no zone stays unrenderable and is refused by field, which
+    `test_write_contract_entry_points.py::UNRENDERABLE_EXPORTS` pins and this
+    test deliberately agrees with. Reading a nesting the list simply did not
+    know is the whole fix.
     """
     import pytest
 
@@ -367,8 +367,8 @@ def test_a_timezone_object_is_read_or_stood_down_from(tmp_path):
     payload = json.dumps([
         {"name": "by-id", "navigator": {"language": "de-DE"},
          "timezone": {"id": "Europe/Berlin"}},
-        {"name": "unreadable", "navigator": {"language": "fr-FR"},
-         "timezone": {"whatever": True}},
+        {"name": "by-nesting", "navigator": {"language": "en-US"},
+         "timezone": {"timezone": "America/Chicago"}},
         {"name": "plain-string", "navigator": {"language": "en-US"},
          "timezone": "America/Los_Angeles"},
     ])
@@ -379,9 +379,24 @@ def test_a_timezone_object_is_read_or_stood_down_from(tmp_path):
     assert r.json()["imported"] == 3, r.text
     by_name = {p["name"]: p for p in c.get("/api/profiles").json()}
     assert by_name["by-id"]["timezone"] == "Europe/Berlin"
+    assert by_name["by-nesting"]["timezone"] == "America/Chicago"
     assert by_name["plain-string"]["timezone"] == "America/Los_Angeles"
-    # The one it could not read keeps a real zone, and says it substituted one.
-    assert isinstance(by_name["unreadable"]["timezone"], str)
-    assert by_name["unreadable"]["timezone"] == "Europe/Paris"
-    noted = [res for res in r.json()["results"] if res["name"] == "unreadable"]
-    assert noted and any("timezone" in i for i in noted[0]["issues"]), noted
+
+
+def test_an_object_naming_no_zone_is_still_refused(tmp_path):
+    """The other half, held in place: reading `timezone.id` must not become a
+    licence to guess at an object that names nothing."""
+    import pytest
+
+    pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+    from numera.server import create_app
+
+    c = TestClient(create_app(data_dir=str(tmp_path), start_scheduler=False))
+    payload = json.dumps([{"name": "ok", "timezone": {"whatever": True}}])
+
+    r = c.post("/api/profiles/import", json={"text": payload})
+
+    assert 400 <= r.status_code < 500, r.text
+    assert "timezone" in r.text, r.text
+    assert c.get("/api/profiles").json() == [], "a refused import wrote a record"
