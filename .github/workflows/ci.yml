@@ -50,7 +50,15 @@ jobs:
     # matrix, so the cross-process tests only ever ran on the half of the code
     # that already worked.
     name: Engine tests (Windows)
-    runs-on: windows-latest
+    # Hosted Windows cannot start at all on this account - the job's own
+    # annotation is "The job was not started because recent account payments
+    # have failed or your spending limit needs to be increased" - so the label
+    # is switchable. Set the repository variable WINDOWS_RUNNER to a JSON array
+    # of labels (for example ["self-hosted","Windows","X64"]) once a Windows
+    # runner is registered, and both Windows jobs move onto it; leave it unset
+    # and nothing changes, which is what keeps this inert rather than queueing
+    # a job against labels nobody carries.
+    runs-on: ${{ vars.WINDOWS_RUNNER != '' && fromJSON(vars.WINDOWS_RUNNER) || 'windows-latest' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -75,9 +83,14 @@ jobs:
     # as required, and the artifact name interpolates it - while the Linux half
     # runs on the self-hosted runner. Without this all eight legs sat at
     # `steps: 0` under the account billing block, so four jobs the workflow
-    # calls *required* had never once executed. The Windows half still cannot
-    # start; that needs a Windows runner, not a workflow change.
-    runs-on: ${{ matrix.os == 'ubuntu-latest' && fromJSON('["self-hosted", "Linux", "X64"]') || matrix.os }}
+    # calls *required* had never once executed. The Windows half takes the same
+    # route through the WINDOWS_RUNNER variable documented on `engine-windows`:
+    # unset, it stays on hosted Windows and stays blocked by the account's
+    # billing state; set, it moves to a registered Windows runner.
+    runs-on: >-
+      ${{ matrix.os == 'ubuntu-latest' && fromJSON('["self-hosted", "Linux", "X64"]')
+       || matrix.os == 'windows-latest' && vars.WINDOWS_RUNNER != '' && fromJSON(vars.WINDOWS_RUNNER)
+       || matrix.os }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
