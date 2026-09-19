@@ -42,6 +42,7 @@ only ever saw one of the shapes.
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 
 from . import field_policy
 from .field_policy import NUMBER_RANGES        # noqa: F401 - re-export; the API
@@ -440,8 +441,8 @@ def profile_problems(profile, *, where: str = "profile", kind: str = None) -> li
     a malformed record is exactly the one the guess gets wrong.
     """
     kind = shape(profile, kind=kind)
-    if kind is DASHBOARD_PATCH:
-        if not hasattr(profile, "get"):
+    if kind == DASHBOARD_PATCH:
+        if not isinstance(profile, Mapping):
             # Not a record, not a patch, not a `Profile`. The generic reader
             # used to answer `None` to every lookup here too, so an integer
             # handed to this function came back reported as a profile whose
@@ -449,8 +450,18 @@ def profile_problems(profile, *, where: str = "profile", kind: str = None) -> li
             return [f"{where}: a profile must be a record or a patch, not "
                     f"{_name(profile)}. Nothing was written."]
         return _dashboard_problems(profile, where)
-    read = (profile.get if kind is ENGINE_RECORD
-            else lambda name: getattr(profile, name, None))
+    # Context names can come from JSON/configuration; string identity is not
+    # their contract. Validate the container before selecting its accessor.
+    if kind == ENGINE_RECORD:
+        if not isinstance(profile, Mapping):
+            return [f"{where}: an engine profile record must be a mapping, not "
+                    f"{_name(profile)}. Nothing was written."]
+        read = profile.get
+    else:
+        if not isinstance(profile, Profile):
+            return [f"{where}: an engine profile object must be a Profile, not "
+                    f"{_name(profile)}. Nothing was written."]
+        read = lambda name: getattr(profile, name, None)
     return _table_problems(read, field_policy.PROFILE, where)
 
 
