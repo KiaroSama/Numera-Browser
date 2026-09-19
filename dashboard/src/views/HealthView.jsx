@@ -86,11 +86,41 @@ function HealthView({ profiles, live, refresh, setEditor }) {
 
   const rows = data?.profiles || [];
   const s = data?.summary || {};
-  const act = async (id, label, fn) => {
+  /* Both of these open a real browser and change the profile, and neither said
+   * so. `act` reported failures and nothing else, so a trust check that
+   * re-graded a profile from B to C, and an auto-adjust that rewrote its OS,
+   * screen, memory and GPU to what the browser actually presents, both finished
+   * in silence - the row quietly redrew and that was the entire feedback. It is
+   * the reason these read as buttons that do nothing: they do a great deal.
+   *
+   * So each action says what it did, in its own words, from what the endpoint
+   * already returns. `describe` is per action because "graded B, 15 of 16
+   * checks" and "changed 4 fields, C → B" are not the same sentence. */
+  const act = async (id, label, fn, describe) => {
     setBusy(b => ({ ...b, [id]: label }));
-    try { await fn(); await load(); await refresh(); }
-    catch (e) { toast.error(`${label} failed: ` + e.message); }
+    try {
+      const res = await fn();
+      await load(); await refresh();
+      const said = describe?.(res);
+      if (said) toast.success(said);
+    } catch (e) { toast.error(`${label} failed: ` + e.message); }
     setBusy(b => { const n = { ...b }; delete n[id]; return n; });
+  };
+
+  //: "B (94/100), 15 of 16 checks passed" - the grade and what it rests on.
+  const gradeLine = (g) => g?.grade
+    ? `${g.grade} (${g.score}/100)` + (g.total ? `, ${g.passed} of ${g.total} checks passed` : "")
+    : "no grade came back";
+
+  const saidTrust = (name) => (res) => `${name}: trust ${gradeLine(res?.after || res)}.`;
+
+  const saidAlign = (name) => (res) => {
+    const changed = res?.changed || [];
+    const before = res?.before?.grade, after = res?.after?.grade;
+    const moved = before && after && before !== after ? ` ${before} → ${after}` : "";
+    return changed.length
+      ? `${name}: aligned${moved} — rewrote ${changed.join(", ")} to what the browser presents.`
+      : `${name}: already aligned${moved || ""} — nothing needed changing.`;
   };
 
   return (
@@ -137,11 +167,11 @@ function HealthView({ profiles, live, refresh, setEditor }) {
                   <td>
                     <div className="ps-actions">
                       <button title="Run trust check" className="run" disabled={!!busy[r.id] || r.status === "running"}
-                        onClick={() => act(r.id, "Trust check", () => api.trust(r.id))}>
+                        onClick={() => act(r.id, "Trust check", () => api.trust(r.id), saidTrust(r.name))}>
                         {busy[r.id] === "Trust check" ? <RefreshCw size={13} className="ps-spin" /> : <ShieldCheck size={13} />}
                       </button>
                       <button title="Auto-adjust to grade A" className="run" disabled={!!busy[r.id] || r.status === "running"}
-                        onClick={() => act(r.id, "Auto-adjust", () => api.align(r.id))}>
+                        onClick={() => act(r.id, "Auto-adjust", () => api.align(r.id), saidAlign(r.name))}>
                         {busy[r.id] === "Auto-adjust" ? <RefreshCw size={13} className="ps-spin" /> : <Sparkles size={13} />}
                       </button>
                     </div>
