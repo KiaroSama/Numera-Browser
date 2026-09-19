@@ -340,3 +340,48 @@ def test_the_api_import_survives_the_same_number(tmp_path):
     assert r.status_code == 200, r.text
     assert r.json()["imported"] == 2
     assert {p["name"] for p in c.get("/api/profiles").json()} == {"first", "second"}
+
+
+def test_a_timezone_object_is_read_or_stood_down_from(tmp_path):
+    """An object under `timezone` must not take the whole file down.
+
+    Found by driving the dashboard's own Import button with a vendor file whose
+    timezone was `{"id": "Europe/Berlin"}`. `timezone.id` was not among the
+    aliases, so `_first` returned the dict itself, it reached the route's
+    `check_fields` as `'timezone' must be str, got dict`, and the import was
+    refused ENTIRELY - the profile with that field and the profile without it.
+
+    Two things are pinned. `timezone.id` is read, because it is a shape vendors
+    write. And a timezone this importer cannot read falls back to the locale's
+    own zone with the issue said out loud, the same guard the language beside it
+    has always had - a field with a coherent generated value is a field a bad
+    value cannot destroy.
+    """
+    import pytest
+
+    pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+    from numera.server import create_app
+
+    c = TestClient(create_app(data_dir=str(tmp_path), start_scheduler=False))
+    payload = json.dumps([
+        {"name": "by-id", "navigator": {"language": "de-DE"},
+         "timezone": {"id": "Europe/Berlin"}},
+        {"name": "unreadable", "navigator": {"language": "fr-FR"},
+         "timezone": {"whatever": True}},
+        {"name": "plain-string", "navigator": {"language": "en-US"},
+         "timezone": "America/Los_Angeles"},
+    ])
+
+    r = c.post("/api/profiles/import", json={"text": payload})
+
+    assert r.status_code == 200, r.text
+    assert r.json()["imported"] == 3, r.text
+    by_name = {p["name"]: p for p in c.get("/api/profiles").json()}
+    assert by_name["by-id"]["timezone"] == "Europe/Berlin"
+    assert by_name["plain-string"]["timezone"] == "America/Los_Angeles"
+    # The one it could not read keeps a real zone, and says it substituted one.
+    assert isinstance(by_name["unreadable"]["timezone"], str)
+    assert by_name["unreadable"]["timezone"] == "Europe/Paris"
+    noted = [res for res in r.json()["results"] if res["name"] == "unreadable"]
+    assert noted and any("timezone" in i for i in noted[0]["issues"]), noted
