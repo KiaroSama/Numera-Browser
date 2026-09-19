@@ -43,7 +43,7 @@ def abandon(proc) -> None:
         pass
 
 
-def reported(proc, tree) -> object:
+def reported(proc, tree, *, attempt=None) -> object:
     """Record the tree, or end it. Returns the tree when the record was written.
 
     A child whose ownership cannot be *communicated* is in the same position as
@@ -58,7 +58,10 @@ def reported(proc, tree) -> object:
     from . import proctree           # local: see the module docstring
 
     try:
-        proctree.report_unit(tree)
+        if attempt is None:
+            proctree.report_unit(tree)
+        else:
+            proctree.report_unit(tree, attempt=attempt)
     except UnitReportFailed as unreported:
         try:
             gone = proctree.end_tree(tree, grace=ABANDON_GRACE,
@@ -69,11 +72,13 @@ def reported(proc, tree) -> object:
             why = None
         abandon(proc)          # the leader too, in case it left the tree
         if not gone:
-            raise UnitReportFailed(
+            error = UnitReportFailed(
                 f"{unreported} Ending it failed as well"
                 f"{f' ({why})' if why else ''}, so {tree.kind or 'the'} tree "
                 f"{tree.group!r} (leader pid {tree.pid}) may still be running "
                 f"and is not recorded anywhere: end it by that identity."
-            ) from unreported
+            )
+            error.proc, error.tree = proc, tree
+            raise error from unreported
         raise
     return tree
