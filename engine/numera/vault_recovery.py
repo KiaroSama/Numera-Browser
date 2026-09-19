@@ -61,6 +61,11 @@ from .vault_problems import (
     locked,
     same_descriptor as _same_descriptor,
 )
+from .vault_active_descriptor import (
+    require_transition_config as _require_transition_config,
+    usable as _descriptor_ok,
+    verify_persisted_completion as _verify_persisted_completion,
+)
 
 #: The journal shapes this build knows how to finish.
 SUPPORTED_OPS = ("enable", "rotate")
@@ -103,30 +108,6 @@ def descriptors(record: dict) -> tuple:
 
 def _text(value) -> bool:
     return isinstance(value, str) and bool(value)
-
-
-def _descriptor_ok(desc) -> bool:
-    """Is this a descriptor, or just a salt someone wrote down?
-
-    Both halves are load-bearing. The salt says which key the ciphertext is
-    under; the verifier is the only way to tell a correct password from one
-    that will decrypt every record into noise. A journal carrying only the
-    first let recovery commit a vault whose password could never be checked -
-    and `crypto.check_password(pw, salt, None)` answers False for every
-    password, so the store it produced could not be unlocked by anyone.
-    """
-    if not (isinstance(desc, dict)
-            and _text(desc.get("salt")) and _text(desc.get("verifier"))):
-        return False
-    # The salt has to be the encoding the key derivation will feed to
-    # `b64decode`. Checking only that it is a nonempty string let a damaged
-    # descriptor through to `binascii.Error`, raised out of what every caller
-    # asks as a yes/no question.
-    try:
-        base64.b64decode(desc["salt"], validate=True)
-    except (ValueError, TypeError):
-        return False
-    return True
 
 
 def classify(root) -> tuple:
@@ -477,54 +458,6 @@ def recover(root, get_config, save_config,
         return _finish_rotation(root, cfg, new, old, save_config,
                                 password, old_password)
     return _finish_enable(root, cfg, new, save_config, password)
-
-
-def _require_transition_config(root, cfg, new, old, op) -> None:
-    """Validate the active generation before either recovery path can write.
-
-    A missing active descriptor is legitimate only for an enable. Rotation
-    starts from a configured generation, so absent/damaged/unrelated config
-    is unresolved evidence, not permission to choose the journal's key.
-    """
-    if not isinstance(cfg, dict):
-        _refuse_incomplete(root, "migration", [Problem(
-            DESCRIPTOR_UNUSABLE, "the active config is not a settings object")])
-    active = cfg.get("vault")
-    if active is None and op == "enable":
-        return
-    if not _descriptor_ok(active):
-        _refuse_incomplete(root, "migration", [Problem(
-            DESCRIPTOR_UNUSABLE, "the active config has no usable vault descriptor")])
-    permitted = (new, old) if op == "rotate" else (new,)
-    if not any(_same_descriptor(active, desc) for desc in permitted if desc is not None):
-        _refuse_incomplete(root, "migration", [Problem(
-            DESCRIPTOR_DISAGREEMENT,
-            "the active descriptor is neither an allowed starting generation "
-            "nor the journal's target; neither record has been discarded")])
-
-
-def _verify_persisted_completion(root, new, password, what) -> None:
-    """Read back the descriptor the next opener will use, then prove its data.
-
-    A successful callback is not evidence that it wrote the intended config.
-    This check stays inside migration's rollback boundary when writes occur.
-    """
-    try:
-        cfg = json.loads((Path(root) / "config.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError, UnicodeError, RecursionError) as error:
-        raise VaultIncomplete(
-            "The persisted config could not be read; migration completion "
-            "has not been established and recovery evidence is retained.",
-            [Problem(UNREADABLE_FILES, "config.json cannot be read")]) from error
-    active = cfg.get("vault") if isinstance(cfg, dict) else None
-    if not _descriptor_ok(active) or not _same_descriptor(active, new):
-        _refuse_incomplete(root, what, [Problem(
-            DESCRIPTOR_DISAGREEMENT,
-            "the descriptor persisted in config.json does not match the "
-            "verified target generation")])
-    problems = completion_problems(root, active, password)
-    if problems:
-        _refuse_incomplete(root, what, problems)
 
 
 def sync_config(root) -> None:
