@@ -4,6 +4,7 @@
  * A component used by exactly one view belongs in that view's file instead -
  * this is for the genuinely shared ones. */
 
+import { Children, cloneElement, isValidElement, useId } from "react";
 import { Boxes, RefreshCw, X } from "lucide-react";
 import { toSvg } from "jdenticon";
 import { FONT, T } from "./theme";
@@ -11,7 +12,39 @@ import { FONT, T } from "./theme";
 import { CORES, GPUS, RAM, SCREENS, nid, uaFor } from "./deviceData";
 
 /* ---- form atoms -------------------------------------------------- */
-const Field = ({ label, children }) => (<label className="ps-field"><span className="ps-flabel">{label}</span>{children}</label>);
+
+/* A labelled control group.
+ *
+ * This was a `<label>` wrapped around everything, which is wrong twice over as
+ * soon as a field holds more than a bare input. A `<label>` with no `for` names
+ * the FIRST labelable descendant in tree order and nothing else - so in a field
+ * that leads with a segmented control, the first BUTTON took the field's name
+ * ("Timezone" instead of "Auto") and the input the label was written for got no
+ * accessible name at all. Measured, not assumed: `input.labels.length` was 0
+ * and `button.labels.length` was 1.
+ *
+ * So the field is a named group now, and the label text is bound to the control
+ * that should own it by id rather than by position. `input`, `select` and
+ * `textarea` children take the name; buttons keep the name their own text gives
+ * them, which is the whole point - two buttons in one field have to be tellable
+ * apart. A child that already carries `aria-label`/`aria-labelledby` is left
+ * alone, so a control with a better name of its own keeps it. */
+const NAMED_BY_FIELD = new Set(["input", "select", "textarea"]);
+
+const Field = ({ label, children }) => {
+  const id = useId();
+  const named = Children.map(children, child => (
+    isValidElement(child) && NAMED_BY_FIELD.has(child.type)
+      && !child.props["aria-label"] && !child.props["aria-labelledby"]
+      ? cloneElement(child, { "aria-labelledby": id })
+      : child
+  ));
+  return (
+    <div className="ps-field" role="group" aria-labelledby={id}>
+      <span className="ps-flabel" id={id}>{label}</span>{named}
+    </div>
+  );
+};
 
 const Row = ({ children }) => <div className="ps-row">{children}</div>;
 
