@@ -209,8 +209,17 @@ def profile_from_export(d: dict) -> tuple[Profile, list[str]]:
                      base.locale, "the language", issues)
     if locale not in devices.LOCALES:
         locale = base.locale
-    tz = _first(d, "timezone.timezone", "timezone", "time_zone",
-                "fingerprint.timezone", default=devices.LOCALES[locale][0])
+    # `timezone.id` is a real vendor shape, and the guard is the same one the
+    # language above carries: a timezone has a coherent generated value sitting
+    # right here - the locale's own zone - so an export that puts an object
+    # under `timezone` is a field this profile does not have, not a file the
+    # importer should refuse. Unguarded, the dict travelled all the way to the
+    # route's `check_fields` as `'timezone' must be str, got dict` and took the
+    # WHOLE file down with it, including the profiles that were readable.
+    tz = _usable(_first(d, "timezone.timezone", "timezone.id", "timezone",
+                        "time_zone", "fingerprint.timezone",
+                        default=devices.LOCALES[locale][0]),
+                 devices.LOCALES[locale][0], "the timezone", issues)
 
     fp = Fingerprint(
         os=os_key,
