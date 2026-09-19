@@ -97,11 +97,21 @@ def test_closing_does_not_block_on_a_reader_holding_a_live_writer():
         assert took < SLACK, (
             f"close() blocked for {took:.1f}s on a reader whose writer is "
             f"still open; it is supposed to be bounded")
-        assert alive == ["stdout"], \
-            "a reader still holding a live pipe must be reported, not waited on"
-        assert streams.retained(), \
-            "the retained reader carries no identity to act on"
-        assert "stdout(fd " in streams.retained()[0]
+        # The outcome changed with the cancellable pump, and the new one is
+        # stronger. A blocking `read1` could not be interrupted, so the only
+        # safe thing left was to RETAIN the reader and report it; this test
+        # used to assert exactly that. A cancellable reader is told to stop,
+        # stops, and its pipe is genuinely closed - so there is nothing to
+        # retain even though the writer is still open. Retention is for what
+        # cannot be closed, which is what the very next test pins.
+        #
+        # What the writer being alive still means is that the OUTPUT is not
+        # complete, and that is reported on the output, not as a leaked pipe.
+        assert alive == [], (
+            "a cancellable reader must be disposed, not retained: "
+            f"{alive} was left holding a pipe")
+        assert streams.retained() == [], \
+            "nothing failed to close, so nothing should be reported retained"
     finally:
         writer.close()
         streams.close(budget=SLACK)
@@ -205,7 +215,7 @@ def test_a_failure_before_attach_still_owns_the_spawned_child(manager, tmp_path)
     proctree_spawn, helpers.Streams = proctree.spawn, None
     proctree.spawn = watched
 
-    def exploding(proc):
+    def exploding(proc, **kwargs):
         raise Boom("constructing the readers failed")
 
     helpers.Streams = exploding
@@ -358,7 +368,10 @@ def test_an_undecodable_report_is_incomplete_evidence(tmp_path):
     report = unit_report.read(path)
 
     assert report.complete is False
-    assert "not valid UTF-8" in report.problem
+    # The reason is now reported as one category covering both ways a line can
+    # fail to decode into a record; either wording satisfies what this pins.
+    assert ("not valid UTF-8" in report.problem
+            or "invalid JSON/UTF-8" in report.problem)
 
 
 def test_a_partial_report_still_yields_the_records_it_did_have(tmp_path):
@@ -392,14 +405,34 @@ def test_a_valid_record_is_complete(tmp_path, record, kind):
     assert report.trees[0].verified, "an accepted record cannot even be signalled"
 
 
-def test_an_empty_report_is_a_real_answer(tmp_path):
-    """Zero units, trustworthy because the file existed."""
+def test_an_initialized_zero_unit_report_is_a_real_answer(tmp_path):
+    """Zero units, trustworthy because the receipt was INITIALIZED.
+
+    This used to write an empty file and call that trustworthy evidence of
+    zero units. It is not: an erased, truncated or never-written report is
+    byte-for-byte identical to one from a helper that spawned nothing, so
+    "the file exists and is empty" proved only that nothing could be read.
+    The receipt now carries a versioned header written before any child can
+    exist, which is what makes zero a positive answer rather than an absence.
+    """
+    path = tmp_path / "units.jsonl"
+    path.write_text("", encoding="utf-8")
+    unit_report.initialize(path)
+
+    report = unit_report.read(path)
+
+    assert report.complete is True and report.trees == []
+
+
+def test_an_erased_report_is_not_zero_units(tmp_path):
+    """The other half, kept separate on purpose: an empty file is refused."""
     path = tmp_path / "units.jsonl"
     path.write_text("", encoding="utf-8")
 
     report = unit_report.read(path)
 
-    assert report.complete is True and report.trees == []
+    assert report.complete is False
+    assert "zero-unit receipt" in report.problem
 
 
 # ---------------------------------------------------------------------------
