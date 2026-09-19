@@ -101,7 +101,13 @@ def _capture(original):
                 if on_tree is not None:
                     on_tree(tree)
             except BaseException:
-                proctree._abandon(proc)
+                try:
+                    if not proctree.end_tree(tree, grace=1.0, kill_grace=1.0):
+                        error = proctree.UnitReportFailed("driver claim failed; its owned tree could not be ended")
+                        error.proc, error.tree = proc, tree
+                        raise error
+                finally:
+                    proctree._abandon(proc)
                 raise
             holder.tree = tree
             return proc
