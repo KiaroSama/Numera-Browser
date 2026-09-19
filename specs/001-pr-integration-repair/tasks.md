@@ -105,10 +105,10 @@ repair. Landing it first proves the integration route works before the larger tw
 
 ## Phase 8: Convergence
 
-- [ ] T029 CRITICAL Split engine/numera/proctree.py by responsibility so no file exceeds the ceiling, keeping behaviour and every public name reachable through proctree, per Constitution V (contradicts)
-- [ ] T030 Re-run the platform gate to a recorded run-level conclusion on the exact final SHA, then stop the runner, per SC-006 (partial)
-- [ ] T031 Add the post-0.36.0 entry to CHANGELOG.md covering the three merged repairs and the fixes found reviewing them, per Constitution "Change Discipline" (missing)
-- [ ] T032 Rebuild the code graph so it covers engine/numera/vault_active_descriptor.py and dashboard/src/views/ProfileSummary.jsx, per plan: navigation before broad browsing (missing)
+- [X] T029 CRITICAL Split engine/numera/proctree.py by responsibility so no file exceeds the ceiling, keeping behaviour and every public name reachable through proctree, per Constitution V (contradicts)
+- [X] T030 Re-run the platform gate to a recorded run-level conclusion on the exact final SHA, then stop the runner, per SC-006 (partial)
+- [X] T031 Add the post-0.36.0 entry to CHANGELOG.md covering the three merged repairs and the fixes found reviewing them, per Constitution "Change Discipline" (missing)
+- [X] T032 Rebuild the code graph so it covers engine/numera/vault_active_descriptor.py and dashboard/src/views/ProfileSummary.jsx, per plan: navigation before broad browsing (missing)
 
 ### Convergence dependencies
 
