@@ -666,9 +666,9 @@ def test_a_claim_that_is_simply_absent_still_opens(tmp_path, profile):
 THREADED_ADOPTION = """
 import os, sys, threading
 sys.path.insert(0, {engine!r})
-from numera import proctree
+from numera import posix_session, proctree
 
-proctree._terminal = lambda: 0
+posix_session._terminal = lambda: 0
 os.tcgetpgrp = lambda fd: 4242          # a foreground group that is not ours
 
 before = os.getpgrp()

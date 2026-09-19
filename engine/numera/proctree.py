@@ -35,7 +35,6 @@ detached session.
 
 from __future__ import annotations
 
-import atexit
 import hashlib
 import os
 import signal
@@ -50,6 +49,10 @@ from typing import Optional
 
 from .handshake import ChildTerminationFailed, end_child
 from .driver_capture import Adopted, spawning_own_tree  # public capture API
+from .posix_session import (_adopt_group, _group_is_running,  # noqa: F401
+                            _rejoin, _restore_terminal, _terminal)  # noqa: F401
+from .winjob import (_job_active, _job_assign, _job_assign_self,  # noqa: F401
+                     _job_open, _job_structs, _job_terminate, _kernel32)  # noqa: F401
 
 _WINDOWS = os.name == "nt"
 _POLL_SECONDS = 0.05
@@ -59,15 +62,6 @@ _POLL_SECONDS = 0.05
 #: for the moment right after `CreateProcess` when the handle is not yet
 #: queryable, not for a slow machine.
 _IDENTITY_DEADLINE = 2.0
-
-#: Windows job objects, as much of them as this needs.
-_JOB_QUERY = 0x0004
-_JOB_TERMINATE = 0x0008
-_PROCESS_SET_QUOTA = 0x0100
-_PROCESS_TERMINATE = 0x0001
-_JOB_BASIC_ACCOUNTING = 1
-_JOB_EXTENDED_LIMIT = 9
-_JOB_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
 
 
 class TreeUnavailable(RuntimeError):
@@ -252,200 +246,6 @@ def identify(proc: subprocess.Popen,
         time.sleep(_POLL_SECONDS)
 
 
-# ---- Windows job objects -------------------------------------------------
-#: The one bound `kernel32`. Cached because `WinDLL` returns a NEW object every
-#: call and ctypes caches signatures *per object*, so a fresh instance per call
-#: re-binds nothing that any other call site can see.
-_K32 = []
-
-
-def _kernel32():
-    """`kernel32` with every signature this module uses declared.
-
-    ctypes defaults an unbound argument and return value to `c_int` - 32 bits -
-    and a Windows `HANDLE` is pointer-sized. An unbound `OpenProcess` therefore
-    hands back a truncated, sign-extended handle, and the `CloseHandle` or
-    `WaitForSingleObject` that follows acts on whatever that value names. It
-    looked like it worked because handle values are small; that is luck, not a
-    guarantee, and `alive()` and `started_at()` - the two liveness checks the
-    whole durable claim rests on - were the call sites reaching for the
-    unbound `ctypes.windll.kernel32`.
-    """
-    if _K32:
-        return _K32[0]
-    import ctypes
-    import ctypes.wintypes as wt
-
-    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    for fn, restype, argtypes in (
-        ("CreateJobObjectW", wt.HANDLE, (ctypes.c_void_p, wt.LPCWSTR)),
-        ("OpenJobObjectW", wt.HANDLE, (wt.DWORD, wt.BOOL, wt.LPCWSTR)),
-        ("OpenProcess", wt.HANDLE, (wt.DWORD, wt.BOOL, wt.DWORD)),
-        ("CloseHandle", wt.BOOL, (wt.HANDLE,)),
-        ("WaitForSingleObject", wt.DWORD, (wt.HANDLE, wt.DWORD)),
-        ("GetProcessTimes", wt.BOOL, (wt.HANDLE, ctypes.c_void_p, ctypes.c_void_p,
-                                      ctypes.c_void_p, ctypes.c_void_p)),
-        ("AssignProcessToJobObject", wt.BOOL, (wt.HANDLE, wt.HANDLE)),
-        ("TerminateJobObject", wt.BOOL, (wt.HANDLE, ctypes.c_uint)),
-        ("SetInformationJobObject", wt.BOOL, (wt.HANDLE, ctypes.c_int,
-                                              ctypes.c_void_p, wt.DWORD)),
-        ("QueryInformationJobObject", wt.BOOL, (wt.HANDLE, ctypes.c_int,
-                                                ctypes.c_void_p, wt.DWORD,
-                                                ctypes.c_void_p)),
-    ):
-        handle = getattr(k32, fn)
-        handle.restype = restype
-        handle.argtypes = argtypes
-    _K32.append(k32)
-    return k32
-
-
-def _job_structs():
-    """The two job-object structures, built where ctypes is known to exist."""
-    import ctypes
-    import ctypes.wintypes as wt
-
-    class SECURITY_ATTRIBUTES(ctypes.Structure):
-        _fields_ = [("nLength", wt.DWORD),
-                    ("lpSecurityDescriptor", ctypes.c_void_p),
-                    ("bInheritHandle", wt.BOOL)]
-
-    class BASIC_LIMITS(ctypes.Structure):
-        _fields_ = [("PerProcessUserTimeLimit", ctypes.c_int64),
-                    ("PerJobUserTimeLimit", ctypes.c_int64),
-                    ("LimitFlags", wt.DWORD),
-                    ("MinimumWorkingSetSize", ctypes.c_size_t),
-                    ("MaximumWorkingSetSize", ctypes.c_size_t),
-                    ("ActiveProcessLimit", wt.DWORD),
-                    ("Affinity", ctypes.c_size_t),
-                    ("PriorityClass", wt.DWORD),
-                    ("SchedulingClass", wt.DWORD)]
-
-    class IO_COUNTERS(ctypes.Structure):
-        _fields_ = [(name, ctypes.c_uint64) for name in
-                    ("ReadOperationCount", "WriteOperationCount",
-                     "OtherOperationCount", "ReadTransferCount",
-                     "WriteTransferCount", "OtherTransferCount")]
-
-    class EXTENDED_LIMITS(ctypes.Structure):
-        _fields_ = [("BasicLimitInformation", BASIC_LIMITS),
-                    ("IoInfo", IO_COUNTERS),
-                    ("ProcessMemoryLimit", ctypes.c_size_t),
-                    ("JobMemoryLimit", ctypes.c_size_t),
-                    ("PeakProcessMemoryUsed", ctypes.c_size_t),
-                    ("PeakJobMemoryUsed", ctypes.c_size_t)]
-
-    return SECURITY_ATTRIBUTES, EXTENDED_LIMITS
-
-
-def _job_open(name: str):
-    """A new named job for a child about to be spawned, or None.
-
-    Two properties, and the session's whole guarantee on Windows rests on them.
-
-    **The handle is inheritable**, and the child is spawned with inheritance
-    on, so the child holds one from the moment it exists. A job object's *name*
-    is only resolvable while some handle to it is open - closing ours the
-    instant the child was assigned made the name disappear immediately, which
-    is how the first version of this read "empty" for a tree with a live
-    browser in it. The child's own handle is what keeps the name answerable for
-    as long as the tree exists, without this process having to hold anything.
-
-    **Kill-on-close** then closes the case the whole module is about: when the
-    leader exits, its handle goes with it, and if nothing else holds one
-    Windows terminates whatever is left in the job. A Chromium that outlives
-    the Python process that started it is not detected and cleaned up after the
-    fact - it cannot happen. A detached job has no other holder, so this is
-    what makes `numera launch --detach` safe to stop from a later process.
-    """
-    import ctypes
-
-    sa_type, limits_type = _job_structs()
-    k32 = _kernel32()
-    sa = sa_type(ctypes.sizeof(sa_type), None, True)
-    job = k32.CreateJobObjectW(ctypes.byref(sa), name)
-    if not job:
-        return None
-    limits = limits_type()
-    limits.BasicLimitInformation.LimitFlags = _JOB_LIMIT_KILL_ON_JOB_CLOSE
-    if not k32.SetInformationJobObject(job, _JOB_EXTENDED_LIMIT,
-                                       ctypes.byref(limits),
-                                       ctypes.sizeof(limits)):   # pragma: no cover
-        k32.CloseHandle(job)
-        return None
-    return job
-
-
-def _job_assign(job, proc: subprocess.Popen) -> bool:
-    """Put a just-spawned process in `job`, and let go of our handle.
-
-    The window between `CreateProcess` and the assignment is real and cannot be
-    closed without a suspended start, which `subprocess` does not expose - it
-    hands back no thread handle to resume. It is microseconds wide and the
-    child is a fresh interpreter that has not imported anything yet, let alone
-    started a browser, so nothing it owns can escape through it.
-    """
-    k32 = _kernel32()
-    try:
-        handle = k32.OpenProcess(_PROCESS_SET_QUOTA | _PROCESS_TERMINATE,
-                                 False, int(proc.pid))
-        if not handle:                                       # pragma: no cover
-            return False
-        try:
-            return bool(k32.AssignProcessToJobObject(job, handle))
-        finally:
-            k32.CloseHandle(handle)
-    finally:
-        # Ours goes; the child's inherited one keeps the job named and alive.
-        k32.CloseHandle(job)
-
-
-def _job_active(name: str) -> tuple:
-    """`(known, active)` for a named job.
-
-    Two different facts used to arrive as the same `None`: *there is no such
-    job* and *the job is there but could not be queried*. `alive_tree` read
-    both as empty, so a failing query - a handle refused, a transient error -
-    reported a live browser tree as gone, which is the one answer that lets a
-    second browser open on the same profile directory.
-
-    `(True, 0)` means proved empty, `(True, n)` proved occupied, and
-    `(False, 0)` means unknown, which every caller must treat as still owned.
-    """
-    import ctypes
-
-    k32 = _kernel32()
-    job = k32.OpenJobObjectW(_JOB_QUERY, False, name)
-    if not job:
-        # ERROR_FILE_NOT_FOUND is the job being gone, which is real evidence.
-        # Anything else - access denied, a broken handle table - is not.
-        absent = ctypes.get_last_error() in (2, 3)
-        return (True, 0) if absent else (False, 0)
-    try:
-        buf = ctypes.create_string_buffer(48)
-        got = ctypes.c_ulong(0)
-        if not k32.QueryInformationJobObject(job, _JOB_BASIC_ACCOUNTING,
-                                             buf, 48, ctypes.byref(got)):
-            return (False, 0)           # it exists; we simply cannot see in
-        # JOBOBJECT_BASIC_ACCOUNTING_INFORMATION: four LARGE_INTEGERs, then
-        # TotalPageFaultCount, TotalProcesses, ActiveProcesses.
-        return (True, int.from_bytes(buf.raw[40:44], "little"))
-    finally:
-        k32.CloseHandle(job)
-
-
-def _job_terminate(name: str) -> bool:
-    """Kill everything in this job. True when the job is gone or was ended."""
-    k32 = _kernel32()
-    job = k32.OpenJobObjectW(_JOB_TERMINATE | _JOB_QUERY, False, name)
-    if not job:
-        return True                     # already gone
-    try:
-        return bool(k32.TerminateJobObject(job, 1))
-    finally:
-        k32.CloseHandle(job)
-
-
 # ---- spawning ------------------------------------------------------------
 def spawn(argv, **kwargs) -> tuple:
     """Start `argv` as the leader of a tree this process owns.
@@ -595,47 +395,6 @@ def alive_tree(tree: Tree) -> bool:
             return False
         return _group_is_running(pgid)
     return alive(tree.pid, tree.token)
-
-
-def _group_is_running(pgid: int, ignore: int = 0) -> bool:
-    """Is anything in this group more than a corpse?
-
-    A process that has exited but has not been reaped stays in its process
-    group and goes on answering `killpg(pgid, 0)`, so a group holding nothing
-    but zombies read as a live browser - and `end_tree` could never prove
-    otherwise, however many signals it sent. A zombie holds no files, no port
-    and no profile directory; it is gone in every sense this module is about.
-
-    Conservative when it cannot tell: an unreadable process table answers
-    "still running", so a stop reports failure rather than a success it has not
-    established.
-    """
-    procfs = Path("/proc")
-    if procfs.is_dir():
-        for entry in procfs.iterdir():
-            if not entry.name.isdigit():
-                continue
-            try:
-                # After the comm field: state, ppid, pgrp.
-                text = (entry / "stat").read_text(encoding="utf-8", errors="replace")
-                fields = text[text.rindex(")") + 2:].split()
-                if (int(fields[2]) == pgid and fields[0] != "Z"
-                        and int(entry.name) != ignore):
-                    return True
-            except (OSError, ValueError, IndexError):
-                continue                # it exited while we were reading it
-        return False
-    try:                                                     # pragma: no cover
-        out = subprocess.run(["ps", "-A", "-o", "pgid=,state=,pid="],
-                             capture_output=True, text=True, timeout=5)
-        for line in out.stdout.splitlines():
-            parts = line.split()
-            if (len(parts) >= 3 and parts[0] == str(pgid)
-                    and not parts[1].startswith("Z") and parts[2] != str(ignore)):
-                return True
-        return not out.stdout.strip()
-    except Exception:  # noqa: BLE001 - no readable process table            # pragma: no cover
-        return True
 
 
 def prove_empty(tree: Tree, *, deadline: float = 5.0) -> bool:
@@ -894,109 +653,6 @@ def _adopt_tree() -> "Tree":
             "outlives it. Run it from a shell with job control, or through "
             "`--detach` or the API, both of which start their own session.")
     return Tree(pid=me, token=started_at(me), group=os.getpgrp(), kind="pgid")
-
-
-def _adopt_group() -> bool:
-    """Put this process in a process group of its own. True if it now leads one.
-
-    `setpgrp()` alone is not enough when there is a terminal: the kernel
-    delivers Ctrl+C to the terminal's *foreground* group, so a process that
-    leaves that group silently stops being interruptible. So the group is made
-    and then handed the terminal, which is the same dance a shell does for
-    every job it starts - and the old foreground group is put back on the way
-    out, or the shell is left talking to a group that no longer exists.
-
-    `tcsetpgrp` from a process that is not currently the foreground group
-    raises SIGTTOU at itself, which would stop us; it is ignored across the
-    call and restored afterwards.
-
-    **All of it or none of it.** This moves the *embedding* process, so a half
-    finished adoption is not a failed launch, it is a host left somewhere it
-    never asked to be. `signal.signal` raises `ValueError` off the main thread,
-    and it did so after `setpgrp()` had already moved the process: an
-    application opening its first browser from a worker thread ended up in a
-    group of its own, out of the terminal's foreground group and therefore deaf
-    to Ctrl+C, and the `ValueError` was not even the refusal `own_tree` knows
-    how to report. Anything that cannot be finished is now put back, and the
-    caller is told it has no tree.
-    """
-    was = os.getpgrp()
-    try:
-        os.setpgrp()
-    except OSError:                                          # pragma: no cover
-        return False
-    fd = _terminal()
-    if fd is None:
-        return True                     # nothing to hand over; nothing to lose
-    try:
-        previous = os.tcgetpgrp(fd)
-        handler = signal.signal(signal.SIGTTOU, signal.SIG_IGN)
-    except OSError:                                          # pragma: no cover
-        return True                     # no controlling terminal after all
-    except ValueError:
-        # Not the main thread, so signals cannot be touched here and the
-        # terminal cannot be taken safely. Leaving the group change standing
-        # would silence Ctrl+C for the whole host.
-        _rejoin(was)
-        return False
-    try:
-        os.tcsetpgrp(fd, os.getpgrp())
-    except OSError:                                          # pragma: no cover
-        _rejoin(was)
-        return False
-    finally:
-        signal.signal(signal.SIGTTOU, handler)
-    atexit.register(_restore_terminal, fd, previous)
-    return True
-
-
-def _rejoin(group: int) -> None:
-    """Undo `setpgrp`, back into the group this process started in."""
-    try:
-        os.setpgid(0, group)
-    except OSError:                                          # pragma: no cover
-        pass
-
-
-def _terminal() -> "Optional[int]":
-    """A descriptor for the controlling terminal, or None if there is none."""
-    for fd in (0, 1, 2):
-        try:
-            if os.isatty(fd) and os.tcgetpgrp(fd) >= 0:
-                return fd
-        except OSError:
-            continue
-    return None
-
-
-def _restore_terminal(fd: int, group: int) -> None:            # pragma: no cover
-    """Give the terminal back to whoever had it before we took it."""
-    try:
-        handler = signal.signal(signal.SIGTTOU, signal.SIG_IGN)
-        try:
-            os.tcsetpgrp(fd, group)
-        finally:
-            signal.signal(signal.SIGTTOU, handler)
-    except (OSError, ValueError):
-        pass
-
-
-def _job_assign_self(job) -> bool:
-    """Put this process in `job`, keeping the job handle open.
-
-    Through a real handle from `OpenProcess`, not the `GetCurrentProcess`
-    pseudo-handle: that one is `(HANDLE)-1`, and ctypes would pass it through a
-    32-bit int parameter it does not have a declared type for.
-    """
-    k32 = _kernel32()
-    handle = k32.OpenProcess(_PROCESS_SET_QUOTA | _PROCESS_TERMINATE,
-                             False, os.getpid())
-    if not handle:                                           # pragma: no cover
-        return False
-    try:
-        return bool(k32.AssignProcessToJobObject(job, handle))
-    finally:
-        k32.CloseHandle(handle)
 
 
 def others_alive(tree: "Tree", besides: int) -> bool:
