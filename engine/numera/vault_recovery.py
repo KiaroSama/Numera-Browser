@@ -152,7 +152,7 @@ def classify(root) -> tuple:
         return "absent", None
     try:
         record = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except (OSError, ValueError, UnicodeError, RecursionError):
         return "unreadable", None
     if not isinstance(record, dict) or not record:
         return "unreadable", None
@@ -297,9 +297,12 @@ def end_journal(root) -> None:
     """
     try:
         journal_path(root).unlink(missing_ok=True)
-        sync_dir(Path(root))     # the removal itself, durable - last in the order
-    except OSError:                                          # pragma: no cover
-        pass
+        sync_dir(Path(root))
+    except OSError as error:
+        raise VaultRecoveryRequired(
+            "The data/config phase finished, but recovery-record cleanup "
+            "could not be completed. Preserve the data root and retry after "
+            "the filesystem problem is resolved.") from error
 
 
 def needs_recovery(root) -> bool:
@@ -383,7 +386,7 @@ def unreadable_secret_files(root) -> list:
     for path, site in vault.secret_files(Path(root)):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, ValueError, UnicodeError, RecursionError):
             bad.append(path)
             continue
         if not _container_ok(data, site):
@@ -406,7 +409,7 @@ def unconverted(root, password: str, salt: str) -> list:
     for path, site in vault.secret_files(Path(root)):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, ValueError, UnicodeError, RecursionError):
             stale.append(path)
             continue
         for holder in vault.holders(data, site):
@@ -458,11 +461,70 @@ def recover(root, get_config, save_config,
         return False
 
     new, old = descriptors(record)
-    cfg = get_config()
+    try:
+        cfg = get_config()
+        path = Path(root) / "config.json"
+        if path.exists():
+            persisted = json.loads(path.read_text(encoding="utf-8"))
+            _require_transition_config(root, persisted, new, old,
+                                       record.get("op", "enable"))
+    except (OSError, ValueError, UnicodeError, RecursionError) as error:
+        raise VaultIncomplete(
+            "The active config cannot be read; recovery evidence is retained.",
+            [Problem(UNREADABLE_FILES, "config.json cannot be read")]) from error
+    _require_transition_config(root, cfg, new, old, record.get("op", "enable"))
     if record.get("op") == "rotate":
         return _finish_rotation(root, cfg, new, old, save_config,
                                 password, old_password)
     return _finish_enable(root, cfg, new, save_config, password)
+
+
+def _require_transition_config(root, cfg, new, old, op) -> None:
+    """Validate the active generation before either recovery path can write.
+
+    A missing active descriptor is legitimate only for an enable. Rotation
+    starts from a configured generation, so absent/damaged/unrelated config
+    is unresolved evidence, not permission to choose the journal's key.
+    """
+    if not isinstance(cfg, dict):
+        _refuse_incomplete(root, "migration", [Problem(
+            DESCRIPTOR_UNUSABLE, "the active config is not a settings object")])
+    active = cfg.get("vault")
+    if active is None and op == "enable":
+        return
+    if not _descriptor_ok(active):
+        _refuse_incomplete(root, "migration", [Problem(
+            DESCRIPTOR_UNUSABLE, "the active config has no usable vault descriptor")])
+    permitted = (new, old) if op == "rotate" else (new,)
+    if not any(_same_descriptor(active, desc) for desc in permitted if desc is not None):
+        _refuse_incomplete(root, "migration", [Problem(
+            DESCRIPTOR_DISAGREEMENT,
+            "the active descriptor is neither an allowed starting generation "
+            "nor the journal's target; neither record has been discarded")])
+
+
+def _verify_persisted_completion(root, new, password, what) -> None:
+    """Read back the descriptor the next opener will use, then prove its data.
+
+    A successful callback is not evidence that it wrote the intended config.
+    This check stays inside migration's rollback boundary when writes occur.
+    """
+    try:
+        cfg = json.loads((Path(root) / "config.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeError, RecursionError) as error:
+        raise VaultIncomplete(
+            "The persisted config could not be read; migration completion "
+            "has not been established and recovery evidence is retained.",
+            [Problem(UNREADABLE_FILES, "config.json cannot be read")]) from error
+    active = cfg.get("vault") if isinstance(cfg, dict) else None
+    if not _descriptor_ok(active) or not _same_descriptor(active, new):
+        _refuse_incomplete(root, what, [Problem(
+            DESCRIPTOR_DISAGREEMENT,
+            "the descriptor persisted in config.json does not match the "
+            "verified target generation")])
+    problems = completion_problems(root, active, password)
+    if problems:
+        _refuse_incomplete(root, what, problems)
 
 
 def sync_config(root) -> None:
@@ -522,6 +584,9 @@ def structural_problems(root, descriptor: dict) -> list:
             UNREADABLE_FILES,
             f"{len(damaged)} secret-bearing file(s) cannot be read: "
             f"{', '.join(p.name for p in damaged)}"))
+
+    if damaged:
+        return problems
 
     leftover = vault.plaintext_secrets(root)
     if leftover:
@@ -618,9 +683,7 @@ def commit_and_verify(root, step, cfg: dict, new: dict, save_config,
     than committing a descriptor half the files do not answer to.
     """
     commit(root, step, cfg, new, save_config)
-    problems = completion_problems(root, new, password)
-    if problems:
-        _refuse_incomplete(root, what, problems)
+    _verify_persisted_completion(root, new, password, what)
 
 
 def commit(root, step, cfg: dict, new: dict, save_config) -> None:
@@ -700,13 +763,10 @@ def _finish_enable(root, cfg, new, save_config, password) -> bool:
                 f"vault descriptors, so which generation this data is in "
                 f"cannot be established from either one alone")])
         problems = completion_problems(root, active or new, password)
-        already = bool(active)
         if not problems:
-            sync_data(root)
-            if not already:
-                save_config({**cfg, "vault": dict(new)})
-            sync_config(root)
-            end_journal(root)
+            with vault.migration(root, keep_journal=True) as step:
+                commit_and_verify(root, step, cfg, new, save_config, password,
+                                  "`vault enable`")
             return True
         _refuse_incomplete(root, "`vault enable`", problems)
     if not password:
@@ -739,7 +799,7 @@ def _finish_rotation(root, cfg, new, old, save_config, password, old_password) -
             f"and its record is kept. Repair or restore those files first.")
 
     current = cfg.get("vault") or {}
-    if (current.get("salt") == new["salt"] and password
+    if (_same_descriptor(current, new) and password
             and crypto.check_password(password, new["salt"], new.get("verifier"))):
         # The descriptor names the new generation. Whether the *data* reached
         # it is a different question, and this used to assume the answer: it
@@ -754,6 +814,7 @@ def _finish_rotation(root, cfg, new, old, save_config, password, old_password) -
         if not completion_problems(root, new, password):
             sync_data(root)
             sync_config(root)
+            _verify_persisted_completion(root, new, password, "master-password rotation")
             end_journal(root)               # nothing left but the cleanup
             return True
         # Something is still behind. Fall through and finish the rotation
