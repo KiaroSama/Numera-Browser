@@ -82,20 +82,25 @@ def _positive_int(value) -> bool:
 
 def _unit(rec) -> tuple:
     from . import proctree
+    # Each reason keeps the generic "unreadable record" alongside the specific
+    # cause. The specific half is what a person debugging needs; the generic
+    # half is the category callers and suites match on, and dropping it made
+    # every one of them stop recognising a refusal they still receive.
     if not isinstance(rec, dict) or not _positive_int(rec.get("pid")):
-        return None, "no usable positive integer pid"
+        return None, "unreadable record: no usable positive integer pid"
     pid, token = rec["pid"], rec.get("pidToken")
     tree = rec.get("tree")
     if not isinstance(tree, dict) or tree.get("kind") not in KINDS:
-        return None, "missing or unsupported tree kind"
+        return None, "unreadable record: missing or unsupported tree kind"
     kind, group = tree["kind"], tree.get("group")
     if kind == "pgid":
         if not _positive_int(token) or not _positive_int(group) or group != pid:
-            return None, "process-group identity needs matching pid/group and a start token"
+            return None, ("unreadable record: process-group identity needs "
+                          "matching pid/group and a start token")
     elif not isinstance(group, str) or not group.strip() or "\0" in group:
-        return None, "job identity needs a nonempty job name"
+        return None, "unreadable record: job identity needs a nonempty job name"
     elif token is not None and not _positive_int(token):
-        return None, "invalid process start token"
+        return None, "unreadable record: invalid process start token"
     return proctree.Tree(pid=pid, token=token, group=group, kind=kind), None
 
 
