@@ -73,3 +73,5 @@ node_modules/
 # are intermediates that nothing references and that regenerate in a second.
 /docs/brand/logo-512.png
 /docs/brand/logo-128.png
+
+/plans/
