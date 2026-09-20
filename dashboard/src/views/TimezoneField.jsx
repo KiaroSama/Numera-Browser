@@ -67,8 +67,13 @@ function TimezoneField({ p, set, signal = "timezone" }) {
       {/* Locked only while Auto can actually deliver: a profile with no proxy
           that wants to follow one must stay editable, or the field is dead with
           nothing able to fill it. */}
+      {/* No `aria-label` here on purpose: `Field` gives this input the field's
+          own label, because it is the only naming-capable control in the field.
+          Carrying one as well made the group AND the control both announce
+          "Timezone" - the duplication the Field rule exists to prevent, found
+          by reading the rendered page rather than the component. The Auto and
+          Manual buttons keep their own labels; they say something different. */}
       <input className="ps-in mono" value={p.timezone} list={LIST_ID}
-        aria-label="Timezone"
         disabled={auto && hasProxy} placeholder="Region/City" spellCheck={false}
         aria-invalid={!known || undefined}
         title={known ? `One of ${TIMEZONES.length} zones this browser knows`
