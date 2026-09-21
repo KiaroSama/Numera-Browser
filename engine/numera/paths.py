@@ -24,6 +24,7 @@ the cause.
 from __future__ import annotations
 
 import os
+import math
 import hashlib
 import sys
 import tempfile
@@ -295,10 +296,14 @@ _LOCK_POLL = 0.05
 
 
 def _lock_timeout() -> float:
+    """A finite supported wait; invalid settings keep the existing default."""
     try:
-        return float(os.environ.get("NUMERA_LOCK_TIMEOUT") or _DEFAULT_LOCK_TIMEOUT)
-    except ValueError:
+        limit = float(os.environ.get("NUMERA_LOCK_TIMEOUT") or _DEFAULT_LOCK_TIMEOUT)
+    except (ValueError, OverflowError):
         return _DEFAULT_LOCK_TIMEOUT
+    if not math.isfinite(limit) or not 0 <= limit <= threading.TIMEOUT_MAX:
+        return _DEFAULT_LOCK_TIMEOUT
+    return limit
 
 
 class LockTimeout(RuntimeError):
@@ -357,24 +362,16 @@ else:
 
 
 class _DataLock:
-    """Mutual exclusion across threads *and* processes for one piece of state.
+    """Serialize one state object across threads and processes.
 
-    Two layers, because they answer different questions:
+    The owning thread may re-enter; every other contender shares one finite
+    deadline across the RLock and OS file-lock stages. The owner identity is
+    recorded independently of depth, so another thread cannot borrow a root
+    transaction to authorize a whole-document replacement.
 
-    * a `threading.RLock`, so the owning thread can re-enter (a save inside a
-      folder transaction inside a batch) and other threads in this process wait;
-    * an OS lock on a file, so *other processes* wait too.
-
-    The second layer is the point. Numera runs several processes against one
-    data root - `numera serve`, CLI commands, detached jobs, the scheduler, a
-    second desktop window - and the in-process `RLock` these locks used to be
-    was invisible to every one of them. Two processes could read, modify and
-    atomically replace the same JSON and the later write simply erased the
-    earlier one.
-
-    The OS releases the lock when the file handle closes, including when the
-    process dies, so a crash cannot leave the data root permanently locked. The
-    lock *file* stays behind; it holds no state and is reused.
+    The OS drops its lock when the handle closes, including process death.
+    Keep the lock file: unlinking it can create a second lock domain while an
+    existing process still owns the first inode.
     """
 
     def __init__(self, path: Path):
@@ -382,48 +379,77 @@ class _DataLock:
         self._rlock = threading.RLock()
         self._depth = 0
         self._fd = None
+        self._owner = None
+        self._owner_pid = None
+
+    def owned_by_current_thread(self) -> bool:
+        """A nonblocking ownership check, not merely a process-wide depth."""
+        return (self._depth > 0 and self._owner is threading.current_thread()
+                and self._owner_pid == os.getpid())
 
     def _open(self):
         self._path.parent.mkdir(parents=True, exist_ok=True)
         return os.open(self._path, os.O_RDWR | os.O_CREAT, 0o600)
 
     def __enter__(self):
-        self._rlock.acquire()
+        limit = _lock_timeout()
+        deadline = time.monotonic() + limit
+        # Contention on either layer spends the same acquisition budget.
+        if not self._rlock.acquire(timeout=max(0.0, deadline - time.monotonic())):
+            raise self._timed_out(limit)
         try:
             if self._depth == 0:
-                self._acquire_os_lock()
+                self._acquire_os_lock(deadline=deadline, limit=limit)
+                self._owner = threading.current_thread()
+                self._owner_pid = os.getpid()
+            elif not self.owned_by_current_thread():
+                raise RuntimeError("cannot reuse a data lock inherited while held")
             self._depth += 1
         except BaseException:
             self._rlock.release()
             raise
         return self
 
-    def _acquire_os_lock(self) -> None:
+    def _timed_out(self, limit: float) -> LockTimeout:
+        return LockTimeout(
+            f"another thread or process has held {self._path} for more than "
+            f"{limit:g}s. Wait for the owner to finish or investigate the "
+            f"blocked operation; NUMERA_LOCK_TIMEOUT controls this wait. "
+            f"Keep the lock file in place while any instance may use it.")
+
+    def _acquire_os_lock(self, *, deadline=None, limit=None) -> None:
+        limit = _lock_timeout() if limit is None else limit
+        deadline = time.monotonic() + limit if deadline is None else deadline
         fd = self._open()
-        limit = _lock_timeout()
-        deadline = time.monotonic() + limit
         try:
             while True:
                 if _take(fd):
                     self._fd = fd
                     return
-                if time.monotonic() >= deadline:
-                    raise LockTimeout(
-                        f"another process has held {self._path} for more than "
-                        f"{limit:g}s. If nothing else is running, delete "
-                        f"that file; otherwise set NUMERA_LOCK_TIMEOUT higher.")
-                time.sleep(_LOCK_POLL)
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise self._timed_out(limit)
+                time.sleep(min(_LOCK_POLL, remaining))
         except BaseException:
             os.close(fd)
             raise
 
     def __exit__(self, *exc) -> None:
+        # Refuse before touching depth or fd: RLock.release rejects too late.
+        if not self.owned_by_current_thread():
+            raise RuntimeError("data lock must be released by its owning thread")
         self._depth -= 1
-        if self._depth == 0 and self._fd is not None:
-            fd, self._fd = self._fd, None
-            _drop(fd)
-            os.close(fd)
-        self._rlock.release()
+        try:
+            if self._depth == 0:
+                fd, self._fd = self._fd, None
+                self._owner = self._owner_pid = None
+                if fd is not None:
+                    try:
+                        _drop(fd)
+                    finally:
+                        os.close(fd)
+        finally:
+            self._rlock.release()
 
 
 class SessionBusy(RuntimeError):
@@ -545,17 +571,15 @@ _ROOT_LOCKS: dict = {}
 
 
 def holding_transaction(root) -> bool:
-    """Does this process already hold `root`'s transaction?
+    """Does the calling thread own this root's transaction right now?
 
-    So an API whose safety depends on the caller holding it can say so instead
-    of documenting it and hoping. `_DataLock` counts its own re-entries, and
-    the OS lock is per handle, so a non-zero depth means this process is
-    inside the transaction - which is exactly the precondition being checked.
+    A transaction held by another thread does not authorize a whole-config
+    replacement. The replacement must belong to the same read/write unit.
     """
     resolved = str(Path(root).resolve())
     with _LOCKS_GUARD:
         lock = _ROOT_LOCKS.get(resolved)
-    return bool(lock is not None and lock._depth)
+    return lock is not None and lock.owned_by_current_thread()
 
 
 def transaction_lock(root):
@@ -571,10 +595,6 @@ def transaction_lock(root):
     So multi-file mutations serialise against each other and against single
     saves, and the order is always this lock first, per-file lock second - one
     lock, taken outermost, cannot deadlock against itself.
-
-    ponytail: one lock per root, not per file. Profile writes are user-paced
-    (a save, a rename, a folder move); if a workload ever makes this the
-    bottleneck, the upgrade is a reader/writer lock, not finer keys.
     """
     resolved = Path(root).resolve()
     key = str(resolved)
@@ -760,9 +780,8 @@ def write_json(path, data) -> None:
     looks exactly like losing every proxy. Serialising before the file is opened
     means a failure loses the change rather than the data.
 
-    ponytail: in-process locking only. The engine is one process; two
-    `numera serve` instances over one data directory would need an OS-level
-    lock, which is a bigger change than this bug calls for.
+    Callers hold the appropriate data/root lock around read-modify-write.
+    Atomic replacement alone does not serialize a multi-step transaction.
     """
     path = Path(path)
     blob = json.dumps(data, indent=2)          # may raise; nothing written yet
