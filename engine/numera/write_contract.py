@@ -42,6 +42,7 @@ only ever saw one of the shapes.
 from __future__ import annotations
 
 import math
+import reprlib
 from collections.abc import Mapping
 
 from . import field_policy
@@ -84,6 +85,16 @@ def _name(value) -> str:
     return type(value).__name__
 
 
+def _diagnostic_value(value) -> str:
+    """A bounded diagnostic that never needs a huge integer's decimal form."""
+    if isinstance(value, int) and value.bit_length() > 128:
+        return f"<integer with {value.bit_length()} bits>"
+    try:
+        return reprlib.repr(value)
+    except (ValueError, OverflowError, RecursionError):
+        return f"<{_name(value)}>"
+
+
 def text_problem(field: str, value, where: str, *, optional=None, quote=True):
     """Why `value` cannot be stored as `field`'s text, or None.
 
@@ -97,7 +108,7 @@ def text_problem(field: str, value, where: str, *, optional=None, quote=True):
     if value is None and optional:
         return None                      # absent is not wrong; empty is text
     if not isinstance(value, str):
-        shown = f" ({value!r})" if quote else ""
+        shown = f" ({_diagnostic_value(value)})" if quote else ""
         return (f"{where}: {field!r} must be text, not {_name(value)}"
                 f"{shown}. Nothing was written.")
     return None
@@ -121,7 +132,7 @@ def list_problem(field: str, value, where: str, *, optional=True):
 
 
 def number_problem(field: str, value, where: str, *, label=None, bounds=None,
-                   whole=False, optional=True, fractions=()):
+                   whole=None, optional=True, fractions=()):
     """Why `value` cannot be stored as `field`'s number, or None.
 
     `field` selects the bounds, `label` names the field in the message. They
@@ -140,6 +151,14 @@ def number_problem(field: str, value, where: str, *, label=None, bounds=None,
     every field but that one, and `hardware_concurrency = 8.5` passed it.
     """
     shown = label or field
+    if whole is None:
+        # A flat dashboard alias uses the same policy as its nested model
+        # field. Explicit callers can still supply their own numeric mode.
+        rule = next((r for r in field_policy.FINGERPRINT.values()
+                     if r.dash == field and r.kind in ("int", "number")), None)
+        whole = rule is not None and rule.kind == "int"
+        if rule is not None and not fractions:
+            fractions = rule.fractions
     if value is None:
         if optional:
             return None
@@ -158,7 +177,7 @@ def number_problem(field: str, value, where: str, *, label=None, bounds=None,
         allowed = (f" (or one of {', '.join(str(f) for f in fractions)})"
                    if fractions else "")
         return (f"{where}: {shown!r} must be a whole number{allowed}, got "
-                f"{str(value)[:40]}. Nothing was written.")
+                f"{_diagnostic_value(value)}. Nothing was written.")
     low, high = bounds
     if low is not None and high is not None and not low <= value <= high:
         # Truncated: the value being quoted back is the caller's, and CPython
@@ -166,7 +185,7 @@ def number_problem(field: str, value, where: str, *, label=None, bounds=None,
         # copy of this check already bounded its message; this one did not, so
         # the CLI could print four thousand digits at a refusal.
         return (f"{where}: {shown!r} must be between {low} and {high}, "
-                f"got {str(value)[:40]}. Nothing was written.")
+                f"got {_diagnostic_value(value)}. Nothing was written.")
     return None
 
 
@@ -478,6 +497,21 @@ def require(profile, *, where: str = "profile", kind: str = None) -> None:
     found = profile_problems(profile, where=where, kind=kind)
     if found:
         raise WriteRefused("; ".join(found))
+
+
+def require_dashboard_numbers(profile, *, where: str = "profile") -> None:
+    """Check numeric values before server conversion can truncate them.
+
+    Missing/null values still request defaults. The core converter remains
+    tolerant for legacy readers; HTTP conversion is a write boundary as well
+    as a projection, so it must not turn invalid counts into valid integers.
+    """
+    if not isinstance(profile, Mapping):
+        raise WriteRefused(f"{where}: a dashboard profile must be a mapping")
+    problems = [problem for field in NUMBER_RANGES
+                if (problem := number_problem(field, profile.get(field), where))]
+    if problems:
+        raise WriteRefused("; ".join(problems))
 
 
 # --------------------------------------------------------------------------
