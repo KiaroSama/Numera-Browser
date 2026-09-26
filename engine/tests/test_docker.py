@@ -35,16 +35,24 @@ def test_every_copy_source_exists():
 
 def test_the_browser_image_matches_the_playwright_client():
     """A browser build newer than its client fails at launch with a protocol
-    error, which reads as a broken profile rather than a version mismatch."""
-    import importlib.metadata as md
+    error, which reads as a broken profile rather than a version mismatch.
 
-    try:
-        pinned = md.version("playwright")
-    except md.PackageNotFoundError:
-        pytest.skip("playwright is not installed in this environment")
+    Compared against the version the project PINS (the live matrix in
+    `ci.yml`, the desktop floor in `pyproject.toml`), not whatever happens to
+    be installed: the Windows runner shares one tool cache across jobs, so the
+    installed client was the last live leg's leftover, and the check passed or
+    failed by job order - or skipped entirely where none was installed."""
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    pins = set(re.findall(r"playwright==(\d+\.\d+\.\d+)", ci))
+    assert len(pins) == 1, f"ci.yml pins playwright inconsistently: {sorted(pins)}"
+    pinned, = pins
+    floor = re.search(r'"playwright>=(\d+\.\d+\.\d+)"',
+                      (ROOT / "engine" / "pyproject.toml").read_text(encoding="utf-8"))
+    assert floor and floor.group(1) == pinned, (
+        f"engine/pyproject.toml's desktop floor is not playwright {pinned}")
     assert f"v{pinned}-noble" in dockerfile(), (
         f"the image is not pinned to playwright {pinned}; "
-        "update the FROM line and engine/pyproject.toml together")
+        "update the FROM line, ci.yml and engine/pyproject.toml together")
 
 
 def test_the_dashboard_lands_where_the_engine_serves_it():
