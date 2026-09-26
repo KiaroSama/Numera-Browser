@@ -19,6 +19,7 @@ import math
 import pytest
 
 from numera import convert, field_policy, write_contract
+from numera.server import convert as http_convert
 from numera.write_contract import WriteRefused
 
 COUNTS = ["cores", "mediaVideo", "mediaAudio", "mediaSpeakers",
@@ -94,33 +95,28 @@ def test_a_secret_is_still_not_quoted_back():
     assert "bits" not in str(caught.value) and "1000" not in str(caught.value)
 
 
-# ---- the API door ---------------------------------------------------------
-# `routes_profiles` kept its own ranges-only copy of the same check, so the
-# HTTP write path truncated `cores=1.5` even with the contract fixed.
+# ---- the conversion door ------------------------------------------------
+# The server conversion is a writer too: `DashboardStore.save` converts before
+# anything else checks, and the core cast turned `1.5` into `1` in the engine
+# copy only. Every HTTP route and the store are exercised end to end, both
+# copies compared, in `test_dashboard_numeric_boundaries.py` (from PR #22).
 
-@pytest.fixture
-def api(tmp_path, monkeypatch):
-    pytest.importorskip("fastapi")
-    pytest.importorskip("httpx")
-    from fastapi.testclient import TestClient
-    from numera.server import create_app
-    monkeypatch.delenv("NUMERA_API_TOKEN", raising=False)
-    with TestClient(create_app(str(tmp_path))) as client:
-        yield client
+# A fractional pixel ratio is legal, so 1.25 is not a bad value for that one.
+CONVERSION_CASES = [(field, bad) for field in write_contract.NUMBER_RANGES
+                    for bad in (1.25, True, "8", math.nan, math.inf, -1)
+                    if not (field == "devicePixelRatio" and bad == 1.25)]
 
 
-def test_api_create_and_batch_refuse_a_fractional_count(api):
-    created = api.post("/api/profiles", json={"name": "a", "cores": 1.5})
-    assert created.status_code == 422 and "whole number" in created.text
-    batch = api.post("/api/profiles/batch", json={"profiles": [
-        {"name": "ok", "cores": 4}, {"name": "bad", "mediaVideo": 1.5}]})
-    assert batch.status_code == 400 and "whole number" in batch.text
-    assert api.get("/api/profiles").json() == [], "a refused write left a profile"
+@pytest.mark.parametrize("field,bad", CONVERSION_CASES)
+def test_the_server_conversion_refuses_a_number_it_would_change(field, bad):
+    record = {"name": "n", field: bad}
+    with pytest.raises(WriteRefused, match=field):
+        http_convert.to_engine_profile(record)
+    assert record == {"name": "n", field: bad}, "the caller's input was mutated"
 
 
-def test_api_update_refuses_and_keeps_the_stored_value(api):
-    pid = api.post("/api/profiles", json={"name": "a", "cores": 4}).json()["id"]
-    assert api.put(f"/api/profiles/{pid}", json={"cores": 2.5}).status_code == 422
-    stored, = [p for p in api.get("/api/profiles").json() if p["id"] == pid]
-    assert stored["cores"] == 4
-    assert api.put(f"/api/profiles/{pid}", json={"memory": 0.5}).status_code == 200
+def test_the_core_conversion_stays_tolerant_for_legacy_readers():
+    """Stored records written before this check must still load."""
+    fp = convert.to_engine_profile({"name": "legacy", "cores": "8", "memory": None,
+                                   "mediaVideo": math.nan}).fingerprint
+    assert (fp.hardware_concurrency, fp.device_memory, fp.cameras) == (8, 16, 1)

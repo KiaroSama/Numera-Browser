@@ -30,8 +30,8 @@ instead of the thing the label described.
   operator entered, and offer each country once.
 - Refuse a fractional count in a flat profile edit - `cores`, `seed`, camera,
   microphone, speaker and touch counts, and memory outside 0.25/0.5 - instead of
-  accepting it and storing a truncated number. Both write doors read the rule
-  from the model's own field policy.
+  accepting it and storing a truncated number. The API, the batch and import
+  routes and the dashboard store all read the rule from the model's field policy.
 - Refuse an integer too long to print with the ordinary write refusal rather
   than a conversion error raised while formatting the message.
 - Treat only "no such process" as proof that a process group is gone; any other

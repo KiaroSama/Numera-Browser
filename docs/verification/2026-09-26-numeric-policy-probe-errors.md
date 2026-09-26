@@ -17,6 +17,12 @@ Both doors now call `write_contract.flat_number_problem`, which reads the rule f
 requirement and permitted fractions (`memory` 0.25 / 0.5) the complete model applies, on the
 caller's original value. A flat number without exactly one model rule stops the import.
 
+A third door had the same gap: `DashboardStore.save` converts straight away, without the API's
+field check, and the core cast stored `1` in the engine copy while the dashboard copy kept
+`1.5`. `server/convert.to_engine_profile` now calls `write_contract.require_flat_numbers`
+first, as PR #22 proposed. The core converter stays tolerant so older stored records still load,
+and the read-only overviews already catch a refusal.
+
 Refusal messages quoted the caller's value with `str()`/`repr()`, which raise `ValueError`
 past CPython's 4300-digit integer limit, so `cores = 10**5000` escaped as a conversion error.
 `_display()` describes such a value by type and bit length. The process-wide limit is untouched
@@ -30,9 +36,12 @@ and secrets stay unquoted.
 
 ## Tests
 
-- `engine/tests/test_flat_numeric_policy.py`: 38 cases. On base: 20 failed, 18 passed (the
-  controls). Includes the real API create, batch and update routes: a refused write leaves no
-  profile and keeps the stored value.
+- `engine/tests/test_flat_numeric_policy.py`: contract cases, the server-conversion seam for
+  every flat field, and the legacy-reader control.
+- `engine/tests/test_dashboard_numeric_boundaries.py` (taken from PR #22): every HTTP write
+  route (create, update, batch, bulk, native import) and the mirrored store, with both copies
+  byte-compared before and after a refusal.
+- Together 137 cases; with the conversion guard reverted, 61 fail.
 - `engine/tests/test_process_observation_errors.py`: 5 cases. On base: EINVAL and EIO failed.
 - Local light run, Windows, Python 3.13, the project's warning gates: all pass. The heavy pass
   is the CI run on the pushed commit.
