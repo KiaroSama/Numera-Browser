@@ -10,7 +10,6 @@ from ..paths import safe_id
 from ..handshake import ChildTerminationFailed
 
 import json
-import math
 import os
 from .. import devices, write_contract
 from ..fingerprint import validate
@@ -121,21 +120,14 @@ def _value_problems(key: str, value, where: str) -> list:
         return ([f"{where}: every entry in {key!r} must be a string, "
                  f"got {bad[0]}"] if bad else [])
     if key in NUMBER_RANGES:
-        low, high = NUMBER_RANGES[key]
-        # `math.isfinite` converts its argument to a float first, so it is not
-        # a question an arbitrary JSON integer can answer: `math.isfinite(10 **
-        # 400)` raises `OverflowError: int too large to convert to float` and
-        # took the whole validator with it - a 500 where `cores: -4` already
-        # gets a named 4xx. A Python `int` is exact and unbounded, so it is
-        # compared against the bounds directly and only a `float` is asked
-        # whether it is finite. Truncated in the message because the value
-        # being quoted back is the client's.
-        if isinstance(value, float) and not math.isfinite(value):
-            return [f"{where}: {key!r} must be a finite number"]
-        if not low <= value <= high:
-            return [f"{where}: {key!r} must be between {low} and {high}, "
-                    f"got {str(value)[:40]}"]
-        return []
+        # The contract's check, not a copy of it. This branch used to test the
+        # range and stop, so `cores: 1.5` passed here, reached the converter's
+        # `int()` and was stored as 1. The shared rule also keeps the earlier
+        # lessons: an `int` is compared without `math.isfinite` (which raised
+        # `OverflowError` on `10**400`, a 500), and the quoted value is
+        # truncated - or described by size when it cannot be printed at all.
+        problem = write_contract.flat_number_problem(key, value, where)
+        return [problem] if problem else []
     if key == "proxy":
         # Keys only - a message is not a place to quote a password back.
         return [f"{where}: proxy {k!r} must be "

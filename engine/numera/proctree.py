@@ -389,10 +389,10 @@ def alive_tree(tree: Tree) -> bool:
             os.killpg(pgid, 0)
         except ProcessLookupError:
             return False
-        except PermissionError:         # pragma: no cover - present, not ours
+        except OSError:
+            # Only ESRCH proves absence. EPERM means present but not ours, and
+            # any other failure is unknown - which, as for a job, is owned.
             return True
-        except OSError:                 # pragma: no cover
-            return False
         return _group_is_running(pgid)
     return alive(tree.pid, tree.token)
 
