@@ -133,9 +133,11 @@ def test_health_converts_each_profile_once(tmp_path, monkeypatch):
     c = TestClient(create_app(data_dir=str(tmp_path), start_scheduler=False))
     c.post("/api/profiles/batch", json={"profiles": [{"name": f"p{i}"} for i in range(5)]})
 
+    # The overviews convert through the tolerant read path; the guarded
+    # `to_engine_profile` is for writes and must not be what health counts.
     calls = {"n": 0}
-    real = routes_profiles.to_engine_profile
-    monkeypatch.setattr(routes_profiles, "to_engine_profile",
+    real = routes_profiles.read_engine_profile
+    monkeypatch.setattr(routes_profiles, "read_engine_profile",
                         lambda d: (calls.__setitem__("n", calls["n"] + 1), real(d))[1])
     c.get("/api/profiles/health")
     assert calls["n"] == 5, f"converted {calls['n']} times for 5 profiles"
