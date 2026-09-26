@@ -524,6 +524,24 @@ def require(profile, *, where: str = "profile", kind: str = None) -> None:
         raise WriteRefused("; ".join(found))
 
 
+
+def require_flat_numbers(profile, *, where: str = "profile") -> None:
+    """Refuse a flat number the conversion would change, before it converts.
+
+    The API's field check covers the HTTP routes, but `DashboardStore.save`
+    is a writer too, and it converts straight away: `int(1.5)` then stored
+    `1` in the engine copy while the dashboard copy kept `1.5`. Checking here
+    covers every caller of the server conversion. Missing and null still mean
+    "use the default"; the core converter stays tolerant for legacy readers.
+    """
+    if not isinstance(profile, Mapping):
+        raise WriteRefused(f"{where}: a dashboard profile must be a mapping, "
+                           f"not {_name(profile)}. Nothing was written.")
+    found = [problem for field in NUMBER_RANGES
+             if (problem := flat_number_problem(field, profile.get(field), where))]
+    if found:
+        raise WriteRefused("; ".join(found))
+
 # --------------------------------------------------------------------------
 # Reading back what an older build stored
 # --------------------------------------------------------------------------
