@@ -84,6 +84,23 @@ def _name(value) -> str:
     return type(value).__name__
 
 
+def _display(value, show=str) -> str:
+    """The caller's value, short enough to quote back in a refusal.
+
+    CPython refuses to print an integer longer than 4300 digits, and `str`,
+    `repr` and `format` all raise `ValueError` on one. That raised from inside
+    the validator, so `cores = 10**5000` reached the caller as a conversion
+    crash instead of the refusal it was. The value is described by size
+    instead; the process-wide limit is not touched.
+    """
+    try:
+        return show(value)[:40]
+    except ValueError:
+        if isinstance(value, int):
+            return f"{_name(value)} of {value.bit_length()} bits"
+        return f"an unprintable {_name(value)}"
+
+
 def text_problem(field: str, value, where: str, *, optional=None, quote=True):
     """Why `value` cannot be stored as `field`'s text, or None.
 
@@ -97,7 +114,7 @@ def text_problem(field: str, value, where: str, *, optional=None, quote=True):
     if value is None and optional:
         return None                      # absent is not wrong; empty is text
     if not isinstance(value, str):
-        shown = f" ({value!r})" if quote else ""
+        shown = f" ({_display(value, repr)})" if quote else ""
         return (f"{where}: {field!r} must be text, not {_name(value)}"
                 f"{shown}. Nothing was written.")
     return None
@@ -158,7 +175,7 @@ def number_problem(field: str, value, where: str, *, label=None, bounds=None,
         allowed = (f" (or one of {', '.join(str(f) for f in fractions)})"
                    if fractions else "")
         return (f"{where}: {shown!r} must be a whole number{allowed}, got "
-                f"{str(value)[:40]}. Nothing was written.")
+                f"{_display(value)}. Nothing was written.")
     low, high = bounds
     if low is not None and high is not None and not low <= value <= high:
         # Truncated: the value being quoted back is the caller's, and CPython
@@ -166,8 +183,35 @@ def number_problem(field: str, value, where: str, *, label=None, bounds=None,
         # copy of this check already bounded its message; this one did not, so
         # the CLI could print four thousand digits at a refusal.
         return (f"{where}: {shown!r} must be between {low} and {high}, "
-                f"got {str(value)[:40]}. Nothing was written.")
+                f"got {_display(value)}. Nothing was written.")
     return None
+
+
+#: Each flat (dashboard) number's rule, read off the complete model through the
+#: entry's `dash` name. The flat door used to check a range and nothing else, so
+#: `cores = 1.5` passed here, reached `convert`'s `int()` and was stored as `1` -
+#: a value the caller never sent - while the model itself refused it. One table,
+#: two vocabularies: no second copy to drift.
+FLAT_NUMBER_RULES = {rule.dash: rule for rule in field_policy.FINGERPRINT.values()
+                     if rule.dash}
+# A flat number with no model rule, or two, is a programming error: there is no
+# safe default for "which rule applies", so refuse to import rather than guess.
+if (set(FLAT_NUMBER_RULES) != set(NUMBER_RANGES)
+        or len(FLAT_NUMBER_RULES) != sum(1 for r in field_policy.FINGERPRINT.values()
+                                         if r.dash)):
+    raise AssertionError("every NUMBER_RANGES key needs exactly one Fingerprint rule")
+
+
+def flat_number_problem(field: str, value, where: str):
+    """Why `value` cannot be stored as flat number `field`, or None.
+
+    The same bounds, whole-number requirement and permitted fractions the
+    complete model applies, checked on the caller's original value - before any
+    conversion has the chance to replace it.
+    """
+    rule = FLAT_NUMBER_RULES[field]
+    return number_problem(field, value, where, bounds=rule.bounds(),
+                          whole=rule.kind == "int", fractions=rule.fractions)
 
 
 def bool_problem(field: str, value, where: str, *, label=None):
@@ -407,7 +451,7 @@ def _dashboard_problems(patch, where: str) -> list:
         if problem:
             found.append(problem)
     for field in NUMBER_RANGES:
-        problem = number_problem(field, get(field), where)
+        problem = flat_number_problem(field, get(field), where)
         if problem:
             found.append(problem)
     for field in PACKED_FIELDS:
