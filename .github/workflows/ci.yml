@@ -1,9 +1,11 @@
 name: CI
 
+# Manual only. Every job runs on a self-hosted runner on the owner's machine, and
+# such a job never starts by itself: no push, pull_request or schedule trigger.
+# The agent dispatches one run per task (`gh workflow run ci.yml --ref <branch>`)
+# with the runners held up for that run only. `workflow_call` stays so a
+# dispatched release build can reuse this workflow.
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
   workflow_call:
 

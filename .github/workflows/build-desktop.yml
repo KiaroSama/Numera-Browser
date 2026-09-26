@@ -9,13 +9,17 @@
 # is the only real proof it works there.
 name: Build (desktop + server)
 
+# Manual only, for the same reason as `ci.yml`: the jobs run on the owner's
+# machine and never start by themselves. A routine dispatch builds Linux only,
+# as a push used to; `release: true`, or a dispatch on a `v*` tag, runs the full
+# matrix that a tag push used to.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    tags: ["v*"]
-  pull_request:
-    branches: [main]
+    inputs:
+      release:
+        description: "Full desktop matrix (macOS and Windows) - the release path"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -134,7 +138,7 @@ jobs:
         # anywhere, and it went unnoticed only because nothing ran the workflow.
         # One artifact that starts, launches its bundled Chromium and does a
         # vault round trip is what closes that gap.
-        os: ${{ (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch') && fromJSON('["ubuntu-latest", "macos-latest"]') || fromJSON('["ubuntu-latest"]') }}
+        os: ${{ (startsWith(github.ref, 'refs/tags/v') || inputs.release) && fromJSON('["ubuntu-latest", "macos-latest"]') || fromJSON('["ubuntu-latest"]') }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -250,7 +254,7 @@ jobs:
     # Release path only, for the cost reason above. The Windows-specific things
     # it proves - the static CRT, the clean-checkout dashboard build - do not
     # change on an ordinary push, and the Linux job covers the packaging.
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
