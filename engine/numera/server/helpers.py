@@ -374,6 +374,11 @@ class HelperManager:
                     "output did not reach EOF, or a reader is still holding a "
                     "pipe and could not be disposed: "
                     + ", ".join(helper.streams.unfinished() + retained))
+            else:
+                # A previous join can time out after genuine EOF. Recompute
+                # its verdict from current evidence, not a stale diagnostic.
+                # Read errors and cancellation still make output[2] false.
+                helper.output_problem = None
         elif helper.proc is not None:
             # Preparation failed before any pump was started.
             for pipe in (helper.proc.stdout, helper.proc.stderr):
