@@ -1,0 +1,160 @@
+"""Incomplete procfs/ps observations do not prove an owned group empty."""
+import errno
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+from numera import posix_session, proctree
+
+pytestmark = pytest.mark.skipif(os.name == "nt", reason="POSIX process-group observation")
+requires_procfs = pytest.mark.skipif(not Path("/proc/self/stat").is_file(),
+                                     reason="requires Linux procfs")
+
+
+@pytest.mark.parametrize('error', [errno.EACCES, errno.EIO])
+@requires_procfs
+def test_real_running_child_is_not_declared_gone_when_its_stat_is_unreadable(monkeypatch, error):
+    proc = subprocess.Popen([sys.executable, '-c', 'import time;time.sleep(30)'],
+                            start_new_session=True)
+    tree = proctree.Tree(proc.pid, proctree.identify(proc), proc.pid, 'pgid')
+    stat = Path(f'/proc/{proc.pid}/stat')
+    read_text = Path.read_text
+    def read(path, *args, **kwargs):
+        if path == stat:
+            raise OSError(error, 'injected failure for the fixture child only')
+        return read_text(path, *args, **kwargs)
+    try:
+        assert proc.poll() is None
+        with monkeypatch.context() as patch:
+            patch.setattr(Path, 'read_text', read)
+            assert proctree.alive_tree(tree) is True
+        assert proc.poll() is None
+    finally:
+        proc.kill()
+        proc.wait(timeout=3)
+
+
+@requires_procfs
+def test_bad_stat_text_is_unknown_not_a_zombie(monkeypatch):
+    proc = subprocess.Popen([sys.executable, '-c', 'import time;time.sleep(30)'],
+                            start_new_session=True)
+    tree = proctree.Tree(proc.pid, proctree.identify(proc), proc.pid, 'pgid')
+    stat = Path(f'/proc/{proc.pid}/stat')
+    original = Path.read_text
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(Path, 'read_text', lambda path, *a, **kw:
+                          'incomplete stat' if path == stat else original(path, *a, **kw))
+            assert proctree.alive_tree(tree) is True
+        assert proc.poll() is None
+    finally:
+        proc.kill()
+        proc.wait(timeout=3)
+
+
+
+
+@requires_procfs
+def test_process_table_listing_failure_is_unknown(monkeypatch):
+    original = Path.iterdir
+    def iterdir(path):
+        if path == Path('/proc'):
+            raise PermissionError('injected table observation failure')
+        return original(path)
+    monkeypatch.setattr(Path, 'iterdir', iterdir)
+    assert posix_session._group_is_running(123456789) is True
+
+
+@pytest.mark.parametrize('code,stdout,expected', [
+    (1, '123 S 123\n', True),
+    (0, 'invalid-row\n', True),
+    (0, '123 Z 123\n', False),
+    (0, '123 S 123\n', True),
+    (0, '987 S 987\n', False),
+    (0, '', True),
+])
+def test_ps_fallback_checks_exit_and_row_integrity(monkeypatch, code, stdout, expected):
+    original = Path.is_dir
+    monkeypatch.setattr(Path, 'is_dir', lambda path: False if path == Path('/proc') else original(path))
+    monkeypatch.setattr(subprocess, 'run', lambda *a, **kw:
+                        subprocess.CompletedProcess(a, code, stdout=stdout, stderr=''))
+    # A failed partial observation for a different group must not prove that
+    # the requested group is absent.
+    pgid = 789 if code else 123
+    assert posix_session._group_is_running(pgid) is expected
+
+
+def test_healthy_running_and_reaped_child_controls():
+    proc = subprocess.Popen([sys.executable, '-c', 'import time;time.sleep(30)'],
+                            start_new_session=True)
+    tree = proctree.Tree(proc.pid, proctree.identify(proc), proc.pid, 'pgid')
+    try:
+        assert proctree.alive_tree(tree) is True
+    finally:
+        proc.kill()
+        proc.wait(timeout=3)
+    assert proctree.alive_tree(tree) is False
+
+
+@requires_procfs
+def test_end_tree_cannot_report_a_live_child_stopped_from_failed_observation(monkeypatch):
+    proc = subprocess.Popen([sys.executable, '-c', 'import time;time.sleep(30)'],
+                            start_new_session=True)
+    tree = proctree.Tree(proc.pid, proctree.identify(proc), proc.pid, 'pgid')
+    target = Path(f'/proc/{proc.pid}/stat')
+    original = Path.read_text
+    def read(path, *args, **kwargs):
+        if path == target:
+            raise PermissionError(errno.EACCES, 'fixture observation denied')
+        return original(path, *args, **kwargs)
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(Path, 'read_text', read)
+            finished = proctree.end_tree(tree, grace=.02, kill_grace=.02)
+        # Observe before fixture teardown, independently from the tree scanner.
+        assert not finished or proc.poll() is not None
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+        proc.wait(timeout=3)
+
+
+@pytest.mark.parametrize('error,expected', [(errno.ESRCH, False), (errno.EACCES, True)])
+def test_probe_disappearance_and_permission_controls(monkeypatch, error, expected):
+    tree = proctree.Tree(123456789, 1, 123456789, 'pgid')
+    def probe(*args):
+        raise OSError(error, 'fixture probe result')
+    monkeypatch.setattr(os, 'killpg', probe)
+    assert proctree.alive_tree(tree) is expected
+
+
+@requires_procfs
+def test_disappearing_procfs_entry_is_not_an_observation_error(monkeypatch):
+    target = Path('/proc/123456789')
+    original_iter = Path.iterdir
+    original_read = Path.read_text
+    monkeypatch.setattr(Path, 'iterdir', lambda p: iter([target])
+                        if p == Path('/proc') else original_iter(p))
+    def read(path, *args, **kwargs):
+        if path == target / 'stat':
+            raise FileNotFoundError(errno.ENOENT, 'fixture entry disappeared')
+        return original_read(path, *args, **kwargs)
+    monkeypatch.setattr(Path, 'read_text', read)
+    assert posix_session._group_is_running(123456789) is False
+
+
+@requires_procfs
+def test_ignored_pid_is_excluded_before_its_stat_is_read(monkeypatch):
+    target = Path('/proc/123456789')
+    original_iter = Path.iterdir
+    original_read = Path.read_text
+    monkeypatch.setattr(Path, 'iterdir', lambda p: iter([target])
+                        if p == Path('/proc') else original_iter(p))
+    def read(path, *args, **kwargs):
+        if path == target / 'stat':
+            raise AssertionError('ignored pid must not be inspected')
+        return original_read(path, *args, **kwargs)
+    monkeypatch.setattr(Path, 'read_text', read)
+    assert posix_session._group_is_running(123456789, ignore=123456789) is False
