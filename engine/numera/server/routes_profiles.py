@@ -15,7 +15,7 @@ from .. import devices, write_contract
 from ..fingerprint import validate
 from .stores import StaleProfile, UnconvertibleProfile
 from ..models import Fingerprint
-from .convert import _rel_time, dashboard_coherence, to_dashboard_profile, to_engine_profile
+from .convert import _rel_time, dashboard_coherence, read_engine_profile, to_dashboard_profile, to_engine_profile
 
 
 # What the dashboard dereferences rather than merely displays. Missing means a
@@ -206,7 +206,7 @@ def engine_view(profile: dict):
     the opposite and refuse; see `_validate_profile`.
     """
     try:
-        return to_engine_profile(profile)
+        return read_engine_profile(profile)
     except Exception:                                        # noqa: BLE001
         return None
 

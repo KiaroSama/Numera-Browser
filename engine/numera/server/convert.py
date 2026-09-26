@@ -24,3 +24,10 @@ def to_engine_profile(profile):
     """The engine shape of a dashboard profile, refusing a lossy number."""
     require_flat_numbers(profile)
     return _core_to_engine_profile(profile)
+
+
+#: The tolerant conversion, for READ paths only. A record stored before the
+#: numeric check existed must still be counted by the overviews - the
+#: collisions view reported `total: 1` for two profiles when it used the
+#: guarded version above.
+read_engine_profile = _core_to_engine_profile
