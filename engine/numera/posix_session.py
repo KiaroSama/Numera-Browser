@@ -11,6 +11,7 @@ Nothing here imports `proctree`, so the dependency runs one way only.
 from __future__ import annotations
 
 import atexit
+import errno
 import os
 import signal
 import subprocess
@@ -33,29 +34,48 @@ def _group_is_running(pgid: int, ignore: int = 0) -> bool:
     """
     procfs = Path("/proc")
     if procfs.is_dir():
-        for entry in procfs.iterdir():
-            if not entry.name.isdigit():
-                continue
-            try:
-                # After the comm field: state, ppid, pgrp.
-                text = (entry / "stat").read_text(encoding="utf-8", errors="replace")
-                fields = text[text.rindex(")") + 2:].split()
-                if (int(fields[2]) == pgid and fields[0] != "Z"
-                        and int(entry.name) != ignore):
-                    return True
-            except (OSError, ValueError, IndexError):
-                continue                # it exited while we were reading it
-        return False
-    try:                                                     # pragma: no cover
+        uncertain = False
+        try:
+            for entry in procfs.iterdir():
+                if not entry.name.isdigit():
+                    continue
+                try:
+                    pid = int(entry.name)
+                    if pid == ignore:
+                        continue
+                    # After the comm field: state, ppid, pgrp.
+                    text = (entry / "stat").read_text(encoding="utf-8", errors="replace")
+                    fields = text[text.rindex(")") + 2:].split()
+                    if int(fields[2]) == pgid and fields[0] != "Z":
+                        return True
+                except OSError as error:
+                    if error.errno not in (errno.ENOENT, errno.ESRCH):
+                        uncertain = True
+                except (ValueError, IndexError):
+                    uncertain = True
+        except OSError:
+            return True
+        # A disappearing entry is normal; an unreadable one could belong to
+        # this group. Do not turn incomplete observation into an empty tree.
+        return uncertain
+    try:
         out = subprocess.run(["ps", "-A", "-o", "pgid=,state=,pid="],
                              capture_output=True, text=True, timeout=5)
+        if out.returncode != 0 or not out.stdout.strip():
+            return True
         for line in out.stdout.splitlines():
+            if not line.strip():
+                continue
             parts = line.split()
-            if (len(parts) >= 3 and parts[0] == str(pgid)
-                    and not parts[1].startswith("Z") and parts[2] != str(ignore)):
+            if len(parts) != 3:
                 return True
-        return not out.stdout.strip()
-    except Exception:  # noqa: BLE001 - no readable process table            # pragma: no cover
+            group, state, pid = int(parts[0]), parts[1], int(parts[2])
+            if group < 0 or pid <= 0:
+                return True
+            if group == pgid and not state.startswith("Z") and pid != ignore:
+                return True
+        return False
+    except Exception:  # An unavailable or incomplete process table is unknown.
         return True
 
 
