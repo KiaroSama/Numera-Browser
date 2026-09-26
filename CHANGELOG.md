@@ -28,6 +28,14 @@ instead of the thing the label described.
   when no control inside it took the name.
 - Mark what the engine generates rather than presenting it as something the
   operator entered, and offer each country once.
+- Refuse a fractional count in a flat profile edit - `cores`, `seed`, camera,
+  microphone, speaker and touch counts, and memory outside 0.25/0.5 - instead of
+  accepting it and storing a truncated number. Both write doors read the rule
+  from the model's own field policy.
+- Refuse an integer too long to print with the ordinary write refusal rather
+  than a conversion error raised while formatting the message.
+- Treat only "no such process" as proof that a process group is gone; any other
+  probe error keeps the browser owned instead of reporting it stopped.
 - Report what a health action actually did instead of only that it ran.
 - Reach every section from the command palette, and drop the sidebar entry that
   had no screen behind it.
