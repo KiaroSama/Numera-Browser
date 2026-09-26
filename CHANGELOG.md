@@ -40,8 +40,7 @@ instead of the thing the label described.
   pass as the owner of a transaction and replace the whole config underneath
   it; one `NUMERA_LOCK_TIMEOUT` deadline now covers waiting on another thread
   and another process, and an invalid value falls back to the default.
-- Dependencies: Tauri 2.11.6 (security fixes), Playwright 1.63.0 (container image,
-  desktop floor and the live test matrix together), lucide-react 1.47.0, and dev tooling (vitest 5.0.1, eslint 10.11.0,
+- Dependencies: Tauri 2.11.6 (security fixes), lucide-react 1.47.0, and dev tooling (vitest 5.0.1, eslint 10.11.0,
   jsdom 30.1.1).
 - Report what a health action actually did instead of only that it ran.
 - Reach every section from the command palette, and drop the sidebar entry that
