@@ -9,7 +9,7 @@ import sys
 import threading
 
 import pytest
-from numera import paths
+from numera import data_locks, paths
 from numera.config_store import ConfigStore
 
 
@@ -128,7 +128,7 @@ def test_thread_and_os_wait_share_one_budget(tmp_path, monkeypatch):
     lock = paths._DataLock(tmp_path / "lock")
     lock._rlock = DelayedRLock()
     monkeypatch.setattr(paths, "time", clock)
-    monkeypatch.setattr(paths, "_take", lambda fd: False)
+    monkeypatch.setattr(data_locks, "_take", lambda fd: False)
     monkeypatch.setenv("NUMERA_LOCK_TIMEOUT", ".1")
     with pytest.raises(paths.LockTimeout):
         with lock:
@@ -170,7 +170,7 @@ def test_acquisition_error_releases_the_thread_lock(tmp_path, monkeypatch):
     def refuse(fd):
         raise PermissionError("injected OS acquisition error")
     with monkeypatch.context() as patch:
-        patch.setattr(paths, "_take", refuse)
+        patch.setattr(data_locks, "_take", refuse)
         with pytest.raises(PermissionError):
             with lock:
                 pass
@@ -206,7 +206,7 @@ def test_process_contention_times_out_then_succeeds_without_deleting_lock_file(t
     program = '''
 import sys
 from pathlib import Path
-from numera import paths
+from numera import data_locks, paths
 root = Path(sys.argv[1])
 try:
     with paths.transaction_lock(root):
@@ -231,7 +231,7 @@ except paths.LockTimeout:
 def test_timeout_message_never_recommends_removing_the_lock_file(tmp_path, monkeypatch):
     lock = paths._DataLock(tmp_path / "lock")
     monkeypatch.setenv("NUMERA_LOCK_TIMEOUT", "0")
-    monkeypatch.setattr(paths, "_take", lambda fd: False)
+    monkeypatch.setattr(data_locks, "_take", lambda fd: False)
     with pytest.raises(paths.LockTimeout) as caught:
         with lock:
             pass
