@@ -36,6 +36,10 @@ instead of the thing the label described.
   than a conversion error raised while formatting the message.
 - Treat only "no such process" as proof that a process group is gone; any other
   probe error keeps the browser owned instead of reporting it stopped.
+- Tie a data lock to the thread that holds it, so another thread can no longer
+  pass as the owner of a transaction and replace the whole config underneath
+  it; one `NUMERA_LOCK_TIMEOUT` deadline now covers waiting on another thread
+  and another process, and an invalid value falls back to the default.
 - Report what a health action actually did instead of only that it ran.
 - Reach every section from the command palette, and drop the sidebar entry that
   had no screen behind it.

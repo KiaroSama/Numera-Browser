@@ -45,6 +45,7 @@ pick OS ──▶ archetype (devices.py) ──▶ Fingerprint ──▶ validat
 | `models.py` | `Fingerprint`, `Proxy`, `Profile` dataclasses + (de)serialization |
 | `store.py` | `ProfileStore` — one JSON file per profile, plus a `user-data/<id>` dir per profile for the browser session. Where that lives is decided by `paths.py`, not here |
 | `paths.py` | The one place that decides the data directory. Order: explicit argument, `NUMERA_DATA_DIR`, a **writable** `data/` beside the app, `~/.numera`, then the pre-rename `~/.persona` |
+| `data_locks.py` | One owner at a time for a JSON file, a root transaction and a browser session: an in-process `RLock` plus an OS file lock, so other processes on the same data root wait too. Ownership is the calling thread, and one deadline (`NUMERA_LOCK_TIMEOUT`) covers both layers. `paths` re-exports every name |
 | `bundled.py` | Resolves the portable manifest to each backend's own executable, addon and GeoIP resources, keeping Playwright and Patchright caches separate |
 | `firstrun.py` | Copies an older install's profiles, pool, config and browser sessions into a new root once. Copy, never move; never overwrites |
 | `logs.py` | Per-run log file, UTC. Credentials are redacted by a filter on the *handler*, so a library logging under its own name cannot bypass it |
