@@ -45,17 +45,23 @@ sys.stdout.write('TAIL');sys.stdout.flush()
 if sys.argv[3]=='True':time.sleep(30)
 '''
     manager = helpers.HelperManager()
+    # The fixture must start Python, import `numera` and spawn its child before
+    # the helper deadline. That takes ~0.6 s idle on Windows; 1.2 s left 2x
+    # headroom and failed in CI whenever the WSL jobs shared the machine. The
+    # deadline stays far below the fixture's 30 s sleep, so the timeout path is
+    # still what is proved, and the bound below is relative to it.
+    timeout = 4 if timed_out else 5
     start = time.monotonic()
     try:
         if timed_out:
             with pytest.raises(helpers.HelperTimeout):
                 helpers.run_helper([sys.executable, '-c', program, str(receipt), str(separate), str(timed_out)],
-                                   1.2, manager=manager, cleanup=1)
+                                   timeout, manager=manager, cleanup=1)
         else:
             result = helpers.run_helper([sys.executable, '-c', program, str(receipt), str(separate), str(timed_out)],
-                                        5, manager=manager, cleanup=1)
+                                        timeout, manager=manager, cleanup=1)
             assert result.stdout == 'TAIL'
-        assert time.monotonic() - start < 3
+        assert time.monotonic() - start < timeout + 2, 'cleanup overran the deadline plus its grace'
         assert receipt.exists(), 'fixture never created the relevant child'
         child = json.loads(receipt.read_text())
         stat = Path(f"/proc/{child['pid']}/stat")
