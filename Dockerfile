@@ -24,8 +24,9 @@ RUN npm run build
 # --- 2. the engine ----------------------------------------------------------
 # Pinned to the Playwright release that matches engine/pyproject.toml's client,
 # because a browser build newer than its client is exactly how launches start
-# failing with protocol errors.
-FROM mcr.microsoft.com/playwright/python:v1.63.0-noble
+# failing with protocol errors. Held at 1.62: camoufox (0.5.6, the latest) requires
+# playwright<1.63, and the desktop extra installs both.
+FROM mcr.microsoft.com/playwright/python:v1.62.0-noble
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
