@@ -142,6 +142,7 @@ def runtime(smoke, tmp_path, monkeypatch):
     executable.write_text('fixture, not a real browser', encoding='utf-8')
     executable.chmod(0o700)
     monkeypatch.setattr(smoke, 'BROWSER_ROOT', root)
+    monkeypatch.setattr(smoke, 'LOG_DIR', tmp_path / 'logs', raising=False)
     monkeypatch.setattr(smoke.os, 'geteuid', lambda: 1000, raising=False)
     monkeypatch.setattr(smoke.metadata, 'version', lambda name: image_version())
 
@@ -262,6 +263,27 @@ def test_failures_never_become_success_and_cleanup_continues(smoke, runtime, mon
         assert 'close-context' in events
     if failure not in ('launch', 'context', 'page'):
         assert 'close-page' in events
+
+
+def test_smoke_run_logs_are_unique_sanitized_and_closed(smoke, tmp_path, monkeypatch, capsys):
+    directory = tmp_path / 'path with spaces' / 'logs'
+    monkeypatch.setattr(smoke, 'LOG_DIR', directory, raising=False)
+
+    def fail(expected):
+        raise RuntimeError('password=synthetic-do-not-log-this')
+
+    monkeypatch.setattr(smoke, 'check_browser', fail)
+    for _ in range(2):
+        assert smoke.main([]) == 1
+    files = list(directory.glob('smoke_container_browser_*_UTC*.log'))
+    assert len(files) == 2, 'each run must leave an independent diagnostic log'
+    text = '\n'.join(path.read_text(encoding='utf-8') for path in files)
+    console = capsys.readouterr().err
+    assert 'synthetic-do-not-log-this' not in text + console
+    assert 'UTC] [ERROR] [numera.container-smoke]' in text
+    assert 'exit=1' in text
+    for path in files:
+        path.unlink()  # an open FileHandler prevents deletion on Windows
 
 
 def test_cli_returns_failure_without_an_image_manifest(tmp_path):
