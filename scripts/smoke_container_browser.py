@@ -10,6 +10,8 @@ import argparse
 import logging
 import os
 import re
+import sys
+import time
 from importlib import metadata
 from pathlib import Path
 
@@ -17,6 +19,8 @@ LOG = logging.getLogger("numera.container-smoke")
 VERSION_ENV = "NUMERA_CONTAINER_PLAYWRIGHT_VERSION"
 BROWSER_ROOT = Path("/ms-playwright")
 PAGE_TEXT = "numera-container-ready"
+# stdin execution has no launcher file: the image's /app directory is its root.
+LOG_DIR = (Path(__file__).resolve().parent if __file__ != '<stdin>' else Path('/app')) / 'logs'
 
 
 class SmokeFailure(RuntimeError):
@@ -91,18 +95,51 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--debug", action="store_true", help="Enable diagnostic logging")
     args = parser.parse_args(argv)
-    # Standard logging supports DEBUG, INFO, WARNING and ERROR. No environment
-    # dump, credential, token or profile data is included in these diagnostics.
-    logging.basicConfig(
-        level=logging.DEBUG if args.debug else logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-    )
+    from numera.logs import RedactingFilter, UTCFormatter
+
+    handlers = [logging.StreamHandler(sys.stderr)]
+    started = time.monotonic()
+    LOG.setLevel(logging.DEBUG if args.debug else logging.INFO)
+    old_propagate = LOG.propagate
+    LOG.propagate = False
     try:
-        check_browser(os.environ.get(VERSION_ENV, ""))
-    except Exception as error:
-        LOG.error("Container browser smoke failed (%s): %s", type(error).__name__, error)
-        return 1
-    return 0
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        stamp = time.strftime('%Y-%m-%d_%H-%M-%S', time.gmtime())
+        for suffix in range(1000):
+            tail = f'.{suffix}' if suffix else ''
+            path = LOG_DIR / f'smoke_container_browser_{stamp}_UTC{tail}.log'
+            try:
+                handlers.append(logging.FileHandler(path, mode='x', encoding='utf-8'))
+                break
+            except FileExistsError:
+                continue
+        else:
+            raise OSError('Run log name space exhausted')
+    except OSError as error:
+        print(f'Container smoke log unavailable ({type(error).__name__}); console only', file=sys.stderr)
+    for handler in handlers:
+        handler.setFormatter(UTCFormatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'))
+        handler.addFilter(RedactingFilter())
+        LOG.addHandler(handler)
+    code = 1
+    try:
+        LOG.info('Smoke starting pid=%s', os.getpid())
+        try:
+            check_browser(os.environ.get(VERSION_ENV, ''))
+        except Exception as error:
+            # Unknown library exceptions can contain credentials; only our own
+            # controlled contract diagnostics may include their message.
+            detail = str(error) if isinstance(error, SmokeFailure) else 'See the failed contract phase'
+            LOG.error('Container browser smoke failed (%s): %s', type(error).__name__, detail)
+        else:
+            code = 0
+        LOG.info('Smoke finished exit=%s duration=%.3fs', code, time.monotonic() - started)
+        return code
+    finally:
+        for handler in handlers:
+            LOG.removeHandler(handler)
+            handler.close()
+        LOG.propagate = old_propagate
 
 
 if __name__ == "__main__":
