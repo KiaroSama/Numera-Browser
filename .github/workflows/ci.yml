@@ -326,6 +326,23 @@ jobs:
           docker run --rm --entrypoint python numera-browser:ci \
                  -c "import cryptography, numera; print(numera.__version__, cryptography.__version__)"
 
+      # API readiness cannot prove the browser bundled in the final image
+      # matches its installed client. No host cache, network or root override.
+      - name: The container launches its bundled Chromium
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 60s \
+            docker run --rm --init --network none --shm-size=1g -i \
+              --name "numera-browser-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+              --entrypoint python numera-browser:ci - \
+              < scripts/smoke_container_browser.py
+
+      - name: Remove an interrupted browser smoke container
+        if: always()
+        run: |
+          docker rm -f "numera-browser-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" 2>/dev/null || true
+
       - name: Container logs on failure
         if: failure()
         run: docker logs numera-ci || true

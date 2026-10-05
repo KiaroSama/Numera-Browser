@@ -31,7 +31,8 @@ FROM mcr.microsoft.com/playwright/python:v1.62.0-noble
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    NUMERA_DATA_DIR=/data
+    NUMERA_DATA_DIR=/data \
+    NUMERA_CONTAINER_PLAYWRIGHT_VERSION=1.62.0
 
 WORKDIR /app
 
@@ -40,7 +41,12 @@ COPY engine/ ./engine/
 # has to land where `dashboard_dir()` looks: numera/web next to the code.
 COPY --from=dashboard /src/dist/ ./engine/numera/web/
 
-RUN pip install --no-cache-dir "./engine[api,launch,secure]"
+# Keep the literal image tag visible to Dependabot. The contract test requires
+# its version to equal this container-only pin; the general launch extra stays
+# flexible for source installations. Resolve both requirements together.
+RUN python -m pip install --no-cache-dir "./engine[api,launch,secure]" \
+        "playwright==${NUMERA_CONTAINER_PLAYWRIGHT_VERSION}" \
+    && python -m pip check
 
 # `pwuser` ships with the Playwright image and owns the browser cache. Running
 # as root would work and would also mean every file the container writes into a
