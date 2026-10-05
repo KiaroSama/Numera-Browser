@@ -103,11 +103,12 @@ def main(argv=None) -> int:
     old_propagate = LOG.propagate
     LOG.propagate = False
     try:
-        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        directory = Path(os.environ.get('NUMERA_SMOKE_LOG_DIR', str(LOG_DIR)))
+        directory.mkdir(parents=True, exist_ok=True)
         stamp = time.strftime('%Y-%m-%d_%H-%M-%S', time.gmtime())
         for suffix in range(1000):
             tail = f'.{suffix}' if suffix else ''
-            path = LOG_DIR / f'smoke_container_browser_{stamp}_UTC{tail}.log'
+            path = directory / f'smoke_container_browser_{stamp}_UTC{tail}.log'
             try:
                 handlers.append(logging.FileHandler(path, mode='x', encoding='utf-8'))
                 break
