@@ -289,6 +289,7 @@ def test_smoke_run_logs_are_unique_sanitized_and_closed(smoke, tmp_path, monkeyp
 def test_cli_returns_failure_without_an_image_manifest(tmp_path):
     env = {key: value for key, value in os.environ.items() if key != 'NUMERA_CONTAINER_PLAYWRIGHT_VERSION'}
     env['UNRELATED_SECRET'] = 'synthetic-do-not-log-this'
+    env['NUMERA_SMOKE_LOG_DIR'] = str(tmp_path / 'logs')
     result = subprocess.run([sys.executable, str(SCRIPT)], env=env, capture_output=True,
                             text=True, timeout=10)
     assert result.returncode == 1

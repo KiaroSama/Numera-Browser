@@ -575,7 +575,7 @@ release publication depends on that verification; this does not configure remote
 branch protection or prove a hosted workflow has executed.
 
 For this lifecycle matrix Cloak is deliberately pinned to the official key-free
-`146.0.7680.177.5` build with wrapper `0.5.10`, `CLOAKBROWSER_VERSION` set explicitly
+`146.0.7680.177.5` build with wrapper `0.5.12`, `CLOAKBROWSER_VERSION` set explicitly
 and `CLOAKBROWSER_AUTO_UPDATE=false`. Internal CI use is allowed by the vendor's
 [binary license](https://github.com/CloakHQ/CloakBrowser/blob/main/BINARY-LICENSE.md).
 License keys and custom binary/download overrides are refused by this contract,
