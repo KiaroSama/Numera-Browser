@@ -99,9 +99,9 @@ def _resolve(wheels, requirements):
         sys.executable, '-m', 'pip', 'install', '--disable-pip-version-check',
         '--no-cache-dir', '--no-index', '--find-links', str(directory),
         '--ignore-installed', '--dry-run', '--report', str(report), *requirements,
-    ], capture_output=True, text=True, timeout=30)
+    ], capture_output=True, text=True, encoding='utf-8', timeout=30)
     LOG.debug('Offline resolver exited %s', result.returncode)
-    return result, json.loads(report.read_text()) if report.exists() else None
+    return result, json.loads(report.read_text(encoding='utf-8')) if report.exists() else None
 
 
 def test_container_install_does_not_select_newer_client(wheels):

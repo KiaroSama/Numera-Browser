@@ -4,6 +4,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+- Couple the container's installed Playwright client to its bundled browser image;
+  require an offline Chromium render and orderly cleanup, with sanitized run logs.
+- Refresh dashboard, API, browser-wrapper and desktop dependencies, resolve the
+  brace-expansion advisory, and align Node and Rust prerequisites with the current stack.
+
 Three reviewed correctness fixes went in after 0.36.0, and the round of repairs
 that reviewing them found. The shape they share: a check that read a label
 instead of the thing the label described.
