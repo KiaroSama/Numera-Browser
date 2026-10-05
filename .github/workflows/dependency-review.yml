@@ -60,5 +60,7 @@ jobs:
       - name: Audit the engine dependencies
         run: |
           python -m pip install --quiet pip-audit
-          python -m pip install --quiet "./engine[api,launch,secure]"
-          pip-audit --strict --progress-spinner=off
+          python -m pip install --quiet -e "./engine[api,launch,secure]"
+          # The unpublished application is reviewed in source; audit every
+          # resolved registry dependency without querying it as a PyPI release.
+          pip-audit --strict --skip-editable --progress-spinner=off
