@@ -2,7 +2,7 @@
 name = "numera-desktop"
 version = "0.36.0"
 edition = "2021"
-rust-version = "1.77"
+rust-version = "1.90"
 description = "Numera Browser desktop shell"
 publish = false
 
@@ -11,10 +11,10 @@ name = "numera"
 path = "src/main.rs"
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.7.1", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2.12.1", features = [] }
 serde_json = "1"
 
 # Already in the tree via tauri; used only for the job object that stops the

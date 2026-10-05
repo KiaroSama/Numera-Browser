@@ -12,11 +12,19 @@ and launch them from a clean web console or CLI.
 
 A self-hosted alternative to GoLogin, Multilogin and AdsPower.
 
-![python](https://img.shields.io/badge/python-3.10%2B-blue)
-![react](https://img.shields.io/badge/react-19-61DAFB)
-![license](https://img.shields.io/badge/license-proprietary-lightgrey)
-![tests](https://img.shields.io/badge/tests-passing-brightgreen)
-![status](https://img.shields.io/badge/status-beta-orange)
+[![License: proprietary](https://img.shields.io/badge/License-proprietary-lightgrey)](LICENSE)
+[![Version: 0.36.0](https://img.shields.io/badge/Version-0.36.0-blue)](CHANGELOG.md)
+[![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776ab)](engine/pyproject.toml)
+[![Node: 22.22.2+ supported branches](https://img.shields.io/badge/Node-22.22.2%2B-339933)](dashboard/package.json)
+[![Rust: 1.90+](https://img.shields.io/badge/Rust-1.90%2B-dea584)](desktop/src-tauri/Cargo.toml)
+[![Platforms: Windows Linux macOS](https://img.shields.io/badge/Platforms-Windows%20%7C%20Linux%20%7C%20macOS-555)](#build-it)
+
+[![Documentation](https://img.shields.io/badge/Docs-project%20guides-4c9a2a)](docs/architecture.md)
+[![React: 19](https://img.shields.io/badge/React-19-61dafb)](dashboard/package.json)
+[![Tauri: 2](https://img.shields.io/badge/Tauri-2-24c8d8)](desktop/src-tauri/Cargo.toml)
+[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688)](engine/pyproject.toml)
+[![Browser: Playwright](https://img.shields.io/badge/Browser-Playwright-45ba4b)](Dockerfile)
+[![Support donations](https://img.shields.io/badge/Support-donations-d04a9a)](#donate)
 
 <br>
 
@@ -126,8 +134,10 @@ Details for each are in [engine/README.md](engine/README.md).
 ## Quick start
 
 **Prerequisites:** [Python 3.10+](https://www.python.org/downloads/) and (for the
-dashboard) [Node.js](https://nodejs.org/) **22.12+** — Vitest 5 requires Node 22,
-and every CI job already runs on it. Node 18 fails at `npm run build`. Check with
+dashboard) [Node.js](https://nodejs.org/) **22.22.2+, 24.15+, or 26+** — the
+DOM test runtime requires these supported branches. CI uses current Node 26 and
+Python 3.14, with Python 3.10/3.12 compatibility checks. Desktop compilation needs
+**Rust 1.90+** for Tauri 2.12. Check with
 `python --version` and `node --version`.
 
 ```bash

@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         # Oldest and newest supported, plus the current default.
-        python-version: ["3.10", "3.12", "3.13"]
+        python-version: ["3.10", "3.12", "3.14"]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -66,7 +66,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.14"
           cache: pip
           cache-dependency-path: engine/pyproject.toml
       - name: Install engine
@@ -104,11 +104,11 @@ jobs:
           - engine: playwright
             package: playwright==1.62.0
           - engine: patchright
-            package: patchright==1.62.3
+            package: patchright==1.63.0
           - engine: camoufox
-            package: camoufox[geoip]==0.5.6
+            package: camoufox[geoip]==0.5.7
           - engine: cloak
-            package: cloakbrowser==0.5.10
+            package: cloakbrowser==0.5.12
     env:
       PYTHONUTF8: "1"
       NUMERA_TEST_ENGINE: ${{ matrix.engine }}
@@ -121,7 +121,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.14"
           cache: pip
           cache-dependency-path: .github/workflows/ci.yml
       - name: Install the selected engine and test dependencies
@@ -194,7 +194,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.14"
           cache: pip
           cache-dependency-path: engine/pyproject.toml
       - name: Install engine with the launcher
@@ -244,8 +244,8 @@ jobs:
       # when the image is updated.
       - uses: actions/setup-node@v7
         with:
-          # vite 8 needs ^20.19 || >=22.12; 22 keeps real headroom.
-          node-version: "22"
+          # Use current stable Node; jsdom's runtime floor is stricter than Vite's.
+          node-version: "26"
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
 
@@ -279,7 +279,7 @@ jobs:
       # works. Most of the time is the Playwright base image, which is the same
       # download a developer pays once.
       - name: Build the image
-        run: docker build -t numera-browser:ci .
+        run: docker build --pull --no-cache -t numera-browser:ci .
 
       # Building proves the Dockerfile parses and `pip install ./engine[...]`
       # resolves. It does not prove the container serves anything - and the
@@ -359,9 +359,8 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          # vite 8 needs ^20.19 || >=22.12. Pinning "20" resolves to the latest
-          # 20.x, which satisfies that only by a hair - 22 keeps real headroom.
-          node-version: "22"
+          # Match the Docker dashboard stage and latest stable Node runtime.
+          node-version: "26"
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
       - name: Install (from the lockfile)

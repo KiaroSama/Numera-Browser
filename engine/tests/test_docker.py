@@ -46,7 +46,7 @@ def test_the_browser_image_matches_the_playwright_client():
     pins = set(re.findall(r"playwright==(\d+\.\d+\.\d+)", ci))
     assert len(pins) == 1, f"ci.yml pins playwright inconsistently: {sorted(pins)}"
     pinned, = pins
-    floor = re.search(r'"playwright>=(\d+\.\d+\.\d+)"',
+    floor = re.search(r'"playwright>=(\d+\.\d+\.\d+)(?:,[^"\n]+)?"',
                       (ROOT / "engine" / "pyproject.toml").read_text(encoding="utf-8"))
     assert floor and floor.group(1) == pinned, (
         f"engine/pyproject.toml's desktop floor is not playwright {pinned}")
