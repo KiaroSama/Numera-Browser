@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.36.0",
   "engines": {
-    "node": ">=22.12.0"
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
   },
   "type": "module",
   "description": "Web dashboard for Numera Browser, a self-hosted anti-detect browser profile manager.",
@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "jdenticon": "^3.3.0",
-    "lucide-react": "^1.47.0",
+    "lucide-react": "^1.52.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
@@ -24,12 +24,12 @@
     "@eslint/js": "^10.0.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
-    "@vitejs/plugin-react": "^6.1.1",
-    "eslint": "^10.11.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
-    "jsdom": "^30.1.1",
-    "vite": "^8.3.1",
-    "vitest": "^5.0.1"
+    "jsdom": "^30.1.2",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
   }
 }
