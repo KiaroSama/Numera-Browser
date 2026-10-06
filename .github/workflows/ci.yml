@@ -36,7 +36,7 @@ jobs:
           cache-dependency-path: engine/pyproject.toml
       - name: Install engine
         working-directory: engine
-        run: pip install -e ".[api,dev]"
+        run: python -m pip install -e ".[api,dev]"
       - name: Compile check
         working-directory: engine
         run: python -m compileall -q numera
@@ -71,7 +71,7 @@ jobs:
           cache-dependency-path: engine/pyproject.toml
       - name: Install engine
         working-directory: engine
-        run: pip install -e ".[api,dev]"
+        run: python -m pip install -e ".[api,dev]"
       - name: Compile check
         working-directory: engine
         run: python -m compileall -q numera
@@ -199,7 +199,7 @@ jobs:
           cache-dependency-path: engine/pyproject.toml
       - name: Install engine with the launcher
         working-directory: engine
-        run: pip install -e ".[api,launch,dev]"
+        run: python -m pip install -e ".[api,launch,dev]"
       - name: Install Chromium
         working-directory: engine
         run: python -m playwright install --with-deps chromium
