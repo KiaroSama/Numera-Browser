@@ -13,6 +13,7 @@ exercised byte for byte with no network.
 import socket
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.error import HTTPError
 from urllib.request import ProxyHandler, build_opener
 
 import pytest
@@ -183,8 +184,11 @@ def test_a_refusal_is_reported_as_a_refusal():
     with Site() as site, FakeSocks4(grant=False, to_port=site.port) as socks:
         upstream = Proxy(server=f"socks4://127.0.0.1:{socks.port}")
         with ProxyRelay(upstream).start() as relay:
-            with pytest.raises(Exception):
+            with pytest.raises(HTTPError) as refused:
                 fetch_through(relay.url, f"http://127.0.0.1:{site.port}/", timeout=5)
+            # HTTPError owns the response even when opener.open never enters its context.
+            with refused.value:
+                assert refused.value.code == 502
             assert relay.last_error, "the relay recorded no reason"
             assert "SOCKS4" in relay.last_error
 
