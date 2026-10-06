@@ -229,9 +229,19 @@ jobs:
       # names Tauri.
       - name: System dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
-                                  librsvg2-dev patchelf libssl-dev
+          set -euo pipefail
+          packages=(libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev)
+          missing=()
+          for package in "${packages[@]}"; do
+            if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -qx 'install ok installed'; then
+              missing+=("$package")
+            fi
+          done
+          # A prepared self-hosted runner needs no unrelated apt repository refresh.
+          if [ "${#missing[@]}" -gt 0 ]; then
+            sudo apt-get update
+            sudo apt-get install -y "${missing[@]}"
+          fi
 
       - uses: Swatinem/rust-cache@v2
         with:
