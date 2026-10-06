@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "jdenticon": "^3.3.0",
-    "lucide-react": "^1.47.0",
+    "lucide-react": "^1.51.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
