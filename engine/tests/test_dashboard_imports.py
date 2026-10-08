@@ -70,11 +70,22 @@ def bindings(text):
     return names
 
 
+def component_tags(text):
+    code = code_of(text)
+    return {name for name, tail in re.findall(r"<\s*([A-Z]\w*)\b([^<>]*?)>", code)
+            if tail.rstrip().endswith("/") or re.search(rf"</\s*{name}\s*>", code)}
+
+
+def test_component_reader_distinguishes_types_from_rendered_tags():
+    text = 'const state = useState<Profile>(null); <Missing />; <Panel>{state}</Panel>'
+    assert component_tags(text) == {"Missing", "Panel"}
+
+
 @pytest.mark.parametrize("path", [p for p in sources() if p.suffix == ".tsx"], ids=lambda p: p.name)
 def test_every_component_used_is_imported(path):
     """A JSX tag with no binding is a white screen, and the build will not say so."""
     text = path.read_text(encoding="utf-8")
-    tags = set(re.findall(r"<\s*([A-Z]\w*)(?=[\s/>])", code_of(text)))
+    tags = component_tags(text)
     missing = sorted(tags - bindings(text) - AMBIENT)
     assert not missing, (
         f"{path.name} renders {missing} but never imports them. "
