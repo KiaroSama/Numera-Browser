@@ -68,12 +68,18 @@ what makes Numera Browser distinctive.
 
 ## What's in the box
 
-Numera Browser is a monorepo whose parts work together:
+Numera Browser is a monorepo whose parts work together. A
+[parity-gated Rust migration](docs/migration.md) is in progress: `engine-rust`
+is a non-default native library, not yet a replacement CLI/server. The Python
+application remains selected; the React dashboard now uses strict TypeScript.
+Current CI checkpoints run manually on GitHub-hosted Windows/Linux, not local
+runners. Full migration, cutover and retirement acceptance remain pending.
 
 ```
 Numera/
 ├── engine/        Python core — fingerprints, storage, launcher, CLI, HTTP API
-├── dashboard/     React console — served by the engine itself, not a separate server
+├── engine-rust/   Non-default native library — migration and acceptance in progress
+├── dashboard/     React/TypeScript console — served by the engine itself
 ├── desktop/       Tauri shell — the standalone windowed app
 ├── scripts/       build-desktop.ps1 (portable app) and build-server.ps1 (wheel)
 └── build/         every artifact, one directory per platform — git-ignored,
