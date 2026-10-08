@@ -16,6 +16,7 @@ on:
           - ready
           - profile-http-delete
           - init-script
+          - browser-options
 
 permissions:
   contents: read

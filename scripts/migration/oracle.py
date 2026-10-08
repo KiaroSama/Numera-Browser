@@ -79,6 +79,11 @@ def document(seam: str = 'models') -> dict:
     elif seam == 'pool-digits':
         from pool_parse_cases import digit_ranges, decimal_ranges
         result.update(seam='unicode-digit-ranges', ranges=digit_ranges(), decimal_ranges=decimal_ranges())
+    elif seam == 'browser-options':
+        from browser_options_cases import cases
+        result.update(seam='browser-effective-options', cases=cases())
+        for name in ('engine/numera/drivers.py', 'engine/numera/launch_options.py'):
+            result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'init-script':
         from init_script_cases import document as scripts
         result.update(seam='identity-init-script', **scripts())
@@ -432,7 +437,7 @@ def document(seam: str = 'models') -> dict:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--seam', choices=('models', 'devices', 'generation', 'identity', 'validation', 'field-policy', 'vault', 'conversion', 'journal', 'paths', 'config', 'secrets', 'repo', 'completion', 'repo-write', 'migration', 'recovery', 'claims', 'vault-enable', 'vault-rotate', 'rotation-recovery', 'folders', 'repo-batch', 'repo-lookup', 'repo-delete', 'data-root', 'first-run', 'pool-parse', 'pool-digits', 'pool-normalize', 'pool-store', 'pool-vault', 'profile-export', 'profile-import', 'profile-backup', 'profile-restore', 'extension-resources', 'extension-ids', 'extension-packages', 'extension-install', 'token-store', 'token-create', 'request-auth', 'dashboard-store', 'dashboard-vault', 'dashboard-batch', 'dashboard-meta', 'dashboard-revision', 'schedule-store', 'schedule-write', 'bind-policy', 'cors', 'diagnostic-routes', 'token-routes', 'folder-routes', 'schedule-routes', 'application-routes', 'config-routes', 'extension-routes', 'proxy-routes', 'fingerprint-routes', 'profile-read', 'http-fields', 'profile-write', 'profile-overview', 'profile-batch', 'profile-http-import', 'ready', 'profile-http-delete', 'init-script'), default='models')
+    parser.add_argument('--seam', choices=('models', 'devices', 'generation', 'identity', 'validation', 'field-policy', 'vault', 'conversion', 'journal', 'paths', 'config', 'secrets', 'repo', 'completion', 'repo-write', 'migration', 'recovery', 'claims', 'vault-enable', 'vault-rotate', 'rotation-recovery', 'folders', 'repo-batch', 'repo-lookup', 'repo-delete', 'data-root', 'first-run', 'pool-parse', 'pool-digits', 'pool-normalize', 'pool-store', 'pool-vault', 'profile-export', 'profile-import', 'profile-backup', 'profile-restore', 'extension-resources', 'extension-ids', 'extension-packages', 'extension-install', 'token-store', 'token-create', 'request-auth', 'dashboard-store', 'dashboard-vault', 'dashboard-batch', 'dashboard-meta', 'dashboard-revision', 'schedule-store', 'schedule-write', 'bind-policy', 'cors', 'diagnostic-routes', 'token-routes', 'folder-routes', 'schedule-routes', 'application-routes', 'config-routes', 'extension-routes', 'proxy-routes', 'fingerprint-routes', 'profile-read', 'http-fields', 'profile-write', 'profile-overview', 'profile-batch', 'profile-http-import', 'ready', 'profile-http-delete', 'init-script', 'browser-options'), default='models')
     parser.add_argument('--check', action='store_true')
     parser.add_argument('--log-dir', type=Path, default=ROOT / 'scripts' / 'logs')
     args = parser.parse_args(argv)
