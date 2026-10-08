@@ -15,6 +15,7 @@ on:
           - profile-http-import
           - ready
           - profile-http-delete
+          - init-script
 
 permissions:
   contents: read
