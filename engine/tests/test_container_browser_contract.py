@@ -65,7 +65,7 @@ def test_container_ci_requires_bundled_browser_without_network_or_host_cache():
     assert 'timeout --signal=TERM --kill-after=5s 60s' in smoke
     assert 'GITHUB_RUN_ID' in smoke and 'GITHUB_RUN_ATTEMPT' in smoke
     assert 'Remove an interrupted browser smoke container\n        if: always()' in docker
-    assert 'needs: [engine, engine-windows, engine-live, browser, rust, docker, dashboard]' in ci
+    assert 'needs: [engine, engine-windows, engine-live, browser, rust, rust-core, docker, dashboard]' in ci
     triggers = ci.split('\non:\n', 1)[1].split('\n# Read-only', 1)[0]
     assert set(re.findall(r'^  ([a-z_]+):', triggers, re.M)) == {'workflow_dispatch', 'workflow_call'}
 

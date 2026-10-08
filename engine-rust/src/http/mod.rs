@@ -1,0 +1,21 @@
+//! HTTP policy adapters; the full router is not yet a selectable application.
+pub mod application;
+pub mod auth_policy;
+pub mod bind_policy;
+pub mod config_routes;
+pub mod cors;
+pub mod diagnostics;
+pub mod extension_routes;
+pub mod fingerprint_routes;
+pub mod folder_routes;
+mod json_diagnostics;
+mod json_encoding;
+pub mod middleware;
+pub mod profile_routes;
+pub mod proxy_routes;
+pub mod request_auth;
+pub mod request_body;
+pub mod schedule_routes;
+pub mod token_errors;
+pub mod token_routes;
+pub mod tokens;

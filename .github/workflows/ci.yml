@@ -1,10 +1,8 @@
 name: CI
 
-# Manual only. Every job runs on a self-hosted runner on the owner's machine, and
-# such a job never starts by itself: no push, pull_request or schedule trigger.
-# The agent dispatches one run per task (`gh workflow run ci.yml --ref <branch>`)
-# with the runners held up for that run only. `workflow_call` stays so a
-# dispatched release build can reuse this workflow.
+# Manual checkpoint on GitHub-hosted runners. The owner temporarily prohibits
+# local/self-hosted execution; dispatch does not start a runner on their machine.
+# Keep release reuse and every required verification job.
 on:
   workflow_dispatch:
   workflow_call:
@@ -20,7 +18,7 @@ concurrency:
 jobs:
   engine:
     name: Engine tests (py${{ matrix.python-version }})
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -42,7 +40,7 @@ jobs:
         run: python -m compileall -q numera
       - name: Unit tests
         working-directory: engine
-        run: python -m pytest -q --ignore-glob=tests/test_*_live.py --durations=10
+        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python -m pytest -q --ignore-glob=tests/test_*_live.py --durations=10
 
   engine-windows:
     # The storage locks are OS locks, and Windows takes an entirely different
@@ -52,15 +50,7 @@ jobs:
     # matrix, so the cross-process tests only ever ran on the half of the code
     # that already worked.
     name: Engine tests (Windows)
-    # Hosted Windows cannot start at all on this account - the job's own
-    # annotation is "The job was not started because recent account payments
-    # have failed or your spending limit needs to be increased" - so the label
-    # is switchable. Set the repository variable WINDOWS_RUNNER to a JSON array
-    # of labels (for example ["self-hosted","Windows","X64"]) once a Windows
-    # runner is registered, and both Windows jobs move onto it; leave it unset
-    # and nothing changes, which is what keeps this inert rather than queueing
-    # a job against labels nobody carries.
-    runs-on: ${{ vars.WINDOWS_RUNNER != '' && fromJSON(vars.WINDOWS_RUNNER) || 'windows-latest' }}
+    runs-on: windows-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -77,22 +67,11 @@ jobs:
         run: python -m compileall -q numera
       - name: Unit tests
         working-directory: engine
-        run: python -m pytest -q --ignore-glob=tests/test_*_live.py --durations=10
+        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python -m pytest -q --ignore-glob=tests/test_*_live.py --durations=10
 
   engine-live:
     name: Required live engine (${{ matrix.os }}, ${{ matrix.engine }})
-    # `matrix.os` stays the plain label - the contract test pins both platforms
-    # as required, and the artifact name interpolates it - while the Linux half
-    # runs on the self-hosted runner. Without this all eight legs sat at
-    # `steps: 0` under the account billing block, so four jobs the workflow
-    # calls *required* had never once executed. The Windows half takes the same
-    # route through the WINDOWS_RUNNER variable documented on `engine-windows`:
-    # unset, it stays on hosted Windows and stays blocked by the account's
-    # billing state; set, it moves to a registered Windows runner.
-    runs-on: >-
-      ${{ matrix.os == 'ubuntu-latest' && fromJSON('["self-hosted", "Linux", "X64"]')
-       || matrix.os == 'windows-latest' && vars.WINDOWS_RUNNER != '' && fromJSON(vars.WINDOWS_RUNNER)
-       || matrix.os }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -154,7 +133,7 @@ jobs:
         timeout-minutes: 5
         working-directory: engine
         run: >-
-          python -m pytest -q tests/test_session_tree_live.py
+          python ../scripts/migration/run_owned.py --wall 240 --idle 150 -- python -m pytest -q tests/test_session_tree_live.py
           -k "every_installed_engine or hard_killed_owner"
           --timeout=120 --timeout-method=thread --strict-config
           --junitxml=../build/live-engine/results.xml --durations=10
@@ -188,7 +167,7 @@ jobs:
 
   browser:
     name: Live browser tests
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -209,14 +188,14 @@ jobs:
       # browser, so these skip everywhere except here.
       - name: Browser-backed tests
         working-directory: engine
-        run: python -m pytest -q tests/test_*_live.py --durations=10
+        run: python ../scripts/migration/run_owned.py --wall 900 --idle 150 -- python -m pytest -q tests/test_*_live.py --durations=10
 
   # The shell is half the product and nothing here compiled it. A Rust error
   # only showed up in the release build, which runs on a tag - by then the
   # version is cut.
   rust:
     name: Tauri shell (Rust)
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -274,11 +253,56 @@ jobs:
 
       - name: Tests
         working-directory: desktop/src-tauri
-        run: cargo test --all-features
+        run: python ../../scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo test --all-features -- --test-threads=2
+
+  rust-core:
+    name: Rust migration core (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            runner: ubuntu-latest
+          - os: windows
+            runner: windows-latest
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: "2"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-python@v7
+        with:
+          # The original behavior/catalog fixtures were recorded on this exact
+          # interpreter. Keep Unicode classification drift visible, not hidden
+          # by normalizing fixtures against a newer runtime.
+          python-version: "3.13.15"
+      - name: Source oracle prerequisites
+        # Original HTTP behavior includes framework-level CORS/body contracts.
+        # Pin the recorded oracle framework, not an arbitrary future release.
+        run: python -m pip install -e "engine[api,dev]" "fastapi==0.142.3" "starlette==1.7.0"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: engine-rust
+      - name: Source inventory and oracle drift
+        run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/verify_oracles.py
+      - name: Native formatting
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- cargo fmt --manifest-path engine-rust/Cargo.toml --all --check
+      - name: Native lint
+        run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --all-targets -- -D warnings
+      - name: Native parity seams
+        run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --all-targets -- --test-threads=2
+      - name: Original runtime remains selected
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/migration/verify_default.py
 
   docker:
     name: Container image
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -363,7 +387,7 @@ jobs:
 
   dashboard:
     name: Dashboard build and tests
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -382,7 +406,11 @@ jobs:
       # way. `npm test` is `vitest run`, which exits rather than watching.
       - name: Tests
         working-directory: dashboard
-        run: npm test
+        run: python ../scripts/migration/run_owned.py --wall 300 --idle 90 -- npm test
+
+      - name: Strict TypeScript
+        working-directory: dashboard
+        run: npm run typecheck
 
       # The linter is only a gate if CI runs it.
       - name: Lint
@@ -395,8 +423,8 @@ jobs:
   required:
     name: Required verification
     if: always()
-    needs: [engine, engine-windows, engine-live, browser, rust, docker, dashboard]
-    runs-on: [self-hosted, Linux, X64]
+    needs: [engine, engine-windows, engine-live, browser, rust, rust-core, docker, dashboard]
+    runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
       - name: Every required job succeeded

@@ -4,6 +4,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+- Begin a parity-gated native Rust domain library with source-generated identity,
+  model, validation, conversion and vault fixtures; keep the current Python
+  application selected until the complete migration is verified.
+- Refresh Vite to 8.3.3 and add native Windows/Linux Rust parity and source-fixture
+  drift gates. The library is not yet a replacement CLI or HTTP server.
+
 - Couple the container's installed Playwright client to its bundled browser image;
   require an offline Chromium render and orderly cleanup, with sanitized run logs.
 - Refresh dashboard, API, browser-wrapper and desktop dependencies, resolve the

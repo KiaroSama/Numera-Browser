@@ -2,7 +2,7 @@
 
 This is not a style check. esbuild resolves module *specifiers*, not free
 variables: `<ShieldAlert />` with no import builds cleanly and throws the moment
-that component renders. During the App.jsx split five icons went missing exactly
+that component renders. During the App.tsx split five icons went missing exactly
 that way, and two of them were inside the error boundary - the one component that
 must never itself fail.
 
@@ -37,7 +37,9 @@ AMBIENT = {
 
 
 def sources():
-    return sorted(p for p in SRC.rglob("*.js*"))
+    paths = sorted(p for p in SRC.rglob("*") if p.suffix in {".ts", ".tsx"})
+    assert paths, "No TypeScript dashboard sources were discovered"
+    return paths
 
 
 def code_of(text):
@@ -68,11 +70,11 @@ def bindings(text):
     return names
 
 
-@pytest.mark.parametrize("path", sources(), ids=lambda p: p.name)
+@pytest.mark.parametrize("path", [p for p in sources() if p.suffix == ".tsx"], ids=lambda p: p.name)
 def test_every_component_used_is_imported(path):
     """A JSX tag with no binding is a white screen, and the build will not say so."""
     text = path.read_text(encoding="utf-8")
-    tags = set(re.findall(r"<\s*([A-Z]\w*)", code_of(text)))
+    tags = set(re.findall(r"<\s*([A-Z]\w*)(?=[\s/>])", code_of(text)))
     missing = sorted(tags - bindings(text) - AMBIENT)
     assert not missing, (
         f"{path.name} renders {missing} but never imports them. "
@@ -97,11 +99,11 @@ def test_no_module_imports_the_demo_data_except_the_app():
     Demo mode exists so the UI is explorable with no engine. The failure it
     invites is fabricated profiles appearing in *live* mode, which happened once
     already (a hardcoded API port sent the app to demo data on any other port).
-    Keeping the import surface to App.jsx means a view cannot render a fake row
+    Keeping the import surface to App.tsx means a view cannot render a fake row
     even by accident.
     """
     offenders = [p.name for p in sources()
-                 if p.name != "App.jsx" and re.search(r'from "\.\.?/demoData"', p.read_text(encoding="utf-8"))]
+                 if p.name != "App.tsx" and re.search(r'from "\.\.?/demoData"', p.read_text(encoding="utf-8"))]
     assert not offenders, f"these import sample data: {offenders}"
 
 
@@ -112,7 +114,7 @@ def test_no_import_cycles():
         deps = set()
         for spec in re.findall(r'from "(\.[^"]+)"', p.read_text(encoding="utf-8")):
             base = (p.parent / spec).resolve()
-            for ext in (".js", ".jsx", ""):
+            for ext in (".ts", ".tsx", ""):
                 cand = Path(str(base) + ext)
                 if cand.is_file():
                     deps.add(cand)

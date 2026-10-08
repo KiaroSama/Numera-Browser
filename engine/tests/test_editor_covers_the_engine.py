@@ -49,7 +49,9 @@ def engine_reads() -> set[str]:
 def editor_writes() -> set[str]:
     """Keys any view writes through `set({ key: ... })` or a named setter."""
     keys = set()
-    for path in SRC.rglob("*.jsx"):
+    paths = sorted(SRC.rglob("*.tsx"))
+    assert paths, "No TypeScript dashboard components were discovered"
+    for path in paths:
         text = path.read_text(encoding="utf-8")
         keys |= set(re.findall(r"set\(\{\s*(\w+)\s*[:,}]", text))
         keys |= set(re.findall(r"set\(\{\s*\.\.\.\w+,\s*(\w+)\s*[:,}]", text))
@@ -76,12 +78,12 @@ def test_the_summary_panel_stays_in_step_with_the_editor():
     It is the panel a user reads to cross-check the identity, so a row showing a
     field nobody can set is worse than no row.
     """
-    # The panel moved out of `Editor.jsx` into its own file when that file hit
+    # The panel moved out of `Editor.tsx` into its own file when that file hit
     # the 800-line ceiling. Located by where the component actually lives rather
     # than by which file used to hold it: this assertion is about the panel, and
     # `index()` raising `ValueError: substring not found` told us nothing about
     # the summary at all.
-    panel = SRC / "views" / "ProfileSummary.jsx"
+    panel = SRC / "views" / "ProfileSummary.tsx"
     assert panel.is_file(), f"the summary panel is not at {panel}"
     block = panel.read_text(encoding="utf-8")
     assert "function ProfileSummary" in block, "ProfileSummary moved again"
@@ -102,7 +104,7 @@ def test_a_minimal_post_cannot_blank_the_profile_list():
     import re as _re
     from numera.server import routes_profiles as rp
 
-    view = (SRC / "views" / "ProfilesView.jsx").read_text(encoding="utf-8")
+    view = (SRC / "views" / "ProfilesView.tsx").read_text(encoding="utf-8")
     dereferenced = set(_re.findall(r"p\.([a-zA-Z]+)\.(?:map|join|split)\b", view))
     filled = set(rp.LIST_FIELDS) | set(rp.TEXT_FIELDS)
     # `name` is required by the API in its own right and checked separately.
