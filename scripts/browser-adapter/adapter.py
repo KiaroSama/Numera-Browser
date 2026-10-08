@@ -161,26 +161,7 @@ def main():
                         raise ValueError('Invalid open request')
                     if not isinstance(options.get('user_data_dir'), str) or not options['user_data_dir']:
                         raise ValueError('Persistent profile directory required')
-                    completed = threading.Event()
-                    observer = None
-                    if os.environ.get('NUMERA_ADAPTER_DIAGNOSTICS') == '1':
-                        def snapshot():
-                            if completed.wait(60):
-                                return
-                            frame = sys._current_frames().get(threading.main_thread().ident)
-                            for _ in range(20):
-                                if frame is None:
-                                    break
-                                log.warning('Open stack file=%s function=%s line=%s', Path(frame.f_code.co_filename).name, frame.f_code.co_name, frame.f_lineno)
-                                frame = frame.f_back
-                        observer = threading.Thread(target=snapshot, daemon=True, name='open-diagnostics')
-                        observer.start()
-                    try:
-                        owner, context, manager = open_context(backend, options)
-                    finally:
-                        completed.set()
-                        if observer is not None:
-                            observer.join(timeout=1)
+                    owner, context, manager = open_context(backend, options)
                     log.info('Context scripts applying count=%s', len(scripts))
                     context.on('close', lambda *_: closed.set())
                     for script in scripts:
