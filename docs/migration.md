@@ -109,8 +109,11 @@ The owner-requested October 8 checkpoint uses manually dispatched GitHub-hosted
 Windows/Linux jobs, without local or self-hosted test execution. It verifies the
 current incomplete implementation, not final candidate acceptance or retirement.
 The standalone profile-read router now includes engine-only adoption, view-only
-repairs and uncertain-claim status. Its latest expanded regression remains
-unverified until hosted CI; it is not yet merged into the application router.
+repairs and uncertain-claim status. Its expanded regression passed the hosted checkpoint. Application composition
+now includes that read router with an explicit caller-supplied session host;
+this later composition change awaits its next hosted check. Typed storage
+refusals distinguish name conflict, stale revision and unconvertible records
+without parsing error-message prefixes.
 
 CI discovers all native parity test targets through Cargo on Windows and Linux,
 runs formatting/strict Clippy, regenerates source oracles, checks original runtime

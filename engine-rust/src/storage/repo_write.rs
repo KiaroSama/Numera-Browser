@@ -63,7 +63,7 @@ impl ProfileRepo {
                 if policy == "skip" {
                     continue;
                 }
-                return Err(RepoError::Message(format!(
+                return Err(RepoError::NameTaken(format!(
                     "a profile called {} already exists",
                     validation::repr(&profile.name)
                 )));

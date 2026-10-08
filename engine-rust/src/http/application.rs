@@ -1,8 +1,8 @@
 //! Composition of implemented routes, not a complete executable HTTP server.
 use super::{
     config_routes, cors, diagnostics, extension_routes, fingerprint_routes, folder_routes,
-    middleware::protect, proxy_routes, request_auth::RequestAuth, schedule_routes, token_routes,
-    tokens::TokenStore,
+    middleware::protect, profile_routes, proxy_routes, request_auth::RequestAuth, schedule_routes,
+    token_routes, tokens::TokenStore,
 };
 use axum::{
     Json, Router,
@@ -23,8 +23,15 @@ pub async fn router(
     environment: &str,
     origins: &str,
     password: Option<String>,
+    host: &str,
     installed: BTreeMap<String, bool>,
 ) -> io::Result<Router> {
+    if host.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Session host identity is missing",
+        ));
+    }
     let auth = Arc::new(RequestAuth::new(TokenStore::new(root.clone()), environment));
     let adopting = auth.clone();
     tokio::task::spawn_blocking(move || {
@@ -40,6 +47,7 @@ pub async fn router(
         .merge(token_routes::routes(root.clone(), environment))
         .merge(folder_routes::routes(root.clone()))
         .merge(fingerprint_routes::routes())
+        .merge(profile_routes::routes(root.clone(), password.clone(), host))
         .merge(extension_routes::routes(root.clone()))
         .merge(proxy_routes::routes(root.clone(), password.clone()))
         .merge(config_routes::routes(
