@@ -99,8 +99,10 @@ CLI/server**. A passing library test does not certify a finished product migrati
   on both Patchright hosts. Protocol output is now reserved independently of SDK
   stdout, and Patchright observation reads the main page world. Reverification is
   passed in all eight hosted SDK legs; these narrow results are not full
-  backend/application acceptance. Source-derived effective-option capture is
-  being added at the SDK call boundary, with network/resources isolated explicitly.
+  backend/application acceptance. Forty source-derived effective-option cases
+  capture the SDK call boundary with network/resources isolated explicitly. Native
+  backend option construction is implemented and awaits that exact verification;
+  resource preparation, IP resolution, relay and launch-service integration remain pending.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
