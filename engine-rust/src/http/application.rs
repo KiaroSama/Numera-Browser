@@ -26,10 +26,52 @@ pub async fn router(
     host: &str,
     installed: BTreeMap<String, bool>,
 ) -> io::Result<Router> {
+    let sessions = Arc::new(crate::ownership::registry::Registry::new(
+        root.clone(),
+        host.into(),
+        password.clone(),
+    )?);
+    router_with_sessions(
+        root,
+        environment,
+        origins,
+        password,
+        host,
+        SessionApplication {
+            installed,
+            sessions,
+        },
+    )
+    .await
+}
+
+pub struct SessionApplication {
+    pub installed: BTreeMap<String, bool>,
+    pub sessions: Arc<crate::ownership::registry::Registry>,
+}
+
+pub async fn router_with_sessions(
+    root: PathBuf,
+    environment: &str,
+    origins: &str,
+    password: Option<String>,
+    host: &str,
+    application: SessionApplication,
+) -> io::Result<Router> {
+    let SessionApplication {
+        installed,
+        sessions,
+    } = application;
     if host.is_empty() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             "Session host identity is missing",
+        ));
+    }
+    if sessions.root() != root || sessions.host() != host {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Session registry does not belong to this application root and host",
         ));
     }
     let auth = Arc::new(RequestAuth::new(TokenStore::new(root.clone()), environment));
@@ -52,6 +94,7 @@ pub async fn router(
             password.clone(),
             host,
             installed.clone(),
+            sessions,
         ))
         .merge(extension_routes::routes(root.clone()))
         .merge(proxy_routes::routes(root.clone(), password.clone()))

@@ -42,6 +42,7 @@ jobs:
           --test profile_overview_parity --test profile_batch_parity
           --test profile_http_import_parity --test ready_parity
           --test session_ready_lifecycle --test session_registry_lifecycle
+          --test profile_http_delete_parity --test profile_delete_owned_session
           --no-fail-fast -- --test-threads=2
       - name: Native lint
         run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --all-targets -- -D warnings

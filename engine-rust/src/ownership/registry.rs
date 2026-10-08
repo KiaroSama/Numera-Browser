@@ -72,6 +72,13 @@ impl Registry {
             closed: Mutex::new(false),
         })
     }
+    pub fn root(&self) -> &Path {
+        &self.root
+    }
+    pub fn host(&self) -> &str {
+        &self.host
+    }
+
     fn decision(&self, id: &str) -> io::Result<Arc<Mutex<()>>> {
         safe_id(id).map_err(io::Error::other)?;
         Ok(self

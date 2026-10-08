@@ -1,10 +1,9 @@
 use super::{cors, middleware::protect, request_auth::RequestAuth, tokens::TokenStore};
 use crate::{
     conversion::{to_dashboard, truth},
-    ownership::claims,
     storage::{
         dashboard::DashboardStore,
-        locks::{DataLock, SessionLease},
+        locks::DataLock,
         paths::safe_id,
         repo::{ProfileRepo, RepoError},
     },
@@ -27,22 +26,29 @@ use std::{
 pub(super) struct Profiles {
     pub(super) root: PathBuf,
     pub(super) dashboard: DashboardStore,
-    engine: ProfileRepo,
-    host: String,
+    pub(super) engine: ProfileRepo,
+    pub(super) host: String,
+    pub(super) sessions: Arc<crate::ownership::registry::Registry>,
     pub(super) installed: std::collections::BTreeMap<String, bool>,
 }
-pub fn router(root: PathBuf, environment: &str, host: &str) -> Router {
+pub fn router(root: PathBuf, environment: &str, host: &str) -> io::Result<Router> {
     let auth = Arc::new(RequestAuth::new(TokenStore::new(root.clone()), environment));
-    protect(
-        cors::apply(routes(root, None, host, Default::default()), ""),
+    let sessions = Arc::new(crate::ownership::registry::Registry::new(
+        root.clone(),
+        host.into(),
+        None,
+    )?);
+    Ok(protect(
+        cors::apply(routes(root, None, host, Default::default(), sessions), ""),
         auth,
-    )
+    ))
 }
 pub(crate) fn routes(
     root: PathBuf,
     password: Option<String>,
     host: &str,
     installed: std::collections::BTreeMap<String, bool>,
+    sessions: Arc<crate::ownership::registry::Registry>,
 ) -> Router {
     let state = Arc::new(Profiles {
         dashboard: DashboardStore::new(root.clone(), password.clone()),
@@ -50,6 +56,7 @@ pub(crate) fn routes(
         root,
         host: host.into(),
         installed,
+        sessions,
     });
     Router::new()
         .route(
@@ -60,7 +67,7 @@ pub(crate) fn routes(
         )
         .route(
             "/api/profiles/{pid}",
-            axum::routing::put(super::profile_write::update),
+            axum::routing::put(super::profile_write::update).delete(super::profile_delete::single),
         )
         .route(
             "/api/profiles/health",
@@ -81,6 +88,10 @@ pub(crate) fn routes(
         .route(
             "/api/profiles/import",
             axum::routing::post(super::profile_import::import),
+        )
+        .route(
+            "/api/profiles/delete",
+            axum::routing::post(super::profile_delete::bulk),
         )
         .with_state(state)
 }
@@ -154,16 +165,7 @@ pub(super) fn decorate(state: &Profiles, mut profile: Value, now: f64) -> Result
     let id = profile["id"]
         .as_str()
         .ok_or_else(|| RepoError::InvalidRecord("Stored profile ID is not text".into()))?;
-    let held = match SessionLease::acquire(&SessionLease::path_for(&state.root, id)?) {
-        Ok(lease) => {
-            drop(lease);
-            false
-        }
-        Err(error) if error.kind() == io::ErrorKind::WouldBlock => true,
-        Err(error) => return Err(error.into()),
-    };
-    let running =
-        held || claims::state(&claims::read(&state.root, id), &state.host) != claims::State::Free;
+    let running = state.sessions.running(id)?;
     let label = if running {
         "now".into()
     } else {
@@ -189,6 +191,7 @@ fn listing(state: &Profiles) -> Result<Vec<Value>, RepoError> {
     let entries = match std::fs::read_dir(state.root.join("profiles")) {
         Ok(entries) => entries,
         Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            drop(_guard);
             return profiles
                 .into_iter()
                 .map(|profile| decorate(state, readable(profile)?, now))
@@ -248,6 +251,7 @@ fn listing(state: &Profiles) -> Result<Vec<Value>, RepoError> {
                 .save_many(adopting, Default::default(), None, now)?,
         );
     }
+    drop(_guard);
     profiles
         .into_iter()
         .map(|profile| decorate(state, readable(profile)?, now))

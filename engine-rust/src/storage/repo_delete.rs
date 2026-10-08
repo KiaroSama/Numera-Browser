@@ -18,10 +18,18 @@ impl ProfileRepo {
         let id = candidate.id;
         let tomb: Option<PathBuf>;
         {
-            let _lease = SessionLease::acquire(&SessionLease::path_for(&self.root, &id)?)?;
+            let _lease = SessionLease::acquire(&SessionLease::path_for(&self.root, &id)?).map_err(
+                |error| {
+                    if error.kind() == io::ErrorKind::WouldBlock {
+                        RepoError::SessionBusy(error.to_string())
+                    } else {
+                        error.into()
+                    }
+                },
+            )?;
             // Keep source domain error text, not an opaque I/O prefix.
             claims::refuse_if_busy(&self.root, &id, host)
-                .map_err(|e| RepoError::Message(e.to_string()))?;
+                .map_err(|e| RepoError::SessionBusy(e.to_string()))?;
             let lock = DataLock::transaction(&self.root)?;
             let _root = lock.acquire(Duration::from_secs(30))?;
             let Some(current) = self.resolve(reference, now)? else {
