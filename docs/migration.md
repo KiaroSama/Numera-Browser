@@ -119,7 +119,10 @@ narrow hosted Linux check. Health and collision overview handlers reuse native
 conversion, identity validation and lease/claim status; 26 source-generated
 read-only outcomes passed hosted Linux verification. Batch creation and bulk
 patch handlers use the same validators and all-or-nothing store transactions;
-21 independent source outcomes await verification. No full application acceptance is implied. Typed storage
+21 independent source outcomes passed hosted Linux verification. Native-format
+HTTP imports and seeded vendor conversion have source-generated cases awaiting
+verification; randomized vendor HTTP acceptance and full legacy coercion remain
+pending. No full application acceptance is implied. Typed storage
 refusals distinguish name conflict, stale revision and unconvertible records
 without parsing error-message prefixes.
 

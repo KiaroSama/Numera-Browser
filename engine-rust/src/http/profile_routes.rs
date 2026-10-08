@@ -78,6 +78,10 @@ pub(crate) fn routes(
             "/api/profiles/bulk",
             axum::routing::post(super::profile_batch::bulk),
         )
+        .route(
+            "/api/profiles/import",
+            axum::routing::post(super::profile_import::import),
+        )
         .with_state(state)
 }
 const TEXT_FIELDS: &[&str] = &[
