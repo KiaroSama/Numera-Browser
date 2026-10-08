@@ -17,6 +17,7 @@ on:
           - profile-http-delete
           - init-script
           - browser-options
+          - browser-admission
 
 permissions:
   contents: read
