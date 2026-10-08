@@ -17,6 +17,9 @@ def cases(parent: Path) -> list[dict]:
     parent.mkdir(parents=True,exist_ok=True)
     variants = [
         ('create-minimal','POST','/api/profiles',{'name':'Fixture','seed':42},None),
+        ('screen-underscores','POST','/api/profiles',{'name':'Fixture','seed':42,'screen':'1_280x720'},None),
+        ('screen-unicode','POST','/api/profiles',{'name':'Fixture','seed':42,'screen':'١٢٨٠x٧٢٠'},None),
+        ('screen-sign','POST','/api/profiles',{'name':'Fixture','seed':42,'screen':'+1280x+720'},None),
         ('create-explicit','POST','/api/profiles',{'name':'Fixture','seed':42,'engine':'patchright'},None),
         ('create-default','POST','/api/profiles',{'name':'Fixture','seed':42},'camoufox'),
         ('invalid-name','POST','/api/profiles',{'name':False},None),
