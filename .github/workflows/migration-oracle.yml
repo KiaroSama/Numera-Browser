@@ -12,6 +12,7 @@ on:
           - profile-write
           - profile-overview
           - profile-batch
+          - profile-http-import
 
 permissions:
   contents: read
