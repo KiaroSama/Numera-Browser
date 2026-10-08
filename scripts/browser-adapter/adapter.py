@@ -46,17 +46,27 @@ def logger():
 
 def read_frames(events):
     try:
-        while True:
-            line = sys.stdin.buffer.readline(MAX_FRAME + 1)
-            if not line:
-                events.put(None)
-                return
-            if len(line) > MAX_FRAME or not line.endswith(b'\n'):
-                raise ValueError('Invalid frame size')
-            value = json.loads(line.decode('utf-8', errors='strict'))
-            if not isinstance(value, dict):
-                raise ValueError('Frame must be an object')
-            events.put(value)
+        # A blocked CRT read owns its descriptor lock on Windows. SDK DLL
+        # initialization can inspect stdin; keep descriptor 0 free for that.
+        descriptor = os.dup(sys.stdin.fileno())
+        try:
+            os.set_inheritable(descriptor, False)
+            stream = os.fdopen(descriptor, 'rb')
+        except BaseException:
+            os.close(descriptor)
+            raise
+        with stream:
+            while True:
+                line = stream.readline(MAX_FRAME + 1)
+                if not line:
+                    events.put(None)
+                    return
+                if len(line) > MAX_FRAME or not line.endswith(b'\n'):
+                    raise ValueError('Invalid frame size')
+                value = json.loads(line.decode('utf-8', errors='strict'))
+                if not isinstance(value, dict):
+                    raise ValueError('Frame must be an object')
+                events.put(value)
     except Exception:
         events.put({'invalid': True})
 
