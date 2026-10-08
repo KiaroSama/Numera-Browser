@@ -70,6 +70,14 @@ pub(crate) fn routes(
             "/api/profiles/collisions",
             get(super::profile_overview::collisions).head(super::application::method_not_allowed),
         )
+        .route(
+            "/api/profiles/batch",
+            axum::routing::post(super::profile_batch::batch),
+        )
+        .route(
+            "/api/profiles/bulk",
+            axum::routing::post(super::profile_batch::bulk),
+        )
         .with_state(state)
 }
 const TEXT_FIELDS: &[&str] = &[

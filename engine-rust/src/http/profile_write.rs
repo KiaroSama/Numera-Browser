@@ -26,7 +26,7 @@ fn now() -> Result<f64, RepoError> {
         .map_err(io::Error::other)?
         .as_secs_f64())
 }
-fn check(record: &Value, merged: bool) -> Result<(), RepoError> {
+pub(super) fn check(record: &Value, merged: bool) -> Result<(), RepoError> {
     let mut client = record.clone();
     if merged {
         profile_fields::strip_server_owned(
@@ -51,7 +51,7 @@ fn strip(record: &mut Map<String, Value>) -> Result<(), RepoError> {
         .map_err(|error| RepoError::Io(io::Error::other(error)))?;
     Ok(())
 }
-fn extensions(record: &mut Value, config: &ConfigStore) -> Result<(), RepoError> {
+pub(super) fn extensions(record: &mut Value, config: &ConfigStore) -> Result<(), RepoError> {
     if record["extensions"]
         .as_str()
         .is_none_or(|text| text.trim().is_empty())

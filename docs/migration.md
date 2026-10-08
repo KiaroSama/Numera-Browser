@@ -117,7 +117,9 @@ inside the transaction and derive credential intent only from the request.
 Fourteen source-generated write outcomes and 612 field-refusal cases passed a
 narrow hosted Linux check. Health and collision overview handlers reuse native
 conversion, identity validation and lease/claim status; 26 source-generated
-read-only outcomes await verification. No full application acceptance is implied. Typed storage
+read-only outcomes passed hosted Linux verification. Batch creation and bulk
+patch handlers use the same validators and all-or-nothing store transactions;
+21 independent source outcomes await verification. No full application acceptance is implied. Typed storage
 refusals distinguish name conflict, stale revision and unconvertible records
 without parsing error-message prefixes.
 
