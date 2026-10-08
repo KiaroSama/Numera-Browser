@@ -39,6 +39,7 @@ fn application_composes_auth_once_and_keeps_legacy_protection_after_token_loss()
                     case["environment"].as_str().ok_or("Environment missing")?,
                     "https://fixture.test",
                     None,
+                    "fixture-host",
                     std::collections::BTreeMap::from([
                         ("camoufox".into(), false),
                         ("cloak".into(), false),

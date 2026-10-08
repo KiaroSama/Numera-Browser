@@ -193,12 +193,12 @@ impl DashboardStore {
         let problems = validation::flat_number_problems(&record)
             .map_err(|_| RepoError::Message("Field policy is unreadable".into()))?;
         if !problems.is_empty() {
-            return Err(RepoError::InvalidRecord(format!(
+            return Err(RepoError::UnconvertibleProfile(format!(
                 "profile {id} cannot be converted for the engine, so neither copy was written: {}",
                 problems.join("; ")
             )));
         }
-        let profile=conversion::to_engine(&record,now).map_err(|error|RepoError::InvalidRecord(format!("profile {id} cannot be converted for the engine, so neither copy was written: {error}")))?;
+        let profile=conversion::to_engine(&record,now).map_err(|error|RepoError::UnconvertibleProfile(format!("profile {id} cannot be converted for the engine, so neither copy was written: {error}")))?;
         let mut twin = serde_json::to_value(profile)
             .map_err(|_| RepoError::Message("Engine twin cannot be serialized".into()))?;
         if twin["proxy"].is_object() {
@@ -246,7 +246,7 @@ impl DashboardStore {
                     .iter()
                     .any(|(other, names)| other != &id && names.iter().any(|held| held == name))
             {
-                return Err(RepoError::Message(format!(
+                return Err(RepoError::NameTaken(format!(
                     "a profile called {} already exists",
                     validation::repr(&record["name"])
                 )));
@@ -262,7 +262,7 @@ impl DashboardStore {
             && let Some(current) = stored.get("_rev").filter(|value| !value.is_null())
             && value_text(current) != value_text(expected)
         {
-            return Err(RepoError::Message(format!(
+            return Err(RepoError::StaleProfile(format!(
                 "profile {id} changed since you loaded it (revision {}, you sent {})",
                 value_text(current),
                 value_text(expected)
@@ -370,7 +370,7 @@ impl DashboardStore {
                         .iter()
                         .any(|(other, names)| other != &id && names.iter().any(|held| held == name))
                 {
-                    return Err(RepoError::Message(format!(
+                    return Err(RepoError::NameTaken(format!(
                         "a profile called {} already exists",
                         validation::repr(&record["name"])
                     )));

@@ -17,6 +17,9 @@ pub enum RepoError {
     Message(String),
     Diverged(String),
     InvalidRecord(String),
+    NameTaken(String),
+    StaleProfile(String),
+    UnconvertibleProfile(String),
     VaultLocked(String),
     Io(io::Error),
     Recovery(vault::recovery::RecoveryError),
@@ -27,6 +30,9 @@ impl fmt::Display for RepoError {
             Self::Message(message)
             | Self::Diverged(message)
             | Self::InvalidRecord(message)
+            | Self::NameTaken(message)
+            | Self::StaleProfile(message)
+            | Self::UnconvertibleProfile(message)
             | Self::VaultLocked(message) => f.write_str(message),
             Self::Io(error) => write!(f, "Profile storage operation failed: {error}"),
             Self::Recovery(error) => fmt::Display::fmt(error, f),

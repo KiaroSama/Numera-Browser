@@ -11,6 +11,7 @@ pub mod folder_routes;
 mod json_diagnostics;
 mod json_encoding;
 pub mod middleware;
+mod profile_errors;
 pub mod profile_routes;
 pub mod proxy_routes;
 pub mod request_auth;
