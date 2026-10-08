@@ -14,6 +14,7 @@ pub mod middleware;
 mod profile_batch;
 mod profile_errors;
 pub mod profile_fields;
+mod profile_import;
 mod profile_overview;
 pub mod profile_routes;
 mod profile_write;

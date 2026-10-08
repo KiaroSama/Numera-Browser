@@ -5,6 +5,7 @@ mod devices;
 pub mod fingerprint;
 pub mod http;
 pub mod identity;
+pub mod importers;
 pub mod models;
 pub mod ownership;
 pub mod pool;
