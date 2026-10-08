@@ -1,4 +1,4 @@
-use crate::{conversion, pool::decimal_ascii, validation};
+use crate::{conversion, decimal, validation};
 use serde_json::{Map, Value};
 use std::sync::OnceLock;
 
@@ -47,27 +47,9 @@ fn names(values: &[Value]) -> String {
         .join(" or ")
 }
 fn dimension(value: &str) -> bool {
-    let value = value.trim();
-    let value = value.strip_prefix('+').unwrap_or(value);
-    let mut previous = false;
-    let mut digits = String::new();
-    for character in value.chars() {
-        if character == '_' {
-            if !previous {
-                return false;
-            }
-            previous = false;
-        } else if let Some(digit) = decimal_ascii(&character.to_string()) {
-            digits.push_str(&digit);
-            previous = true;
-        } else {
-            return false;
-        }
-    }
-    previous
-        && digits
-            .parse::<u32>()
-            .is_ok_and(|number| (1..=65536).contains(&number))
+    decimal::integer(value)
+        .and_then(|value| value.parse::<i64>().ok())
+        .is_some_and(|number| (1..=65536).contains(&number))
 }
 pub fn check(
     record: &Value,

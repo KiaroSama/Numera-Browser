@@ -118,8 +118,10 @@ now includes profile read/create/update routes with an explicit caller-supplied
 session host and backend availability. Create/update reuse the shared field
 policy and atomic dashboard/engine/config writes; updates merge raw stored state
 inside the transaction and derive credential intent only from the request.
-Fourteen source-generated write outcomes and 612 field-refusal cases passed a
-narrow hosted Linux check. Health and collision overview handlers reuse native
+The initial 14 source-generated write outcomes and 612 field-refusal cases passed a
+narrow hosted Linux check. Expanded writes check accepted Unicode/underscore
+screen dimensions against both stored copies; vendor import regressions check
+that invalid proxy fields are refused rather than discarded. Health and collision overview handlers reuse native
 conversion, identity validation and lease/claim status; 26 source-generated
 read-only outcomes passed hosted Linux verification. Batch creation and bulk
 patch handlers use the same validators and all-or-nothing store transactions;

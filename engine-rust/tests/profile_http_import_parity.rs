@@ -65,7 +65,7 @@ fn native_http_import_preserves_both_copies_and_refusal_contracts()
         let fixture: Value =
             serde_json::from_str(include_str!("fixtures/profile-http-import.json"))?;
         let cases = fixture["cases"].as_array().ok_or("Import cases missing")?;
-        assert_eq!(cases.len(), 18);
+        assert_eq!(cases.len(), 21);
         let mut count = 0;
         // Vendor entropy is exercised separately at its explicit-seed seam;
         // native import and refusals have deterministic public HTTP contracts.
@@ -157,7 +157,7 @@ fn native_http_import_preserves_both_copies_and_refusal_contracts()
             temporary.cleanup()?;
             count += 1;
         }
-        assert_eq!(count, 13);
+        assert_eq!(count, 16);
         Ok(())
     })
 }

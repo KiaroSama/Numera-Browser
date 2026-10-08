@@ -1,6 +1,7 @@
 //! Native application-domain migration; not yet a replacement executable.
 pub mod collision;
 pub mod conversion;
+mod decimal;
 mod devices;
 pub mod fingerprint;
 pub mod http;

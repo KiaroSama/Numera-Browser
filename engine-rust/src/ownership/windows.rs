@@ -1,5 +1,10 @@
 #![allow(unsafe_code)]
-use std::{io, mem, os::windows::io::AsRawHandle, process::Child, ptr};
+use std::{
+    io, mem,
+    os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle},
+    process::Child,
+    ptr,
+};
 use windows_sys::Win32::{
     Foundation::{CloseHandle, ERROR_NO_MORE_FILES, HANDLE, INVALID_HANDLE_VALUE},
     System::{
@@ -17,7 +22,7 @@ use windows_sys::Win32::{
     },
 };
 
-pub struct Job(HANDLE, String);
+pub struct Job(OwnedHandle, String);
 fn job_name() -> io::Result<String> {
     let mut bytes = [0u8; 16];
     getrandom::fill(&mut bytes).map_err(|e| io::Error::other(e.to_string()))?;
@@ -25,12 +30,6 @@ fn job_name() -> io::Result<String> {
         "numera-native-{}",
         bytes.iter().map(|b| format!("{b:02x}")).collect::<String>()
     ))
-}
-impl Drop for Job {
-    fn drop(&mut self) {
-        // SAFETY: handle is uniquely owned by this Job and never transferred.
-        unsafe { CloseHandle(self.0) };
-    }
 }
 impl Job {
     pub fn name(&self) -> &str {
@@ -45,7 +44,9 @@ impl Job {
         if handle.is_null() {
             return Err(io::Error::last_os_error());
         }
-        let job = Self(handle, name);
+        // SAFETY: non-null uniquely owned job handle requires CloseHandle;
+        // OwnedHandle supplies that lifetime and safe Send/Sync semantics.
+        let job = Self(unsafe { OwnedHandle::from_raw_handle(handle) }, name);
         // SAFETY: Win32 POD structure initialized before passing exact size.
         let mut limits: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = unsafe { mem::zeroed() };
         limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
@@ -65,7 +66,10 @@ impl Job {
     }
     pub fn assign(&self, child: &Child) -> io::Result<()> {
         // SAFETY: both handles are live and the child is still suspended.
-        if unsafe { AssignProcessToJobObject(self.0, child.as_raw_handle() as HANDLE) } == 0 {
+        if unsafe {
+            AssignProcessToJobObject(self.0.as_raw_handle(), child.as_raw_handle() as HANDLE)
+        } == 0
+        {
             return Err(io::Error::last_os_error());
         }
         Ok(())
@@ -75,7 +79,7 @@ impl Job {
         let mut info: JOBOBJECT_BASIC_ACCOUNTING_INFORMATION = unsafe { mem::zeroed() };
         if unsafe {
             QueryInformationJobObject(
-                self.0,
+                self.0.as_raw_handle(),
                 JobObjectBasicAccountingInformation,
                 ptr::addr_of_mut!(info).cast(),
                 mem::size_of_val(&info) as u32,
@@ -89,7 +93,7 @@ impl Job {
     }
     pub fn terminate(&self) -> io::Result<()> {
         // SAFETY: this job contains only the tree this owner spawned.
-        if unsafe { TerminateJobObject(self.0, 1) } == 0 {
+        if unsafe { TerminateJobObject(self.0.as_raw_handle(), 1) } == 0 {
             return Err(io::Error::last_os_error());
         }
         Ok(())
@@ -113,7 +117,8 @@ pub fn named_empty(name: &str) -> io::Result<bool> {
         }
         return Err(error);
     }
-    let job = Job(handle, name.into());
+    // SAFETY: OpenJobObjectW returned a new owned CloseHandle-compatible handle.
+    let job = Job(unsafe { OwnedHandle::from_raw_handle(handle) }, name.into());
     job.empty()
 }
 
