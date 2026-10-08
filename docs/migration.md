@@ -83,7 +83,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
   The deletion HTTP and owned-session integration cases await verification.
   SDK-only Python transport now waits inertly for native activation, exchanges
   bounded versioned UTF-8 frames and exposes sanitized SDK metadata/open/close.
-  Native transport owns its pipes and session tree; protocol checks are pending.
+  Native transport owns its pipes and session tree; protocol/error/EOF checks passed
+  hosted Windows/Linux. The separate manual browser SDK tier opens real persistent
+  contexts for four backends on both platforms; its first live run is pending.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
