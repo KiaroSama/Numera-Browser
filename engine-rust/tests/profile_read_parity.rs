@@ -52,7 +52,7 @@ fn profile_http_read_repairs_only_view_and_reports_uncertain_claim_as_running()
                 fs::create_dir(root.join("sessions"))?;
                 fs::write(root.join("sessions/a.json"), claim.as_bytes())?;
             }
-            let app = router(root.clone(), "fixture-api", "fixture-host");
+            let app = router(root.clone(), "fixture-api", "fixture-host")?;
             let started = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs_f64();
             let response = tokio::time::timeout(
                 Duration::from_secs(5),

@@ -19,6 +19,7 @@ pub enum RepoError {
     InvalidRecord(String),
     NameTaken(String),
     StaleProfile(String),
+    SessionBusy(String),
     UnconvertibleProfile(String),
     VaultLocked(String),
     Io(io::Error),
@@ -32,6 +33,7 @@ impl fmt::Display for RepoError {
             | Self::InvalidRecord(message)
             | Self::NameTaken(message)
             | Self::StaleProfile(message)
+            | Self::SessionBusy(message)
             | Self::UnconvertibleProfile(message)
             | Self::VaultLocked(message) => f.write_str(message),
             Self::Io(error) => write!(f, "Profile storage operation failed: {error}"),

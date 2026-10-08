@@ -77,7 +77,10 @@ CLI/server**. A passing library test does not certify a finished product migrati
   File-based startup readiness preserves original failure kinds and exit ordering,
   with owned-tree cleanup on failure; the narrow Linux integration check passed.
   A per-server registry now retains ownership, reaps only empty trees and attributes
-  schedule completion to its exact occurrence; its lifecycle check is pending.
+  schedule completion to its exact occurrence; the limited lifecycle check passed
+  hosted Windows/Linux. Profile status and deletion now share that actual registry;
+  deletion stops only locally owned sessions and preserves foreign ownership refusals.
+  The deletion HTTP and owned-session integration cases await verification.
   The SDK activation handshake, hard-parent-death and platform acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,

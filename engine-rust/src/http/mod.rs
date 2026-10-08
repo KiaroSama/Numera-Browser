@@ -12,6 +12,7 @@ mod json_diagnostics;
 mod json_encoding;
 pub mod middleware;
 mod profile_batch;
+mod profile_delete;
 mod profile_errors;
 pub mod profile_fields;
 mod profile_import;
