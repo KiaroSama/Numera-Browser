@@ -31,11 +31,16 @@ def cases(parent: Path) -> list[dict]:
         ('update-null-proxy','PUT','/api/profiles/existing',{'proxy':None},None),
         ('duplicate-name','POST','/api/profiles',{'name':'Existing','seed':42},None),
     ]
+    from numera.models import Profile
+    def converted_profile(**values):
+        values.setdefault('created_at',1700000000.0)
+        values.setdefault('updated_at',1700000000.0)
+        return Profile(**values)
     found=[]
     for name,method,url,body,default in variants:
         with tempfile.TemporaryDirectory(prefix='profile-write-oracle-',dir=parent) as directory:
             root=Path(directory)
-            with patch.dict(os.environ,{'NUMERA_API_TOKEN':'fixture-api','NUMERA_ALLOWED_ORIGINS':''}), patch('numera.convert.time.time',return_value=1700000000.0), patch('numera.server.routes_profiles.uuid.uuid4',return_value=uuid.UUID(hex='00000000004200000000000000000000')):
+            with patch.dict(os.environ,{'NUMERA_API_TOKEN':'fixture-api','NUMERA_ALLOWED_ORIGINS':''}), patch('numera.convert.time.time',return_value=1700000000.0), patch('numera.convert.Profile',side_effect=converted_profile), patch('numera.server.routes_profiles.uuid.uuid4',return_value=uuid.UUID(hex='00000000004200000000000000000000')):
                 app=create_app(data_dir=directory,start_scheduler=False)
                 if default:
                     (root/'config.json').write_text(json.dumps({'default_engine':default}),encoding='utf-8')
