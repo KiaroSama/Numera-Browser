@@ -75,7 +75,7 @@ def _owner(tmp_path, pid):
     """Start a session owner in its own process group, as a shell would."""
     script = OWNER.format(engine=ENGINE, root=str(tmp_path), pid=pid)
     proc = subprocess.Popen([sys.executable, "-c", textwrap.dedent(script)],
-                            stdout=subprocess.PIPE, text=True,
+                            env={k: v for k, v in os.environ.items() if k != proctree.TREE_ENV}, stdout=subprocess.PIPE, text=True,
                             **({} if proctree._WINDOWS else {"start_new_session": True}))
     kid = int(proc.stdout.readline().strip())
     return proc, kid
