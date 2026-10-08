@@ -90,9 +90,10 @@ CLI/server**. A passing library test does not certify a finished product migrati
   not full backend acceptance. An isolated manual Windows Camoufox scope retains
   the same deadlines and reports sanitized stage/stack diagnostics before cleanup.
   That diagnostic localized the stall to NumPy binary import, before browser entry.
-  The input reader now uses a non-inheritable duplicate descriptor so Windows SDK
-  runtime initialization can inspect standard input without its read lock; verification
-  is pending. No browser deadline or ownership guarantee was relaxed.
+  Duplicating the input descriptor did not resolve it. The next isolated check
+  suspends further frame reads while SDK initialization processes the open request,
+  using an event rather than overlapping a blocked pipe read. Verification is pending;
+  no browser deadline or ownership guarantee was relaxed.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
