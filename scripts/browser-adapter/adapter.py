@@ -170,6 +170,14 @@ def main():
                     send(request_id, {'opened': True, 'backend': backend})
                     log.info('Persistent context opened backend=%s', backend)
                     permit.set()
+                elif operation == 'navigate' and initialized and context is not None:
+                    url = request.get('url')
+                    if not isinstance(url, str) or not url:
+                        raise ValueError('Navigation URL required')
+                    page = context.pages[0] if context.pages else context.new_page()
+                    page.goto(url, wait_until='domcontentloaded', timeout=30000)
+                    send(request_id, {'navigated': True})
+                    permit.set()
                 elif operation == 'inspect' and initialized and context is not None:
                     page = context.pages[0] if context.pages else context.new_page()
                     send(request_id, page.evaluate("() => ({userAgent:navigator.userAgent, platform:navigator.platform, locale:navigator.language, languages:Array.from(navigator.languages), cores:navigator.hardwareConcurrency, width:innerWidth, height:innerHeight})"))
@@ -182,7 +190,7 @@ def main():
             except Exception as error:
                 # SDK errors can embed proxy credentials/URLs. Type is safe;
                 # never send or log raw exception messages or request payloads.
-                log.error('Operation failed operation=%s type=%s', operation if operation in ('hello','open','close','inspect') else 'invalid', type(error).__name__)
+                log.error('Operation failed operation=%s type=%s', operation if operation in ('hello','open','close','inspect','navigate') else 'invalid', type(error).__name__)
                 send(request_id, error={'kind':'sdk','type':type(error).__name__})
                 exit_code = 1
                 break
