@@ -24,27 +24,43 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-struct Profiles {
-    root: PathBuf,
-    dashboard: DashboardStore,
+pub(super) struct Profiles {
+    pub(super) root: PathBuf,
+    pub(super) dashboard: DashboardStore,
     engine: ProfileRepo,
     host: String,
+    pub(super) installed: std::collections::BTreeMap<String, bool>,
 }
 pub fn router(root: PathBuf, environment: &str, host: &str) -> Router {
     let auth = Arc::new(RequestAuth::new(TokenStore::new(root.clone()), environment));
-    protect(cors::apply(routes(root, None, host), ""), auth)
+    protect(
+        cors::apply(routes(root, None, host, Default::default()), ""),
+        auth,
+    )
 }
-pub(crate) fn routes(root: PathBuf, password: Option<String>, host: &str) -> Router {
+pub(crate) fn routes(
+    root: PathBuf,
+    password: Option<String>,
+    host: &str,
+    installed: std::collections::BTreeMap<String, bool>,
+) -> Router {
     let state = Arc::new(Profiles {
         dashboard: DashboardStore::new(root.clone(), password.clone()),
         engine: ProfileRepo::new(root.clone(), password),
         root,
         host: host.into(),
+        installed,
     });
     Router::new()
         .route(
             "/api/profiles",
-            get(list).head(super::application::method_not_allowed),
+            get(list)
+                .head(super::application::method_not_allowed)
+                .post(super::profile_write::create),
+        )
+        .route(
+            "/api/profiles/{pid}",
+            axum::routing::put(super::profile_write::update),
         )
         .with_state(state)
 }
@@ -114,7 +130,7 @@ fn relative_time(value: &Value, now: f64) -> Result<String, RepoError> {
         format!("{}d ago", (seconds / 86400.0).trunc())
     })
 }
-fn decorate(state: &Profiles, mut profile: Value, now: f64) -> Result<Value, RepoError> {
+pub(super) fn decorate(state: &Profiles, mut profile: Value, now: f64) -> Result<Value, RepoError> {
     let id = profile["id"]
         .as_str()
         .ok_or_else(|| RepoError::InvalidRecord("Stored profile ID is not text".into()))?;

@@ -61,27 +61,8 @@ async fn engines(State(state): State<Arc<Settings>>) -> Json<Value> {
 }
 fn view(state: &Settings) -> Result<Value, ()> {
     let config = state.config.read();
-    let engine = config
-        .get("default_engine")
-        .filter(|value| truth(value))
-        .cloned()
-        .unwrap_or_else(|| {
-            ["camoufox", "patchright", "playwright"]
-                .into_iter()
-                .find(|name| state.installed.get(*name) == Some(&true))
-                .unwrap_or("playwright")
-                .into()
-        });
-    let extensions = match config
-        .get("default_extensions")
-        .filter(|value| truth(value))
-    {
-        None => Vec::new(),
-        Some(Value::Array(rows)) => rows.clone(),
-        Some(Value::String(text)) => text.chars().map(|c| Value::String(c.to_string())).collect(),
-        Some(Value::Object(object)) => object.keys().cloned().map(Value::String).collect(),
-        _ => return Err(()),
-    };
+    let engine = state.config.default_engine(&state.installed);
+    let extensions = state.config.default_extensions().map_err(|_| ())?;
     let meta = state.dashboard.get_meta().map_err(|_| ())?;
     let metadata = meta.as_object().ok_or(())?;
     let mut folders = match metadata.get("folders") {

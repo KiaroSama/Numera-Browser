@@ -47,7 +47,12 @@ pub async fn router(
         .merge(token_routes::routes(root.clone(), environment))
         .merge(folder_routes::routes(root.clone()))
         .merge(fingerprint_routes::routes())
-        .merge(profile_routes::routes(root.clone(), password.clone(), host))
+        .merge(profile_routes::routes(
+            root.clone(),
+            password.clone(),
+            host,
+            installed.clone(),
+        ))
         .merge(extension_routes::routes(root.clone()))
         .merge(proxy_routes::routes(root.clone(), password.clone()))
         .merge(config_routes::routes(

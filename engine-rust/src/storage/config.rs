@@ -50,6 +50,37 @@ impl ConfigStore {
             .unwrap_or_default()
     }
 
+    pub fn default_engine(&self, installed: &std::collections::BTreeMap<String, bool>) -> Value {
+        self.read()
+            .get("default_engine")
+            .filter(|value| crate::conversion::truth(value))
+            .cloned()
+            .unwrap_or_else(|| {
+                ["camoufox", "patchright", "playwright"]
+                    .into_iter()
+                    .find(|name| installed.get(*name) == Some(&true))
+                    .unwrap_or("playwright")
+                    .into()
+            })
+    }
+
+    pub fn default_extensions(&self) -> Result<Vec<Value>, ConfigError> {
+        match self
+            .read()
+            .get("default_extensions")
+            .filter(|value| crate::conversion::truth(value))
+        {
+            None => Ok(Vec::new()),
+            Some(Value::Array(rows)) => Ok(rows.clone()),
+            Some(Value::String(text)) => Ok(text
+                .chars()
+                .map(|character| character.to_string().into())
+                .collect()),
+            Some(Value::Object(object)) => Ok(object.keys().cloned().map(Value::String).collect()),
+            Some(value) => Err(ConfigError::WrongContainer(crate::validation::kind(value))),
+        }
+    }
+
     pub fn set_many(&self, changes: Map<String, Value>) -> Result<Map<String, Value>, ConfigError> {
         if changes.is_empty() {
             return Ok(self.read());

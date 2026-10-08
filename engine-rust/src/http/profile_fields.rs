@@ -165,7 +165,7 @@ pub fn check(
 pub fn complete(
     mut record: Value,
     id: &str,
-    default_engine: Option<&str>,
+    default_engine: Option<&Value>,
     now: f64,
 ) -> Result<Value, String> {
     let object = record.as_object_mut().ok_or("profile must be an object")?;
@@ -184,7 +184,7 @@ pub fn complete(
     if let Some(default) = default_engine
         .filter(|_| !conversion::truth(&object.get("engine").cloned().unwrap_or(Value::Null)))
     {
-        object.insert("engine".into(), default.into());
+        object.insert("engine".into(), default.clone());
     }
     let problems =
         validation::flat_number_problems(&record).map_err(|_| "Field policy is unreadable")?;
