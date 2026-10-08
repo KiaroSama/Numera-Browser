@@ -74,6 +74,8 @@ CLI/server**. A passing library test does not certify a finished product migrati
   platform acceptance remain pending.
 - Native process birth identities, Windows named jobs and bounded owned-tree
   cleanup, durable claim uncertainty checks and lease-retaining session admission.
+  File-based startup readiness preserves original failure kinds and exit ordering,
+  with owned-tree cleanup on failure; its native integration check is pending.
   The SDK activation handshake, hard-parent-death and platform acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
