@@ -289,7 +289,10 @@ import subprocess,sys,time,json
 from pathlib import Path
 from numera import proctree
 p=subprocess.Popen([sys.executable,'-c','import time;time.sleep(30)'])
-Path(sys.argv[1]).write_text(json.dumps({'pid':p.pid,'token':proctree.identify(p)}))
+path=Path(sys.argv[1])
+staging=path.with_suffix('.tmp')
+staging.write_text(json.dumps({'pid':p.pid,'token':proctree.identify(p)}),encoding='utf-8')
+staging.replace(path)
 time.sleep(30)
 '''
     proc, tree = proctree.spawn([sys.executable, '-c', program, str(receipt)],
@@ -322,7 +325,10 @@ import subprocess,sys,time,json
 from pathlib import Path
 from numera import proctree
 p=subprocess.Popen([sys.executable,'-c','import time;time.sleep(30)'])
-Path(sys.argv[1]).write_text(json.dumps({'pid':p.pid,'token':proctree.identify(p)}))
+path=Path(sys.argv[1])
+staging=path.with_suffix('.tmp')
+staging.write_text(json.dumps({'pid':p.pid,'token':proctree.identify(p)}),encoding='utf-8')
+staging.replace(path)
 time.sleep(30)
 '''
     def refuse(tree):
