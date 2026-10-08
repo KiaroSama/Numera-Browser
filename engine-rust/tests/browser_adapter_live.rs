@@ -21,7 +21,6 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         .arg("-u")
         .arg(script)
         .env("NUMERA_ADAPTER_LOG_DIR", root.join("logs"))
-        .env("NUMERA_ADAPTER_DIAGNOSTICS", "1")
         .env("PYTHONUTF8", "1");
     let mut adapter = Adapter::spawn(
         root,

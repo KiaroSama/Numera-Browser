@@ -86,14 +86,12 @@ CLI/server**. A passing library test does not certify a finished product migrati
   Native transport owns its pipes and session tree; protocol/error/EOF checks passed
   hosted Windows/Linux. The separate manual browser SDK tier opens real persistent
   contexts for four backends on both platforms. The first live run passed seven
-  legs; Windows Camoufox timed out awaiting its open response. This is unresolved,
-  not full backend acceptance. An isolated manual Windows Camoufox scope retains
-  the same deadlines and reports sanitized stage/stack diagnostics before cleanup.
-  That diagnostic localized the stall to NumPy binary import, before browser entry.
-  Duplicating the input descriptor did not resolve it. The next isolated check
-  suspends further frame reads while SDK initialization processes the open request,
-  using an event rather than overlapping a blocked pipe read. Verification is pending;
-  no browser deadline or ownership guarantee was relaxed.
+  legs; Windows Camoufox stalled during NumPy binary import before browser entry.
+  An isolated hosted regression passed after sequencing frame reads so no outstanding
+  pipe read overlaps SDK initialization (10.53 seconds, same 90-second deadline).
+  Duplicate-descriptor isolation alone did not fix it. Whole-tree cleanup passed;
+  no ownership guarantee was relaxed. The complete matrix after the repair remains
+  pending; this narrow result is not full backend/application acceptance.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
