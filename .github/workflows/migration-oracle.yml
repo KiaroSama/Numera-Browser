@@ -11,6 +11,7 @@ on:
           - http-fields
           - profile-write
           - profile-overview
+          - profile-batch
 
 permissions:
   contents: read
