@@ -98,7 +98,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
   exposed SDK stdout contamination on Linux Camoufox plus isolated-world inspection
   on both Patchright hosts. Protocol output is now reserved independently of SDK
   stdout, and Patchright observation reads the main page world. Reverification is
-  pending; these narrow results are not full backend/application acceptance.
+  passed in all eight hosted SDK legs; these narrow results are not full
+  backend/application acceptance. Source-derived effective-option capture is
+  being added at the SDK call boundary, with network/resources isolated explicitly.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
