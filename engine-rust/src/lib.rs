@@ -7,6 +7,7 @@ mod devices;
 pub mod fingerprint;
 pub mod http;
 pub mod identity;
+pub mod identity_script;
 pub mod importers;
 pub mod models;
 pub mod ownership;
