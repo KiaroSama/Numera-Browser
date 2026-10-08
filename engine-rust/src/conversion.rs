@@ -178,13 +178,13 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
     let c = &root["catalog"];
     let os = engine_os(d["os"].as_str().unwrap_or("Windows"));
     let mobile = os == "ios" || os == "android";
-    let sides: Result<Vec<i64>, _> = text(&d["screen"], "1920x1080")
+    let sides: Option<Vec<i64>> = text(&d["screen"], "1920x1080")
         .to_lowercase()
         .split('x')
-        .map(|v| v.trim().parse::<i64>())
+        .map(|value| crate::decimal::integer(value)?.parse::<i64>().ok())
         .collect();
     let (sw, sh) = match sides {
-        Ok(v) if v.len() == 2 => (v[0], v[1]),
+        Some(v) if v.len() == 2 => (v[0], v[1]),
         _ => (1920, 1080),
     };
     let locale = text(&d["locale"], "en-US");

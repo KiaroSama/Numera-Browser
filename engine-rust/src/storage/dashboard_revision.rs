@@ -1,5 +1,5 @@
 use super::repo::RepoError;
-use crate::{conversion::truth, pool::decimal_ascii, validation};
+use crate::{conversion::truth, decimal::integer as parse, validation};
 use serde_json::Value;
 
 // Revisions are legacy persisted values, not newly validated API input. Python
@@ -87,33 +87,4 @@ pub(super) fn next(value: &Value) -> Result<Value, RepoError> {
     };
     serde_json::from_str(&number)
         .map_err(|_| RepoError::Message("Revision cannot be serialized".into()))
-}
-
-fn parse(text: &str) -> Option<String> {
-    let text = text.trim();
-    let (negative, body) = if let Some(body) = text.strip_prefix('-') {
-        (true, body)
-    } else {
-        (false, text.strip_prefix('+').unwrap_or(text))
-    };
-    let mut digits = String::new();
-    let mut previous_digit = false;
-    for character in body.chars() {
-        if character == '_' {
-            if !previous_digit {
-                return None;
-            }
-            previous_digit = false;
-        } else {
-            digits.push_str(&decimal_ascii(&character.to_string())?);
-            previous_digit = true;
-        }
-    }
-    if !previous_digit {
-        return None;
-    }
-    if negative {
-        digits.insert(0, '-');
-    }
-    Some(digits)
 }

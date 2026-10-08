@@ -67,18 +67,18 @@ fn chrome(ua: &str) -> String {
     }
     parts.join(".")
 }
-fn proxy(record: &Value) -> Option<Proxy> {
+fn proxy(record: &Value) -> Result<(Option<Proxy>, Option<Value>), String> {
     let px = first(
         record,
         &["proxy", "proxyConfig", "user_proxy_config"],
         Value::Null,
     );
     if !px.is_object() {
-        return None;
+        return Ok((None, None));
     }
     let host = first(&px, &["host", "ip", "proxy_host", "addr"], Value::Null);
     if !truth(&host) {
-        return None;
+        return Ok((None, None));
     }
     let mode = value_text(&first(
         &px,
@@ -89,7 +89,7 @@ fn proxy(record: &Value) -> Option<Proxy> {
     if ["none", "no_proxy", "direct", ""].contains(&mode.as_str())
         && !truth(&first(&px, &["type", "proxy_type"], Value::Null))
     {
-        return None;
+        return Ok((None, None));
     }
     let declared = value_text(&first(&px, &["type", "proxy_type", "mode"], "".into()))
         .trim()
@@ -112,7 +112,26 @@ fn proxy(record: &Value) -> Option<Proxy> {
         .trim_end_matches(':')
         .to_owned();
     let record = json!({"server":server,"username":first(&px,&["username","user","proxy_user","login"],Value::Null),"password":first(&px,&["password","pass","proxy_password"],Value::Null),"country":first(&px,&["country","geo"],Value::Null)});
-    Proxy::from_record(&record, false).ok()
+    let invalid = ["username", "password", "country"]
+        .into_iter()
+        .filter(|key| !record[*key].is_null() && !record[*key].is_string())
+        .collect::<Vec<_>>();
+    let mut safe = record.clone();
+    for key in &invalid {
+        safe[*key] = Value::Null;
+    }
+    let proxy = Proxy::from_record(&safe, false).map_err(|error| error.to_string())?;
+    let mut dashboard = json!({});
+    for (engine, client) in [
+        ("username", "user"),
+        ("password", "pass"),
+        ("country", "country"),
+    ] {
+        if invalid.contains(&engine) {
+            dashboard[client] = record[engine].clone();
+        }
+    }
+    Ok((Some(proxy), Some(dashboard)))
 }
 /// Vendor import generation is explicit at this pure seam; HTTP supplies OS entropy.
 pub fn profile(record: &Value, seed: i64, now: f64) -> Result<(Value, Vec<String>), String> {
@@ -334,9 +353,17 @@ pub fn profile(record: &Value, seed: i64, now: f64) -> Result<(Value, Vec<String
             .push(value_text(&group).into());
     }
     let notes = first(record, &["notes", "description"], "".into());
-    let model=Profile::from_record(&json!({"id":random_hex(6).map_err(|error|error.to_string())?,"name":first(record,&["name","title","profile_name"],"imported profile".into()),"fingerprint":fp,"proxy":proxy(record),"notes":"","tags":[],"created_at":now,"updated_at":now})).map_err(|error|error.to_string())?;
+    let (proxy, proxy_view) = proxy(record)?;
+    let model=Profile::from_record(&json!({"id":random_hex(6).map_err(|error|error.to_string())?,"name":first(record,&["name","title","profile_name"],"imported profile".into()),"fingerprint":fp,"proxy":proxy,"notes":"","tags":[],"created_at":now,"updated_at":now})).map_err(|error|error.to_string())?;
     issues.extend(identity::validate(&model.fingerprint).map_err(|error| error.to_string())?);
     let mut dashboard = crate::conversion::to_dashboard(&model);
+    if let Some(proxy) = proxy_view
+        && let Some(fields) = proxy.as_object()
+    {
+        for (key, value) in fields {
+            dashboard["proxy"][key] = value.clone();
+        }
+    }
     dashboard["notes"] = if truth(&notes) { notes } else { "".into() };
     dashboard["tags"] = tags;
     dashboard["timezone"] = timezone;

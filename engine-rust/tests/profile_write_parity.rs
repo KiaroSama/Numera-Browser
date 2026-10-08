@@ -70,7 +70,7 @@ fn composed_profile_writes_preserve_source_responses_both_copies_and_config()
         let cases = fixture["cases"]
             .as_array()
             .ok_or("Profile write cases missing")?;
-        assert_eq!(cases.len(), 14);
+        assert_eq!(cases.len(), 17);
         let mut minted = BTreeSet::new();
         for case in cases {
             let temporary = common::TempDirectory::new("http-profile-write")?;
@@ -195,7 +195,7 @@ fn composed_profile_writes_preserve_source_responses_both_copies_and_config()
             assert_eq!(config, case["after_config"], "{} settings", case["name"]);
             temporary.cleanup()?;
         }
-        assert_eq!(minted.len(), 4);
+        assert_eq!(minted.len(), 7);
         Ok(())
     })
 }
