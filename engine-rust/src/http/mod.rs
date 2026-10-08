@@ -13,6 +13,7 @@ mod json_encoding;
 pub mod middleware;
 mod profile_errors;
 pub mod profile_fields;
+mod profile_overview;
 pub mod profile_routes;
 mod profile_write;
 pub mod proxy_routes;

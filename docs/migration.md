@@ -114,8 +114,10 @@ now includes profile read/create/update routes with an explicit caller-supplied
 session host and backend availability. Create/update reuse the shared field
 policy and atomic dashboard/engine/config writes; updates merge raw stored state
 inside the transaction and derive credential intent only from the request.
-Fourteen source-generated write outcomes and 612 field-refusal cases await their
-hosted native check; no full application acceptance is implied. Typed storage
+Fourteen source-generated write outcomes and 612 field-refusal cases passed a
+narrow hosted Linux check. Health and collision overview handlers reuse native
+conversion, identity validation and lease/claim status; 26 source-generated
+read-only outcomes await verification. No full application acceptance is implied. Typed storage
 refusals distinguish name conflict, stale revision and unconvertible records
 without parsing error-message prefixes.
 
