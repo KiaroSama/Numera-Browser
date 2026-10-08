@@ -116,6 +116,7 @@ def main():
     closed = threading.Event()
     input_deadline = time.monotonic() + 120
     exit_code = 0
+    closing_request = None
     log.info('Starting protocol=%s runtime=%s pid=%s', PROTOCOL, sys.version.split()[0], os.getpid())
     try:
         while True:
@@ -155,15 +156,18 @@ def main():
                     page = context.pages[0] if context.pages else context.new_page()
                     send(request_id, {'opened': True, 'backend': backend})
                     log.info('Persistent context opened backend=%s', backend)
+                elif operation == 'inspect' and initialized and context is not None:
+                    page = context.pages[0] if context.pages else context.new_page()
+                    send(request_id, page.evaluate("() => ({userAgent:navigator.userAgent, platform:navigator.platform, locale:navigator.language, languages:Array.from(navigator.languages), cores:navigator.hardwareConcurrency, width:innerWidth, height:innerHeight})"))
                 elif operation == 'close' and initialized:
-                    send(request_id, {'closing': True})
+                    closing_request = request_id
                     break
                 else:
                     raise ValueError('Unsupported operation or state')
             except Exception as error:
                 # SDK errors can embed proxy credentials/URLs. Type is safe;
                 # never send or log raw exception messages or request payloads.
-                log.error('Operation failed operation=%s type=%s', operation if operation in ('hello','open','close') else 'invalid', type(error).__name__)
+                log.error('Operation failed operation=%s type=%s', operation if operation in ('hello','open','close','inspect') else 'invalid', type(error).__name__)
                 send(request_id, error={'kind':'sdk','type':type(error).__name__})
                 exit_code = 1
                 break
@@ -177,6 +181,12 @@ def main():
                 action()
             except Exception as error:
                 log.error('SDK cleanup failed type=%s', type(error).__name__)
+                exit_code = 1
+        if closing_request is not None:
+            try:
+                send(closing_request, {'closing': True} if exit_code == 0 else None,
+                     error={'kind':'cleanup'} if exit_code else None)
+            except (OSError, ValueError):
                 exit_code = 1
         log.info('Finished exit=%s', exit_code)
         for handler in list(log.handlers):
