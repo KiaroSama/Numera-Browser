@@ -62,6 +62,14 @@ pub(crate) fn routes(
             "/api/profiles/{pid}",
             axum::routing::put(super::profile_write::update),
         )
+        .route(
+            "/api/profiles/health",
+            get(super::profile_overview::health).head(super::application::method_not_allowed),
+        )
+        .route(
+            "/api/profiles/collisions",
+            get(super::profile_overview::collisions).head(super::application::method_not_allowed),
+        )
         .with_state(state)
 }
 const TEXT_FIELDS: &[&str] = &[
@@ -82,7 +90,7 @@ const TEXT_FIELDS: &[&str] = &[
     "dns",
 ];
 const LIST_FIELDS: &[&str] = &["tags", "ipBased", "clearOnStart", "switchedOff"];
-fn readable(mut profile: Value) -> Result<Value, RepoError> {
+pub(super) fn readable(mut profile: Value) -> Result<Value, RepoError> {
     let object = profile.as_object_mut().ok_or_else(|| {
         RepoError::InvalidRecord("Stored dashboard profile is not an object".into())
     })?;
