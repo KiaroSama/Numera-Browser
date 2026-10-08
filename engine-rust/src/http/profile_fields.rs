@@ -170,16 +170,15 @@ pub fn complete(
 ) -> Result<Value, String> {
     let object = record.as_object_mut().ok_or("profile must be an object")?;
     object.insert("id".into(), id.into());
-    if let Some(engine) = object.get("engine").filter(|value| !value.is_null()) {
-        if !engine
+    if let Some(engine) = object.get("engine").filter(|value| !value.is_null())
+        && !engine
             .as_str()
             .is_some_and(|name| ["playwright", "patchright", "camoufox", "cloak"].contains(&name))
-        {
-            return Err(format!(
-                "unknown engine {}; known: camoufox, cloak, patchright, playwright",
-                validation::repr(engine)
-            ));
-        }
+    {
+        return Err(format!(
+            "unknown engine {}; known: camoufox, cloak, patchright, playwright",
+            validation::repr(engine)
+        ));
     }
     if let Some(default) = default_engine
         .filter(|_| !conversion::truth(&object.get("engine").cloned().unwrap_or(Value::Null)))
