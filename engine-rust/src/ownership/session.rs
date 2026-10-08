@@ -82,6 +82,34 @@ impl Session {
             .ok_or_else(|| io::Error::other("Session tree was not retained"))
     }
 
+    pub fn await_ready(
+        &mut self,
+        path: &Path,
+        budget: Duration,
+    ) -> Result<(), super::ready::StartupFailed> {
+        let Some(tree) = self.tree.as_mut() else {
+            return Err(super::ready::StartupFailed {
+                kind: "failed".into(),
+                message: "Session owns no helper tree".into(),
+            });
+        };
+        let result = super::ready::await_ready(path, budget, || {
+            tree.child_mut()
+                .try_wait()
+                .map(|status| status.map(|status| status.code().unwrap_or(-1)))
+        });
+        if let Err(failure) = result {
+            if let Err(cleanup) = self.finish(Duration::from_secs(5)) {
+                return Err(super::ready::StartupFailed {
+                    message: format!("{failure}; helper cleanup failed: {cleanup}"),
+                    kind: failure.kind,
+                });
+            }
+            return Err(failure);
+        }
+        Ok(())
+    }
+
     pub fn finish(&mut self, budget: Duration) -> io::Result<()> {
         let Some(tree) = self.tree.as_mut() else {
             return Ok(());
