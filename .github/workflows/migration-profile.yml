@@ -56,7 +56,7 @@ jobs:
           --test profile_http_import_parity --test ready_parity
           --test session_ready_lifecycle --test session_registry_lifecycle
           --test profile_http_delete_parity --test profile_delete_owned_session
-          --test browser_adapter_protocol
+          --test browser_adapter_protocol --test init_script_parity --test browser_options_parity
           --no-fail-fast -- --test-threads=2
       - name: Native lint
         if: inputs.scope == 'profiles'
