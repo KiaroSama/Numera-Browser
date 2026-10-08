@@ -14,6 +14,7 @@ from pathlib import Path
 
 PROTOCOL = 1
 MAX_FRAME = 1_048_576
+OUTPUT = None
 PACKAGES = {'playwright':'playwright','patchright':'patchright','camoufox':'camoufox','cloak':'cloakbrowser'}
 
 
@@ -71,8 +72,8 @@ def send(request_id, result=None, error=None):
     data = json.dumps(value, ensure_ascii=True, allow_nan=False).encode('utf-8') + b'\n'
     if len(data) > MAX_FRAME:
         raise ValueError('Response exceeds frame limit')
-    sys.stdout.buffer.write(data)
-    sys.stdout.buffer.flush()
+    OUTPUT.write(data)
+    OUTPUT.flush()
 
 
 def available():
@@ -116,6 +117,18 @@ def open_context(backend, options):
 
 
 def main():
+    global OUTPUT
+    # SDKs can print downloads/configuration, including from native libraries.
+    # Only protocol frames may reach the native owner's response pipe.
+    descriptor = os.dup(sys.stdout.fileno())
+    try:
+        os.set_inheritable(descriptor, False)
+        OUTPUT = os.fdopen(descriptor, 'wb')
+    except BaseException:
+        os.close(descriptor)
+        raise
+    with open(os.devnull, 'wb') as sink:
+        os.dup2(sink.fileno(), sys.stdout.fileno(), inheritable=False)
     log = logger()
     events = queue.Queue(maxsize=8)
     permit = threading.Event()
@@ -180,7 +193,9 @@ def main():
                     permit.set()
                 elif operation == 'inspect' and initialized and context is not None:
                     page = context.pages[0] if context.pages else context.new_page()
-                    send(request_id, page.evaluate("() => ({userAgent:navigator.userAgent, platform:navigator.platform, locale:navigator.language, languages:Array.from(navigator.languages), cores:navigator.hardwareConcurrency, width:innerWidth, height:innerHeight})"))
+                    observation = "() => ({userAgent:navigator.userAgent, platform:navigator.platform, locale:navigator.language, languages:Array.from(navigator.languages), cores:navigator.hardwareConcurrency, width:innerWidth, height:innerHeight})"
+                    view = page.evaluate(observation, isolated_context=False) if backend == 'patchright' else page.evaluate(observation)
+                    send(request_id, view)
                     permit.set()
                 elif operation == 'close' and initialized:
                     closing_request = request_id
@@ -215,6 +230,7 @@ def main():
         for handler in list(log.handlers):
             log.removeHandler(handler)
             handler.close()
+        OUTPUT.close()
     return exit_code
 
 if __name__ == '__main__':
