@@ -10,6 +10,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
 - Fingerprint/Profile/Proxy typed serialization and explicit proxy-password intent.
 - Integer-seeded identity generation with source-compatible MT19937 selection and
   the original device catalog; original Client Hints and coherence diagnostics.
+  Native init-script configuration and the unchanged original page template are
+  implemented; exact source-derived script verification is pending. Full browser
+  application and legacy encoding/number compatibility remain separate gates.
 - Uncoerced engine-record/dashboard-patch field validation from the authoritative
   field-policy catalog, with source-generated refusal cases.
 - Bidirectional profile shape conversion and absent/null/empty secret intent.
