@@ -14,6 +14,7 @@ on:
           - profile-batch
           - profile-http-import
           - ready
+          - profile-http-delete
 
 permissions:
   contents: read
