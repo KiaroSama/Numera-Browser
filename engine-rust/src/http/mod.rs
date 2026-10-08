@@ -14,6 +14,7 @@ pub mod middleware;
 mod profile_errors;
 pub mod profile_fields;
 pub mod profile_routes;
+mod profile_write;
 pub mod proxy_routes;
 pub mod request_auth;
 pub mod request_body;

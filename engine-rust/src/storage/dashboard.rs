@@ -77,6 +77,14 @@ impl DashboardStore {
         })?;
         Ok(Some(self.decrypted(record)))
     }
+    pub fn raw(&self, id: &str) -> Result<Option<Value>, RepoError> {
+        if safe_id(id).is_err() {
+            return Ok(None);
+        }
+        let lock = DataLock::transaction(&self.root)?;
+        let _guard = lock.acquire(Duration::from_secs(30))?;
+        Ok(ProfileRepo::raw(&self.repo.path(id, "dashboard")?))
+    }
     pub fn list(&self) -> Result<Vec<Value>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
         let _guard = lock.acquire(Duration::from_secs(30))?;

@@ -110,8 +110,12 @@ Windows/Linux jobs, without local or self-hosted test execution. It verifies the
 current incomplete implementation, not final candidate acceptance or retirement.
 The standalone profile-read router now includes engine-only adoption, view-only
 repairs and uncertain-claim status. Its expanded regression passed the hosted checkpoint. Application composition
-now includes that read router with an explicit caller-supplied session host;
-this later composition change awaits its next hosted check. Typed storage
+now includes profile read/create/update routes with an explicit caller-supplied
+session host and backend availability. Create/update reuse the shared field
+policy and atomic dashboard/engine/config writes; updates merge raw stored state
+inside the transaction and derive credential intent only from the request.
+Fourteen source-generated write outcomes and 612 field-refusal cases await their
+hosted native check; no full application acceptance is implied. Typed storage
 refusals distinguish name conflict, stale revision and unconvertible records
 without parsing error-message prefixes.
 
