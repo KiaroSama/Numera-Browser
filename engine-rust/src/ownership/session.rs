@@ -110,11 +110,36 @@ impl Session {
         Ok(())
     }
 
-    pub fn finish(&mut self, budget: Duration) -> io::Result<()> {
+    pub fn settled_exit(&mut self) -> io::Result<Option<i32>> {
         let Some(tree) = self.tree.as_mut() else {
-            return Ok(());
+            return Ok(None);
+        };
+        let Some(status) = tree.child_mut().try_wait()? else {
+            return Ok(None);
+        };
+        if !tree.empty()? {
+            return Ok(None);
+        }
+        Ok(Some(status.code().unwrap_or(-1)))
+    }
+
+    pub fn tree_record(&self) -> Option<serde_json::Value> {
+        self.tree.as_ref().map(OwnedTree::record)
+    }
+
+    pub fn finish(&mut self, budget: Duration) -> io::Result<()> {
+        self.finish_with_status(budget).map(|_| ())
+    }
+
+    pub fn finish_with_status(&mut self, budget: Duration) -> io::Result<Option<i32>> {
+        let Some(tree) = self.tree.as_mut() else {
+            return Ok(None);
         };
         tree.settle(budget)?;
+        let code = tree
+            .child_mut()
+            .try_wait()?
+            .map(|status| status.code().unwrap_or(-1));
         if let Some(claim) = &self.claim
             && !claims::release(&self.root, &self.id, claim, tree)?
         {
@@ -124,7 +149,7 @@ impl Session {
         }
         self.claim = None;
         self.tree = None;
-        Ok(())
+        Ok(code)
     }
 }
 
