@@ -81,7 +81,10 @@ CLI/server**. A passing library test does not certify a finished product migrati
   hosted Windows/Linux. Profile status and deletion now share that actual registry;
   deletion stops only locally owned sessions and preserves foreign ownership refusals.
   The deletion HTTP and owned-session integration cases await verification.
-  The SDK activation handshake, hard-parent-death and platform acceptance are pending.
+  SDK-only Python transport now waits inertly for native activation, exchanges
+  bounded versioned UTF-8 frames and exposes sanitized SDK metadata/open/close.
+  Native transport owns its pipes and session tree; protocol checks are pending.
+  Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
 using non-sensitive inputs, fixed source clocks for conversion and deterministic

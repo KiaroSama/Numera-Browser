@@ -1,4 +1,5 @@
 //! Native application-domain migration; not yet a replacement executable.
+pub mod browser;
 pub mod collision;
 pub mod conversion;
 mod decimal;

@@ -26,7 +26,7 @@ def verify() -> None:
     # These real-file/OS regressions are native integration targets as well,
     # even though their names do not end in _parity. Cargo runs every target.
     expected_tests |= {'first_run_failure', 'live_migration_owner', 'repo_batch_rollback',
-                       'pool_add', 'dashboard_write_rollback', 'dashboard_error_kinds', 'test_temp_cleanup', 'session_ready_lifecycle', 'session_registry_lifecycle', 'profile_delete_owned_session'}
+                       'pool_add', 'dashboard_write_rollback', 'dashboard_error_kinds', 'test_temp_cleanup', 'session_ready_lifecycle', 'session_registry_lifecycle', 'profile_delete_owned_session', 'browser_adapter_protocol'}
     if discovered_tests != expected_tests:
         raise ValueError('Rust integration suite discovery changed; map its source oracle and CI tier')
     seams = {'models':'models.json','generation':'generation.json','identity':'identity.json',

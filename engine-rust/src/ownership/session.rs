@@ -82,6 +82,13 @@ impl Session {
             .ok_or_else(|| io::Error::other("Session tree was not retained"))
     }
 
+    pub fn child_mut(&mut self) -> io::Result<&mut std::process::Child> {
+        self.tree
+            .as_mut()
+            .map(OwnedTree::child_mut)
+            .ok_or_else(|| io::Error::other("Session owns no helper tree"))
+    }
+
     pub fn await_ready(
         &mut self,
         path: &Path,
