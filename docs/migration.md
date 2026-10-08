@@ -94,8 +94,11 @@ CLI/server**. A passing library test does not certify a finished product migrati
   An isolated hosted regression passed after sequencing frame reads so no outstanding
   pipe read overlaps SDK initialization (10.53 seconds, same 90-second deadline).
   Duplicate-descriptor isolation alone did not fix it. Whole-tree cleanup passed;
-  no ownership guarantee was relaxed. The complete matrix after the repair remains
-  pending; this narrow result is not full backend/application acceptance.
+  no ownership guarantee was relaxed. The subsequent matrix passed five legs and
+  exposed SDK stdout contamination on Linux Camoufox plus isolated-world inspection
+  on both Patchright hosts. Protocol output is now reserved independently of SDK
+  stdout, and Patchright observation reads the main page world. Reverification is
+  pending; these narrow results are not full backend/application acceptance.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
