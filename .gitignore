@@ -76,3 +76,4 @@ node_modules/
 
 /plans/
 /scripts/logs/
+/engine-rust/target/

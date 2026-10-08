@@ -9,13 +9,15 @@
 import js from "@eslint/js";
 import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
+import tseslint from "typescript-eslint";
 
 export default [
   { ignores: ["dist/**"] },
   js.configs.recommended,
+  ...tseslint.configs.recommended,
   reactHooks.configs.flat["recommended-latest"],
   {
-    files: ["**/*.{js,jsx}"],
+    files: ["**/*.{js,jsx,ts,tsx}"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
@@ -34,6 +36,14 @@ export default [
       // effect body the rule describes. Load-on-mount is the pattern here and
       // there are seven of them; keeping this on would mean seven suppressions.
       "react-hooks/set-state-in-effect": "off",
+    },
+  },
+  {
+    files: ["**/*.{ts,tsx}"],
+    rules: {
+      "no-undef": "off",
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true, argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     },
   },
 ];

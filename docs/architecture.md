@@ -5,6 +5,12 @@ Numera Browser has three parts: a Python **engine** that does the real work, a R
 Tauri **desktop shell** that wraps both into a standalone window. This doc
 explains how they fit together.
 
+A parity-gated [Rust/TypeScript migration](migration.md) is in progress.
+`engine-rust` currently implements native domain/persistence seams only; it does
+not replace the running Python CLI/API. The original remains selected until full
+capability, real-platform, performance and rollback acceptance. See the
+[accepted boundary](adr/0001-parity-gated-rust-migration.md).
+
 ## The coherence principle
 
 Every design decision follows from one idea: a fingerprint is only convincing

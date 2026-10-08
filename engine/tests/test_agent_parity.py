@@ -5,7 +5,7 @@ The dashboard is a client of the HTTP API, so "does the API cover the GUI?" is
 true by construction and worth nothing as a test. The claim actually worth
 proving is the harder one: **a machine with no browser at all can drive Numera
 through the CLI.** So this file reads the two surfaces from source —
-``dashboard/src/api.js`` for what the GUI calls, ``cli.build_parser()`` for what
+``dashboard/src/api.ts`` for what the GUI calls, ``cli.build_parser()`` for what
 the CLI offers — and holds them against an explicit map.
 
 The map is the specification. A capability the dashboard grows and nobody gives
@@ -34,7 +34,7 @@ import pytest
 from numera import cli
 
 REPO = Path(__file__).resolve().parents[2]
-API_JS = REPO / "dashboard" / "src" / "api.js"
+API_JS = REPO / "dashboard" / "src" / "api.ts"
 
 # Verdicts.
 CLI = "cli"    # one command does it
@@ -129,7 +129,7 @@ _REQ = re.compile(r'^\s*(\w+)\s*[:(].*?req\(\s*"(\w+)"\s*,\s*[`"]([^`"]+)', re.M
 
 
 def dashboard_calls() -> dict[str, tuple[str, str]]:
-    """Every ``api.*`` method in api.js, mapped to the route it calls.
+    """Every ``api.*`` method in api.ts, mapped to the route it calls.
 
     ``health`` hand-rolls its own fetch (it must never throw), so it is picked
     up by name rather than by loosening the regex until it swallows unrelated
@@ -180,7 +180,7 @@ def test_the_readers_actually_read_something():
     """Guard the readers themselves: a regex that quietly matches nothing would
     make every assertion below pass while proving the opposite."""
     calls = dashboard_calls()
-    assert len(calls) >= 30, f"only found {len(calls)} api.js calls: {sorted(calls)}"
+    assert len(calls) >= 30, f"only found {len(calls)} api.ts calls: {sorted(calls)}"
     assert calls["launch"][0] == "POST" and "launch" in calls["launch"][1]
     assert calls["list"] == ("GET", "/api/profiles")
 
@@ -202,7 +202,7 @@ def test_no_unmapped_dashboard_capabilities():
     # Compare against every member, not only the `req(...)` ones: PARITY may
     # legitimately name a member that builds a URL instead of calling req.
     stale = set(PARITY) - dashboard_members()
-    assert not stale, f"PARITY names calls api.js no longer has: {sorted(stale)}"
+    assert not stale, f"PARITY names calls api.ts no longer has: {sorted(stale)}"
 
 
 def test_no_api_member_escapes_a_verdict():
@@ -215,7 +215,7 @@ def test_no_api_member_escapes_a_verdict():
     """
     unaccounted = dashboard_members() - set(PARITY)
     assert not unaccounted, (
-        f"api.js members with no PARITY verdict: {sorted(unaccounted)}. "
+        f"api.ts members with no PARITY verdict: {sorted(unaccounted)}. "
         "Give each one a verdict — NA if it is transport rather than a capability.")
 
 
@@ -284,7 +284,7 @@ def test_dashboard_routes_all_exist_on_the_api(tmp_path):
     app = create_app(str(tmp_path), start_scheduler=False)
     served = {(m, getattr(r, "path", "")) for r in app.routes
               for m in (getattr(r, "methods", None) or ())}
-    # api.js writes `${id}` where FastAPI writes `{pid}` / `{sid}` / `{tid}`, and
+    # api.ts writes `${id}` where FastAPI writes `{pid}` / `{sid}` / `{tid}`, and
     # the names never have to agree. Comparing shapes rather than spellings means
     # a route with a new parameter name needs no hand-written alias here - the
     # previous version carried one for schedules and would have needed another

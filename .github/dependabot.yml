@@ -43,6 +43,12 @@ updates:
       interval: daily
     labels: [dependencies, desktop]
 
+  - package-ecosystem: cargo
+    directory: /engine-rust
+    schedule:
+      interval: daily
+    labels: [dependencies, engine]
+
   - package-ecosystem: docker
     directory: /
     schedule:

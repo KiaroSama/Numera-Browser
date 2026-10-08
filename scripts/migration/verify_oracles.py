@@ -1,0 +1,54 @@
+"""Regenerate recorded source expectations and fail on behavioral fixture drift."""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from inventory import discover
+from oracle import document
+from run_logging import run_log
+
+ROOT = Path(__file__).resolve().parents[2]
+FIXTURES = ROOT / 'engine-rust' / 'tests' / 'fixtures'
+
+
+def verify() -> None:
+    inventory = json.loads((ROOT / 'docs' / 'migration-coverage.json').read_text(encoding='utf-8'))
+    current = discover()
+    # Frozen source TESTS are provenance, not immutable implementation. Their
+    # maintenance may change CI assertions while the original app stays the
+    # oracle. Validate app hashes here; ledger discovery still sees live tests.
+    source_files = lambda rows: [row for row in rows if row['path'].startswith('engine/numera/')]
+    if source_files(inventory['files']) != source_files(current['files']) or inventory['source_commit'] != current['source_commit']:
+        raise ValueError('Source application contract inventory drift')
+    discovered_tests = {path.stem for path in (ROOT / 'engine-rust' / 'tests').glob('*.rs')}
+    expected_tests = {'model_parity','generation_parity','identity_parity','validation_parity',
+                      'vault_parity','conversion_parity','journal_parity','storage_parity','auth_policy_parity','lock_interop_parity','path_parity','config_parity','secret_policy_parity','repo_parity','completion_parity','repo_write_parity','vault_files_parity','recovery_parity','ownership_identity_parity','ownership_tree_parity','claim_parity','vault_enable_parity','vault_rotate_parity','rotation_recovery_parity','folder_parity','repo_batch_parity','repo_lookup_parity','repo_delete_parity','data_root_parity','store_open_parity','first_run_parity','pool_parse_parity','pool_normalize_parity','pool_store_parity','pool_vault_parity','profile_export_parity','profile_import_parity','profile_backup_parity','profile_restore_parity','extension_resources_parity','extension_ids_parity','extension_packages_parity','extension_install_parity','token_store_parity','token_create_parity','request_auth_parity','dashboard_store_parity','dashboard_vault_parity','dashboard_batch_parity','dashboard_meta_parity','dashboard_revision_parity','schedule_store_parity','schedule_write_parity','bind_policy_parity','auth_middleware_parity','cors_parity','diagnostic_routes_parity','token_routes_parity','folder_routes_parity','schedule_routes_parity','application_routes_parity','config_routes_parity','extension_routes_parity','proxy_routes_parity','fingerprint_routes_parity','profile_read_parity'}
+    # These real-file/OS regressions are native integration targets as well,
+    # even though their names do not end in _parity. Cargo runs every target.
+    expected_tests |= {'first_run_failure', 'live_migration_owner', 'repo_batch_rollback',
+                       'pool_add', 'dashboard_write_rollback', 'test_temp_cleanup'}
+    if discovered_tests != expected_tests:
+        raise ValueError('Rust integration suite discovery changed; map its source oracle and CI tier')
+    seams = {'models':'models.json','generation':'generation.json','identity':'identity.json',
+             'validation':'validation.json','vault':'vault.json','conversion':'conversion.json',
+             'journal':'journal.json','paths':'paths.json','config':'config.json','secrets':'secrets.json','repo':'repo.json','completion':'completion.json','repo-write':'repo-write.json','migration':'migration.json','recovery':'recovery.json','claims':'claims.json','vault-enable':'vault-enable.json','vault-rotate':'vault-rotate.json','rotation-recovery':'rotation-recovery.json','folders':'folders.json','repo-batch':'repo-batch.json','repo-lookup':'repo-lookup.json','repo-delete':'repo-delete.json','data-root':'data-root.json','first-run':'first-run.json','pool-parse':'pool-parse.json','pool-normalize':'pool-normalize.json','pool-store':'pool-store.json','pool-vault':'pool-vault.json','profile-export':'profile-export.json','profile-import':'profile-import.json','profile-backup':'profile-backup.json','profile-restore':'profile-restore.json','extension-resources':'extension-resources.json','extension-ids':'extension-ids.json','extension-packages':'extension-packages.json','extension-install':'extension-install.json','token-store':'token-store.json','token-create':'token-create.json','request-auth':'request-auth.json','dashboard-store':'dashboard-store.json','dashboard-vault':'dashboard-vault.json','dashboard-batch':'dashboard-batch.json','dashboard-meta':'dashboard-meta.json','dashboard-revision':'dashboard-revision.json','schedule-store':'schedule-store.json','schedule-write':'schedule-write.json','bind-policy':'bind-policy.json','cors':'cors.json','diagnostic-routes':'diagnostic-routes.json','token-routes':'token-routes.json','folder-routes':'folder-routes.json','schedule-routes':'schedule-routes.json','application-routes':'application-routes.json','config-routes':'config-routes.json','extension-routes':'extension-routes.json','proxy-routes':'proxy-routes.json','fingerprint-routes':'fingerprint-routes.json','profile-read':'profile-read.json'}
+    for seam, name in seams.items():
+        expected = json.loads((FIXTURES / name).read_text(encoding='utf-8'))
+        actual = document(seam)
+        actual['source_runtime'] = expected['source_runtime']
+        if not expected['cases'] or actual != expected:
+            raise ValueError(f'Source oracle drift: {seam}')
+    for seam,name in [('devices','device_catalog.json'),('field-policy','field_policy.json'),('pool-digits','pool_digit_ranges.json')]:
+        expected = json.loads((ROOT / 'engine-rust' / 'src' / name).read_text(encoding='utf-8'))
+        # Catalog constants contain Python tuples; fixtures are their JSON
+        # representation. Compare that wire representation, not tuple vs list.
+        actual = json.loads(json.dumps(document(seam), ensure_ascii=True))
+        actual['source_runtime'] = expected['source_runtime']
+        if actual != expected:
+            raise ValueError(f'Source catalog drift: {seam}')
+
+
+if __name__ == '__main__':
+    with run_log('verify-oracles') as logger:
+        verify()
+        logger.info('All implemented source oracle seams match; full migration is not implied')
