@@ -44,29 +44,23 @@ def logger():
     return log
 
 
-def read_frames(events):
+def read_frames(events, permit):
     try:
-        # A blocked CRT read owns its descriptor lock on Windows. SDK DLL
-        # initialization can inspect stdin; keep descriptor 0 free for that.
-        descriptor = os.dup(sys.stdin.fileno())
-        try:
-            os.set_inheritable(descriptor, False)
-            stream = os.fdopen(descriptor, 'rb')
-        except BaseException:
-            os.close(descriptor)
-            raise
-        with stream:
-            while True:
-                line = stream.readline(MAX_FRAME + 1)
-                if not line:
-                    events.put(None)
-                    return
-                if len(line) > MAX_FRAME or not line.endswith(b'\n'):
-                    raise ValueError('Invalid frame size')
-                value = json.loads(line.decode('utf-8', errors='strict'))
-                if not isinstance(value, dict):
-                    raise ValueError('Frame must be an object')
-                events.put(value)
+        while True:
+            # No pipe read overlaps SDK calls: Windows DLL initialization may
+            # inspect standard handles and wait for an outstanding read.
+            permit.wait()
+            permit.clear()
+            line = sys.stdin.buffer.readline(MAX_FRAME + 1)
+            if not line:
+                events.put(None)
+                return
+            if len(line) > MAX_FRAME or not line.endswith(b'\n'):
+                raise ValueError('Invalid frame size')
+            value = json.loads(line.decode('utf-8', errors='strict'))
+            if not isinstance(value, dict):
+                raise ValueError('Frame must be an object')
+            events.put(value)
     except Exception:
         events.put({'invalid': True})
 
@@ -124,8 +118,10 @@ def open_context(backend, options):
 def main():
     log = logger()
     events = queue.Queue(maxsize=8)
-    reader = threading.Thread(target=read_frames, args=(events,), daemon=True, name='adapter-input')
+    permit = threading.Event()
+    reader = threading.Thread(target=read_frames, args=(events, permit), daemon=True, name='adapter-input')
     reader.start()
+    permit.set()
     owner = context = manager = None
     initialized = False
     closed = threading.Event()
@@ -156,6 +152,7 @@ def main():
                 if operation == 'hello' and not initialized:
                     send(request_id, {'backends': available(), 'runtime': sys.version.split()[0]})
                     initialized = True
+                    permit.set()
                 elif operation == 'open' and initialized and context is None:
                     backend = request.get('backend')
                     options = request.get('options')
@@ -191,9 +188,11 @@ def main():
                     page = context.pages[0] if context.pages else context.new_page()
                     send(request_id, {'opened': True, 'backend': backend})
                     log.info('Persistent context opened backend=%s', backend)
+                    permit.set()
                 elif operation == 'inspect' and initialized and context is not None:
                     page = context.pages[0] if context.pages else context.new_page()
                     send(request_id, page.evaluate("() => ({userAgent:navigator.userAgent, platform:navigator.platform, locale:navigator.language, languages:Array.from(navigator.languages), cores:navigator.hardwareConcurrency, width:innerWidth, height:innerHeight})"))
+                    permit.set()
                 elif operation == 'close' and initialized:
                     closing_request = request_id
                     break
