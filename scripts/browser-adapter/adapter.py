@@ -98,9 +98,14 @@ def open_context(backend, options):
             owner.stop()
             raise
     if backend == 'camoufox':
+        log = logging.getLogger('numera.browser-adapter')
+        log.info('Camoufox SDK import starting')
         from camoufox.sync_api import Camoufox
+        log.info('Camoufox SDK import complete')
         manager = Camoufox(persistent_context=True, **options)
+        log.info('Camoufox persistent context entering')
         context = manager.__enter__()
+        log.info('Camoufox persistent context entered')
         return None, context, manager
     import cloakbrowser
     return None, cloakbrowser.launch_persistent_context(**options), None
@@ -149,7 +154,27 @@ def main():
                         raise ValueError('Invalid open request')
                     if not isinstance(options.get('user_data_dir'), str) or not options['user_data_dir']:
                         raise ValueError('Persistent profile directory required')
-                    owner, context, manager = open_context(backend, options)
+                    completed = threading.Event()
+                    observer = None
+                    if os.environ.get('NUMERA_ADAPTER_DIAGNOSTICS') == '1':
+                        def snapshot():
+                            if completed.wait(60):
+                                return
+                            frame = sys._current_frames().get(threading.main_thread().ident)
+                            for _ in range(20):
+                                if frame is None:
+                                    break
+                                log.warning('Open stack file=%s function=%s line=%s', Path(frame.f_code.co_filename).name, frame.f_code.co_name, frame.f_lineno)
+                                frame = frame.f_back
+                        observer = threading.Thread(target=snapshot, daemon=True, name='open-diagnostics')
+                        observer.start()
+                    try:
+                        owner, context, manager = open_context(backend, options)
+                    finally:
+                        completed.set()
+                        if observer is not None:
+                            observer.join(timeout=1)
+                    log.info('Context scripts applying count=%s', len(scripts))
                     context.on('close', lambda *_: closed.set())
                     for script in scripts:
                         context.add_init_script(script=script)

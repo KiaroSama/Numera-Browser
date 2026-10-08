@@ -21,6 +21,7 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         .arg("-u")
         .arg(script)
         .env("NUMERA_ADAPTER_LOG_DIR", root.join("logs"))
+        .env("NUMERA_ADAPTER_DIAGNOSTICS", "1")
         .env("PYTHONUTF8", "1");
     let mut adapter = Adapter::spawn(
         root,
@@ -63,6 +64,17 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
     })();
     let cleanup = adapter.finish(Duration::from_secs(10));
     drop(adapter);
+    if result.is_err() || cleanup.is_err() {
+        for entry in std::fs::read_dir(root.join("logs"))? {
+            let path = entry?.path();
+            if std::fs::metadata(&path)?.len() <= 65_536 {
+                eprintln!(
+                    "Sanitized adapter diagnostics:\n{}",
+                    std::fs::read_to_string(path)?
+                );
+            }
+        }
+    }
     cleanup?;
     result?;
     assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
