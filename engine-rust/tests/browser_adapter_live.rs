@@ -1,5 +1,8 @@
 use numera_core::{
-    browser::adapter::Adapter, identity_script, models::Fingerprint, ownership::claims,
+    browser::{adapter::Adapter, options},
+    identity_script,
+    models::{Fingerprint, Profile},
+    ownership::claims,
 };
 use serde_json::{Map, json};
 use std::{path::Path, process::Command, time::Duration};
@@ -31,16 +34,23 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         &mut command,
         Duration::from_secs(10),
     )?;
-    let options = if backend == "camoufox" {
-        json!({"user_data_dir":root.join("user-data/a").to_str().ok_or("Profile path not Unicode")?,"headless":true,"os":"windows","locale":"en-US"})
-    } else if backend == "cloak" {
-        json!({"user_data_dir":root.join("user-data/a").to_str().ok_or("Profile path not Unicode")?,"headless":true,"viewport":{"width":900,"height":650},"locale":"en-US","timezone":"America/New_York"})
-    } else {
-        json!({"user_data_dir":root.join("user-data/a").to_str().ok_or("Profile path not Unicode")?,"headless":true,"channel":"chromium","viewport":{"width":900,"height":650},"locale":"en-US","timezone_id":"America/New_York"})
-    };
     let fingerprint_document: serde_json::Value =
         serde_json::from_str(include_str!("fixtures/init-script.json"))?;
     let fingerprint = Fingerprint::from_record(&fingerprint_document["cases"][0]["input"])?;
+    let profile = Profile::from_record(
+        &json!({"id":"a", "name":"fixture", "engine":backend, "created_at":1000.0, "updated_at":1000.0, "fingerprint":fingerprint_document["cases"][0]["input"].clone()}),
+    )?;
+    let options = options::build(
+        &profile,
+        &backend,
+        root.join("user-data/a")
+            .to_str()
+            .ok_or("Profile path not Unicode")?,
+        true,
+        &[],
+        &[],
+        None,
+    )?;
     let uses_page_script = matches!(backend.as_str(), "playwright" | "patchright");
     let scripts = if uses_page_script {
         vec![identity_script::build(&fingerprint)?]
@@ -71,6 +81,9 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
             assert_eq!(view["platform"], fingerprint.platform);
             assert_eq!(view["cores"], fingerprint.hardware_concurrency);
             assert_eq!(view["languages"], json!(fingerprint.languages));
+            assert_eq!(view["userAgent"], fingerprint.user_agent);
+            assert_eq!(view["width"], fingerprint.viewport_width);
+            assert_eq!(view["height"], fingerprint.viewport_height);
         }
         assert!(
             view["userAgent"]

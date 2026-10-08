@@ -107,7 +107,7 @@ def open_context(backend, options):
         log.info('Camoufox SDK import starting')
         from camoufox.sync_api import Camoufox
         log.info('Camoufox SDK import complete')
-        manager = Camoufox(persistent_context=True, **options)
+        manager = Camoufox(**options)
         log.info('Camoufox persistent context entering')
         context = manager.__enter__()
         log.info('Camoufox persistent context entered')

@@ -101,7 +101,7 @@ CLI/server**. A passing library test does not certify a finished product migrati
   passed in all eight hosted SDK legs; these narrow results are not full
   backend/application acceptance. Forty source-derived effective-option cases
   capture the SDK call boundary with network/resources isolated explicitly. Native
-  backend option construction is implemented and awaits that exact verification;
+  backend option construction passed all forty cases on hosted Windows/Linux;
   resource preparation, IP resolution, relay and launch-service integration remain pending.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
