@@ -19,6 +19,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import App from "../src/App.tsx";
 import { auth } from "../src/api.ts";
+import { demoProfiles } from "../src/demoData";
 import { COUNTRIES, COUNTRY_LOCALE } from "../src/deviceData.ts";
 
 
@@ -58,6 +59,7 @@ test("no two offered countries share a locale, and the alias is not offered", ()
  * picker being right is not the rule holding. */
 test("the editor's proxy country select offers each country once", async () => {
   const stored = {
+    ...demoProfiles[0],
     id: "p1", name: "Has proxy", folder: "All profiles", status: "stopped",
     os: "Windows", tags: [], engine: "playwright", browser: "Chrome",
     browserVersion: "128.0.0.0", userAgent: "UA", screen: "1920x1080",
@@ -91,6 +93,7 @@ test("a profile that already stores the alias still shows it", async () => {
   // Dropping `UK` from the LIST must not blank the field of every profile that
   // was created back when the list offered it.
   const stored = {
+    ...demoProfiles[0],
     id: "p2", name: "Stored UK", folder: "All profiles", status: "stopped",
     os: "Windows", tags: [], engine: "playwright", browser: "Chrome",
     browserVersion: "128.0.0.0", userAgent: "UA", screen: "1920x1080",

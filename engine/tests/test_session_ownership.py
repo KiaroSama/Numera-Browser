@@ -888,13 +888,13 @@ def test_only_one_thread_ever_adopts_a_tree(monkeypatch):
     proctree._SELF_TREE.clear()
     inside, proceed, adopted, results = (threading.Event(), threading.Event(),
                                          [], {})
-    real = proctree._adopt_tree
+    inherited, real = proctree._inherited_tree(), proctree._adopt_tree
 
     def slow():
         adopted.append(1)
         inside.set()
         assert proceed.wait(15), "the first thread was never released"
-        return real()
+        return inherited or real()
 
     monkeypatch.setattr(proctree, "_adopt_tree", slow)
     # Under pytest on POSIX the runner may already lead its own group, so
