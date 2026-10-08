@@ -10,6 +10,7 @@ on:
         options:
           - http-fields
           - profile-write
+          - profile-overview
 
 permissions:
   contents: read
