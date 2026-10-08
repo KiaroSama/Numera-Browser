@@ -2,6 +2,12 @@ name: Migration browser SDK seam
 
 on:
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Full SDK matrix or isolated Windows Camoufox diagnosis
+        type: choice
+        default: all
+        options: [all, windows-camoufox]
 
 permissions:
   contents: read
@@ -13,21 +19,13 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        engine: [playwright, patchright, camoufox, cloak]
-        include:
-          - engine: playwright
-            package: playwright==1.62.0
-          - engine: patchright
-            package: patchright==1.63.0
-          - engine: camoufox
-            package: camoufox[geoip]==0.5.7
-          - engine: cloak
-            package: cloakbrowser==0.5.12
+        os: ${{ fromJSON(inputs.scope == 'windows-camoufox' && '["windows-latest"]' || '["ubuntu-latest","windows-latest"]') }}
+        engine: ${{ fromJSON(inputs.scope == 'windows-camoufox' && '["camoufox"]' || '["playwright","patchright","camoufox","cloak"]') }}
     runs-on: ${{ matrix.os }}
     env:
       CARGO_BUILD_JOBS: "2"
       NUMERA_NATIVE_LIVE_ENGINE: ${{ matrix.engine }}
+      SDK_PACKAGE: ${{ fromJSON('{"playwright":"playwright==1.62.0","patchright":"patchright==1.63.0","camoufox":"camoufox[geoip]==0.5.7","cloak":"cloakbrowser==0.5.12"}')[matrix.engine] }}
       CLOAKBROWSER_VERSION: "146.0.7680.177.5"
       CLOAKBROWSER_AUTO_UPDATE: "false"
     steps:
@@ -37,7 +35,7 @@ jobs:
         with:
           python-version: "3.13.15"
       - name: Install selected SDK and test owner
-        run: python -m pip install -e "engine[api,dev]" "${{ matrix.package }}" "playwright==1.62.0"
+        run: python -m pip install -e "engine[api,dev]" "${{ env.SDK_PACKAGE }}" "playwright==1.62.0"
       - name: Install Chromium system dependencies
         if: runner.os == 'Linux' && matrix.engine != 'camoufox'
         run: python -m playwright install-deps chromium

@@ -80,12 +80,15 @@ CLI/server**. A passing library test does not certify a finished product migrati
   schedule completion to its exact occurrence; the limited lifecycle check passed
   hosted Windows/Linux. Profile status and deletion now share that actual registry;
   deletion stops only locally owned sessions and preserves foreign ownership refusals.
-  The deletion HTTP and owned-session integration cases await verification.
+  The deletion HTTP and owned-session integration cases passed hosted Windows/Linux.
   SDK-only Python transport now waits inertly for native activation, exchanges
   bounded versioned UTF-8 frames and exposes sanitized SDK metadata/open/close.
   Native transport owns its pipes and session tree; protocol/error/EOF checks passed
   hosted Windows/Linux. The separate manual browser SDK tier opens real persistent
-  contexts for four backends on both platforms; its first live run is pending.
+  contexts for four backends on both platforms. The first live run passed seven
+  legs; Windows Camoufox timed out awaiting its open response. This is unresolved,
+  not full backend acceptance. An isolated manual Windows Camoufox scope retains
+  the same deadlines and reports sanitized stage/stack diagnostics before cleanup.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
