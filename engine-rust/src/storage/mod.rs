@@ -1,6 +1,6 @@
 //! Native persistence adapters; application reconciliation remains separately gated.
 mod archive;
-mod archive_paths;
+pub(crate) mod archive_paths;
 pub mod atomic;
 mod backup;
 pub mod config;
