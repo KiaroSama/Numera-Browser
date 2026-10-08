@@ -47,26 +47,25 @@ fn names(values: &[Value]) -> String {
         .join(" or ")
 }
 fn dimension(value: &str) -> bool {
-    let Some(value) = decimal_ascii(value.trim()) else {
-        return false;
-    };
-    let value = value.strip_prefix('+').unwrap_or(&value);
+    let value = value.trim();
+    let value = value.strip_prefix('+').unwrap_or(value);
     let mut previous = false;
+    let mut digits = String::new();
     for character in value.chars() {
         if character == '_' {
             if !previous {
                 return false;
             }
             previous = false;
-        } else if character.is_ascii_digit() {
+        } else if let Some(digit) = decimal_ascii(&character.to_string()) {
+            digits.push_str(&digit);
             previous = true;
         } else {
             return false;
         }
     }
     previous
-        && value
-            .replace('_', "")
+        && digits
             .parse::<u32>()
             .is_ok_and(|number| (1..=65536).contains(&number))
 }
