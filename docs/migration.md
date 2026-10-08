@@ -11,8 +11,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
 - Integer-seeded identity generation with source-compatible MT19937 selection and
   the original device catalog; original Client Hints and coherence diagnostics.
   Native init-script configuration and the unchanged original page template are
-  implemented; exact source-derived script verification is pending. Full browser
-  application and legacy encoding/number compatibility remain separate gates.
+  implemented; ten exact source-derived config/full-script cases passed hosted
+  Windows/Linux. Real script application through the SDK transport is being checked;
+  full browser and legacy encoding/number compatibility remain separate gates.
 - Uncoerced engine-record/dashboard-patch field validation from the authoritative
   field-policy catalog, with source-generated refusal cases.
 - Bidirectional profile shape conversion and absent/null/empty secret intent.

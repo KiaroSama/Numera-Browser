@@ -1,4 +1,6 @@
-use numera_core::{browser::adapter::Adapter, ownership::claims};
+use numera_core::{
+    browser::adapter::Adapter, identity_script, models::Fingerprint, ownership::claims,
+};
 use serde_json::{Map, json};
 use std::{path::Path, process::Command, time::Duration};
 mod common;
@@ -36,18 +38,40 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
     } else {
         json!({"user_data_dir":root.join("user-data/a").to_str().ok_or("Profile path not Unicode")?,"headless":true,"channel":"chromium","viewport":{"width":900,"height":650},"locale":"en-US","timezone_id":"America/New_York"})
     };
+    let fingerprint_document: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/init-script.json"))?;
+    let fingerprint = Fingerprint::from_record(&fingerprint_document["cases"][0]["input"])?;
+    let uses_page_script = matches!(backend.as_str(), "playwright" | "patchright");
+    let scripts = if uses_page_script {
+        vec![identity_script::build(&fingerprint)?]
+    } else {
+        Vec::new()
+    };
     let result = (|| -> Result<(), Box<dyn std::error::Error>> {
         adapter.open(
             &backend,
             options.as_object().cloned().ok_or("Options missing")?,
-            Vec::new(),
+            scripts,
             Duration::from_secs(90),
         )?;
         assert_eq!(
             claims::state(&claims::read(root, "a"), "fixture-host"),
             claims::State::Busy
         );
+        assert_eq!(
+            adapter.call(
+                "navigate",
+                Map::from_iter([("url".into(), "about:blank".into())]),
+                Duration::from_secs(35)
+            )?["navigated"],
+            true
+        );
         let view = adapter.call("inspect", Map::new(), Duration::from_secs(10))?;
+        if uses_page_script {
+            assert_eq!(view["platform"], fingerprint.platform);
+            assert_eq!(view["cores"], fingerprint.hardware_concurrency);
+            assert_eq!(view["languages"], json!(fingerprint.languages));
+        }
         assert!(
             view["userAgent"]
                 .as_str()
