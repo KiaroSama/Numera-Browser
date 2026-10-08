@@ -7,7 +7,7 @@ on:
         description: Profile contracts or isolated identity script seam
         type: choice
         default: profiles
-        options: [profiles, identity-script]
+        options: [profiles, identity-script, browser-options]
 
 permissions:
   contents: read
@@ -42,8 +42,11 @@ jobs:
       - name: Identity script contract
         if: inputs.scope == 'identity-script'
         run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test init_script_parity -- --test-threads=1
+      - name: Browser option contract
+        if: inputs.scope == 'browser-options'
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_options_parity -- --test-threads=1
       - name: Profile HTTP contracts
-        if: inputs.scope != 'identity-script'
+        if: inputs.scope == 'profiles'
         run: >-
           python scripts/migration/run_owned.py --wall 600 --idle 120 --
           cargo test --manifest-path engine-rust/Cargo.toml --locked
@@ -56,5 +59,5 @@ jobs:
           --test browser_adapter_protocol
           --no-fail-fast -- --test-threads=2
       - name: Native lint
-        if: inputs.scope != 'identity-script'
+        if: inputs.scope == 'profiles'
         run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --all-targets -- -D warnings
