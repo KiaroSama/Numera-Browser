@@ -1,5 +1,5 @@
 use numera_core::{
-    browser::{adapter::Adapter, options},
+    browser::{adapter::Adapter, admission, options},
     identity_script,
     models::{Fingerprint, Profile},
     ownership::claims,
@@ -27,19 +27,17 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         .arg(script)
         .env("NUMERA_ADAPTER_LOG_DIR", root.join("logs"))
         .env("PYTHONUTF8", "1");
-    let mut adapter = Adapter::spawn(
-        root,
-        "a",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(10),
-    )?;
     let fingerprint_document: serde_json::Value =
         serde_json::from_str(include_str!("fixtures/init-script.json"))?;
     let fingerprint = Fingerprint::from_record(&fingerprint_document["cases"][0]["input"])?;
     let profile = Profile::from_record(
         &json!({"id":"a", "name":"fixture", "engine":backend, "created_at":1000.0, "updated_at":1000.0, "fingerprint":fingerprint_document["cases"][0]["input"].clone()}),
     )?;
+    std::fs::create_dir_all(root.join("profiles"))?;
+    std::fs::write(root.join("profiles/a.json"), serde_json::to_vec(&profile)?)?;
+    let (session, profile) =
+        admission::current(root, "a", "fixture", "fixture-host", None, 1000.0)?;
+    let mut adapter = Adapter::spawn_admitted(session, &mut command, Duration::from_secs(10))?;
     let options = options::build(
         &profile,
         &backend,

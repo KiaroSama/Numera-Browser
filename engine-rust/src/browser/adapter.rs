@@ -86,7 +86,13 @@ impl Adapter {
         command: &mut Command,
         budget: Duration,
     ) -> io::Result<Self> {
-        let mut session = Session::admit(root, id, host)?;
+        Self::spawn_admitted(Session::admit(root, id, host)?, command, budget)
+    }
+    pub fn spawn_admitted(
+        mut session: Session,
+        command: &mut Command,
+        budget: Duration,
+    ) -> io::Result<Self> {
         command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
