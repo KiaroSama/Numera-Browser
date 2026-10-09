@@ -103,6 +103,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
   capture the SDK call boundary with network/resources isolated explicitly. Native
   backend option construction passed all forty cases on hosted Windows/Linux;
   resource preparation, IP resolution, relay and launch-service integration remain pending.
+  A native post-lease admission seam now rereads coherent current state and refuses
+  missing, divergent or unreadable-credential profiles before any SDK activation;
+  its source-derived regression is awaiting verification.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
