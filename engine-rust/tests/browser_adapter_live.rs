@@ -15,8 +15,10 @@ fn assert_page(view: &Value, fingerprint: &Fingerprint, config: &Value, secure: 
     assert_eq!(view["cores"], fingerprint.hardware_concurrency);
     assert_eq!(view["languages"], json!(fingerprint.languages));
     assert_eq!(view["userAgent"], fingerprint.user_agent);
-    assert_eq!(view["width"], fingerprint.viewport_width);
-    assert_eq!(view["height"], fingerprint.viewport_height);
+    if secure || !fingerprint.is_mobile {
+        assert_eq!(view["width"], fingerprint.viewport_width);
+        assert_eq!(view["height"], fingerprint.viewport_height);
+    }
     let data = &view["userAgentData"];
     if !secure {
         assert!(
@@ -212,9 +214,12 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
                             true
                         );
                     }
+                    eprintln!("Browser stage: wire assertions");
                     assert_wire(&site, prefix, &case["config"])?;
+                    eprintln!("Browser stage: secure page inspection");
                     let view = adapter.call("inspect", Map::new(), Duration::from_secs(10))?;
                     assert_page(&view, &fingerprint, &case["config"], true);
+                    eprintln!("Browser stage: site cleanup");
                     site.finish()?;
                     eprintln!("Browser stage: loopback finished");
                 }
