@@ -18,6 +18,7 @@ on:
           - init-script
           - browser-options
           - browser-admission
+          - browser-resources
 
 permissions:
   contents: read
