@@ -193,13 +193,24 @@ def main():
                     url = request.get('url')
                     if not isinstance(url, str) or not url:
                         raise ValueError('Navigation URL required')
-                    page = context.pages[0] if context.pages else context.new_page()
+                    new_page = request.get('new_page', False)
+                    if type(new_page) is not bool:
+                        raise ValueError('New page option must be a boolean')
+                    if new_page:
+                        page = context.new_page()
                     page.goto(url, wait_until='domcontentloaded', timeout=30000)
                     send(request_id, {'navigated': True})
                     permit.set()
                 elif operation == 'inspect' and initialized and context is not None:
-                    page = context.pages[0] if context.pages else context.new_page()
-                    observation = "() => ({userAgent:navigator.userAgent, platform:navigator.platform, locale:navigator.language, languages:Array.from(navigator.languages), cores:navigator.hardwareConcurrency, width:innerWidth, height:innerHeight})"
+                    observation = """async () => ({
+                        userAgent:navigator.userAgent, platform:navigator.platform,
+                        locale:navigator.language, languages:Array.from(navigator.languages),
+                        cores:navigator.hardwareConcurrency, width:innerWidth, height:innerHeight,
+                        userAgentData:navigator.userAgentData
+                            ? await navigator.userAgentData.getHighEntropyValues([
+                                'platformVersion','architecture','bitness','model',
+                                'uaFullVersion','fullVersionList','wow64']) : null
+                    })"""
                     view = page.evaluate(observation, isolated_context=False) if backend == 'patchright' else page.evaluate(observation)
                     send(request_id, view)
                     permit.set()
