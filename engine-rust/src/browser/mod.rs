@@ -2,3 +2,4 @@
 pub mod adapter;
 pub mod admission;
 pub mod options;
+pub mod resources;

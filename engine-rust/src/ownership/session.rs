@@ -82,6 +82,16 @@ impl Session {
             .ok_or_else(|| io::Error::other("Session tree was not retained"))
     }
 
+    pub(crate) fn preparation_path(&self, id: &str) -> io::Result<PathBuf> {
+        if id != self.id || self.tree.is_some() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Profile preparation requires its admitted lease before helper birth",
+            ));
+        }
+        Ok(self.root.join("user-data").join(&self.id))
+    }
+
     pub fn child_mut(&mut self) -> io::Result<&mut std::process::Child> {
         self.tree
             .as_mut()
