@@ -105,7 +105,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
   resource preparation, IP resolution, relay and launch-service integration remain pending.
   A native post-lease admission seam now rereads coherent current state and refuses
   missing, divergent or unreadable-credential profiles before any SDK activation;
-  its source-derived regression is awaiting verification.
+  five source-derived cases passed hosted Windows/Linux. The admitted session lease
+  now moves into the SDK owner without reacquisition; its real-browser regression
+  is pending.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
