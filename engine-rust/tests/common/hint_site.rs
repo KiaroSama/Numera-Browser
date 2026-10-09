@@ -15,12 +15,27 @@ pub struct HintSite {
     worker: Option<JoinHandle<io::Result<()>>>,
 }
 fn serve(mut stream: TcpStream, seen: &Seen) -> io::Result<()> {
+    stream.set_nonblocking(false)?;
     stream.set_read_timeout(Some(Duration::from_secs(2)))?;
     stream.set_write_timeout(Some(Duration::from_secs(2)))?;
     let mut request = Vec::new();
     let mut buffer = [0; 1024];
     while !request.windows(4).any(|bytes| bytes == b"\r\n\r\n") {
-        let count = stream.read(&mut buffer)?;
+        let count = match stream.read(&mut buffer) {
+            Ok(count) => count,
+            Err(error)
+                if request.is_empty()
+                    && matches!(
+                        error.kind(),
+                        io::ErrorKind::WouldBlock
+                            | io::ErrorKind::TimedOut
+                            | io::ErrorKind::ConnectionReset
+                    ) =>
+            {
+                return Ok(());
+            }
+            Err(error) => return Err(error),
+        };
         if count == 0 {
             return Ok(());
         }
