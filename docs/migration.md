@@ -117,8 +117,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
   relay services remain pending. Native CDP hint payload/header policy is implemented;
   ten original current/new-page command cases passed hosted Windows/Linux. The SDK
   adapter executes the native commands and retains supplied header-interception
-  policy; actual CDP application is being verified. Real header timing/new-page
-  failure coverage remains pending.
+  policy; actual CDP application passed the eight-leg hosted SDK checkpoint.
+  Loopback first-request/Accept-CH timing verification is being added; iOS stripping
+  and complete new-page/failure coverage remain pending.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,

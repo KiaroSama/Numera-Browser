@@ -7,6 +7,8 @@ use numera_core::{
 use serde_json::{Map, json};
 use std::{path::Path, process::Command, time::Duration};
 mod common;
+#[path = "common/hint_site.rs"]
+mod hint_site;
 
 #[test]
 #[ignore = "requires explicitly selected SDK and installed browser in the hosted live tier"]
@@ -97,6 +99,40 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
                 .is_some_and(|agent| agent.starts_with("Mozilla/5.0"))
         );
         assert!(view["cores"].as_u64().is_some_and(|cores| cores > 0));
+        if uses_page_script {
+            let mut site = hint_site::HintSite::new()?;
+            for path in ["/first", "/second"] {
+                assert_eq!(
+                    adapter.call(
+                        "navigate",
+                        Map::from_iter([("url".into(), site.url(path)?.into())]),
+                        Duration::from_secs(35)
+                    )?["navigated"],
+                    true
+                );
+            }
+            let first = site.headers("/first")?;
+            let second = site.headers("/second")?;
+            assert_eq!(
+                first.len(),
+                3,
+                "High entropy hints were sent before Accept-CH"
+            );
+            assert_eq!(
+                first.get("sec-ch-ua-platform"),
+                Some(&fingerprint.ch_platform)
+            );
+            let expected_version = format!(
+                "\"{}\"",
+                numera_core::identity::platform_version(&fingerprint.os, &fingerprint.os_version)?
+            );
+            assert_eq!(
+                second.get("sec-ch-ua-platform-version"),
+                Some(&expected_version)
+            );
+            assert_eq!(second.get("sec-ch-ua-arch"), Some(&"\"x86\"".to_owned()));
+            site.finish()?;
+        }
         assert!(root.join("user-data/a").is_dir());
         assert_eq!(
             adapter.call("close", Map::new(), Duration::from_secs(10))?["closing"],
