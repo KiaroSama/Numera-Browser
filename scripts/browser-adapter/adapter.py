@@ -142,6 +142,7 @@ def main():
     exit_code = 0
     closing_request = None
     cdp_sessions = []
+    cdp_ready = None
     log.info('Starting protocol=%s runtime=%s pid=%s', PROTOCOL, sys.version.split()[0], os.getpid())
     try:
         while True:
@@ -184,8 +185,11 @@ def main():
                         if backend not in ('playwright','patchright'):
                             raise ValueError('Selected SDK does not accept CDP policy')
                         from hints import apply
-                        cdp_sessions.extend(apply(context, request['cdp_policy']))
+                        sessions, cdp_ready = apply(context, request['cdp_policy'])
+                        cdp_sessions.extend(sessions)
                     page = context.pages[0] if context.pages else context.new_page()
+                    if cdp_ready:
+                        cdp_ready(page)
                     send(request_id, {'opened': True, 'backend': backend})
                     log.info('Persistent context opened backend=%s', backend)
                     permit.set()
@@ -198,6 +202,8 @@ def main():
                         raise ValueError('New page option must be a boolean')
                     if new_page:
                         page = context.new_page()
+                        if cdp_ready:
+                            cdp_ready(page)
                     page.goto(url, wait_until='domcontentloaded', timeout=30000)
                     send(request_id, {'navigated': True})
                     permit.set()
