@@ -115,8 +115,10 @@ CLI/server**. A passing library test does not certify a finished product migrati
   Native IP-marked signal resolution from an observed country is implemented;
   33 original pure outcomes passed hosted Windows/Linux. Actual country lookup and
   relay services remain pending. Native CDP hint payload/header policy is implemented;
-  ten original current/new-page command cases await verification, with real CDP/header
-  timing and adapter integration still pending.
+  ten original current/new-page command cases passed hosted Windows/Linux. The SDK
+  adapter executes the native commands and retains supplied header-interception
+  policy; actual CDP application is being verified. Real header timing/new-page
+  failure coverage remains pending.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
