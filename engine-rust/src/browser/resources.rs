@@ -37,17 +37,37 @@ fn clear_paths(key: &str) -> &'static [&'static str] {
     }
 }
 
+fn linked(metadata: &fs::Metadata) -> bool {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        metadata.file_attributes() & 0x400 != 0
+    }
+    #[cfg(not(windows))]
+    {
+        metadata.file_type().is_symlink()
+    }
+}
+
 fn contained(root: &Path, relative: &str) -> io::Result<std::path::PathBuf> {
-    let mut path = root.to_owned();
-    for component in std::iter::once(root.to_owned()).chain(relative.split('/').scan(
-        root.to_owned(),
-        |path, component| {
-            path.push(component);
-            Some(path.clone())
-        },
-    )) {
+    let parent = root
+        .parent()
+        .ok_or_else(|| io::Error::other("Browser profile parent is missing"))?;
+    let mut path = parent.to_owned();
+    for component in
+        [parent.to_owned(), root.to_owned()]
+            .into_iter()
+            .chain(
+                relative
+                    .split('/')
+                    .scan(root.to_owned(), |path, component| {
+                        path.push(component);
+                        Some(path.clone())
+                    }),
+            )
+    {
         match fs::symlink_metadata(&component) {
-            Ok(metadata) if metadata.file_type().is_symlink() => {
+            Ok(metadata) if linked(&metadata) => {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
                     "Browser preparation refuses symbolic-link resources",
