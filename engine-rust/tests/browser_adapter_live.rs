@@ -61,6 +61,7 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         Vec::new()
     };
     let result = (|| -> Result<(), Box<dyn std::error::Error>> {
+        eprintln!("Browser stage: open");
         adapter.open_configured(
             &backend,
             options.as_object().cloned().ok_or("Options missing")?,
@@ -100,8 +101,10 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         );
         assert!(view["cores"].as_u64().is_some_and(|cores| cores > 0));
         if uses_page_script {
+            eprintln!("Browser stage: loopback site");
             let mut site = hint_site::HintSite::new()?;
             for path in ["/first", "/second"] {
+                eprintln!("Browser stage: loopback navigation {path}");
                 assert_eq!(
                     adapter.call(
                         "navigate",
@@ -131,7 +134,9 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
                 Some(&expected_version)
             );
             assert_eq!(second.get("sec-ch-ua-arch"), Some(&"\"x86\"".to_owned()));
+            eprintln!("Browser stage: loopback finish");
             site.finish()?;
+            eprintln!("Browser stage: loopback finished");
         }
         assert!(root.join("user-data/a").is_dir());
         assert_eq!(

@@ -7,7 +7,7 @@ on:
         description: Full SDK matrix or isolated Windows Camoufox diagnosis
         type: choice
         default: all
-        options: [all, windows-camoufox]
+        options: [all, windows-camoufox, windows-playwright]
 
 permissions:
   contents: read
@@ -19,8 +19,8 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        os: ${{ fromJSON(inputs.scope == 'windows-camoufox' && '["windows-latest"]' || '["ubuntu-latest","windows-latest"]') }}
-        engine: ${{ fromJSON(inputs.scope == 'windows-camoufox' && '["camoufox"]' || '["playwright","patchright","camoufox","cloak"]') }}
+        os: ${{ fromJSON(inputs.scope != 'all' && '["windows-latest"]' || '["ubuntu-latest","windows-latest"]') }}
+        engine: ${{ fromJSON(inputs.scope == 'windows-camoufox' && '["camoufox"]' || inputs.scope == 'windows-playwright' && '["playwright"]' || '["playwright","patchright","camoufox","cloak"]') }}
     runs-on: ${{ matrix.os }}
     env:
       CARGO_BUILD_JOBS: "2"
@@ -58,4 +58,4 @@ jobs:
         run: >-
           python scripts/migration/run_owned.py --wall 600 --idle 150 --
           cargo test --manifest-path engine-rust/Cargo.toml --locked
-          --test browser_adapter_live -- --ignored --test-threads=1
+          --test browser_adapter_live -- --ignored --test-threads=1 --nocapture
