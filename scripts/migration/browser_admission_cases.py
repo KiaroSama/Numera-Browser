@@ -17,8 +17,8 @@ def cases(parent: Path):
     result = []
     export = json.loads((Path(__file__).resolve().parents[2]/'engine-rust/tests/fixtures/profile-export.json').read_text(encoding='utf-8'))
     for mode in ('current', 'missing', 'locked', 'unlocked', 'diverged'):
-        stale = Profile(id='a', name='stale', fingerprint=generate(seed=1, os='windows'), created_at=1000, updated_at=1000)
-        current = Profile(id='a', name='current', fingerprint=generate(seed=42, os='windows'), created_at=1000, updated_at=1000).to_dict()
+        stale = Profile(id='a', name='stale', fingerprint=generate(seed=1, os='windows'), created_at=1000.0, updated_at=1000.0)
+        current = Profile(id='a', name='current', fingerprint=generate(seed=42, os='windows'), created_at=1000.0, updated_at=1000.0).to_dict()
         config = {}
         password = None
         if mode in ('locked', 'unlocked'):
