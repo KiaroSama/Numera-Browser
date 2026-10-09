@@ -61,11 +61,22 @@ fn serve(mut stream: TcpStream, seen: &Seen) -> io::Result<()> {
         .collect();
     seen.lock()
         .map_err(|_| io::Error::other("Hint fixture state poisoned"))?
-        .push((path, headers));
-    let body = "<!doctype html><meta charset=utf-8><title>hint fixture</title>";
+        .push((path.clone(), headers));
+    let body = if let Some(prefix) = path.strip_suffix("/first") {
+        format!(
+            "<!doctype html><meta charset=utf-8><title>hint fixture</title><script src=\"{prefix}/resource\"></script>"
+        )
+    } else {
+        String::new()
+    };
+    let content_type = if path.ends_with("/resource") {
+        "application/javascript"
+    } else {
+        "text/html"
+    };
     write!(
         stream,
-        "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nAccept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Model, Sec-CH-UA-Full-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-WoW64\r\nConnection: close\r\n\r\n{}",
+        "HTTP/1.1 200 OK\r\nContent-Type: {content_type}; charset=utf-8\r\nContent-Length: {}\r\nAccept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Model, Sec-CH-UA-Full-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-WoW64\r\nConnection: close\r\n\r\n{}",
         body.len(),
         body
     )?;

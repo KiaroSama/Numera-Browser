@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       scope:
-        description: Full SDK matrix or isolated Windows Camoufox diagnosis
+        description: Full SDK matrix or isolated Windows diagnosis
         type: choice
         default: all
         options: [all, windows-camoufox, windows-playwright]
