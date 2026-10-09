@@ -89,12 +89,23 @@ fn preparation_refuses_foreign_profile_and_linked_resource_without_touching_targ
     {
         let status = std::process::Command::new("cmd.exe")
             .args(["/c", "mklink", "/J"])
-            .arg(root.join("user-data/a/Default"))
-            .arg(root.join("outside"))
+            .arg(
+                root.join("user-data/a/Default")
+                    .to_str()
+                    .ok_or("Path not Unicode")?
+                    .replace('/', "\\"),
+            )
+            .arg(
+                root.join("outside")
+                    .to_str()
+                    .ok_or("Path not Unicode")?
+                    .replace('/', "\\"),
+            )
             .output()?;
         assert!(
             status.status.success(),
-            "Owned junction fixture creation failed"
+            "Owned junction fixture creation failed: {}",
+            String::from_utf8_lossy(&status.stderr)
         );
     }
     assert!(resources::prepare(&session, &profile, 1000.0).is_err());
