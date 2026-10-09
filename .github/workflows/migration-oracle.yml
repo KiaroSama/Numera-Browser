@@ -20,6 +20,7 @@ on:
           - browser-admission
           - browser-resources
           - browser-ip
+          - browser-hints
 
 permissions:
   contents: read
