@@ -112,6 +112,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
   profile lease before helper birth and refuses linked/reparse resource paths;
   that containment regression and integration are being verified. Real database,
   concurrent-path replacement and full failure-path acceptance remain pending.
+  Native IP-marked signal resolution from an observed country is implemented;
+  33 original pure outcomes await verification. Actual country lookup and relay
+  services remain pending.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
