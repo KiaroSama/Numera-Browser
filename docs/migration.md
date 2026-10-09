@@ -113,8 +113,10 @@ CLI/server**. A passing library test does not certify a finished product migrati
   that containment regression and integration are being verified. Real database,
   concurrent-path replacement and full failure-path acceptance remain pending.
   Native IP-marked signal resolution from an observed country is implemented;
-  33 original pure outcomes await verification. Actual country lookup and relay
-  services remain pending.
+  33 original pure outcomes passed hosted Windows/Linux. Actual country lookup and
+  relay services remain pending. Native CDP hint payload/header policy is implemented;
+  ten original current/new-page command cases await verification, with real CDP/header
+  timing and adapter integration still pending.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
