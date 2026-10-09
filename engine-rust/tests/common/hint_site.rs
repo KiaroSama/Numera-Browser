@@ -2,10 +2,7 @@ use std::{
     collections::BTreeMap,
     io::{self, Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
-    sync::{
-        Arc, Condvar, Mutex,
-        atomic::{AtomicU8, Ordering},
-    },
+    sync::{Arc, Condvar, Mutex},
     thread::{self, JoinHandle},
     time::{Duration, Instant},
 };
@@ -16,17 +13,14 @@ pub struct HintSite {
     seen: Seen,
     stop: Arc<(Mutex<bool>, Condvar)>,
     worker: Option<JoinHandle<io::Result<()>>>,
-    stage: Arc<AtomicU8>,
 }
-fn serve(mut stream: TcpStream, seen: &Seen, stage: &AtomicU8) -> io::Result<()> {
-    stage.store(2, Ordering::Relaxed);
+fn serve(mut stream: TcpStream, seen: &Seen) -> io::Result<()> {
     stream.set_nonblocking(false)?;
     stream.set_read_timeout(Some(Duration::from_secs(2)))?;
     stream.set_write_timeout(Some(Duration::from_secs(2)))?;
     let mut request = Vec::new();
     let mut buffer = [0; 1024];
     while !request.windows(4).any(|bytes| bytes == b"\r\n\r\n") {
-        stage.store(3, Ordering::Relaxed);
         let count = match stream.read(&mut buffer) {
             Ok(count) => count,
             Err(error)
@@ -81,7 +75,6 @@ fn serve(mut stream: TcpStream, seen: &Seen, stage: &AtomicU8) -> io::Result<()>
     } else {
         "text/html"
     };
-    stage.store(4, Ordering::Relaxed);
     write!(
         stream,
         "HTTP/1.1 200 OK\r\nContent-Type: {content_type}; charset=utf-8\r\nContent-Length: {}\r\nAccept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Model, Sec-CH-UA-Full-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-WoW64\r\nConnection: close\r\n\r\n{}",
@@ -99,8 +92,6 @@ impl HintSite {
         let worker_seen = seen.clone();
         let stop = Arc::new((Mutex::new(false), Condvar::new()));
         let worker_stop = stop.clone();
-        let stage = Arc::new(AtomicU8::new(0));
-        let worker_stage = stage.clone();
         let worker = thread::spawn(move || {
             let deadline = Instant::now() + Duration::from_secs(60);
             loop {
@@ -117,9 +108,8 @@ impl HintSite {
                         "Hint fixture wall deadline",
                     ));
                 }
-                worker_stage.store(1, Ordering::Relaxed);
                 match listener.accept() {
-                    Ok((stream, _)) => serve(stream, &worker_seen, &worker_stage)?,
+                    Ok((stream, _)) => serve(stream, &worker_seen)?,
                     Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
                         let stopped = worker_stop
                             .0
@@ -139,7 +129,6 @@ impl HintSite {
             seen,
             stop,
             worker: Some(worker),
-            stage,
         })
     }
     pub fn url(&self, path: &str) -> io::Result<String> {
@@ -167,10 +156,10 @@ impl HintSite {
                 thread::sleep(Duration::from_millis(10));
             }
             if !worker.is_finished() {
-                eprintln!(
-                    "Hint fixture worker stalled stage={}",
-                    self.stage.load(Ordering::Relaxed)
-                );
+                // Failing the test must not leave its worker behind. The CI
+                // owner then settles the whole process tree on this exit.
+                eprintln!("Hint fixture worker did not stop within its cleanup budget");
+                std::process::exit(1);
             }
             worker
                 .join()

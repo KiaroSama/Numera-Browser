@@ -118,12 +118,17 @@ CLI/server**. A passing library test does not certify a finished product migrati
   ten original current/new-page command cases passed hosted Windows/Linux. The SDK
   adapter executes the native commands and retains supplied header-interception
   policy; actual CDP application passed the eight-leg hosted SDK checkpoint.
-  Loopback first-request/Accept-CH timing passed both Playwright/Patchright hosts
-  in the eight-leg diagnostic checkpoint on `80eea32`; every owned tree settled.
-  The earlier Windows Playwright captured-output stall is not conclusively diagnosed,
-  so finite stage diagnostics remain. Five-OS page/wire values, iOS stripping,
-  subresource completion and new-page application are being checked; complete
-  failure coverage remains pending.
+  Five source-derived OS identities now pass page/wire checks on both
+  Playwright/Patchright hosts, including first-request/Accept-CH timing, iOS
+  suppression, script-resource completion and new-page configuration. The hosted
+  eight-leg checkpoint on `bf29681` settled every owned tree. New-page navigation
+  waits for its SDK callback to finish CDP configuration. The Windows fixture
+  cleanup stall was isolated to the accept/wait boundary and resolved by moving
+  one nonblocking listener directly into its worker instead of duplicating it;
+  the precise underlying socket-mode change was not captured. Secure-origin and
+  responsive-viewport fixture corrections preserve actual page assertions.
+  Temporary worker instrumentation is removed; final regression verification and
+  complete failure coverage remain pending.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
