@@ -1,7 +1,7 @@
 use std::{
     collections::BTreeMap,
     io::{self, Read, Write},
-    net::{TcpListener, TcpStream},
+    net::{SocketAddr, TcpListener, TcpStream},
     sync::{
         Arc, Condvar, Mutex,
         atomic::{AtomicU8, Ordering},
@@ -12,7 +12,7 @@ use std::{
 
 type Seen = Arc<Mutex<Vec<(String, BTreeMap<String, String>)>>>;
 pub struct HintSite {
-    listener: TcpListener,
+    address: SocketAddr,
     seen: Seen,
     stop: Arc<(Mutex<bool>, Condvar)>,
     worker: Option<JoinHandle<io::Result<()>>>,
@@ -94,7 +94,7 @@ impl HintSite {
     pub fn new() -> io::Result<Self> {
         let listener = TcpListener::bind("127.0.0.1:0")?;
         listener.set_nonblocking(true)?;
-        let accepting = listener.try_clone()?;
+        let address = listener.local_addr()?;
         let seen = Arc::new(Mutex::new(Vec::new()));
         let worker_seen = seen.clone();
         let stop = Arc::new((Mutex::new(false), Condvar::new()));
@@ -118,7 +118,7 @@ impl HintSite {
                     ));
                 }
                 worker_stage.store(1, Ordering::Relaxed);
-                match accepting.accept() {
+                match listener.accept() {
                     Ok((stream, _)) => serve(stream, &worker_seen, &worker_stage)?,
                     Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
                         let stopped = worker_stop
@@ -135,7 +135,7 @@ impl HintSite {
             }
         });
         Ok(Self {
-            listener,
+            address,
             seen,
             stop,
             worker: Some(worker),
@@ -143,7 +143,7 @@ impl HintSite {
         })
     }
     pub fn url(&self, path: &str) -> io::Result<String> {
-        Ok(format!("http://{}{}", self.listener.local_addr()?, path))
+        Ok(format!("http://{}{}", self.address, path))
     }
     pub fn headers(&self, path: &str) -> io::Result<BTreeMap<String, String>> {
         self.seen
