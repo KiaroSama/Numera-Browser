@@ -29,8 +29,8 @@ def cases(parent: Path):
         files = {} if mode == 'missing' else {'profiles/a.json': current}
         if mode == 'diverged':
             current['proxy'] = {'server':'http://127.0.0.1:8080','username':None,'password':'fixture-engine','country':None}
-            from numera.convert import to_dashboard
-            dashboard = to_dashboard(Profile.from_dict(current))
+            from numera.convert import to_dashboard_profile
+            dashboard = to_dashboard_profile(Profile.from_dict(current))
             dashboard['id'] = 'a'
             dashboard['proxy']['pass'] = 'fixture-dashboard'
             files['dashboard/a.json'] = dashboard
