@@ -10,7 +10,7 @@ mod common;
 #[path = "common/hint_site.rs"]
 mod hint_site;
 
-fn assert_page(view: &Value, fingerprint: &Fingerprint, config: &Value) {
+fn assert_page(view: &Value, fingerprint: &Fingerprint, config: &Value, secure: bool) {
     assert_eq!(view["platform"], fingerprint.platform);
     assert_eq!(view["cores"], fingerprint.hardware_concurrency);
     assert_eq!(view["languages"], json!(fingerprint.languages));
@@ -18,6 +18,13 @@ fn assert_page(view: &Value, fingerprint: &Fingerprint, config: &Value) {
     assert_eq!(view["width"], fingerprint.viewport_width);
     assert_eq!(view["height"], fingerprint.viewport_height);
     let data = &view["userAgentData"];
+    if !secure {
+        assert!(
+            data.is_null(),
+            "Blank page unexpectedly exposed secure-context UAData"
+        );
+        return;
+    }
     if config["hasUaData"] == false {
         assert!(data.is_null(), "iOS exposed navigator.userAgentData");
     } else {
@@ -177,7 +184,7 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
             );
             let view = adapter.call("inspect", Map::new(), Duration::from_secs(10))?;
             if uses_page_script {
-                assert_page(&view, &fingerprint, &case["config"]);
+                assert_page(&view, &fingerprint, &case["config"], false);
             }
             assert!(
                 view["userAgent"]
@@ -207,7 +214,7 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
                     }
                     assert_wire(&site, prefix, &case["config"])?;
                     let view = adapter.call("inspect", Map::new(), Duration::from_secs(10))?;
-                    assert_page(&view, &fingerprint, &case["config"]);
+                    assert_page(&view, &fingerprint, &case["config"], true);
                     site.finish()?;
                     eprintln!("Browser stage: loopback finished");
                 }
