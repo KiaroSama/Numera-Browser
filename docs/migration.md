@@ -107,9 +107,11 @@ CLI/server**. A passing library test does not certify a finished product migrati
   missing, divergent or unreadable-credential profiles before any SDK activation;
   five source-derived cases passed hosted Windows/Linux. The admitted session lease
   now moves into the SDK owner without reacquisition; all eight hosted real-browser
-  regression legs passed. Native clear-before-seed resource preparation is being
-  checked against nine original file/bookmark cases; real database, symlink and
-  failure-path acceptance remain pending.
+  regression legs passed. Native clear-before-seed resource preparation passed nine
+  original file/bookmark cases on hosted Windows/Linux. It requires the admitted
+  profile lease before helper birth and refuses linked/reparse resource paths;
+  that containment regression and integration are being verified. Real database,
+  concurrent-path replacement and full failure-path acceptance remain pending.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,

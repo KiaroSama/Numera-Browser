@@ -67,3 +67,46 @@ fn clear_then_seed_preserves_original_bookmark_and_file_outcomes()
     }
     Ok(())
 }
+
+#[test]
+fn preparation_refuses_foreign_profile_and_linked_resource_without_touching_target()
+-> Result<(), Box<dyn std::error::Error>> {
+    let document: Value = serde_json::from_str(include_str!("fixtures/browser-resources.json"))?;
+    let mut profile = Profile::from_record(&document["cases"][1]["input"])?;
+    let temporary = common::TempDirectory::new("browser-resource-refusal")?;
+    let root = temporary.path();
+    let session = Session::admit(root, "a", "fixture-host")?;
+    profile.id = "other".into();
+    assert!(resources::prepare(&session, &profile, 1000.0).is_err());
+    assert!(!root.join("user-data/other").exists());
+    profile.id = "a".into();
+    fs::create_dir_all(root.join("user-data/a"))?;
+    fs::create_dir_all(root.join("outside"))?;
+    fs::write(root.join("outside/History"), "preserve")?;
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(root.join("outside"), root.join("user-data/a/Default"))?;
+    #[cfg(windows)]
+    {
+        let status = std::process::Command::new("cmd.exe")
+            .args(["/c", "mklink", "/J"])
+            .arg(root.join("user-data/a/Default"))
+            .arg(root.join("outside"))
+            .output()?;
+        assert!(
+            status.status.success(),
+            "Owned junction fixture creation failed"
+        );
+    }
+    assert!(resources::prepare(&session, &profile, 1000.0).is_err());
+    assert_eq!(
+        fs::read_to_string(root.join("outside/History"))?,
+        "preserve"
+    );
+    #[cfg(unix)]
+    fs::remove_file(root.join("user-data/a/Default"))?;
+    #[cfg(windows)]
+    fs::remove_dir(root.join("user-data/a/Default"))?;
+    drop(session);
+    temporary.cleanup()?;
+    Ok(())
+}

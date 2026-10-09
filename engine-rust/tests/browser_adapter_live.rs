@@ -1,5 +1,5 @@
 use numera_core::{
-    browser::{adapter::Adapter, admission, options},
+    browser::{adapter::Adapter, admission, options, resources},
     identity_script,
     models::{Fingerprint, Profile},
     ownership::claims,
@@ -37,6 +37,9 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
     std::fs::write(root.join("profiles/a.json"), serde_json::to_vec(&profile)?)?;
     let (session, profile) =
         admission::current(root, "a", "fixture", "fixture-host", None, 1000.0)?;
+    if backend != "camoufox" {
+        resources::prepare(&session, &profile, 1000.0)?;
+    }
     let mut adapter = Adapter::spawn_admitted(session, &mut command, Duration::from_secs(10))?;
     let options = options::build(
         &profile,
