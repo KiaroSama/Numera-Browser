@@ -7,7 +7,7 @@ on:
         description: Profile contracts or isolated identity script seam
         type: choice
         default: profiles
-        options: [profiles, identity-script, browser-options, browser-admission]
+        options: [profiles, identity-script, browser-options, browser-admission, browser-resources]
 
 permissions:
   contents: read
@@ -48,6 +48,9 @@ jobs:
       - name: Browser admission contract
         if: inputs.scope == 'browser-admission'
         run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_admission_parity -- --test-threads=1
+      - name: Browser resource contract
+        if: inputs.scope == 'browser-resources'
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_resources_parity -- --test-threads=1
       - name: Profile HTTP contracts
         if: inputs.scope == 'profiles'
         run: >-
