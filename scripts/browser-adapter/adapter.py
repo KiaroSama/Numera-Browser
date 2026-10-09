@@ -141,6 +141,7 @@ def main():
     input_deadline = time.monotonic() + 120
     exit_code = 0
     closing_request = None
+    cdp_sessions = []
     log.info('Starting protocol=%s runtime=%s pid=%s', PROTOCOL, sys.version.split()[0], os.getpid())
     try:
         while True:
@@ -179,6 +180,11 @@ def main():
                     context.on('close', lambda *_: closed.set())
                     for script in scripts:
                         context.add_init_script(script=script)
+                    if request.get('cdp_policy') is not None:
+                        if backend not in ('playwright','patchright'):
+                            raise ValueError('Selected SDK does not accept CDP policy')
+                        from hints import apply
+                        cdp_sessions.extend(apply(context, request['cdp_policy']))
                     page = context.pages[0] if context.pages else context.new_page()
                     send(request_id, {'opened': True, 'backend': backend})
                     log.info('Persistent context opened backend=%s', backend)

@@ -178,6 +178,16 @@ impl Adapter {
         scripts: Vec<String>,
         budget: Duration,
     ) -> io::Result<()> {
+        self.open_configured(backend, options, scripts, None, budget)
+    }
+    pub fn open_configured(
+        &mut self,
+        backend: &str,
+        options: Map<String, Value>,
+        scripts: Vec<String>,
+        cdp_policy: Option<Value>,
+        budget: Duration,
+    ) -> io::Result<()> {
         if !["playwright", "patchright", "camoufox", "cloak"].contains(&backend) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -194,6 +204,7 @@ impl Adapter {
             ("backend".into(), backend.into()),
             ("options".into(), Value::Object(options)),
             ("init_scripts".into(), json!(scripts)),
+            ("cdp_policy".into(), cdp_policy.unwrap_or(Value::Null)),
         ]);
         let value = self.call("open", fields, budget)?;
         if value["opened"] != true || value["backend"] != backend {

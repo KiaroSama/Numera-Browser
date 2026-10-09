@@ -1,5 +1,5 @@
 use numera_core::{
-    browser::{adapter::Adapter, admission, options, resources},
+    browser::{adapter::Adapter, admission, hints, options, resources},
     identity_script,
     models::{Fingerprint, Profile},
     ownership::claims,
@@ -59,10 +59,15 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         Vec::new()
     };
     let result = (|| -> Result<(), Box<dyn std::error::Error>> {
-        adapter.open(
+        adapter.open_configured(
             &backend,
             options.as_object().cloned().ok_or("Options missing")?,
             scripts,
+            if uses_page_script {
+                Some(hints::policy(&fingerprint)?)
+            } else {
+                None
+            },
             Duration::from_secs(90),
         )?;
         assert_eq!(
