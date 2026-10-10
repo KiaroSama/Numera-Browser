@@ -140,7 +140,10 @@ CLI/server**. A passing library test does not certify a finished product migrati
   Native admitted launch composition now reuses IP-marked identity, resource
   preparation, effective options, init-script/CDP policy and SDK transport. Its
   caller must supply independently observed country, resolved extension paths,
-  relay and packaged binary data; live composition verification is pending.
+  relay and packaged binary data. Composition passed all eight hosted SDK legs
+  on `3dea706`, with native refusal/parity/strict lint checks on both hosts.
+  Camoufox retains its original locale rather than applying the Chromium-only
+  country resolver; an independent SDK-frame regression checks that distinction.
   Full launch-service integration, hard-parent-death and backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
