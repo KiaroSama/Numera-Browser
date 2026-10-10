@@ -229,6 +229,20 @@ def main():
                     view = page.evaluate(observation, isolated_context=False) if backend == 'patchright' else page.evaluate(observation)
                     send(request_id, view)
                     permit.set()
+                elif operation == 'cookies-read' and initialized and context is not None:
+                    send(request_id, {'cookies': context.cookies()})
+                    permit.set()
+                elif operation == 'cookies-clear' and initialized and context is not None:
+                    context.clear_cookies()
+                    send(request_id, {'cleared': True})
+                    permit.set()
+                elif operation == 'cookies-add' and initialized and context is not None:
+                    cookies = request.get('cookies')
+                    if not isinstance(cookies, list) or not all(isinstance(cookie, dict) for cookie in cookies):
+                        raise ValueError('Cookie rows must be objects')
+                    context.add_cookies(cookies)
+                    send(request_id, {'added': True})
+                    permit.set()
                 elif operation == 'close' and initialized:
                     closing_request = request_id
                     break
@@ -237,7 +251,7 @@ def main():
             except Exception as error:
                 # SDK errors can embed proxy credentials/URLs. Type is safe;
                 # never send or log raw exception messages or request payloads.
-                log.error('Operation failed operation=%s type=%s', operation if operation in ('hello','open','close','inspect','navigate') else 'invalid', type(error).__name__)
+                log.error('Operation failed operation=%s type=%s', operation if operation in ('hello','open','close','inspect','navigate','cookies-read','cookies-clear','cookies-add') else 'invalid', type(error).__name__)
                 send(request_id, error={'kind':'sdk','type':type(error).__name__})
                 exit_code = 1
                 break
