@@ -157,6 +157,10 @@ CLI/server**. A passing library test does not certify a finished product migrati
   isolated confirmation on that same commit. The failed matrix is not reported as
   wholly green. Cookie format normalization, persisted restart and public HTTP/CLI
   integration remain pending.
+  Native extension path resolution reuses existing home expansion and canonical
+  Windows/UNC spelling, preserving directory filtering, order and duplicates.
+  Isolated original flag comparison is prepared for hosted verification; named-user
+  home lookup, concurrent path replacement and production service wiring remain pending.
 
 All expected fixture outcomes are produced by the retained implementation,
 using non-sensitive inputs, fixed source clocks for conversion and deterministic

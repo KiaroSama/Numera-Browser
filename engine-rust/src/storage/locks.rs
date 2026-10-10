@@ -78,7 +78,7 @@ fn open_lock(path: &Path) -> io::Result<File> {
     options.open(path)
 }
 
-fn resolved(path: &Path) -> io::Result<PathBuf> {
+pub(crate) fn resolved(path: &Path) -> io::Result<PathBuf> {
     let absolute = if path.is_absolute() {
         path.to_owned()
     } else {
