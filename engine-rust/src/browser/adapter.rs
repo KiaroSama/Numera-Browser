@@ -78,7 +78,31 @@ fn frame(reader: &mut impl BufRead) -> io::Result<Option<Value>> {
     }
     Ok(Some(value))
 }
+fn request_bytes(
+    operation: &str,
+    mut fields: Map<String, Value>,
+    sequence: u64,
+) -> io::Result<Vec<u8>> {
+    fields.extend(Map::from_iter([
+        ("protocol".into(), PROTOCOL.into()),
+        ("id".into(), sequence.into()),
+        ("operation".into(), operation.into()),
+    ]));
+    let mut bytes = serde_json::to_vec(&fields).map_err(io::Error::other)?;
+    bytes.push(b'\n');
+    if bytes.len() > MAX_FRAME {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Browser adapter request exceeds frame limit",
+        ));
+    }
+    Ok(bytes)
+}
 impl Adapter {
+    /// Check the largest sequence envelope before any destructive SDK operation.
+    pub(crate) fn preflight(operation: &str, fields: Map<String, Value>) -> io::Result<()> {
+        request_bytes(operation, fields, u64::MAX).map(|_| ())
+    }
     pub fn spawn(
         root: &Path,
         id: &str,
@@ -270,26 +294,14 @@ impl Adapter {
     pub fn call(
         &mut self,
         operation: &str,
-        mut fields: Map<String, Value>,
+        fields: Map<String, Value>,
         budget: Duration,
     ) -> io::Result<Value> {
         self.sequence = self
             .sequence
             .checked_add(1)
             .ok_or_else(|| io::Error::other("Browser adapter request sequence exhausted"))?;
-        fields.extend(Map::from_iter([
-            ("protocol".into(), PROTOCOL.into()),
-            ("id".into(), self.sequence.into()),
-            ("operation".into(), operation.into()),
-        ]));
-        let mut bytes = serde_json::to_vec(&fields).map_err(io::Error::other)?;
-        bytes.push(b'\n');
-        if bytes.len() > MAX_FRAME {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Browser adapter request exceeds frame limit",
-            ));
-        }
+        let bytes = request_bytes(operation, fields, self.sequence)?;
         let deadline = std::time::Instant::now()
             .checked_add(budget)
             .ok_or_else(|| io::Error::other("Browser adapter request budget is invalid"))?;

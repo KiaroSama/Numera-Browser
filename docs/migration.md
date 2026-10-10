@@ -156,7 +156,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
   Windows Camoufox initially could not fetch its paired browser, then passed one
   isolated confirmation on that same commit. The failed matrix is not reported as
   wholly green. Cookie format normalization, persisted restart and public HTTP/CLI
-  integration remain pending.
+  integration remain pending. Independent review found that a locally oversized
+  replacement frame could be refused after clearing; complete add-frame preflight
+  now precedes activation and clearing, with a regression awaiting hosted verification.
   Native extension path resolution reuses existing home expansion and canonical
   Windows/UNC spelling, preserving directory filtering, order and duplicates.
   Isolated original flag comparison passed hosted Windows/Linux on `dee4c5b`.
@@ -164,6 +166,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
   its original-derived SDK-frame regression and related native strict lint passed
   hosted Windows/Linux on `d8853d4`. Named-user home
   lookup, concurrent path replacement and full application service wiring remain pending.
+  Independent review found Windows drive-relative entries could use ambient CWD;
+  same-drive entries now anchor to the supplied CWD, while cross-drive entries
+  without an explicit drive context refuse. Source comparison awaits hosted verification.
 
 All expected fixture outcomes are produced by the retained implementation,
 using non-sensitive inputs, fixed source clocks for conversion and deterministic

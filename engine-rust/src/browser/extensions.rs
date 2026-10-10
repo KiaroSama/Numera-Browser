@@ -27,6 +27,45 @@ pub fn paths(entries: &[String], cwd: &Path, home: &Path) -> io::Result<Vec<Stri
             ));
         }
         let path = expand_home(path, home);
+        #[cfg(windows)]
+        let path = {
+            use std::path::{Component, Prefix};
+            if !path.has_root()
+                && let Some(Component::Prefix(prefix)) = path.components().next()
+            {
+                let drive = match prefix.kind() {
+                    Prefix::Disk(drive) => drive,
+                    _ => {
+                        return Err(io::Error::new(
+                            io::ErrorKind::Unsupported,
+                            "Extension path prefix cannot be resolved",
+                        ));
+                    }
+                };
+                let current_drive = cwd
+                    .components()
+                    .next()
+                    .and_then(|component| match component {
+                        Component::Prefix(prefix) => match prefix.kind() {
+                            Prefix::Disk(drive) | Prefix::VerbatimDisk(drive) => Some(drive),
+                            _ => None,
+                        },
+                        _ => None,
+                    });
+                if current_drive != Some(drive) {
+                    return Err(io::Error::new(
+                        io::ErrorKind::Unsupported,
+                        "Cross-drive relative extension paths require a working directory for that drive",
+                    ));
+                }
+                cwd.join(
+                    path.strip_prefix(prefix.as_os_str())
+                        .map_err(io::Error::other)?,
+                )
+            } else {
+                path
+            }
+        };
         let path = if path.is_absolute() {
             path
         } else {
