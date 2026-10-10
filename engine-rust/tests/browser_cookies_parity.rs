@@ -17,8 +17,33 @@ fn cookie_write_matches_original_noop_clear_add_and_failure_order()
         .join("scripts/migration");
     let mut command = Command::new(&python);
     let diagnostic = source.path().join("diagnostic.txt");
-    command.args(["-u", "-c", "import json,os,pathlib,sys; diagnostic=pathlib.Path(os.environ['FIXTURE_DIAGNOSTIC']); exec(\"try:\n from browser_cookie_cases import cases\n r=json.loads(sys.stdin.readline())\n result=cases()\n print(json.dumps({'protocol':1,'id':r['id'],'ok':True,'result':{'cases':result}}),flush=True)\nexcept Exception as error:\n diagnostic.write_text(type(error).__name__,encoding='utf-8')\n raise\")"])
-        .env("PYTHONPATH", format!("{}{}{}", module.display(), if cfg!(windows) { ";" } else { ":" }, module.parent().and_then(Path::parent).ok_or("Repository missing")?.join("engine").display()))
+    let observation = r#"
+import json, os, pathlib, sys
+try:
+    from browser_cookie_cases import cases
+    request = json.loads(sys.stdin.readline())
+    print(json.dumps({'protocol':1, 'id':request['id'], 'ok':True,
+                      'result':{'cases':cases()}}), flush=True)
+except Exception as error:
+    pathlib.Path(os.environ['FIXTURE_DIAGNOSTIC']).write_text(type(error).__name__, encoding='utf-8')
+    raise
+"#;
+    command
+        .args(["-u", "-c", observation])
+        .env(
+            "PYTHONPATH",
+            format!(
+                "{}{}{}",
+                module.display(),
+                if cfg!(windows) { ";" } else { ":" },
+                module
+                    .parent()
+                    .and_then(Path::parent)
+                    .ok_or("Repository missing")?
+                    .join("engine")
+                    .display()
+            ),
+        )
         .env("FIXTURE_DIAGNOSTIC", &diagnostic)
         .env("PYTHONUTF8", "1");
     eprintln!("Cookie stage: original policy observation");
@@ -57,7 +82,34 @@ fn cookie_write_matches_original_noop_clear_add_and_failure_order()
         let jar = case["cookies"].as_array().ok_or("Cookie input missing")?;
         let clear = case["clear"].as_bool().ok_or("Clear input missing")?;
         let mut command = Command::new(&python);
-        let script = "import json,os,pathlib,sys; seen=[]; failed=json.loads(os.environ['FIXTURE_FAILURE']); exec(\"for line in sys.stdin:\n r=json.loads(line)\n op=r['operation']\n if op=='hello': seen.append({'operation':'open'})\n elif op=='cookies-clear': seen.append({'operation':'clear'})\n elif op=='cookies-add': seen.append({'operation':'add','cookies':r['cookies']})\n elif op=='close': seen.append({'operation':'close'})\n else: raise ValueError('Unexpected operation')\n pathlib.Path(os.environ['FIXTURE_CAPTURE']).write_text(json.dumps(seen),encoding='utf-8')\n ok=not ((op=='cookies-clear' and failed=='clear') or (op=='cookies-add' and failed=='add'))\n print(json.dumps({'protocol':1,'id':r['id'],'ok':ok,'result':{'closing':True} if op=='close' else {'cleared':True} if op=='cookies-clear' else {'added':True} if op=='cookies-add' else {}}),flush=True)\n if op=='close': break\")";
+        let script = r#"
+import json, os, pathlib, sys
+seen = []
+failed = json.loads(os.environ['FIXTURE_FAILURE'])
+for line in sys.stdin:
+    request = json.loads(line)
+    operation = request['operation']
+    if operation == 'hello':
+        seen.append({'operation':'open'})
+        result = {}
+    elif operation == 'cookies-clear':
+        seen.append({'operation':'clear'})
+        result = {'cleared':True}
+    elif operation == 'cookies-add':
+        seen.append({'operation':'add', 'cookies':request['cookies']})
+        result = {'added':True}
+    elif operation == 'close':
+        seen.append({'operation':'close'})
+        result = {'closing':True}
+    else:
+        raise ValueError('Unexpected operation')
+    pathlib.Path(os.environ['FIXTURE_CAPTURE']).write_text(json.dumps(seen), encoding='utf-8')
+    ok = not ((operation == 'cookies-clear' and failed == 'clear') or
+              (operation == 'cookies-add' and failed == 'add'))
+    print(json.dumps({'protocol':1, 'id':request['id'], 'ok':ok, 'result':result}), flush=True)
+    if operation == 'close':
+        break
+"#;
         command
             .args(["-u", "-c", script])
             .env("FIXTURE_CAPTURE", &capture)
