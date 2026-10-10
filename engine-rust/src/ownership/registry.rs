@@ -2,6 +2,10 @@ use super::{claims, ready::StartupFailed, session::Session};
 use crate::storage::{
     dashboard::DashboardStore, locks::SessionLease, paths::safe_id, schedules::ScheduleStore,
 };
+use crate::{
+    browser::{adapter::Adapter, admission},
+    models::Profile,
+};
 use serde_json::{Map, Value, json};
 use std::{
     collections::BTreeMap,
@@ -29,8 +33,32 @@ impl Kind {
         }
     }
 }
+enum Owner {
+    Helper(Session),
+    Browser(Adapter),
+}
+impl Owner {
+    fn settled_exit(&mut self) -> io::Result<Option<i32>> {
+        match self {
+            Self::Helper(session) => session.settled_exit(),
+            Self::Browser(adapter) => adapter.settled_exit(),
+        }
+    }
+    fn finish(&mut self, budget: Duration) -> io::Result<Option<i32>> {
+        match self {
+            Self::Helper(session) => session.finish_with_status(budget),
+            Self::Browser(adapter) => adapter.finish_with_status(budget),
+        }
+    }
+    fn stop(&mut self, budget: Duration) -> io::Result<Option<i32>> {
+        match self {
+            Self::Helper(session) => session.finish_with_status(budget),
+            Self::Browser(adapter) => adapter.close(budget),
+        }
+    }
+}
 struct Entry {
-    session: Session,
+    owner: Owner,
     kind: Kind,
     schedule: Option<String>,
 }
@@ -40,6 +68,7 @@ pub struct Registry {
     root: PathBuf,
     host: String,
     dashboard: DashboardStore,
+    password: Option<String>,
     schedules: ScheduleStore,
     entries: Mutex<BTreeMap<String, Entry>>,
     decisions: Mutex<BTreeMap<String, Arc<Mutex<()>>>>,
@@ -63,7 +92,8 @@ impl Registry {
             ));
         }
         Ok(Self {
-            dashboard: DashboardStore::new(root.clone(), password),
+            dashboard: DashboardStore::new(root.clone(), password.clone()),
+            password,
             schedules: ScheduleStore::new(root.clone()),
             root,
             host,
@@ -121,10 +151,10 @@ impl Registry {
         let Some(entry) = entries.get_mut(id) else {
             return Ok(false);
         };
-        let Some(code) = entry.session.settled_exit()? else {
+        let Some(code) = entry.owner.settled_exit()? else {
             return Ok(true);
         };
-        entry.session.finish(Duration::from_secs(5))?;
+        entry.owner.finish(Duration::from_secs(5))?;
         let entry = entries
             .remove(id)
             .ok_or_else(|| io::Error::other("Settled session disappeared"))?;
@@ -193,7 +223,7 @@ impl Registry {
                     .insert(
                         id.into(),
                         Entry {
-                            session,
+                            owner: Owner::Helper(session),
                             kind,
                             schedule,
                         },
@@ -213,7 +243,7 @@ impl Registry {
                     .insert(
                         id.into(),
                         Entry {
-                            session,
+                            owner: Owner::Helper(session),
                             kind,
                             schedule,
                         },
@@ -231,13 +261,88 @@ impl Registry {
             .insert(
                 id.into(),
                 Entry {
-                    session,
+                    owner: Owner::Helper(session),
                     kind,
                     schedule,
                 },
             );
         Ok(true)
     }
+    pub fn retain_browser(&self, id: &str, adapter: Adapter) -> io::Result<()> {
+        let decision = self.decision(id)?;
+        let _guard = decision.lock().map_err(|_| poisoned())?;
+        self.retain_browser_locked(id, adapter)
+    }
+    fn retain_browser_locked(&self, id: &str, mut adapter: Adapter) -> io::Result<()> {
+        if !adapter.belongs_to(&self.root, id, &self.host) {
+            adapter.finish(Duration::from_secs(5))?;
+            return Err(io::Error::other(
+                "Browser adapter belongs to another session",
+            ));
+        }
+        let closed = self.closed.lock().map_err(|_| poisoned())?;
+        let mut entries = self.entries.lock().map_err(|_| poisoned())?;
+        if entries.contains_key(id) {
+            adapter.finish(Duration::from_secs(5))?;
+            return Err(io::Error::new(
+                io::ErrorKind::AlreadyExists,
+                "Registry already owns this profile",
+            ));
+        }
+        let shutting_down = *closed;
+        entries.insert(
+            id.into(),
+            Entry {
+                owner: Owner::Browser(adapter),
+                kind: Kind::Launch,
+                schedule: None,
+            },
+        );
+        if shutting_down {
+            let entry = entries
+                .get_mut(id)
+                .ok_or_else(|| io::Error::other("Browser owner missing"))?;
+            entry.owner.stop(Duration::from_secs(5))?;
+            entries.remove(id);
+            return Err(io::Error::other("Session registry is shutting down"));
+        }
+        Ok(())
+    }
+
+    /// The SDK closure receives the current profile with its already-held lease.
+    pub fn open_browser(
+        &self,
+        id: &str,
+        requested_name: &str,
+        activate: impl FnOnce(Session, Profile) -> Result<Adapter, StartupFailed>,
+    ) -> Result<bool, StartupFailed> {
+        let failure = |error: io::Error| StartupFailed {
+            kind: "failed".into(),
+            message: error.to_string(),
+        };
+        let decision = self.decision(id).map_err(failure)?;
+        let _guard = decision.lock().map_err(|_| failure(poisoned()))?;
+        if *self.closed.lock().map_err(|_| failure(poisoned()))? {
+            return Err(failure(io::Error::other(
+                "Session registry is shutting down",
+            )));
+        }
+        if self.reap_one(id).map_err(failure)? {
+            return Ok(false);
+        }
+        let (session, profile) = admission::current(
+            &self.root,
+            id,
+            requested_name,
+            &self.host,
+            self.password.as_deref(),
+            now().map_err(failure)?,
+        )?;
+        let adapter = activate(session, profile)?;
+        self.retain_browser_locked(id, adapter).map_err(failure)?;
+        Ok(true)
+    }
+
     pub fn stop(&self, id: &str, budget: Duration) -> io::Result<bool> {
         let decision = self.decision(id)?;
         let _guard = decision.lock().map_err(|_| poisoned())?;
@@ -245,7 +350,7 @@ impl Registry {
         let Some(entry) = entries.get_mut(id) else {
             return Ok(false);
         };
-        let code = entry.session.finish_with_status(budget)?.unwrap_or(-1);
+        let code = entry.owner.stop(budget)?.unwrap_or(-1);
         let entry = entries
             .remove(id)
             .ok_or_else(|| io::Error::other("Stopped session disappeared"))?;

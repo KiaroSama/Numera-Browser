@@ -1,4 +1,8 @@
-use numera_core::{browser::adapter::Adapter, ownership::claims};
+use numera_core::{
+    browser::adapter::Adapter,
+    models::Profile,
+    ownership::{claims, ready::StartupFailed, registry::Registry},
+};
 use serde_json::Map;
 use std::{path::Path, process::Command, time::Duration};
 mod common;
@@ -67,6 +71,48 @@ fn actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure()
     }
     Ok(())
 }
+#[test]
+fn registry_retains_sdk_transport_and_closes_only_its_admitted_session()
+-> Result<(), Box<dyn std::error::Error>> {
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
+    let temporary = common::TempDirectory::new("browser-registry-protocol")?;
+    let root = temporary.path();
+    std::fs::create_dir_all(root.join("profiles"))?;
+    let profile = Profile::from_record(&serde_json::json!({"id":"a", "name":"fixture"}))?;
+    std::fs::write(root.join("profiles/a.json"), serde_json::to_vec(&profile)?)?;
+    let registry = Registry::new(root.into(), "fixture-host".into(), None)?;
+    let foreign = Registry::new(root.into(), "fixture-host".into(), None)?;
+    let failure = |error: std::io::Error| StartupFailed {
+        kind: "failed".into(),
+        message: error.to_string(),
+    };
+    assert!(registry.open_browser("a", "fixture", |session, current| {
+        assert_eq!(current.id, "a");
+        let mut command = adapter(&python, &root.join("logs"));
+        Adapter::spawn_admitted(session, &mut command, Duration::from_secs(5)).map_err(failure)
+    })?);
+    assert!(registry.owns("a")?);
+    assert!(registry.running("a")?);
+    assert!(!registry.open_browser("a", "fixture", |_, _| panic!(
+        "Duplicate activated another SDK"
+    ))?);
+    assert!(!foreign.stop("a", Duration::from_secs(5))?);
+    assert!(registry.running("a")?);
+    assert!(registry.stop("a", Duration::from_secs(5))?);
+    assert!(!registry.owns("a")?);
+    assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
+    assert!(registry.shutdown(Duration::from_secs(5)).is_empty());
+    assert!(
+        registry
+            .open_browser("a", "fixture", |_, _| panic!("Shutdown activated SDK"))
+            .is_err()
+    );
+    drop(registry);
+    drop(foreign);
+    temporary.cleanup()?;
+    Ok(())
+}
+
 #[test]
 fn native_transport_refuses_wrong_envelope_partial_frame_and_unresponsive_writer()
 -> Result<(), Box<dyn std::error::Error>> {

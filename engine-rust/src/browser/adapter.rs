@@ -171,6 +171,52 @@ impl Adapter {
     pub fn metadata(&self) -> &Value {
         &self.metadata
     }
+    pub(crate) fn belongs_to(&self, root: &Path, id: &str, host: &str) -> bool {
+        self.session.belongs_to(root, id, host)
+    }
+    pub(crate) fn settled_exit(&mut self) -> io::Result<Option<i32>> {
+        self.session.settled_exit()
+    }
+    pub(crate) fn finish_with_status(&mut self, budget: Duration) -> io::Result<Option<i32>> {
+        self.input.take();
+        self.output.take();
+        let code = self.session.finish_with_status(budget)?;
+        if let Some(writer) = self.writer.take() {
+            writer
+                .join()
+                .map_err(|_| io::Error::other("Browser adapter input writer failed"))?;
+        }
+        if let Some(reader) = self.reader.take() {
+            reader
+                .join()
+                .map_err(|_| io::Error::other("Browser adapter output reader failed"))?;
+        }
+        Ok(code)
+    }
+    pub(crate) fn close(&mut self, budget: Duration) -> io::Result<Option<i32>> {
+        let result = self.call("close", Map::new(), budget).and_then(|value| {
+            if value["closing"] == true {
+                Ok(())
+            } else {
+                Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Browser adapter close was not confirmed",
+                ))
+            }
+        });
+        let cleanup = self.finish_with_status(budget);
+        match cleanup {
+            Err(error) => Err(error),
+            Ok(code) => {
+                if result.is_err() {
+                    eprintln!("Browser close failed; native owner settled its entire tree");
+                    Ok(Some(-1))
+                } else {
+                    Ok(code.or(Some(0)))
+                }
+            }
+        }
+    }
     pub fn open(
         &mut self,
         backend: &str,
@@ -292,20 +338,7 @@ impl Adapter {
         })
     }
     pub fn finish(&mut self, budget: Duration) -> io::Result<()> {
-        self.input.take();
-        self.output.take();
-        self.session.finish(budget)?;
-        if let Some(writer) = self.writer.take() {
-            writer
-                .join()
-                .map_err(|_| io::Error::other("Browser adapter input writer failed"))?;
-        }
-        if let Some(reader) = self.reader.take() {
-            reader
-                .join()
-                .map_err(|_| io::Error::other("Browser adapter output reader failed"))?;
-        }
-        Ok(())
+        self.finish_with_status(budget).map(|_| ())
     }
 }
 impl Drop for Adapter {

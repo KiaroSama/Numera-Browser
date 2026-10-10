@@ -92,6 +92,10 @@ impl Session {
         Ok(self.root.join("user-data").join(&self.id))
     }
 
+    pub(crate) fn belongs_to(&self, root: &Path, id: &str, host: &str) -> bool {
+        self.root == root && self.id == id && self.host == host
+    }
+
     pub fn child_mut(&mut self) -> io::Result<&mut std::process::Child> {
         self.tree
             .as_mut()
