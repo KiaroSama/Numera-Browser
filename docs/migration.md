@@ -211,6 +211,11 @@ regressions and a narrow demo editor render have passed; complete live interface
 viewport and final CI acceptance remain pending. TypeScript6.0.3 is retained
 because the current ESLint parser supports versions below6.1, not TypeScript7.
 Existing React, theme tokens, handwritten CSS and Tauri are retained.
+The October 10 maintenance refresh selects Vite8.3.4, Lucide React1.55.0 and
+Node types26.6.5 without changing the interface or compiler compatibility hold.
+Dashboard tests, strict types, lint, build and dependency checks share one manually
+dispatchable hosted workflow, also called by full CI. A dashboard-only checkpoint
+does not certify native product acceptance or self-hosted runner job compatibility.
 
 ## Verification
 

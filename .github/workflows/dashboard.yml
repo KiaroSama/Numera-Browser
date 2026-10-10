@@ -1,0 +1,50 @@
+name: Dashboard verification
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  dashboard:
+    name: Dashboard build and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: "1"
+      HOOKMAKER_MAX_TEST_WORKERS: "2"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13.15"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - name: Install (from the lockfile)
+        working-directory: dashboard
+        run: python ../scripts/migration/run_owned.py --wall 300 --idle 90 -- npm ci
+      - name: Dependency consistency
+        working-directory: dashboard
+        run: python ../scripts/migration/run_owned.py --wall 60 --idle 30 -- npm ls --all
+      - name: Advisory audit
+        working-directory: dashboard
+        run: python ../scripts/migration/run_owned.py --wall 120 --idle 60 -- npm audit --audit-level=high
+      # Bundling cannot catch auth-lockout or dev-proxy regressions. Keep the
+      # actual suite in both full CI and the manual maintenance checkpoint.
+      - name: Tests
+        working-directory: dashboard
+        run: python ../scripts/migration/run_owned.py --wall 300 --idle 90 -- npm test -- --maxWorkers=2
+      - name: Strict TypeScript
+        working-directory: dashboard
+        run: python ../scripts/migration/run_owned.py --wall 120 --idle 60 -- npm run typecheck
+      - name: Lint
+        working-directory: dashboard
+        run: python ../scripts/migration/run_owned.py --wall 120 --idle 60 -- npm run lint
+      - name: Build
+        working-directory: dashboard
+        run: python ../scripts/migration/run_owned.py --wall 180 --idle 60 -- npm run build
