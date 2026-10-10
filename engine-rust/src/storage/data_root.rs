@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-fn expand_home(path: &Path, home: &Path) -> PathBuf {
+pub(crate) fn expand_home(path: &Path, home: &Path) -> PathBuf {
     if path == Path::new("~") {
         return home.to_owned();
     }

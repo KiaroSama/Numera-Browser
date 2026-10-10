@@ -2,6 +2,7 @@
 pub mod adapter;
 pub mod admission;
 pub mod cookies;
+pub mod extensions;
 pub mod hints;
 pub mod ip_identity;
 pub mod launch;
