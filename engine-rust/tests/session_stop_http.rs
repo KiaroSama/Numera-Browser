@@ -24,8 +24,10 @@ fn http_stop_preserves_source_refusals_and_closes_only_its_native_owner()
         .join("scripts/migration");
     let script = r#"
 import json, os, sys
-from session_stop_cases import cases
 request = json.loads(sys.stdin.readline())
+print(json.dumps({'protocol':1, 'id':request['id'], 'ok':True, 'result':{}}), flush=True)
+request = json.loads(sys.stdin.readline())
+from session_stop_cases import cases
 print(json.dumps({'protocol':1, 'id':request['id'], 'ok':True, 'result':{'cases':cases(os.environ['FIXTURE_ROOT'])}}), flush=True)
 "#;
     let mut command = Command::new(&python);
@@ -41,7 +43,7 @@ print(json.dumps({'protocol':1, 'id':request['id'], 'ok':True, 'result':{'cases'
         &mut command,
         Duration::from_secs(5),
     )?;
-    let document = source.metadata().clone();
+    let document = source.call("observe-stop", Default::default(), Duration::from_secs(30))?;
     source.finish(Duration::from_secs(5))?;
     drop(source);
     source_root.cleanup()?;
