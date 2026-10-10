@@ -48,6 +48,64 @@ fn expiry(value: Option<&Value>) -> io::Result<String> {
     }
 }
 
+/// Parse the original text-cookie dialect; JSON normalization is separate.
+pub fn parse_netscape(text: &str) -> io::Result<Vec<Value>> {
+    let mut cookies = Vec::new();
+    for line in text.split([
+        '\n', '\r', '\u{b}', '\u{c}', '\u{1c}', '\u{1d}', '\u{1e}', '\u{85}', '\u{2028}',
+        '\u{2029}',
+    ]) {
+        let line = line.trim();
+        let http_only = line.starts_with("#HttpOnly_");
+        let line = if http_only {
+            &line[10..]
+        } else if line.is_empty() || line.starts_with('#') {
+            continue;
+        } else {
+            line
+        };
+        let mut fields: Vec<_> = line.split('\t').collect();
+        if fields.len() < 7 {
+            fields = line.split_whitespace().collect();
+        }
+        if fields.len() < 7 {
+            continue;
+        }
+        let expiry = fields[4];
+        let digits = expiry.replacen('.', "", 1);
+        let expires = if !digits.is_empty() && digits.chars().all(crate::pool::is_digit) {
+            let ascii = expiry
+                .chars()
+                .map(|c| {
+                    if c == '.' {
+                        Some(".".into())
+                    } else {
+                        crate::pool::decimal_ascii(&c.to_string())
+                    }
+                })
+                .collect::<Option<String>>()
+                .ok_or_else(invalid)?;
+            ascii.parse::<f64>().map_err(|_| invalid())?
+        } else {
+            -1.0
+        };
+        if !expires.is_finite() {
+            return Err(invalid());
+        }
+        if fields[0].is_empty() || fields[5].is_empty() {
+            continue;
+        }
+        cookies.push(serde_json::json!({
+            "name": fields[5], "value": fields[6], "domain": fields[0],
+            "path": if fields[2].is_empty() { "/" } else { fields[2] },
+            "expires": if expires == 0.0 { -1.0 } else { expires },
+            "httpOnly": http_only, "secure": fields[3].to_uppercase() == "TRUE",
+            "sameSite": "Lax"
+        }));
+    }
+    Ok(cookies)
+}
+
 /// Preserve the source storage-state envelope, indentation and ASCII escaping.
 pub fn dumps(cookies: &[Value], format: &str) -> io::Result<String> {
     if format == "netscape" {
