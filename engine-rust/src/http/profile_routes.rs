@@ -90,6 +90,10 @@ pub(crate) fn routes(
             axum::routing::post(super::profile_import::import),
         )
         .route(
+            "/api/profiles/{pid}/stop",
+            axum::routing::post(super::session_routes::stop_profile),
+        )
+        .route(
             "/api/profiles/delete",
             axum::routing::post(super::profile_delete::bulk),
         )

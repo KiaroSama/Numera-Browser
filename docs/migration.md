@@ -176,6 +176,10 @@ CLI/server**. A passing library test does not certify a finished product migrati
   before browser entry. Isolated Windows Camoufox preparation and real-context
   verification passed on `5ed531c`; the earlier seven-success/one-failure matrix
   remains reported as failed. Complete candidate acceptance is still pending.
+  The HTTP stop route now reuses actual native registry ownership, preserves
+  missing/foreign-session refusals and returns the original pre-stop record.
+  Original HTTP observations plus an owned SDK-transport stop regression await
+  hosted verification; full launch/stop failure and concurrent lifecycle remain pending.
 
 All expected fixture outcomes are produced by the retained implementation,
 using non-sensitive inputs, fixed source clocks for conversion and deterministic

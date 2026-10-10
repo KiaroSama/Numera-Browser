@@ -23,6 +23,7 @@ pub mod proxy_routes;
 pub mod request_auth;
 pub mod request_body;
 pub mod schedule_routes;
+mod session_routes;
 pub mod token_errors;
 pub mod token_routes;
 pub mod tokens;
