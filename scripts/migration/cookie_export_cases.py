@@ -1,7 +1,7 @@
 """Observe original cookie exports using non-sensitive synthetic rows only."""
 from __future__ import annotations
 
-from numera.cookies import to_netscape
+from numera.cookies import dumps, to_netscape
 
 
 def cases():
@@ -31,5 +31,6 @@ def cases():
             expected = {'text': to_netscape(rows)}
         except (AttributeError, KeyError, TypeError, ValueError, OverflowError):
             expected = {'failed': True}
-        output.append({'name': name, 'cookies': rows, 'expected': expected})
+        output.append({'name': name, 'cookies': rows, 'expected': expected,
+                       'json': dumps(rows)})
     return output
