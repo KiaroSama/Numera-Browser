@@ -131,7 +131,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
   complete failure coverage remain pending.
   The server registry now has an actual SDK transport owner variant, with
   post-lease current-profile activation and retained transport handoff; its
-  protocol and real-context ownership regressions await hosted verification.
+  protocol and real-context ownership regressions passed hosted Windows/Linux.
+  Independent review found an acknowledged-close/normal-exit race; a bounded
+  normal-exit grace period and synchronized regression are awaiting verification.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,

@@ -204,6 +204,14 @@ impl Adapter {
                 ))
             }
         });
+        if result.is_ok() {
+            let deadline = std::time::Instant::now()
+                .checked_add(budget)
+                .ok_or_else(|| io::Error::other("Invalid browser close budget"))?;
+            while self.session.settled_exit()?.is_none() && std::time::Instant::now() < deadline {
+                thread::sleep(Duration::from_millis(10));
+            }
+        }
         let cleanup = self.finish_with_status(budget);
         match cleanup {
             Err(error) => Err(error),
