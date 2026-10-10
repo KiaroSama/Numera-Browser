@@ -55,6 +55,23 @@ pub fn config(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
     )))
 }
 
+pub(crate) fn write_ascii_fragment<W: ?Sized + Write>(
+    writer: &mut W,
+    fragment: &str,
+) -> io::Result<()> {
+    for character in fragment.chars() {
+        if (' '..='~').contains(&character) {
+            write!(writer, "{character}")?;
+        } else {
+            let mut units = [0; 2];
+            for unit in character.encode_utf16(&mut units) {
+                write!(writer, "\\u{unit:04x}")?;
+            }
+        }
+    }
+    Ok(())
+}
+
 struct SourceJson;
 impl Formatter for SourceJson {
     fn begin_array_value<W: ?Sized + Write>(
@@ -83,17 +100,7 @@ impl Formatter for SourceJson {
         writer: &mut W,
         fragment: &str,
     ) -> io::Result<()> {
-        for character in fragment.chars() {
-            if (' '..='~').contains(&character) {
-                write!(writer, "{character}")?;
-            } else {
-                let mut units = [0; 2];
-                for unit in character.encode_utf16(&mut units) {
-                    write!(writer, "\\u{unit:04x}")?;
-                }
-            }
-        }
-        Ok(())
+        write_ascii_fragment(writer, fragment)
     }
 }
 

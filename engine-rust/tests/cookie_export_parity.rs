@@ -52,6 +52,16 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
     assert_eq!(cases.len(), 24);
     for case in cases {
         let rows = case["cookies"].as_array().ok_or("Cookie rows missing")?;
+        assert_eq!(
+            cookie_format::dumps(rows, "json")?,
+            case["json"].as_str().ok_or("Original JSON missing")?,
+            "{} JSON bytes",
+            case["name"]
+        );
+        assert_eq!(
+            cookie_format::dumps(rows, "unknown")?,
+            cookie_format::dumps(rows, "json")?
+        );
         let output = cookie_format::to_netscape(rows);
         if case["expected"]["failed"] == true {
             assert!(

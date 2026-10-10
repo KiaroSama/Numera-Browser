@@ -48,6 +48,25 @@ fn expiry(value: Option<&Value>) -> io::Result<String> {
     }
 }
 
+/// Preserve the source storage-state envelope, indentation and ASCII escaping.
+pub fn dumps(cookies: &[Value], format: &str) -> io::Result<String> {
+    if format == "netscape" {
+        return to_netscape(cookies);
+    }
+    let document = serde_json::json!({"cookies": cookies, "origins": []});
+    let encoded = serde_json::to_string_pretty(&document).map_err(io::Error::other)?;
+    let mut bytes = Vec::with_capacity(encoded.len());
+    // JSON emits non-ASCII only inside strings; leave structural whitespace intact.
+    for character in encoded.chars() {
+        if character.is_ascii() && character != '\u{7f}' {
+            bytes.push(character as u8);
+        } else {
+            crate::identity_script::write_ascii_fragment(&mut bytes, &character.to_string())?;
+        }
+    }
+    String::from_utf8(bytes).map_err(io::Error::other)
+}
+
 /// Export normalized rows without changing the original header, order or bytes.
 /// Parsing, normalization and destination writes belong to separate boundaries.
 pub fn to_netscape(cookies: &[Value]) -> io::Result<String> {
