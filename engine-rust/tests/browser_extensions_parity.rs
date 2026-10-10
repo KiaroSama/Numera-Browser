@@ -1,6 +1,11 @@
 use numera_core::{
-    browser::{adapter::Adapter, extensions, options},
+    browser::{
+        adapter::Adapter,
+        extensions,
+        launch::{self, PreparedLaunch},
+    },
     models::Profile,
+    ownership::session::Session,
 };
 use serde_json::{Map, Value, json};
 use std::{path::Path, process::Command, time::Duration};
@@ -75,16 +80,45 @@ for line in sys.stdin:
     assert_eq!(paths.len(), 5);
     assert_eq!(paths[0], paths[2]);
     assert_eq!(paths[0], paths[4]);
-    let actual = options::build(
-        &profile,
-        "playwright",
-        "user-data/a",
-        true,
-        &[],
-        &paths,
-        None,
+    let capture = root.join("open.json");
+    let script = r#"
+import json, os, pathlib, sys
+for line in sys.stdin:
+    request = json.loads(line)
+    if request['operation'] == 'hello':
+        result = {'backends':{'playwright':{'installed':True}}}
+    elif request['operation'] == 'open':
+        pathlib.Path(os.environ['FIXTURE_CAPTURE']).write_text(json.dumps(request), encoding='utf-8')
+        result = {'opened':True, 'backend':'playwright'}
+    else:
+        raise ValueError('Unexpected operation')
+    print(json.dumps({'protocol':1, 'id':request['id'], 'ok':True, 'result':result}), flush=True)
+"#;
+    let mut command = Command::new(&python);
+    command
+        .args(["-u", "-c", script])
+        .env("FIXTURE_CAPTURE", &capture);
+    let session = Session::admit(&root, "a", "fixture-host")?;
+    let mut adapter = launch::open(
+        session,
+        profile,
+        &mut command,
+        PreparedLaunch {
+            backend: "playwright",
+            headless: true,
+            extra_args: &[],
+            cwd: &cwd,
+            home: &home,
+            country: None,
+            relay: None,
+            binary_options: Map::new(),
+        },
+        1000.0,
     )?;
-    let flags: Vec<_> = actual["args"]
+    adapter.finish(Duration::from_secs(5))?;
+    drop(adapter);
+    let frame: Value = serde_json::from_slice(&std::fs::read(capture)?)?;
+    let flags: Vec<_> = frame["options"]["args"]
         .as_array()
         .ok_or("Launch args missing")?
         .iter()

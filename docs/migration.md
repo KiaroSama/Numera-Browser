@@ -139,7 +139,7 @@ CLI/server**. A passing library test does not certify a finished product migrati
   concurrent-shutdown and natural-browser-exit pipe coverage remains pending.
   Native admitted launch composition now reuses IP-marked identity, resource
   preparation, effective options, init-script/CDP policy and SDK transport. Its
-  caller must supply independently observed country, resolved extension paths,
+  caller must supply independently observed country, working/home directories,
   relay and packaged binary data. Composition passed all eight hosted SDK legs
   on `3dea706`, with native refusal/parity/strict lint checks on both hosts.
   Camoufox retains its original locale rather than applying the Chromium-only
@@ -159,8 +159,10 @@ CLI/server**. A passing library test does not certify a finished product migrati
   integration remain pending.
   Native extension path resolution reuses existing home expansion and canonical
   Windows/UNC spelling, preserving directory filtering, order and duplicates.
-  Isolated original flag comparison is prepared for hosted verification; named-user
-  home lookup, concurrent path replacement and production service wiring remain pending.
+  Isolated original flag comparison passed hosted Windows/Linux on `dee4c5b`.
+  Launch composition now resolves the current admitted profile's extension entries;
+  its captured SDK-frame regression awaits hosted verification. Named-user home
+  lookup, concurrent path replacement and full application service wiring remain pending.
 
 All expected fixture outcomes are produced by the retained implementation,
 using non-sensitive inputs, fixed source clocks for conversion and deterministic
