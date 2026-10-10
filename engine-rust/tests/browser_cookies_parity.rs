@@ -16,16 +16,25 @@ fn cookie_write_matches_original_noop_clear_add_and_failure_order()
         .ok_or("Repository missing")?
         .join("scripts/migration");
     let mut command = Command::new(&python);
-    command.args(["-u", "-c", "import json,sys; from browser_cookie_cases import cases; r=json.loads(sys.stdin.readline()); print(json.dumps({'protocol':1,'id':r['id'],'ok':True,'result':{'cases':cases()}}),flush=True)"])
+    let diagnostic = source.path().join("diagnostic.txt");
+    command.args(["-u", "-c", "import json,os,pathlib,sys; diagnostic=pathlib.Path(os.environ['FIXTURE_DIAGNOSTIC']); exec(\"try:\n from browser_cookie_cases import cases\n r=json.loads(sys.stdin.readline())\n result=cases()\n print(json.dumps({'protocol':1,'id':r['id'],'ok':True,'result':{'cases':result}}),flush=True)\nexcept Exception as error:\n diagnostic.write_text(type(error).__name__,encoding='utf-8')\n raise\")"])
         .env("PYTHONPATH", format!("{}{}{}", module.display(), if cfg!(windows) { ";" } else { ":" }, module.parent().and_then(Path::parent).ok_or("Repository missing")?.join("engine").display()))
+        .env("FIXTURE_DIAGNOSTIC", &diagnostic)
         .env("PYTHONUTF8", "1");
+    eprintln!("Cookie stage: original policy observation");
     let mut oracle = Adapter::spawn(
         source.path(),
         "a",
         "fixture-host",
         &mut command,
         Duration::from_secs(5),
-    )?;
+    )
+    .map_err(|error| {
+        if let Ok(kind) = std::fs::read_to_string(&diagnostic) {
+            eprintln!("Original cookie observation failed: {kind}");
+        }
+        error
+    })?;
     let document = oracle.metadata().clone();
     oracle.finish(Duration::from_secs(5))?;
     drop(oracle);
@@ -41,6 +50,7 @@ fn cookie_write_matches_original_noop_clear_add_and_failure_order()
         .ok_or("Original cases missing")?;
     assert_eq!(cases.len(), 6);
     for case in cases {
+        eprintln!("Cookie stage: {}", case["name"]);
         let temporary = common::TempDirectory::new("cookie-write-policy")?;
         let root = temporary.path();
         let capture = root.join("seen.json");
