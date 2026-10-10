@@ -163,8 +163,11 @@ CLI/server**. A passing library test does not certify a finished product migrati
   original header, order, flags, Unicode bytes and expiry truncation. An exact
   source-observation test compares exported bytes and malformed-row refusals;
   JSON storage-state export also preserves source indentation, ASCII escaping
-  and format fallback, reusing the existing identity string encoder. Complete
-  parser/normalization and public service wiring remain pending.
+  and format fallback, reusing the existing identity string encoder. Native
+  Netscape parsing preserves tab/whitespace fallback, HttpOnly/comment handling,
+  original digit rules and text line boundaries through source-observation cases.
+  Complete JSON normalization, non-finite/legacy formats and public service wiring
+  remain pending.
   Native extension path resolution reuses existing home expansion and canonical
   Windows/UNC spelling, preserving directory filtering, order and duplicates.
   Isolated original flag comparison passed hosted Windows/Linux on `dee4c5b`.

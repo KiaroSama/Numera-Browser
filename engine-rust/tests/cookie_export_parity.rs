@@ -16,7 +16,8 @@ request = json.loads(sys.stdin.readline())
 print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}), flush=True)
 request = json.loads(sys.stdin.readline())
 from cookie_export_cases import cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases()}}), flush=True)
+from cookie_parse_cases import cases as parse_cases
+print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(), 'parse_cases':parse_cases()}}), flush=True)
 "#;
     let mut command = Command::new(python);
     command
@@ -75,6 +76,23 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
                 case["expected"]["text"]
                     .as_str()
                     .ok_or("Expected text missing")?,
+                "{}",
+                case["name"]
+            );
+        }
+    }
+    let parsed = observations["parse_cases"]
+        .as_array()
+        .ok_or("Parse observations missing")?;
+    assert_eq!(parsed.len(), 24);
+    for case in parsed {
+        let actual = cookie_format::parse_netscape(case["text"].as_str().ok_or("Text missing")?);
+        if case["expected"]["failed"] == true {
+            assert!(actual.is_err(), "{} expected parse refusal", case["name"]);
+        } else {
+            assert_eq!(
+                serde_json::to_value(actual?)?,
+                case["expected"]["cookies"],
                 "{}",
                 case["name"]
             );

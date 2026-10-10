@@ -84,7 +84,7 @@ pub fn parse_line(line: &str) -> Option<Value> {
     )
 }
 
-fn is_digit(character: char) -> bool {
+pub(crate) fn is_digit(character: char) -> bool {
     let scalar = u32::from(character);
     // Generated from the pinned original runtime's Unicode digit predicate,
     // not Rust is_numeric (which also accepts fractions and Roman numerals).
