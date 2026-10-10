@@ -1,13 +1,19 @@
+use axum::{
+    body::{Body, to_bytes},
+    http::Request,
+};
 use numera_core::{
     browser::{
         admission, cookies,
         launch::{self, PreparedLaunch},
     },
+    http::application::{SessionApplication, router_with_sessions},
     models::{Fingerprint, Profile},
     ownership::{claims, registry::Registry},
 };
 use serde_json::{Map, Value, json};
-use std::{path::Path, process::Command, time::Duration};
+use std::{collections::BTreeMap, path::Path, process::Command, sync::Arc, time::Duration};
+use tower::ServiceExt;
 mod common;
 #[path = "common/hint_site.rs"]
 mod hint_site;
@@ -118,6 +124,9 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         })
         .collect();
     assert_eq!(selected.len(), if uses_page_script { 5 } else { 1 });
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()?;
     for case in selected {
         let fingerprint = Fingerprint::from_record(&case["input"])?;
         eprintln!("Browser stage: profile {}", fingerprint.os);
@@ -241,7 +250,7 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
             Ok(())
         })();
         let cleanup = if result.is_ok() {
-            let registry = Registry::new(root.into(), "fixture-host".into(), None)?;
+            let registry = Arc::new(Registry::new(root.into(), "fixture-host".into(), None)?);
             let foreign = Registry::new(root.into(), "fixture-host".into(), None)?;
             // Transfer the existing admitted SDK owner; no second lease can be acquired.
             let transferred = registry.retain_browser("a", adapter);
@@ -249,7 +258,43 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
             assert!(registry.owns("a")?);
             assert!(registry.running("a")?);
             assert!(!foreign.stop("a", Duration::from_secs(10))?);
-            assert!(registry.stop("a", Duration::from_secs(10))?);
+            runtime.block_on(async {
+                let app = router_with_sessions(
+                    root.into(),
+                    "fixture-api",
+                    "",
+                    None,
+                    "fixture-host",
+                    SessionApplication {
+                        installed: BTreeMap::from([(backend.clone(), true)]),
+                        sessions: registry.clone(),
+                    },
+                )
+                .await?;
+                let response = tokio::time::timeout(
+                    Duration::from_secs(20),
+                    app.oneshot(
+                        Request::post("/api/profiles/a/stop")
+                            .header("authorization", "Bearer fixture-api")
+                            .body(Body::empty())?,
+                    ),
+                )
+                .await??;
+                assert_eq!(
+                    response.status().as_u16(),
+                    200,
+                    "Actual browser HTTP stop failed"
+                );
+                let bytes = tokio::time::timeout(
+                    Duration::from_secs(5),
+                    to_bytes(response.into_body(), 65_536),
+                )
+                .await??;
+                let record: Value = serde_json::from_slice(&bytes)?;
+                assert_eq!(record["id"], "a");
+                assert_eq!(record["status"], "stopped");
+                Ok::<_, Box<dyn std::error::Error>>(())
+            })?;
             assert!(!registry.owns("a")?);
             assert!(registry.shutdown(Duration::from_secs(10)).is_empty());
             Ok(())

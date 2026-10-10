@@ -178,8 +178,10 @@ CLI/server**. A passing library test does not certify a finished product migrati
   remains reported as failed. Complete candidate acceptance is still pending.
   The HTTP stop route now reuses actual native registry ownership, preserves
   missing/foreign-session refusals and returns the original pre-stop record.
-  Original HTTP observations plus an owned SDK-transport stop regression await
-  hosted verification; full launch/stop failure and concurrent lifecycle remain pending.
+  Original HTTP observations plus an owned SDK-transport stop regression passed
+  hosted Windows/Linux on `5a1a718`. Actual browser tests now stop through this
+  authenticated HTTP route; hosted verification awaits completion. Full launch/stop
+  failure and concurrent lifecycle remain pending.
 
 All expected fixture outcomes are produced by the retained implementation,
 using non-sensitive inputs, fixed source clocks for conversion and deterministic
