@@ -158,7 +158,8 @@ CLI/server**. A passing library test does not certify a finished product migrati
   wholly green. Cookie format normalization, persisted restart and public HTTP/CLI
   integration remain pending. Independent review found that a locally oversized
   replacement frame could be refused after clearing; complete add-frame preflight
-  now precedes activation and clearing, with a regression awaiting hosted verification.
+  now precedes activation and clearing; hosted Windows/Linux regression passed
+  on `1dfc484`.
   Native extension path resolution reuses existing home expansion and canonical
   Windows/UNC spelling, preserving directory filtering, order and duplicates.
   Isolated original flag comparison passed hosted Windows/Linux on `dee4c5b`.
@@ -168,7 +169,11 @@ CLI/server**. A passing library test does not certify a finished product migrati
   lookup, concurrent path replacement and full application service wiring remain pending.
   Independent review found Windows drive-relative entries could use ambient CWD;
   same-drive entries now anchor to the supplied CWD, while cross-drive entries
-  without an explicit drive context refuse. Source comparison awaits hosted verification.
+  without an explicit drive context refuse. Original-derived Windows comparison
+  passed on `1dfc484`, with related native parity and strict lint on both hosts.
+  Repeated Camoufox release-fetch failures are isolated to CI preparation; that
+  step now uses a scoped read-only workflow token and verifies the actual binary
+  before browser entry. Replacement hosted verification remains pending.
 
 All expected fixture outcomes are produced by the retained implementation,
 using non-sensitive inputs, fixed source clocks for conversion and deterministic

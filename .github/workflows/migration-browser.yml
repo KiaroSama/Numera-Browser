@@ -47,7 +47,12 @@ jobs:
         run: python -m ${{ matrix.engine }} install chromium
       - name: Fetch Camoufox
         if: matrix.engine == 'camoufox'
-        run: python -m camoufox fetch
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python -m camoufox fetch
+      - name: Verify Camoufox binary prerequisite
+        if: matrix.engine == 'camoufox'
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/live_engine.py prepare --engine camoufox
       - name: Fetch pinned official Cloak binary
         if: matrix.engine == 'cloak'
         run: python scripts/live_engine.py prepare --engine cloak --fetch
