@@ -118,6 +118,53 @@ fn registry_retains_sdk_transport_and_closes_only_its_admitted_session()
 }
 
 #[test]
+fn acknowledged_close_waits_for_normal_exit_before_releasing_the_owner()
+-> Result<(), Box<dyn std::error::Error>> {
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
+    let temporary = common::TempDirectory::new("browser-close-exit")?;
+    let root = temporary.path();
+    let registry = Registry::new(root.into(), "fixture-host".into(), None)?;
+    let release = root.join("release");
+    let completed = root.join("completed");
+    let script = "import json,os,pathlib,sys,time; hello=json.loads(sys.stdin.readline()); print(json.dumps({'protocol':1,'id':hello['id'],'ok':True,'result':{}}),flush=True); close=json.loads(sys.stdin.readline()); print(json.dumps({'protocol':1,'id':close['id'],'ok':True,'result':{'closing':True}}),flush=True); ack=pathlib.Path(os.environ['FIXTURE_ACK']); ack.write_text('ack',encoding='utf-8'); release=pathlib.Path(os.environ['FIXTURE_RELEASE']); deadline=time.monotonic()+5; exec('while not release.exists() and time.monotonic()<deadline:\\n time.sleep(0.01)'); pathlib.Path(os.environ['FIXTURE_COMPLETED']).write_text('finished',encoding='utf-8')";
+    let ack = root.join("ack");
+    let mut command = Command::new(&python);
+    command
+        .args(["-u", "-c", script])
+        .env("FIXTURE_ACK", &ack)
+        .env("FIXTURE_RELEASE", &release)
+        .env("FIXTURE_COMPLETED", &completed);
+    let adapter = Adapter::spawn(
+        root,
+        "a",
+        "fixture-host",
+        &mut command,
+        Duration::from_secs(5),
+    )?;
+    registry.retain_browser("a", adapter)?;
+    let stopping = std::thread::scope(|scope| -> Result<(), Box<dyn std::error::Error>> {
+        let stop = scope.spawn(|| registry.stop("a", Duration::from_secs(5)));
+        let deadline = std::time::Instant::now() + Duration::from_secs(5);
+        while !ack.exists() {
+            if std::time::Instant::now() >= deadline {
+                return Err("Close acknowledgement missing".into());
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        std::fs::write(&release, b"release")?;
+        assert!(stop.join().map_err(|_| "Stop thread failed")??);
+        Ok(())
+    });
+    stopping?;
+    assert_eq!(std::fs::read_to_string(completed)?, "finished");
+    assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
+    assert!(!registry.owns("a")?);
+    drop(registry);
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn native_transport_refuses_wrong_envelope_partial_frame_and_unresponsive_writer()
 -> Result<(), Box<dyn std::error::Error>> {
     let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
