@@ -151,8 +151,11 @@ CLI/server**. A passing library test does not certify a finished product migrati
   Full launch-service integration, hard-parent-death and backend acceptance are pending.
   Native cookie write policy now preserves empty/no-clear admission avoidance and
   clear-before-add ordering, with SDK-only read/add/clear operations. Six original
-  policy observations and real isolated cookie roundtrips are prepared for hosted
-  verification; cookie format normalization, persisted restart and public HTTP/CLI
+  policy observations passed hosted Windows/Linux on `1767757`, alongside native
+  parity and strict lint. Real isolated cookie roundtrips passed seven matrix legs;
+  Windows Camoufox initially could not fetch its paired browser, then passed one
+  isolated confirmation on that same commit. The failed matrix is not reported as
+  wholly green. Cookie format normalization, persisted restart and public HTTP/CLI
   integration remain pending.
 
 All expected fixture outcomes are produced by the retained implementation,
