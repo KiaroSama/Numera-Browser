@@ -1,6 +1,7 @@
 //! Narrow SDK transport; effective launch/application services remain native.
 pub mod adapter;
 pub mod admission;
+pub mod cookie_format;
 pub mod cookies;
 pub mod extensions;
 pub mod hints;

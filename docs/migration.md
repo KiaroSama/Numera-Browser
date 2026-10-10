@@ -159,7 +159,10 @@ CLI/server**. A passing library test does not certify a finished product migrati
   integration remain pending. Independent review found that a locally oversized
   replacement frame could be refused after clearing; complete add-frame preflight
   now precedes activation and clearing; hosted Windows/Linux regression passed
-  on `1dfc484`.
+  on `1dfc484`. Native Netscape export for normalized rows now preserves the
+  original header, order, flags, Unicode bytes and expiry truncation. An exact
+  source-observation test compares exported bytes and malformed-row refusals;
+  complete parser/normalization, JSON export and public service wiring remain pending.
   Native extension path resolution reuses existing home expansion and canonical
   Windows/UNC spelling, preserving directory filtering, order and duplicates.
   Isolated original flag comparison passed hosted Windows/Linux on `dee4c5b`.
