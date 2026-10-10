@@ -1,6 +1,8 @@
 use numera_core::{
-    browser::{adapter::Adapter, admission, hints, options, resources},
-    identity_script,
+    browser::{
+        admission,
+        launch::{self, PreparedLaunch},
+    },
     models::{Fingerprint, Profile},
     ownership::{claims, registry::Registry},
 };
@@ -139,39 +141,23 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         std::fs::write(root.join("profiles/a.json"), serde_json::to_vec(&profile)?)?;
         let (session, profile) =
             admission::current(root, "a", "fixture", "fixture-host", None, 1000.0)?;
-        if backend != "camoufox" {
-            resources::prepare(&session, &profile, 1000.0)?;
-        }
-        let mut adapter = Adapter::spawn_admitted(session, &mut command, Duration::from_secs(10))?;
-        let options = options::build(
-            &profile,
-            &backend,
-            root.join("user-data/a")
-                .to_str()
-                .ok_or("Profile path not Unicode")?,
-            true,
-            &[],
-            &[],
-            None,
+        eprintln!("Browser stage: native launch");
+        let mut adapter = launch::open(
+            session,
+            profile,
+            &mut command,
+            PreparedLaunch {
+                backend: &backend,
+                headless: true,
+                extra_args: &[],
+                extensions: &[],
+                country: None,
+                relay: None,
+                binary_options: Map::new(),
+            },
+            1000.0,
         )?;
-        let scripts = if uses_page_script {
-            vec![identity_script::build(&fingerprint)?]
-        } else {
-            Vec::new()
-        };
         let result = (|| -> Result<(), Box<dyn std::error::Error>> {
-            eprintln!("Browser stage: open");
-            adapter.open_configured(
-                &backend,
-                options.as_object().cloned().ok_or("Options missing")?,
-                scripts,
-                if uses_page_script {
-                    Some(hints::policy(&fingerprint)?)
-                } else {
-                    None
-                },
-                Duration::from_secs(90),
-            )?;
             assert_eq!(
                 claims::state(&claims::read(root, "a"), "fixture-host"),
                 claims::State::Busy
