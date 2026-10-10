@@ -386,39 +386,7 @@ jobs:
         run: docker rm -f numera-ci || true
 
   dashboard:
-    name: Dashboard build and tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          # Match the Docker dashboard stage and latest stable Node runtime.
-          node-version: "26"
-          cache: npm
-          cache-dependency-path: dashboard/package-lock.json
-      - name: Install (from the lockfile)
-        working-directory: dashboard
-        run: npm ci
-      # The suite existed and nothing ever ran it. A build is a compile check:
-      # the auth-lockout and dev-proxy regressions these tests were written for
-      # could return and still reach main, because bundling them succeeds either
-      # way. `npm test` is `vitest run`, which exits rather than watching.
-      - name: Tests
-        working-directory: dashboard
-        run: python ../scripts/migration/run_owned.py --wall 300 --idle 90 -- npm test
-
-      - name: Strict TypeScript
-        working-directory: dashboard
-        run: npm run typecheck
-
-      # The linter is only a gate if CI runs it.
-      - name: Lint
-        working-directory: dashboard
-        run: npm run lint
-      - name: Build
-        working-directory: dashboard
-        run: npm run build
+    uses: ./.github/workflows/dashboard.yml
 
   required:
     name: Required verification
