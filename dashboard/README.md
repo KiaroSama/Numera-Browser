@@ -81,8 +81,11 @@ the proxy, or choose **Use latest** to accept the removal.
 A failed refresh keeps the draft with an explicit retry message. Other storage
 conflicts retain their own error and are not automatically rebased.
 
-React 19 with strict TypeScript and Vite 8.3.3. `npm run typecheck` checks source
+React 19 with strict TypeScript and Vite 8.3.4. `npm run typecheck` checks source
 and tests; `npm run build` type-checks before bundling. Icons from `lucide-react`.
+The manual **Dashboard verification** workflow runs the locked install, dependency
+consistency and advisory checks, tests, strict types, lint and build on a hosted
+runner. Full CI calls that same workflow; it does not duplicate the suite.
 Styling is a single scoped
 `<style>` block — no CSS framework dependency.
 
