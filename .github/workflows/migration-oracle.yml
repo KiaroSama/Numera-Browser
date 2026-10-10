@@ -21,6 +21,7 @@ on:
           - browser-resources
           - browser-ip
           - browser-hints
+          - browser-startup
 
 permissions:
   contents: read
