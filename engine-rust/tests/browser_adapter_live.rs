@@ -225,7 +225,11 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
             let rows = cookies::read(&mut adapter)?;
             assert_eq!(rows.len(), 1);
             for (key, expected) in cookie.as_object().ok_or("Cookie fixture missing")? {
-                assert_eq!(&rows[0][key], expected, "Cookie field {key}");
+                if key == "expires" {
+                    assert_eq!(rows[0][key].as_f64(), Some(-1.0), "Session cookie expiry");
+                } else {
+                    assert_eq!(&rows[0][key], expected, "Cookie field {key}");
+                }
             }
             assert_eq!(
                 adapter.call("cookies-clear", Map::new(), Duration::from_secs(10))?["cleared"],

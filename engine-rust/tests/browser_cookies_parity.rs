@@ -54,11 +54,10 @@ except Exception as error:
         &mut command,
         Duration::from_secs(5),
     )
-    .map_err(|error| {
+    .inspect_err(|_| {
         if let Ok(kind) = std::fs::read_to_string(&diagnostic) {
             eprintln!("Original cookie observation failed: {kind}");
         }
-        error
     })?;
     let document = oracle.metadata().clone();
     oracle.finish(Duration::from_secs(5))?;
