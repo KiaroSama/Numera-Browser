@@ -1,17 +1,18 @@
-use super::{adapter::Adapter, hints, ip_identity, options, resources, startup};
+use super::{adapter::Adapter, extensions, hints, ip_identity, options, resources, startup};
 use crate::{
     identity_script,
     models::Profile,
     ownership::{ready::StartupFailed, session::Session},
 };
 use serde_json::{Map, Value};
-use std::{io, process::Command, time::Duration};
+use std::{io, path::Path, process::Command, time::Duration};
 
 pub struct PreparedLaunch<'a> {
     pub backend: &'a str,
     pub headless: bool,
     pub extra_args: &'a [String],
-    pub extensions: &'a [String],
+    pub cwd: &'a Path,
+    pub home: &'a Path,
     pub country: Option<&'a str>,
     pub relay: Option<&'a str>,
     pub binary_options: Map<String, Value>,
@@ -45,6 +46,11 @@ pub fn open(
         resources::prepare(&session, &profile, now).map_err(failure)?;
     }
     let path = session.preparation_path(&profile.id).map_err(failure)?;
+    let extensions = if launch.backend == "camoufox" {
+        Vec::new()
+    } else {
+        extensions::paths(&profile.extensions, launch.cwd, launch.home).map_err(failure)?
+    };
     let mut options = options::build(
         &profile,
         launch.backend,
@@ -52,7 +58,7 @@ pub fn open(
             .ok_or_else(|| failure(io::Error::other("Profile path is not Unicode")))?,
         launch.headless,
         launch.extra_args,
-        launch.extensions,
+        &extensions,
         launch.relay,
     )
     .map_err(failure)?
