@@ -78,7 +78,11 @@ fn registry_retains_sdk_transport_and_closes_only_its_admitted_session()
     let temporary = common::TempDirectory::new("browser-registry-protocol")?;
     let root = temporary.path();
     std::fs::create_dir_all(root.join("profiles"))?;
-    let profile = Profile::from_record(&serde_json::json!({"id":"a", "name":"fixture"}))?;
+    let fixture: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/init-script.json"))?;
+    let profile = Profile::from_record(&serde_json::json!({
+        "id":"a", "name":"fixture", "fingerprint":fixture["cases"][0]["input"]
+    }))?;
     std::fs::write(root.join("profiles/a.json"), serde_json::to_vec(&profile)?)?;
     let registry = Registry::new(root.into(), "fixture-host".into(), None)?;
     let foreign = Registry::new(root.into(), "fixture-host".into(), None)?;
