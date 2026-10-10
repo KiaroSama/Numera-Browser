@@ -161,7 +161,8 @@ CLI/server**. A passing library test does not certify a finished product migrati
   Windows/UNC spelling, preserving directory filtering, order and duplicates.
   Isolated original flag comparison passed hosted Windows/Linux on `dee4c5b`.
   Launch composition now resolves the current admitted profile's extension entries;
-  its captured SDK-frame regression awaits hosted verification. Named-user home
+  its original-derived SDK-frame regression and related native strict lint passed
+  hosted Windows/Linux on `d8853d4`. Named-user home
   lookup, concurrent path replacement and full application service wiring remain pending.
 
 All expected fixture outcomes are produced by the retained implementation,
