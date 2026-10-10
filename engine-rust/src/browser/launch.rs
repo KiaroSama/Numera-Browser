@@ -36,7 +36,11 @@ pub fn open(
             "Unknown browser backend",
         )));
     }
-    let profile = ip_identity::resolve(&profile, launch.country).map_err(failure)?;
+    let profile = if launch.backend == "camoufox" {
+        profile
+    } else {
+        ip_identity::resolve(&profile, launch.country).map_err(failure)?
+    };
     if launch.backend != "camoufox" {
         resources::prepare(&session, &profile, now).map_err(failure)?;
     }
