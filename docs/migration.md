@@ -132,8 +132,11 @@ CLI/server**. A passing library test does not certify a finished product migrati
   The server registry now has an actual SDK transport owner variant, with
   post-lease current-profile activation and retained transport handoff; its
   protocol and real-context ownership regressions passed hosted Windows/Linux.
-  Independent review found an acknowledged-close/normal-exit race; a bounded
-  normal-exit grace period and synchronized regression are awaiting verification.
+  Independent review found an acknowledged-close/normal-exit race. Shared cleanup
+  now gives the adapter a bounded normal-exit grace period before forced tree
+  settlement; the synchronized regression, prior protocol/logging cases and all
+  eight real-context legs passed on `ad77c24`. Complete activation-failure,
+  concurrent-shutdown and natural-browser-exit pipe coverage remains pending.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
