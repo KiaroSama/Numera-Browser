@@ -137,7 +137,11 @@ CLI/server**. A passing library test does not certify a finished product migrati
   settlement; the synchronized regression, prior protocol/logging cases and all
   eight real-context legs passed on `ad77c24`. Complete activation-failure,
   concurrent-shutdown and natural-browser-exit pipe coverage remains pending.
-  Effective launch integration, hard-parent-death and real backend acceptance are pending.
+  Native admitted launch composition now reuses IP-marked identity, resource
+  preparation, effective options, init-script/CDP policy and SDK transport. Its
+  caller must supply independently observed country, resolved extension paths,
+  relay and packaged binary data; live composition verification is pending.
+  Full launch-service integration, hard-parent-death and backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
 using non-sensitive inputs, fixed source clocks for conversion and deterministic
