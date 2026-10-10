@@ -27,7 +27,26 @@ fn native_extension_paths_preserve_original_order_home_and_directory_filter()
         std::fs::create_dir_all(path)?;
     }
     std::fs::write(cwd.join("not-directory"), b"fixture")?;
-    let entries = vec![
+    #[cfg(windows)]
+    let drive_entries = {
+        use std::path::{Component, Prefix};
+        let drive = match cwd.components().next() {
+            Some(Component::Prefix(prefix)) => match prefix.kind() {
+                Prefix::Disk(drive) => drive,
+                _ => return Err("Fixture drive missing".into()),
+            },
+            _ => return Err("Fixture prefix missing".into()),
+        };
+        let other = if drive == b'Z' { b'Y' } else { b'Z' };
+        assert!(
+            extensions::paths(&[format!("{}:extension α", char::from(other))], &cwd, &home)
+                .is_err()
+        );
+        vec![format!("{}:extension α", char::from(drive))]
+    };
+    #[cfg(not(windows))]
+    let drive_entries: Vec<String> = Vec::new();
+    let entries: Vec<String> = vec![
         "extension α".into(),
         "~/extension".into(),
         "missing".into(),
@@ -35,7 +54,10 @@ fn native_extension_paths_preserve_original_order_home_and_directory_filter()
         "extension α/../extension α".into(),
         "comma,folder".into(),
         "extension α".into(),
-    ];
+    ]
+    .into_iter()
+    .chain(drive_entries)
+    .collect();
     let fixture: Value = serde_json::from_str(include_str!("fixtures/init-script.json"))?;
     let profile = Profile::from_record(&json!({
         "id":"a", "name":"fixture", "fingerprint":fixture["cases"][0]["input"],
@@ -77,7 +99,12 @@ for line in sys.stdin:
     source.finish(Duration::from_secs(5))?;
     drop(source);
     let paths = extensions::paths(&entries, &cwd, &home)?;
-    assert_eq!(paths.len(), 5);
+    assert_eq!(paths.len(), if cfg!(windows) { 6 } else { 5 });
+    #[cfg(windows)]
+    assert_eq!(
+        paths[0], paths[5],
+        "Drive-relative path used ambient rather than supplied CWD"
+    );
     assert_eq!(paths[0], paths[2]);
     assert_eq!(paths[0], paths[4]);
     let capture = root.join("open.json");

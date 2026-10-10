@@ -69,6 +69,15 @@ except Exception as error:
         ))
         .is_err()
     );
+    for clear in [false, true] {
+        let oversized = serde_json::json!({"name":"fixture", "value":"x".repeat(1_048_576), "domain":".fixture.test"});
+        let error = cookies::write(&[oversized], clear, || {
+            panic!("Oversized cookie activated or cleared SDK")
+        })
+        .err()
+        .ok_or("Oversized replacement accepted")?;
+        assert_eq!(error.kind(), std::io::ErrorKind::InvalidInput);
+    }
     let cases = document["cases"]
         .as_array()
         .ok_or("Original cases missing")?;

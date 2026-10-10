@@ -23,6 +23,10 @@ pub fn write(
     if cookies.is_empty() && !clear {
         return Ok(0);
     }
+    let adding = Map::from_iter([("cookies".into(), Value::Array(cookies.to_vec()))]);
+    if !cookies.is_empty() {
+        Adapter::preflight("cookies-add", adding.clone())?;
+    }
     let mut adapter = activate()?;
     let result: io::Result<usize> = (|| {
         if clear {
@@ -30,11 +34,7 @@ pub fn write(
             confirmed(&result, "cleared")?;
         }
         if !cookies.is_empty() {
-            let result = adapter.call(
-                "cookies-add",
-                Map::from_iter([("cookies".into(), Value::Array(cookies.to_vec()))]),
-                Duration::from_secs(10),
-            )?;
+            let result = adapter.call("cookies-add", adding, Duration::from_secs(10))?;
             confirmed(&result, "added")?;
         }
         Ok(cookies.len())
