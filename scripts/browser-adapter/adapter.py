@@ -200,12 +200,21 @@ def main():
                     new_page = request.get('new_page', False)
                     if type(new_page) is not bool:
                         raise ValueError('New page option must be a boolean')
-                    if new_page:
-                        page = context.new_page()
-                        if cdp_ready:
-                            cdp_ready(page)
-                    page.goto(url, wait_until='domcontentloaded', timeout=30000)
-                    send(request_id, {'navigated': True})
+                    tolerate_failure = request.get('tolerate_failure', False)
+                    if type(tolerate_failure) is not bool:
+                        raise ValueError('Navigation failure option must be a boolean')
+                    navigated = True
+                    try:
+                        if new_page:
+                            page = context.new_page()
+                            if cdp_ready:
+                                cdp_ready(page)
+                        page.goto(url, wait_until='domcontentloaded', timeout=30000)
+                    except Exception:
+                        if not tolerate_failure:
+                            raise
+                        navigated = False
+                    send(request_id, {'navigated': navigated})
                     permit.set()
                 elif operation == 'inspect' and initialized and context is not None:
                     observation = """async () => ({
