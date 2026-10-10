@@ -180,8 +180,10 @@ CLI/server**. A passing library test does not certify a finished product migrati
   missing/foreign-session refusals and returns the original pre-stop record.
   Original HTTP observations plus an owned SDK-transport stop regression passed
   hosted Windows/Linux on `5a1a718`. Actual browser tests now stop through this
-  authenticated HTTP route; hosted verification awaits completion. Full launch/stop
-  failure and concurrent lifecycle remain pending.
+  authenticated HTTP route; all eight hosted real-browser legs passed on `c44fcbc`.
+  Source observation now has a separate inert hello and finite fixture deadline;
+  native parity and strict lint passed both hosts on `e106e2c`, which changes only
+  that source-fixture test. Full launch/stop failure and concurrent lifecycle remain pending.
 
 All expected fixture outcomes are produced by the retained implementation,
 using non-sensitive inputs, fixed source clocks for conversion and deterministic
