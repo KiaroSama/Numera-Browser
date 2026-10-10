@@ -173,7 +173,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
   passed on `1dfc484`, with related native parity and strict lint on both hosts.
   Repeated Camoufox release-fetch failures are isolated to CI preparation; that
   step now uses a scoped read-only workflow token and verifies the actual binary
-  before browser entry. Replacement hosted verification remains pending.
+  before browser entry. Isolated Windows Camoufox preparation and real-context
+  verification passed on `5ed531c`; the earlier seven-success/one-failure matrix
+  remains reported as failed. Complete candidate acceptance is still pending.
 
 All expected fixture outcomes are produced by the retained implementation,
 using non-sensitive inputs, fixed source clocks for conversion and deterministic
