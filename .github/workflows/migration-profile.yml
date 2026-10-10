@@ -7,7 +7,7 @@ on:
         description: Profile contracts or isolated identity script seam
         type: choice
         default: profiles
-        options: [profiles, identity-script, browser-options, browser-admission, browser-resources, browser-ip, browser-hints, browser-cookies, browser-extensions]
+        options: [profiles, identity-script, browser-options, browser-admission, browser-resources, browser-ip, browser-hints, browser-cookies, browser-extensions, cookie-export]
 
 permissions:
   contents: read
@@ -63,6 +63,9 @@ jobs:
       - name: Browser cookie policy contract
         if: inputs.scope == 'browser-cookies'
         run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_cookies_parity -- --test-threads=1 --nocapture
+      - name: Cookie export contract
+        if: inputs.scope == 'cookie-export'
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test cookie_export_parity -- --test-threads=1
       - name: Profile HTTP contracts
         if: inputs.scope == 'profiles'
         run: >-
@@ -74,7 +77,7 @@ jobs:
           --test profile_http_import_parity --test ready_parity
           --test session_ready_lifecycle --test session_registry_lifecycle
           --test profile_http_delete_parity --test profile_delete_owned_session
-          --test browser_adapter_protocol --test browser_launch_admission --test init_script_parity --test browser_options_parity --test browser_admission_parity --test browser_resources_parity --test browser_ip_parity --test browser_hints_parity --test browser_startup_parity --test browser_cookies_parity --test browser_extensions_parity --test session_stop_http
+          --test browser_adapter_protocol --test browser_launch_admission --test init_script_parity --test browser_options_parity --test browser_admission_parity --test browser_resources_parity --test browser_ip_parity --test browser_hints_parity --test browser_startup_parity --test browser_cookies_parity --test browser_extensions_parity --test session_stop_http --test cookie_export_parity
           --no-fail-fast -- --test-threads=2
       - name: Native lint
         if: inputs.scope == 'profiles'
