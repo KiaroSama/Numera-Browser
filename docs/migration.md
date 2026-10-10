@@ -129,6 +129,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
   responsive-viewport fixture corrections preserve actual page assertions.
   Temporary worker instrumentation is removed; final regression verification and
   complete failure coverage remain pending.
+  The server registry now has an actual SDK transport owner variant, with
+  post-lease current-profile activation and retained transport handoff; its
+  protocol and real-context ownership regressions await hosted verification.
   Effective launch integration, hard-parent-death and real backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,

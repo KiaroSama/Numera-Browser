@@ -2,7 +2,7 @@ use numera_core::{
     browser::{adapter::Adapter, admission, hints, options, resources},
     identity_script,
     models::{Fingerprint, Profile},
-    ownership::claims,
+    ownership::{claims, registry::Registry},
 };
 use serde_json::{Map, Value, json};
 use std::{path::Path, process::Command, time::Duration};
@@ -225,14 +225,24 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
                 }
             }
             assert!(root.join("user-data/a").is_dir());
-            assert_eq!(
-                adapter.call("close", Map::new(), Duration::from_secs(10))?["closing"],
-                true
-            );
             Ok(())
         })();
-        let cleanup = adapter.finish(Duration::from_secs(10));
-        drop(adapter);
+        let cleanup = if result.is_ok() {
+            let registry = Registry::new(root.into(), "fixture-host".into(), None)?;
+            let foreign = Registry::new(root.into(), "fixture-host".into(), None)?;
+            // Transfer the existing admitted SDK owner; no second lease can be acquired.
+            let transferred = registry.retain_browser("a", adapter);
+            transferred?;
+            assert!(registry.owns("a")?);
+            assert!(registry.running("a")?);
+            assert!(!foreign.stop("a", Duration::from_secs(10))?);
+            assert!(registry.stop("a", Duration::from_secs(10))?);
+            assert!(!registry.owns("a")?);
+            assert!(registry.shutdown(Duration::from_secs(10)).is_empty());
+            Ok(())
+        } else {
+            adapter.finish(Duration::from_secs(10))
+        };
         if result.is_err() || cleanup.is_err() {
             for entry in std::fs::read_dir(root.join("logs"))? {
                 let path = entry?.path();
