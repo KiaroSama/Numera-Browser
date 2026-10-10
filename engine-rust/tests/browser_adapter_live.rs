@@ -1,6 +1,6 @@
 use numera_core::{
     browser::{
-        admission,
+        admission, cookies,
         launch::{self, PreparedLaunch},
     },
     models::{Fingerprint, Profile},
@@ -211,6 +211,27 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
                     eprintln!("Browser stage: loopback finished");
                 }
             }
+            eprintln!("Browser stage: isolated cookie roundtrip");
+            assert!(cookies::read(&mut adapter)?.is_empty());
+            let cookie = json!({"name":"fixture", "value":"synthetic", "domain":".fixture.test", "path":"/", "expires":-1.0, "httpOnly":true, "secure":false, "sameSite":"Lax"});
+            assert_eq!(
+                adapter.call(
+                    "cookies-add",
+                    Map::from_iter([("cookies".into(), json!([cookie]))]),
+                    Duration::from_secs(10)
+                )?["added"],
+                true
+            );
+            let rows = cookies::read(&mut adapter)?;
+            assert_eq!(rows.len(), 1);
+            for (key, expected) in cookie.as_object().ok_or("Cookie fixture missing")? {
+                assert_eq!(&rows[0][key], expected, "Cookie field {key}");
+            }
+            assert_eq!(
+                adapter.call("cookies-clear", Map::new(), Duration::from_secs(10))?["cleared"],
+                true
+            );
+            assert!(cookies::read(&mut adapter)?.is_empty());
             assert!(root.join("user-data/a").is_dir());
             Ok(())
         })();

@@ -149,6 +149,11 @@ CLI/server**. A passing library test does not certify a finished product migrati
   cases and actual invalid-then-valid startup passed the hosted Windows/Linux
   checkpoint on `7cca1bc`, with all eight real SDK legs and native strict lint.
   Full launch-service integration, hard-parent-death and backend acceptance are pending.
+  Native cookie write policy now preserves empty/no-clear admission avoidance and
+  clear-before-add ordering, with SDK-only read/add/clear operations. Six original
+  policy observations and real isolated cookie roundtrips are prepared for hosted
+  verification; cookie format normalization, persisted restart and public HTTP/CLI
+  integration remain pending.
 
 All expected fixture outcomes are produced by the retained implementation,
 using non-sensitive inputs, fixed source clocks for conversion and deterministic
