@@ -59,7 +59,7 @@ jobs:
         run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_hints_parity -- --test-threads=1
       - name: Browser cookie policy contract
         if: inputs.scope == 'browser-cookies'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_cookies_parity -- --test-threads=1
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_cookies_parity -- --test-threads=1 --nocapture
       - name: Profile HTTP contracts
         if: inputs.scope == 'profiles'
         run: >-
