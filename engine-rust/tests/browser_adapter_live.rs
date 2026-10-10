@@ -135,7 +135,8 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
             .env("PYTHONUTF8", "1");
         let profile = Profile::from_record(&json!({
             "id":"a", "name":"fixture", "engine":backend,
-            "created_at":1000.0, "updated_at":1000.0, "fingerprint":case["input"]
+            "created_at":1000.0, "updated_at":1000.0, "fingerprint":case["input"],
+            "startup_urls":["invalid-fixture-url", "about:blank"],
         }))?;
         std::fs::create_dir_all(root.join("profiles"))?;
         std::fs::write(root.join("profiles/a.json"), serde_json::to_vec(&profile)?)?;

@@ -1,4 +1,4 @@
-use super::{adapter::Adapter, hints, ip_identity, options, resources};
+use super::{adapter::Adapter, hints, ip_identity, options, resources, startup};
 use crate::{
     identity_script,
     models::Profile,
@@ -97,6 +97,10 @@ pub fn open(
         policy,
         Duration::from_secs(90),
     ) {
+        adapter.finish(Duration::from_secs(10)).map_err(failure)?;
+        return Err(failure(error));
+    }
+    if let Err(error) = startup::navigate(&mut adapter, &profile.startup_urls) {
         adapter.finish(Duration::from_secs(10)).map_err(failure)?;
         return Err(failure(error));
     }

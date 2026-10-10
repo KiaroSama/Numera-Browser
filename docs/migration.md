@@ -144,6 +144,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
   on `3dea706`, with native refusal/parity/strict lint checks on both hosts.
   Camoufox retains its original locale rather than applying the Chromium-only
   country resolver; an independent SDK-frame regression checks that distinction.
+  Startup navigation now preserves original ordering/new-tab decisions and
+  per-URL failure continuation through the SDK transport; four independent source
+  cases and actual invalid-then-valid startup verification are pending.
   Full launch-service integration, hard-parent-death and backend acceptance are pending.
 
 All expected fixture outcomes are produced by the retained implementation,
