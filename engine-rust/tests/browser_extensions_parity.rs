@@ -163,3 +163,212 @@ for line in sys.stdin:
     temporary.cleanup()?;
     Ok(())
 }
+
+#[test]
+fn portable_backend_selection_matches_original_bundle_options_and_overrides()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::browser::bundled;
+    let temporary = common::TempDirectory::new("bundled-resources")?;
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(python);
+    command.args(["-u", "-c", r#"
+import json,os,sys
+request=json.loads(sys.stdin.readline())
+print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
+request=json.loads(sys.stdin.readline())
+from bundled_cases import cases
+print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(os.environ['FIXTURE_ROOT'])}}),flush=True)
+"#]).env("PYTHONUTF8","1").env("FIXTURE_ROOT",temporary.path().join("source"))
+        .env("PYTHONPATH",std::env::join_paths([repository.join("engine"),repository.join("scripts/migration")])?);
+    let mut source = Adapter::spawn(
+        temporary.path(),
+        "oracle",
+        "fixture-host",
+        &mut command,
+        Duration::from_secs(5),
+    )?;
+    let observations = source.call("bundled-options", Map::new(), Duration::from_secs(15))?;
+    source.finish(Duration::from_secs(5))?;
+    drop(source);
+    let cases = observations["cases"]
+        .as_array()
+        .ok_or("Bundle cases missing")?;
+    assert_eq!(cases.len(), 7);
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        let browsers = root.join("browsers");
+        for backend in ["playwright", "patchright", "camoufox", "cloak"] {
+            std::fs::create_dir_all(browsers.join(backend))?;
+            std::fs::write(
+                browsers.join(backend).join("browser.bin"),
+                backend.as_bytes(),
+            )?;
+        }
+        std::fs::create_dir_all(browsers.join("camoufox/addons/UBO"))?;
+        std::fs::write(browsers.join("camoufox/addons/UBO/manifest.json"), b"{}")?;
+        std::fs::write(
+            browsers.join("manifest.json"),
+            serde_json::to_vec(&case["manifest"])?,
+        )?;
+        let environment = serde_json::from_value(case["environment"].clone())?;
+        let selected = bundled::select(
+            Some(&browsers),
+            case["engine"].as_str().ok_or("Backend missing")?,
+            &root.join("data"),
+            &environment,
+            &["UBO".into()],
+        )?;
+        let normalized = |value: Value| -> Result<Value, Box<dyn std::error::Error>> {
+            let text = root.to_str().ok_or("Fixture root nontext")?;
+            fn paths(value: &mut Value, root: &str) {
+                match value {
+                    Value::String(text) => *text = text.replace(root, "$ROOT"),
+                    Value::Array(values) => values.iter_mut().for_each(|value| paths(value, root)),
+                    Value::Object(values) => {
+                        values.values_mut().for_each(|value| paths(value, root))
+                    }
+                    _ => {}
+                }
+            }
+            let mut value = value;
+            paths(&mut value, text);
+            Ok(value)
+        };
+        assert_eq!(
+            normalized(Value::Object(selected.options))?,
+            case["options"]
+        );
+        assert_eq!(
+            normalized(serde_json::to_value(selected.environment)?)?,
+            case["changes"]
+        );
+        assert_eq!(bundled::discover(&root)?, Some(browsers.clone()));
+        if case["engine"] == "camoufox" {
+            let source = browsers.join("camoufox-data/mmdb/fixture.mmdb");
+            std::fs::create_dir_all(source.parent().ok_or("GeoIP parent missing")?)?;
+            std::fs::write(&source, b"fixture-database")?;
+            let file = std::fs::File::options().write(true).open(&source)?;
+            let modified = std::time::UNIX_EPOCH + Duration::from_secs(1700000000);
+            file.set_times(std::fs::FileTimes::new().set_modified(modified))?;
+            drop(file);
+            let mut manifest = case["manifest"].clone();
+            manifest["_geoip"] = json!({"camoufox":"camoufox-data"});
+            std::fs::write(
+                browsers.join("manifest.json"),
+                serde_json::to_vec(&manifest)?,
+            )?;
+            let data = root.join("data");
+            let selected = bundled::select(
+                Some(&browsers),
+                "camoufox",
+                &data,
+                &environment,
+                &["UBO".into()],
+            )?;
+            assert_eq!(selected.geoip, Some(data.join("browser-cache/camoufox")));
+            let cache = data.join("browser-cache/camoufox/mmdb/fixture.mmdb");
+            assert_eq!(std::fs::read(&cache)?, b"fixture-database");
+            assert_eq!(std::fs::metadata(&cache)?.modified()?, modified);
+            std::fs::write(&cache, b"vendor-refreshed")?;
+            bundled::select(
+                Some(&browsers),
+                "camoufox",
+                &data,
+                &environment,
+                &["UBO".into()],
+            )?;
+            assert_eq!(std::fs::read(&cache)?, b"vendor-refreshed");
+            let capture = root.join("packaged-open.json");
+            let script = root.join("capture-sdk.py");
+            std::fs::write(
+                &script,
+                r#"
+import json,os,pathlib,sys
+request=json.loads(sys.stdin.readline())
+print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'backends':{'camoufox':{'installed':True}}}}),flush=True)
+request=json.loads(sys.stdin.readline())
+pathlib.Path(os.environ['FIXTURE_CAPTURE']).write_text(json.dumps({'frame':request,'geoip':os.environ.get('NUMERA_ADAPTER_GEOIP_DIR')}),encoding='utf-8')
+print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'opened':True,'backend':'camoufox'}}),flush=True)
+sys.stdin.readline()
+"#,
+            )?;
+            let runtime = numera_core::browser::runtime::Runtime {
+                python: std::env::var_os("NUMERA_ORACLE_PYTHON")
+                    .ok_or("Fixture interpreter missing")?
+                    .into(),
+                adapter: script,
+                cwd: root.clone(),
+                home: root.clone(),
+                logs: root.join("logs"),
+                country: None,
+                relay: None,
+                binary_options: Map::new(),
+            };
+            let fingerprint: Value =
+                serde_json::from_str(include_str!("fixtures/init-script.json"))?;
+            let profile = Profile::from_record(
+                &json!({"id":"packaged","name":"fixture","engine":"camoufox","fingerprint":fingerprint["cases"][0]["input"]}),
+            )?;
+            let session = Session::admit(&data, "packaged", "fixture-host")?;
+            // Capture location is part of the owned script, never a global environment mutation.
+            let code = std::fs::read_to_string(&runtime.adapter)?.replace(
+                "os.environ['FIXTURE_CAPTURE']",
+                &serde_json::to_string(capture.to_str().ok_or("Capture path nontext")?)?,
+            );
+            std::fs::write(&runtime.adapter, code)?;
+            let mut adapter = runtime.open_discovered(
+                session,
+                profile,
+                true,
+                false,
+                1000.0,
+                bundled::Discovery {
+                    app: &root,
+                    environment: &environment,
+                    default_addons: &["UBO".into()],
+                },
+            )?;
+            adapter.finish(Duration::from_secs(5))?;
+            drop(adapter);
+            let observed: Value = serde_json::from_slice(&std::fs::read(capture)?)?;
+            assert_eq!(
+                observed["geoip"],
+                serde_json::to_value(data.join("browser-cache/camoufox"))?
+            );
+            assert_eq!(observed["frame"]["options"]["ff_version"], "152");
+            assert_eq!(
+                observed["frame"]["options"]["exclude_addons"],
+                json!(["UBO"])
+            );
+            assert_eq!(
+                observed["frame"]["options"]["executable_path"],
+                serde_json::to_value(browsers.join("camoufox/browser.bin"))?
+            );
+            assert!(matches!(
+                numera_core::ownership::claims::read(&data, "packaged"),
+                numera_core::ownership::claims::Claim::Absent
+            ));
+            manifest["camoufox"]["executable"] = "../outside.bin".into();
+            std::fs::write(
+                browsers.join("manifest.json"),
+                serde_json::to_vec(&manifest)?,
+            )?;
+            assert!(
+                bundled::select(
+                    Some(&browsers),
+                    "camoufox",
+                    &data,
+                    &environment,
+                    &["UBO".into()]
+                )
+                .is_err()
+            );
+            assert_eq!(std::fs::read(&cache)?, b"vendor-refreshed");
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}

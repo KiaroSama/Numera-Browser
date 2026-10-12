@@ -22,6 +22,7 @@ pub enum Kind {
     Attach,
     ManualWarmup,
     ScheduledWarmup,
+    Finite,
 }
 impl Kind {
     pub fn name(self) -> &'static str {
@@ -30,30 +31,50 @@ impl Kind {
             Self::Attach => "attach",
             Self::ManualWarmup => "manual_warmup",
             Self::ScheduledWarmup => "scheduled_warmup",
+            Self::Finite => "finite",
         }
     }
 }
+#[cfg(test)]
+#[path = "attachment_tests.rs"]
+mod attachment_tests;
+#[path = "background_browser.rs"]
+mod background_browser;
+#[path = "finite_browser.rs"]
+mod finite_browser;
+use background_browser::Background;
+pub use background_browser::retry_retained as retry_retained_background;
+#[path = "background_registry.rs"]
+mod background_registry;
+#[cfg(test)]
+#[path = "background_tests.rs"]
+mod background_tests;
+
 enum Owner {
     Helper(Session),
     Browser(Adapter),
+    Background(Background),
 }
 impl Owner {
     fn settled_exit(&mut self) -> io::Result<Option<i32>> {
         match self {
             Self::Helper(session) => session.settled_exit(),
             Self::Browser(adapter) => adapter.settled_exit(),
+            Self::Background(background) => background.settled_exit(),
         }
     }
     fn finish(&mut self, budget: Duration) -> io::Result<Option<i32>> {
         match self {
             Self::Helper(session) => session.finish_with_status(budget),
             Self::Browser(adapter) => adapter.finish_with_status(budget),
+            Self::Background(background) => background.finish(budget),
         }
     }
     fn stop(&mut self, budget: Duration) -> io::Result<Option<i32>> {
         match self {
             Self::Helper(session) => session.finish_with_status(budget),
             Self::Browser(adapter) => adapter.close(budget),
+            Self::Background(background) => background.finish(budget),
         }
     }
 }
@@ -61,6 +82,7 @@ struct Entry {
     owner: Owner,
     kind: Kind,
     schedule: Option<String>,
+    details: Option<Value>,
 }
 /// One server lifetime owns only its own admitted sessions. Foreign claims are
 /// observed, never placed in this registry or terminated by it.
@@ -120,6 +142,9 @@ impl Registry {
             .clone())
     }
     fn finish_metadata(&self, id: &str, entry: &Entry, code: i32, time: f64) {
+        if entry.kind == Kind::Finite {
+            return;
+        }
         // Cleanup is already proved. A damaged/deleted record must not strand
         // another session; failed bookkeeping remains an explicit diagnostic.
         if let Err(error) = self.dashboard.patch(
@@ -180,7 +205,8 @@ impl Registry {
             .entries
             .lock()
             .map_err(|_| poisoned())?
-            .contains_key(id))
+            .get(id)
+            .is_some_and(|entry| entry.kind != Kind::Finite))
     }
     pub fn spawn(
         &self,
@@ -226,6 +252,7 @@ impl Registry {
                             owner: Owner::Helper(session),
                             kind,
                             schedule,
+                            details: None,
                         },
                     );
             }
@@ -246,6 +273,7 @@ impl Registry {
                             owner: Owner::Helper(session),
                             kind,
                             schedule,
+                            details: None,
                         },
                     );
                 return Err(failure(error));
@@ -264,6 +292,7 @@ impl Registry {
                     owner: Owner::Helper(session),
                     kind,
                     schedule,
+                    details: None,
                 },
             );
         Ok(true)
@@ -271,9 +300,15 @@ impl Registry {
     pub fn retain_browser(&self, id: &str, adapter: Adapter) -> io::Result<()> {
         let decision = self.decision(id)?;
         let _guard = decision.lock().map_err(|_| poisoned())?;
-        self.retain_browser_locked(id, adapter)
+        self.retain_browser_locked(id, adapter, Kind::Launch, None)
     }
-    fn retain_browser_locked(&self, id: &str, mut adapter: Adapter) -> io::Result<()> {
+    fn retain_browser_locked(
+        &self,
+        id: &str,
+        mut adapter: Adapter,
+        kind: Kind,
+        details: Option<Value>,
+    ) -> io::Result<()> {
         if !adapter.belongs_to(&self.root, id, &self.host) {
             adapter.finish(Duration::from_secs(5))?;
             return Err(io::Error::other(
@@ -294,8 +329,9 @@ impl Registry {
             id.into(),
             Entry {
                 owner: Owner::Browser(adapter),
-                kind: Kind::Launch,
+                kind,
                 schedule: None,
+                details,
             },
         );
         if shutting_down {
@@ -316,12 +352,37 @@ impl Registry {
         requested_name: &str,
         activate: impl FnOnce(Session, Profile) -> Result<Adapter, StartupFailed>,
     ) -> Result<bool, StartupFailed> {
+        self.open_browser_kind(id, requested_name, Kind::Launch, |session, profile| {
+            activate(session, profile).map(|adapter| (adapter, None))
+        })
+    }
+    pub fn open_browser_kind(
+        &self,
+        id: &str,
+        requested_name: &str,
+        kind: Kind,
+        activate: impl FnOnce(Session, Profile) -> Result<(Adapter, Option<Value>), StartupFailed>,
+    ) -> Result<bool, StartupFailed> {
         let failure = |error: io::Error| StartupFailed {
             kind: "failed".into(),
             message: error.to_string(),
         };
         let decision = self.decision(id).map_err(failure)?;
         let _guard = decision.lock().map_err(|_| failure(poisoned()))?;
+        self.open_browser_locked(id, requested_name, kind, activate)
+    }
+
+    fn open_browser_locked(
+        &self,
+        id: &str,
+        requested_name: &str,
+        kind: Kind,
+        activate: impl FnOnce(Session, Profile) -> Result<(Adapter, Option<Value>), StartupFailed>,
+    ) -> Result<bool, StartupFailed> {
+        let failure = |error: io::Error| StartupFailed {
+            kind: "failed".into(),
+            message: error.to_string(),
+        };
         if *self.closed.lock().map_err(|_| failure(poisoned()))? {
             return Err(failure(io::Error::other(
                 "Session registry is shutting down",
@@ -338,9 +399,96 @@ impl Registry {
             self.password.as_deref(),
             now().map_err(failure)?,
         )?;
-        let adapter = activate(session, profile)?;
-        self.retain_browser_locked(id, adapter).map_err(failure)?;
+        let (adapter, details) = activate(session, profile)?;
+        self.retain_browser_locked(id, adapter, kind, details)
+            .map_err(failure)?;
         Ok(true)
+    }
+
+    pub fn attached(&self, id: &str) -> io::Result<Option<Value>> {
+        let decision = self.decision(id)?;
+        let _guard = decision.lock().map_err(|_| poisoned())?;
+        if !self.reap_one(id)? {
+            return Ok(None);
+        }
+        Ok(self
+            .entries
+            .lock()
+            .map_err(|_| poisoned())?
+            .get(id)
+            .filter(|entry| entry.kind == Kind::Attach)
+            .and_then(|entry| entry.details.clone()))
+    }
+
+    /// Admission and readiness are one decision; an older request must never
+    /// query or settle a replacement attachment's owner.
+    pub fn open_attachment(
+        &self,
+        id: &str,
+        requested_name: &str,
+        activate: impl FnOnce(Session, Profile) -> Result<Adapter, StartupFailed>,
+        observe: impl FnOnce() -> io::Result<Value>,
+    ) -> Result<Option<Value>, StartupFailed> {
+        let failure = |error: io::Error| StartupFailed {
+            kind: "failed".into(),
+            message: error.to_string(),
+        };
+        let decision = self.decision(id).map_err(failure)?;
+        let _guard = decision.lock().map_err(|_| failure(poisoned()))?;
+        if !self.open_browser_locked(id, requested_name, Kind::Attach, |session, profile| {
+            activate(session, profile).map(|adapter| (adapter, None))
+        })? {
+            return Ok(None);
+        }
+        self.attachment_details_locked(id, observe)
+            .map(Some)
+            .map_err(failure)
+    }
+
+    fn attachment_details_locked(
+        &self,
+        id: &str,
+        observe: impl FnOnce() -> io::Result<Value>,
+    ) -> io::Result<Value> {
+        if !self.reap_one(id)? {
+            return Err(io::Error::other(
+                "Attached browser ended before DevTools was ready",
+            ));
+        }
+        if !self
+            .entries
+            .lock()
+            .map_err(|_| poisoned())?
+            .get(id)
+            .is_some_and(|entry| entry.kind == Kind::Attach)
+        {
+            return Err(io::Error::other("Profile is not an owned attachment"));
+        }
+        match observe() {
+            Ok(details) => {
+                if !self.reap_one(id)? {
+                    return Err(io::Error::other(
+                        "Attached browser ended before DevTools was ready",
+                    ));
+                }
+                let mut entries = self.entries.lock().map_err(|_| poisoned())?;
+                let entry = entries
+                    .get_mut(id)
+                    .ok_or_else(|| io::Error::other("Attachment disappeared"))?;
+                entry.details = Some(details.clone());
+                Ok(details)
+            }
+            Err(error) => {
+                let mut entries = self.entries.lock().map_err(|_| poisoned())?;
+                let entry = entries
+                    .get_mut(id)
+                    .ok_or_else(|| io::Error::other("Attachment disappeared"))?;
+                // A failed settlement leaves the original owner for retry/shutdown.
+                entry.owner.stop(Duration::from_secs(10))?;
+                entries.remove(id);
+                Err(error)
+            }
+        }
     }
 
     pub fn stop(&self, id: &str, budget: Duration) -> io::Result<bool> {

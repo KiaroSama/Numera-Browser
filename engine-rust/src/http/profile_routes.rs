@@ -30,6 +30,7 @@ pub(super) struct Profiles {
     pub(super) host: String,
     pub(super) sessions: Arc<crate::ownership::registry::Registry>,
     pub(super) installed: std::collections::BTreeMap<String, bool>,
+    pub(super) browser: Option<crate::browser::runtime::Runtime>,
 }
 pub fn router(root: PathBuf, environment: &str, host: &str) -> io::Result<Router> {
     let auth = Arc::new(RequestAuth::new(TokenStore::new(root.clone()), environment));
@@ -50,6 +51,16 @@ pub(crate) fn routes(
     installed: std::collections::BTreeMap<String, bool>,
     sessions: Arc<crate::ownership::registry::Registry>,
 ) -> Router {
+    routes_with_browser(root, password, host, installed, sessions, None)
+}
+pub(crate) fn routes_with_browser(
+    root: PathBuf,
+    password: Option<String>,
+    host: &str,
+    installed: std::collections::BTreeMap<String, bool>,
+    sessions: Arc<crate::ownership::registry::Registry>,
+    browser: Option<crate::browser::runtime::Runtime>,
+) -> Router {
     let state = Arc::new(Profiles {
         dashboard: DashboardStore::new(root.clone(), password.clone()),
         engine: ProfileRepo::new(root.clone(), password),
@@ -57,6 +68,7 @@ pub(crate) fn routes(
         host: host.into(),
         installed,
         sessions,
+        browser,
     });
     Router::new()
         .route(
@@ -88,6 +100,44 @@ pub(crate) fn routes(
         .route(
             "/api/profiles/import",
             axum::routing::post(super::profile_import::import),
+        )
+        .route(
+            "/api/profiles/{pid}/cookies",
+            get(super::cookie_routes::export)
+                .head(super::application::method_not_allowed)
+                .post(super::cookie_routes::import),
+        )
+        .route(
+            "/api/profiles/{pid}/align",
+            axum::routing::post(super::probe_routes::align),
+        )
+        .route(
+            "/api/profiles/{pid}/trust",
+            axum::routing::post(super::probe_routes::trust),
+        )
+        .route(
+            "/api/profiles/{pid}/proxy-test",
+            axum::routing::post(super::probe_routes::proxy),
+        )
+        .route(
+            "/api/profiles/{pid}/tls",
+            axum::routing::post(super::probe_routes::tls),
+        )
+        .route(
+            "/api/profiles/{pid}/dns",
+            axum::routing::post(super::probe_routes::dns),
+        )
+        .route(
+            "/api/profiles/{pid}/attach",
+            axum::routing::post(super::attach_routes::attach_profile),
+        )
+        .route(
+            "/api/profiles/{pid}/warmup",
+            axum::routing::post(super::warmup_routes::warmup_profile),
+        )
+        .route(
+            "/api/profiles/{pid}/launch",
+            axum::routing::post(super::launch_routes::launch_profile),
         )
         .route(
             "/api/profiles/{pid}/stop",

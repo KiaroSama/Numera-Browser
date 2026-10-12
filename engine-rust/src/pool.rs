@@ -122,14 +122,38 @@ pub(crate) fn decimal_ascii(text: &str) -> Option<String> {
     Some(out)
 }
 
-pub fn to_line(proxy: &Value) -> io::Result<String> {
-    let kind = proxy["type"].as_str().unwrap_or("HTTP").to_uppercase();
-    let scheme = match kind.as_str() {
-        "HTTPS" => "https",
-        "SOCKS4" => "socks4",
-        "SOCKS5" => "socks5",
-        _ => "http",
+pub fn server_url(kind: &str, host: &str, port: &str) -> io::Result<String> {
+    let scheme = scheme(kind)?;
+    let host = if host.contains(':') && !host.starts_with('[') {
+        format!("[{host}]")
+    } else {
+        host.into()
     };
+    let tail = if port.trim().is_empty() {
+        String::new()
+    } else {
+        format!(":{port}")
+    };
+    Ok(format!("{scheme}://{host}{tail}"))
+}
+fn scheme(kind: &str) -> io::Result<&'static str> {
+    match kind.to_uppercase().as_str() {
+        "HTTP" | "" => Ok("http"),
+        "HTTPS" => Ok("https"),
+        "SOCKS4" => Ok("socks4"),
+        "SOCKS5" => Ok("socks5"),
+        _ => Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!(
+                "unsupported proxy type {}; expected one of ['HTTP', 'HTTPS', 'SOCKS4', 'SOCKS5']",
+                crate::validation::repr(&Value::String(kind.into()))
+            ),
+        )),
+    }
+}
+pub fn to_line(proxy: &Value) -> io::Result<String> {
+    // Export retains the original fallback for unknown legacy pool types.
+    let scheme = scheme(proxy["type"].as_str().unwrap_or("HTTP")).unwrap_or("http");
     let mut host = proxy["host"]
         .as_str()
         .ok_or_else(|| io::Error::other("Proxy host is not text"))?

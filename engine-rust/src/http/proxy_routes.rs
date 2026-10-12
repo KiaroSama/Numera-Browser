@@ -16,9 +16,9 @@ use axum::{
 use serde_json::{Map, Value, json};
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
-struct Proxies {
-    pool: ProxyPool,
-    dashboard: DashboardStore,
+pub(super) struct Proxies {
+    pub(super) pool: ProxyPool,
+    pub(super) dashboard: DashboardStore,
 }
 pub fn router(root: PathBuf, environment: &str) -> Router {
     let auth = Arc::new(RequestAuth::new(TokenStore::new(root.clone()), environment));
@@ -39,6 +39,21 @@ pub(crate) fn routes(root: PathBuf, password: Option<String>) -> Router {
         .route("/api/proxies/{id}", put(edit).delete(delete_one))
         .route("/api/proxies/delete", post(delete))
         .route("/api/proxies/export", post(export))
+        .route(
+            "/api/proxies/archive",
+            post(super::proxy_assignment::archive),
+        )
+        .route("/api/proxies/assign", post(super::proxy_assignment::assign))
+        .route("/api/proxies/test", post(super::proxy_test::test))
+        .route("/api/proxies/{id}/test", post(super::proxy_test::test_one))
+        .route(
+            "/api/proxies/{id}/rotate",
+            post(super::proxy_rotate::rotate_one),
+        )
+        .route(
+            "/api/proxies/rotate",
+            post(super::proxy_rotate::rotate_many),
+        )
         .with_state(state)
 }
 async fn list(State(state): State<Arc<Proxies>>) -> Response {
@@ -207,23 +222,48 @@ async fn export(State(state): State<Arc<Proxies>>, ObjectBody(body): ObjectBody)
                 Value::Array(ids) => ids.clone(),
                 Value::String(text) => text.chars().map(|c| Value::String(c.to_string())).collect(),
                 Value::Object(object) => object.keys().cloned().map(Value::String).collect(),
-                _ => return Err(RepoError::InvalidRecord("Proxy selection is not iterable".into())),
+                _ => {
+                    return Err(RepoError::InvalidRecord(
+                        "Proxy selection is not iterable".into(),
+                    ));
+                }
             };
-            if keep.iter().any(|id| id.is_array() || id.is_object()) { return Err(RepoError::InvalidRecord("Proxy selection contains unhashable IDs".into())); }
+            if keep.iter().any(|id| id.is_array() || id.is_object()) {
+                return Err(RepoError::InvalidRecord(
+                    "Proxy selection contains unhashable IDs".into(),
+                ));
+            }
             rows.retain(|row| keep.contains(&row["id"]));
         }
         let mut withheld = 0;
         for row in &rows {
-            let id = row["id"].as_str().ok_or_else(|| RepoError::InvalidRecord("Proxy ID is not text".into()))?;
+            let id = row["id"]
+                .as_str()
+                .ok_or_else(|| RepoError::InvalidRecord("Proxy ID is not text".into()))?;
             withheld += usize::from(state.pool.secret_withheld(id)?);
         }
         if withheld > 0 {
-            return Ok(error(StatusCode::CONFLICT, &format!("{withheld} of these proxies have a password that cannot be read: the vault is locked, so this needs the master password - set NUMERA_PASSWORD or pass --password")));
+            return Ok(error(
+                StatusCode::CONFLICT,
+                &format!(
+                    "{withheld} of these proxies have a password that cannot be read: {}",
+                    crate::vault::policy::LOCKED_MESSAGE
+                ),
+            ));
         }
-        let lines = rows.iter().map(crate::pool::to_line).collect::<Result<Vec<_>, _>>()?;
-        let text = if lines.is_empty() { String::new() } else { format!("{}\n", lines.join("\n")) };
+        let lines = rows
+            .iter()
+            .map(crate::pool::to_line)
+            .collect::<Result<Vec<_>, _>>()?;
+        let text = if lines.is_empty() {
+            String::new()
+        } else {
+            format!("{}\n", lines.join("\n"))
+        };
         Ok::<_, RepoError>(Json(json!({"count":lines.len(),"text":text})).into_response())
-    }).await {
+    })
+    .await
+    {
         Ok(Ok(response)) => response,
         _ => failure(),
     }
@@ -231,6 +271,6 @@ async fn export(State(state): State<Arc<Proxies>>, ObjectBody(body): ObjectBody)
 fn error(status: StatusCode, detail: &str) -> Response {
     (status, Json(json!({"detail":detail}))).into_response()
 }
-fn failure() -> Response {
+pub(super) fn failure() -> Response {
     (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response()
 }

@@ -2,6 +2,8 @@ use axum::{
     body::{Body, to_bytes},
     http::Request,
 };
+use numera_core::browser::runtime::Runtime as BrowserRuntime;
+use numera_core::http::application::router_with_browser;
 use numera_core::{
     browser::{
         admission, cookies,
@@ -326,5 +328,93 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         );
         temporary.cleanup()?;
     }
+    let temporary = common::TempDirectory::new("native-cookie-http-live")?;
+    let root = temporary.path();
+    std::fs::create_dir_all(root.join("dashboard"))?;
+    std::fs::write(
+        root.join("dashboard/a.json"),
+        serde_json::to_vec(
+            &json!({"id":"a", "name":"fixture", "seed":42, "engine":backend, "startupUrls":"about:blank"}),
+        )?,
+    )?;
+    let registry = Arc::new(Registry::new(root.into(), "fixture-host".into(), None)?);
+    let browser = BrowserRuntime {
+        python: python.clone().into(),
+        adapter: Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .ok_or("Repository missing")?
+            .join("scripts/browser-adapter/adapter.py"),
+        cwd: root.into(),
+        home: root.into(),
+        logs: root.join("logs"),
+        country: None,
+        relay: None,
+        binary_options: Default::default(),
+    };
+    let result = runtime.block_on(async {
+        let app = router_with_browser(root.into(), "fixture-api", "", None, "fixture-host",
+            SessionApplication { installed:BTreeMap::from([(backend.clone(),true)]), sessions:registry.clone() }, Some(browser.clone())).await?;
+        let cookie = json!({"name":"persistent-fixture", "value":"synthetic", "domain":".fixture.test", "path":"/", "expires":1893456000.0, "secure":false, "httpOnly":true, "sameSite":"Lax"});
+        for (step, (method, route, payload, status)) in [
+            ("POST", "/cookies", Some(json!({"cookies":[cookie.clone()],"clear":true})),200),
+            ("GET", "/cookies", None,200),
+            ("POST", "/launch", Some(json!({"headless":true})),200),
+            ("POST", "/launch", Some(json!({"headless":true})),200),
+            ("GET", "/cookies", None,409),
+            ("POST", "/stop", None,200),
+            ("POST", "/cookies", Some(json!({"cookies":[],"clear":true})),500),
+            ("GET", "/cookies", None,200),
+        ].into_iter().enumerate() {
+            eprintln!("Browser stage: actual HTTP {method} {route}");
+            let mut request = Request::builder().method(method).uri(format!("/api/profiles/a{route}")).header("authorization","Bearer fixture-api");
+            let body = match payload { Some(payload) => { request=request.header("content-type","application/json"); Body::from(serde_json::to_vec(&payload)?) }, None=>Body::empty() };
+            let response=tokio::time::timeout(Duration::from_secs(120),app.clone().oneshot(request.body(body)?)).await??;
+            assert_eq!(response.status().as_u16(),status,"{method} {route}");
+            let bytes=tokio::time::timeout(Duration::from_secs(5),to_bytes(response.into_body(),65536)).await??;
+            let result:Value=serde_json::from_slice(&bytes)?;
+            if method=="GET" && status==200 {
+                assert_eq!(result["cookies"], json!([cookie.clone()]), "Empty import erased the existing jar at step {step}");
+                assert!(!registry.owns("a")?);
+            }
+            if route=="/launch" { assert_eq!(result["status"],"running"); assert!(registry.owns("a")?); }
+        }
+        Ok::<_,Box<dyn std::error::Error>>(())
+    });
+    let failed = registry.shutdown(Duration::from_secs(10));
+    assert!(failed.is_empty(), "Actual HTTP lifecycle cleanup failed");
+    drop(registry);
+    result?;
+    assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
+    let repo = numera_core::storage::repo::ProfileRepo::open(root.into(), None, None)?;
+    let config = numera_core::storage::config::ConfigStore::new(root.into());
+    let installed = BTreeMap::from([(backend.clone(), true)]);
+    let profiles = numera_core::cli::profile_commands::Profiles {
+        repo: &repo,
+        config: &config,
+        installed: &installed,
+        host: "fixture-host",
+    };
+    eprintln!("Browser stage: actual native foreground CLI launch and controlled close");
+    let time = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_secs_f64();
+    let outcome = profiles.launch(
+        &browser,
+        numera_core::cli::launch_commands::LaunchOptions {
+            reference: "a",
+            engine: Some(&backend),
+            headless: true,
+            time,
+        },
+        || true,
+    )?;
+    assert_eq!(outcome.exit, 0);
+    assert_eq!(outcome.payload["engine"], backend);
+    assert_eq!(outcome.payload["id"], "a");
+    assert!(
+        matches!(claims::read(root, "a"), claims::Claim::Absent),
+        "Foreground CLI retained its settled claim"
+    );
+    temporary.cleanup()?;
     Ok(())
 }

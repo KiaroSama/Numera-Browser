@@ -50,14 +50,31 @@ CLI/server**. A passing library test does not certify a finished product migrati
   HTTP list/create/edit/delete/export handlers reuse those stores, preserving
   credential identity, clear/preserve intent, locked-vault refusal and health
   invalidation. URL/network trust rules, bulk
-  assignment and live proxy operations remain pending.
+  HTTP archive and atomic round-robin assignment now reuse these stores,
+  preserving explicit archived selection, unreadable-password refusal and
+  transaction-time profile readback. Original HTTP/store fixtures are prepared,
+  not executed. Native proxy checking now uses explicit authenticated transports,
+  remote SOCKS DNS and the original echo/UA/result policy; HTTP checks run at most
+  eight tasks and commit health once, while CLI checks retain sequential verdicts.
+  Single checks preserve missing/locked refusal before network access. Native
+  rotation now validates all destination addresses, pins each direct control-plane
+  hop, revalidates redirects, applies cooldown and checks whether the exit moved.
+  CLI and single/bulk HTTP handlers preserve their distinct attempt/health updates;
+  original refusal/store and two-address loopback fixtures are prepared, unexecuted.
+  The native loopback relay now supplies browser HTTP/SOCKS credentials and
+  SOCKS4 USERID checks, retaining its runtime and connection tasks through SDK
+  settlement. Original wire, admitted-idle shutdown and framed-SDK lifetime
+  fixtures are prepared, not executed. Precise legacy/network errors, failed
+  cleanup retention, real DNS/TLS/rotation checks and full acceptance remain pending.
 - Extension manifest/localized labels, contained icon selection, ID diagnostics,
   CRX2/CRX3 extraction and staged install/reuse/replacement/removal primitives.
   Failed replacement keeps the prior installation; installed-list HTTP includes
   known store and manually configured resources through the same native description.
-  Package downloading is supplied at a narrow adapter seam. Live download,
-  icon-serving, hostile-resource budgets, remaining
-  compatibility contracts and real browser activation are pending.
+  Native async TLS download now supplies the fixed Web Store request to the
+  staged installer, with total/read/connect deadlines, a streamed output ceiling
+  and CRX magic checks. CLI installation is wired; loopback transport fixtures
+  are prepared but unexecuted. Actual TLS/proxy compatibility, live download,
+  icon-serving, remaining contracts and real browser activation are pending.
 - Named token persistence, sticky auth-policy adoption, duplicate-name creation,
   lockout-aware revocation and constant-time digest verification primitives.
   Per-request auth and literal-host bind refusal decisions are present, with auth
@@ -102,7 +119,11 @@ CLI/server**. A passing library test does not certify a finished product migrati
   backend/application acceptance. Forty source-derived effective-option cases
   capture the SDK call boundary with network/resources isolated explicitly. Native
   backend option construction passed all forty cases on hosted Windows/Linux;
-  resource preparation, IP resolution, relay and launch-service integration remain pending.
+  Native packaged-resource selection now preserves per-backend executables,
+  explicit overrides, Camoufox addon/version options and writable GeoIP seeding.
+  Its original-option, file-preservation and framed-runtime cases are prepared,
+  unexecuted. Automatic executable-entry discovery, actual SDK enum receipt,
+  platform packaging and complete launch-service acceptance remain pending.
   A native post-lease admission seam now rereads coherent current state and refuses
   missing, divergent or unreadable-credential profiles before any SDK activation;
   five source-derived cases passed hosted Windows/Linux. The admitted session lease
@@ -166,8 +187,19 @@ CLI/server**. A passing library test does not certify a finished product migrati
   and format fallback, reusing the existing identity string encoder. Native
   Netscape parsing preserves tab/whitespace fallback, HttpOnly/comment handling,
   original digit rules and text line boundaries through source-observation cases.
-  Complete JSON normalization, non-finite/legacy formats and public service wiring
-  remain pending.
+  Finite JSON normalization now covers storage-state/extension records and ISO
+  expiry using native calendar/timezone primitives. A deployment-selected runtime
+  composes native launch policy with the fixed SDK transport; cookie import/export
+  and launch handlers reuse it through the authenticated router. These additions
+  are unverified pending hosted execution. HTTP import rejects empty usable jars
+  before clearing, matching the original CLI boundary. Finite operations join the
+  registry's shutdown/admission synchronization without becoming user launch
+  sessions; unsuccessful cleanup remains retained for a later sweep. New original
+  command-handler observations and synchronized shutdown tests cover those policies.
+  Actual SDK tests also exercise persisted-cookie reopen, idempotent HTTP launch,
+  busy refusal and stop, but their extended acceptance has not run yet.
+  Complete non-finite/surrogate/legacy/DST compatibility, CLI service wiring,
+  full listener and lifecycle acceptance remain pending.
   Native extension path resolution reuses existing home expansion and canonical
   Windows/UNC spelling, preserving directory filtering, order and duplicates.
   Isolated original flag comparison passed hosted Windows/Linux on `dee4c5b`.
@@ -192,6 +224,110 @@ CLI/server**. A passing library test does not certify a finished product migrati
   Source observation now has a separate inert hello and finite fixture deadline;
   native parity and strict lint passed both hosts on `e106e2c`, which changes only
   that source-fixture test. Full launch/stop failure and concurrent lifecycle remain pending.
+
+- Native clap command definitions and automation reflection are now prepared for
+  the original command tree, including shared flags, numeric/default/choice rules
+  and MCP schemas derived from that same registry. Profile create/list/show/edit,
+  coherence/collision verdicts and archive service seams reuse native stores rather
+  than forwarding Python application commands. New original-handler/parser tests
+  are pending hosted execution; exact help/error/human output, all command handlers,
+  detached jobs and executable MCP/server lifecycle remain incomplete.
+  A native output owner now separates human narration from one structured document,
+  using the existing ASCII JSON formatter and TTY-gated colors. Profile, settings,
+  folder/vault and durable-job renderers have original-handler byte fixtures.
+  Probe startup/result narration now runs through the actual native service, and
+  warmup/run-due progress is emitted at its execution boundary rather than invented
+  from final payloads. Token/schedule display reuses the existing local-time library.
+  Public presentation now composes native pool, extension, cookie, fleet and mutation
+  output without a generic JSON fallback. Launch narration uses the admitted profile;
+  attachment publishes its single structured endpoint while ownership is still held.
+  Omitted CDP browser titles retain the original human fallback without changing JSON.
+  A native HTTP lifetime is drafted with secure bind checks, readiness, the original
+  scheduler cadence and retained shutdown retries; its loopback/failure fixtures are
+  prepared for hosted execution. Static dashboard discovery/fallback now has a native
+  draft backed by the maintained file service and fourteen original-response cases,
+  including missing assets, unknown API paths, HEAD policy and text charset fidelity.
+  It is not a selectable replacement server: executable signals, detached supervision,
+  full static/auth verification and acceptance remain open. The fallback is now mounted
+  before the shared CORS/auth layers; four original-auth cases cover protected unknown
+  API paths alongside public SPA/readiness. These checks are prepared, not executed.
+  These fixtures are prepared, not compiled or executed; file-output rendering tests
+  do not certify archive behavior, and interactive input deadlines, other command
+  families and executable output/signal acceptance remain pending.
+  Native settings, folder/token/schedule, extension, vault, pool and cookie CLI
+  service seams now compose through one shared application dispatcher. Native
+  DNS/TLS and combined proxy probes now use finite browser ownership: Rust
+  selects the original scripts, endpoints, retry order, grading and command exit;
+  Python performs only SDK navigation/evaluation. The combined probe reads
+  IP/WebRTC/DNS/TLS in one context, preserving the original private-address
+  heuristic and timezone aliases rather than substituting rotation policy.
+  Initial IP evaluation failure stops later probes; raw SDK error text remains
+  suppressed for credential safety, so exact exception-message parity is unfinished.
+  HTTP proxy/TLS/DNS routes reuse those same services,
+  preserving auth, missing/busy admission and unhealthy-result HTTP 200 behavior.
+  Original grade/retry/HTTP observations and actual CLI/HTTP protocol fixtures
+  are prepared, unexecuted. Invalid navigation deadlines
+  refuse before SDK calls; tolerated SDK errors do not hide protocol serialization
+  failures. Offline trust now selects its in-memory HTTPS page and original
+  observation script natively, with backend-aware grading and distinct human/JSON
+  exit rules. HTTP trust caches only grade/score/time onto the current profile.
+  Alignment observes the original font candidates and patches only its owned
+  fingerprint fields onto a fresh transaction-time profile after browser cleanup;
+  unrelated edits are retained. Original grades and concurrent-edit/frame fixtures
+  are prepared, unexecuted. Real service/CORS, stalled-evaluation cleanup, exact
+  legacy errors, complete alignment and full backend acceptance remain pending.
+  Native CLI DevTools attachment publishes connection details through an explicit
+  output owner before waiting for browser closure. Natural SDK exit finishes the
+  existing owner without sending a second close request. HTTP attachment stores
+  endpoint metadata beside its exact registry owner; admission, readiness and
+  failure cleanup share one per-profile decision, preventing an older request from
+  stopping a replacement attachment. Original HTTP refusals/success/idempotence,
+  actual native loopback CDP/stop and controlled readiness-failure fixtures are
+  prepared, unexecuted. Actual SDK attachment, concurrent shutdown, failed
+  settlement and executable signal/output acceptance remain pending.
+  Native warmup control now owns the original preset destinations, timing,
+  navigation, mouse-action selection and same-site link scripts. Its duration
+  and preset validator is shared with schedules. The SDK only passes selected
+  mouse operations and navigation deadlines; finite sessions strip startup URLs
+  without changing stored profiles. Original validation and virtual-time runs,
+  native service/claim cleanup and fixed-SDK mouse/deadline fixtures are prepared,
+  unexecuted. HTTP manual warmup now registers an owned native control worker;
+  stop deadlines retain unfinished workers/adapters for retry rather than losing
+  their ownership. CLI run-due and a caller-driven server scheduler tick are
+  drafted, sharing occurrence claims and native warmup. Scheduled admission,
+  atomic outcome bookkeeping and failure cleanup hold one profile decision;
+  unsettled startup retains the occurrence claim. Controlled worker/claim,
+  quarantine retry, HTTP refusal/start/stop and bookkeeping-failure fixtures are
+  prepared, unexecuted. Full failure injection, automatic server lifetime,
+  cancellation/progress, wider branch coverage and actual backend acceptance
+  remain incomplete. Pool
+  standard-input import shares the same service through an explicit input owner;
+  unrelated commands never consume stdin. Shared
+  CLI store opening resolves explicit/inherited unlock and supplies both keys
+  for interrupted-rotation resume before exposing services; its generated
+  recovery-fixture regression is prepared, not executed. Bulk
+  generation/apply and vendor imports reuse native identity and atomic dual-store
+  services; fresh proxy-password choices survive storage reads. Original-handler
+  observations cover structured payloads, refusal order and persisted twins.
+  Durable job identity/outcome merging, bounded UTF-8 log reads, finished-job
+  pruning and recorded-tree stopping are prepared with source and isolated OS
+  fixtures. Unknown process observations remain owned; cleanup refuses a log
+  belonging to another job. Detached spawning, legacy Windows tree stopping and
+  full failure/recovery acceptance remain unfinished. MCP dispatch also reaches
+  the shared native application and reuses the existing JSON formatter; non-zero
+  command verdicts remain structured results rather than transport errors. This is still library
+  code, not proof of a running MCP server or a completed CLI. A bounded sequential
+  stdio loop now reuses that dispatch and checks frame size before buffering;
+  tool subprocess capture uses one nonblocking pipe owner with wall, idle,
+  output and cleanup ceilings. Failed cleanup retains its tree owner. Inherited
+  vault unlock stays in the environment, never public argv. Original protocol
+  observations now traverse the loop; these additions have not run in hosted CI.
+  POSIX escaped-writer fixtures check capture deadlines and separately stop their
+  own escaped tree; they do not prove universal descendant containment. A complete
+  native executable and detached-job supervisor are still required. The integrated native
+  dependency batch selects clap 4.6.7, Chrono 0.4.45, serde_json 1.0.152 and ZIP 9.0.1;
+  upstream exact transitive pins remain respected. Hosted compatibility is pending. No library
+  registry entry is evidence that its command is runnable in the finished product.
 
 All expected fixture outcomes are produced by the retained implementation,
 using non-sensitive inputs, fixed source clocks for conversion and deterministic

@@ -30,7 +30,11 @@ def run(command: list[str], wall: float, idle: float, logger) -> int:
     env['NUMERA_ORACLE_PYTHON'] = sys.executable
     budget = max(1, min(2, int(env.get('HOOKMAKER_MAX_TEST_WORKERS', '2'))))
     env['CARGO_BUILD_JOBS'] = str(budget)
-    env['NUMERA_TEST_TEMP'] = str(ROOT / '.ci-work' / 'migration-temp')
+    temporary = ROOT / '.ci-work' / 'migration-temp'
+    temporary.mkdir(parents=True, exist_ok=True)
+    env['NUMERA_TEST_TEMP'] = str(temporary)
+    for key in ('TEMP', 'TMP', 'TMPDIR'):
+        env[key] = str(temporary)
     proc, tree = spawn(command, env=env, stdin=subprocess.DEVNULL,
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                        text=True, encoding='utf-8', errors='strict', bufsize=1)

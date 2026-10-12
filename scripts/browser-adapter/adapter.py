@@ -106,6 +106,16 @@ def open_context(backend, options):
         log = logging.getLogger('numera.browser-adapter')
         log.info('Camoufox SDK import starting')
         from camoufox.sync_api import Camoufox
+        if 'exclude_addons' in options:
+            from camoufox.addons import DefaultAddons
+            options = dict(options)
+            options['exclude_addons'] = [DefaultAddons[name] for name in options['exclude_addons']]
+        geoip = os.environ.get('NUMERA_ADAPTER_GEOIP_DIR')
+        if geoip:
+            from camoufox import geolocation
+            geolocation.GEOIP_DIR = Path(geoip)
+            geolocation.MMDB_DIR = Path(geoip) / 'mmdb'
+            geolocation.GEOIP_CONFIG = Path(geoip) / 'config.yml'
         log.info('Camoufox SDK import complete')
         manager = Camoufox(**options)
         log.info('Camoufox persistent context entering')
@@ -147,13 +157,19 @@ def main():
     try:
         while True:
             if context is not None:
+                if closed.is_set():
+                    break
                 try:
                     request = events.get_nowait()
                 except queue.Empty:
                     if closed.is_set():
                         break
-                    # Pump the sync SDK event loop; stdin reader never invokes SDK.
-                    context.pages[0].wait_for_timeout(25) if context.pages else context.new_page().wait_for_timeout(25)
+                    # Pump SDK events while retaining responsive native close input.
+                    try:
+                        context.pages[0].wait_for_timeout(25) if context.pages else context.new_page().wait_for_timeout(25)
+                    except Exception:
+                        if not closed.is_set():
+                            raise
                     continue
             else:
                 request = events.get(timeout=max(0.001, input_deadline - time.monotonic()))
@@ -188,6 +204,8 @@ def main():
                         sessions, cdp_ready = apply(context, request['cdp_policy'])
                         cdp_sessions.extend(sessions)
                     page = context.pages[0] if context.pages else context.new_page()
+                    if os.environ.get('NUMERA_ADAPTER_FIRST_PAGE') == '1':
+                        page.on('close', lambda *_: closed.set())
                     if cdp_ready:
                         cdp_ready(page)
                     send(request_id, {'opened': True, 'backend': backend})
@@ -203,18 +221,68 @@ def main():
                     tolerate_failure = request.get('tolerate_failure', False)
                     if type(tolerate_failure) is not bool:
                         raise ValueError('Navigation failure option must be a boolean')
+                    timeout_ms = request.get('timeout_ms', 30000)
+                    if type(timeout_ms) is not int or not 1 <= timeout_ms <= 45000:
+                        raise ValueError('Navigation deadline is invalid')
                     navigated = True
                     try:
                         if new_page:
                             page = context.new_page()
                             if cdp_ready:
                                 cdp_ready(page)
-                        page.goto(url, wait_until='domcontentloaded', timeout=30000)
+                        page.goto(url, wait_until='domcontentloaded', timeout=timeout_ms)
                     except Exception:
                         if not tolerate_failure:
                             raise
                         navigated = False
                     send(request_id, {'navigated': navigated})
+                    permit.set()
+                elif operation == 'mouse' and initialized and context is not None:
+                    import math
+                    action, x, y = request.get('action'), request.get('x'), request.get('y')
+                    if (action not in ('wheel', 'move') or type(x) not in (int, float)
+                            or type(y) not in (int, float) or not math.isfinite(x)
+                            or not math.isfinite(y)):
+                        raise ValueError('Invalid mouse action')
+                    steps = request.get('steps', 1)
+                    if type(steps) is not int or not 1 <= steps <= 1000:
+                        raise ValueError('Invalid mouse steps')
+                    performed = True
+                    try:
+                        if action == 'wheel':
+                            page.mouse.wheel(x, y)
+                        else:
+                            page.mouse.move(x, y, steps=steps)
+                    except Exception as error:
+                        log.warning('Mouse failed type=%s', type(error).__name__)
+                        performed = False
+                    send(request_id, {'performed': performed})
+                    permit.set()
+                elif operation == 'route' and initialized and context is not None:
+                    pattern, body = request.get('pattern'), request.get('body')
+                    content_type, status = request.get('content_type'), request.get('status')
+                    if (not isinstance(pattern, str) or not pattern or not isinstance(body, str)
+                            or not isinstance(content_type, str) or not content_type
+                            or type(status) is not int or not 100 <= status <= 599):
+                        raise ValueError('Invalid route response')
+                    page.route(pattern, lambda route, body=body, content_type=content_type, status=status:
+                               route.fulfill(status=status, content_type=content_type, body=body))
+                    send(request_id, {'routed': True})
+                    permit.set()
+                elif operation == 'evaluate' and initialized and context is not None:
+                    expression = request.get('expression')
+                    tolerate_failure = request.get('tolerate_failure', False)
+                    if not isinstance(expression, str) or not expression or type(tolerate_failure) is not bool:
+                        raise ValueError('Invalid evaluation request')
+                    evaluated = True
+                    try:
+                        value = page.evaluate(expression, request.get('argument'))
+                    except Exception as error:
+                        if not tolerate_failure:
+                            raise
+                        log.warning('Evaluation failed type=%s', type(error).__name__)
+                        evaluated, value = False, None
+                    send(request_id, {'evaluated': evaluated, 'value': value})
                     permit.set()
                 elif operation == 'inspect' and initialized and context is not None:
                     observation = """async () => ({
@@ -251,7 +319,7 @@ def main():
             except Exception as error:
                 # SDK errors can embed proxy credentials/URLs. Type is safe;
                 # never send or log raw exception messages or request payloads.
-                log.error('Operation failed operation=%s type=%s', operation if operation in ('hello','open','close','inspect','navigate','cookies-read','cookies-clear','cookies-add') else 'invalid', type(error).__name__)
+                log.error('Operation failed operation=%s type=%s', operation if operation in ('hello','open','close','inspect','navigate','mouse','route','evaluate','cookies-read','cookies-clear','cookies-add') else 'invalid', type(error).__name__)
                 send(request_id, error={'kind':'sdk','type':type(error).__name__})
                 exit_code = 1
                 break

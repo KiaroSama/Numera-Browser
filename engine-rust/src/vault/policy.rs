@@ -1,5 +1,7 @@
 use super::{VaultError, is_envelope};
 
+pub const LOCKED_MESSAGE: &str = "the vault is locked, so this needs the master password - set NUMERA_PASSWORD or pass --password";
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum VaultState {
     Disabled,

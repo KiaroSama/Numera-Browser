@@ -72,7 +72,7 @@ pub(crate) fn write_ascii_fragment<W: ?Sized + Write>(
     Ok(())
 }
 
-struct SourceJson;
+pub(crate) struct SourceJson;
 impl Formatter for SourceJson {
     fn begin_array_value<W: ?Sized + Write>(
         &mut self,

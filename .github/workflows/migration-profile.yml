@@ -70,14 +70,14 @@ jobs:
         if: inputs.scope == 'profiles'
         run: >-
           python scripts/migration/run_owned.py --wall 600 --idle 120 --
-          cargo test --manifest-path engine-rust/Cargo.toml --locked
+          cargo test --manifest-path engine-rust/Cargo.toml --locked --lib
           --test profile_write_parity --test http_fields_parity
           --test profile_application_parity --test dashboard_error_kinds
           --test profile_overview_parity --test profile_batch_parity
           --test profile_http_import_parity --test ready_parity
           --test session_ready_lifecycle --test session_registry_lifecycle
           --test profile_http_delete_parity --test profile_delete_owned_session
-          --test browser_adapter_protocol --test browser_launch_admission --test init_script_parity --test browser_options_parity --test browser_admission_parity --test browser_resources_parity --test browser_ip_parity --test browser_hints_parity --test browser_startup_parity --test browser_cookies_parity --test browser_extensions_parity --test session_stop_http --test cookie_export_parity
+          --test browser_adapter_protocol --test browser_launch_admission --test init_script_parity --test browser_options_parity --test browser_admission_parity --test browser_resources_parity --test browser_ip_parity --test browser_hints_parity --test browser_startup_parity --test browser_cookies_parity --test browser_extensions_parity --test session_stop_http --test cookie_export_parity --test cookie_http_parity --test finite_browser_lifecycle --test cli_registry_parity --test cli_profile_parity --test cli_settings_parity --test cli_cookie_parity --test mcp_parity --test job_parity --test bulk_parity --test cli_pool_parity --test cli_import_parity --test cli_launch_parity --test launch_http_parity --test command_capture_lifecycle --test proxy_assignment_parity --test extension_routes_parity
           --no-fail-fast -- --test-threads=2
       - name: Native lint
         if: inputs.scope == 'profiles'

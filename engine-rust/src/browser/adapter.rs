@@ -25,6 +25,7 @@ pub struct Adapter {
     writer: Option<JoinHandle<()>>,
     sequence: u64,
     metadata: Value,
+    relay: Option<crate::network::relay::Relay>,
 }
 fn frame(reader: &mut impl BufRead) -> io::Result<Option<Value>> {
     let mut bytes = Vec::new();
@@ -179,6 +180,7 @@ impl Adapter {
             writer: Some(writer),
             sequence: 0,
             metadata: Value::Null,
+            relay: None,
         };
         let hello = adapter.call("hello", Map::new(), budget);
         match hello {
@@ -198,19 +200,67 @@ impl Adapter {
     pub(crate) fn belongs_to(&self, root: &Path, id: &str, host: &str) -> bool {
         self.session.belongs_to(root, id, host)
     }
-    pub(crate) fn settled_exit(&mut self) -> io::Result<Option<i32>> {
-        self.session.settled_exit()
+    pub(crate) fn own_relay(&mut self, relay: crate::network::relay::Relay) -> io::Result<()> {
+        if self.relay.is_some() {
+            return Err(io::Error::other("Browser relay already owned"));
+        }
+        self.relay = Some(relay);
+        Ok(())
+    }
+    fn close_relay(&mut self, budget: Duration) -> io::Result<()> {
+        if let Some(relay) = &mut self.relay {
+            relay.close(budget)?;
+        }
+        self.relay = None;
+        Ok(())
+    }
+    pub fn settled_exit(&mut self) -> io::Result<Option<i32>> {
+        let exit = self.session.settled_exit()?;
+        if exit.is_some() {
+            self.close_relay(Duration::from_secs(5))?;
+        }
+        Ok(exit)
     }
     pub(crate) fn finish_with_status(&mut self, budget: Duration) -> io::Result<Option<i32>> {
+        self.finish_observed(budget, Session::settled_exit)
+    }
+    fn finish_observed(
+        &mut self,
+        budget: Duration,
+        mut observe: impl FnMut(&mut Session) -> io::Result<Option<i32>>,
+    ) -> io::Result<Option<i32>> {
         self.input.take();
         self.output.take();
         let deadline = std::time::Instant::now()
             .checked_add(budget)
             .ok_or_else(|| io::Error::other("Invalid browser cleanup budget"))?;
-        while self.session.settled_exit()?.is_none() && std::time::Instant::now() < deadline {
-            thread::sleep(Duration::from_millis(10));
+        let mut observation = None;
+        while self.session.tree_record().is_some() && std::time::Instant::now() < deadline {
+            match observe(&mut self.session) {
+                Ok(None) => thread::sleep(Duration::from_millis(10)),
+                Ok(Some(_)) => break,
+                Err(error) => {
+                    observation = Some(error);
+                    break;
+                }
+            }
         }
-        let code = self.session.finish_with_status(budget)?;
+        let cleanup = self.session.finish_with_status(budget);
+        if observation.is_some() && cleanup.is_ok() {
+            eprintln!(
+                "Browser tree observation failed; native owner subsequently settled the tree"
+            );
+        }
+        let relay_cleanup = self.close_relay(budget);
+        let code = match (cleanup, relay_cleanup) {
+            (Err(tree), Err(relay)) => {
+                return Err(io::Error::other(format!(
+                    "Browser tree cleanup failed: {tree}; relay cleanup failed: {relay}"
+                )));
+            }
+            (Err(error), _) | (_, Err(error)) => return Err(error),
+            (Ok(code), Ok(())) => code,
+        };
         if let Some(writer) = self.writer.take() {
             writer
                 .join()
@@ -364,5 +414,84 @@ impl Drop for Adapter {
         if let Err(error) = self.finish(Duration::from_secs(2)) {
             eprintln!("Browser adapter cleanup remains unverified: {error}");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn polling_error_still_settles_sdk_tree_and_owned_relay() -> io::Result<()> {
+        let python = std::env::var_os("NUMERA_ORACLE_PYTHON")
+            .ok_or_else(|| io::Error::other("Fixture interpreter required"))?;
+        let mut nonce = [0; 8];
+        getrandom::fill(&mut nonce).map_err(io::Error::other)?;
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("target/test-temp")
+            .join(format!("adapter-cleanup-{:x}", u64::from_le_bytes(nonce)));
+        std::fs::create_dir_all(
+            root.parent()
+                .ok_or_else(|| io::Error::other("Fixture parent missing"))?,
+        )?;
+        std::fs::create_dir(&root)?;
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut command = Command::new(python);
+            command.args([
+                "-u",
+                "-c",
+                r#"
+import json,sys
+request=json.loads(sys.stdin.readline())
+print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
+sys.stdin.readline()
+"#,
+            ]);
+            let mut adapter = Adapter::spawn(
+                &root,
+                "a",
+                "fixture-host",
+                &mut command,
+                Duration::from_secs(5),
+            )?;
+            let proxy = crate::proxy::Proxy::from_record(&json!({"server":"http://127.0.0.1:9","username":"fixture","password":null,"country":null}),false).map_err(io::Error::other)?;
+            let relay = crate::network::relay::Relay::start(&proxy)?;
+            let address = reqwest::Url::parse(&relay.url()).map_err(io::Error::other)?;
+            let address = std::net::SocketAddr::new(
+                "127.0.0.1".parse().map_err(io::Error::other)?,
+                address
+                    .port()
+                    .ok_or_else(|| io::Error::other("Relay port missing"))?,
+            );
+            adapter.own_relay(relay)?;
+            let called = std::cell::Cell::new(false);
+            adapter.finish_observed(Duration::from_secs(5), |_| {
+                called.set(true);
+                Err(io::Error::other("Fixture process observation failure"))
+            })?;
+            assert!(called.get(), "Polling error path not exercised");
+            assert!(adapter.relay.is_none());
+            assert!(adapter.reader.is_none() && adapter.writer.is_none());
+            assert!(
+                std::net::TcpStream::connect_timeout(&address, Duration::from_millis(100)).is_err(),
+                "Polling failure skipped relay closure"
+            );
+            assert!(matches!(
+                crate::ownership::claims::read(&root, "a"),
+                crate::ownership::claims::Claim::Absent
+            ));
+            Ok(())
+        }));
+        let cleanup = std::fs::remove_dir_all(&root);
+        let result = match result {
+            Ok(result) => result,
+            Err(panic) => {
+                if let Err(error) = cleanup {
+                    eprintln!("Cleanup regression fixture removal failed: {error}");
+                }
+                std::panic::resume_unwind(panic)
+            }
+        };
+        cleanup?;
+        result
     }
 }

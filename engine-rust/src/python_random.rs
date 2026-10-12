@@ -72,7 +72,7 @@ impl PythonRandom {
         y ^ (y >> 18)
     }
 
-    fn random(&mut self) -> f64 {
+    pub(crate) fn random(&mut self) -> f64 {
         let a = self.word() >> 5;
         let b = self.word() >> 6;
         (a as f64 * 67_108_864.0 + b as f64) / 9_007_199_254_740_992.0

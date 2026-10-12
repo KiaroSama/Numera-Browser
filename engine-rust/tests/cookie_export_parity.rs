@@ -1,4 +1,4 @@
-use numera_core::browser::{adapter::Adapter, cookie_format};
+use numera_core::browser::{adapter::Adapter, cookie_format, cookie_normalize};
 use serde_json::Value;
 use std::{path::Path, process::Command, time::Duration};
 mod common;
@@ -17,7 +17,8 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}), flush
 request = json.loads(sys.stdin.readline())
 from cookie_export_cases import cases
 from cookie_parse_cases import cases as parse_cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(), 'parse_cases':parse_cases()}}), flush=True)
+from cookie_normalize_cases import cases as normalize_cases
+print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(), 'parse_cases':parse_cases(), 'normalization':normalize_cases()}}), flush=True)
 "#;
     let mut command = Command::new(python);
     command
@@ -97,6 +98,30 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
                 case["name"]
             );
         }
+    }
+    let normalized = observations["normalization"]["normalize"]
+        .as_array()
+        .ok_or("Normalization missing")?;
+    assert_eq!(normalized.len(), 46);
+    for case in normalized {
+        assert_eq!(
+            cookie_normalize::normalize(&case["input"])?.unwrap_or(Value::Null),
+            case["expected"],
+            "{}",
+            case["input"]
+        );
+    }
+    let inputs = observations["normalization"]["parse"]
+        .as_array()
+        .ok_or("Format inputs missing")?;
+    assert_eq!(inputs.len(), 14);
+    for case in inputs {
+        assert_eq!(
+            serde_json::to_value(cookie_normalize::parse(
+                case["text"].as_str().ok_or("Input text missing")?
+            )?)?,
+            case["expected"]
+        );
     }
     assert!(cookie_format::to_netscape(&[Value::Null]).is_err());
     Ok(())

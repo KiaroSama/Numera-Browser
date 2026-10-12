@@ -58,6 +58,50 @@ pub async fn router_with_sessions(
     host: &str,
     application: SessionApplication,
 ) -> io::Result<Router> {
+    router_with_browser(
+        root,
+        environment,
+        origins,
+        password,
+        host,
+        application,
+        None,
+    )
+    .await
+}
+
+pub async fn router_with_browser(
+    root: PathBuf,
+    environment: &str,
+    origins: &str,
+    password: Option<String>,
+    host: &str,
+    application: SessionApplication,
+    browser: Option<crate::browser::runtime::Runtime>,
+) -> io::Result<Router> {
+    router_with_dashboard(
+        root,
+        environment,
+        origins,
+        password,
+        host,
+        application,
+        browser,
+        None,
+    )
+    .await
+}
+
+pub async fn router_with_dashboard(
+    root: PathBuf,
+    environment: &str,
+    origins: &str,
+    password: Option<String>,
+    host: &str,
+    application: SessionApplication,
+    browser: Option<crate::browser::runtime::Runtime>,
+    dashboard: Option<&std::path::Path>,
+) -> io::Result<Router> {
     let SessionApplication {
         installed,
         sessions,
@@ -89,12 +133,13 @@ pub async fn router_with_sessions(
         .merge(token_routes::routes(root.clone(), environment))
         .merge(folder_routes::routes(root.clone()))
         .merge(fingerprint_routes::routes())
-        .merge(profile_routes::routes(
+        .merge(profile_routes::routes_with_browser(
             root.clone(),
             password.clone(),
             host,
             installed.clone(),
             sessions,
+            browser,
         ))
         .merge(extension_routes::routes(root.clone()))
         .merge(proxy_routes::routes(root.clone(), password.clone()))
@@ -105,6 +150,7 @@ pub async fn router_with_sessions(
         ))
         .merge(schedule_routes::routes(root, password))
         .method_not_allowed_fallback(method_not_allowed);
+    let routes = super::dashboard::mount(routes, dashboard)?;
     Ok(protect(cors::apply(routes, origins), auth))
 }
 pub(crate) async fn method_not_allowed() -> Response {

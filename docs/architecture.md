@@ -42,6 +42,18 @@ pick OS ──▶ archetype (devices.py) ──▶ Fingerprint ──▶ validat
                           (cookies + localStorage persist)
 ```
 
+### Native migration candidate
+
+The selected application is still the Python engine described below. The
+non-default `engine-rust` candidate now composes native domain/storage/ownership
+services through CLI presentation and HTTP routing. Browser SDK-only operations
+remain in the framed adapter; it does not receive whole application commands.
+The HTTP candidate owns its runtime, scheduler, readiness and cleanup retries;
+its optional dashboard fallback is mounted before shared CORS/token protection.
+The draft is awaiting a hosted Windows/Linux compile/parity checkpoint, not
+complete migration acceptance. Executable entry, detached jobs, full replay,
+performance and selector/rollback gates remain open. See [migration status](migration.md).
+
 ### Modules
 
 | Module | Role |

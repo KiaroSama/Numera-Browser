@@ -74,6 +74,14 @@ is a non-default native library, not yet a replacement CLI/server. The Python
 application remains selected; the React dashboard now uses strict TypeScript.
 Current CI checkpoints run manually on GitHub-hosted Windows/Linux, not local
 runners. Full migration, cutover and retirement acceptance remain pending.
+Native candidate HTTP lifecycle logs use its configured log directory, with a new
+UTF-8 `native-http_YYYY-MM-DD_HH-mm-ss_UTC.log` per server run (collision suffixes
+preserve older files). Entries use `[YYYY-MM-DD HH:mm:ss UTC] [LEVEL] [COMPONENT]`
+and fixed lifecycle labels only—never arguments, tokens, passwords or profile
+contents. Initialization/write failures fall back to safe stderr diagnostics.
+No automatic retention deletes logs; attach a reviewed, non-sensitive log when
+reporting candidate lifecycle failures. Native runtime/logging tests are still
+pending hosted verification; this does not change the selected application.
 
 ```
 Numera/
