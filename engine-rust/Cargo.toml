@@ -17,7 +17,7 @@ getrandom = "0.4.3"
 base64 = "0.23.1"
 pbkdf2 = { version = "0.13.0", features = ["sha2"] }
 fernet = { version = "0.2.2", default-features = false, features = ["rustcrypto"] }
-zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+zip = { version = "9.0.1", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 [dev-dependencies]
 tower = { version = "0.5.3", features = ["util"] }
