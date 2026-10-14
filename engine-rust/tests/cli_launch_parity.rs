@@ -79,6 +79,7 @@ for line in sys.stdin:
         country: None,
         relay: None,
         binary_options: Default::default(),
+        deployment: None,
     };
     let installed = BTreeMap::new();
     let application = Application {
@@ -239,7 +240,7 @@ finally:
     )?;
     let browser = Runtime {
         adapter: attach_script.clone(),
-        ..browser
+        ..browser.clone()
     };
     let application = Application {
         browser: Some(&browser),
@@ -328,7 +329,7 @@ finally:
     )?;
     let browser = Runtime {
         adapter: natural_script.clone(),
-        ..browser
+        ..browser.clone()
     };
     let application = Application {
         browser: Some(&browser),

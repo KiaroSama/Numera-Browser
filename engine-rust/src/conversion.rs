@@ -274,13 +274,22 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
             default.into()
         }
     };
+    let ratio = d["devicePixelRatio"]
+        .as_f64()
+        .or_else(|| {
+            d["devicePixelRatio"]
+                .as_str()
+                .and_then(|value| value.parse::<f64>().ok())
+        })
+        .filter(|value| value.is_finite() && *value != 0.0)
+        .map_or_else(|| c["PIXEL_RATIOS"][os][0].clone(), |value| json!(value));
     let fp=Fingerprint::from_record(&json!({"os":os,"user_agent":ua,"platform":c["NAV_PLATFORM"][os],"ch_platform":c["CH_PLATFORM"][os],"chrome_version":chrome,
         "screen_width":sw,"screen_height":sh,"viewport_width":sw,"viewport_height":(sh-if os=="ios"{113}else if mobile{80}else{88}).max(1),
         "hardware_concurrency":number(&d["cores"],8.0,true),"device_memory":if os=="ios"{json!(0)}else{number(&d["memory"],16.0,false)},
         "fonts":fonts,"cameras":number(&d["mediaVideo"],1.0,true),"microphones":number(&d["mediaAudio"],1.0,true),"speakers":number(&d["mediaSpeakers"],1.0,true),
         "webrtc":mode("webrtc","altered"),"canvas":mode("canvas","noise"),"audio":mode("audio","noise"),"client_rects":mode("clientRects","noise"),"webgl_image":mode("webglImage","noise"),"media_mode":mode("mediaDevices","masked"),"font_mode":mode("fonts","masked"),"geolocation":mode("geo","prompt"),"do_not_track":truth(&d["dnt"]),
         "webgl_vendor":vendor,"webgl_renderer":renderer,"locale":locale,"timezone":if truth(&d["timezone"]){d["timezone"].clone()}else{language[0].clone()},"languages":language[1],"is_mobile":mobile,"os_version":version,"device_model":model,"max_touch_points":number(&d["maxTouchPoints"],c["TOUCH_POINTS"][os][0].as_f64().unwrap_or(0.0),true),
-        "device_pixel_ratio":if truth(&number(&d["devicePixelRatio"],0.0,false)){number(&d["devicePixelRatio"],1.0,false)}else{c["PIXEL_RATIOS"][os][0].clone()},"seed":seed})).map_err(|_|ConversionError("Converted fingerprint is invalid".into()))?;
+        "device_pixel_ratio":ratio,"seed":seed})).map_err(|_|ConversionError("Converted fingerprint is invalid".into()))?;
     let px = &d["proxy"];
     let proxy = if px.is_object() && truth(&px["host"]) {
         let kind = text(&px["type"], "HTTP").to_uppercase();

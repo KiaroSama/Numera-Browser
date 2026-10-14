@@ -74,11 +74,9 @@ impl RuntimeLog {
     }
 }
 #[cfg(test)]
-#[path = "../tests/common/mod.rs"]
-mod common;
-#[cfg(test)]
 mod tests {
     use super::*;
+    use crate::common;
     #[test]
     fn runtime_logs_are_exclusive_utf8_and_never_accept_dynamic_input() -> io::Result<()> {
         let root = common::TempDirectory::new("runtime-log")?;

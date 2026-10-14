@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/brand/logo-256.png" alt="Numera Browser" width="128" height="128">
+<img src="docs/brand/logo-256.png" alt="Numera Browser" width="240" height="240">
 
 # Numera Browser
 
@@ -12,7 +12,7 @@ and launch them from a clean web console or CLI.
 
 A self-hosted alternative to GoLogin, Multilogin and AdsPower.
 
-[![License: proprietary](https://img.shields.io/badge/License-proprietary-lightgrey)](LICENSE)
+[![License: noncommercial](https://img.shields.io/badge/License-noncommercial-d04a9a)](LICENSE)
 [![Version: 0.36.0](https://img.shields.io/badge/Version-0.36.0-blue)](CHANGELOG.md)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776ab)](engine/pyproject.toml)
 [![Node: 22.22.2+ supported branches](https://img.shields.io/badge/Node-22.22.2%2B-339933)](dashboard/package.json)
@@ -70,18 +70,37 @@ what makes Numera Browser distinctive.
 
 Numera Browser is a monorepo whose parts work together. A
 [parity-gated Rust migration](docs/migration.md) is in progress: `engine-rust`
-is a non-default native library, not yet a replacement CLI/server. The Python
+is a non-default native candidate with an acceptance-only CLI/server example, not yet
+an installed replacement. The Python
 application remains selected; the React dashboard now uses strict TypeScript.
-Current CI checkpoints run manually on GitHub-hosted Windows/Linux, not local
-runners. Full migration, cutover and retirement acceptance remain pending.
+Verification and builds now run on GitHub-hosted runners only, with source checks
+and portable distributions for Windows, Linux and Apple Silicon macOS. Earlier
+explicitly authorized local Windows checks followed a hosted billing refusal; they
+are historical evidence, not a workstation fallback for the current pipeline.
+The initial checkpoint failed; all twelve observed failures were repaired and the
+subsequent non-live native checks passed. Full migration, cutover and retirement
+acceptance remain pending.
 Native candidate HTTP lifecycle logs use its configured log directory, with a new
 UTF-8 `native-http_YYYY-MM-DD_HH-mm-ss_UTC.log` per server run (collision suffixes
 preserve older files). Entries use `[YYYY-MM-DD HH:mm:ss UTC] [LEVEL] [COMPONENT]`
 and fixed lifecycle labels only—never arguments, tokens, passwords or profile
 contents. Initialization/write failures fall back to safe stderr diagnostics.
 No automatic retention deletes logs; attach a reviewed, non-sensitive log when
-reporting candidate lifecycle failures. Native runtime/logging tests are still
-pending hosted verification; this does not change the selected application.
+reporting candidate lifecycle failures. The local Windows checkpoint passed the
+bounded HTTP readiness/shutdown and runtime-log cases. The repaired checkpoint
+passed 156 tests across 113 non-live targets; the later integrated Windows batch
+passed 160 tests across 116 targets with strict lint and formatting. These are
+uncommitted candidate checks, not full acceptance or a selected-runtime change.
+The acceptance-only native entry now matches fifteen JSON CLI scenarios, three human
+output scenarios and MCP on Windows/Linux; twenty-one actual HTTP read/auth/error and
+documentation cases matched on both platforms. Native `/docs`, `/redoc` and
+`/openapi.json` preserve source-generated contracts; Swagger executed readiness in a
+browser preview. Real hidden Windows consoles and Linux terminals exercised
+vault enable/change/resume, Unicode/no-echo input, Ctrl-C cancellation and damaged-journal
+refusal before prompting. Linux detached ownership and MCP signal cancellation passed
+scoped SDK stand-in checks.
+Windows detach under restrictive outer jobs, real four-engine acceptance, packaging,
+replay, performance and rollback still gate replacement.
 
 ```
 Numera/
@@ -194,8 +213,20 @@ therefore preserves that directory and replaces everything else.
 
 Windows only from a Windows machine: a Tauri binary links against the host's web
 view (WebKitGTK on Linux, WKWebView on macOS) and cannot be cross-compiled.
-**Linux and macOS builds run in CI** — `.github/workflows/build-desktop.yml`
-builds both and attaches every platform to the GitHub Release for a `v*` tag.
+**All three platforms build in hosted CI**. The full `CI` workflow calls the
+[distribution workflow](.github/workflows/build-desktop.yml) once, reusing its
+verified dashboard build. After every required check and platform build passes,
+[release publication](.github/workflows/release.yml) publishes an immutable
+`build-<full-commit-SHA>` prerelease on trusted `main`; no failing build is released
+or marked stable/latest. The workflows are prepared; the expanded pipeline and
+its first downloadable artifacts have not yet been verified.
+
+Windows x64, Linux x64 and macOS ARM64 archives include matching editable source,
+full license/notices, dependency/browser provenance and SHA-256 checksums. They
+retain the Python application, not the unfinished Rust replacement. Builds are
+unsigned and macOS is not notarized; Gatekeeper approval and the platform's
+WebView/system libraries may be required. Cloak's proprietary browser binary
+is excluded from distribution.
 
 **Server / CLI — headless, any OS.**
 
@@ -485,5 +516,10 @@ If this project helps you, donations are appreciated.
 
 ## License
 
-Proprietary. **All rights reserved.** See [LICENSE](LICENSE). This repository is not open
-source: no permission is granted to use, copy, modify or distribute it.
+[Noncommercial Network Share-Alike License 1.0](LICENSE): ordinary noncommercial
+use, modification and no-charge redistribution are permitted under its conditions.
+Sale, business use and commercial exploitation of covered copies, modifications
+and derivatives are not licensed. Redistribution requires matching Complete Source;
+modified network versions have source-offer obligations. This is source-available,
+not OSI-approved open source. Third-party licenses and prior valid grants remain
+unchanged; see [licensing and notices](docs/licensing.md).

@@ -6,8 +6,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 fn one() -> i64 {
     1
 }
-fn one_float() -> f64 {
-    1.0
+fn one_float() -> serde_json::Number {
+    serde_json::Number::from_f64(1.0).expect("Finite default pixel ratio")
 }
 fn altered() -> String {
     "altered".into()
@@ -87,7 +87,7 @@ pub struct Fingerprint {
     #[serde(default)]
     pub max_touch_points: i64,
     #[serde(default = "one_float")]
-    pub device_pixel_ratio: f64,
+    pub device_pixel_ratio: serde_json::Number,
 }
 
 impl Fingerprint {

@@ -203,12 +203,12 @@ pub(super) fn commands() -> Vec<Command> {
             "folder",
             "Folders: list, create, rename, delete",
             vec![
-                command("list", "List every folder"),
-                command("create", "Create a folder").arg(positional("name", "")),
-                command("rename", "Rename a folder and move its profiles with it")
+                leaf("list", "List every folder"),
+                leaf("create", "Create a folder").arg(positional("name", "")),
+                leaf("rename", "Rename a folder and move its profiles with it")
                     .arg(positional("old", ""))
                     .arg(positional("new", "")),
-                command(
+                leaf(
                     "delete",
                     "Delete a folder; its profiles are reassigned, not deleted",
                 )

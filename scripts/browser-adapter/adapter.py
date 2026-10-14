@@ -6,7 +6,6 @@ import importlib.util
 import json
 import logging
 import os
-import queue
 import sys
 import threading
 import time
@@ -43,27 +42,6 @@ def logger():
         print('Browser adapter file logging unavailable; diagnostics remain on stderr', file=sys.stderr)
         log.addHandler(logging.StreamHandler(sys.stderr))
     return log
-
-
-def read_frames(events, permit):
-    try:
-        while True:
-            # No pipe read overlaps SDK calls: Windows DLL initialization may
-            # inspect standard handles and wait for an outstanding read.
-            permit.wait()
-            permit.clear()
-            line = sys.stdin.buffer.readline(MAX_FRAME + 1)
-            if not line:
-                events.put(None)
-                return
-            if len(line) > MAX_FRAME or not line.endswith(b'\n'):
-                raise ValueError('Invalid frame size')
-            value = json.loads(line.decode('utf-8', errors='strict'))
-            if not isinstance(value, dict):
-                raise ValueError('Frame must be an object')
-            events.put(value)
-    except Exception:
-        events.put({'invalid': True})
 
 
 def send(request_id, result=None, error=None):
@@ -140,11 +118,10 @@ def main():
     with open(os.devnull, 'wb') as sink:
         os.dup2(sink.fileno(), sys.stdout.fileno(), inheritable=False)
     log = logger()
-    events = queue.Queue(maxsize=8)
-    permit = threading.Event()
-    reader = threading.Thread(target=read_frames, args=(events, permit), daemon=True, name='adapter-input')
-    reader.start()
-    permit.set()
+    # Import by the adapter's location even when a fixture loads it by spec.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from frame_input import FrameInput
+    frames = FrameInput(sys.stdin.buffer, MAX_FRAME)
     owner = context = manager = None
     initialized = False
     closed = threading.Event()
@@ -156,23 +133,23 @@ def main():
     log.info('Starting protocol=%s runtime=%s pid=%s', PROTOCOL, sys.version.split()[0], os.getpid())
     try:
         while True:
-            if context is not None:
-                if closed.is_set():
-                    break
-                try:
-                    request = events.get_nowait()
-                except queue.Empty:
-                    if closed.is_set():
-                        break
-                    # Pump SDK events while retaining responsive native close input.
+            if closed.is_set():
+                break
+            ready, request = frames.poll()
+            if not ready:
+                if context is not None:
+                    # Pump SDK events with no concurrent stdin read at shutdown.
                     try:
                         context.pages[0].wait_for_timeout(25) if context.pages else context.new_page().wait_for_timeout(25)
                     except Exception:
                         if not closed.is_set():
                             raise
-                    continue
-            else:
-                request = events.get(timeout=max(0.001, input_deadline - time.monotonic()))
+                else:
+                    remaining = input_deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise TimeoutError('Input deadline exceeded')
+                    closed.wait(min(0.025, remaining))
+                continue
             if request is None:
                 break
             request_id = request.get('id')
@@ -183,7 +160,6 @@ def main():
                 if operation == 'hello' and not initialized:
                     send(request_id, {'backends': available(), 'runtime': sys.version.split()[0]})
                     initialized = True
-                    permit.set()
                 elif operation == 'open' and initialized and context is None:
                     backend = request.get('backend')
                     options = request.get('options')
@@ -210,7 +186,6 @@ def main():
                         cdp_ready(page)
                     send(request_id, {'opened': True, 'backend': backend})
                     log.info('Persistent context opened backend=%s', backend)
-                    permit.set()
                 elif operation == 'navigate' and initialized and context is not None:
                     url = request.get('url')
                     if not isinstance(url, str) or not url:
@@ -236,7 +211,6 @@ def main():
                             raise
                         navigated = False
                     send(request_id, {'navigated': navigated})
-                    permit.set()
                 elif operation == 'mouse' and initialized and context is not None:
                     import math
                     action, x, y = request.get('action'), request.get('x'), request.get('y')
@@ -257,7 +231,6 @@ def main():
                         log.warning('Mouse failed type=%s', type(error).__name__)
                         performed = False
                     send(request_id, {'performed': performed})
-                    permit.set()
                 elif operation == 'route' and initialized and context is not None:
                     pattern, body = request.get('pattern'), request.get('body')
                     content_type, status = request.get('content_type'), request.get('status')
@@ -268,7 +241,6 @@ def main():
                     page.route(pattern, lambda route, body=body, content_type=content_type, status=status:
                                route.fulfill(status=status, content_type=content_type, body=body))
                     send(request_id, {'routed': True})
-                    permit.set()
                 elif operation == 'evaluate' and initialized and context is not None:
                     expression = request.get('expression')
                     tolerate_failure = request.get('tolerate_failure', False)
@@ -283,7 +255,6 @@ def main():
                         log.warning('Evaluation failed type=%s', type(error).__name__)
                         evaluated, value = False, None
                     send(request_id, {'evaluated': evaluated, 'value': value})
-                    permit.set()
                 elif operation == 'inspect' and initialized and context is not None:
                     observation = """async () => ({
                         userAgent:navigator.userAgent, platform:navigator.platform,
@@ -296,21 +267,17 @@ def main():
                     })"""
                     view = page.evaluate(observation, isolated_context=False) if backend == 'patchright' else page.evaluate(observation)
                     send(request_id, view)
-                    permit.set()
                 elif operation == 'cookies-read' and initialized and context is not None:
                     send(request_id, {'cookies': context.cookies()})
-                    permit.set()
                 elif operation == 'cookies-clear' and initialized and context is not None:
                     context.clear_cookies()
                     send(request_id, {'cleared': True})
-                    permit.set()
                 elif operation == 'cookies-add' and initialized and context is not None:
                     cookies = request.get('cookies')
                     if not isinstance(cookies, list) or not all(isinstance(cookie, dict) for cookie in cookies):
                         raise ValueError('Cookie rows must be objects')
                     context.add_cookies(cookies)
                     send(request_id, {'added': True})
-                    permit.set()
                 elif operation == 'close' and initialized:
                     closing_request = request_id
                     break

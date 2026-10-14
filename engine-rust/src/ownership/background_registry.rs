@@ -8,6 +8,13 @@ use std::{
     time::Duration,
 };
 
+pub struct BackgroundOptions<'a> {
+    pub id: &'a str,
+    pub requested_name: &'a str,
+    pub kind: Kind,
+    pub schedule: Option<String>,
+}
+
 impl Registry {
     pub fn start_background_browser(
         &self,
@@ -19,10 +26,12 @@ impl Registry {
         operation: impl FnOnce(&mut Adapter, Arc<AtomicBool>) -> io::Result<()> + Send + 'static,
     ) -> Result<bool, StartupFailed> {
         self.start_background_checked(
-            id,
-            requested_name,
-            kind,
-            schedule,
+            BackgroundOptions {
+                id,
+                requested_name,
+                kind,
+                schedule,
+            },
             activate,
             operation,
             || Ok(()),
@@ -30,14 +39,17 @@ impl Registry {
     }
     pub fn start_background_checked(
         &self,
-        id: &str,
-        requested_name: &str,
-        kind: Kind,
-        schedule: Option<String>,
+        options: BackgroundOptions<'_>,
         activate: impl FnOnce(Session, Profile) -> Result<Adapter, StartupFailed>,
         operation: impl FnOnce(&mut Adapter, Arc<AtomicBool>) -> io::Result<()> + Send + 'static,
         commit: impl FnOnce() -> io::Result<()>,
     ) -> Result<bool, StartupFailed> {
+        let BackgroundOptions {
+            id,
+            requested_name,
+            kind,
+            schedule,
+        } = options;
         let failure = |error: io::Error| StartupFailed {
             kind: "failed".into(),
             message: error.to_string(),
@@ -60,7 +72,7 @@ impl Registry {
         };
         self.background_result_locked(id, result, |owner| owner.stop(Duration::from_secs(10)))
     }
-    fn background_result_locked(
+    pub(super) fn background_result_locked(
         &self,
         id: &str,
         result: Result<bool, StartupFailed>,
@@ -130,21 +142,21 @@ impl Registry {
         let owner = match Background::start(&mut pending, operation) {
             Ok(owner) => owner,
             Err(error) => {
-                if let Some(mut adapter) = pending {
-                    if let Err(cleanup) = adapter.close(Duration::from_secs(5)) {
-                        entries.insert(
-                            id.into(),
-                            Entry {
-                                owner: Owner::Browser(adapter),
-                                kind,
-                                schedule,
-                                details: None,
-                            },
-                        );
-                        return Err(failure(io::Error::other(format!(
-                            "Background start failed: {error}; cleanup failed: {cleanup}"
-                        ))));
-                    }
+                if let Some(mut adapter) = pending
+                    && let Err(cleanup) = adapter.close(Duration::from_secs(5))
+                {
+                    entries.insert(
+                        id.into(),
+                        Entry {
+                            owner: Owner::Browser(adapter),
+                            kind,
+                            schedule,
+                            details: None,
+                        },
+                    );
+                    return Err(failure(io::Error::other(format!(
+                        "Background start failed: {error}; cleanup failed: {cleanup}"
+                    ))));
                 }
                 return Err(failure(error));
             }

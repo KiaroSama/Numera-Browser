@@ -4,7 +4,7 @@ use numera_core::{
     import_format,
     storage::{config::ConfigStore, repo::ProfileRepo},
 };
-use serde_json::{Value, json};
+use serde_json::Value;
 use std::{collections::BTreeMap, path::Path, process::Command, time::Duration};
 mod common;
 
@@ -94,8 +94,22 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
                 1,
                 "Mixed invalid import partially wrote its valid row"
             );
-            assert_eq!(std::fs::read_dir(root.join("profiles"))?.count(), 1);
-            assert_eq!(std::fs::read_dir(root.join("dashboard"))?.count(), 1);
+            for directory in ["profiles", "dashboard"] {
+                let records = std::fs::read_dir(root.join(directory))?
+                    .collect::<Result<Vec<_>, _>>()?
+                    .into_iter()
+                    .filter(|entry| {
+                        entry
+                            .path()
+                            .extension()
+                            .is_some_and(|value| value == "json")
+                    })
+                    .count();
+                assert_eq!(
+                    records, 1,
+                    "Mixed invalid import added a {directory} record"
+                );
+            }
         }
         if native_id.is_none()
             && let Some(profile) = profiles.first()

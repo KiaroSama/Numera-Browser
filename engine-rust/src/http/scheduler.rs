@@ -12,10 +12,11 @@ use serde_json::{Map, json};
 /// One tick has no clock thread or transport: the server lifetime drives it.
 /// Each occurrence is claimed before activation and records only its own owner.
 pub(crate) fn release_failed(schedules: &ScheduleStore, id: &str, claimed: bool, unsettled: bool) {
-    if claimed && !unsettled {
-        if let Err(error) = schedules.release(id) {
-            eprintln!("Schedule occurrence release failed: {error}");
-        }
+    if claimed
+        && !unsettled
+        && let Err(error) = schedules.release(id)
+    {
+        eprintln!("Schedule occurrence release failed: {error}");
     }
 }
 

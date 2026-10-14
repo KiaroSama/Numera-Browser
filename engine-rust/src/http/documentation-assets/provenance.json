@@ -1,0 +1,11 @@
+{
+  "fastapi": "0.142.3",
+  "starlette": "1.7.0",
+  "source": "engine/numera/server",
+  "sha256": {
+    "openapi.json": "3428f1d0f627af3e9e70f0f3fdb35929aae3e96e15a4d00cf28b8b30a95e864b",
+    "swagger.html": "64024b138fa70fa8f12fb111e45d636198155894574cefc269d01f6540738c5d",
+    "oauth2-redirect.html": "f45d60bb9f054b1712b3f9e60547eb9e1d523afd6472a4137b89eb503b37f058",
+    "redoc.html": "439200342724b78fa6529f5541b50ff5abd0cafa0aac635dac3896b560771793"
+  }
+}

@@ -1,4 +1,5 @@
 use super::{adapter::Adapter, runtime::Runtime, warmup, warmup_policy};
+use crate::common;
 use crate::{
     cli::warmup_commands::{Options, Warmup},
     ownership::registry::Registry,
@@ -6,8 +7,6 @@ use crate::{
 };
 use serde_json::{Value, json};
 use std::{path::Path, process::Command, time::Duration};
-#[path = "../../tests/common/mod.rs"]
-mod common;
 
 struct Clock(f64, std::path::PathBuf);
 impl warmup::Control for Clock {
@@ -181,6 +180,7 @@ for line in sys.stdin:
         country: None,
         relay: None,
         binary_options: Default::default(),
+        deployment: None,
     };
     let service = Warmup {
         repo: &repo,

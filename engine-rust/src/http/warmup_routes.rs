@@ -7,7 +7,7 @@ use super::{
 use crate::{
     browser::{warmup, warmup_policy},
     conversion::{truth, value_text},
-    ownership::registry::Kind,
+    ownership::registry::{BackgroundOptions, Kind},
     storage::repo::RepoError,
 };
 use axum::{
@@ -95,10 +95,12 @@ pub(super) fn start_owned(
     let started = std::time::Instant::now();
     let bookkeeping = schedule.clone();
     Ok(state.sessions.start_background_checked(
-        id,
-        name,
-        kind,
-        schedule,
+        BackgroundOptions {
+            id,
+            requested_name: name,
+            kind,
+            schedule,
+        },
         |session, mut current| {
             current.startup_urls.clear();
             browser.open(

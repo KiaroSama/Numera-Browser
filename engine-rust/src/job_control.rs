@@ -62,6 +62,14 @@ impl JobStore {
         let Some(record) = self.get(id, now)? else {
             return Ok(None);
         };
+        if truth(&record["running"]) && !truth(&record["pid"]) {
+            if let Some(units) = crate::ownership::unit_report::for_job(&record, &self.root, id)? {
+                let _ = crate::ownership::unit_report::settle(&units, Duration::from_secs(10))?;
+            }
+            return Err(io::Error::other(
+                "Job startup has no published leader; ownership remains retained",
+            ));
+        }
         if truth(&record["running"]) && truth(&record["pid"]) {
             if !recorded_tree::verified(&record) {
                 return Err(io::Error::other(format!(
@@ -74,6 +82,13 @@ impl JobStore {
                     "job {id} (pid {}) did not stop: something it started is still running and may still hold its profile's browser directory. Stop it by hand and re-run this once it is gone.",
                     record["pid"]
                 )));
+            }
+            if let Some(units) = crate::ownership::unit_report::for_job(&record, &self.root, id)?
+                && !crate::ownership::unit_report::settle(&units, Duration::from_secs(10))?
+            {
+                return Err(io::Error::other(
+                    "Job ownership report remains incomplete or its nested trees are not empty",
+                ));
             }
             let mut outcome = self
                 .record(id)?
@@ -124,8 +139,32 @@ impl JobStore {
             }
             // Validate every path before deleting any part of this job.
             let log = self.log_path(&current)?;
+            let units = crate::ownership::unit_report::for_job(&current, &self.root, id)?;
+            let mut sidecars = Vec::new();
+            if units.is_some() {
+                for extension in ["launch", "ready", "go", "admitted", "cancel"] {
+                    let sibling = path.with_extension(extension);
+                    match fs::symlink_metadata(&sibling) {
+                        Ok(metadata) if !metadata.is_file() || metadata.is_symlink() => {
+                            return Err(io::Error::new(
+                                io::ErrorKind::PermissionDenied,
+                                "Job startup artifact is not a regular file",
+                            ));
+                        }
+                        Ok(_) => sidecars.push(sibling),
+                        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+                        Err(error) => return Err(error),
+                    }
+                }
+            }
             remove(&path)?;
             remove(&path.with_extension("exit"))?;
+            if let Some(units) = units {
+                remove(&units)?;
+            }
+            for sibling in sidecars {
+                remove(&sibling)?;
+            }
             if let Some(log) = log {
                 remove(&log)?;
             }

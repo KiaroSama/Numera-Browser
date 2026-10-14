@@ -134,6 +134,13 @@ pub(crate) fn argv_with_path(
             }
         }
     }
+    if command.get_arguments().all(|arg| arg.get_id() != "detach")
+        && arguments
+            .get("detach")
+            .is_some_and(crate::conversion::truth)
+    {
+        flags.insert(0, "--detach".into());
+    }
     let argv = path
         .iter()
         .cloned()
@@ -160,7 +167,16 @@ pub fn values(command: &Command, matches: &ArgMatches) -> Value {
                 .and_then(|v| serde_json::from_str(&v.0).ok())
                 .unwrap_or(Value::Null)
         } else if scalar(arg) == "number" {
-            matches.get_one::<f64>(id).map_or(Value::Null, |v| json!(v))
+            matches.get_one::<f64>(id).map_or(Value::Null, |v| {
+                if matches.value_source(id) == Some(clap::parser::ValueSource::DefaultValue)
+                    && let Some(default) = arg.get_default_values().first().and_then(|v| v.to_str())
+                    && let Ok(value) = serde_json::from_str::<Value>(default)
+                {
+                    value
+                } else {
+                    json!(v)
+                }
+            })
         } else if multiple(arg) {
             matches.get_many::<String>(id).map_or_else(
                 || {

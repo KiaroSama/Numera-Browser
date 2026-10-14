@@ -144,7 +144,25 @@ impl JobStore {
         let observation = crate::ownership::identity::alive(pid, token);
         let leader = observation.as_ref().copied().unwrap_or(true);
         let value = Value::Object(record.clone());
-        let survivors = if observation.is_err() {
+        let report_survivors = match crate::ownership::unit_report::for_job(&value, &self.root, id)
+        {
+            Ok(Some(path)) => !crate::ownership::unit_report::empty(&path).unwrap_or(false),
+            Ok(None) => false,
+            Err(_) => true,
+        };
+        let supervisor_active = record.get("state").is_none()
+            && record
+                .get("supervisorPid")
+                .and_then(Value::as_u64)
+                .and_then(|pid| u32::try_from(pid).ok())
+                .is_some_and(|pid| {
+                    crate::ownership::identity::alive(
+                        pid,
+                        record.get("supervisorToken").and_then(Value::as_u64),
+                    )
+                    .unwrap_or(true)
+                });
+        let survivors = if report_survivors || supervisor_active || observation.is_err() {
             true
         } else if !leader && crate::ownership::recorded_tree::verified(&value) {
             crate::ownership::recorded_tree::owned(&value).unwrap_or(true)

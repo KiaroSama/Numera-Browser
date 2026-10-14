@@ -1,9 +1,5 @@
 use super::output::{Output, Tone};
-use crate::{
-    conversion::{truth, value_text},
-    models::Profile,
-    storage::repo::RepoError,
-};
+use crate::{conversion::value_text, models::Profile, storage::repo::RepoError};
 use serde_json::Value;
 use std::io::{self, Write};
 
@@ -66,8 +62,8 @@ pub fn summary(
             ),
             (
                 "notes",
-                if truth(&profile.notes) {
-                    value_text(&profile.notes)
+                if !profile.notes.is_empty() {
+                    profile.notes.clone()
                 } else {
                     "-".into()
                 },

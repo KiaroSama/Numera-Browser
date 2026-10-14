@@ -1,7 +1,6 @@
 use super::*;
+use crate::common;
 use crate::ownership::{claims, session::Session};
-#[path = "../../tests/common/mod.rs"]
-mod common;
 
 #[test]
 fn quarantine_keeps_actual_worker_and_adapter_until_explicit_retry()

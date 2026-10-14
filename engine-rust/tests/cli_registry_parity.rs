@@ -1,5 +1,4 @@
 use numera_core::{browser::adapter::Adapter, cli};
-use serde_json::Value;
 use std::{path::Path, process::Command, time::Duration};
 mod common;
 

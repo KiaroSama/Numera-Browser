@@ -1,7 +1,6 @@
 use super::*;
+use crate::common;
 use std::io::{Read, Write};
-#[path = "../../tests/common/mod.rs"]
-mod common;
 
 fn options(root: &std::path::Path) -> Options {
     Options {
@@ -22,6 +21,7 @@ fn options(root: &std::path::Path) -> Options {
             country: None,
             relay: None,
             binary_options: Default::default(),
+            deployment: None,
         },
         dashboard: None,
     }

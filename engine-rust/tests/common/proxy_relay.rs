@@ -50,6 +50,7 @@ pub fn observe(case: &Value) -> Result<(), Box<dyn std::error::Error>> {
                 _ => return Err(io::Error::other("SOCKS fixture cancelled")),
             }
         };
+        stream.set_nonblocking(false)?;
         stream.set_read_timeout(Some(Duration::from_secs(1)))?;
         stream.set_write_timeout(Some(Duration::from_secs(1)))?;
         let mut wire = Vec::new();

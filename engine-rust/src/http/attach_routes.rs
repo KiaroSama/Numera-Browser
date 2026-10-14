@@ -82,12 +82,10 @@ fn attach(state: &Profiles, id: &str, body: Map<String, Value>) -> Result<Respon
         },
     );
     match result {
-        Ok(None) => {
-            return Ok(profile_errors::detail(
-                StatusCode::CONFLICT,
-                "stop the profile first - its session is in use",
-            ));
-        }
+        Ok(None) => Ok(profile_errors::detail(
+            StatusCode::CONFLICT,
+            "stop the profile first - its session is in use",
+        )),
         Err(error) => {
             let status = match error.kind.as_str() {
                 "busy" => StatusCode::CONFLICT,
@@ -95,7 +93,7 @@ fn attach(state: &Profiles, id: &str, body: Map<String, Value>) -> Result<Respon
                 "gone" => StatusCode::NOT_FOUND,
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
             };
-            return Ok(profile_errors::detail(status, error.message));
+            Ok(profile_errors::detail(status, error.message))
         }
         Ok(Some(details)) => Ok(Json(details).into_response()),
     }

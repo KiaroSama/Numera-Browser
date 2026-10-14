@@ -46,6 +46,7 @@ use background_browser::Background;
 pub use background_browser::retry_retained as retry_retained_background;
 #[path = "background_registry.rs"]
 mod background_registry;
+pub use background_registry::BackgroundOptions;
 #[cfg(test)]
 #[path = "background_tests.rs"]
 mod background_tests;
@@ -541,14 +542,52 @@ impl Registry {
         failed
     }
 }
+fn retained_entries() -> &'static std::sync::Mutex<Vec<Entry>> {
+    static OWNERS: std::sync::OnceLock<std::sync::Mutex<Vec<Entry>>> = std::sync::OnceLock::new();
+    OWNERS.get_or_init(|| std::sync::Mutex::new(Vec::new()))
+}
 impl Drop for Registry {
     fn drop(&mut self) {
         let failed = self.shutdown(Duration::from_secs(2));
         if !failed.is_empty() {
             eprintln!(
-                "Session registry could not settle {} owned tree(s)",
+                "Session registry retains {} unsettled owned tree(s)",
                 failed.len()
             );
+            let entries = self
+                .entries
+                .get_mut()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            retained_entries()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .extend(std::mem::take(entries).into_values());
         }
     }
+}
+pub fn retry_retained_sessions(budget: Duration) -> Vec<String> {
+    let entries = std::mem::take(
+        &mut *retained_entries()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner),
+    );
+    let deadline = std::time::Instant::now()
+        .checked_add(budget)
+        .unwrap_or_else(std::time::Instant::now);
+    let mut pending = Vec::new();
+    let mut failures = Vec::new();
+    for mut entry in entries {
+        if let Err(error) = entry
+            .owner
+            .stop(deadline.saturating_duration_since(std::time::Instant::now()))
+        {
+            failures.push(error.to_string());
+            pending.push(entry);
+        }
+    }
+    retained_entries()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .extend(pending);
+    failures
 }

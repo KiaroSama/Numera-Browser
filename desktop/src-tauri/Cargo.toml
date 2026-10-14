@@ -4,6 +4,7 @@ version = "0.36.0"
 edition = "2021"
 rust-version = "1.90"
 description = "Numera Browser desktop shell"
+license-file = "../../LICENSE"
 publish = false
 
 [[bin]]

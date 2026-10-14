@@ -1,6 +1,5 @@
 use super::*;
-#[path = "../../tests/common/mod.rs"]
-mod common;
+use crate::common;
 use std::sync::{atomic::Ordering, mpsc};
 
 #[test]
@@ -141,10 +140,12 @@ fn scheduled_commit_failure_settles_same_owner_under_its_admission_decision()
     let (release_tx, release_rx) = mpsc::sync_channel(1);
     let mut committed = false;
     let result = registry.start_background_checked(
-        "a",
-        "Fixture",
-        Kind::ScheduledWarmup,
-        Some("schedule".into()),
+        BackgroundOptions {
+            id: "a",
+            requested_name: "Fixture",
+            kind: Kind::ScheduledWarmup,
+            schedule: Some("schedule".into()),
+        },
         |session, _| {
             let mut command = Command::new(&python);
             command

@@ -113,7 +113,7 @@ def cases(parent):
     for name, verb, body, proxies, authorized in variants:
         with tempfile.TemporaryDirectory(prefix='proxy-source-', dir=parent) as directory:
             root = Path(directory)
-            with patch.dict(os.environ, {'NUMERA_API_TOKEN': 'fixture-api', 'NUMERA_ALLOWED_ORIGINS': '', 'NUMERA_PASSWORD': ''}), patch('time.time', return_value=1000.0):
+            with patch.dict(os.environ, {'NUMERA_API_TOKEN': 'fixture-api', 'NUMERA_ALLOWED_ORIGINS': '', 'NUMERA_PASSWORD': ''}), patch('time.time', return_value=1000.0), patch('numera.convert.Profile', side_effect=lambda **values: Profile(**dict({'created_at': 1000.0, 'updated_at': 1000.0}, **values))):
                 app = create_app(data_dir=directory, start_scheduler=False)
                 store = ProfileStore(root)
                 for id in ('a', 'b'):

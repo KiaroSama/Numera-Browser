@@ -6,8 +6,8 @@ Tauri **desktop shell** that wraps both into a standalone window. This doc
 explains how they fit together.
 
 A parity-gated [Rust/TypeScript migration](migration.md) is in progress.
-`engine-rust` currently implements native domain/persistence seams only; it does
-not replace the running Python CLI/API. The original remains selected until full
+`engine-rust` implements native domain/persistence services and a non-default
+acceptance-only CLI/API entry; it does not replace the selected Python application. The original remains selected until full
 capability, real-platform, performance and rollback acceptance. See the
 [accepted boundary](adr/0001-parity-gated-rust-migration.md).
 
@@ -50,9 +50,19 @@ services through CLI presentation and HTTP routing. Browser SDK-only operations
 remain in the framed adapter; it does not receive whole application commands.
 The HTTP candidate owns its runtime, scheduler, readiness and cleanup retries;
 its optional dashboard fallback is mounted before shared CORS/token protection.
-The draft is awaiting a hosted Windows/Linux compile/parity checkpoint, not
-complete migration acceptance. Executable entry, detached jobs, full replay,
-performance and selector/rollback gates remain open. See [migration status](migration.md).
+Hosted Windows/Linux jobs were refused before startup. An authorized local Windows
+checkpoint initially failed twelve contracts; the repaired tree passed 156 tests
+across 113 non-live native targets and source-oracle drift checks. The later integrated
+Windows tree passed 160 tests across 116 targets, strict lint and formatting. An
+acceptance-only native entry example now matches fifteen JSON and three human CLI
+scenarios plus MCP on Windows/Linux. Twenty-one actual HTTP read/auth/error and
+documentation contracts matched on both platforms. Source-generated Swagger/ReDoc
+HTML and OpenAPI are embedded in Rust; serving them invokes no Python application. Hidden ConPTY/PTY checks exercised vault enable/change/resume,
+Unicode passwords, no echo, Ctrl-C cancellation and damaged-journal refusal before
+prompting. Linux detached jobs and scoped nested SDK receipt cleanup passed narrow
+stand-in checks, including hard leader exit and MCP signal cancellation. Windows
+restrictive outer jobs still refuse detach; complete real SDK, packaging, replay,
+performance and selector/rollback acceptance remain open. See [migration status](migration.md).
 
 ### Modules
 

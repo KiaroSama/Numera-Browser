@@ -31,7 +31,7 @@ pub fn config(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
         ("maxTouchPoints", fp.max_touch_points.into()),
         (
             "devicePixelRatio",
-            serde_json::to_value(fp.device_pixel_ratio)?,
+            Value::Number(fp.device_pixel_ratio.clone()),
         ),
         ("languages", serde_json::to_value(&fp.languages)?),
         ("webglVendor", serde_json::to_value(&fp.webgl_vendor)?),

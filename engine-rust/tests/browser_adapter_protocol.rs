@@ -11,6 +11,14 @@ use std::{
 };
 mod common;
 
+fn adapter_logs(root: &Path) -> std::io::Result<String> {
+    let mut text = String::new();
+    for entry in std::fs::read_dir(root.join("logs"))? {
+        text.push_str(&std::fs::read_to_string(entry?.path())?);
+    }
+    Ok(text)
+}
+
 fn adapter(python: &std::ffi::OsStr, logs: &Path) -> Command {
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
@@ -140,7 +148,12 @@ raise SystemExit(module.main())
         let end = Instant::now() + Duration::from_secs(5);
         loop {
             if let Some(code) = sdk.settled_exit()? {
-                assert_eq!(code, 0, "First-page close became an SDK failure");
+                assert_eq!(
+                    code,
+                    0,
+                    "First-page close became an SDK failure\n{}",
+                    adapter_logs(root)?
+                );
                 break;
             }
             if Instant::now() >= end {
@@ -276,11 +289,15 @@ geolocation=types.ModuleType('camoufox.geolocation')
 package=types.ModuleType('camoufox');package.geolocation=geolocation
 class Manager:
     def __init__(self,**options):
-        assert options['exclude_addons']==[DefaultAddons.UBO]
-        assert options['ff_version']=='152'
-        assert str(geolocation.GEOIP_DIR)==os.environ['NUMERA_ADAPTER_GEOIP_DIR']
-        assert geolocation.MMDB_DIR==geolocation.GEOIP_DIR/'mmdb'
-        assert geolocation.GEOIP_CONFIG==geolocation.GEOIP_DIR/'config.yml'
+        checks={
+            'enum':options['exclude_addons']==[DefaultAddons.UBO],
+            'version':options['ff_version']=='152',
+            'geoip':geolocation.GEOIP_DIR==pathlib.Path(os.environ['NUMERA_ADAPTER_GEOIP_DIR']),
+            'mmdb':geolocation.MMDB_DIR==geolocation.GEOIP_DIR/'mmdb',
+            'config':geolocation.GEOIP_CONFIG==geolocation.GEOIP_DIR/'config.yml',
+        }
+        pathlib.Path(os.environ['FIXTURE_OBSERVED']).write_text(json.dumps(checks),encoding='utf-8')
+        assert all(checks.values())
         pathlib.Path(os.environ['FIXTURE_OBSERVED']).write_text('mapped',encoding='utf-8')
     def __enter__(self): return Context()
     def __exit__(self,*args): pass
@@ -328,7 +345,15 @@ sys.exit(module.main())
         Ok(())
     })();
     sdk.finish(Duration::from_secs(5))?;
-    result?;
+    if let Err(error) = result {
+        return Err(format!(
+            "{error}\n{}\nSDK mapping checks: {}",
+            adapter_logs(root)?,
+            std::fs::read_to_string(root.join("observed"))
+                .unwrap_or_else(|_| "SDK mapping checks unavailable".into())
+        )
+        .into());
+    }
     drop(sdk);
     assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
     temporary.cleanup()?;
@@ -554,6 +579,77 @@ sys.exit(module.main())
         assert!(!std::fs::read_to_string(entry?.path())?.contains("Sensitive SDK detail"));
     }
     temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn fixed_input_preserves_empty_partial_coalesced_and_bounded_frames()
+-> Result<(), Box<dyn std::error::Error>> {
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
+    let directory = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?
+        .join("scripts/browser-adapter");
+    let mut command = Command::new(python);
+    command
+        .args([
+            "-u",
+            "-c",
+            r#"
+import os,sys
+sys.path.insert(0,os.environ['FIXED_INPUT_DIR'])
+from frame_input import FrameInput
+for chunks,invalid in [([],False),([b'{'],True),([b'{}'],True),
+                       ([b'{',b'}\n{}\n'],False),([b'{}\n'],False),
+                       ([b'x'*17],True),([b'[]\n'],True),([b'\xff\n'],True)]:
+    read,write=os.pipe()
+    with os.fdopen(read,'rb',buffering=0) as stream:
+        try:
+            frames=FrameInput(stream,16)
+            assert frames.poll()==(False,None)
+            for index,chunk in enumerate(chunks):
+                os.write(write,chunk)
+                if len(chunks)==2 and index==0: assert frames.poll()==(False,None)
+            os.close(write);write=None
+            values=[]
+            try:
+                for _ in range(8):
+                    ready,value=frames.poll()
+                    if ready:
+                        if value is None: break
+                        values.append(value)
+                else: raise AssertionError('Frame reader did not reach EOF')
+            except (ValueError,UnicodeDecodeError):
+                assert invalid
+            else:
+                assert not invalid
+                assert values==([{},{}] if len(chunks)==2 else [{}] if chunks else [])
+        finally:
+            if write is not None: os.close(write)
+print('bounded frames verified',flush=True)
+"#,
+        ])
+        .env("FIXED_INPUT_DIR", directory)
+        .env("PYTHONUTF8", "1");
+    let result = numera_core::ownership::capture::run(
+        &mut command,
+        numera_core::ownership::capture::Limits {
+            wall: Duration::from_secs(5),
+            idle: Duration::from_secs(5),
+            bytes: 4096,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        result.exit,
+        0,
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert_eq!(
+        String::from_utf8(result.stdout)?.replace("\r\n", "\n"),
+        "bounded frames verified\n"
+    );
     Ok(())
 }
 

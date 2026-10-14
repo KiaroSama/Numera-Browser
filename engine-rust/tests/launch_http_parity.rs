@@ -91,6 +91,7 @@ for line in sys.stdin:
             country: None,
             relay: None,
             binary_options: Default::default(),
+            deployment: None,
         };
         let result = runtime.block_on(async {
             let app = router_with_browser(
@@ -192,6 +193,7 @@ for line in sys.stdin:
                     country: None,
                     relay: None,
                     binary_options: Default::default(),
+                    deployment: None,
                 }),
             )
             .await?;
@@ -303,6 +305,7 @@ for line in sys.stdin:
                     country: None,
                     relay: None,
                     binary_options: Default::default(),
+                    deployment: None,
                 }),
             )
             .await?;
@@ -388,6 +391,7 @@ for line in sys.stdin:
                             country: None,
                             relay: None,
                             binary_options: Default::default(),
+                            deployment: None,
                         },
                     )?;
                     tokio::task::spawn_blocking(move || scheduler.tick()).await??;
@@ -516,6 +520,7 @@ finally:
                 country: None,
                 relay: None,
                 binary_options: Default::default(),
+                deployment: None,
             }),
         )
         .await?;

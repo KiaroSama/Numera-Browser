@@ -222,7 +222,9 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
             &["UBO".into()],
         )?;
         let normalized = |value: Value| -> Result<Value, Box<dyn std::error::Error>> {
+            let root = root.canonicalize()?;
             let text = root.to_str().ok_or("Fixture root nontext")?;
+            let text = text.strip_prefix(r"\\?\").unwrap_or(text);
             fn paths(value: &mut Value, root: &str) {
                 match value {
                     Value::String(text) => *text = text.replace(root, "$ROOT"),
@@ -306,6 +308,11 @@ sys.stdin.readline()
                 country: None,
                 relay: None,
                 binary_options: Map::new(),
+                deployment: Some(numera_core::browser::runtime::Deployment {
+                    app: root.clone(),
+                    environment: environment.clone(),
+                    default_addons: vec!["UBO".into()],
+                }),
             };
             let fingerprint: Value =
                 serde_json::from_str(include_str!("fixtures/init-script.json"))?;
@@ -319,24 +326,13 @@ sys.stdin.readline()
                 &serde_json::to_string(capture.to_str().ok_or("Capture path nontext")?)?,
             );
             std::fs::write(&runtime.adapter, code)?;
-            let mut adapter = runtime.open_discovered(
-                session,
-                profile,
-                true,
-                false,
-                1000.0,
-                bundled::Discovery {
-                    app: &root,
-                    environment: &environment,
-                    default_addons: &["UBO".into()],
-                },
-            )?;
+            let mut adapter = runtime.open_lifetime(session, profile, true, false, 1000.0)?;
             adapter.finish(Duration::from_secs(5))?;
             drop(adapter);
             let observed: Value = serde_json::from_slice(&std::fs::read(capture)?)?;
             assert_eq!(
                 observed["geoip"],
-                serde_json::to_value(data.join("browser-cache/camoufox"))?
+                serde_json::to_value(data.join("browser-cache").join("camoufox"))?
             );
             assert_eq!(observed["frame"]["options"]["ff_version"], "152");
             assert_eq!(
@@ -344,8 +340,16 @@ sys.stdin.readline()
                 json!(["UBO"])
             );
             assert_eq!(
-                observed["frame"]["options"]["executable_path"],
-                serde_json::to_value(browsers.join("camoufox/browser.bin"))?
+                Path::new(
+                    observed["frame"]["options"]["executable_path"]
+                        .as_str()
+                        .ok_or("Executable path missing")?
+                )
+                .canonicalize()?,
+                browsers
+                    .join("camoufox")
+                    .join("browser.bin")
+                    .canonicalize()?
             );
             assert!(matches!(
                 numera_core::ownership::claims::read(&data, "packaged"),

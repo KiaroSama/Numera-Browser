@@ -1,6 +1,5 @@
 use super::*;
-#[path = "../../tests/common/mod.rs"]
-mod common;
+use crate::common;
 
 #[test]
 fn attachment_readiness_holds_the_admission_decision_and_settles_failed_owner()

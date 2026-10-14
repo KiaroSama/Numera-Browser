@@ -12,11 +12,14 @@ from run_logging import run_log
 
 ROOT = Path(__file__).resolve().parents[2]
 BASELINE = '13b6d9c6973281fe123353eaec05b29d65781a2d'
+# The scoped privacy rewrite preserved these exact source/test trees. Keep the
+# original fixture provenance, but read the reachable equivalent in clean CI.
+BASELINE_TREE = '760f9873ded13c5ebfecae1f16b385e34f695124'
 
 
 def tracked_paths(prefix: str) -> list[Path]:
     result = subprocess.run(
-        ['git', '-C', str(ROOT), 'ls-tree', '-rz', '--name-only', BASELINE, '--', prefix],
+        ['git', '-C', str(ROOT), 'ls-tree', '-rz', '--name-only', BASELINE_TREE, '--', prefix],
         check=True, capture_output=True, timeout=10,
     )
     return sorted(ROOT / name.decode('utf-8') for name in result.stdout.split(b'\0') if name)

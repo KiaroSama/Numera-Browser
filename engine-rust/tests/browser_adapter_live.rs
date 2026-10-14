@@ -350,6 +350,7 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         country: None,
         relay: None,
         binary_options: Default::default(),
+        deployment: None,
     };
     let result = runtime.block_on(async {
         let app = router_with_browser(root.into(), "fixture-api", "", None, "fixture-host",

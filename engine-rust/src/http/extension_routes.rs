@@ -27,7 +27,7 @@ pub(crate) fn routes(root: PathBuf) -> Router {
         .route("/api/extensions/install", post(install))
         .with_state(Arc::new(root))
 }
-fn install_sync(root: &std::path::Path, body: Map<String, Value>) -> Result<Value, Response> {
+fn install_sync(root: &std::path::Path, body: Map<String, Value>) -> Result<Value, Box<Response>> {
     let reference = body
         .get("url")
         .filter(|value| truth(value))
@@ -71,7 +71,7 @@ fn install_sync(root: &std::path::Path, body: Map<String, Value>) -> Result<Valu
 async fn install(State(root): State<Arc<PathBuf>>, ObjectBody(body): ObjectBody) -> Response {
     match tokio::task::spawn_blocking(move || install_sync(&root, body)).await {
         Ok(Ok(result)) => Json(result).into_response(),
-        Ok(Err(response)) => response,
+        Ok(Err(response)) => *response,
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),
     }
 }

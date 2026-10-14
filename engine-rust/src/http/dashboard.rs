@@ -26,7 +26,7 @@ pub fn discover(app: &Path) -> Option<PathBuf> {
 }
 pub fn mount(router: Router, root: Option<&Path>) -> io::Result<Router> {
     let Some(root) = root else {
-        return Ok(router);
+        return Ok(router.fallback(|| async { missing(false) }));
     };
     let root = std::fs::canonicalize(root)?;
     let index = std::fs::canonicalize(root.join("index.html"))?;

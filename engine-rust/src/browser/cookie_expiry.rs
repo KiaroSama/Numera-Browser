@@ -61,7 +61,7 @@ fn clock(text: &str, offset: bool) -> Option<(u32, u32, u32, u32)> {
     if !text.is_ascii() {
         return None;
     }
-    let (base, fractional) = text.split_once(['.', ',']).map_or((text, ""), |v| v);
+    let (base, fractional) = text.split_once(['.', ',']).unwrap_or((text, ""));
     let separated = base.contains(':');
     let components: Vec<_> = if separated {
         base.split(':').collect()

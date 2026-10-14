@@ -121,8 +121,7 @@ impl Server {
                                 installed: options.installed,
                                 sessions: worker_sessions,
                             },
-                            Some(options.browser),
-                            options.dashboard.as_deref(),
+                            (Some(options.browser), options.dashboard.as_deref()),
                         )
                         .await?;
                         Ok::<_, io::Error>((listener, router))

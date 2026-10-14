@@ -86,8 +86,7 @@ pub async fn router_with_browser(
         password,
         host,
         application,
-        browser,
-        None,
+        (browser, None),
     )
     .await
 }
@@ -99,9 +98,12 @@ pub async fn router_with_dashboard(
     password: Option<String>,
     host: &str,
     application: SessionApplication,
-    browser: Option<crate::browser::runtime::Runtime>,
-    dashboard: Option<&std::path::Path>,
+    resources: (
+        Option<crate::browser::runtime::Runtime>,
+        Option<&std::path::Path>,
+    ),
 ) -> io::Result<Router> {
+    let (browser, dashboard) = resources;
     let SessionApplication {
         installed,
         sessions,
@@ -130,6 +132,7 @@ pub async fn router_with_dashboard(
     .await
     .map_err(|_| io::Error::other("Authentication startup task failed"))??;
     let routes = diagnostics::routes(auth.clone())
+        .merge(super::documentation::routes()?)
         .merge(token_routes::routes(root.clone(), environment))
         .merge(folder_routes::routes(root.clone()))
         .merge(fingerprint_routes::routes())

@@ -12,6 +12,12 @@ use std::{path::PathBuf, process::Command};
 /// Deployment-selected SDK transport and independently observed launch resources.
 /// This is not a Python application entry point: only the fixed SDK protocol runs.
 #[derive(Clone)]
+pub struct Deployment {
+    pub app: PathBuf,
+    pub environment: std::collections::BTreeMap<String, String>,
+    pub default_addons: Vec<String>,
+}
+#[derive(Clone)]
 pub struct Runtime {
     pub python: PathBuf,
     pub adapter: PathBuf,
@@ -21,6 +27,7 @@ pub struct Runtime {
     pub country: Option<String>,
     pub relay: Option<String>,
     pub binary_options: Map<String, Value>,
+    pub deployment: Option<Deployment>,
 }
 impl Runtime {
     pub fn open(
@@ -40,6 +47,20 @@ impl Runtime {
         first_page: bool,
         now: f64,
     ) -> Result<Adapter, StartupFailed> {
+        if let Some(deployment) = &self.deployment {
+            return self.open_discovered(
+                session,
+                profile,
+                headless,
+                first_page,
+                now,
+                super::bundled::Discovery {
+                    app: &deployment.app,
+                    environment: &deployment.environment,
+                    default_addons: &deployment.default_addons,
+                },
+            );
+        }
         self.open_packaged(
             session,
             profile,

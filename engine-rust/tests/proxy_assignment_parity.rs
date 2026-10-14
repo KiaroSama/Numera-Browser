@@ -156,7 +156,16 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
                 let expected = case["after"][kind]
                     .as_object()
                     .ok_or("Source readback missing")?;
-                let paths = fs::read_dir(root.join(kind))?.collect::<Result<Vec<_>, _>>()?;
+                let paths = fs::read_dir(root.join(kind))?
+                    .collect::<Result<Vec<_>, _>>()?
+                    .into_iter()
+                    .filter(|entry| {
+                        entry
+                            .path()
+                            .extension()
+                            .is_some_and(|value| value == "json")
+                    })
+                    .collect::<Vec<_>>();
                 assert_eq!(paths.len(), expected.len());
                 for path in paths {
                     let name = path

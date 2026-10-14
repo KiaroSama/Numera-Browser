@@ -92,12 +92,7 @@ impl<W: Write, E: Write> Output<W, E> {
         Ok(code)
     }
     pub fn error(&mut self, message: &str) -> io::Result<i32> {
-        if self.tty {
-            writeln!(self.stderr, "\x1b[31mError: {message}\x1b[0m")?;
-        } else {
-            writeln!(self.stderr, "Error: {message}")?;
-        }
-        self.stderr.flush()?;
+        self.say(message, Some(Tone::Red))?;
         self.emit(&serde_json::json!({"ok":false,"error":message}), 1)
     }
     pub fn confirm(&mut self, prompt: &str, input: &mut impl BufRead) -> io::Result<bool> {

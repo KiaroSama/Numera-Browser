@@ -1,0 +1,372 @@
+"""Discover maintained CI suites and reject missing, skipped prerequisite evidence."""
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+import xml.etree.ElementTree as ET
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'scripts' / 'migration'))
+from run_logging import run_log
+
+LIVE_TARGET = 'browser_adapter_live'
+SEAMS = {'identity-script': 'init_script_parity',
+         'browser-options': 'browser_options_parity',
+         'browser-admission': 'browser_admission_parity',
+         'browser-resources': 'browser_resources_parity',
+         'browser-ip': 'browser_ip_parity', 'browser-hints': 'browser_hints_parity',
+         'browser-cookies': 'browser_cookies_parity',
+         'browser-extensions': 'browser_extensions_parity', 'cookie-export': 'cookie_export_parity'}
+PLATFORM_REASONS = {
+    'windows': ('POSIX process groups', 'POSIX process-group observation',
+                'a Windows session cannot outlive its job', 'a Windows session always has a job object',
+                'a Windows session is in a job object however it was started',
+                'Windows adopts a job object and never touches signals',
+                'liveness is only answerable on POSIX', 'the orphan case only exists on POSIX',
+                'Windows owns the engine through a job object'),
+    'posix': ('kernel32 exists only on Windows', 'job objects are Windows-only',
+              'only Windows can fail to create the tree primitive', 'only Windows assigns a job object',
+              'exclusive file locking is a Windows behaviour'),
+    'not-linux': ('requires Linux procfs',),
+}
+# These two source modules are wholly POSIX-specific; mixed-platform modules
+# still require at least one actual pass on every platform where they are run.
+WHOLE_MODULE_OS_LIMITS = {
+    'win32': {'test_posix_observation_errors': 'POSIX process-group observation',
+              'test_shell_death_cleanup': 'Windows owns the engine through a job object'},
+}
+CAPABILITY_REASONS = {
+    'test_webrtc_live': {'no STUN reachability here - nothing to suppress'},
+    'test_dead_controls_live': {'no OfflineAudioContext in this browser build',
+                               'host reports none of the probe fonts installed'},
+    'test_parity_live': {'this build exposes no navigator.userAgentData',
+                         'navigator.deviceMemory unavailable in this build',
+                         'no WebGL context in this browser build',
+                         'navigator.mediaDevices unavailable in this build'},
+    'test_relay': {'no non-loopback address here to aim at'},
+}
+
+
+def discover(root: Path = ROOT) -> dict[str, list[Path]]:
+    python = sorted((root / 'engine/tests').rglob('test_*.py'))
+    if any(path.parent != root / 'engine/tests' for path in python if path.name.endswith('_live.py')):
+        raise ValueError('Nested browser suites require explicit hosted tier selection')
+    nested_native = list((root / 'engine-rust/tests').glob('*/main.rs'))
+    if nested_native:
+        raise ValueError('Nested Cargo test entry points require explicit hosted tier mapping')
+    native = sorted((root / 'engine-rust/tests').glob('*.rs'))
+    dashboard = sorted(path for path in (root / 'dashboard/test').rglob('*')
+                       if re.search(r'\.test\.[jt]sx?$', path.name))
+    if len({path.stem for path in python}) != len(python):
+        raise ValueError('Duplicate Python suite names require qualified report mapping')
+    if not any(path.name.endswith('_live.py') for path in python):
+        raise ValueError('Browser suite mapping is empty')
+    result = {'python': [path for path in python if not path.name.endswith('_live.py')],
+              'browser': [path for path in python if path.name.endswith('_live.py')],
+              'native': [path for path in native if path.stem != LIVE_TARGET],
+              'native-sdk': [path for path in native if path.stem == LIVE_TARGET],
+              'dashboard': dashboard,
+              'shell': [root / 'desktop/src-tauri/src/main.rs']}
+    if any(not paths or any(not path.is_file() for path in paths) for paths in result.values()):
+        raise ValueError('A maintained verification tier is absent or empty')
+    return result
+
+
+BINARY_SUFFIXES = {'.png', '.ico', '.jpg', '.jpeg', '.gif', '.webp', '.woff', '.woff2',
+                   '.ttf', '.otf', '.zip', '.gz', '.zst', '.whl', '.exe', '.dll'}
+
+
+def check_utf8(paths: list[Path]) -> int:
+    checked = 0
+    for path in paths:
+        if path.suffix.lower() in BINARY_SUFFIXES:
+            continue
+        try:
+            path.read_bytes().decode('utf-8', errors='strict')
+        except UnicodeDecodeError as error:
+            raise ValueError(f'Tracked text is not UTF-8: {path.name}') from error
+        checked += 1
+    return checked
+
+
+def tracked_paths(root: Path = ROOT) -> list[Path]:
+    output = subprocess.run(['git', '-C', str(root), 'ls-files', '-z'],
+                            capture_output=True, check=True, timeout=30).stdout
+    paths = [root / name for name in output.decode('utf-8', errors='strict').split('\0') if name]
+    if not paths:
+        raise ValueError('Tracked verification scope is empty')
+    return paths
+
+
+def stage_tracked(destination: Path, root: Path = ROOT) -> int:
+    import shutil
+
+    if destination.exists():
+        raise ValueError('Tracked secret scan requires a new empty destination')
+    destination.mkdir(parents=True)
+    paths = tracked_paths(root)
+    for source in paths:
+        relative = source.relative_to(root)
+        if source.is_symlink() or not source.is_file():
+            raise ValueError('Tracked secret scope contains a link or non-file')
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
+    return len(paths)
+
+
+SCANNER_CONFIG_SHA256 = 'e163e53b9e7e8a8511e77271e2b323ed057759542a6d988258afe3a1fa329caf'
+
+
+def prepare_secret_config(base: Path, destination: Path, root: Path = ROOT) -> None:
+    import hashlib
+
+    data = base.read_bytes()
+    if hashlib.sha256(data).hexdigest() != SCANNER_CONFIG_SHA256:
+        raise ValueError('Official scanner configuration checksum mismatch')
+    text = data.decode('utf-8', errors='strict')
+    # Remove whole path-dependent rule exceptions: clearing the path of an
+    # AND exception would broaden its remaining regex into a global waiver.
+    # Singular `path` remains a detection selector, not an exception.
+    blocks = re.split(r'(?m)(?=^\[\[)', text)
+    text = ''.join(block for block in blocks if not (
+        block.startswith('[[rules.allowlists]]') and re.search(r'(?m)^\s*paths\s*=', block)))
+    text, count = re.subn(r'(?ms)^(\s*)paths = \[.*?\]', r'\1paths = []', text)
+    if count != 1:
+        raise ValueError('Official scanner exclusion layout changed; inspect before scanning')
+    base.write_text(text, encoding='utf-8')
+    template = (root / 'scripts/ci/gitleaks.toml').read_text(encoding='utf-8')
+    if template.count('useDefault = true') != 1:
+        raise ValueError('Exact reviewed scanner configuration changed')
+    config = template.replace('useDefault = true', 'path = ' + json.dumps(str(base.resolve())))
+    if destination.exists():
+        raise ValueError('Scanner configuration destination must be new')
+    destination.write_text(config, encoding='utf-8')
+
+
+def check_dashboard(path: Path, root: Path = ROOT) -> dict[str, int]:
+    report = json.loads(path.read_text(encoding='utf-8'))
+    expected = {source.resolve() for source in discover(root)['dashboard']}
+    observed = {Path(suite['name']).resolve() for suite in report.get('testResults', [])}
+    if observed != expected:
+        raise ValueError('Dashboard report does not cover every maintained test file')
+    if not report.get('success') or report.get('numPassedTests', 0) <= 0:
+        raise ValueError('Dashboard report has no successful test evidence')
+    if any(report.get(key, 0) for key in ('numFailedTests', 'numPendingTests', 'numTodoTests')):
+        raise ValueError('Dashboard tests failed, skipped or were left unimplemented')
+    for suite in report['testResults']:
+        assertions = suite.get('assertionResults', [])
+        if suite.get('status') != 'passed' or not assertions or any(row['status'] != 'passed' for row in assertions):
+            raise ValueError('Dashboard suite is incomplete or skipped')
+    return {'tests': report['numPassedTests'], 'suites': len(observed)}
+
+
+def check_native_ignored(paths: list[Path]) -> None:
+    for path in paths:
+        if re.search(r'#\s*\[\s*ignore(?:\s|\]|=)', path.read_text(encoding='utf-8')):
+            raise ValueError(f'Native source has unmapped ignored tests: {path.name}')
+
+
+def check_workflows(root: Path = ROOT) -> dict[str, int]:
+    import yaml
+
+    class UniqueLoader(yaml.SafeLoader):
+        pass
+
+    def unique_mapping(loader, node, deep=False):
+        result = {}
+        for key_node, value_node in node.value:
+            key = loader.construct_object(key_node, deep=deep)
+            if key in result:
+                raise ValueError(f'Duplicate workflow key: {key}')
+            result[key] = loader.construct_object(value_node, deep=deep)
+        return result
+
+    UniqueLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, unique_mapping)
+    suites = discover(root)
+    workflows = {}
+    for path in (root / '.github/workflows').glob('*.yml'):
+        workflows[path.stem] = yaml.load(path.read_text(encoding='utf-8'), Loader=UniqueLoader)
+    jobs = workflows['ci']['jobs']
+    expected = {'coverage', 'secrets', 'engine', 'engine-windows', 'engine-macos', 'engine-live',
+                'browser', 'rust-core', 'docker', 'dashboard', 'codeql', 'dependencies', 'distribution'}
+    if set(jobs) != expected | {'required'} or set(jobs['required']['needs']) != expected:
+        raise ValueError('Required verification does not gate every maintained CI tier')
+    if jobs['required'].get('if') != 'always()':
+        raise ValueError('Required verification must reject failed and skipped dependencies')
+    checks = {
+        'engine': ('--ignore-glob=tests/test_*_live.py', '--junitxml='),
+        'engine-windows': ('--ignore-glob=tests/test_*_live.py', '--junitxml='),
+        'engine-macos': ('--ignore-glob=tests/test_*_live.py', '--junitxml='),
+        'browser': ('tests/test_*_live.py', '--deselect=', 'xvfb-run'),
+        'rust-core': ('suites.py native --phase build', 'suites.py native --phase test',
+                      'verify_oracles.py', 'verify_default.py'),
+        'engine-live': ('test_session_tree_live.py', '--ignored', '--test browser_adapter_live',
+                        'report --engine ${{ matrix.engine }}'),
+        'secrets': ('--redact=100', '--ignore-gitleaks-allow', '--timeout 240',
+                    'stage-tracked', '--log-opts=--all', 'sha256sum --check --strict'),
+    }
+    for job, fragments in checks.items():
+        text = json.dumps(jobs[job])
+        if any(fragment not in text for fragment in fragments):
+            raise ValueError(f'Missing suite command in CI tier: {job}')
+    for workflow_name in ('ci', 'dashboard', 'build-desktop', 'codeql', 'dependency-review', 'migration-profile'):
+        for name, job in workflows[workflow_name]['jobs'].items():
+            if job.get('continue-on-error') or 'self-hosted' in str(job.get('runs-on', '')):
+                raise ValueError(f'Unbounded or softened hosted tier: {workflow_name}/{name}')
+            if 'runs-on' in job and not isinstance(job.get('timeout-minutes'), int):
+                raise ValueError(f'Missing job deadline: {workflow_name}/{name}')
+            if any(step.get('continue-on-error') for step in job.get('steps', [])):
+                raise ValueError(f'Softened required step: {workflow_name}/{name}')
+    if jobs['distribution'].get('uses') != './.github/workflows/build-desktop.yml':
+        raise ValueError('Distribution verification is not reused by the full CI gate')
+    for job in ('desktop', 'desktop-windows'):
+        text = json.dumps(workflows['build-desktop']['jobs'][job])
+        if 'cargo test --locked --all-features' not in text or '--test-threads=2' not in text:
+            raise ValueError('Three-platform shell contracts are not required by distribution verification')
+    if 'macos-latest' not in json.dumps(workflows['build-desktop']['jobs']['desktop']):
+        raise ValueError('Requested macOS distribution is not mapped')
+    dashboard_text = json.dumps(workflows['dashboard']['jobs'])
+    if 'npm test' not in dashboard_text or 'dashboard-dist' not in dashboard_text:
+        raise ValueError('Dashboard suite and exact-run build artifact are not mapped')
+    if jobs['engine-live']['strategy']['matrix']['os'] != ['ubuntu-latest', 'windows-latest']:
+        raise ValueError('SDK coverage must retain both supported native ownership platforms')
+    if set(jobs['engine-live']['strategy']['matrix']['engine']) != {'playwright', 'patchright', 'camoufox', 'cloak'}:
+        raise ValueError('A supported SDK is absent from the required live matrix')
+    check_native_ignored(suites['native'] + sorted((root / 'engine-rust/src').rglob('*.rs')))
+    manifest = (root / 'engine-rust/Cargo.toml').read_text(encoding='utf-8')
+    if re.search(r'autotests\s*=\s*false|\[\[test\]\]', manifest):
+        raise ValueError('Native target discovery requires explicit mapping after Cargo configuration changes')
+    return {tier: len(paths) for tier, paths in suites.items()}
+
+
+def native_command(phase: str, root: Path = ROOT) -> list[str]:
+    command = ['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
+               '--locked', '--lib']
+    for path in discover(root)['native']:
+        command.extend(('--test', path.stem))
+    command.append('--no-fail-fast')
+    if phase == 'build':
+        command.append('--no-run')
+    else:
+        command.extend(('--', '--test-threads=2'))
+    return command
+
+
+def seam_command(phase: str, scope: str, root: Path = ROOT) -> list[str]:
+    target = SEAMS[scope]
+    if not (root / 'engine-rust/tests' / f'{target}.rs').is_file():
+        raise ValueError('Requested native seam is absent')
+    command = ['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
+               '--locked', '--test', target]
+    if phase == 'build':
+        command.append('--no-run')
+    else:
+        command.extend(('--', '--test-threads=1', '--nocapture'))
+    return command
+
+
+def check_report(path: Path, tier: str, root: Path = ROOT) -> dict[str, int]:
+    expected = {source.stem for source in discover(root)[tier]}
+    cases = list(ET.parse(path).iter('testcase'))
+    if not cases:
+        raise ValueError('Verification report is empty')
+    observed = set()
+    passed_by_module = dict.fromkeys(expected, 0)
+    module_skip_reasons = {module: [] for module in expected}
+    passed = skipped = 0
+    for case in cases:
+        module = next((part for part in case.get('classname', '').split('.')
+                       if part in expected), '')
+        if module not in expected:
+            # Module-level collection skips use the file name as their testcase name.
+            module = Path(case.get('name', '')).name.split('.py', 1)[0]
+        if module not in expected:
+            raise ValueError(f'Unexpected verification report module: {module}')
+        observed.add(module)
+        if case.find('failure') is not None or case.find('error') is not None:
+            raise ValueError(f'Failed verification case: {module}/{case.get("name")}')
+        skip = case.find('skipped')
+        if skip is None:
+            passed += 1
+            passed_by_module[module] += 1
+            continue
+        if skip.get('type') == 'pytest.xfail':
+            raise ValueError(f'Expected failure is not passing coverage: {module}/{case.get("name")}')
+        skipped += 1
+        reason = skip.get('message', '') + ' ' + (skip.text or '')
+        module_skip_reasons[module].append(reason)
+        platform_reasons = PLATFORM_REASONS['windows' if sys.platform == 'win32' else 'posix']
+        if sys.platform != 'linux':
+            platform_reasons += PLATFORM_REASONS['not-linux']
+        allowed = any(value in reason for value in platform_reasons)
+        allowed |= any(value in reason for value in CAPABILITY_REASONS.get(module, set()))
+        if not allowed:
+            raise ValueError(f'Unexpected skip: {module}/{case.get("name")}: {reason[:180]}')
+        print(f'Explicit platform/capability limit: {module}/{case.get("name")}: {reason[:180]}', flush=True)
+    if observed != expected:
+        raise ValueError('Maintained suite missing from report: ' + ', '.join(sorted(expected - observed)))
+    whole_os_limits = WHOLE_MODULE_OS_LIMITS.get(sys.platform, {})
+    for module, count in passed_by_module.items():
+        if count:
+            continue
+        required_reason = whole_os_limits.get(module)
+        reasons = module_skip_reasons[module]
+        if not required_reason or not reasons or not all(required_reason in reason for reason in reasons):
+            raise ValueError(f'Maintained suite has no passing cases: {module}')
+    if passed == 0:
+        raise ValueError('No maintained verification case passed')
+    return {'passed': passed, 'explicit_limits': skipped, 'suites': len(observed)}
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest='command', required=True)
+    sub.add_parser('coverage')
+    staged = sub.add_parser('stage-tracked')
+    staged.add_argument('--destination', type=Path, required=True)
+    scanner = sub.add_parser('secret-config')
+    scanner.add_argument('--base', type=Path, required=True)
+    scanner.add_argument('--destination', type=Path, required=True)
+    native = sub.add_parser('native')
+    native.add_argument('--phase', choices=('build', 'test'), required=True)
+    seam = sub.add_parser('seam')
+    seam.add_argument('--phase', choices=('build', 'test'), required=True)
+    seam.add_argument('--scope', choices=tuple(SEAMS), required=True)
+    report = sub.add_parser('report')
+    report.add_argument('--tier', choices=('python', 'browser', 'dashboard'), required=True)
+    report.add_argument('--report', type=Path, required=True)
+    args = parser.parse_args()
+    with run_log('hosted-suite-coverage') as log:
+        if args.command == 'coverage':
+            counts = check_workflows()
+            checked = check_utf8(tracked_paths())
+            log.info('Maintained tiers mapped counts=%s utf8_text_files=%s', json.dumps(counts, sort_keys=True), checked)
+        elif args.command == 'secret-config':
+            prepare_secret_config(args.base, args.destination)
+            log.info('Checksum-verified scanner rules retained; inherited path omissions removed')
+        elif args.command == 'stage-tracked':
+            count = stage_tracked(args.destination)
+            log.info('Exact tracked secret scope staged files=%s', count)
+        elif args.command == 'report':
+            result = (check_dashboard(args.report) if args.tier == 'dashboard'
+                      else check_report(args.report, args.tier))
+            log.info('Actual report verified tier=%s result=%s', args.tier, json.dumps(result))
+        else:
+            command = (seam_command(args.phase, args.scope) if args.command == 'seam'
+                       else native_command(args.phase))
+            log.info('Native phase=%s tier=%s workers=2', args.phase, args.command)
+            return subprocess.run(command, stdin=subprocess.DEVNULL, check=False).returncode
+    return 0
+
+
+if __name__ == '__main__':
+    try:
+        raise SystemExit(main())
+    except (OSError, ValueError, ET.ParseError) as error:
+        print(f'Hosted suite coverage failed: {error}', file=sys.stderr)
+        raise SystemExit(1)

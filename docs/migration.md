@@ -2,8 +2,9 @@
 
 The accepted boundary is [ADR0001](adr/0001-parity-gated-rust-migration.md).
 The existing Python application remains the default and rollback implementation.
-`engine-rust` is currently a native domain/persistence library, **not a replacement
-CLI/server**. A passing library test does not certify a finished product migration.
+`engine-rust` includes native domain/persistence services and an acceptance-only
+CLI/server example, **not an installed replacement**. Passing library or narrow
+entrypoint tests does not certify a finished product migration.
 
 ## Implemented native seams
 
@@ -361,7 +362,92 @@ Dashboard tests, strict types, lint, build and dependency checks share one manua
 dispatchable hosted workflow, also called by full CI. A dashboard-only checkpoint
 does not certify native product acceptance or self-hosted runner job compatibility.
 
+## Hosted-only distribution update — October 14, 2026
+
+All further application tests, checks and builds run on GitHub-hosted runners.
+Earlier local checkpoints below remain historical and cannot verify the newly
+edited tree. Full CI discovers the maintained source/native/dashboard tiers,
+runs source and native SDK checks in the same eight Windows/Linux browser legs,
+and gates Windows x64, Linux x64 and macOS ARM64 retained-Python distributions.
+macOS source/package checks do not certify unsupported native process ownership.
+
+The new detached MCP path shares the durable native supervisor instead of
+creating an unnecessary transient command-capture tree. It preserves parser
+versus application verdicts, cancellation ownership and idle supervisor reaping.
+Actual handoff-cancellation and no-zombie regressions are prepared for hosted
+execution; the current source has not been compiled or runtime-verified.
+
+Only a successful exact-SHA trusted `main` CI run with every applicable required
+check can publish a `build-<SHA>` prerelease. Archives include matching editable
+source, full project/third-party notices and checksums; restricted Cloak binaries
+are excluded. The new workflows and their downloads are not yet verified. This
+distribution work changes neither default selection nor the remaining capability,
+real-browser, replay, performance and rollback acceptance gates.
+
 ## Verification
+
+### Local Windows checkpoint — October 13, 2026
+
+After hosted jobs were refused before runner startup, the owner authorized local
+verification. The initial profile bucket failed twelve tests in ten targets. All
+observed failures were repaired: the final bucket passed 80 tests across 42 targets,
+including one added pipe-framing regression. A separate discovery-driven pass passed
+76 tests across the other 71 non-live native targets. Source-oracle regeneration and
+inventory drift checks, strict all-target Clippy and formatting also passed.
+
+Corrections preserve stored profile identity under Windows case-insensitive lookup,
+source integer/float JSON distinctions, persisted-language readback, path identity and
+exact record counts. Fixture sockets explicitly enter blocking mode before bounded
+reads. The SDK adapter now uses one main-thread input owner rather than leaving a
+blocked daemon reader during Python shutdown; the reproduced Windows exit crash and
+packaged-option failures passed their regression checks without weakening assertions.
+
+After entry integration and review corrections, the discovery-driven final Windows
+batch passed 160 tests across the library and 115 non-live integration targets, with
+zero failed or ignored cases. Strict all-target Clippy and formatting passed on that
+tree. These results describe uncommitted changes, not the unchanged published candidate. Tests used reduced debug information with
+assertions unchanged; documented cold compilation idle timeouts were build failures,
+not test verdicts. Every bounded command owner reported its tree empty.
+
+An acceptance-only `native_candidate` example now composes the real Rust entrypoint.
+Fifteen JSON CLI scenarios, three human output scenarios and MCP ping/tool execution
+matched the original runtime on Windows/Linux using isolated stores. Twenty-one actual
+HTTP read/authentication/error and documentation cases also matched status, bodies
+and selected headers on both platforms; listeners and process trees settled.
+Documentation assets are generated from the pinned original application, carry the
+FastAPI MIT notice and are served natively without application forwarding. A Router
+regression also compares allowed methods and content lengths for twelve documentation
+requests. Swagger loaded the schema in a browser preview and executed readiness with
+status 200; ReDoc rendering remains unverified. Real invisible ConPTY/PTY
+checks exercised vault enable/change/resume, Unicode password input without echo,
+Ctrl-C cancellation and damaged-journal refusal before prompts. Recovery checks
+decrypted every source-fixture secret and preserved unrelated config; Linux checks
+also inspected terminal echo restoration after success and cancellation. The example is not installed or selected
+as the product. Deployment discovery reaches ordinary browser opens; SDK metadata and
+redirected UTF-8 input/cancellation have narrow Windows checks.
+
+Linux detached execution now records trusted nested native/SDK spawn transfers before
+activation, gates the command until its durable identity is published, and retains
+incomplete receipts rather than declaring them empty. Actual detached list/MCP/server
+start, poll, stop and prune checks passed, including a separately-owned SDK protocol
+stand-in after normal stop and a hard-killed leader. MCP signal cancellation also
+passed with stdin kept open and a nonresponsive SDK stand-in; the parent settles its
+nested receipts rather than only terminating the command group. These checks preserve
+the original trusted-spawn contract, not universal containment of hostile arbitrary
+process-group changes. They do not substitute for real four-engine acceptance.
+
+Windows detached startup explicitly refuses under a non-breakaway outer job. That
+refusal is verified; successful cooperative handoff, non-password console/signal
+handling and the complete parent-death matrix remain pending. Native server parent
+identity disappearance has scoped Windows/Linux evidence; the original Windows
+PID-only path is inapplicable because the desktop shell owns it through a job object. Kill-on-close ownership is not disabled.
+
+The real four-engine matrix, complete native CLI/MCP/server packaging,
+replay, performance and rollback remain required. Python stays selected; these results
+authorize neither cutover nor retirement. Earlier **prepared/unexecuted** descriptions
+in the seam inventory are historical and superseded only by actual scoped evidence.
+
+### Earlier hosted evidence
 
 The owner-requested October 8 checkpoint uses manually dispatched GitHub-hosted
 Windows/Linux jobs, without local or self-hosted test execution. It verifies the
@@ -416,5 +502,7 @@ old run logs deliberately after diagnosis, and sanitize any approved support exp
 The original engine's logging policy remains unchanged.
 
 Algorithm redistribution notices are in
-[migration-random-notices.txt](migration-random-notices.txt); the project's LICENSE
-has not been changed.
+[migration-random-notices.txt](migration-random-notices.txt). The maintainer-selected
+[Noncommercial Network Share-Alike License 1.0](../LICENSE) now applies to authorized
+project material; independent dependency licenses and earlier valid grants remain
+in force. See [licensing scope and notices](licensing.md).

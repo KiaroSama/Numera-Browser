@@ -19,6 +19,20 @@ def load(name):
         sys.path.remove(str(SCRIPTS))
 
 
+def test_repaired_baseline_is_reachable_without_changing_fixture_provenance(monkeypatch):
+    inventory = load('inventory')
+    from types import SimpleNamespace
+
+    def fresh_checkout(argv, **options):
+        assert argv[6] == '760f9873ded13c5ebfecae1f16b385e34f695124', 'Unreachable pre-repair baseline used'
+        assert options['check'] and options['timeout'] == 10
+        return SimpleNamespace(stdout=b'engine/numera/models.py\0')
+
+    monkeypatch.setattr(inventory.subprocess, 'run', fresh_checkout)
+    assert inventory.tracked_paths('engine/numera') == [ROOT / 'engine/numera/models.py']
+    assert inventory.BASELINE == '13b6d9c6973281fe123353eaec05b29d65781a2d'
+
+
 def test_empty_missing_and_forged_ledgers_cannot_allow_switch(tmp_path, monkeypatch):
     gate = load('check_coverage')
     source = {'files':[{'path':'source.py'}], 'capabilities':[{'id':'source.py::required'}]}

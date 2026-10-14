@@ -132,6 +132,7 @@ for line in sys.stdin:
             country: None,
             relay: None,
             binary_options: Default::default(),
+            deployment: None,
         };
         runtime.block_on(async {
             let app = router_with_browser(

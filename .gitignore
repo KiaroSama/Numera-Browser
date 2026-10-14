@@ -54,6 +54,12 @@ node_modules/
 # build/ is produced by scripts/, never edited, and published through Releases.
 /build/
 
+# Maintained distribution helpers, not generated build output.
+!/scripts/build/
+/scripts/build/*
+!/scripts/build/*.py
+!/scripts/build/requirements.txt
+
 # The self-hosted CI runner and everything it checks out or builds. Kept inside
 # the project on purpose - one folder to delete - and never tracked: it holds a
 # runner credential, a second copy of this repository, and multi-gigabyte build

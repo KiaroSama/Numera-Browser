@@ -1,9 +1,8 @@
 use super::*;
 use crate::browser::adapter::Adapter;
+use crate::common;
 use axum::body::to_bytes;
 use std::{process::Command, time::Duration};
-#[path = "../../tests/common/mod.rs"]
-mod common;
 
 #[test]
 fn dashboard_files_and_spa_fallback_match_original_without_swallowing_api()
@@ -90,8 +89,7 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':cases(os.en
                     None,
                 )?),
             },
-            None,
-            Some(&build),
+            (None, Some(&build)),
         )
         .await?;
         let authenticated = document["authenticated"]

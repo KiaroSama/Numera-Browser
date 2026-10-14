@@ -97,7 +97,11 @@ fn seed(source: &Path, target: &Path, depth: usize) -> io::Result<()> {
                 permissions.set_mode(permissions.mode() | 0o200);
             }
             #[cfg(windows)]
-            permissions.set_readonly(false);
+            {
+                // Windows readonly flags do not change Unix permission bits.
+                #[allow(clippy::permissions_set_readonly_false)]
+                permissions.set_readonly(false);
+            }
             fs::set_permissions(&temporary, permissions)?;
             let file = fs::File::options().write(true).open(&temporary)?;
             file.set_times(

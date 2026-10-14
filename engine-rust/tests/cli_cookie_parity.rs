@@ -92,6 +92,7 @@ for line in sys.stdin:
         country: None,
         relay: None,
         binary_options: Default::default(),
+        deployment: None,
     };
     let installed = std::collections::BTreeMap::new();
     let services = Application {
@@ -619,9 +620,7 @@ for line in sys.stdin:
         )?;
         assert_eq!(outcome.payload, case["expected"]);
         assert_eq!(outcome.exit, 0);
-        let saved = repo
-            .resolve("fixture", 1000.0)?
-            .ok_or("Aligned profile missing")?;
+        let saved = repo.get("fixture")?.ok_or("Aligned profile missing")?;
         assert_eq!(saved.notes, "edited during probe");
         assert_eq!(
             serde_json::to_value(&saved.fingerprint)?,

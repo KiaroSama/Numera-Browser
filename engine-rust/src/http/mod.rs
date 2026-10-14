@@ -8,6 +8,7 @@ mod cookie_routes;
 pub mod cors;
 pub mod dashboard;
 pub mod diagnostics;
+mod documentation;
 pub mod extension_routes;
 pub mod fingerprint_routes;
 pub mod folder_routes;

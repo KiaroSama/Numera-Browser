@@ -1,0 +1,220 @@
+name: Publish verified build
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+# Each completed SHA gets its own release; another push must not cancel it.
+concurrency:
+  group: verified-release-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Require exact trusted verification
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      source_sha: ${{ steps.gate.outputs.source_sha }}
+      run_id: ${{ steps.gate.outputs.run_id }}
+    steps:
+      # No checkout and no execution of code or scripts from a predecessor artifact.
+      - name: Read the exact CI run and blocking aggregate
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ && "$RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$REPOSITORY/actions/runs/$RUN_ID" > run.json
+          gh api --paginate "repos/$REPOSITORY/actions/runs/$RUN_ID/jobs?filter=latest&per_page=100" --slurp > jobs.json
+          gh api "repos/$REPOSITORY/compare/$SOURCE_SHA...main" > ancestry.json
+          python3 -I - <<'PY'
+          import json, os, pathlib
+          run = json.loads(pathlib.Path('run.json').read_text(encoding='utf-8'))
+          pages = json.loads(pathlib.Path('jobs.json').read_text(encoding='utf-8'))
+          ancestry = json.loads(pathlib.Path('ancestry.json').read_text(encoding='utf-8'))
+          assert run['name'] == 'CI' and run['path'] == '.github/workflows/ci.yml', 'Wrong verification workflow'
+          assert run['head_sha'] == os.environ['SOURCE_SHA'] and run['head_branch'] == 'main', 'Wrong verified SHA/ref'
+          assert run['head_repository']['full_name'] == os.environ['REPOSITORY'], 'Untrusted verification repository'
+          assert run['event'] in ('push', 'workflow_dispatch') and not run['pull_requests'], 'Untrusted CI event'
+          assert run['status'] == 'completed' and run['conclusion'] == 'success', 'CI did not pass'
+          assert ancestry['status'] in ('ahead', 'identical'), 'Verified SHA is no longer on trusted main'
+          required = [job for page in pages for job in page['jobs'] if job['name'] == 'Required verification']
+          assert len(required) == 1 and required[0]['conclusion'] == 'success', 'Required verification did not pass'
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f"source_sha={os.environ['SOURCE_SHA']}\nrun_id={os.environ['RUN_ID']}\n")
+          PY
+
+  publish:
+    name: Publish exact verified downloads
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    env:
+      SOURCE_SHA: ${{ needs.gate.outputs.source_sha }}
+      RUN_ID: ${{ needs.gate.outputs.run_id }}
+      REPOSITORY: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: distribution-manifest
+          path: ${{ runner.temp }}/verified-downloads
+          run-id: ${{ needs.gate.outputs.run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          digest-mismatch: error
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: numera-release-windows-x64
+          path: ${{ runner.temp }}/verified-downloads
+          run-id: ${{ needs.gate.outputs.run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          digest-mismatch: error
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: numera-release-linux-x64
+          path: ${{ runner.temp }}/verified-downloads
+          run-id: ${{ needs.gate.outputs.run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          digest-mismatch: error
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: numera-release-macos-arm64
+          path: ${{ runner.temp }}/verified-downloads
+          run-id: ${{ needs.gate.outputs.run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          digest-mismatch: error
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: numera-release-server
+          path: ${{ runner.temp }}/verified-downloads
+          run-id: ${{ needs.gate.outputs.run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ github.token }}
+          digest-mismatch: error
+      - name: Independently verify the named archives and exact source checksums
+        env:
+          DOWNLOADS: ${{ runner.temp }}/verified-downloads
+        run: |
+          python3 -I - <<'PY'
+          import hashlib, json, os, pathlib, re
+          root = pathlib.Path(os.environ['DOWNLOADS'])
+          sha = os.environ['SOURCE_SHA']
+          assert re.fullmatch('[0-9a-f]{40}', sha), 'Invalid verified SHA'
+          manifest = json.loads((root / 'distribution.json').read_text(encoding='utf-8'))
+          assert manifest['schema'] == 1 and manifest['source_sha'] == sha, 'Distribution source_sha mismatch'
+          assert manifest['application_runtime'] == 'retained-python', 'Unapproved runtime promotion'
+          expected = {f'numera-windows-x64-{sha}.zip', f'numera-linux-x64-{sha}.tar.gz',
+                      f'numera-macos-arm64-{sha}.tar.gz', f'numera-server-{sha}.tar.gz',
+                      f'numera-source-{sha}.tar.gz'}
+          assets = manifest['assets']
+          assert len(assets) == len(expected) and {row['name'] for row in assets} == expected, 'Missing/duplicate/unknown product asset'
+          for platform in ('windows-x64', 'linux-x64', 'macos-arm64', 'server'):
+              metadata_path = root / (platform + '.json')
+              metadata = json.loads(metadata_path.read_text(encoding='utf-8'))
+              assert metadata['source_sha'] == sha and metadata['platform'] == platform, 'Wrong platform archive identity'
+              assert metadata['asset'] in assets, 'Platform archive not in verified manifest'
+              metadata_path.unlink()
+          assert {path.name for path in root.iterdir()} == expected | {'distribution.json', 'SHA256SUMS'}, 'Unexpected publication payload'
+          checksums = []
+          for row in assets:
+              path = root / row['name']
+              assert path.is_file() and not path.is_symlink(), 'Unsafe asset type'
+              with path.open('rb') as stream:
+                  value = hashlib.file_digest(stream, 'sha256').hexdigest()
+              assert value == row['sha256'] and path.stat().st_size == row['size'], 'Asset checksum/size mismatch'
+              checksums.append(f"{value}  {path.name}\n")
+          assert (root / 'SHA256SUMS').read_text(encoding='utf-8') == ''.join(checksums), 'Checksum file differs from manifest'
+          PY
+      - name: Recheck trusted CI and publish one immutable SHA build tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DOWNLOADS: ${{ runner.temp }}/verified-downloads
+        run: |
+          set -euo pipefail
+          gh api "repos/$REPOSITORY/actions/runs/$RUN_ID" > run.json
+          gh api "repos/$REPOSITORY/compare/$SOURCE_SHA...main" > ancestry.json
+          python3 -I - <<'PY'
+          import json, os, pathlib
+          run = json.loads(pathlib.Path('run.json').read_text(encoding='utf-8'))
+          ancestry = json.loads(pathlib.Path('ancestry.json').read_text(encoding='utf-8'))
+          assert run['head_sha'] == os.environ['SOURCE_SHA'] and run['conclusion'] == 'success'
+          assert run['path'] == '.github/workflows/ci.yml' and run['head_branch'] == 'main'
+          assert run['head_repository']['full_name'] == os.environ['REPOSITORY']
+          assert ancestry['status'] in ('ahead', 'identical'), 'Verified SHA left main'
+          PY
+          tag="build-$SOURCE_SHA"
+          if gh release view "$tag" --repo "$REPOSITORY" --json tagName >/dev/null 2>&1; then
+            gh api "repos/$REPOSITORY/releases/tags/$tag" > existing.json
+            gh api "repos/$REPOSITORY/git/ref/tags/$tag" > tag.json
+            python3 -I - <<'PY'
+          import json, os, pathlib
+          root = pathlib.Path(os.environ['DOWNLOADS'])
+          release = json.loads(pathlib.Path('existing.json').read_text(encoding='utf-8'))
+          tag = json.loads(pathlib.Path('tag.json').read_text(encoding='utf-8'))
+          manifest = json.loads((root / 'distribution.json').read_text(encoding='utf-8'))
+          assert tag['object']['type'] == 'commit' and tag['object']['sha'] == os.environ['SOURCE_SHA'], 'Existing tag differs from verified SHA'
+          assert not release['draft'] and release['prerelease'], 'Existing release is incomplete or stable'
+          rows = manifest['assets'] + [{'name': name, 'size': (root/name).stat().st_size,
+                   'sha256': __import__('hashlib').sha256((root/name).read_bytes()).hexdigest()}
+                   for name in ('distribution.json', 'SHA256SUMS')]
+          remote = {asset['name']: asset for asset in release['assets']}
+          assert set(remote) == {row['name'] for row in rows}, 'Existing published assets differ'
+          assert all(remote[row['name']]['size'] == row['size'] and remote[row['name']]['digest'] == 'sha256:' + row['sha256'] for row in rows), 'Published asset checksum differs'
+          PY
+            echo "Verified build already published for this SHA; no assets replaced."
+            exit 0
+          fi
+          cat > release-notes.txt <<EOF
+          Verified retained-Python Numera Browser build from commit $SOURCE_SHA.
+          Blocking CI: https://github.com/$REPOSITORY/actions/runs/$RUN_ID
+
+          Windows x64, Linux x64 and Apple Silicon macOS portable downloads include
+          matching editable Complete Source, build/dependency information, full
+          project license and independent third-party notices/source offers.
+          SHA256SUMS and distribution.json bind every download to this commit.
+
+          The Rust application migration is unfinished and is NOT selected as default.
+          Builds are unsigned; macOS is not notarized and Gatekeeper may require approval.
+          Host WebView2/WebKit system prerequisites still apply. Cloak's proprietary
+          browser binary is excluded; its end-user vendor download is not offline.
+          EOF
+          mapfile -t assets < <(python3 -I -c 'import json,os,pathlib; p=pathlib.Path(os.environ["DOWNLOADS"]); m=json.loads((p/"distribution.json").read_text(encoding="utf-8")); print("\n".join(str(p/r["name"]) for r in m["assets"]))')
+          assets+=("$DOWNLOADS/distribution.json" "$DOWNLOADS/SHA256SUMS")
+          gh release create "$tag" "${assets[@]}" --repo "$REPOSITORY" --target "$SOURCE_SHA" \
+            --title "Verified build $SOURCE_SHA" --notes-file release-notes.txt --prerelease --latest=false
+          gh api "repos/$REPOSITORY/git/ref/tags/$tag" --jq .object.sha | grep -Fx "$SOURCE_SHA"
+          gh api "repos/$REPOSITORY/releases/tags/$tag" > published.json
+          python3 -I - <<'PY'
+          import hashlib, json, os, pathlib
+          root = pathlib.Path(os.environ['DOWNLOADS'])
+          published = json.loads(pathlib.Path('published.json').read_text(encoding='utf-8'))
+          remote = {row['name']: row for row in published['assets']}
+          assert not published['draft'] and published['prerelease'], 'Release was not published as a build prerelease'
+          assert set(remote) == {path.name for path in root.iterdir()}, 'Published assets do not match verified payload'
+          for path in root.iterdir():
+              with path.open('rb') as stream:
+                  sha = hashlib.file_digest(stream, 'sha256').hexdigest()
+              assert remote[path.name]['digest'] == 'sha256:' + sha and remote[path.name]['size'] == path.stat().st_size, 'Uploaded release asset differs'
+          PY

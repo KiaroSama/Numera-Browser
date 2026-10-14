@@ -59,14 +59,66 @@ impl Failure {
         Ok(())
     }
 }
+fn retained() -> &'static std::sync::Mutex<Vec<OwnedTree>> {
+    static OWNERS: std::sync::OnceLock<std::sync::Mutex<Vec<OwnedTree>>> =
+        std::sync::OnceLock::new();
+    OWNERS.get_or_init(|| std::sync::Mutex::new(Vec::new()))
+}
+pub(crate) fn retain_tree(tree: OwnedTree) {
+    retained()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .push(tree);
+}
 impl Drop for Failure {
     fn drop(&mut self) {
         if let Err(error) = self.settle(Duration::from_secs(2)) {
-            eprintln!("Native command cleanup remains unverified: {error}");
+            eprintln!("Native command cleanup remains owned: {error}");
+            if let Some(owner) = self.pending.take() {
+                retained()
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .push(*owner);
+            }
         }
     }
 }
+pub fn retry_retained(budget: Duration) -> Vec<String> {
+    let owners = std::mem::take(
+        &mut *retained()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner),
+    );
+    let end = Instant::now()
+        .checked_add(budget)
+        .unwrap_or_else(Instant::now);
+    let mut pending = Vec::new();
+    let mut failures = Vec::new();
+    for mut owner in owners {
+        if let Err(error) = owner.settle(end.saturating_duration_since(Instant::now())) {
+            failures.push(error.to_string());
+            pending.push(owner);
+        }
+    }
+    retained()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .extend(pending);
+    failures
+}
 pub fn run(command: &mut Command, limits: Limits) -> Result<Output, Failure> {
+    run_controlled(command, limits, || false)
+}
+pub fn run_controlled(
+    command: &mut Command,
+    limits: Limits,
+    mut cancelled: impl FnMut() -> bool,
+) -> Result<Output, Failure> {
+    if cancelled() {
+        return Err(
+            io::Error::new(io::ErrorKind::ConnectionAborted, "Native command cancelled").into(),
+        );
+    }
     if limits.wall.is_zero()
         || limits.idle.is_zero()
         || limits.cleanup.is_zero()
@@ -109,6 +161,12 @@ pub fn run(command: &mut Command, limits: Limits) -> Result<Output, Failure> {
         let mut bytes = [0u8; 8192];
         let mut progress = Instant::now();
         loop {
+            if cancelled() {
+                return Err(io::Error::new(
+                    io::ErrorKind::ConnectionAborted,
+                    "Native command cancelled",
+                ));
+            }
             if pipes.iter().all(Option::is_none)
                 && let Some(status) = tree.child_mut().try_wait()?
             {

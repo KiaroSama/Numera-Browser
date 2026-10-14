@@ -1,353 +1,298 @@
-# The builds that cannot happen on the maintainer's Windows machine.
-#
-# A Tauri binary links against the host's web view - WebKitGTK on Linux, WKWebView
-# on macOS - so it cannot be cross-compiled. These runners are the only way the
-# project produces a Linux or macOS desktop build at all.
-#
-# The server wheel is the opposite: pure Python, tagged py3-none-any, so one build
-# runs everywhere. It is here for convenience and because installing it on Linux
-# is the only real proof it works there.
-name: Build (desktop + server)
+name: Build distributions
 
-# Manual only, for the same reason as `ci.yml`: the jobs run on the owner's
-# machine and never start by themselves. A routine dispatch builds Linux only,
-# as a push used to; `release: true`, or a dispatch on a `v*` tag, runs the full
-# matrix that a tag push used to.
+# CI calls this once after its verification tiers. Dispatch CI for a manual build;
+# an independent run would not own the verified dashboard artifact.
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      release:
-        description: "Full desktop matrix (macOS and Windows) - the release path"
-        type: boolean
-        default: false
+      dashboard_artifact:
+        type: string
+        default: dashboard-dist
+    outputs:
+      source_sha:
+        value: ${{ jobs.manifest.outputs.source_sha }}
+      manifest_artifact:
+        value: ${{ jobs.manifest.outputs.manifest_artifact }}
 
 permissions:
   contents: read
+  actions: read
+
+env:
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: utf-8
+  HOOKMAKER_MAX_TEST_WORKERS: "2"
+  CARGO_BUILD_JOBS: "2"
 
 jobs:
-  verify-release:
-    name: Verify the release source
-    if: startsWith(github.ref, 'refs/tags/v')
-    uses: ./.github/workflows/ci.yml
-
   server:
-    name: Server wheel (any OS)
-    runs-on: [self-hosted, Linux, X64]
-    timeout-minutes: 15
+    name: Server distribution
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          node-version: "26"
-          cache: npm
-          cache-dependency-path: dashboard/package-lock.json
-      - uses: actions/setup-python@v7
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.14"
-
-      - name: Build the dashboard
-        working-directory: dashboard
-        run: npm ci && npm run build
-
-      # The engine serves numera/web, so the built dashboard has to be inside
-      # the package before the wheel is made. Mirrors scripts/build-server.ps1.
-      - name: Stage the dashboard into the package
-        run: cp -r dashboard/dist engine/numera/web
-
-      - name: Build wheel and sdist
-        working-directory: engine
-        run: python -m pip install --quiet build && python -m build --outdir ../build/server
-
-      # A wheel tagged for one platform would install nowhere else, and the tag
-      # is the only evidence either way.
-      - name: Assert the wheel is platform-independent
-        run: ls build/server/*py3-none-any.whl
-
-      # Installing and starting it is the only proof the artifact actually works;
-      # a wheel that builds and cannot serve is the failure worth catching.
-      - name: Install it and check it serves
-        timeout-minutes: 5
-        run: |
-          set -euo pipefail
-          smoke_root="$(mktemp -d)"
-          server_pid=""
-          cleanup() {
-            if [ -n "$server_pid" ]; then
-              kill "$server_pid" 2>/dev/null || true
-              wait "$server_pid" 2>/dev/null || true
-            fi
-            rm -rf "$smoke_root"
-          }
-          trap cleanup EXIT
-          python -m venv "$smoke_root/venv"
-          "$smoke_root/venv/bin/pip" install --quiet "$(ls build/server/*.whl)[api]"
-          mkdir "$smoke_root/data"
-          printf 'ci smoke\n' > "$smoke_root/data/.imported"
-          timeout --signal=TERM --kill-after=10 120 "$smoke_root/venv/bin/numera" \
-            --data-dir "$smoke_root/data" serve --port 8788 &
-          server_pid=$!
-          for _ in $(seq 1 30); do
-            if curl -sf --max-time 3 http://127.0.0.1:8788/api/health; then break; fi
-            sleep 0.5
-          done
-          curl -sf --max-time 3 http://127.0.0.1:8788/api/health
-          curl -sf --max-time 3 http://127.0.0.1:8788/ | grep -q Numera
-          echo "server artifact serves both the API and the dashboard"
-
-      - uses: actions/upload-artifact@v7
-        timeout-minutes: 3
-        # Retention, not a verdict. The artifact service is an account-level
-        # condition - "Artifact storage quota has been hit" failed this step on
-        # 905c204 after every real step had passed, including the smoke that
-        # proves the assembled artifact runs. A job whose work succeeded must
-        # not report failure because a quota that recalculates every 6-12
-        # hours was full.
-        continue-on-error: true
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          name: numera-server-wheel
-          path: build/server/*
-          # Every artifact this workflow stores, capped. The desktop folders
-          # are the expensive ones - roughly 700 MB each, produced on every
-          # push to main - and letting them accumulate is what filled the
-          # account's artifact storage, after which uploads failed for *every*
-          # workflow, including the small JUnit reports a failure diagnosis
-          # needs. Seven days is long enough to download a build someone is
-          # looking at and short enough that ordinary pushes stop piling up.
+          name: ${{ inputs.dashboard_artifact }}
+          path: dashboard/dist
+      - name: Require the dashboard from this source SHA
+        run: |
+          python -I -c 'import json,os,pathlib; p=pathlib.Path("dashboard/dist/ci-source.json"); assert json.loads(p.read_text(encoding="utf-8"))["source_sha"]==os.environ["GITHUB_SHA"]; p.unlink()'
+      - name: Install released build inputs
+        timeout-minutes: 5
+        run: python -m pip install -r scripts/build/requirements.txt "./engine[api,launch,secure,desktop]"
+      - name: Stage dashboard and complete notices for the wheel
+        run: |
+          python scripts/build/distribution.py stage-wheel
+          cp -R dashboard/dist engine/numera/web
+      - name: Build the wheel and source distribution
+        timeout-minutes: 5
+        run: python scripts/migration/run_owned.py --wall 240 --idle 120 -- python -m build engine --outdir build/server/Numera\ Server
+      - name: Verify and exercise the installed wheel
+        timeout-minutes: 5
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python scripts/build/server_smoke.py --directory "build/server/Numera Server"
+      - name: Package matching complete source and checksum metadata
+        run: python scripts/build/distribution.py package --stage "build/server/Numera Server" --platform server --output build/release
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        timeout-minutes: 3
+        with:
+          name: numera-release-server
+          path: build/release/*
+          if-no-files-found: error
           retention-days: 7
+          compression-level: 0
 
   desktop:
-    name: Desktop app (${{ matrix.os }})
-    # `matrix.os` stays the plain label so the job name and the matrix read the
-    # way they did; only where the Linux leg *runs* changes. macOS has no
-    # self-hosted runner and keeps the hosted one.
-    runs-on: ${{ matrix.os == 'ubuntu-latest' && fromJSON('["self-hosted", "Linux", "X64"]') || matrix.os }}
-    # Same ceiling as the Windows job below, because it now does the same work:
-    # a Chromium download and a real browser launch on top of the Rust build.
+    name: Portable (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
-        # Every push builds and smokes the Linux artifact; a tag or a manual run
-        # adds macOS. This is a cost decision with a measured basis: the three
-        # desktop jobs take 6.1 + 7.1 + 4.6 minutes, and GitHub bills macOS at
-        # 10x and Windows at 2x - about 66 billable minutes for the full matrix
-        # against roughly 8 for ordinary CI.
-        #
-        # Linux alone is the right one to keep, because the artifact defects
-        # this workflow has actually caught were not platform-specific in
-        # origin: the PyInstaller entry point could not survive being frozen
-        # anywhere, and it went unnoticed only because nothing ran the workflow.
-        # One artifact that starts, launches its bundled Chromium and does a
-        # vault round trip is what closes that gap.
-        os: ${{ (startsWith(github.ref, 'refs/tags/v') || inputs.release) && fromJSON('["ubuntu-latest", "macos-latest"]') || fromJSON('["ubuntu-latest"]') }}
+        include:
+          - os: ubuntu-latest
+            platform: linux-x64
+            architecture: x86_64
+          - os: macos-latest
+            platform: macos-arm64
+            architecture: arm64
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          node-version: "26"
-          cache: npm
-          cache-dependency-path: dashboard/package-lock.json
-      - uses: actions/setup-python@v7
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.14"
-      - uses: dtolnay/rust-toolchain@stable
-
-      # Tauri's Linux backend is WebKitGTK; without these the Rust build fails
-      # at link time with missing pkg-config packages rather than anything that
-      # names Tauri.
-      - name: System dependencies (Linux only)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
-                                  librsvg2-dev patchelf libssl-dev
-
-      - name: Build the dashboard
-        working-directory: dashboard
-        run: npm ci && npm run build
-
-      # --add-data is what puts the dashboard in the bundle. --collect-submodules
-      # collects Python modules and nothing else, so with it alone the frozen
-      # engine served every API route and answered `/` with a 404 - a build that
-      # passes a file listing, uploads happily, and opens to an empty window.
-      # Mirrors scripts/build-desktop.ps1, which has always had it; the source
-      # and destination are separated by `:` here and `;` there.
-      - name: Freeze the engine
-        run: |
-          python -m pip install --quiet pyinstaller "./engine[api,launch,secure,desktop]"
-          # `scripts/engine_entry.py`, not `engine/numera/__main__.py`. PyInstaller
-          # runs the entry as top-level `__main__` with no package, so the
-          # relative import in `__main__.py` raised "attempted relative import
-          # with no known parent package" and the artifact died on `--version`.
-          # It went unnoticed because this workflow had never actually run -
-          # every earlier attempt reported steps=0 under the billing block.
-          pyinstaller --noconfirm --name numera-engine --distpath desktop/dist/.build \
-                      --add-data "dashboard/dist:numera/web" \
-                      --collect-all uvicorn --collect-submodules numera \
-                      --collect-all playwright --collect-all patchright \
-                      --collect-all camoufox --collect-all cloakbrowser \
-                      --collect-all browserforge --collect-all apify_fingerprint_datapoints \
-                      --collect-all language_tags --collect-all ua_parser \
-                      --collect-all screeninfo --collect-all maxminddb \
-                      --recursive-copy-metadata camoufox --recursive-copy-metadata cloakbrowser \
-                      --copy-metadata patchright --copy-metadata playwright \
-                      scripts/engine_entry.py
-
-      - name: Build the shell
-        working-directory: desktop/src-tauri
-        run: cargo build --release
-
-      - name: Assemble the portable folder
-        run: |
-          plat=$([ "$RUNNER_OS" = "macOS" ] && echo macos || echo linux)
-          echo "PLAT=$plat" >> "$GITHUB_ENV"
-          mkdir -p "build/$plat/Numera Browser"
-          cp desktop/src-tauri/target/release/numera "build/$plat/Numera Browser/numera"
-          cp -r desktop/dist/.build/numera-engine "build/$plat/Numera Browser/engine"
-          cp docs/browser-notices.txt "build/$plat/Numera Browser/BROWSER-NOTICES.txt"
-          du -sh "build/$plat/Numera Browser"
-
-      # Each Chromium backend gets its own cache. Cloak's Python wrapper ships;
-      # the vendor binary is downloaded directly by the end user, never released here.
-      - name: Bundle desktop browsers and GeoIP data
-        timeout-minutes: 15
-        run: |
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            python -m playwright install-deps chromium
-          fi
-          python scripts/bundle-browsers.py --output "$PWD/build/$PLAT/Numera Browser/browsers" \
-            --cache "$RUNNER_TEMP/numera-browser-downloads"
-
-      # Proof the binary is for the runner it was built on. A silently
-      # mis-targeted artifact would upload happily and fail on a user's machine.
-      - name: Check the binary matches the platform
-        run: file "build/$PLAT/Numera Browser/numera"
-
-      # A file listing is not a working app. The gate that matters: the
-      # assembled folder has to start, create a profile, launch the *bundled*
-      # Chromium and still have the profile after a restart. Freezing an engine
-      # that cannot open a browser is the exact failure this catches, and it
-      # looks like a successful build without it.
-      - name: Smoke the assembled artifact
-        run: bash scripts/smoke-portable.sh "build/$PLAT/Numera Browser"
-
-      - uses: actions/upload-artifact@v7
-        timeout-minutes: 3
-        # Retention, not a verdict. The artifact service is an account-level
-        # condition - "Artifact storage quota has been hit" failed this step on
-        # 905c204 after every real step had passed, including the smoke that
-        # proves the assembled artifact runs. A job whose work succeeded must
-        # not report failure because a quota that recalculates every 6-12
-        # hours was full.
-        continue-on-error: true
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
-          name: numera-desktop-${{ runner.os }}
-          path: "build/${{ env.PLAT }}/Numera Browser"
-          retention-days: 7
-
-  # Windows has its own script: it proves the static CRT took, which the POSIX
-  # steps above have no equivalent of, and it is the same script a maintainer
-  # runs locally. Bolting it into that matrix would mean reimplementing it in
-  # bash. The browser bundle is the same on both, just expressed twice.
-  desktop-windows:
-    name: Desktop app (windows-latest)
-    runs-on: windows-latest
-    timeout-minutes: 60
-    # Release path only, for the cost reason above. The Windows-specific things
-    # it proves - the static CRT, the clean-checkout dashboard build - do not
-    # change on an ordinary push, and the Linux job covers the packaging.
-    if: startsWith(github.ref, 'refs/tags/v') || inputs.release
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: "26"
-          cache: npm
-          cache-dependency-path: dashboard/package-lock.json
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.14"
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+          toolchain: 1.99.0
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
           workspaces: desktop/src-tauri
-
-      # The point of running the script bare: `dashboard/dist` is git-ignored, so
-      # a fresh checkout never has one, and the script used to abort on exactly
-      # that. This job was therefore broken from a clean checkout for as long as
-      # it existed. Asserting the absence keeps it honest - if someone adds an
-      # `npm run build` step above, this fails and says why it should not be
-      # needed.
-      - name: There is no prebuilt dashboard (the script must make its own)
-        shell: pwsh
-        run: |
-          if (Test-Path dashboard/dist) {
-            throw "dashboard/dist exists before the build, so this job no longer proves the script works from a clean checkout"
-          }
-
-      - name: Build the portable app
-        shell: pwsh
-        run: ./scripts/build-desktop.ps1
-
-      # The gate that matters: the assembled folder has to start, create a
-      # profile, launch the *bundled* Chromium and still have the profile after
-      # a restart. Freezing an engine that cannot open a browser is the exact
-      # failure this catches, and it looks like a successful build without it.
-      - name: Smoke the assembled artifact
-        shell: pwsh
-        run: ./scripts/smoke-portable.ps1 -Stage 'build/windows/Numera Browser'
-
-      - uses: actions/upload-artifact@v7
-        timeout-minutes: 3
-        # Retention, not a verdict. The artifact service is an account-level
-        # condition - "Artifact storage quota has been hit" failed this step on
-        # 905c204 after every real step had passed, including the smoke that
-        # proves the assembled artifact runs. A job whose work succeeded must
-        # not report failure because a quota that recalculates every 6-12
-        # hours was full.
-        continue-on-error: true
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          name: numera-desktop-Windows
-          path: "build/windows/Numera Browser"
+          name: ${{ inputs.dashboard_artifact }}
+          path: dashboard/dist
+      - name: Require exact dashboard SHA and host architecture
+        env:
+          EXPECTED_ARCH: ${{ matrix.architecture }}
+        run: |
+          python -I -c 'import json,os,pathlib,platform; p=pathlib.Path("dashboard/dist/ci-source.json"); assert json.loads(p.read_text(encoding="utf-8"))["source_sha"]==os.environ["GITHUB_SHA"]; assert platform.machine().lower()==os.environ["EXPECTED_ARCH"]; p.unlink()'
+      - name: Tauri system dependencies (Linux)
+        if: runner.os == 'Linux'
+        timeout-minutes: 5
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
+            librsvg2-dev libxdo-dev libssl-dev build-essential file
+      - name: Install released build inputs
+        timeout-minutes: 5
+        run: python -m pip install -r scripts/build/requirements.txt "./engine[api,launch,secure,desktop]"
+      - name: Verify Tauri shell formatting
+        working-directory: desktop/src-tauri
+        run: python ../../scripts/migration/run_owned.py --wall 60 --idle 30 -- cargo fmt --all --check
+      - name: Compile and lint the Tauri shell
+        working-directory: desktop/src-tauri
+        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo clippy --locked --all-targets --all-features -- -D warnings
+      - name: Compile Tauri shell contract binaries
+        working-directory: desktop/src-tauri
+        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo test --locked --all-features --no-run
+      - name: Verify Tauri shell contracts
+        working-directory: desktop/src-tauri
+        run: python ../../scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo test --locked --all-features -- --test-threads=2
+      - name: Build the native shell without changing the application runtime
+        working-directory: desktop/src-tauri
+        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo build --release --locked
+      - name: Freeze the retained Python application
+        timeout-minutes: 10
+        run: |
+          python scripts/migration/run_owned.py --wall 540 --idle 180 -- \
+            python -m PyInstaller --noconfirm --clean --onedir --console --name numera-engine \
+            --distpath desktop/dist/.build --workpath build/pyinstaller --specpath build \
+            --add-data "dashboard/dist:numera/web" \
+            --collect-all uvicorn --collect-submodules numera \
+            --collect-all playwright --collect-all patchright --collect-all camoufox --collect-all cloakbrowser \
+            --collect-all browserforge --collect-all apify_fingerprint_datapoints \
+            --collect-all language_tags --collect-all ua_parser --collect-all screeninfo --collect-all maxminddb \
+            --recursive-copy-metadata camoufox --recursive-copy-metadata cloakbrowser \
+            --copy-metadata patchright --copy-metadata playwright scripts/engine_entry.py
+      - name: Assemble the existing portable layout
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          stage="build/$PLATFORM/Numera Browser"
+          mkdir -p "$stage"
+          cp desktop/src-tauri/target/release/numera "$stage/numera"
+          cp -R desktop/dist/.build/numera-engine "$stage/engine"
+          cp docs/browser-notices.txt "$stage/BROWSER-NOTICES.txt"
+          file "$stage/numera"
+      - name: Prepare redistributable browsers (no Cloak binary)
+        timeout-minutes: 15
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then python -m playwright install-deps chromium; fi
+          python scripts/migration/run_owned.py --wall 840 --idle 180 -- python scripts/bundle-browsers.py \
+            --output "$PWD/build/$PLATFORM/Numera Browser/browsers" --cache "$RUNNER_TEMP/numera-browser-downloads"
+      - name: Exercise the assembled frozen product and settle all owned units
+        timeout-minutes: 7
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: python scripts/migration/run_owned.py --wall 360 --idle 180 -- python scripts/build/smoke.py --stage "build/$PLATFORM/Numera Browser" --seconds 300
+      - name: Package portable product with exact source and third-party provenance
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/migration/run_owned.py --wall 600 --idle 180 -- python scripts/build/distribution.py package --stage "build/$PLATFORM/Numera Browser" --platform "$PLATFORM" --output build/release
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        timeout-minutes: 5
+        with:
+          name: numera-release-${{ matrix.platform }}
+          path: build/release/*
+          if-no-files-found: error
           retention-days: 7
+          compression-level: 0
 
-  # Reusable CI also uploads diagnostics into this run; only products are assets.
-  release:
-    name: Publish to the release
-    needs: [verify-release, server, desktop, desktop-windows]
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: [self-hosted, Linux, X64]
-    permissions:
-      contents: write
+  desktop-windows:
+    name: Portable (windows-x64)
+    runs-on: windows-latest
+    timeout-minutes: 60
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          name: numera-server-wheel
-          path: artifacts/numera-server-wheel
-      - uses: actions/download-artifact@v8
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
-          name: numera-desktop-Linux
-          path: artifacts/numera-desktop-Linux
-      - uses: actions/download-artifact@v8
+          python-version: "3.14"
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
-          name: numera-desktop-macOS
-          path: artifacts/numera-desktop-macOS
-      - uses: actions/download-artifact@v8
+          toolchain: 1.99.0
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
-          name: numera-desktop-Windows
-          path: artifacts/numera-desktop-Windows
-      - name: Zip each platform folder
+          workspaces: desktop/src-tauri
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: ${{ inputs.dashboard_artifact }}
+          path: dashboard/dist
+      - name: Require exact dashboard SHA and host architecture
+        shell: pwsh
         run: |
-          cd artifacts
-          for name in numera-server-wheel numera-desktop-Linux numera-desktop-macOS numera-desktop-Windows; do
-            test -d "$name" || { echo "Missing release artifact: $name" >&2; exit 1; }
-            zip -rq "../$name.zip" "$name"
-          done
-      - uses: softprops/action-gh-release@v3
+          python -I -c 'import json,os,pathlib,platform; p=pathlib.Path("dashboard/dist/ci-source.json"); assert json.loads(p.read_text(encoding="utf-8"))["source_sha"]==os.environ["GITHUB_SHA"]; assert platform.machine().lower() in {"amd64","x86_64"}; p.unlink()'
+          if ($LASTEXITCODE) { throw 'Dashboard provenance/architecture validation failed' }
+      - name: Install released build inputs
+        timeout-minutes: 5
+        run: python -m pip install -r scripts/build/requirements.txt "./engine[api,launch,secure,desktop]"
+      - name: Verify Tauri shell formatting
+        working-directory: desktop/src-tauri
+        run: python ../../scripts/migration/run_owned.py --wall 60 --idle 30 -- cargo fmt --all --check
+      - name: Compile and lint the Tauri shell
+        working-directory: desktop/src-tauri
+        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo clippy --locked --all-targets --all-features -- -D warnings
+      - name: Compile Tauri shell contract binaries
+        working-directory: desktop/src-tauri
+        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo test --locked --all-features --no-run
+      - name: Verify Tauri shell contracts
+        working-directory: desktop/src-tauri
+        run: python ../../scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo test --locked --all-features -- --test-threads=2
+      - name: Build the native shell with static CRT
+        working-directory: desktop/src-tauri
+        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo build --release --locked
+      - name: Build the existing portable product
+        timeout-minutes: 20
+        shell: pwsh
+        run: python scripts/migration/run_owned.py --wall 1140 --idle 180 -- pwsh -NoProfile -NonInteractive -File scripts/build-desktop.ps1 -PrebuiltShell
+      - name: Exercise the assembled frozen product and settle all owned units
+        timeout-minutes: 7
+        shell: pwsh
+        run: python scripts/migration/run_owned.py --wall 360 --idle 180 -- python scripts/build/smoke.py --stage 'build/windows/Numera Browser' --seconds 300
+      - name: Package portable product with exact source and third-party provenance
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/migration/run_owned.py --wall 600 --idle 180 -- python scripts/build/distribution.py package --stage 'build/windows/Numera Browser' --platform windows-x64 --output build/release
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        timeout-minutes: 5
         with:
-          files: |
-            numera-server-wheel.zip
-            numera-desktop-Linux.zip
-            numera-desktop-macOS.zip
-            numera-desktop-Windows.zip
-          fail_on_unmatched_files: true
+          name: numera-release-windows-x64
+          path: build/release/*
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  manifest:
+    name: Distribution manifest
+    needs: [server, desktop, desktop-windows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      source_sha: ${{ steps.identity.outputs.source_sha }}
+      manifest_artifact: distribution-manifest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.14"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: numera-release-windows-x64
+          path: build/release
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: numera-release-linux-x64
+          path: build/release
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: numera-release-macos-arm64
+          path: build/release
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: numera-release-server
+          path: build/release
+      - name: Require all downloads and make the exact-source checksum manifest
+        id: identity
+        run: |
+          python scripts/build/distribution.py manifest --directory build/release
+          printf 'source_sha=%s\n' "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        timeout-minutes: 5
+        with:
+          name: distribution-manifest
+          # Products already have immutable per-platform artifacts; do not store
+          # another multi-gigabyte copy merely to publish the small manifest.
+          path: |
+            build/release/distribution.json
+            build/release/SHA256SUMS
+            build/release/numera-source-*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

@@ -107,7 +107,7 @@ impl Probes<'_> {
                     "proxy":current.proxy.as_ref().map(|proxy| proxy.server.as_str()),"checks":[]})
             } else {
                 crate::browser::network_grades::proxy(
-                    &current,
+                    current,
                     &result["info"],
                     &result["leaks"],
                     &result["dns"],

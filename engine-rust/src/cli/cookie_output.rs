@@ -55,7 +55,7 @@ pub fn render(
                     Some(Tone::Bold),
                 )?;
                 let mut rows = domains.iter().collect::<Vec<_>>();
-                rows.sort_by(|(_, left), (_, right)| right.as_u64().cmp(&left.as_u64()));
+                rows.sort_by_key(|(_, count)| std::cmp::Reverse(count.as_u64()));
                 for (domain, count) in rows {
                     let spaces = " ".repeat(40usize.saturating_sub(domain.chars().count()));
                     output.say(

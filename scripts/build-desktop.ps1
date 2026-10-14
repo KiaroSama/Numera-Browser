@@ -37,7 +37,8 @@
 param(
     [string]$OutDir,
     [switch]$SkipFreeze,
-    [switch]$IncludeCloakBinary
+    [switch]$IncludeCloakBinary,
+    [switch]$PrebuiltShell
 )
 
 $ErrorActionPreference = 'Stop'
@@ -133,7 +134,8 @@ if ($SkipFreeze) {
     # cannot ask the user to pip-install into its embedded runtime - so shipping
     # without it meant `numera vault enable` was unavailable in exactly the build
     # where the encrypted vault is advertised as built in.
-    & $py -m pip install --quiet --upgrade --upgrade-strategy eager pip pyinstaller "$repo\engine[api,launch,secure,desktop]"
+    $releaseRequirements = Join-Path $repo 'scripts\build\requirements.txt'
+    & $py -m pip install --quiet --upgrade pip -r $releaseRequirements "$repo\engine[api,launch,secure,desktop]"
     if ($LASTEXITCODE -ne 0) { throw 'could not install the build dependencies' }
 
     Step 'Preparing the desktop browsers and GeoIP data'
@@ -176,16 +178,17 @@ if ($SkipFreeze) {
 
 # --- 2. build the shell ------------------------------------------------------
 
-Step 'Building the Tauri shell (cargo build --release)'
-# From the crate directory, not via --manifest-path: cargo discovers
-# .cargo/config.toml by walking up from the working directory, and that file
-# carries +crt-static. Build from elsewhere and the shell silently regains its
-# VCRUNTIME140 dependency.
-Push-Location (Join-Path $repo 'desktop\src-tauri')
-try {
-    & $cargo build --release
-    if ($LASTEXITCODE -ne 0) { throw 'cargo build failed' }
-} finally { Pop-Location }
+if (-not $PrebuiltShell) {
+    Step 'Building the Tauri shell (cargo build --release --locked)'
+    # Cargo discovers +crt-static from this working directory, not --manifest-path.
+    Push-Location (Join-Path $repo 'desktop\src-tauri')
+    try {
+        & $cargo build --release --locked
+        if ($LASTEXITCODE -ne 0) { throw 'cargo build failed' }
+    } finally { Pop-Location }
+} else {
+    Step 'Using the shell already built by the hosted verification job'
+}
 $shell = Join-Path $repo 'desktop\src-tauri\target\release\numera.exe'
 if (-not (Test-Path $shell)) { throw "cargo reported success but $shell is missing" }
 
@@ -267,6 +270,17 @@ if ($dataKeep) {
 Copy-Item $shell -Destination $stage
 Copy-Item $frozen -Destination (Join-Path $stage 'engine') -Recurse
 Copy-Item -LiteralPath (Join-Path $repo 'docs/browser-notices.txt') -Destination (Join-Path $stage 'BROWSER-NOTICES.txt')
+foreach ($notice in @('LICENSE', 'docs/licensing.md', 'docs/browser-notices.txt',
+                      'docs/migration-random-notices.txt',
+                      'engine-rust/src/http/documentation-assets/NOTICE.md')) {
+    $sourceNotice = Join-Path $repo $notice
+    if (-not (Test-Path -LiteralPath $sourceNotice -PathType Leaf)) {
+        throw "Required distribution license/notice is missing: $notice"
+    }
+    $targetNotice = Join-Path $stage $notice
+    New-Item -ItemType Directory -Force -Path (Split-Path $targetNotice -Parent) | Out-Null
+    Copy-Item -LiteralPath $sourceNotice -Destination $targetNotice
+}
 
 # The manifest selects each vendor's executable, including when Chromium revision
 # labels collide. Never ship a cached internal Cloak binary by accident.

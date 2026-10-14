@@ -1,0 +1,28 @@
+title = "Numera exact reviewed synthetic findings"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "Pinned original auth-policy source SHA-256 provenance, independently reviewed 2026-10-14"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''(^|/)engine-rust/tests/fixtures/(request-auth|token-store)\.json$''']
+regexes = ['''^632130334a8c0089cc3a3903670e8d1745cf841835a8a28f7b05da0f11412195$''']
+
+[[rules.allowlists]]
+description = "Exact source-generated documentation asset checksums, verified against asset bytes 2026-10-15"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''(^|/)engine-rust/src/http/documentation-assets/provenance\.json$''']
+regexes = ['''^3428f1d0f627af3e9e70f0f3fdb35929aae3e96e15a4d00cf28b8b30a95e864b$''', '''^f45d60bb9f054b1712b3f9e60547eb9e1d523afd6472a4137b89eb503b37f058$''']
+
+[[rules.allowlists]]
+description = "Exact synthetic log-redaction regression literal, independently reviewed 2026-10-14"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''(^|/)engine/tests/test_portable_root\.py$''']
+regexes = ['''^sk-live-9f8e7d6c5b4a$''']
