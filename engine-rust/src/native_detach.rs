@@ -134,14 +134,16 @@ pub(crate) fn tool(
             &environment.app,
             &environment.home,
         )?;
+        let admission =
+            crate::ownership::update_admission::Reservation::begin(&root, "native-mcp-detach")?;
         let inherited_password = std::env::var("NUMERA_PASSWORD").ok();
         let password = password
             .filter(|value| !value.is_empty())
             .or(inherited_password.as_deref());
         let repo = application::open_store(&root, args, password).map_err(io::Error::other)?;
-        Ok((environment, root, repo))
+        Ok((environment, root, repo, admission))
     })();
-    let (environment, root, repo) = match prepared {
+    let (environment, root, repo, _admission) = match prepared {
         Ok(prepared) => prepared,
         Err(error) => {
             return crate::mcp::tool_result(Outcome::failed(error.to_string()))

@@ -14,9 +14,8 @@ FIXTURES = ROOT / 'engine-rust' / 'tests' / 'fixtures'
 def verify() -> None:
     inventory = json.loads((ROOT / 'docs' / 'migration-coverage.json').read_text(encoding='utf-8'))
     current = discover()
-    # Frozen source TESTS are provenance, not immutable implementation. Their
-    # maintenance may change CI assertions while the original app stays the
-    # oracle. Validate app hashes here; ledger discovery still sees live tests.
+    # The original application and test inventory are frozen provenance. Current
+    # tests are discovered independently by the hosted suite coverage guard.
     source_files = lambda rows: [row for row in rows if row['path'].startswith('engine/numera/')]
     if source_files(inventory['files']) != source_files(current['files']) or inventory['source_commit'] != current['source_commit']:
         raise ValueError('Source application contract inventory drift')

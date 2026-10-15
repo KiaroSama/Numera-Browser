@@ -53,6 +53,10 @@ impl Scheduler {
         })
     }
     pub fn tick(&self) -> Result<(), RepoError> {
+        let _admission = crate::ownership::update_admission::Reservation::begin(
+            &self.state.root,
+            "native-scheduler",
+        )?;
         self.state.sessions.reap()?;
         tick(&self.state)
     }

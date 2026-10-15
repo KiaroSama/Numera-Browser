@@ -94,6 +94,12 @@ def build_parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_jobs)
 
     c = add("engines", help="List available launch engines")
+    c.add_argument('--cloak-offer', action='store_true',
+                   help='Show the local Cloak acquisition target without downloading')
+    c.add_argument('--acquire-cloak', metavar='OFFER_ID',
+                   help='Acquire only the exact Cloak offer previously shown')
+    c.add_argument('--approve', action='store_true',
+                   help='Explicitly approve this exact browser acquisition')
     c.set_defaults(func=cmd_engines)
 
     c = add("default-engine",

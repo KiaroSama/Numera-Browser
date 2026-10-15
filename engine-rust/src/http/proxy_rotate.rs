@@ -97,7 +97,7 @@ pub(super) async fn rotate_one(
     let selection = {
         let state = state.clone();
         let id = id.clone();
-        tokio::task::spawn_blocking(move || {
+        super::admission::blocking(move || {
             let proxy = state.pool.get(&id)?;
             let hidden = proxy.is_some() && state.pool.secret_withheld(&id)?;
             Ok::<_, RepoError>((proxy, hidden))
@@ -116,7 +116,7 @@ pub(super) async fn rotate_one(
         return locked(None);
     }
     let result = crate::network::proxy_rotate::rotate(&proxy, Duration::from_secs(20)).await;
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         record(&state, &id, &result)?;
         Ok::<_, RepoError>(result)
     })
@@ -134,7 +134,7 @@ pub(super) async fn rotate_many(
 ) -> Response {
     let selection = {
         let state = state.clone();
-        tokio::task::spawn_blocking(move || select(&state, body.get("ids").unwrap_or(&Value::Null)))
+        super::admission::blocking(move || select(&state, body.get("ids").unwrap_or(&Value::Null)))
             .await
     };
     let (targets, hidden) = match selection {
@@ -153,7 +153,7 @@ pub(super) async fn rotate_many(
         let result = crate::network::proxy_rotate::rotate(&proxy, Duration::from_secs(20)).await;
         let saved = {
             let state = state.clone();
-            tokio::task::spawn_blocking(move || {
+            super::admission::blocking(move || {
                 let id = proxy["id"]
                     .as_str()
                     .ok_or_else(|| RepoError::InvalidRecord("Proxy ID is not text".into()))?;

@@ -5,24 +5,14 @@ import argparse
 import ast
 import hashlib
 import json
-import subprocess
 import sys
 from pathlib import Path
 from run_logging import run_log
-
-ROOT = Path(__file__).resolve().parents[2]
-BASELINE = '13b6d9c6973281fe123353eaec05b29d65781a2d'
-# The scoped privacy rewrite preserved these exact source/test trees. Keep the
-# original fixture provenance, but read the reachable equivalent in clean CI.
-BASELINE_TREE = '760f9873ded13c5ebfecae1f16b385e34f695124'
+from baseline_source import BASELINE, BASELINE_TREE, source_root, tracked_paths as baseline_paths
 
 
 def tracked_paths(prefix: str) -> list[Path]:
-    result = subprocess.run(
-        ['git', '-C', str(ROOT), 'ls-tree', '-rz', '--name-only', BASELINE_TREE, '--', prefix],
-        check=True, capture_output=True, timeout=10,
-    )
-    return sorted(ROOT / name.decode('utf-8') for name in result.stdout.split(b'\0') if name)
+    return baseline_paths(prefix)
 
 
 def describe(path: Path) -> dict:
@@ -52,7 +42,7 @@ def describe(path: Path) -> dict:
                 for handler in getattr(node, 'handlers', []):
                     walk(handler.body, parent)
     walk(tree.body)
-    return {'path': path.relative_to(ROOT).as_posix(),
+    return {'path': path.relative_to(source_root()).as_posix(),
             'sha256': hashlib.sha256(raw).hexdigest(), 'symbols': symbols,
             'tests': tests, 'routes': routes}
 
@@ -91,6 +81,7 @@ def main(argv=None) -> int:
 
 
 if __name__ == '__main__':
+    source_root()
     with run_log('inventory') as log:
         code = main()
         log.info('Inventory verdict exit=%s', code)

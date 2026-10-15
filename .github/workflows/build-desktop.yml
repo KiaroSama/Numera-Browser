@@ -8,6 +8,19 @@ on:
       dashboard_artifact:
         type: string
         default: dashboard-dist
+      owner_signing:
+        type: boolean
+        default: false
+      trusted_sha:
+        type: string
+        required: true
+    secrets:
+      NUMERA_RELEASE_SIGNING_KEY:
+        required: false
+      NUMERA_CODE_SIGNING_PFX:
+        required: false
+      NUMERA_CODE_SIGNING_PASSWORD:
+        required: false
     outputs:
       source_sha:
         value: ${{ jobs.manifest.outputs.source_sha }}
@@ -23,6 +36,8 @@ env:
   PYTHONIOENCODING: utf-8
   HOOKMAKER_MAX_TEST_WORKERS: "2"
   CARGO_BUILD_JOBS: "2"
+  NUMERA_SIGNING_SCOPE: ${{ inputs.owner_signing && 'owner' || 'validation-only' }}
+  NUMERA_TRUSTED_SHA: ${{ inputs.trusted_sha }}
 
 jobs:
   server:
@@ -57,6 +72,8 @@ jobs:
         timeout-minutes: 5
         run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python scripts/build/server_smoke.py --directory "build/server/Numera Server"
       - name: Package matching complete source and checksum metadata
+        env:
+          NUMERA_RELEASE_SIGNING_KEY: ${{ secrets.NUMERA_RELEASE_SIGNING_KEY }}
         run: python scripts/build/distribution.py package --stage "build/server/Numera Server" --platform server --output build/release
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         timeout-minutes: 3
@@ -70,7 +87,7 @@ jobs:
   desktop:
     name: Portable (${{ matrix.platform }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 150
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -111,7 +128,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
-            librsvg2-dev libxdo-dev libssl-dev build-essential file
+            librsvg2-dev libxdo-dev libssl-dev build-essential file xvfb xauth
       - name: Install released build inputs
         timeout-minutes: 5
         run: python -m pip install -r scripts/build/requirements.txt "./engine[api,launch,secure,desktop]"
@@ -120,21 +137,23 @@ jobs:
         run: python ../../scripts/migration/run_owned.py --wall 60 --idle 30 -- cargo fmt --all --check
       - name: Compile and lint the Tauri shell
         working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo clippy --locked --all-targets --all-features -- -D warnings
+        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo clippy --locked --all-targets --no-default-features -- -D warnings
       - name: Compile Tauri shell contract binaries
         working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo test --locked --all-features --no-run
+        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo test --locked --no-default-features --no-run
       - name: Verify Tauri shell contracts
         working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo test --locked --all-features -- --test-threads=2
+        run: python ../../scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo test --locked --no-default-features -- --test-threads=2
       - name: Build the native shell without changing the application runtime
         working-directory: desktop/src-tauri
         run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo build --release --locked
       - name: Freeze the retained Python application
         timeout-minutes: 10
         run: |
+          python scripts/build/identity.py prepare --directory build/identity
           python scripts/migration/run_owned.py --wall 540 --idle 180 -- \
             python -m PyInstaller --noconfirm --clean --onedir --console --name numera-engine \
+            --paths build/identity \
             --distpath desktop/dist/.build --workpath build/pyinstaller --specpath build \
             --add-data "dashboard/dist:numera/web" \
             --collect-all uvicorn --collect-submodules numera \
@@ -161,6 +180,32 @@ jobs:
           if [ "$RUNNER_OS" = Linux ]; then python -m playwright install-deps chromium; fi
           python scripts/migration/run_owned.py --wall 840 --idle 180 -- python scripts/bundle-browsers.py \
             --output "$PWD/build/$PLATFORM/Numera Browser/browsers" --cache "$RUNNER_TEMP/numera-browser-downloads"
+      - name: Verify embedded owner and exact build identity before signing
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/build/identity.py verify --stage "build/$PLATFORM/Numera Browser"
+      - name: Compile and freeze two isolated updater fixture generations
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: python scripts/migration/run_owned.py --wall 4200 --idle 300 -- python scripts/build/update_acceptance_build.py --stage "build/$PLATFORM/Numera Browser" --directory build/update-fixtures --platform "$PLATFORM"
+      - name: Exercise actual hidden desktop upgrade and interrupted recovery
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a python scripts/migration/run_owned.py --wall 1260 --idle 180 -- python scripts/build/update_acceptance.py run --old-stage "build/update-fixtures/old/Numera Browser" --new-stage "build/update-fixtures/new/Numera Browser" --directory build/update-acceptance --platform "$PLATFORM" --seconds 1200
+          else
+            python scripts/migration/run_owned.py --wall 1260 --idle 180 -- python scripts/build/update_acceptance.py run --old-stage "build/update-fixtures/old/Numera Browser" --new-stage "build/update-fixtures/new/Numera Browser" --directory build/update-acceptance --platform "$PLATFORM" --seconds 1200
+          fi
+      - name: Sign owned native executables before final archive hashing
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          NUMERA_CODE_SIGNING_PFX: ${{ secrets.NUMERA_CODE_SIGNING_PFX }}
+          NUMERA_CODE_SIGNING_PASSWORD: ${{ secrets.NUMERA_CODE_SIGNING_PASSWORD }}
+        run: |
+          fixture=""
+          if [ "$NUMERA_SIGNING_SCOPE" = validation-only ]; then fixture="--fixture"; fi
+          python scripts/migration/run_owned.py --wall 300 --idle 120 -- python scripts/build/signing.py native --stage "build/$PLATFORM/Numera Browser" --platform "$PLATFORM" $fixture
       - name: Exercise the assembled frozen product and settle all owned units
         timeout-minutes: 7
         env:
@@ -170,6 +215,7 @@ jobs:
         env:
           PLATFORM: ${{ matrix.platform }}
           GITHUB_TOKEN: ${{ github.token }}
+          NUMERA_RELEASE_SIGNING_KEY: ${{ secrets.NUMERA_RELEASE_SIGNING_KEY }}
         run: python scripts/migration/run_owned.py --wall 600 --idle 180 -- python scripts/build/distribution.py package --stage "build/$PLATFORM/Numera Browser" --platform "$PLATFORM" --output build/release
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         timeout-minutes: 5
@@ -183,7 +229,7 @@ jobs:
   desktop-windows:
     name: Portable (windows-x64)
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -215,13 +261,13 @@ jobs:
         run: python ../../scripts/migration/run_owned.py --wall 60 --idle 30 -- cargo fmt --all --check
       - name: Compile and lint the Tauri shell
         working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo clippy --locked --all-targets --all-features -- -D warnings
+        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo clippy --locked --all-targets --no-default-features -- -D warnings
       - name: Compile Tauri shell contract binaries
         working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo test --locked --all-features --no-run
+        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo test --locked --no-default-features --no-run
       - name: Verify Tauri shell contracts
         working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo test --locked --all-features -- --test-threads=2
+        run: python ../../scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo test --locked --no-default-features -- --test-threads=2
       - name: Build the native shell with static CRT
         working-directory: desktop/src-tauri
         run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo build --release --locked
@@ -229,6 +275,22 @@ jobs:
         timeout-minutes: 20
         shell: pwsh
         run: python scripts/migration/run_owned.py --wall 1140 --idle 180 -- pwsh -NoProfile -NonInteractive -File scripts/build-desktop.ps1 -PrebuiltShell
+      - name: Verify embedded owner and exact build identity before signing
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/build/identity.py verify --stage 'build/windows/Numera Browser'
+      - name: Compile and freeze two isolated updater fixture generations
+        run: python scripts/migration/run_owned.py --wall 4200 --idle 300 -- python scripts/build/update_acceptance_build.py --stage 'build/windows/Numera Browser' --directory build/update-fixtures --platform windows-x64
+      - name: Exercise actual hidden desktop upgrade and interrupted recovery
+        run: python scripts/migration/run_owned.py --wall 1260 --idle 180 -- python scripts/build/update_acceptance.py run --old-stage 'build/update-fixtures/old/Numera Browser' --new-stage 'build/update-fixtures/new/Numera Browser' --directory build/update-acceptance --platform windows-x64 --seconds 1200
+      - name: Sign owned Windows executables before final archive hashing
+        shell: pwsh
+        env:
+          NUMERA_CODE_SIGNING_PFX: ${{ secrets.NUMERA_CODE_SIGNING_PFX }}
+          NUMERA_CODE_SIGNING_PASSWORD: ${{ secrets.NUMERA_CODE_SIGNING_PASSWORD }}
+        run: |
+          $arguments = @('scripts/migration/run_owned.py','--wall','300','--idle','120','--','python','scripts/build/signing.py','native','--stage','build/windows/Numera Browser','--platform','windows-x64')
+          if ($env:NUMERA_SIGNING_SCOPE -eq 'validation-only') { $arguments += '--fixture' }
+          & python @arguments
+          if ($LASTEXITCODE) { throw 'Native Windows signing or verification failed' }
       - name: Exercise the assembled frozen product and settle all owned units
         timeout-minutes: 7
         shell: pwsh
@@ -237,6 +299,7 @@ jobs:
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          NUMERA_RELEASE_SIGNING_KEY: ${{ secrets.NUMERA_RELEASE_SIGNING_KEY }}
         run: python scripts/migration/run_owned.py --wall 600 --idle 180 -- python scripts/build/distribution.py package --stage 'build/windows/Numera Browser' --platform windows-x64 --output build/release
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         timeout-minutes: 5

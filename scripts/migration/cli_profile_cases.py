@@ -6,6 +6,9 @@ import io
 import json
 from pathlib import Path
 from unittest.mock import patch
+from baseline_source import activate
+activate()
+
 from numera.cli import profiles as handlers
 from numera.cli.parser import build_parser
 from numera.cli.out import set_json_mode

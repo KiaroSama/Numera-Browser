@@ -122,6 +122,8 @@ fn execute(
     )?;
     let operation = args.get("command").and_then(Value::as_str).unwrap_or("");
     if operation == "serve" && args.get("detach") != Some(&Value::Bool(true)) {
+        let _admission =
+            crate::ownership::update_admission::Reservation::begin(&root, "native-server-prepare")?;
         let host = args
             .get("host")
             .and_then(Value::as_str)
@@ -177,6 +179,7 @@ pub fn dispatch(
     let password = std::env::var("NUMERA_PASSWORD").ok();
     let root = root.to_owned();
     let operation = args.get("command").and_then(Value::as_str).unwrap_or("");
+    let mut admission = crate::ownership::update_admission::Reservation::for_command(&root, args)?;
     let prepared = (|| -> io::Result<_> {
         // Resume requires both keys before recovery. Other vault prompts belong
         // after ordinary store-open, so a damaged journal refuses first.
@@ -215,6 +218,13 @@ pub fn dispatch(
     };
     let args = &prepared_args;
     let selected_password = repo.password.clone();
+    // Long-lived transports reserve individual requests/jobs, not their idle loop.
+    if operation == "mcp" {
+        if let Some(admission) = &mut admission {
+            admission.release()?;
+        }
+        admission = None;
+    }
     let result = if args.get("detach") == Some(&Value::Bool(true)) {
         match crate::native_detach::execute(
             args,
@@ -302,6 +312,9 @@ pub fn dispatch(
             Ok(value) => value,
             Err(mut failure) => {
                 if failure.settle(Duration::from_secs(10)).is_err() {
+                    if let Some(admission) = &mut admission {
+                        admission.retain();
+                    }
                     log.event(
                         "ERROR",
                         "entry",
@@ -312,6 +325,10 @@ pub fn dispatch(
             }
         };
         if operation == "serve" {
+            if let Some(admission) = &mut admission {
+                admission.release()?;
+            }
+            drop(admission.take());
             serve(
                 &root,
                 args,
@@ -415,6 +432,9 @@ pub fn dispatch(
                     .map(|error| (String::new(), error)),
             );
             if !pending.is_empty() {
+                if let Some(admission) = &mut admission {
+                    admission.retain();
+                }
                 log.event(
                     "ERROR",
                     "entry",

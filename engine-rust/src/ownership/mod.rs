@@ -10,5 +10,8 @@ pub mod registry;
 pub mod session;
 pub mod tree;
 pub mod unit_report;
+pub mod update_admission;
+#[cfg(test)]
+mod update_admission_tests;
 #[cfg(windows)]
 mod windows;

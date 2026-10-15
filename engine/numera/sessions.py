@@ -240,6 +240,8 @@ def take(root, profile_id: str, tree: proctree.Tree, what: str = "a session") ->
     find the previous claim stale cannot both recover it.
     """
     with transaction_lock(root):
+        from .update_admission import Admission
+        Admission(root).assert_open()
         current = read(root, profile_id)
         if current is not None:
             if state(current) != "free":

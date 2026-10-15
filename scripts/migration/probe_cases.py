@@ -1,5 +1,8 @@
 """Observe original DNS/TLS grades with only the browser observation substituted."""
 from __future__ import annotations
+from baseline_source import activate
+activate()
+
 from numera.probe.dns import _grade_dns, _DNS_JS
 from numera.probe.network import check_tls, _TLS_PARSE
 from numera.models import Profile

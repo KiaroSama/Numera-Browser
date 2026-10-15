@@ -72,8 +72,8 @@ def test_container_ci_requires_bundled_browser_without_network_or_host_cache():
                             'dashboard', 'codeql', 'dependencies', 'distribution'}
     assert 'if: always()' in required and 'job["result"] != "success"' in required
     triggers = ci.split('\non:\n', 1)[1].split('\n# Read-only', 1)[0]
-    assert set(re.findall(r'^  ([a-z_]+):', triggers, re.M)) == {'push', 'pull_request', 'workflow_dispatch', 'workflow_call'}
-    assert 'branches: [main]' in triggers and 'self-hosted' not in ci
+    assert set(re.findall(r'^  ([a-z_]+):', triggers, re.M)) == {'workflow_dispatch'}
+    assert 'trusted_sha:' in triggers and 'publish:' in triggers and 'self-hosted' not in ci
 
 
 def _wheel(directory, name, version, requires=()):

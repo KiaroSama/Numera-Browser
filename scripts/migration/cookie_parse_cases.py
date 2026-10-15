@@ -1,6 +1,9 @@
 """Observe original Netscape parsing with synthetic, non-sensitive text."""
 from __future__ import annotations
 
+from baseline_source import activate
+activate()
+
 from numera.cookies import parse_netscape
 
 

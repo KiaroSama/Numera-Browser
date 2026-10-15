@@ -57,7 +57,7 @@ pub(crate) fn routes(root: PathBuf, password: Option<String>) -> Router {
         .with_state(state)
 }
 async fn list(State(state): State<Arc<Proxies>>) -> Response {
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let mut usage = HashMap::<String, usize>::new();
         for profile in state.dashboard.list()? {
             let proxy = &profile["proxy"];
@@ -99,7 +99,7 @@ async fn edit(
     Path(id): Path<String>,
     ObjectBody(body): ObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || edit_row(&state, &id, body)).await {
+    match super::admission::blocking(move || edit_row(&state, &id, body)).await {
         Ok(Ok(response)) => response,
         Ok(Err(RepoError::VaultLocked(message))) => error(StatusCode::LOCKED, &message),
         _ => failure(),
@@ -154,7 +154,7 @@ async fn delete(State(state): State<Arc<Proxies>>, ObjectBody(body): ObjectBody)
             "give a list of proxy ids to delete",
         );
     };
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let mut removed = Vec::new();
         for id in ids {
             if let Some(id) = id.as_str()
@@ -174,7 +174,7 @@ async fn delete(State(state): State<Arc<Proxies>>, ObjectBody(body): ObjectBody)
     }
 }
 async fn delete_one(State(state): State<Arc<Proxies>>, Path(id): Path<String>) -> Response {
-    match tokio::task::spawn_blocking(move || state.pool.delete(&id)).await {
+    match super::admission::blocking(move || state.pool.delete(&id)).await {
         Ok(Ok(true)) => Json(json!({"ok":true})).into_response(),
         Ok(Ok(false)) => error(StatusCode::NOT_FOUND, "proxy not found"),
         Ok(Err(RepoError::VaultLocked(message))) => error(StatusCode::LOCKED, &message),
@@ -182,7 +182,7 @@ async fn delete_one(State(state): State<Arc<Proxies>>, Path(id): Path<String>) -
     }
 }
 async fn add(State(state): State<Arc<Proxies>>, ObjectBody(body): ObjectBody) -> Response {
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let incoming = match body.get("proxies").filter(|value| !value.is_null()) {
             Some(incoming) => incoming.clone(),
             None => match body.get("text").filter(|value| truth(value)) {
@@ -215,7 +215,7 @@ async fn add(State(state): State<Arc<Proxies>>, ObjectBody(body): ObjectBody) ->
     }
 }
 async fn export(State(state): State<Arc<Proxies>>, ObjectBody(body): ObjectBody) -> Response {
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let mut rows = state.pool.list()?;
         if let Some(ids) = body.get("ids").filter(|value| truth(value)) {
             let keep = match ids {

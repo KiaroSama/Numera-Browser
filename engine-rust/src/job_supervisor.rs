@@ -170,6 +170,8 @@ pub fn run_internal(path: &Path) -> io::Result<i32> {
         return Err(unsupported());
     }
     let (store, id, record) = record_location(path)?;
+    let mut admission =
+        crate::ownership::update_admission::Reservation::begin(&store.root, "native-job")?;
     let log = RuntimeLog::new(&store.root.join("logs"), "native-job-supervisor");
     log.event("INFO", "supervisor", "Startup requested");
     let request = read(&record.with_extension("launch"))?;
@@ -260,7 +262,17 @@ pub fn run_internal(path: &Path) -> io::Result<i32> {
         .env_remove("NUMERA_JOB_PARENT_TOKEN");
     let units = record.with_extension("units");
     let attempt = crate::ownership::unit_report::begin_at(&units)?;
-    let mut tree = OwnedTree::spawn(&mut command)?;
+    let startup_lock = DataLock::transaction(&store.root)?;
+    let startup_guard = startup_lock.acquire(STARTUP)?;
+    crate::ownership::update_admission::assert_open_locked(&store.root)?;
+    let mut tree = match OwnedTree::spawn(&mut command) {
+        Ok(tree) => tree,
+        Err(error) => {
+            admission.retain();
+            return Err(error);
+        }
+    };
+    drop(startup_guard);
     let result = (|| -> io::Result<i32> {
         let actual = tree.record();
         crate::ownership::unit_report::record_at(&units, &actual, &attempt)?;
@@ -342,6 +354,7 @@ pub fn run_internal(path: &Path) -> io::Result<i32> {
     })();
     if result.is_err() {
         if tree.settle(STARTUP).is_err() {
+            admission.retain();
             log.event(
                 "ERROR",
                 "supervisor",
@@ -349,6 +362,9 @@ pub fn run_internal(path: &Path) -> io::Result<i32> {
             );
             crate::ownership::capture::retain_tree(tree);
             return result;
+        }
+        if !crate::ownership::unit_report::settle(&units, STARTUP).unwrap_or(false) {
+            admission.retain();
         }
         log.event(
             "ERROR",

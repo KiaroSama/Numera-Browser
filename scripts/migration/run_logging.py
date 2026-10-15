@@ -8,12 +8,16 @@ from contextlib import contextmanager
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / 'engine'))
-from numera.logs import RedactingFilter, UTCFormatter  # noqa: E402
 
 
 @contextmanager
 def run_log(name: str, directory: Path | None = None):
+    # Import after an observer selects its source; loading this utility must not
+    # pre-import the mutable application into an original-source interpreter.
+    if 'numera' not in sys.modules:
+        sys.path.insert(0, str(ROOT / 'engine'))
+    from numera.logs import RedactingFilter, UTCFormatter
+
     directory = directory or ROOT / 'scripts' / 'logs'
     logger = logging.getLogger(f'numera.migration-{name}')
     logger.setLevel(logging.INFO)

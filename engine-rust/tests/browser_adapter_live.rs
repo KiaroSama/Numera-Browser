@@ -243,6 +243,41 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
                     assert_eq!(&rows[0][key], expected, "Cookie field {key}");
                 }
             }
+            // Persistent expiry must stay inside each engine's lifetime cap.
+            // Assert before close to distinguish SDK rejection from restart loss.
+            let expires = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_secs()
+                + 86_400;
+            let persistent = json!({"name":"persistent-fixture", "value":"synthetic", "domain":".fixture.test", "path":"/", "expires":expires as f64, "httpOnly":true, "secure":false, "sameSite":"Lax"});
+            assert_eq!(
+                adapter.call(
+                    "cookies-add",
+                    Map::from_iter([("cookies".into(), json!([persistent.clone()]))]),
+                    Duration::from_secs(10)
+                )?["added"],
+                true
+            );
+            let rows = cookies::read(&mut adapter)?;
+            assert_eq!(rows.len(), 2, "Persistent cookie was rejected before close");
+            let saved = rows
+                .iter()
+                .find(|row| row["name"] == "persistent-fixture")
+                .ok_or("Persistent cookie was rejected before close")?;
+            for (key, expected) in persistent.as_object().ok_or("Persistent fixture missing")? {
+                if key == "expires" {
+                    assert_eq!(
+                        saved[key].as_f64(),
+                        Some(expires as f64),
+                        "Persistent cookie expiry before close"
+                    );
+                } else {
+                    assert_eq!(
+                        &saved[key], expected,
+                        "Persistent cookie field {key} before close"
+                    );
+                }
+            }
             assert_eq!(
                 adapter.call("cookies-clear", Map::new(), Duration::from_secs(10))?["cleared"],
                 true
@@ -355,7 +390,11 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
     let result = runtime.block_on(async {
         let app = router_with_browser(root.into(), "fixture-api", "", None, "fixture-host",
             SessionApplication { installed:BTreeMap::from([(backend.clone(),true)]), sessions:registry.clone() }, Some(browser.clone())).await?;
-        let cookie = json!({"name":"persistent-fixture", "value":"synthetic", "domain":".fixture.test", "path":"/", "expires":1893456000.0, "secure":false, "httpOnly":true, "sameSite":"Lax"});
+        // A far-future literal is capped/rejected by current browser engines,
+        // so it cannot prove preservation of the imported persistent jar.
+        let expires = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?.as_secs() + 86_400;
+        let cookie = json!({"name":"persistent-fixture", "value":"synthetic", "domain":".fixture.test", "path":"/", "expires":expires as f64, "secure":false, "httpOnly":true, "sameSite":"Lax"});
         for (step, (method, route, payload, status)) in [
             ("POST", "/cookies", Some(json!({"cookies":[cookie.clone()],"clear":true})),200),
             ("GET", "/cookies", None,200),
@@ -374,7 +413,8 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
             let bytes=tokio::time::timeout(Duration::from_secs(5),to_bytes(response.into_body(),65536)).await??;
             let result:Value=serde_json::from_slice(&bytes)?;
             if method=="GET" && status==200 {
-                assert_eq!(result["cookies"], json!([cookie.clone()]), "Empty import erased the existing jar at step {step}");
+                assert_eq!(result["cookies"], json!([cookie.clone()]),
+                    "Persistent jar changed on HTTP restart/read at step {step} (empty-import refusal occurs at step 6)");
                 assert!(!registry.owns("a")?);
             }
             if route=="/launch" { assert_eq!(result["status"],"running"); assert!(registry.owns("a")?); }

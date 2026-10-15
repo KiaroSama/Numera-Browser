@@ -84,7 +84,7 @@ fn run(state: &Profiles, id: &str, operation: &str) -> Result<Response, RepoErro
     })
 }
 async fn execute(state: Arc<Profiles>, id: String, operation: &'static str) -> Response {
-    match tokio::task::spawn_blocking(move || run(&state, &id, operation)).await {
+    match super::admission::blocking(move || run(&state, &id, operation)).await {
         Ok(Ok(response)) => response,
         Ok(Err(error)) => profile_errors::storage(error),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),

@@ -19,7 +19,7 @@ pub(crate) fn routes() -> Router {
     Router::new().route("/api/fingerprint/validate", post(validate))
 }
 async fn validate(ObjectBody(body): ObjectBody) -> Response {
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let profile = match crate::conversion::to_engine(&Value::Object(body), 0.0) {
             Ok(profile) => profile,
             Err(error) => return Ok(vec![format!("could not validate: {error}")]),

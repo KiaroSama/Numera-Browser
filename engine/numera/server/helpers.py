@@ -155,7 +155,8 @@ class HelperManager:
     shutdown.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, root=None) -> None:
+        self.root = root
         self._live: "dict[int, Helper]" = {}
         self._lock = threading.Lock()
         self._closed = False
@@ -484,7 +485,16 @@ def end_helpers(*, deadline: float = CLEANUP_BUDGET) -> list:
 def run_helper(cli, timeout: float, env=None, manager: HelperManager = None,
                cleanup: float = CLEANUP_BUDGET):
     """Return complete output only after the owned lifecycle has terminated."""
+    from contextlib import nullcontext
+    from ..update_admission import Admission
     manager = manager or default_manager()
+    work = (Admission(manager.root).work('finite helper', settled=lambda: not manager.stragglers())
+            if manager.root is not None else nullcontext())
+    with work:
+        return _run_helper(cli, timeout, env, manager, cleanup)
+
+
+def _run_helper(cli, timeout, env, manager, cleanup):
     helper = manager.admit(cli)
     try:
         child_env = manager.child_env(helper, env)

@@ -39,6 +39,9 @@ dev = ["pytest>=9.1.1", "pytest-timeout>=2.4.0", "cryptography>=50.0.2", "httpx>
 [project.scripts]
 numera = "numera.cli:main"
 
+[tool.setuptools]
+py-modules = ["numera_installation"]
+
 [tool.setuptools.packages.find]
 include = ["numera*"]
 

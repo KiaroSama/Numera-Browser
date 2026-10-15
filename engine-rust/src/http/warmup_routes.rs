@@ -153,7 +153,7 @@ pub(super) async fn warmup_profile(
     Path(id): Path<String>,
     OptionalObjectBody(body): OptionalObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || start(&state, &id, body)).await {
+    match super::admission::blocking(move || start(&state, &id, body)).await {
         Ok(Ok(response)) => response,
         Ok(Err(error)) => profile_errors::storage(error),
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),

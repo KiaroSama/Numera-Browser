@@ -10,6 +10,8 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+from baseline_source import source_root
+ORIGINAL = source_root()
 sys.path.insert(0, str(ROOT / 'engine'))
 from numera import proctree
 from native_http_acceptance import request
@@ -77,7 +79,7 @@ def main(candidate, log):
         for key in ('NUMERA_PASSWORD', 'NUMERA_API_TOKEN', 'NUMERA_DATA_DIR', 'NUMERA_NATIVE_SUPERVISE',
                     'NUMERA_NATIVE_JOB_GATE', 'NUMERA_HELPER_UNITS', 'NUMERA_HELPER_SCOPE', 'NUMERA_PARENT_PID'):
             env.pop(key, None)
-        env.update(PYTHONUTF8='1', PYTHONPATH=str(ROOT / 'engine'), HOME=str(home), USERPROFILE=str(home),
+        env.update(PYTHONUTF8='1', PYTHONDONTWRITEBYTECODE='1', PYTHONPATH=str(ORIGINAL / 'engine'), HOME=str(home), USERPROFILE=str(home),
                    NUMERA_APP_DIR=str(parent), NUMERA_LOG_DIR=str(parent / 'logs'),
                    NUMERA_BROWSER_ADAPTER=str(parent / 'absent.py'), NUMERA_SDK_PYTHON=sys.executable)
         runtimes = [('native', [str(candidate)])]

@@ -121,7 +121,7 @@ fn view(state: &Settings) -> Result<Value, ()> {
     )
 }
 async fn read(State(state): State<Arc<Settings>>) -> Response {
-    match tokio::task::spawn_blocking(move || view(&state)).await {
+    match super::admission::blocking(move || view(&state)).await {
         Ok(Ok(value)) => Json(value).into_response(),
         _ => failure(),
     }
@@ -195,7 +195,7 @@ fn patch(
     Ok(clean)
 }
 async fn write(State(state): State<Arc<Settings>>, ObjectBody(body): ObjectBody) -> Response {
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let clean = match patch(body, &state.installed) {
             Ok(clean) => clean,
             Err(message) => {

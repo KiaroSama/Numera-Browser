@@ -107,6 +107,7 @@ pub fn refuse_if_busy(root: &Path, id: &str, host: &str) -> io::Result<()> {
 pub fn take(root: &Path, id: &str, tree: &OwnedTree, host: &str, what: &str) -> io::Result<String> {
     let lock = DataLock::transaction(root)?;
     let _guard = lock.acquire(Duration::from_secs(30))?;
+    super::update_admission::assert_open_locked(root)?;
     if state(&read(root, id), host) != State::Free {
         return Err(io::Error::new(
             io::ErrorKind::WouldBlock,

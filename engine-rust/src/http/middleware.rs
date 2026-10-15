@@ -12,7 +12,11 @@ use std::{
 };
 
 pub fn protect(router: Router, auth: Arc<RequestAuth>) -> Router {
-    router.layer(middleware::from_fn_with_state(auth, require_token))
+    let root = auth.root().to_owned();
+    super::admission::protect(
+        router.layer(middleware::from_fn_with_state(auth, require_token)),
+        root,
+    )
 }
 
 async fn require_token(
@@ -44,7 +48,7 @@ async fn require_token(
     };
     // Token policy/read-modify-write takes a finite file lock. Do not run that
     // blocking work on an event-loop worker; a canceled future cannot abort IO.
-    let decision = tokio::task::spawn_blocking(move || {
+    let decision = super::admission::blocking(move || {
         auth.authorize(
             &method,
             &path,

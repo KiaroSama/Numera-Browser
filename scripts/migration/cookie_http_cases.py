@@ -10,6 +10,9 @@ from pathlib import Path
 from subprocess import CompletedProcess
 from unittest.mock import patch
 from fastapi.testclient import TestClient
+from baseline_source import activate
+activate()
+
 from numera import cookies
 from numera.cli.browser import cmd_cookies_import, cmd_cookies_export
 from numera.cli.out import set_json_mode

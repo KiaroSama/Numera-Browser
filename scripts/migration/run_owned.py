@@ -5,6 +5,8 @@ import argparse
 import math
 import os
 import queue
+import shutil
+import secrets
 import subprocess
 import sys
 import threading
@@ -15,6 +17,42 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'engine'))
 from numera.proctree import spawn, end_tree  # noqa: E402
 from run_logging import run_log  # noqa: E402
+
+
+# Linux sun_path is 108 bytes including NUL. Chromium appends this fixed
+# six-character-random directory and socket filename beneath TMPDIR.
+CHROMIUM_SOCKET_SUFFIX = '/org.chromium.Chromium.XXXXXX/SingletonSocket'
+
+
+def temporary_parent(root: Path, env: dict[str, str], platform: str) -> Path:
+    parent = root / '.ci-work'
+    if platform != 'linux':
+        return parent
+    fits = lambda path: len(str(path / 't000000').encode('utf-8')) + len(CHROMIUM_SOCKET_SUFFIX) <= 107
+    if fits(parent):
+        return parent
+    # An overlong checkout cannot contain a valid Chromium AF_UNIX path.
+    # Only an explicit hosted runner temp directory permits this exception.
+    runner = env.get('RUNNER_TEMP', '')
+    if env.get('GITHUB_ACTIONS') != 'true' or not runner or not Path(runner).is_absolute():
+        raise ValueError('Linux checkout exceeds the browser socket path limit; a hosted RUNNER_TEMP is required')
+    parent = Path(runner)
+    if not fits(parent):
+        raise ValueError('Hosted RUNNER_TEMP also exceeds the browser socket path limit')
+    return parent
+
+
+def create_temporary(root: Path, env: dict[str, str], platform: str) -> Path:
+    parent = temporary_parent(root, env, platform)
+    parent.mkdir(parents=True, exist_ok=True)
+    for _ in range(32):
+        temporary = parent / ('t' + secrets.token_hex(3))
+        try:
+            temporary.mkdir(mode=0o700)
+            return temporary
+        except FileExistsError:
+            continue
+    raise OSError('Cannot create a unique owned verification temp directory')
 
 
 def run(command: list[str], wall: float, idle: float, logger) -> int:
@@ -30,14 +68,20 @@ def run(command: list[str], wall: float, idle: float, logger) -> int:
     env['NUMERA_ORACLE_PYTHON'] = sys.executable
     budget = max(1, min(2, int(env.get('HOOKMAKER_MAX_TEST_WORKERS', '2'))))
     env['CARGO_BUILD_JOBS'] = str(budget)
-    temporary = ROOT / '.ci-work' / 'migration-temp'
-    temporary.mkdir(parents=True, exist_ok=True)
+    temporary = create_temporary(ROOT, env, sys.platform)
+    logger.info('Owned verification temp path=%s socket_limit_exception=%s', temporary,
+                not temporary.is_relative_to(ROOT))
     env['NUMERA_TEST_TEMP'] = str(temporary)
     for key in ('TEMP', 'TMP', 'TMPDIR'):
         env[key] = str(temporary)
-    proc, tree = spawn(command, env=env, stdin=subprocess.DEVNULL,
-                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                       text=True, encoding='utf-8', errors='strict', bufsize=1)
+    logger.info('Verification phase=spawn wall=%ss idle=%ss', wall, idle)
+    try:
+        proc, tree = spawn(command, env=env, stdin=subprocess.DEVNULL,
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                           text=True, encoding='utf-8', errors='strict', bufsize=1)
+    except Exception:
+        logger.warning('Spawn failed; retain owned temp until child ownership is reconciled path=%s', temporary)
+        raise
     started = progress = time.monotonic()
     events: queue.Queue = queue.Queue()
 
@@ -52,7 +96,7 @@ def run(command: list[str], wall: float, idle: float, logger) -> int:
 
     reader = threading.Thread(target=pump, name='migration-output', daemon=True)
     reader.start()
-    logger.info('Owned child pid=%s wall=%ss idle=%ss workers=%s', proc.pid, wall, idle, budget)
+    logger.info('Owned child pid=%s wall=%ss idle=%ss workers=%s phase=monitor', proc.pid, wall, idle, budget)
     ended = False
     try:
         while True:
@@ -76,15 +120,22 @@ def run(command: list[str], wall: float, idle: float, logger) -> int:
                 if proc.poll() is not None:
                     return proc.returncode
     finally:
+        logger.info('Verification phase=settle-tree pid=%s', proc.pid)
         clean = end_tree(tree, grace=2, kill_grace=3)
+        logger.info('Verification phase=reap-leader pid=%s clean=%s', proc.pid, clean)
         proc.wait(timeout=5)
+        logger.info('Verification phase=join-reader pid=%s', proc.pid)
         reader.join(timeout=2)
         if reader.is_alive():
             raise RuntimeError('Command output reader did not settle')
+        logger.info('Verification phase=close-output pid=%s', proc.pid)
         proc.stdout.close()
         logger.info('Owned child settled pid=%s exit=%s clean=%s', proc.pid, proc.returncode, clean)
         if not clean:
             raise RuntimeError('Command process tree could not be proved empty')
+        logger.info('Verification phase=remove-temp pid=%s path=%s', proc.pid, temporary)
+        shutil.rmtree(temporary)
+        logger.info('Owned verification temp removed path=%s', temporary)
 
 
 def main() -> int:

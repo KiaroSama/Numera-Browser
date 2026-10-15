@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import contextlib
 from unittest.mock import patch
+from baseline_source import activate
+activate()
+
 from numera import warmup
 from numera.fingerprint import generate
 from numera.models import Profile

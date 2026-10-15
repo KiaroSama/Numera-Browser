@@ -7,6 +7,9 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 from fastapi.testclient import TestClient
+from baseline_source import activate
+activate()
+
 from numera.server import create_app
 from numera.store import ProfileStore
 from numera.models import Profile, Proxy

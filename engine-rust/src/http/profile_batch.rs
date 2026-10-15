@@ -233,7 +233,7 @@ pub(super) async fn batch(
     State(state): State<Arc<Profiles>>,
     ObjectBody(body): ObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || create(&state, body)).await {
+    match super::admission::blocking(move || create(&state, body)).await {
         Ok(result) => response(result),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),
     }
@@ -242,7 +242,7 @@ pub(super) async fn bulk(
     State(state): State<Arc<Profiles>>,
     ObjectBody(body): ObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || update(&state, body)).await {
+    match super::admission::blocking(move || update(&state, body)).await {
         Ok(result) => response(result),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),
     }

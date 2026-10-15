@@ -101,6 +101,30 @@ def test_manifest_requires_exact_sha_and_unique_safe_names(tmp_path):
         module.verify_manifest(tmp_path, manifest, 'a' * 40)
 
 
+@pytest.mark.parametrize('extension', ['.tar.gz', '.zip'])
+def test_archive_excludes_private_update_runtime_state(tmp_path, extension):
+    import zipfile
+    stage = tmp_path / 'Numera Browser'
+    stage.mkdir()
+    (stage / 'numera').write_bytes(b'not executed')
+    (stage / '.updates').mkdir()
+    (stage / '.updates/activation.json').write_text('{"fixture":"private"}', encoding='utf-8')
+    (stage / '.numera-update.lock').touch()
+    (stage / '.numera-update-generation.json').write_text('{"generation":42}', encoding='utf-8')
+    retained = stage / ('.numera-update-' + 'a' * 64)
+    retained.mkdir()
+    (retained / 'journal.json').write_text('{"ticket":"private fixture"}', encoding='utf-8')
+    archive = packaging().archive_stage(stage, tmp_path / ('portable' + extension))
+    if extension == '.zip':
+        with zipfile.ZipFile(archive) as packed:
+            names = packed.namelist()
+    else:
+        with tarfile.open(archive, 'r:gz') as packed:
+            names = packed.getnames()
+    assert 'Numera Browser/numera' in names
+    assert not any('.updates' in name or '.numera-update' in name for name in names)
+
+
 def test_posix_archive_keeps_executable_permissions(tmp_path):
     module = packaging()
     stage = tmp_path / 'Numera Browser'
@@ -123,15 +147,257 @@ def test_mislabeled_shell_architecture_cannot_be_packaged(tmp_path, platform, he
         packaging().verify_architecture(tmp_path, platform)
 
 
-def test_release_workflow_rejects_failed_fork_and_nonmain_runs():
+def test_release_workflow_rejects_failed_forks_and_unapproved_source_refs():
     workflow = (ROOT / '.github/workflows/release.yml').read_text(encoding='utf-8')
-    assert 'workflows: [CI]' in workflow
-    assert 'types: [completed]' in workflow
-    assert "conclusion == 'success'" in workflow
-    assert "head_branch == 'main'" in workflow
-    assert 'head_repository.full_name == github.repository' in workflow
+    assert 'workflow_call:' in workflow and 'workflow_run:' not in workflow
+    assert "github.event_name == 'workflow_dispatch'" in workflow
+    assert "github.ref == 'refs/heads/main'" in workflow
+    assert "inputs.source_sha == github.sha" in workflow
+    assert "run['head_repository']['full_name'] == os.environ['REPOSITORY']" in workflow
     assert 'Required verification' in workflow
     assert '--prerelease' in workflow and '--latest=false' in workflow
     assert '--target "$SOURCE_SHA"' in workflow
     assert 'head_sha' in workflow and 'source_sha' in workflow
     assert 'continue-on-error' not in workflow
+    assert 'signing.py sign' in workflow and 'signing.py verify' in workflow
+
+
+def signing():
+    spec = importlib.util.spec_from_file_location('release_signing', ROOT / 'scripts/build/signing.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_ed25519_exact_manifest_rejects_tampering_wrong_key_and_size(tmp_path, monkeypatch):
+    module = signing()
+    monkeypatch.setenv('RUNNER_TEMP', str(tmp_path))
+    monkeypatch.setenv('NUMERA_RELEASE_SIGNING_KEY', '')
+    monkeypatch.setenv('NUMERA_SIGNING_SCOPE', 'validation-only')
+    public = tmp_path / 'fixture-public.pem'
+    module.fixture_ed25519(public)
+    manifest = tmp_path / 'update-manifest.json'
+    manifest.write_text('{"schema":1,"generation":42}\n', encoding='utf-8')
+    signature = tmp_path / 'update-manifest.sig'
+    module.sign_manifest(manifest, signature, public)
+    assert len(signature.read_bytes()) == 64
+    module.verify_manifest(manifest, signature, public)
+    original = manifest.read_bytes()
+    manifest.write_bytes(original.replace(b'42', b'43'))
+    with pytest.raises(ValueError, match='signature'):
+        module.verify_manifest(manifest, signature, public)
+    manifest.write_bytes(original)
+    wrong = tmp_path / 'wrong-public.pem'
+    module.fixture_ed25519(wrong)
+    with pytest.raises(ValueError, match='signature'):
+        module.verify_manifest(manifest, signature, wrong)
+    signature.write_bytes(b'x' * 63)
+    with pytest.raises(ValueError, match='size'):
+        module.verify_manifest(manifest, signature, public)
+    assert not list(tmp_path.glob('numera-sign-*')), 'Private temporary signing inputs survived'
+
+
+def test_immutable_build_inventory_excludes_only_its_own_signature_cycle(tmp_path, monkeypatch):
+    module = signing()
+    stage = tmp_path / 'Numera Browser'
+    stage.mkdir()
+    (stage / 'numera').write_bytes(b'fixture executable, never run')
+    (stage / 'numera').chmod(0o755)
+    (stage / 'LICENSE').write_text('fixture terms', encoding='utf-8')
+    (stage / '.updates').mkdir()
+    (stage / '.updates/runtime.lock').write_bytes(b'')
+    (stage / '.updates/activation.json').write_text('{"private":"fixture"}', encoding='utf-8')
+    monkeypatch.setenv('GITHUB_RUN_ID', '42')
+    monkeypatch.setenv('NUMERA_SIGNING_SCOPE', 'validation-only')
+    module.installed_manifest(stage, 'linux-x64', 'a' * 40)
+    build = json.loads((stage / 'BUILD.json').read_text(encoding='utf-8'))
+    assert set(build) == {'schema','owner','product','version','source_sha','generation',
+                          'platform','minimum_protocol','components','files'}
+    assert build['owner'] == 'KiaroSama' and build['generation'] == 42
+    rows = {row['path']: row for row in build['files']}
+    assert set(rows) == {'numera','LICENSE'}
+    assert rows['numera']['sha256'] == packaging().digest(stage/'numera')
+    assert rows['numera']['executable']
+    (stage/'data').mkdir()
+    (stage/'data/profile.json').write_text('{}', encoding='utf-8')
+    with pytest.raises(ValueError, match='publication'):
+        module.installed_manifest(stage, 'linux-x64', 'a' * 40)
+
+
+def test_publisher_reads_owner_signed_build_from_actual_archive(tmp_path, monkeypatch):
+    import hashlib
+    import zipfile
+
+    module = signing()
+    monkeypatch.setenv('RUNNER_TEMP', str(tmp_path))
+    monkeypatch.setenv('NUMERA_RELEASE_SIGNING_KEY', '')
+    monkeypatch.setenv('NUMERA_SIGNING_SCOPE', 'validation-only')
+    docs = tmp_path/'docs'
+    docs.mkdir()
+    public = docs/'release-signing-key.pem'
+    module.fixture_ed25519(public)
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    monkeypatch.setenv('GITHUB_ACTIONS', 'false')
+    manifest = tmp_path/'BUILD.json'
+    build = {'generation': 42, 'source_sha': 'a'*40, 'platform': 'windows-x64', 'components': {'sdk':{},'browsers':{}}}
+    manifest.write_text(json.dumps(build), encoding='utf-8')
+    signature = tmp_path/'BUILD.sig'
+    module.sign_manifest(manifest, signature, public)
+    archive = tmp_path/'numera-windows.zip'
+    with zipfile.ZipFile(archive, 'w') as packed:
+        packed.write(manifest, 'Numera Browser/BUILD.json')
+        packed.write(signature, 'Numera Browser/BUILD.sig')
+    metadata = {'build_manifest_sha256': hashlib.sha256(manifest.read_bytes()).hexdigest(),
+                'components': build['components'], 'max_members': 2,
+                'expanded_size': manifest.stat().st_size + signature.stat().st_size}
+    module.validate_archive_build(archive, metadata, 'windows-x64', 42, 'a'*40)
+    with pytest.raises(ValueError, match='generation'):
+        module.validate_archive_build(archive, metadata, 'windows-x64', 43, 'a'*40)
+    metadata['build_manifest_sha256'] = '0'*64
+    with pytest.raises(ValueError, match='hash/signature'):
+        module.validate_archive_build(archive, metadata, 'windows-x64', 42, 'a'*40)
+
+
+@pytest.mark.parametrize('damage', [None, 'scanner-only', 'wrong-sha', 'failed', 'pending', 'newer-failure'])
+def test_signing_requires_the_independent_exact_source_codeql_verdict(damage):
+    spec = importlib.util.spec_from_file_location('codeql_gate', ROOT / 'scripts/ci/codeql_gate.py')
+    gate = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gate)
+    check = {'id': 42, 'name': 'CodeQL', 'app': {'slug': 'github-advanced-security'},
+             'head_sha': 'a' * 40, 'status': 'completed', 'conclusion': 'success'}
+    checks = [check]
+    if damage == 'scanner-only':
+        check.update(name='codeql / CodeQL (rust)', app={'slug': 'github-actions'})
+    elif damage == 'wrong-sha':
+        check['head_sha'] = 'b' * 40
+    elif damage == 'failed':
+        check['conclusion'] = 'failure'
+    elif damage == 'pending':
+        check['status'] = 'in_progress'
+    elif damage == 'newer-failure':
+        checks.append({**check, 'id': 43, 'conclusion': 'failure'})
+    if damage is None:
+        assert gate.verify([{'check_runs': checks}], 'a' * 40) == 42
+    else:
+        with pytest.raises(ValueError):
+            gate.verify([{'check_runs': checks}], 'a' * 40)
+
+
+def test_owner_signing_context_rejects_arbitrary_ref_actor_event_and_sha(monkeypatch):
+    module = signing()
+    values = {'GITHUB_ACTIONS':'true','GITHUB_EVENT_NAME':'workflow_dispatch','GITHUB_ACTOR':'KiaroSama',
+              'GITHUB_REF':'refs/heads/main','GITHUB_SHA':'a'*40,'NUMERA_TRUSTED_SHA':'a'*40}
+    for key,value in values.items():
+        monkeypatch.setenv(key,value)
+    module.require_owner_context()
+    for key,value in [('GITHUB_REF','refs/heads/unreviewed'),('GITHUB_ACTOR','other'),
+                      ('GITHUB_EVENT_NAME','pull_request'),('NUMERA_TRUSTED_SHA','b'*40)]:
+        monkeypatch.setenv(key,value)
+        with pytest.raises(ValueError,match='approved manual'):
+            module.require_owner_context()
+        monkeypatch.setenv(key,values[key])
+
+
+def test_private_signing_tool_failure_never_displays_captured_secrets(monkeypatch):
+    module = signing()
+    from types import SimpleNamespace
+
+    monkeypatch.setenv('NUMERA_RELEASE_SIGNING_KEY', 'private fixture material')
+    monkeypatch.setenv('NUMERA_CODE_SIGNING_PFX', 'private fixture material')
+    monkeypatch.setenv('NUMERA_CODE_SIGNING_PASSWORD', 'private fixture material')
+    def failed(*args, **kwargs):
+        assert not any(name in kwargs['env'] for name in
+                       ('NUMERA_RELEASE_SIGNING_KEY', 'NUMERA_CODE_SIGNING_PFX', 'NUMERA_CODE_SIGNING_PASSWORD'))
+        return SimpleNamespace(returncode=1, stdout=b'private fixture material', stderr=b'private fixture material')
+    monkeypatch.setattr(module.subprocess, 'run', failed)
+    with pytest.raises(ValueError) as failure:
+        module.execute(['openssl', 'pkeyutl'])
+    assert 'private fixture material' not in str(failure.value)
+
+
+@pytest.mark.parametrize('damage', [None, 'protected', 'rules', 'ruleset', 'unknown-rules', 'diverged',
+                                   'wrong-tip', 'failed-required', 'different-sha', 'other-ref', 'other-actor'])
+def test_embedded_promotion_gate_refuses_unverified_or_unsafe_state(tmp_path, monkeypatch, damage):
+    import textwrap
+    ci = (ROOT/'.github/workflows/ci.yml').read_text(encoding='utf-8')
+    promoter = ci.split('\n  promote:', 1)[1].split('\n  publish:', 1)[0]
+    script = textwrap.dedent(promoter.split("python3 -I - <<'PY'\n", 1)[1].split('\n          PY', 1)[0])
+    sha, base = 'a'*40, 'b'*40
+    documents = {
+        'branch': {'name':'main','protected':False,'commit':{'sha':base}},
+        'rules':[[]], 'rulesets':[[]],
+        'run': {'id':42,'head_sha':sha,'name':'CI','path':'.github/workflows/ci.yml',
+                'event':'workflow_dispatch','actor':{'login':'KiaroSama'},
+                'head_repository':{'full_name':'KiaroSama/Numera-Browser'},
+                'head_branch':'migration/native-runtime-checkpoint-20261012'},
+        'jobs':[{'jobs':[{'name':'Required verification','conclusion':'success'}]}],
+        'comparison':{'base_commit':{'sha':base},'status':'ahead','commits':[{'sha':sha}]},
+    }
+    if damage == 'protected': documents['branch']['protected'] = True
+    elif damage == 'rules': documents['rules'] = [[{'type':'pull_request'}]]
+    elif damage == 'ruleset': documents['rulesets'] = [[{'name':'policy'}]]
+    elif damage == 'unknown-rules': documents['rules'] = [{}]
+    elif damage == 'diverged': documents['comparison']['status'] = 'diverged'
+    elif damage == 'wrong-tip': documents['comparison']['commits'][-1]['sha'] = base
+    elif damage == 'failed-required': documents['jobs'][0]['jobs'][0]['conclusion'] = 'failure'
+    elif damage == 'different-sha': documents['run']['head_sha'] = base
+    elif damage == 'other-ref': documents['run']['head_branch'] = 'unapproved'
+    elif damage == 'other-actor': documents['run']['actor']['login'] = 'other'
+    for name, value in documents.items():
+        (tmp_path/(name+'.json')).write_text(json.dumps(value), encoding='utf-8')
+    output = tmp_path/'output.txt'
+    for name, value in {'EXPECTED_SHA':sha,'TRUSTED_SHA':sha,'GITHUB_RUN_ID':'42',
+                        'REPOSITORY':'KiaroSama/Numera-Browser','GITHUB_OUTPUT':str(output),
+                        'GITHUB_REF_NAME':'migration/native-runtime-checkpoint-20261012'}.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.chdir(tmp_path)
+    if damage:
+        with pytest.raises(AssertionError):
+            exec(compile(script, 'promotion-gate-fixture', 'exec'), {})
+        assert not output.exists()
+    else:
+        exec(compile(script, 'promotion-gate-fixture', 'exec'), {})
+        assert output.read_text(encoding='utf-8') == f'base_sha={base}\n'
+
+
+def test_manual_ci_secrets_are_named_and_publish_requires_verified_promotion():
+    ci = (ROOT/'.github/workflows/ci.yml').read_text(encoding='utf-8')
+    triggers = ci.split('\non:\n', 1)[1].split('\n# Read-only', 1)[0]
+    assert set(__import__('re').findall(r'^  ([a-z_]+):', triggers, __import__('re').M)) == {'workflow_dispatch'}
+    assert 'secrets: inherit' not in ci
+    assert "inputs.trusted_sha == github.sha" in ci
+    assert "github.actor == 'KiaroSama'" in ci
+    promoter = ci.split('\n  promote:', 1)[1].split('\n  publish:', 1)[0]
+    assert 'needs: required' in promoter and 'contents: write' in promoter and 'actions: read' in promoter
+    assert "inputs.publish" in promoter and "inputs.trusted_sha == github.sha" in promoter
+    assert "github.actor == 'KiaroSama'" in promoter and "github.event_name == 'workflow_dispatch'" in promoter
+    assert "github.ref == 'refs/heads/main'" in promoter
+    assert "github.ref == 'refs/heads/migration/native-runtime-checkpoint-20261012'" in promoter
+    assert 'rules/branches/main' in promoter and 'rulesets?includes_parents=true' in promoter
+    assert "branch['protected'] is False" in promoter
+    assert "comparison['status'] in ('ahead', 'identical')" in promoter
+    assert 'Required verification' in promoter and "required[0]['conclusion'] == 'success'" in promoter
+    assert 'git/refs/heads/main' in promoter and '-F force=false' in promoter and 'force=true' not in promoter
+    assert 'Read back exact promoted main' in promoter and 'EXPECTED_SHA' in promoter
+    assert 'checkout@' not in promoter, 'Promotion must not execute repository or artifact code'
+    publisher = ci.split('\n  publish:', 1)[1]
+    assert 'needs: [required, promote]' in publisher and "needs.promote.result == 'success'" in publisher
+    assert "github.ref == 'refs/heads/main'" in publisher
+    workflow = (ROOT/'.github/workflows/release.yml').read_text(encoding='utf-8')
+    assert "main['object']['sha'] == os.environ['SOURCE_SHA']" in workflow
+    assert "run['head_branch'] == os.environ['GITHUB_REF_NAME']" in workflow
+    assert 'Promote exact verified source' in workflow
+    assert "run['id'] == int(os.environ['GITHUB_RUN_ID'])" in workflow
+    build = (ROOT/'.github/workflows/build-desktop.yml').read_text(encoding='utf-8')
+    assert 'owner_signing:' in build
+    assert 'NUMERA_RELEASE_SIGNING_KEY:' in build
+    assert 'NUMERA_CODE_SIGNING_PFX:' in build and 'NUMERA_CODE_SIGNING_PASSWORD:' in build
+    assert build.index('Sign owned Windows executables') < build.index("--platform windows-x64 --output")
+    distribution = ci.split('\n  distribution:', 1)[1].split('\n  required:', 1)[0]
+    assert 'codeql, dependencies]' in distribution
+    assert "needs.codeql.result == 'success'" in distribution
+    assert 'github.event.repository.private' in distribution
+    codeql = (ROOT / '.github/workflows/codeql.yml').read_text(encoding='utf-8')
+    assert 'wait-for-processing: true' in codeql
+    assert 'needs: analyze' in codeql and 'scripts/ci/codeql_gate.py' in codeql
+    assert 'checks: read' in codeql

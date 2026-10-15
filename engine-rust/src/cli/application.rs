@@ -90,6 +90,8 @@ impl Application<'_> {
                 "Detached execution requires the native job supervisor".into(),
             ));
         }
+        let _admission =
+            crate::ownership::update_admission::Reservation::for_command(self.root, args)?;
         let operation = required(args, "command")?;
         if !matches!(
             operation,
@@ -207,6 +209,8 @@ impl Application<'_> {
                 "Native application services do not belong to the same data root and host".into(),
             ));
         }
+        let _admission =
+            crate::ownership::update_admission::Reservation::for_command(self.root, args)?;
         let config = ConfigStore::new(self.root.into());
         let profiles = Profiles {
             repo: self.repo,

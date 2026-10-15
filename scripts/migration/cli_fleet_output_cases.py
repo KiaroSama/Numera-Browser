@@ -4,6 +4,9 @@ from __future__ import annotations
 import io
 from types import SimpleNamespace
 from unittest.mock import patch
+from baseline_source import activate
+activate()
+
 from numera.cli.parser import build_parser
 from numera.cli.out import set_json_mode
 from numera.cli import profiles as handlers

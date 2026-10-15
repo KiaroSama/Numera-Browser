@@ -132,6 +132,12 @@ def spawn(root: Path, argv: list[str], command: str = "",
     out of ``argv``, because the first bare word there is whatever value a
     global option happened to take.
     """
+    from .update_admission import Admission
+    with Admission(root).work('detached job startup'):
+        return _spawn(root, argv, command, profile, password)
+
+
+def _spawn(root, argv, command, profile, password):
     jid = uuid.uuid4().hex[:12]
     d = _dir(root)
     rec_path = d / f"{jid}.json"

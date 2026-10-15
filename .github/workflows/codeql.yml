@@ -9,6 +9,7 @@ permissions:
   contents: read
   actions: read
   security-events: write
+  checks: read
 
 jobs:
   analyze:
@@ -34,3 +35,24 @@ jobs:
         uses: github/codeql-action/analyze@cee97f86b972a3ded3c58d04148362b193ddc518 # v4.38.3
         with:
           category: /language:${{ matrix.language }}
+          wait-for-processing: true
+
+  verdict:
+    name: Independent exact-source CodeQL verdict
+    needs: analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      checks: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Require the independent analysis verdict before signing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/migration/run_owned.py --wall 60 --idle 45 -- python scripts/ci/codeql_gate.py

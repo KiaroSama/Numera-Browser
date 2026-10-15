@@ -4,6 +4,9 @@ from __future__ import annotations
 import argparse
 import contextlib
 import io
+from baseline_source import activate
+activate()
+
 from numera.cli.parser import build_parser
 from numera import mcp
 

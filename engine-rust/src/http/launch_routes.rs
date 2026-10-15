@@ -81,7 +81,7 @@ pub(super) async fn launch_profile(
     Path(id): Path<String>,
     OptionalObjectBody(body): OptionalObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || launch(&state, &id, body)).await {
+    match super::admission::blocking(move || launch(&state, &id, body)).await {
         Ok(Ok(response)) => response,
         Ok(Err(error)) => profile_errors::storage(error),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),

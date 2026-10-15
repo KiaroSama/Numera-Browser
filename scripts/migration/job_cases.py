@@ -6,6 +6,9 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
+from baseline_source import activate
+activate()
+
 from numera import jobs
 
 

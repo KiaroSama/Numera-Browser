@@ -74,7 +74,7 @@ where
                 break;
             };
             let check = check.clone();
-            tasks.spawn(async move {
+            tasks.spawn(super::admission::owned(async move {
                 let id = proxy["id"].clone();
                 let mut result = check(proxy).await;
                 result["status"] = if truth(&result["ok"]) {
@@ -87,7 +87,7 @@ where
                 .into();
                 result["id"] = id;
                 (index, result)
-            });
+            }));
         }
         let Some(joined) = tasks.join_next().await else {
             break;
@@ -143,7 +143,7 @@ pub(super) async fn test(
 ) -> Response {
     let selection = {
         let state = state.clone();
-        match tokio::task::spawn_blocking(move || select(&state, &body)).await {
+        match super::admission::blocking(move || select(&state, &body)).await {
             Ok(Ok(selection)) => selection,
             Ok(Err(error)) => return profile_errors::storage(error),
             Err(_) => return super::proxy_routes::failure(),
@@ -156,7 +156,7 @@ pub(super) async fn test(
         Ok(results) => results,
         Err(_) => return super::proxy_routes::failure(),
     };
-    match tokio::task::spawn_blocking(move || commit(&state, results, selection.withheld)).await {
+    match super::admission::blocking(move || commit(&state, results, selection.withheld)).await {
         Ok(Ok(result)) => Json(result).into_response(),
         Ok(Err(error)) => profile_errors::storage(error),
         Err(_) => super::proxy_routes::failure(),
@@ -170,7 +170,7 @@ pub(super) async fn test_one(
     let selected = {
         let state = state.clone();
         let id = id.clone();
-        tokio::task::spawn_blocking(move || {
+        super::admission::blocking(move || {
             let proxy = state.pool.get(&id)?;
             let withheld = proxy.is_some() && state.pool.secret_withheld(&id)?;
             Ok::<_, RepoError>((proxy, withheld))
@@ -202,7 +202,7 @@ pub(super) async fn test_one(
     } else {
         "failed"
     };
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(std::io::Error::other)?

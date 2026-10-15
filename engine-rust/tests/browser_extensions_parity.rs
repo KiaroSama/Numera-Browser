@@ -65,6 +65,8 @@ fn native_extension_paths_preserve_original_order_home_and_directory_filter()
     }))?;
     let script = r#"
 import json, sys
+from baseline_source import activate
+activate()
 from numera.launch_options import _extension_args
 from numera.models import Profile
 for line in sys.stdin:
@@ -83,7 +85,16 @@ for line in sys.stdin:
         .parent()
         .ok_or("Repository missing")?
         .join("engine");
-    command.env("PYTHONPATH", engine);
+    command.env(
+        "PYTHONPATH",
+        std::env::join_paths([
+            engine
+                .parent()
+                .ok_or("Repository missing")?
+                .join("scripts/migration"),
+            engine,
+        ])?,
+    );
     let mut source = Adapter::spawn(
         &root,
         "a",

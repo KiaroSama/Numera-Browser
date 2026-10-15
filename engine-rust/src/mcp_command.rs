@@ -69,6 +69,14 @@ pub fn call_controlled(
         }
         return crate::native_detach::tool(root, password, &argv, &mut cancelled);
     }
+    let mut admission = if path == ["stop"] || path == ["jobs", "stop"] {
+        None
+    } else {
+        root.map(|root| {
+            crate::ownership::update_admission::Reservation::begin(root, "native-mcp-command")
+        })
+        .transpose()?
+    };
     let mut command = prepare(executable, root, password, argv);
     let mut units = root
         .map(|root| crate::ownership::capture_units::Units::new(root, &mut command))
@@ -85,8 +93,13 @@ pub fn call_controlled(
     );
     // The leader's tree may be empty while separately-owned SDK trees remain.
     // Settle their durable receipts before returning a cancellation or result.
-    if let Some(units) = &mut units {
-        units.settle(Duration::from_secs(10))?;
+    if let Some(units) = &mut units
+        && let Err(error) = units.settle(Duration::from_secs(10))
+    {
+        if let Some(admission) = &mut admission {
+            admission.retain();
+        }
+        return Err(error.into());
     }
     let output = match captured {
         Ok(output) => output,
@@ -94,6 +107,11 @@ pub fn call_controlled(
             if error.retained_record().is_some()
                 || error.kind() == io::ErrorKind::ConnectionAborted =>
         {
+            if error.retained_record().is_some()
+                && let Some(admission) = &mut admission
+            {
+                admission.retain();
+            }
             return Err(error);
         }
         Err(error) if error.kind() == io::ErrorKind::TimedOut => {

@@ -153,6 +153,9 @@ if ($SkipFreeze) {
     # the PyInstaller entry.
     $entry = Join-Path $repo 'scripts\engine_entry.py'
     if (-not (Test-Path $entry)) { throw "missing the freeze entry point at $entry" }
+    $identity = Join-Path $build 'identity'
+    & $py (Join-Path $repo 'scripts\build\identity.py') prepare --directory $identity
+    if ($LASTEXITCODE -ne 0) { throw 'could not prepare the embedded build identity' }
 
     # onedir, not onefile. A onefile bootloader that gets TerminateProcess'd --
     # which is exactly how the shell stops the sidecar -- leaves its extracted
@@ -162,6 +165,8 @@ if ($SkipFreeze) {
         --distpath (Join-Path $build 'dist') `
         --workpath (Join-Path $build 'work') `
         --specpath $build `
+        --paths $identity --version-file (Join-Path $identity 'windows-version.txt') `
+        --icon (Join-Path $repo 'desktop\src-tauri\icons\icon.ico') `
         --add-data "$repo\dashboard\dist;numera/web" `
         --collect-all uvicorn `
         --collect-all playwright --collect-all patchright `

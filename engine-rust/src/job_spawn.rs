@@ -28,6 +28,7 @@ struct Pending {
     child: Child,
     record: PathBuf,
     token: Option<u64>,
+    admission: crate::ownership::update_admission::Reservation,
 }
 pub struct SpawnFailure {
     error: io::Error,
@@ -165,6 +166,7 @@ fn cancel(pending: &mut Pending, budget: Duration) -> io::Result<()> {
                     "Detached startup transfer remains pending",
                 ));
             }
+            pending.admission.release()?;
             return Ok(());
         }
         if Instant::now() >= end {
@@ -227,6 +229,8 @@ impl JobStore {
         }
         let executable = options.executable.canonicalize()?;
         let root = self.root.canonicalize()?;
+        let admission =
+            crate::ownership::update_admission::Reservation::begin(&root, "native-job-start")?;
         if let Some(profile) = options.profile {
             safe_id(profile).map_err(io::Error::other)?;
         }
@@ -307,6 +311,14 @@ impl JobStore {
             remove(&record)?;
             return Err(error.into());
         }
+        let startup_lock = crate::storage::locks::DataLock::transaction(&root)?;
+        let startup_guard = startup_lock.acquire(STARTUP)?;
+        if let Err(error) = crate::ownership::update_admission::assert_open_locked(&root) {
+            remove(&record.with_extension("launch"))?;
+            remove(&record.with_extension("units"))?;
+            remove(&record)?;
+            return Err(error.into());
+        }
         let child = match command.spawn() {
             Ok(child) => child,
             Err(_) => {
@@ -319,11 +331,13 @@ impl JobStore {
                 .into());
             }
         };
+        drop(startup_guard);
         let token = identity::started_at(child.id()).ok().flatten();
         let mut pending = Pending {
             child,
             record,
             token,
+            admission,
         };
         let result = (|| {
             if pending.token.is_none() {
@@ -377,6 +391,10 @@ impl JobStore {
         })();
         match result {
             Ok(value) => {
+                // The durable verified job record now owns the full lifetime.
+                if pending.admission.release().is_err() {
+                    pending.admission.retain();
+                }
                 completed_children()
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner)

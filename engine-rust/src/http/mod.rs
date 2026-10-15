@@ -1,4 +1,5 @@
 //! HTTP policy adapters; the full router is not yet a selectable application.
+mod admission;
 pub mod application;
 mod attach_routes;
 pub mod auth_policy;

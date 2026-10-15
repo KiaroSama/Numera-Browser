@@ -26,3 +26,10 @@ condition = "AND"
 regexTarget = "secret"
 paths = ['''(^|/)engine/tests/test_portable_root\.py$''']
 regexes = ['''^sk-live-9f8e7d6c5b4a$''']
+
+[[rules.allowlists]]
+description = "Exact public Ed25519 verification key, independently matched to public SPKI 2026-10-15"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''(^|/)desktop/src-tauri/build\.rs$''']
+regexes = ['''^d4ab0a9e265f108225bc28089cbcba0823beaad39a3639574c1a56e416dd2fad$''']

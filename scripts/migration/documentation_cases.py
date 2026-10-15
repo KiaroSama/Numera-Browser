@@ -10,7 +10,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / 'engine'))
+from baseline_source import activate
+activate()
 from run_logging import run_log
 
 PATHS = {'openapi.json': '/openapi.json', 'swagger.html': '/docs',

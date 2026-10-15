@@ -100,6 +100,11 @@ def open_context(backend, options):
         context = manager.__enter__()
         log.info('Camoufox persistent context entered')
         return None, context, manager
+    # Acquisition belongs to the native owner after consent, never this SDK call.
+    os.environ['CLOAKBROWSER_AUTO_UPDATE'] = 'false'
+    executable = os.environ.get('CLOAKBROWSER_BINARY_PATH')
+    if not executable or not Path(executable).is_file():
+        raise RuntimeError('Cloak requires an existing native-selected browser binary')
     import cloakbrowser
     return None, cloakbrowser.launch_persistent_context(**options), None
 

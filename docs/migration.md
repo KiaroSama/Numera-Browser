@@ -6,6 +6,39 @@ The existing Python application remains the default and rollback implementation.
 CLI/server example, **not an installed replacement**. Passing library or narrow
 entrypoint tests does not certify a finished product migration.
 
+## Current integration status — October 15, 2026
+
+The latest published candidate is `d3b5127`. Its broad hosted run failed; no
+replacement result is claimed for the following source changes. The retained
+Python application remains selected, including in portable distributions.
+
+- The portable updater and private quiescence protocol are drafted in the shell
+  and retained engine. A durable commit prevents automatic downgrade after work
+  admission might reopen; interrupted rollback stays pending until actual restart
+  and private resume succeed. This is not native application cutover.
+- Hosted acceptance now builds two distinct shell/frozen-engine generations and
+  exercises the real hidden WebView, update worker, interruption recovery and
+  preservation of isolated vault/profile/configuration data. These checks have
+  not run. Their compact browser fixture includes real compatibility metadata and
+  one real resource, not full browser archive space/performance acceptance.
+- Parity tooling now reads the pinned original Git blobs rather than importing
+  the mutable current Python application. Recorded original fixture expectations
+  and capability rows are unchanged. New source-freeze checks remain unexecuted.
+- Source repairs address scanner configuration parsing, advisory input selection,
+  Linux browser socket-path length, bounded cookie expiry and Windows MIME lookup.
+  The earlier Windows source-test stall remains unlocalized; the next hosted run
+  retains its deadlines and adds progress/stack diagnostics.
+- The earlier 31 CodeQL candidates were independently assessed against their exact
+  source paths. That source triage does not turn the failed host check green.
+  Signing now requires a successful independent CodeQL verdict for the exact SHA,
+  in addition to successful scanner jobs; missing verdicts block publication.
+
+The chronological seam inventory below records earlier scoped evidence and
+historical prepared work. Only an actual later check supersedes an earlier
+unverified claim. The capability ledger, complete four-engine Windows/Linux
+application acceptance, replay, comparative latency/peak memory and exercised
+rollback still gate Rust selection and retirement.
+
 ## Implemented native seams
 
 - Fingerprint/Profile/Proxy typed serialization and explicit proxy-password intent.
@@ -326,7 +359,7 @@ entrypoint tests does not certify a finished product migration.
   POSIX escaped-writer fixtures check capture deadlines and separately stop their
   own escaped tree; they do not prove universal descendant containment. A complete
   native executable and detached-job supervisor are still required. The integrated native
-  dependency batch selects clap 4.6.7, Chrono 0.4.45, serde_json 1.0.152 and ZIP 9.0.1;
+  dependency batch selects clap 4.6.7, Chrono 0.4.45, serde_json 1.0.154 and ZIP 9.0.3;
   upstream exact transitive pins remain respected. Hosted compatibility is pending. No library
   registry entry is evidence that its command is runnable in the finished product.
 
@@ -356,8 +389,10 @@ regressions and a narrow demo editor render have passed; complete live interface
 viewport and final CI acceptance remain pending. TypeScript6.0.3 is retained
 because the current ESLint parser supports versions below6.1, not TypeScript7.
 Existing React, theme tokens, handwritten CSS and Tauri are retained.
-The October 10 maintenance refresh selects Vite8.3.4, Lucide React1.55.0 and
-Node types26.6.5 without changing the interface or compiler compatibility hold.
+The October 15 integration retains Vite8.3.4 and Node types26.6.5, with
+React/React DOM19.3.1, Lucide React1.57.0, jsdom30.1.3, Vitest5.0.5 and
+typescript-eslint8.71.2. Lock resolution is complete; hosted compatibility checks
+remain pending. The interface and compiler compatibility hold are unchanged.
 Dashboard tests, strict types, lint, build and dependency checks share one manually
 dispatchable hosted workflow, also called by full CI. A dashboard-only checkpoint
 does not certify native product acceptance or self-hosted runner job compatibility.
@@ -377,8 +412,10 @@ versus application verdicts, cancellation ownership and idle supervisor reaping.
 Actual handoff-cancellation and no-zombie regressions are prepared for hosted
 execution; the current source has not been compiled or runtime-verified.
 
-Only a successful exact-SHA trusted `main` CI run with every applicable required
-check can publish a `build-<SHA>` prerelease. Archives include matching editable
+Only a successful exact-SHA trusted manual CI batch with every applicable required
+check can publish a `build-<SHA>` prerelease. An approved candidate must first
+fast-forward an unprotected `main` to that exact verified SHA; the publisher
+independently checks that promotion and reuses the same batch's artifacts. Archives include matching editable
 source, full project/third-party notices and checksums; restricted Cloak binaries
 are excluded. The new workflows and their downloads are not yet verified. This
 distribution work changes neither default selection nor the remaining capability,
@@ -484,9 +521,13 @@ fixture-drift, security, replay, performance and rollback gate passes. The
 explicitly selected non-default candidate is checked first; only afterward does
 the default selector change get its affected selector/rollback check. Retain the
 old runtime through those checks. The owner has approved removing obsolete product
-versions and disposable temp/caches **only after** all acceptance and selector/rollback
-checks pass, leaving one current usable product. That condition has not been met;
-no original runtime has been deleted. Current SDK-only adapters, user assets,
+versions **only after** all acceptance and selector/rollback checks pass, leaving
+one current usable product. That condition has not been met; no original runtime
+has been deleted. The subsequent immediate footprint-cleanup request independently
+authorized inspected generated compiler/package caches: 43.733 GB of such output
+was moved recoverably out of the checkout, without removing source, maintained
+fixtures or application data. This is not runtime retirement or a claim of freed
+drive space while the Recycle Bin retains those bytes. Current SDK-only adapters, user assets,
 required fixtures, LICENSE and Git history are not obsolete product copies.
 
 ## Migration tooling diagnostics

@@ -173,6 +173,8 @@ def validate_stage(stage: Path, sha: str) -> None:
             raise ValueError(f'Product archive is missing a notice: {name}')
     for path in stage.rglob('*'):
         relative = path.relative_to(stage).as_posix()
+        if update_state(relative.split('/')[0]):
+            continue
         # Frozen SDK dependencies may intentionally contain node_modules. They
         # are runtime inputs, not the development directories excluded from Git source.
         safe_relative = '/'.join('sdk-runtime' if part == 'node_modules' else part
@@ -184,16 +186,25 @@ def validate_stage(stage: Path, sha: str) -> None:
                 raise ValueError('Product archive contains an escaping symbolic link')
 
 
+def update_state(name: str) -> bool:
+    return name == '.updates' or name == '.numera-update.lock' or name.startswith('.numera-update-')
+
+
 def archive_stage(stage: Path, archive: Path) -> Path:
     archive.parent.mkdir(parents=True, exist_ok=True)
     if archive.exists():
         raise ValueError('Refusing to overwrite a completed distribution archive')
     if archive.name.endswith('.tar.gz'):
         with tarfile.open(archive, 'w:gz', dereference=False) as packed:
-            packed.add(stage, arcname=stage.name)
+            def include(member):
+                relative = PurePosixPath(member.name).parts[1:]
+                return None if relative and update_state(relative[0]) else member
+            packed.add(stage, arcname=stage.name, filter=include)
     elif archive.suffix == '.zip':
         with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as packed:
             for path in sorted(stage.rglob('*')):
+                if update_state(path.relative_to(stage).parts[0]):
+                    continue
                 if path.is_file():
                     packed.write(path, path.relative_to(stage.parent).as_posix())
     else:
@@ -235,31 +246,54 @@ def package(stage: Path, platform: str, output: Path) -> None:
         raise ValueError('Product archive must never include application/user data')
     if platform != 'server':
         verify_architecture(stage, platform)
+        from identity import verify as verify_identity
+        verify_identity(stage)
     copy_notices(stage)
     source = complete_source(stage / 'sources')
+    secret = os.environ.pop('NUMERA_RELEASE_SIGNING_KEY', '')
     provenance = {'schema': 1, 'source_sha': sha, 'platform': platform,
                   'application_runtime': 'retained-python', 'native_candidate': 'unfinished-not-selected',
-                  'signing': 'unsigned-not-notarized', 'python': sys.version.split()[0],
+                  'signing': 'signed-metadata-private-native-trust-not-notarized',
+                  'signing_scope': os.environ.get('NUMERA_SIGNING_SCOPE', 'owner'), 'python': sys.version.split()[0],
                   'dependencies': dependencies(), 'source': asset_record(source),
                   'host_prerequisites': {
                       'windows-x64': 'Windows with Microsoft WebView2 runtime',
                       'linux-x64': 'Compatible glibc and WebKitGTK4.1/GTK3 system libraries',
-                      'macos-arm64': 'Apple Silicon macOS; unsigned download may need Gatekeeper approval',
+                      'macos-arm64': 'Apple Silicon macOS; self-signed/not-notarized download may need Gatekeeper approval',
                       'server': 'Python and explicitly selected dependencies; browsers not bundled',
                   }[platform]}
     if platform != 'server':
         from third_party import browser_sources
         provenance['third_party'] = browser_sources(stage)
-    write_json(stage / 'BUILD.json', provenance)
+    write_json(stage / 'PROVENANCE.json', provenance)
+    from signing import fixture_ed25519, installed_manifest, sign_manifest
+
+    public_key = ROOT / 'docs/release-signing-key.pem'
+    if os.environ.get('NUMERA_SIGNING_SCOPE') == 'validation-only':
+        public_key = stage / 'VALIDATION-KEY.pem'
+        fixture_ed25519(public_key)
+    else:
+        os.environ['NUMERA_RELEASE_SIGNING_KEY'] = secret
+    installed_manifest(stage, platform, sha)
+    try:
+        sign_manifest(stage / 'BUILD.json', stage / 'BUILD.sig', public_key)
+    finally:
+        os.environ.pop('NUMERA_RELEASE_SIGNING_KEY', None)
     validate_stage(stage, sha)
     extension = '.zip' if platform == 'windows-x64' else '.tar.gz'
     output.mkdir(parents=True, exist_ok=True)
     archive = archive_stage(stage, output / f'numera-{platform}-{sha}{extension}')
+    build = json.loads((stage / 'BUILD.json').read_text(encoding='utf-8'))
     write_json(output / f'{platform}.json', {'schema': 1, 'source_sha': sha,
-                                           'platform': platform, 'asset': asset_record(archive)})
+                                           'platform': platform, 'asset': asset_record(archive),
+                                           'build_manifest_sha256': digest(stage / 'BUILD.json'),
+                                           'expanded_size': sum(path.stat().st_size for path in stage.rglob('*') if path.is_file()),
+                                           'max_members': sum(1 for _ in stage.rglob('*')) + 1,
+                                           'components': build['components'],
+                                           'signing_scope': os.environ.get('NUMERA_SIGNING_SCOPE', 'owner')})
 
 
-def verify_manifest(directory: Path, manifest: dict, sha: str) -> None:
+def verify_manifest(directory: Path, manifest: dict, sha: str, platform_metadata: bool = False) -> None:
     if not SHA.fullmatch(sha) or manifest.get('schema') != 1 or manifest.get('source_sha') != sha:
         raise ValueError('Distribution manifest source SHA does not match')
     expected = set()
@@ -276,7 +310,8 @@ def verify_manifest(directory: Path, manifest: dict, sha: str) -> None:
     if not expected:
         raise ValueError('Distribution manifest has no assets')
     present = {path.name for path in directory.iterdir()}
-    if present - expected - {'distribution.json', 'SHA256SUMS'}:
+    metadata = {f'{platform}.json' for platform in (*PLATFORMS, 'server')} if platform_metadata else set()
+    if present - expected - {'distribution.json', 'SHA256SUMS'} - metadata:
         raise ValueError('Distribution contains unexpected files')
 
 
@@ -293,9 +328,7 @@ def manifest(directory: Path) -> None:
     result = {'schema': 1, 'source_sha': sha, 'application_runtime': 'retained-python',
               'release_channel': 'verified-build-prerelease', 'platforms': list(PLATFORMS),
               'assets': records}
-    for platform in (*PLATFORMS, 'server'):
-        (directory / f'{platform}.json').unlink()
-    verify_manifest(directory, result, sha)
+    verify_manifest(directory, result, sha, platform_metadata=True)
     write_json(directory / 'distribution.json', result)
     (directory / 'SHA256SUMS').write_text(''.join(f"{item['sha256']}  {item['name']}\n"
                                                for item in records), encoding='utf-8')

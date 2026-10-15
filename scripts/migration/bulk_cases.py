@@ -1,6 +1,9 @@
 """Original bulk identity/patch/selection observations, no application writes."""
 from __future__ import annotations
 from unittest.mock import patch
+from baseline_source import activate
+activate()
+
 from numera import bulk
 from numera.fingerprint import generate
 from numera.models import Profile

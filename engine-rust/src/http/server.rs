@@ -60,6 +60,10 @@ pub struct Server {
 }
 impl Server {
     pub fn start(options: Options) -> io::Result<Self> {
+        let startup_admission = crate::ownership::update_admission::Reservation::begin(
+            &options.root,
+            "native-server-startup",
+        )?;
         if let Some(message) = super::bind_policy::refusal(
             &options.address.ip().to_string(),
             &super::tokens::TokenStore::new(options.root.clone()),
@@ -97,6 +101,7 @@ impl Server {
         let worker = thread::Builder::new()
             .name("numera-http".into())
             .spawn(move || {
+                let mut startup_admission = startup_admission;
                 let runtime = match tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
@@ -135,6 +140,7 @@ impl Server {
                             return Err(error);
                         }
                     };
+                    startup_admission.release()?;
                     if worker_stop.load(Ordering::Acquire) || ready.send(Ok(())).is_err() {
                         return Ok(());
                     }

@@ -105,8 +105,14 @@ async fn serve(State(root): State<Arc<PathBuf>>, request: Request) -> Response {
                 .into_response();
         }
     };
+    let media_type = registered_media_type(&path);
     match ServeFile::new(path).oneshot(request).await {
         Ok(mut response) => {
+            if let Some(media_type) = media_type {
+                response
+                    .headers_mut()
+                    .insert(axum::http::header::CONTENT_TYPE, media_type);
+            }
             if let Some(content_type) = response
                 .headers()
                 .get(axum::http::header::CONTENT_TYPE)
@@ -128,6 +134,59 @@ async fn serve(State(root): State<Arc<PathBuf>>, request: Request) -> Response {
         Err(error) => match error {},
     }
 }
+#[cfg(windows)]
+fn registered_media_type(path: &Path) -> Option<axum::http::HeaderValue> {
+    use windows_sys::Win32::{
+        Foundation::ERROR_SUCCESS,
+        System::Registry::{HKEY_CLASSES_ROOT, RRF_RT_REG_SZ, RegGetValueW},
+    };
+    let extension = path.extension()?.to_str()?;
+    // CPython mimetypes reads only a REG_SZ Content Type on the extension
+    // key. Do not follow file associations, shell commands or indirect paths.
+    if extension.is_empty() || extension.contains(['\0', '\\', '/']) {
+        return None;
+    }
+    let key = format!(".{extension}")
+        .encode_utf16()
+        .chain([0])
+        .collect::<Vec<_>>();
+    let name = "Content Type".encode_utf16().chain([0]).collect::<Vec<_>>();
+    let mut buffer = [0u16; 1024];
+    let mut bytes = (buffer.len() * std::mem::size_of::<u16>()) as u32;
+    // SAFETY: predefined read-only registry root, terminated UTF-16 names,
+    // initialized buffer and exact byte capacity; no key handle is opened.
+    #[allow(unsafe_code)]
+    let status = unsafe {
+        RegGetValueW(
+            HKEY_CLASSES_ROOT,
+            key.as_ptr(),
+            name.as_ptr(),
+            RRF_RT_REG_SZ,
+            std::ptr::null_mut(),
+            buffer.as_mut_ptr().cast(),
+            &mut bytes,
+        )
+    };
+    if status != ERROR_SUCCESS
+        || bytes == 0
+        || bytes as usize > std::mem::size_of_val(&buffer)
+        || !bytes.is_multiple_of(2)
+    {
+        return None;
+    }
+    let units = &buffer[..bytes as usize / 2];
+    let end = units.iter().position(|unit| *unit == 0)?;
+    let value = String::from_utf16(&units[..end]).ok()?;
+    if value.is_empty() {
+        return None;
+    }
+    axum::http::HeaderValue::from_str(&value).ok()
+}
+#[cfg(not(windows))]
+fn registered_media_type(_path: &Path) -> Option<axum::http::HeaderValue> {
+    None
+}
+
 #[cfg(test)]
 #[path = "dashboard_tests.rs"]
 mod tests;

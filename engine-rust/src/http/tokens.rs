@@ -34,6 +34,9 @@ impl TokenStore {
     pub fn new(root: PathBuf) -> Self {
         Self { root }
     }
+    pub(crate) fn root(&self) -> &std::path::Path {
+        &self.root
+    }
     fn path(&self) -> PathBuf {
         self.root.join("tokens.json")
     }
@@ -162,6 +165,14 @@ impl TokenStore {
         Ok(true)
     }
     pub fn verify(&self, token: &str, now: f64) -> io::Result<Option<Value>> {
+        self.verify_usage(token, now, true)
+    }
+    pub(crate) fn verify_usage(
+        &self,
+        token: &str,
+        now: f64,
+        stamp: bool,
+    ) -> io::Result<Option<Value>> {
         if token.is_empty() {
             return Ok(None);
         }
@@ -204,7 +215,7 @@ impl TokenStore {
                     ));
                 }
             };
-            if now - last >= 60.0 {
+            if stamp && now - last >= 60.0 {
                 rows[index]["lastUsed"] = now.into();
                 write_json(&self.path(), &Value::Array(rows.clone()))?;
             }

@@ -58,6 +58,7 @@ node_modules/
 !/scripts/build/
 /scripts/build/*
 !/scripts/build/*.py
+!/scripts/build/*.ps1
 !/scripts/build/requirements.txt
 
 # The self-hosted CI runner and everything it checks out or builds. Kept inside

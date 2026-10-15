@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import json
+from baseline_source import activate
+activate()
+
 from numera import cookies
 
 

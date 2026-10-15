@@ -7,6 +7,8 @@ from enum import Enum
 from pathlib import Path
 from types import ModuleType
 from unittest.mock import patch
+from baseline_source import activate
+activate()
 
 
 def cases(parent):

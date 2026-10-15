@@ -120,9 +120,14 @@ pub async fn router_with_dashboard(
             "Session registry does not belong to this application root and host",
         ));
     }
+    let startup_admission = Arc::new(crate::ownership::update_admission::Reservation::begin(
+        &root,
+        "native-http-startup",
+    )?);
     let auth = Arc::new(RequestAuth::new(TokenStore::new(root.clone()), environment));
     let adopting = auth.clone();
     tokio::task::spawn_blocking(move || {
+        let _admission = startup_admission;
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|_| io::Error::other("System clock precedes the Unix epoch"))?

@@ -156,7 +156,7 @@ pub(super) async fn import(
     State(state): State<Arc<Profiles>>,
     ObjectBody(body): ObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || read(&state, body)).await {
+    match super::admission::blocking(move || read(&state, body)).await {
         Ok(Ok(value)) => Json(value).into_response(),
         Ok(Err(Failure::Bad(message))) => profile_errors::detail(StatusCode::BAD_REQUEST, message),
         Ok(Err(Failure::Store(error))) => profile_errors::storage(error),

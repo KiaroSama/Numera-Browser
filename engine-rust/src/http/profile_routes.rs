@@ -312,7 +312,7 @@ fn listing(state: &Profiles) -> Result<Vec<Value>, RepoError> {
         .collect()
 }
 async fn list(State(state): State<Arc<Profiles>>) -> Response {
-    match tokio::task::spawn_blocking(move || listing(&state)).await {
+    match super::admission::blocking(move || listing(&state)).await {
         Ok(Ok(profiles)) => Json(profiles).into_response(),
         Ok(Err(error)) => super::profile_errors::storage(error),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),

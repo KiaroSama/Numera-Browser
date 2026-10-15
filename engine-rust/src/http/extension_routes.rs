@@ -69,7 +69,7 @@ fn install_sync(root: &std::path::Path, body: Map<String, Value>) -> Result<Valu
     Ok(result)
 }
 async fn install(State(root): State<Arc<PathBuf>>, ObjectBody(body): ObjectBody) -> Response {
-    match tokio::task::spawn_blocking(move || install_sync(&root, body)).await {
+    match super::admission::blocking(move || install_sync(&root, body)).await {
         Ok(Ok(result)) => Json(result).into_response(),
         Ok(Err(response)) => *response,
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),
@@ -122,7 +122,7 @@ fn listing(root: PathBuf) -> io::Result<Value> {
     Ok(json!({"extensions":rows}))
 }
 async fn list(State(root): State<Arc<PathBuf>>) -> Response {
-    match tokio::task::spawn_blocking(move || listing(root.as_ref().clone())).await {
+    match super::admission::blocking(move || listing(root.as_ref().clone())).await {
         Ok(Ok(value)) => Json(value).into_response(),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),
     }

@@ -36,7 +36,7 @@ pub(crate) fn routes(root: PathBuf, environment: &str) -> Router {
         .with_state(state)
 }
 async fn list(State(state): State<Arc<TokenState>>) -> Response {
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let mut rows = state.tokens.list();
         for row in &mut rows {
             let object = row.as_object_mut().ok_or(())?;
@@ -64,7 +64,7 @@ async fn create(State(state): State<Arc<TokenState>>, ObjectBody(body): ObjectBo
         Ok(duration) => duration.as_secs_f64(),
         Err(_) => return failure(),
     };
-    match tokio::task::spawn_blocking(move || state.tokens.create(&name, now)).await {
+    match super::admission::blocking(move || state.tokens.create(&name, now)).await {
         Ok(Ok(value)) => Json(value).into_response(),
         Ok(Err(error @ TokenError::DuplicateName(_))) => (
             StatusCode::CONFLICT,
@@ -75,7 +75,7 @@ async fn create(State(state): State<Arc<TokenState>>, ObjectBody(body): ObjectBo
     }
 }
 async fn revoke(State(state): State<Arc<TokenState>>, Path(id): Path<String>) -> Response {
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         state
             .tokens
             .revoke(&id, !state.environment)

@@ -90,7 +90,11 @@ def test_every_supported_engine_is_required_on_both_platforms():
     assert "suites.py native --phase test" in jobs["rust-core"]
     required = jobs["required"]
     claimed = re.search(r"needs: \[([^\]]+)\]", required).group(1).split(", ")
-    assert set(claimed) == set(jobs) - {"required"}
+    assert set(claimed) == set(jobs) - {"required", "promote", "publish"}
+    assert 'needs: required' in jobs['promote']
+    assert 'needs: [required, promote]' in jobs['publish']
+    assert "github.ref == 'refs/heads/main'" in jobs['publish']
+    assert "inputs.trusted_sha == github.sha" in jobs['publish']
     assert "if: always()" in required
     assert 'job["result"] != "success"' in required
     assert "DISTRIBUTION_SHA" in required and "EXPECTED_SHA" in required
@@ -101,7 +105,8 @@ def test_every_supported_engine_is_required_on_both_platforms():
     build = _jobs(ROOT / ".github/workflows/build-desktop.yml")
     assert "uses: ./.github/workflows/ci.yml" not in "".join(build.values()), "Recursive CI would duplicate verification"
     for job in ("desktop", "desktop-windows"):
-        assert "cargo test --locked --all-features" in build[job]
+        assert "cargo test --locked --no-default-features" in build[job]
+        assert 'update_acceptance_build.py' in build[job] and 'update_acceptance.py run' in build[job]
         assert "continue-on-error" not in build[job]
 
 
@@ -137,7 +142,13 @@ def test_release_downloads_and_publishes_only_verified_manifest_products():
     assert "Published asset checksum differs" in release
     assert "--target \"$SOURCE_SHA\"" in release
     assert "--prerelease --latest=false" in release
-    assert "No checkout" in release
+    assert 'ref: ${{ inputs.source_sha }}' in release
+    assert 'update-manifest.sig' in release and 'NUMERA_RELEASE_SIGNING_KEY' in release
+    assert 'signing.py sign' in release and 'signing.py verify' in release
+    browser = _jobs(ROOT / '.github/workflows/ci.yml')['browser']
+    assert 'update_ui_smoke.py --dashboard dashboard/dist --output build/update-ui' in browser
+    assert 'name: rendered-update-ui' in browser
+    assert 'workflow_run:' not in release and 'workflow_call:' in release
     assert "continue-on-error" not in release
 
 
@@ -224,6 +235,17 @@ def test_native_guard_rejects_ignored_library_cases(tmp_path, attribute):
         coverage.check_native_ignored([library])
 
 
+def test_python_audit_excludes_only_local_distribution_and_keeps_every_dependency():
+    coverage = _coverage()
+    frozen = 'Numera_Engine @ file:///checkout/engine\nfastapi==0.143.1\npip-audit==2.10.1\ncryptography==50.0.2\n'
+    assert coverage.third_party_requirements(frozen) == ['fastapi==0.143.1', 'pip-audit==2.10.1', 'cryptography==50.0.2']
+    for invalid in ('fastapi==0.143.1\n', frozen + 'numera-engine==0.36.0\n',
+                    frozen + 'private-lib @ file:///other\n', frozen + '-e /other\n',
+                    frozen + 'unresolved>=1\n'):
+        with pytest.raises(ValueError):
+            coverage.third_party_requirements(invalid)
+
+
 def test_utf8_gate_rejects_invalid_text_without_decoding_binary(tmp_path):
     coverage = _coverage()
     text = tmp_path / 'source.py'
@@ -264,9 +286,9 @@ def test_secret_exceptions_are_only_exact_reviewed_rule_path_and_literal():
 
     config = (ROOT / 'scripts/ci/gitleaks.toml').read_text(encoding='utf-8')
     assert 'useDefault = true' in config and 'disabledRules' not in config
-    assert config.count('[[rules.allowlists]]') == 3
-    assert config.count('condition = "AND"') == 3
-    assert config.count('regexTarget = "secret"') == 3
+    assert config.count('[[rules.allowlists]]') == 4
+    assert config.count('condition = "AND"') == 4
+    assert config.count('regexTarget = "secret"') == 4
     assert re.findall(r'(?m)^id = "([^"]+)"', config) == ['generic-api-key']
     blocks = config.split('[[rules.allowlists]]')[1:]
     patterns = [re.findall(r"'''(.*?)'''", re.search(r'(?m)^regexes = (.+)$', block).group(1))
@@ -275,7 +297,8 @@ def test_secret_exceptions_are_only_exact_reviewed_rule_path_and_literal():
     digests = (('f577f82af741d32085294020c093c7decd65544fe2f43c88bc76768245a5b409',),
                ('ac215b3e0151a72e3e3e5b898b61827612735ed8fdf7865d7a4c90959a242e03',
                 '4c0b89ca29dd4fd13eeefc41a69fee0b64d8244e5fc8e2654ac31ad7c96fc426'),
-               ('7e65f47df01dbc8677d2ced7c8ad02a06afbb21e07c1e872713d2bfaf8773128',))
+               ('7e65f47df01dbc8677d2ced7c8ad02a06afbb21e07c1e872713d2bfaf8773128',),
+               ('bf23e95aa0ff67388daa3728f36a013b9ddafdc2bd280decb03bacbaad9eb8a1',))
     assert len(patterns) == len(paths) == len(digests)
     for group, expected in zip(patterns, digests):
         assert len(group) == len(expected)
@@ -291,6 +314,16 @@ def test_secret_exceptions_are_only_exact_reviewed_rule_path_and_literal():
     assert not re.search(paths[0], 'engine-rust/tests/fixtures/unreviewed.json')
     assert not re.search(paths[1], 'engine-rust/src/http/documentation-assets/unreviewed.json')
     assert not re.search(paths[2], 'engine/tests/test_new_credential.py')
+    assert re.search(paths[3], 'desktop/src-tauri/build.rs')
+    assert not re.search(paths[3], 'desktop/src-tauri/src/unreviewed.rs')
+    import base64
+    pem = (ROOT / 'docs/release-signing-key.pem').read_text(encoding='utf-8')
+    der = base64.b64decode(''.join(pem.splitlines()[1:-1]), validate=True)
+    assert der[:12] == bytes.fromhex('302a300506032b6570032100')
+    public = patterns[3][0][1:-1]
+    assert der[12:].hex() == public
+    assert f'pub const PUBLIC_KEY: &str = "{public}";' in (
+        ROOT / 'desktop/src-tauri/src/updates/manifest.rs').read_text(encoding='utf-8')
     import json
 
     assets = ROOT / 'engine-rust/src/http/documentation-assets'
@@ -306,7 +339,26 @@ def test_strict_secret_config_keeps_rules_but_removes_inherited_path_omissions(t
 
     coverage = _coverage()
     base = tmp_path / 'official.toml'
-    official = '[allowlist]\ndescription = "official values"\npaths = ["package-lock.json"]\nregexes = ["^false$"]\n[[rules]]\nid = "required-rule"\nregex = "required-detection"\npath = "required-selector"\n[[rules.allowlists]]\npaths = ["hidden.txt"]\nregexes = ["^official-constant$"]\n[[rules.allowlists]]\npaths = ["path-only.txt"]\n[[rules]]\nid = "another-required-rule"\nregex = "another-detection"\n'
+    official = '''[allowlist]
+description = "official values"
+paths = [
+    "package-lock.json",
+    "asset[0-9].json",
+]
+regexes = ["^false$"]
+[[rules]]
+id = "required-rule"
+regex = "required-detection"
+path = "required-selector"
+[[rules.allowlists]]
+paths = ["hidden.txt"]
+regexes = ["^official-constant$"]
+[[rules.allowlists]]
+paths = ["path-only.txt"]
+[[rules]]
+id = "another-required-rule"
+regex = "another-detection"
+'''
     base.write_text(official, encoding='utf-8')
     output = tmp_path / 'strict.toml'
     with pytest.raises(ValueError, match='checksum'):
@@ -322,4 +374,13 @@ def test_strict_secret_config_keeps_rules_but_removes_inherited_path_omissions(t
     assert 'official-constant' not in changed, 'An AND path waiver must not turn into a global regex waiver'
     config = output.read_text(encoding='utf-8')
     assert 'useDefault' not in config and 'path = ' in config
-    assert config.count('condition = "AND"') == 3
+    assert config.count('condition = "AND"') == 4
+    if __import__('sys').version_info >= (3, 11):
+        import tomllib
+
+        parsed = tomllib.loads(changed)
+        assert parsed['allowlist']['paths'] == []
+        assert {rule['id'] for rule in parsed['rules']} == {'required-rule', 'another-required-rule'}
+        strict = tomllib.loads(config)
+        assert strict['extend']['path'] == str(base.resolve())
+        assert len(strict['rules'][0]['allowlists']) == 4

@@ -33,6 +33,8 @@ impl Application<'_> {
                 "Detached execution requires the native job supervisor".into(),
             ));
         }
+        let _admission =
+            crate::ownership::update_admission::Reservation::for_command(self.root, args)?;
         let command = args
             .get("command")
             .and_then(Value::as_str)

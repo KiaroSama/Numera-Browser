@@ -313,6 +313,10 @@ def child_env(password=None, base=None) -> dict:
     looks exactly like success.
     """
     env = dict(os.environ if base is None else base)
+    # Shell-only capabilities must never reach browser/helpers or detached jobs.
+    env.pop("NUMERA_UPDATE_TOKEN", None)
+    env.pop("NUMERA_UPDATE_TICKET", None)
+    env.pop("NUMERA_UPDATE_ACTIVATION", None)
     if password:
         env["NUMERA_PASSWORD"] = password
     return env

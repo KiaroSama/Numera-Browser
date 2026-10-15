@@ -13,7 +13,7 @@ jobs:
     name: Public pull-request dependency delta
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: github.event_name == 'pull_request' && github.event.repository.private == false
+    if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && github.event.repository.private == false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -22,6 +22,8 @@ jobs:
         with:
           fail-on-severity: high
           comment-summary-in-pr: never
+          base-ref: main
+          head-ref: ${{ github.sha }}
 
   audit:
     name: Python and Cargo advisory gates
@@ -42,9 +44,11 @@ jobs:
         with:
           toolchain: 1.99.0
       - name: Install actual engine extras and the strict audit tool
-        run: python scripts/migration/run_owned.py --wall 300 --idle 90 -- python -m pip install -e "engine[api,launch,secure,desktop,dev]" pip-audit==2.10.1
-      - name: Audit resolved Python dependencies without waiving collection failures
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python -m pip_audit --strict --skip-editable --progress-spinner=off --timeout=15
+        run: python scripts/migration/run_owned.py --wall 300 --idle 90 -- python -m pip install "./engine[api,launch,secure,desktop,dev]" pip-audit==2.10.1
+      - name: Pin all resolved third-party inputs, excluding only the unpublished local distribution
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py audit-requirements --destination build/audit/python-requirements.txt
+      - name: Audit every resolved Python dependency without waiving collection failures
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python -m pip_audit --strict --no-deps --disable-pip --requirement build/audit/python-requirements.txt --progress-spinner=off --timeout=15
       - name: Install the verified stable Cargo advisory tool
         run: python scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo install cargo-audit --version 0.22.2 --locked
       - name: Audit both authoritative Cargo lockfiles

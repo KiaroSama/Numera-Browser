@@ -59,7 +59,7 @@ pub(super) async fn archive(
     };
     let selected = selected.clone();
     let archived = body.get("archived").is_none_or(truth);
-    match tokio::task::spawn_blocking(move || -> Result<Value, RepoError> {
+    match super::admission::blocking(move || -> Result<Value, RepoError> {
         let mut changed = Vec::new();
         for id in selected {
             let Some(id) = id.as_str() else {
@@ -177,7 +177,7 @@ pub(super) async fn assign(
     State(state): State<Arc<Proxies>>,
     ObjectBody(body): ObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || assign_sync(&state, body)).await {
+    match super::admission::blocking(move || assign_sync(&state, body)).await {
         Ok(Ok(response)) => response,
         Ok(Err(error)) => profile_errors::storage(error),
         Err(_) => super::proxy_routes::failure(),

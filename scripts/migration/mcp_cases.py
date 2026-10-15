@@ -3,6 +3,9 @@ from __future__ import annotations
 import json
 from subprocess import CompletedProcess
 from unittest.mock import patch
+from baseline_source import activate
+activate()
+
 from numera import mcp
 
 
