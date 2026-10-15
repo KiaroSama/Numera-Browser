@@ -55,6 +55,36 @@ def test_missing_report_and_browser_are_failures(tmp_path, monkeypatch):
         live.prepare("patchright")
 
 
+def test_native_handoff_exports_only_the_verified_cloak_path(tmp_path, monkeypatch):
+    binary = tmp_path / 'browser with spaces — fixture'
+    binary.write_bytes(b'not executed')
+    environment = tmp_path / 'github environment'
+    environment.write_text('EXISTING=value\n', encoding='utf-8')
+    monkeypatch.setenv('GITHUB_ENV', str(environment))
+    live.export_native('cloak', binary)
+    assert environment.read_text(encoding='utf-8') == (
+        f'EXISTING=value\nCLOAKBROWSER_BINARY_PATH={binary.resolve()}\n')
+    before = environment.read_bytes()
+    live.export_native('playwright', binary)
+    assert environment.read_bytes() == before
+    with pytest.raises(FileNotFoundError):
+        live.export_native('cloak', tmp_path / 'missing')
+    assert environment.read_bytes() == before
+    monkeypatch.delenv('GITHUB_ENV')
+    with pytest.raises(RuntimeError, match='GitHub environment file'):
+        live.export_native('cloak', binary)
+
+
+@pytest.mark.parametrize('control', ['\n', '\r', '\x00', '\x1f', '\x7f'])
+def test_native_handoff_rejects_environment_injection(tmp_path, monkeypatch, control):
+    environment = tmp_path / 'github environment'
+    monkeypatch.setenv('GITHUB_ENV', str(environment))
+    binary = SimpleNamespace(resolve=lambda **kwargs: f'/fixture/browser{control}INJECTED=value')
+    with pytest.raises(RuntimeError, match='invalid environment characters'):
+        live.export_native('cloak', binary)
+    assert not environment.exists()
+
+
 def _jobs(path):
     text = path.read_text(encoding="utf-8").split("\njobs:\n", 1)[1]
     chunks = re.split(r"(?m)^  ([a-z][a-z0-9-]*):\n", text)
@@ -74,7 +104,8 @@ def test_every_supported_engine_is_required_on_both_platforms():
     assert "NUMERA_TEST_ENGINE: ${{ matrix.engine }}" in matrix
     assert "NUMERA_NATIVE_LIVE_ENGINE: ${{ matrix.engine }}" in matrix
     assert 'CLOAKBROWSER_VERSION: "' + live.CLOAK_VERSION + '"' in matrix
-    assert "prepare --engine ${{ matrix.engine }}" in matrix
+    assert "prepare --engine ${{ matrix.engine }} --export-native" in matrix
+    assert "--fetch --export-native" in (ROOT / '.github/workflows/migration-browser.yml').read_text(encoding='utf-8')
     assert "test_session_tree_live.py" in matrix
     assert "--strict-config" in matrix and "--timeout=120" in matrix
     assert "report --engine ${{ matrix.engine }}" in matrix

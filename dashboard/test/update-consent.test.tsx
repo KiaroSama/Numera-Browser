@@ -74,6 +74,19 @@ test("malformed bridge status is rejected rather than enabling an install", asyn
   await expect(updateRequest(bridge, "status")).rejects.toThrow("Invalid update status");
 });
 
+test.each([...Array.from({ length: 32 }, (_, code) => code), 127])(
+  "status text rejects control code %i before enabling an action", async code => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(response({ ...offered, message: `Update${String.fromCharCode(code)}ready` }));
+    await expect(updateRequest(bridge, "status")).rejects.toThrow("Invalid update status");
+  },
+);
+
+test("status text preserves Unicode and printable ASCII boundaries", async () => {
+  const message = "Update ready ~ — فارسی 🚀";
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(response({ ...offered, message }));
+  expect((await updateRequest(bridge, "status")).message).toBe(message);
+});
+
 test("HTTP refusal carries a safe deferred state and never starts an implicit retry", async () => {
   window.__NUMERA_UPDATES__ = bridge;
   const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(response({ ...offered, state: "deferred", message: "Close active sessions before installing." }, 409));

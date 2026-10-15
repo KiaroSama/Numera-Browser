@@ -154,7 +154,7 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         let (session, profile) =
             admission::current(root, "a", "fixture", "fixture-host", None, 1000.0)?;
         eprintln!("Browser stage: native launch");
-        let mut adapter = launch::open(
+        let opened = launch::open(
             session,
             profile,
             &mut command,
@@ -169,7 +169,23 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
                 binary_options: Map::new(),
             },
             1000.0,
-        )?;
+        );
+        let mut adapter = match opened {
+            Ok(adapter) => adapter,
+            Err(error) => {
+                if let Ok(entries) = std::fs::read_dir(root.join("logs")) {
+                    for entry in entries.flatten().take(8) {
+                        let path = entry.path();
+                        if std::fs::metadata(&path).is_ok_and(|meta| meta.len() <= 65_536)
+                            && let Ok(content) = std::fs::read_to_string(path)
+                        {
+                            eprintln!("Sanitized adapter startup diagnostics:\n{content}");
+                        }
+                    }
+                }
+                return Err(error.into());
+            }
+        };
         let result = (|| -> Result<(), Box<dyn std::error::Error>> {
             assert_eq!(
                 claims::state(&claims::read(root, "a"), "fixture-host"),

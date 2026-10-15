@@ -155,15 +155,18 @@ mod tests {
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()?;
-        let task = runtime.block_on(REQUEST_OWNER.scope(owner.clone(), async {
-            blocking(move || -> io::Result<()> {
-                entered.send(()).map_err(io::Error::other)?;
-                release
-                    .recv_timeout(Duration::from_secs(5))
-                    .map_err(io::Error::other)?;
-                Ok(())
+        let task = {
+            let _runtime = runtime.enter();
+            REQUEST_OWNER.sync_scope(owner.clone(), || {
+                blocking(move || -> io::Result<()> {
+                    entered.send(()).map_err(io::Error::other)?;
+                    release
+                        .recv_timeout(Duration::from_secs(5))
+                        .map_err(io::Error::other)?;
+                    Ok(())
+                })
             })
-        }));
+        };
         started.recv_timeout(Duration::from_secs(5))?;
         drop(owner);
         task.abort(); // A running spawn_blocking closure cannot be canceled.

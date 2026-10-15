@@ -19,7 +19,7 @@ declare global {
 }
 
 const object = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
-const text = (v: unknown, max = 2048): v is string => typeof v === "string" && v.length <= max && !/[\u0000-\u001f\u007f]/.test(v);
+const text = (v: unknown, max = 2048): v is string => typeof v === "string" && v.length <= max && [...v].every(char => char >= " " && char !== "\u007f");
 const count = (v: unknown): v is number => typeof v === "number" && Number.isSafeInteger(v) && v >= 0;
 const states: readonly string[] = ["idle", "checking", "available", "current", "unavailable", "downloading", "ready", "deferred", "activating", "complete", "cancelled", "error"];
 

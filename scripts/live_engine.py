@@ -62,6 +62,20 @@ def prepare(engine: str, *, fetch: bool = False) -> Path:
     return binary
 
 
+def export_native(engine: str, binary: Path) -> None:
+    """Pass only the verified existing Cloak executable to subsequent CI steps."""
+    if engine != 'cloak':
+        return
+    target = os.environ.get('GITHUB_ENV')
+    if not target:
+        raise RuntimeError('Native browser handoff requires the GitHub environment file')
+    path = str(binary.resolve(strict=True))
+    if any(ord(char) < 32 or ord(char) == 127 for char in path):
+        raise RuntimeError('Native browser path contains invalid environment characters')
+    with Path(target).open('a', encoding='utf-8', newline='\n') as stream:
+        stream.write(f'CLOAKBROWSER_BINARY_PATH={path}\n')
+
+
 def check_report(path: Path, engine: str) -> None:
     """Success means both selected engine tests ran and passed without skips."""
     cases = list(ET.parse(path).iter("testcase"))
@@ -80,11 +94,15 @@ def main() -> int:
     parser.add_argument("--engine", choices=tuple(ENGINES), required=True)
     parser.add_argument("--fetch", action="store_true", help="fetch the pinned Cloak binary")
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--export-native", action="store_true",
+                        help="hand the verified Cloak executable to later GitHub CI steps")
     args = parser.parse_args()
     if args.command == "report" and args.report is None:
         parser.error("report requires --report PATH")
     if args.fetch and (args.command != "prepare" or args.engine != "cloak"):
         parser.error("--fetch is only valid for prepare --engine cloak")
+    if args.export_native and args.command != "prepare":
+        parser.error("--export-native is only valid for prepare")
 
     from numera import logs
     logs.setup(ROOT / "build" / "live-engine")
@@ -92,7 +110,9 @@ def main() -> int:
     log.info("command=%s engine=%s fetch=%s", args.command, args.engine, args.fetch)
     try:
         if args.command == "prepare":
-            prepare(args.engine, fetch=args.fetch)
+            binary = prepare(args.engine, fetch=args.fetch)
+            if args.export_native:
+                export_native(args.engine, binary)
         else:
             check_report(args.report, args.engine)
     except Exception as exc:

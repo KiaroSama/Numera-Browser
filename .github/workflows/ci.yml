@@ -264,7 +264,7 @@ jobs:
         if: matrix.engine == 'cloak'
         run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python scripts/live_engine.py prepare --engine cloak --fetch
       - name: Require selected package and browser binary
-        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/live_engine.py prepare --engine ${{ matrix.engine }}
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/live_engine.py prepare --engine ${{ matrix.engine }} --export-native
       - name: Compile real SDK integration separately
         run: python scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_adapter_live --no-run
       - name: Required source session-tree live tests

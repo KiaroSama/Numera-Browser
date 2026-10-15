@@ -55,7 +55,7 @@ jobs:
         run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/live_engine.py prepare --engine camoufox
       - name: Fetch pinned official Cloak binary
         if: matrix.engine == 'cloak'
-        run: python scripts/live_engine.py prepare --engine cloak --fetch
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python scripts/live_engine.py prepare --engine cloak --fetch --export-native
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: engine-rust

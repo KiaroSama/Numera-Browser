@@ -6,11 +6,16 @@ The existing Python application remains the default and rollback implementation.
 CLI/server example, **not an installed replacement**. Passing library or narrow
 entrypoint tests does not certify a finished product migration.
 
-## Current integration status — October 15, 2026
+## Current integration status — October 16, 2026
 
-The latest published candidate is `d3b5127`. Its broad hosted run failed; no
-replacement result is claimed for the following source changes. The retained
-Python application remains selected, including in portable distributions.
+The latest pushed candidate is `3a64fa0`. Its manual hosted batch
+[38806506026](https://github.com/KiaroSama/Numera-Browser/actions/runs/38806506026)
+failed. Dashboard tests and type checking, source/history credential checks,
+Docker, dependency checks and six browser SDK legs passed. Dashboard lint,
+native Rust lint, both native Cloak legs and the independent CodeQL verdict
+blocked the aggregate. Dependent Python, rendered updater and distribution
+checks did not run; there is no signed release or completed updater acceptance.
+The retained Python application remains selected, including in portable distributions.
 
 - The portable updater and private quiescence protocol are drafted in the shell
   and retained engine. A durable commit prevents automatic downgrade after work
@@ -29,9 +34,15 @@ Python application remains selected, including in portable distributions.
   The earlier Windows source-test stall remains unlocalized; the next hosted run
   retains its deadlines and adds progress/stack diagnostics.
 - The earlier 31 CodeQL candidates were independently assessed against their exact
-  source paths. That source triage does not turn the failed host check green.
-  Signing now requires a successful independent CodeQL verdict for the exact SHA,
-  in addition to successful scanner jobs; missing verdicts block publication.
+  source paths. The latest check reports 21 candidates requiring fresh assessment;
+  historical source triage does not turn that failed host check green. Signing
+  requires a successful independent CodeQL verdict for the exact SHA, in addition
+  to successful scanner jobs; missing verdicts block publication.
+- Current corrections preserve control-character validation without a lint waiver,
+  retain detached startup ownership behind a smaller Rust error, and hand the
+  already verified Cloak executable from CI preparation to native tests. The SDK
+  adapter still refuses missing selections instead of acquiring a browser during
+  launch. These corrections require a new hosted batch.
 
 The chronological seam inventory below records earlier scoped evidence and
 historical prepared work. Only an actual later check supersedes an earlier

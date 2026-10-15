@@ -32,7 +32,7 @@ struct Pending {
 }
 pub struct SpawnFailure {
     error: io::Error,
-    pending: Option<Pending>,
+    pending: Option<Box<Pending>>,
 }
 impl std::fmt::Debug for SpawnFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -93,7 +93,7 @@ impl Drop for SpawnFailure {
             retained()
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .push(pending);
+                .push(*pending);
             eprintln!("Detached startup cleanup remains owned; retry retained supervisors");
         }
     }
@@ -404,7 +404,7 @@ impl JobStore {
             Err(error) => {
                 let mut failure = SpawnFailure {
                     error,
-                    pending: Some(pending),
+                    pending: Some(Box::new(pending)),
                 };
                 let _ = failure.settle(STARTUP);
                 Err(failure)
