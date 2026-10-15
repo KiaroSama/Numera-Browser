@@ -86,8 +86,24 @@ and tests; `npm run build` type-checks before bundling. Icons from `lucide-react
 The manual **Dashboard verification** workflow runs the locked install, dependency
 consistency and advisory checks, tests, strict types, lint and build on a hosted
 runner. Full CI calls that same workflow; it does not duplicate the suite.
-Styling is a single scoped
-`<style>` block — no CSS framework dependency.
+Styling uses the existing scoped theme, inline styles and handwritten `ps-`
+classes; the updater's small stylesheet reuses those tokens. No CSS framework
+is introduced.
+
+## Desktop update interface
+
+A signed portable shell supplies a per-run loopback capability to the main
+WebView at its exact engine origin. `updates.ts` validates bounded status data;
+`useUpdates.ts` owns one serial status poller shared by Settings and Engines.
+Native code, not React polling, checks the release feed after readiness and daily.
+Download and install/restart have separate exact-offer consent dialogs. Busy work
+defers installation. Source/server/demo pages cannot self-update; they use their
+own package/deployment route. Engines also provides separate Cloak acquisition
+consent; an installed SDK alone does not prove its browser is ready.
+
+The implementation is under hosted verification. The rendered UI fixture uses a
+synthetic bridge; actual native worker acceptance is a separate check. See
+[update protocol and limits](../docs/updates.md).
 
 The source splits by responsibility, and the dependencies point one way —
 `App` → views → primitives → leaf, with no cycles:

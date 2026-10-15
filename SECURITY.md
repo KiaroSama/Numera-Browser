@@ -11,9 +11,16 @@ timeline after triage.
 
 ## Scope
 
-Numera Browser stores profile data locally as JSON under `~/.numera` (installs that
-predate the rename keep using `~/.persona`, which is read in place). Treat that
-directory as sensitive.
+Numera Browser stores profile data under the resolved data root: explicit
+`--data-dir`/`NUMERA_DATA_DIR`, writable portable `data/`, or the per-user fallback
+(`~/.numera`, with existing pre-rename `~/.persona` retained). Settings → Storage
+shows the actual path. Treat the whole root and its backups as sensitive.
+
+Portable updates require pinned-key signed metadata and separate download and
+installation consent. Native signatures currently use self-signed/private trust,
+not public Windows trust or Apple notarization. Never clear uncertain recovery
+markers or install a root certificate merely to bypass a refusal. See
+[update trust and recovery](docs/updates.md).
 
 **Encrypting secrets:** proxy passwords can be encrypted at rest with a master
 password — run `pip install -e ".[secure]"` then `numera vault enable`. This
