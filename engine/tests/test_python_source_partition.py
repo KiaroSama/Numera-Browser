@@ -120,6 +120,12 @@ def test_module_failure_is_collected_without_repeating_or_omitting_other_modules
     assert [call[1] for call in calls] == [600, 590]
     assert all(call[2] == 120 and call[0][:3] == [module.sys.executable, '-m', 'pytest'] for call in calls)
     assert all('--junitxml=' in ' '.join(call[0]) for call in calls)
+    import json
+    rows = [json.loads(line) for line in (tmp_path / 'build/source-windows-0/progress.jsonl').read_text(
+        encoding='utf-8').splitlines()]
+    assert [(row['module'], row['phase'], row.get('exit')) for row in rows] == [
+        ('test_one.py', 'start', None), ('test_one.py', 'finish', 1),
+        ('test_two.py', 'start', None), ('test_two.py', 'finish', 0)]
 
 
 def test_unproved_module_cleanup_stops_the_partition(tmp_path, monkeypatch):
@@ -129,7 +135,7 @@ def test_unproved_module_cleanup_stops_the_partition(tmp_path, monkeypatch):
     module = runner(monkeypatch)
     (tmp_path / 'engine').mkdir()
     monkeypatch.setattr(module, 'ROOT', tmp_path)
-    monkeypatch.setattr(module, 'python_sources', lambda *args: [Path('first.py'), Path('second.py')])
+    monkeypatch.setattr(module, 'python_sources', lambda *args: [Path('test_first.py'), Path('test_second.py')])
     logger = logging.getLogger('source-partition-fixture')
 
     @contextmanager
@@ -148,3 +154,21 @@ def test_unproved_module_cleanup_stops_the_partition(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError, match='cleanup unproved'):
         module.verify(0, 4, logger)
     assert len(calls) == 1
+    import json
+    rows = [json.loads(line) for line in (tmp_path / 'build/source-windows-0/progress.jsonl').read_text(
+        encoding='utf-8').splitlines()]
+    assert [row['phase'] for row in rows] == ['start', 'unproved']
+    assert rows[-1]['module'] == 'test_first.py' and rows[-1]['error'] == 'RuntimeError'
+
+
+def test_durable_notice_blocks_cover_every_module_with_at_most_ten_annotations(monkeypatch):
+    reporter = runner(monkeypatch)
+    files = [Path(f'test_{index:03}.py') for index in range(37)]
+    from types import SimpleNamespace
+    messages = []
+    logger = SimpleNamespace(info=lambda fmt, *args: messages.append(fmt % args))
+    reported = [reporter.announce(files, index, logger) for index in range(len(files))]
+    assert sum(reported) == len(messages) == 10
+    assert all(message.startswith('##[notice]Source block starting modules=') for message in messages)
+    assert [name for message in messages for name in message.split('modules=', 1)[1].split(',')] == [
+        source.name for source in files]

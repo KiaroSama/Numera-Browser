@@ -201,6 +201,68 @@ def test_end_tree_cannot_report_a_live_child_stopped_from_failed_observation(mon
         proc.wait(timeout=3)
 
 
+@pytest.mark.parametrize('platform,error,code,stdout,expected,observations', [
+    ('darwin', errno.EPERM, 0, '123 Z 123\n987 S 987\n', False, 1),
+    ('darwin', errno.EPERM, 0, '123 Z+ 123\n123 Z 456\n', False, 1),
+    ('darwin', errno.EPERM, 0, '123 Z 123\n123 S 456\n', True, 1),
+    ('darwin', errno.EPERM, 0, '123 R<s 123\n', True, 1),
+    ('darwin', errno.EPERM, 1, '987 S 987\n', True, 1),
+    ('darwin', errno.EPERM, 0, 'malformed\n', True, 1),
+    ('darwin', errno.EPERM, 0, '123 ? 123\n', True, 1),
+    ('darwin', errno.EPERM, 0, '', True, 1),
+    ('darwin', errno.EPERM, None, '', True, 1),
+    ('darwin', errno.EIO, 0, '123 Z 123\n', True, 0),
+    ('linux', errno.EPERM, 0, '123 Z 123\n', True, 0),
+    ('darwin', errno.ESRCH, 0, '123 S 123\n', False, 0),
+])
+def test_darwin_denied_probe_requires_complete_zombie_aware_observation(
+        monkeypatch, platform, error, code, stdout, expected, observations):
+    tree = proctree.Tree(123, 7, 123, 'pgid')
+    original = Path.is_dir
+    monkeypatch.setattr(Path, 'is_dir', lambda path: False if path == Path('/proc') else original(path))
+    monkeypatch.setattr(sys, 'platform', platform)
+    monkeypatch.setattr(os, 'getpgrp', lambda: 1)
+    probes, queries = [], []
+
+    def probe(pgid, sig):
+        probes.append((pgid, sig))
+        raise OSError(error, 'injected group probe refusal')
+
+    def query(*args, **kwargs):
+        queries.append((args, kwargs))
+        if code is None:
+            raise subprocess.TimeoutExpired(args[0], 5)
+        return subprocess.CompletedProcess(args, code, stdout=stdout, stderr='private fixture text')
+
+    monkeypatch.setattr(os, 'killpg', probe)
+    monkeypatch.setattr(subprocess, 'run', query)
+    assert proctree.alive_tree(tree) is expected
+    assert probes == [(123, 0)], 'observation must not deliver a termination signal'
+    assert len(queries) == observations
+    if queries:
+        assert queries[0][0][0] == ['ps', '-A', '-o', 'pgid=,state=,pid=']
+        assert queries[0][1]['timeout'] == 5
+
+
+def test_failed_probe_invalidates_a_previous_live_process_sample(monkeypatch, capsys):
+    original = Path.is_dir
+    monkeypatch.setattr(Path, 'is_dir', lambda path: False if path == Path('/proc') else original(path))
+    monkeypatch.setattr(subprocess, 'run', lambda *a, **kw:
+                        subprocess.CompletedProcess(a, 0, stdout='123 R<s 123\n', stderr=''))
+    assert posix_session._group_is_running(123)
+    monkeypatch.setattr(os, 'getpgrp', lambda: 1)
+
+    def probe(*args):
+        raise OSError(errno.EIO, 'private fixture text')
+
+    monkeypatch.setattr(os, 'killpg', probe)
+    assert proctree.alive_tree(proctree.Tree(123, 7, 123, 'pgid'))
+    posix_session.report_group_failure(123, graceful=True, forced=False, verified=True)
+    output = capsys.readouterr().err
+    assert 'probe_errno=5' in output
+    assert 'state_codes=' not in output and 'private fixture text' not in output
+
+
 @pytest.mark.parametrize('error,expected', [(errno.ESRCH, False), (errno.EACCES, True)])
 def test_probe_disappearance_and_permission_controls(monkeypatch, error, expected):
     tree = proctree.Tree(123456789, 1, 123456789, 'pgid')

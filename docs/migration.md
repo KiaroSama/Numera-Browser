@@ -8,15 +8,16 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 16, 2026
 
-The latest verified checkpoint is `f2fc6e4`. Its manual hosted batch
-[38835828133](https://github.com/KiaroSama/Numera-Browser/actions/runs/38835828133)
+The latest verified checkpoint is `52d4d0d`. Its manual hosted batch
+[38848591542](https://github.com/KiaroSama/Numera-Browser/actions/runs/38848591542)
 failed overall. All three Linux Python versions, dashboard tests/types/lint/build,
 native Windows/Linux contracts, all eight browser SDK legs, source/history
 credential checks, Docker and advisory/dependency checks passed. The rendered
 update interface also passed consent, keyboard, deferral and cancellation checks
 in dark and light themes; its synthetic bridge does not prove a real portable
-upgrade. One macOS process-cleanup test, a cancelled Windows source suite and
-the independent CodeQL verdict still block distribution. There is no signed
+upgrade. Two Windows source partitions passed; one completed with a checksum
+fixture failure and another was cancelled without retrievable logs. Three macOS
+process-cleanup failures and the independent CodeQL verdict also block distribution. There is no signed
 release or completed native updater acceptance. The retained Python application
 remains selected, including in portable distributions.
 
@@ -35,11 +36,14 @@ remains selected, including in portable distributions.
   the latest hosted Linux and macOS source suites.
 - Source repairs address scanner configuration parsing, advisory input selection,
   Linux browser socket-path length, bounded cookie expiry and Windows MIME lookup.
-  The Windows source-test stall remains unlocalized: even the independent step
-  deadline produced no retrievable job log or diagnostic artifact. The next
-  diagnostic pass partitions every discovered source module exactly once across
-  four Windows jobs, at most two concurrently, and gives each module a fresh
-  owned interpreter and report within the existing wall/idle ceilings.
+  Windows source tests now partition every discovered module exactly once across
+  four jobs, at most two concurrently, with a fresh owned interpreter and report
+  per module. One partition still stalls without retrievable logs or artifacts.
+  Bounded block-start timeline notices and a flushed per-module progress journal
+  are prepared to localize it without raising time limits or cutting coverage.
+  The completed failing partition exposed a test fixture hashing LF text while
+  Windows wrote CRLF bytes; explicit byte fixtures now cover both newline forms,
+  without changing the production checksum gate. These corrections await hosted proof.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths. The latest check
   retains the same 21 annotations; source triage does not turn that failed host
@@ -51,10 +55,14 @@ remains selected, including in portable distributions.
   SDK adapter still refuses missing selections instead of acquiring during launch.
   The existing Cloak CLI capability map, temporary-path fixture and deterministic
   shared-deadline correction now pass hosted Linux and macOS source checks. The
-  remaining macOS cleanup failure reports a live group after forced signaling
-  was refused. Numeric refusal-category diagnostics reuse that exact attempt;
-  ownership checks and time budgets remain unchanged. Windows module isolation
-  is diagnostic evidence collection, not a claim that its root cause is fixed.
+  macOS diagnostics localized the refusal to Darwin returning `EPERM`. Official
+  kernel source shows that a zombie-only group can produce that result even for
+  a zero-signal probe; the old early return bypassed the zombie-aware observer
+  and retained a stale live-process sample. The prepared Darwin-only correction
+  requires the existing complete observer to prove emptiness; live or unknown
+  observations remain owned. Ownership checks and time budgets are unchanged.
+  The original failing scenarios still need hosted regression proof. Windows
+  diagnostic isolation is not a claim that its root cause is fixed.
 
 The chronological seam inventory below records earlier scoped evidence and
 historical prepared work. Only an actual later check supersedes an earlier

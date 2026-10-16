@@ -91,6 +91,10 @@ def _ps_group(pgid: int, ignore: int = 0):
         return True, f'query_error={type(error).__name__}'
 
 
+def record_probe_error(pgid: int, code: Optional[int]) -> None:
+    _OBSERVATION.last = (pgid, f'probe_errno={code}')
+
+
 def record_identity_query(pid: int, code: int, size: int) -> None:
     _OBSERVATION.identity = (pid, f'birth_query_exit={code} birth_query_bytes={size}')
 

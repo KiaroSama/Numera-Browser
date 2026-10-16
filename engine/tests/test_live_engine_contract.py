@@ -375,7 +375,8 @@ def test_secret_exceptions_are_only_exact_reviewed_rule_path_and_literal():
         assert hashlib.sha256((assets / name).read_bytes()).hexdigest() == provenance['sha256'][name]
 
 
-def test_strict_secret_config_keeps_rules_but_removes_inherited_path_omissions(tmp_path, monkeypatch):
+@pytest.mark.parametrize('newline', ['\n', '\r\n'], ids=['lf', 'crlf'])
+def test_strict_secret_config_keeps_rules_but_removes_inherited_path_omissions(tmp_path, monkeypatch, newline):
     import hashlib
 
     coverage = _coverage()
@@ -400,11 +401,13 @@ paths = ["path-only.txt"]
 id = "another-required-rule"
 regex = "another-detection"
 '''
-    base.write_text(official, encoding='utf-8')
+    payload = official.replace('\n', newline).encode('utf-8')
+    base.write_bytes(payload)
+    assert base.read_bytes() == payload, 'Checksum fixtures must preserve exact intended bytes'
     output = tmp_path / 'strict.toml'
     with pytest.raises(ValueError, match='checksum'):
         coverage.prepare_secret_config(base, output)
-    monkeypatch.setattr(coverage, 'SCANNER_CONFIG_SHA256', hashlib.sha256(official.encode('utf-8')).hexdigest())
+    monkeypatch.setattr(coverage, 'SCANNER_CONFIG_SHA256', hashlib.sha256(payload).hexdigest())
     coverage.prepare_secret_config(base, output)
     changed = base.read_text(encoding='utf-8')
     assert changed.count('paths = []') == 1

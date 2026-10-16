@@ -35,10 +35,12 @@ detached session.
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import os
 import signal
 import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -51,7 +53,7 @@ from .handshake import ChildTerminationFailed, end_child
 from .driver_capture import Adopted, spawning_own_tree  # public capture API
 from .posix_session import (_adopt_group, _group_is_running,  # noqa: F401
                             _rejoin, _restore_terminal, _terminal,  # noqa: F401
-                            record_identity_query, record_signal)
+                            record_identity_query, record_probe_error, record_signal)
 from .winjob import (_job_active, _job_assign, _job_assign_self,  # noqa: F401
                      _job_open, _job_structs, _job_terminate, _kernel32)  # noqa: F401
 
@@ -391,9 +393,12 @@ def alive_tree(tree: Tree) -> bool:
             os.killpg(pgid, 0)
         except ProcessLookupError:
             return False
-        except OSError:
-            # Only ESRCH proves absence. EPERM means present but not ours, and
-            # any other failure is unknown - which, as for a job, is owned.
+        except OSError as error:
+            record_probe_error(pgid, error.errno)
+            # Darwin also returns EPERM for zombie-only groups. The complete
+            # observer must prove emptiness; the errno alone never does.
+            if sys.platform == 'darwin' and error.errno == errno.EPERM:
+                return _group_is_running(pgid)
             return True
         return _group_is_running(pgid)
     return alive(tree.pid, tree.token)
