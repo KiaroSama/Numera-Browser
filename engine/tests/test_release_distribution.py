@@ -125,16 +125,56 @@ def test_archive_excludes_private_update_runtime_state(tmp_path, extension):
     assert not any('.updates' in name or '.numera-update' in name for name in names)
 
 
-def test_posix_archive_keeps_executable_permissions(tmp_path):
+def fixture_mode(path, mode, monkeypatch):
+    import os
+    import stat
+
+    path.chmod(mode)
+    if os.name == 'nt':
+        # Windows chmod cannot provide POSIX execute bits. Substitute only
+        # this file's OS metadata; archive and manifest bytes remain real.
+        original_stat, original_lstat = Path.stat, os.lstat
+
+        def adjusted(result):
+            values = list(result)
+            values[0] = stat.S_IFMT(result.st_mode) | mode
+            # The tuple omits fractional times and Windows named-only fields.
+            return os.stat_result(values, result.__reduce__()[1][1])
+
+        def file_stat(candidate, *args, **kwargs):
+            result = original_stat(candidate, *args, **kwargs)
+            return adjusted(result) if candidate == path else result
+
+        def file_lstat(candidate, *args, **kwargs):
+            result = original_lstat(candidate, *args, **kwargs)
+            return adjusted(result) if Path(candidate) == path else result
+
+        monkeypatch.setattr(Path, 'stat', file_stat)
+        monkeypatch.setattr(os, 'lstat', file_lstat)
+
+
+@pytest.mark.parametrize('mode', [0o755, 0o644], ids=['executable', 'data'])
+def test_posix_archive_keeps_executable_permissions(tmp_path, monkeypatch, mode):
+    import os
+
     module = packaging()
     stage = tmp_path / 'Numera Browser'
     stage.mkdir()
     executable = stage / 'numera'
     executable.write_bytes(b'not executed fixture')
-    executable.chmod(0o755)
+    os.utime(executable, ns=(1_700_000_000_123_456_700,) * 2)
+    original = executable.stat()
+    fixture_mode(executable, mode, monkeypatch)
+    observed = executable.stat()
+    assert observed.st_mtime == original.st_mtime
+    assert observed.st_mtime_ns == original.st_mtime_ns
     archive = module.archive_stage(stage, tmp_path / 'portable.tar.gz')
     with tarfile.open(archive, 'r:gz') as bundle:
-        assert bundle.getmember('Numera Browser/numera').mode & 0o111 == 0o111
+        member = bundle.getmember('Numera Browser/numera')
+        assert member.mode & 0o777 == mode
+        assert member.mtime == original.st_mtime
+        with bundle.extractfile(member) as stream:
+            assert stream.read() == b'not executed fixture'
 
 
 @pytest.mark.parametrize('platform,header', [('linux-x64', b'wrong'),
@@ -210,12 +250,13 @@ def test_ed25519_exact_manifest_rejects_tampering_wrong_key_and_size(tmp_path, m
     assert not list(tmp_path.glob('numera-sign-*')), 'Private temporary signing inputs survived'
 
 
-def test_immutable_build_inventory_excludes_only_its_own_signature_cycle(tmp_path, monkeypatch):
+@pytest.mark.parametrize('mode,executable', [(0o755, True), (0o644, False)], ids=['executable', 'data'])
+def test_immutable_build_inventory_excludes_only_its_own_signature_cycle(tmp_path, monkeypatch, mode, executable):
     module = signing()
     stage = tmp_path / 'Numera Browser'
     stage.mkdir()
     (stage / 'numera').write_bytes(b'fixture executable, never run')
-    (stage / 'numera').chmod(0o755)
+    fixture_mode(stage / 'numera', mode, monkeypatch)
     (stage / 'LICENSE').write_text('fixture terms', encoding='utf-8')
     (stage / '.updates').mkdir()
     (stage / '.updates/runtime.lock').write_bytes(b'')
@@ -230,7 +271,7 @@ def test_immutable_build_inventory_excludes_only_its_own_signature_cycle(tmp_pat
     rows = {row['path']: row for row in build['files']}
     assert set(rows) == {'numera','LICENSE'}
     assert rows['numera']['sha256'] == packaging().digest(stage/'numera')
-    assert rows['numera']['executable']
+    assert rows['numera']['executable'] is executable
     (stage/'data').mkdir()
     (stage/'data/profile.json').write_text('{}', encoding='utf-8')
     with pytest.raises(ValueError, match='publication'):

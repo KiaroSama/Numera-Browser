@@ -8,23 +8,25 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 16, 2026
 
-The latest completed source checkpoint is `dbca348`. Its manual hosted batch
-[38931350293](https://github.com/KiaroSama/Numera-Browser/actions/runs/38931350293)
+The latest completed source checkpoint is `4e06616`. Its manual hosted batch
+[38940090101](https://github.com/KiaroSama/Numera-Browser/actions/runs/38940090101)
 failed overall. All three Linux source runtimes, macOS source tests, three Windows
 source partitions, dashboard tests/types/lint/build, native Windows/Linux
 contracts, all eight browser SDK legs, source/history credential checks, Docker
 and advisory/dependency checks passed. The rendered update interface also passed
 consent, keyboard, deferral and cancellation checks in dark and light themes;
 its synthetic bridge does not prove a real portable upgrade. The remaining
-Windows partition was cancelled during its third checkpoint block. Its first
-21 modules passed and their diagnostic artifacts were retained, locating the next
-boundary at the release-distribution module. The independent CodeQL verdict still
-fails with 20 changed-line annotations, down from 26. Those annotations are not a
-whole-branch count: the Python and Rust analyses contain 32 and 30 results
-respectively. Removed annotations do not establish whole-branch security.
-Distribution, promotion and publication were skipped. There is no signed release or completed native updater
-acceptance. Python remains selected; a passing narrow tier does not complete the
-907-row capability ledger, replay, comparative performance or rollback acceptance.
+Windows partition completed all 37 modules in 2 minutes 27 seconds without
+cancellation. Its release-distribution module reported two permission-fixture
+failures and 55 passes; later modules completed and the failure verdict was
+preserved. The independent CodeQL verdict still fails with the same 20 changed-line
+annotations, down from an earlier 26. Those annotations are not a whole-branch
+count: the Python and Rust analyses contain 32 and 30 results respectively.
+Removed annotations do not establish whole-branch security. Distribution,
+promotion and publication were skipped. There is no signed release or completed
+native updater acceptance. Python remains selected; a passing narrow tier does
+not complete the 907-row capability ledger, replay, comparative performance or
+rollback acceptance.
 
 - The portable updater and private quiescence protocol are drafted in the shell
   and retained engine. A durable commit prevents automatic downgrade after work
@@ -44,32 +46,37 @@ acceptance. Python remains selected; a passing narrow tier does not complete the
   Windows source tests now partition every discovered module exactly once across
   four jobs, at most two concurrently, with a fresh owned interpreter and report
   per module. The affected partition has four ordered checkpoint steps, with
-  immutable uploads between them and one shared 600-second deadline. Its first
-  two blocks passed. Nine separate local action run/upload pairs now retain each
-  completed module in the third block before starting the next. Three of those
-  module checkpoints survived the latest cancellation; the next module is
-  `test_release_distribution.py`. This establishes an execution boundary, not a
-  whole-runner termination cause. A persisted cursor rejects repeats, skipped
-  indices and uncertain cleanup;
-  both inner and outer process owners must settle before continuation. Ordinary
-  test failures remain failures while later modules can still supply evidence.
-  Upload time consumes the original shared deadline. Source inspection found that
-  one SHA256 vector generated a million-character verbose test identifier before
-  the test ran. Explicit short identifiers now preserve all three vectors and
-  assertions without that oversized diagnostic. Whether this resolves cancellation
-  still requires hosted evidence, not a longer timeout or weaker cleanup.
-  Explicit byte fixtures and the CRLF array-line parser correction now pass on
-  Linux, macOS and Windows. Raw-byte checksum authentication remains unchanged.
+  immutable uploads between them and one shared 600-second deadline. Nine separate
+  local action run/upload pairs retain each completed module in the third block
+  before starting the next; all nine checkpoints survived the latest run.
+  A persisted cursor rejects repeats, skipped indices and uncertain cleanup;
+  both inner and outer process owners must settle before continuation. The latest
+  run retained the two ordinary test failures while executing later modules and
+  correctly failing the final report. Upload time consumes the original deadline.
+  One SHA256 vector previously generated a million-character verbose identifier
+  before the test ran. Explicit short identifiers preserve all three vectors and
+  assertions; the next hosted Windows run completed all 37 modules and its maximum
+  job-log line was 602 characters. The prior runner masking/backpressure mechanism
+  was not directly observed, so this is bounded completion evidence, not universal
+  hang-freedom. The two remaining release-fixture failures assumed Windows `chmod`
+  supplied POSIX execute bits. The fixture correction supplies only that unavailable
+  OS metadata for the exact file on Windows and checks executable and non-executable
+  inputs through real archive readback and manifest hashing. Unix keeps real
+  filesystem permissions; production permission behavior is unchanged. This
+  correction still requires hosted verification. Explicit byte fixtures and the
+  CRLF array-line parser correction pass on Linux, macOS and Windows; raw-byte
+  checksum authentication remains unchanged.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths; that assessment is not
   a clean verdict for the current tree. Identifier, exclusive JSON creation,
   linked-session refusal and generic public-error regressions passed in the latest
   Linux and macOS source suites. Explicit credential-result handling and piped
   package-smoke input also passed those suites; their related annotations are no
-  longer present. The next correction adds an explicit canonical-path containment
-  gate after resolving the original archive member, retaining the final physical
-  ancestry check. Profile paths still return their original nonlinked lexical
-  identity. The added archive guard needs hosted verification. The legacy
+  longer present. The explicit canonical-path containment gate resolves the
+  original archive member and retains the final physical ancestry check. Its
+  archive regressions passed in the latest hosted Windows suite, but the CodeQL
+  annotations remain unchanged. Profile paths still return their original
+  nonlinked lexical identity. Passing regressions do not clear that verdict. The legacy
   store-URL recognizer is not a download allowlist and
   retains original substring behavior for parity; its annotation is unresolved,
   not hidden by changing syntax or recorded expectations. Optional-vault plaintext
