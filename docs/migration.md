@@ -8,19 +8,19 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 16, 2026
 
-The latest completed source checkpoint is `6b79c70`. Its manual hosted batch
-[38946692797](https://github.com/KiaroSama/Numera-Browser/actions/runs/38946692797)
-failed overall. All three Linux source runtimes, macOS source tests, three Windows
-source partitions, dashboard tests/types/lint/build, native Windows/Linux
-contracts, all eight browser SDK legs, source/history credential checks, Docker
-and advisory/dependency checks passed. The rendered update interface also passed
-consent, keyboard, deferral and cancellation checks in dark and light themes;
-its synthetic bridge does not prove a real portable upgrade. The remaining
-Windows partition completed all 37 module executions successfully, including all
-59 release-distribution tests. Its final report guard rejected inconsistent skip
-reasons in a wholly POSIX-specific module: a function's Linux-procfs reason took
-precedence over the module's Windows exclusion. The marker correction preserves
-the existing exclusions and strict report guard; hosted verification is pending.
+The latest completed source checkpoint is `7020a0a`. Its manual hosted batch
+[38949527671](https://github.com/KiaroSama/Numera-Browser/actions/runs/38949527671)
+failed overall on October 16 at 18:54:21 UTC. All three Linux source runtimes,
+macOS source tests, all four Windows source partitions, dashboard tests/types/
+lint/build, native Windows/Linux contracts, all eight browser SDK legs,
+source/history credential checks, Docker and advisory/dependency checks passed.
+The rendered update interface also passed consent, keyboard, deferral and
+cancellation checks in dark and light themes; its synthetic bridge does not
+prove a real portable upgrade. The formerly failing Windows partition completed
+all 37 module executions and its strict final report: 790 passes and 42 explicit
+platform limits. Its 59 release-distribution tests passed in 0.46 seconds.
+The permission-fixture and POSIX skip-precedence corrections are therefore
+verified without weakening the report guard or adding platform skips.
 The independent CodeQL verdict still fails with the same 20 changed-line
 annotations, down from an earlier 26. Those annotations are not a whole-branch
 count: the Python and Rust analyses contain 32 and 30 results respectively.
@@ -66,9 +66,10 @@ rollback acceptance.
   metadata for the exact file on Windows, retaining named metadata and fractional
   timestamps. Executable and non-executable inputs pass real archive readback and
   manifest hashing checks. Unix keeps real filesystem permissions; production
-  permission behavior is unchanged. All 59 release tests passed on Windows in
-  0.52 seconds. The remaining source-report failure concerns skip-marker precedence,
-  not these permission tests. Explicit byte fixtures and the
+  permission behavior is unchanged. The next run also fixed skip-marker precedence:
+  the function-level procfs condition no longer overrides the existing Windows
+  module exclusion. The strict report and its whole-module exceptions are unchanged;
+  the final Windows report now passes. Explicit byte fixtures and the
   CRLF array-line parser correction pass on Linux, macOS and Windows; raw-byte
   checksum authentication remains unchanged.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
