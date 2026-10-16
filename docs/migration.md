@@ -8,19 +8,22 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 16, 2026
 
-The latest completed source checkpoint is `7020a0a`. Its manual hosted batch
-[38949527671](https://github.com/KiaroSama/Numera-Browser/actions/runs/38949527671)
-failed overall on October 16 at 18:54:21 UTC. All three Linux source runtimes,
+The latest completed source checkpoint is `a6f7f8f`. Its manual hosted batch
+[38960117490](https://github.com/KiaroSama/Numera-Browser/actions/runs/38960117490)
+failed overall on October 16 at 20:21:41 UTC. All three Linux source runtimes,
 macOS source tests, all four Windows source partitions, dashboard tests/types/
 lint/build, native Windows/Linux contracts, all eight browser SDK legs,
 source/history credential checks, Docker and advisory/dependency checks passed.
 The rendered update interface also passed consent, keyboard, deferral and
 cancellation checks in dark and light themes; its synthetic bridge does not
-prove a real portable upgrade. The formerly failing Windows partition completed
-all 37 module executions and its strict final report: 790 passes and 42 explicit
-platform limits. Its 59 release-distribution tests passed in 0.46 seconds.
-The permission-fixture and POSIX skip-precedence corrections are therefore
-verified without weakening the report guard or adding platform skips.
+prove a real portable upgrade. The earlier `7020a0a` checkpoint verified the
+formerly failing Windows partition: 790 passes, 42 explicit platform limits and
+37 suites, including 59 release-distribution tests. The latest checkpoint also
+passed all 39 Web Store tests on Windows, including locale traversal, absolute
+paths, lookup priority and simulated outside-link rejection. Linux Python 3.14
+verified 2,772 passes, six explicit limits and all 147 source suites. The source
+jobs for Python 3.10, Python 3.12 and macOS also passed. These corrections do not
+weaken the report guard or add platform skips.
 The independent CodeQL verdict still fails with the same 20 changed-line
 annotations, down from an earlier 26. Those annotations are not a whole-branch
 count: the Python and Rust analyses contain 32 and 30 results respectively.
@@ -87,9 +90,11 @@ rollback acceptance.
   a manifest's `default_locale` could select a catalog outside its extension.
   The correction requires a single directory name and reuses physical containment
   before catalog reads, preserving English/regional/default lookup order and
-  folder-name fallback. Traversal, absolute-path and linked-catalog regressions
-  are prepared; hosted verification is pending. This does not clear the other
-  path annotations. The legacy store-URL recognizer is not a download allowlist and
+  folder-name fallback. Traversal, absolute-path and lookup-priority regressions
+  passed in hosted source suites. The linked-catalog test substitutes the exact
+  OS resolution boundary; it does not prove real symlink/junction behavior.
+  The CodeQL annotation count remains unchanged despite the passing regressions.
+  The legacy store-URL recognizer is not a download allowlist and
   retains original substring behavior for parity; its annotation is unresolved,
   not hidden by changing syntax or recorded expectations. Optional-vault plaintext
   storage also remains an explicitly documented limitation. Signing requires a
