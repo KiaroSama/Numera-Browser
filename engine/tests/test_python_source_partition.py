@@ -161,6 +161,71 @@ def test_unproved_module_cleanup_stops_the_partition(tmp_path, monkeypatch):
     assert rows[-1]['module'] == 'test_first.py' and rows[-1]['error'] == 'RuntimeError'
 
 
+def test_checkpoint_blocks_share_one_budget_and_never_repeat_modules(tmp_path, monkeypatch):
+    from contextlib import contextmanager
+    import json
+    import logging
+    from types import SimpleNamespace
+
+    module = runner(monkeypatch)
+    (tmp_path / 'engine').mkdir()
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    files = [Path(f'test_{index}.py') for index in range(8)]
+    monkeypatch.setattr(module, 'python_sources', lambda *args: files)
+    clock = [0.0]
+    monkeypatch.setattr(module, 'time', SimpleNamespace(monotonic=lambda: clock[0]))
+    logger = logging.getLogger('source-block-fixture')
+
+    @contextmanager
+    def log(*args):
+        yield logger
+
+    monkeypatch.setattr(module, 'run_log', log)
+    calls = []
+
+    def run(command, wall, idle, log):
+        calls.append((command[-1], wall))
+        clock[0] += 10
+        return int(command[-1] == 'test_0.py')
+
+    monkeypatch.setattr(module, 'run', run)
+    monkeypatch.chdir(tmp_path)
+    for block in range(4):
+        assert module.verify(1, 4, logger, block=block, blocks=4) == int(block == 0)
+        clock[0] += 5  # Artifact time also consumes the one partition budget.
+    assert [row[0] for row in calls] == list(map(str, files))
+    assert [row[1] for row in calls] == [600, 590, 575, 565, 550, 540, 525, 515]
+    state = json.loads((tmp_path / 'build/source-windows-1/checkpoint.json').read_text(encoding='utf-8'))
+    assert state['next'] == 4 and state['end'] == 600
+    with pytest.raises(ValueError, match='checkpoint'):
+        module.verify(1, 4, logger, block=3, blocks=4)
+
+
+def test_incomplete_or_expired_checkpoint_never_admits_another_block(tmp_path, monkeypatch):
+    import json
+    import logging
+    from types import SimpleNamespace
+
+    module = runner(monkeypatch)
+    (tmp_path / 'engine').mkdir()
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    monkeypatch.setattr(module, 'python_sources', lambda *args: [Path(f'test_{i}.py') for i in range(8)])
+    monkeypatch.setattr(module, 'time', SimpleNamespace(monotonic=lambda: 601))
+    output = tmp_path / 'build/source-windows-1'
+    output.mkdir(parents=True)
+    state = dict(end=600, next=0, blocks=4, modules=[f'test_{i}.py' for i in range(8)])
+    path = output / 'checkpoint.json'
+    path.write_text(json.dumps(state), encoding='utf-8')
+    logger = logging.getLogger('source-expired-fixture')
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(ValueError, match='checkpoint'):
+        module.verify(1, 4, logger, block=1, blocks=4)
+    state['next'] = 1
+    path.write_text(json.dumps(state), encoding='utf-8')
+    with pytest.raises(TimeoutError):
+        module.verify(1, 4, logger, block=1, blocks=4)
+
+
 def test_durable_notice_blocks_cover_every_module_with_at_most_ten_annotations(monkeypatch):
     reporter = runner(monkeypatch)
     files = [Path(f'test_{index:03}.py') for index in range(37)]

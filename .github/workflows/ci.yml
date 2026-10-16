@@ -164,12 +164,65 @@ jobs:
       - name: Compile check
         run: python scripts/migration/run_owned.py --wall 120 --idle 60 -- python -m compileall -q engine/numera
       - name: Unit tests
+        if: matrix.shard != 1
         working-directory: engine
         timeout-minutes: 12
         run: |
           New-Item -ItemType Directory -Force ../build | Out-Null
           python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python ../scripts/ci/python_source.py --shard ${{ matrix.shard }} --shards 4 2>&1 | Tee-Object -FilePath ../build/source-windows-output.log -Encoding utf8
           exit $LASTEXITCODE
+      - name: Partition 1 block 0
+        if: matrix.shard == 1 && !cancelled()
+        working-directory: engine
+        timeout-minutes: 12
+        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python ../scripts/ci/python_source.py --shard 1 --shards 4 --block 0 --blocks 4
+      - name: Preserve partition 1 checkpoint 0
+        if: matrix.shard == 1 && !cancelled()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-windows-checkpoint-0
+          path: build/source-windows-1/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Partition 1 block 1
+        if: matrix.shard == 1 && !cancelled()
+        working-directory: engine
+        timeout-minutes: 12
+        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python ../scripts/ci/python_source.py --shard 1 --shards 4 --block 1 --blocks 4
+      - name: Preserve partition 1 checkpoint 1
+        if: matrix.shard == 1 && !cancelled()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-windows-checkpoint-1
+          path: build/source-windows-1/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Partition 1 block 2
+        if: matrix.shard == 1 && !cancelled()
+        working-directory: engine
+        timeout-minutes: 12
+        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python ../scripts/ci/python_source.py --shard 1 --shards 4 --block 2 --blocks 4
+      - name: Preserve partition 1 checkpoint 2
+        if: matrix.shard == 1 && !cancelled()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-windows-checkpoint-2
+          path: build/source-windows-1/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Partition 1 block 3
+        if: matrix.shard == 1 && !cancelled()
+        working-directory: engine
+        timeout-minutes: 12
+        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python ../scripts/ci/python_source.py --shard 1 --shards 4 --block 3 --blocks 4
+      - name: Preserve partition 1 checkpoint 3
+        if: matrix.shard == 1 && !cancelled()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-windows-checkpoint-3
+          path: build/source-windows-1/
+          if-no-files-found: error
+          retention-days: 7
       - name: Reject missing suites and prerequisite skips
         if: always()
         run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py report --tier python --report build/source-windows-${{ matrix.shard }} --shard ${{ matrix.shard }} --shards 4

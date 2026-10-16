@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -36,14 +37,29 @@ def record(output: Path, source: Path, phase: str, **detail) -> None:
         os.fsync(stream.fileno())
 
 
-def verify(shard: int, shards: int, logger) -> int:
+def verify(shard: int, shards: int, logger, *, block: int = 0, blocks: int = 1) -> int:
     sources = python_sources(shard, shards)
+    if not 1 <= blocks <= 4 or not 0 <= block < blocks or len(sources) < blocks:
+        raise ValueError('Invalid source checkpoint block')
     output = ROOT / 'build' / f'source-windows-{shard}'
-    output.mkdir(parents=True, exist_ok=False)
-    end = time.monotonic() + 600
+    checkpoint = output / 'checkpoint.json'
+    if block == 0:
+        output.mkdir(parents=True, exist_ok=False)
+        state = dict(end=time.monotonic() + 600, next=0, blocks=blocks,
+                     modules=[source.name for source in sources])
+    else:
+        state = json.loads(checkpoint.read_text(encoding='utf-8'))
+        if (state.get('next') != block or state.get('blocks') != blocks
+                or state.get('modules') != [source.name for source in sources]):
+            raise ValueError('Source checkpoint is incomplete or belongs to another partition')
+    end = state['end']
+    if not isinstance(end, (int, float)) or not math.isfinite(end):
+        raise ValueError('Source checkpoint deadline is invalid')
     failed = []
     os.chdir(ROOT / 'engine')
-    for index, source in enumerate(sources):
+    first, last = len(sources) * block // blocks, len(sources) * (block + 1) // blocks
+    for index in range(first, last):
+        source = sources[index]
         remaining = end - time.monotonic()
         if remaining <= 0:
             raise TimeoutError('Source partition exhausted its 600 second budget')
@@ -66,7 +82,12 @@ def verify(shard: int, shards: int, logger) -> int:
         logger.info('Source module finished name=%s exit=%s', source.name, code)
         if code:
             failed.append(source.name)
-    logger.info('Source partition finished modules=%s failed=%s', len(sources), failed)
+    state['next'] = block + 1
+    with checkpoint.open('w', encoding='utf-8', newline='\n') as stream:
+        stream.write(json.dumps(state) + '\n')
+        stream.flush()
+        os.fsync(stream.fileno())
+    logger.info('Source block finished block=%s modules=%s failed=%s', block, last - first, failed)
     return int(bool(failed))
 
 
@@ -74,9 +95,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--shard', type=int, required=True)
     parser.add_argument('--shards', type=int, required=True)
+    parser.add_argument('--block', type=int, default=0)
+    parser.add_argument('--blocks', type=int, default=1)
     args = parser.parse_args()
     with run_log('source-partition') as logger:
-        return verify(args.shard, args.shards, logger)
+        return verify(args.shard, args.shards, logger, block=args.block, blocks=args.blocks)
 
 
 if __name__ == '__main__':

@@ -119,6 +119,12 @@ def test_every_supported_engine_is_required_on_both_platforms():
     assert 'python_source.py --shard ${{ matrix.shard }} --shards 4' in windows
     assert 'shard: [0, 1, 2, 3]' in windows and 'fail-fast: false' in windows
     assert 'max-parallel: 2' in windows
+    assert 'if: matrix.shard != 1' in windows
+    for block in range(4):
+        assert f'--shard 1 --shards 4 --block {block} --blocks 4' in windows
+        assert f'name: source-windows-checkpoint-{block}' in windows
+    assert windows.index('name: Reject missing suites') > windows.index('--block 3 --blocks 4')
+    assert windows.count('if: matrix.shard == 1 && !cancelled()') == 8
     source = (ROOT / 'scripts/ci/python_source.py').read_text(encoding='utf-8')
     assert '--ignore-glob=tests/test_*_live.py' in source and '--junitxml=' in source
     for name in ("engine", "engine-macos"):

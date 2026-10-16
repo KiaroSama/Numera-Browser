@@ -144,7 +144,7 @@ def prepare_secret_config(base: Path, destination: Path, root: Path = ROOT) -> N
     blocks = re.split(r'(?m)(?=^\[\[)', text)
     text = ''.join(block for block in blocks if not (
         block.startswith('[[rules.allowlists]]') and re.search(r'(?m)^\s*paths\s*=', block)))
-    text, count = re.subn(r'(?ms)^([ \t]*)paths = \[[ \t]*\n.*?^[ \t]*\][ \t]*(?=\r?$)',
+    text, count = re.subn(r'(?ms)^([ \t]*)paths = \[[ \t]*\r?\n.*?^[ \t]*\][ \t]*(?=\r?$)',
                           r'\1paths = []', text)
     if count != 1:
         raise ValueError('Official scanner exclusion layout changed; inspect before scanning')
@@ -287,6 +287,15 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
     dashboard_text = json.dumps(workflows['dashboard']['jobs'])
     if 'npm test' not in dashboard_text or 'dashboard-dist' not in dashboard_text:
         raise ValueError('Dashboard suite and exact-run build artifact are not mapped')
+    windows_steps = jobs['engine-windows']['steps']
+    for block in range(4):
+        run = next((step for step in windows_steps if step.get('name') == f'Partition 1 block {block}'), {})
+        upload = next((step for step in windows_steps if step.get('name') == f'Preserve partition 1 checkpoint {block}'), {})
+        if (f'--shard 1 --shards 4 --block {block} --blocks 4' not in run.get('run', '')
+                or run.get('if') != 'matrix.shard == 1 && !cancelled()'
+                or upload.get('if') != 'matrix.shard == 1 && !cancelled()'
+                or upload.get('with', {}).get('name') != f'source-windows-checkpoint-{block}'):
+            raise ValueError('Missing complete bounded Windows checkpoint diagnostics')
     windows_strategy = jobs['engine-windows']['strategy']
     if (windows_strategy['matrix'] != {'shard': [0, 1, 2, 3]}
             or windows_strategy['max-parallel'] != 2 or windows_strategy['fail-fast'] is not False):
