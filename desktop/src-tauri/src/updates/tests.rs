@@ -65,6 +65,21 @@ fn build(root: &std::path::Path, generation: u64, bytes: &[u8]) -> manifest::Bui
     build
 }
 #[test]
+fn hex_identity_is_derived_from_every_input_byte_and_rejects_noncanonical_text() {
+    assert_eq!(
+        manifest::decode_hex::<4>("00a1fe7b").unwrap(),
+        [0, 161, 254, 123]
+    );
+    assert_eq!(manifest::decode_hex::<2>("abcd").unwrap(), [171, 205]);
+    for invalid in ["", "abc", "abcde", "ABCD", "ab g", "éab"] {
+        assert!(
+            manifest::decode_hex::<2>(invalid).is_err(),
+            "accepted {invalid:?}"
+        );
+    }
+}
+
+#[test]
 fn discovery_uses_the_published_raw_signature_asset_name() {
     let source = "a".repeat(40);
     let (metadata, signature) = download::manifest_urls(&source);

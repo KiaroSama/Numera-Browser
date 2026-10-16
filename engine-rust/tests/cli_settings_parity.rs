@@ -317,6 +317,9 @@ fn shared_cli_open_uses_both_resume_passwords_before_exposing_stores()
 -> Result<(), Box<dyn std::error::Error>> {
     let fixture: Value = serde_json::from_str(include_str!("fixtures/rotation-recovery.json"))?;
     let case = &fixture["cases"][0];
+    let new_password = case["password"]
+        .as_str()
+        .ok_or("Fixture new password missing")?;
     let temporary = common::TempDirectory::new("cli-resume")?;
     let root = temporary.path();
     for (name, value) in [
@@ -371,7 +374,7 @@ fn shared_cli_open_uses_both_resume_passwords_before_exposing_stores()
             "Missing credentials changed {path}"
         );
     }
-    args["new_password"] = "fixture-new-master".into();
+    args["new_password"] = new_password.into();
     let repo = cli::application::open_store(
         root,
         args.as_object().ok_or("Args missing")?,
@@ -380,7 +383,7 @@ fn shared_cli_open_uses_both_resume_passwords_before_exposing_stores()
     let sessions = numera_core::ownership::registry::Registry::new(
         root.into(),
         "fixture-host".into(),
-        Some("fixture-new-master".into()),
+        Some(new_password.into()),
     )?;
     let installed = BTreeMap::new();
     let application = Application {
@@ -389,7 +392,7 @@ fn shared_cli_open_uses_both_resume_passwords_before_exposing_stores()
         repo: &repo,
         installed: &installed,
         host: "fixture-host",
-        password: Some("fixture-new-master"),
+        password: Some(new_password),
         environment_token: false,
         sessions: &sessions,
         browser: None,
@@ -421,7 +424,7 @@ fn shared_cli_open_uses_both_resume_passwords_before_exposing_stores()
     {
         assert_eq!(
             numera_core::vault::decrypt(
-                "fixture-new-master",
+                new_password,
                 config["vault"]["salt"].as_str().ok_or("Salt missing")?,
                 row["pass"].as_str().ok_or("Envelope missing")?
             )?,

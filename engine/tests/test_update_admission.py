@@ -314,6 +314,26 @@ def test_abandoned_named_auth_worker_retains_admission_until_last_used_settles(t
     Admission(tmp_path).resume(ticket)
 
 
+@pytest.mark.parametrize('operation', ['quiesce', 'resume'])
+def test_private_update_errors_never_return_internal_paths_or_capabilities(tmp_path, monkeypatch, operation):
+    from fastapi.testclient import TestClient
+    from numera.server import create_app
+    from numera.update_admission import Admission
+
+    monkeypatch.setenv('NUMERA_UPDATE_TOKEN', TOKEN)
+    app = create_app(str(tmp_path), start_scheduler=False)
+    def denied(*args, **kwargs):
+        raise OSError('internal-path/fixture-private-recovery-capability')
+    monkeypatch.setattr(Admission, operation, denied)
+    with TestClient(app) as client:
+        response = client.post('/api/updates/' + operation, json={'ticket': 'a' * 64},
+                               headers={'Authorization': 'Bearer ' + TOKEN})
+    assert response.status_code == 409
+    assert response.json() == {'detail': 'Update state could not be accessed safely', 'kind': 'UpdateBusy'}
+    assert 'internal-path' not in response.text
+    assert 'recovery-capability' not in response.text
+
+
 def test_private_token_is_not_inherited_by_browser_helper_children(monkeypatch):
     from numera.paths import child_env
 

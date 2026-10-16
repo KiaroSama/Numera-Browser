@@ -226,6 +226,77 @@ def test_incomplete_or_expired_checkpoint_never_admits_another_block(tmp_path, m
         module.verify(1, 4, logger, block=1, blocks=4)
 
 
+@pytest.mark.parametrize('failure', [None, 'ordinary', 'unproved'])
+def test_problem_block_notices_identify_each_admitted_module_before_execution(tmp_path, monkeypatch, failure):
+    from contextlib import contextmanager
+    import json
+    from types import SimpleNamespace
+
+    module = runner(monkeypatch)
+    (tmp_path / 'engine').mkdir()
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    names = [f'test_{index:02}.py' for index in range(37)]
+    names[18:27] = ['test_profile_schema.py', 'test_proxy_removal_intent.py', 'test_public_surface.py',
+                    'test_release_distribution.py', 'test_resilient_and_guarded.py', 'test_rotate_transport.py',
+                    'test_server_api.py', 'test_session_tree_mandatory.py', 'test_startup_resources.py']
+    files = list(map(Path, names))
+    monkeypatch.setattr(module, 'python_sources', lambda *args: files)
+    clock, messages, calls = [0.0], [], []
+    monkeypatch.setattr(module, 'time', SimpleNamespace(monotonic=lambda: clock[0]))
+    logger = SimpleNamespace(info=lambda fmt, *args: messages.append(fmt % args), error=lambda *args: None)
+
+    @contextmanager
+    def log(*args):
+        yield logger
+
+    monkeypatch.setattr(module, 'run_log', log)
+    output = tmp_path / 'build/source-windows-1'
+    output.mkdir(parents=True)
+    checkpoint = output / 'checkpoint.json'
+    state = dict(end=600, next=2, blocks=4, modules=names)
+    checkpoint.write_text(json.dumps(state), encoding='utf-8')
+
+    def run(command, wall, idle, log):
+        name = Path(command[-1]).name
+        # This must exist before spawn or a blocked module can erase its identity.
+        notices = [message for message in messages if message.startswith('##[notice]')]
+        assert notices, f'{name} started without a timeline notice'
+        notice = notices[-1]
+        assert notice.startswith(f'##[notice]Source block starting modules={name} remaining=')
+        assert f'remaining={600 - 10 * len(calls):.1f}s' in notice
+        assert wall == 600 - 10 * len(calls) and idle == 120
+        previous = ','.join(f'{old}:{int(failure == "ordinary" and i == 0)}'
+                            for i, old in enumerate(calls)) or 'none'
+        assert notice.endswith('settled=' + previous)
+        calls.append(name)
+        clock[0] += 10
+        if failure == 'unproved' and len(calls) == 3:
+            raise RuntimeError('fixture cleanup unproved')
+        return int(failure == 'ordinary' and len(calls) == 1)
+
+    monkeypatch.setattr(module, 'run', run)
+    monkeypatch.chdir(tmp_path)
+    if failure == 'unproved':
+        with pytest.raises(RuntimeError, match='cleanup unproved'):
+            module.verify(1, 4, logger, block=2, blocks=4)
+        assert calls == names[18:21]
+        assert json.loads(checkpoint.read_text(encoding='utf-8')) == state
+    else:
+        assert module.verify(1, 4, logger, block=2, blocks=4) == int(failure == 'ordinary')
+        assert calls == names[18:27]
+        assert json.loads(checkpoint.read_text(encoding='utf-8'))['next'] == 3
+    notices = [message for message in messages if message.startswith('##[notice]')]
+    assert len(notices) == len(calls) + 1 <= 10
+    if failure == 'unproved':
+        assert notices[-1].startswith('##[notice]Source module unproved name=test_public_surface.py type=RuntimeError')
+    else:
+        assert notices[-1] == '##[notice]Source block settled modules=' + ','.join(
+            f'{name}:{int(failure == "ordinary" and i == 0)}' for i, name in enumerate(calls))
+    rows = [json.loads(line) for line in (output / 'progress.jsonl').read_text(encoding='utf-8').splitlines()]
+    assert [row['module'] for row in rows if row['phase'] == 'start'] == calls
+    assert rows[-1]['phase'] == ('unproved' if failure == 'unproved' else 'finish')
+
+
 def test_durable_notice_blocks_cover_every_module_with_at_most_ten_annotations(monkeypatch):
     reporter = runner(monkeypatch)
     files = [Path(f'test_{index:03}.py') for index in range(37)]

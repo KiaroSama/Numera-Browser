@@ -298,9 +298,9 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
             from ..update_admission import UpdateBusy
             try:
                 ok = await verify_named_token(app.state.update_admission, tokens, sent)
-            except UpdateBusy as error:
+            except UpdateBusy:
                 from fastapi.responses import JSONResponse
-                return JSONResponse({'detail': str(error)}, status_code=409)
+                return JSONResponse({'detail': 'An update has closed work admission'}, status_code=409)
         if not ok:
             from fastapi.responses import JSONResponse
             return JSONResponse({"detail": "invalid or missing API token"}, status_code=401)

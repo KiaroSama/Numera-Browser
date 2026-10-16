@@ -246,7 +246,7 @@ def safe_id(value, *, what: str = "id") -> str:
     lives at the point the value becomes a path.
     """
     text = str(value or "")
-    if not _SAFE_ID.match(text):
+    if not _SAFE_ID.fullmatch(text):
         raise ValueError(
             f"{what} {text!r} is not a valid profile id: expected 1-64 characters "
             "from A-Z, a-z, 0-9, '_' or '-'")
@@ -265,7 +265,11 @@ def safe_id(value, *, what: str = "id") -> str:
 
 def id_path(base: Path, value, suffix: str = "") -> Path:
     """`<base>/<id><suffix>`, refusing anything that would leave `base`."""
-    return Path(base) / f"{safe_id(value)}{suffix}"
+    base = Path(base).resolve()
+    target = base / f"{safe_id(value)}{suffix}"
+    if target.is_symlink() or target.resolve().parent != base:
+        raise ValueError('profile path escapes its data directory or is linked')
+    return target
 
 
 # The lock layer lives in `data_locks`; these names stay importable from here.
@@ -462,8 +466,12 @@ def write_json(path, data) -> None:
     blob = json.dumps(data, indent=2)          # may raise; nothing written yet
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f"{path.name}.tmp-{os.getpid()}-{threading.get_ident():x}")
+    # Exclusive private creation refuses a planted link instead of truncating
+    # its target. Only a file created by this invocation belongs to its cleanup.
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     try:
-        tmp.write_text(blob, encoding="utf-8")
+        with os.fdopen(fd, 'w', encoding='utf-8') as stream:
+            stream.write(blob)
         _replace(tmp, path)
     finally:
         if tmp.exists():

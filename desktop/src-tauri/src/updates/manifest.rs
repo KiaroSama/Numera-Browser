@@ -104,12 +104,21 @@ pub fn decode_hex<const N: usize>(text: &str) -> io::Result<[u8; N]> {
     {
         return Err(error("Invalid update identity encoding"));
     }
-    let mut result = [0; N];
-    for (index, byte) in result.iter_mut().enumerate() {
-        *byte = u8::from_str_radix(&text[index * 2..index * 2 + 2], 16)
-            .map_err(|_| error("Invalid hexadecimal identity"))?;
-    }
-    Ok(result)
+    text.as_bytes()
+        .chunks_exact(2)
+        .map(|pair| {
+            let digit = |byte: u8| {
+                if byte <= b'9' {
+                    byte - b'0'
+                } else {
+                    byte - b'a' + 10
+                }
+            };
+            (digit(pair[0]) << 4) | digit(pair[1])
+        })
+        .collect::<Vec<_>>()
+        .try_into()
+        .map_err(|_| error("Invalid hexadecimal identity length"))
 }
 pub fn verify(bytes: &[u8], signature: &[u8], key: &[u8; 32]) -> io::Result<()> {
     let key =

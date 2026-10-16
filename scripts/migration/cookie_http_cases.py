@@ -195,7 +195,12 @@ def alignment_http_cases(parent):
                 return CompletedProcess(cli,0,stdout=json.dumps(output),stderr='')
             exists,authorized = name != 'missing', name != 'unauthorized'
             claim = '{' if name == 'foreign' else None
-            record = to_dashboard_profile(Profile.from_dict(case['profile']));record['id']='a'
+            profile = Profile.from_dict(case['profile'])
+            if profile.proxy is not None:
+                raise AssertionError('Alignment HTTP fixture must not contain proxy credentials')
+            record = to_dashboard_profile(profile)
+            record['proxy'] = None
+            record['id']='a'
             with patch.dict(os.environ,{'NUMERA_API_TOKEN':'fixture-api','NUMERA_ALLOWED_ORIGINS':''}),patch.object(routes_browser,'run_helper',helper):
                 app=create_app(data_dir=directory,start_scheduler=False)
                 if exists:
@@ -233,7 +238,11 @@ def trust_http_cases(parent):
             # to the independent original grade fixture, not a seeded approximation.
             from numera.server.convert import to_dashboard_profile
             from numera.models import Profile
-            record = to_dashboard_profile(Profile.from_dict(case['profile']))
+            profile = Profile.from_dict(case['profile'])
+            if profile.proxy is not None:
+                raise AssertionError('Trust HTTP fixture must not contain proxy credentials')
+            record = to_dashboard_profile(profile)
+            record['proxy'] = None
             record['id']='a'
             with patch.dict(os.environ,{'NUMERA_API_TOKEN':'fixture-api','NUMERA_ALLOWED_ORIGINS':''}),patch.object(routes_browser,'run_helper',helper):
                 app = create_app(data_dir=directory,start_scheduler=False)

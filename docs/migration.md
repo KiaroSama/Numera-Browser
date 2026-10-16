@@ -8,8 +8,8 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 16, 2026
 
-The latest tested source checkpoint is `8e493e6`. Its manual hosted batch
-[38858959204](https://github.com/KiaroSama/Numera-Browser/actions/runs/38858959204)
+The latest completed source checkpoint is `2656f32`. Its manual hosted batch
+[38888218822](https://github.com/KiaroSama/Numera-Browser/actions/runs/38888218822)
 failed overall. All three Linux source runtimes, macOS source tests, three Windows
 source partitions, dashboard tests/types/lint/build, native Windows/Linux
 contracts, all eight browser SDK legs, source/history credential checks, Docker
@@ -18,7 +18,8 @@ consent, keyboard, deferral and cancellation checks in dark and light themes;
 its synthetic bridge does not prove a real portable upgrade. The remaining
 Windows partition was cancelled during its third checkpoint block. Its first
 18 modules passed and their diagnostic artifacts were retained. The independent
-CodeQL verdict still fails with 21 annotations. Distribution, promotion and
+CodeQL verdict still fails with 20 annotations; the redundant private-key staging
+annotation was removed after metadata signing moved into memory. Distribution, promotion and
 publication were skipped. There is no signed release or completed native updater
 acceptance. Python remains selected; a passing narrow tier does not complete the
 907-row capability ledger, replay, comparative performance or rollback acceptance.
@@ -44,16 +45,22 @@ acceptance. Python remains selected; a passing narrow tier does not complete the
   immutable uploads between them and one shared 600-second deadline. Its first
   two blocks passed; the third was cancelled without its own retrievable journal.
   This narrows the unresolved failure to nine modules but does not establish a
-  whole-runner termination cause. Modules are not repeated, and incomplete cleanup
-  prevents the next block from running. Further diagnosis needs a retained
-  module-level boundary or runner evidence, not a longer timeout or weaker cleanup.
+  whole-runner termination cause. The next correction records each of those nine
+  module starts and prior settled exits in bounded timeline notices, with one
+  terminal notice. Modules are not repeated, and incomplete cleanup prevents the
+  next block from running. Actual forwarding and the cause of cancellation still
+  require hosted evidence, not a longer timeout or weaker cleanup.
   Explicit byte fixtures and the CRLF array-line parser correction now pass on
   Linux, macOS and Windows. Raw-byte checksum authentication remains unchanged.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths. The latest check
-  retains the same 21 annotations; source triage does not turn that failed host
-  check green. Signing
-  requires a successful independent CodeQL verdict for the exact SHA, in addition
+  removes only the private-key staging annotation, retaining 20 annotations.
+  The next correction hardens identifier checks, exclusive JSON writes and public
+  errors, separates credential transformation from unrelated metadata, and derives
+  hexadecimal bytes directly from their input. These source changes are not yet
+  hosted verification or a waiver of the failed check. Optional-vault plaintext
+  storage remains an explicitly documented limitation. Signing requires a
+  successful independent CodeQL verdict for the exact SHA, in addition
   to successful scanner jobs; missing verdicts block publication.
 - Hosted verification confirmed the control-character validation, smaller Rust
   error retaining detached ownership, and existing Cloak executable handoff. The

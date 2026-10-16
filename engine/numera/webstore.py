@@ -55,7 +55,10 @@ def extension_id(url_or_id: str) -> str:
 
     m = ID_RE.search(text)
     if m:
-        return m.group(1)
+        ext_id = m.group(1)
+        if re.fullmatch(r"[a-p]{32}", ext_id) is None:
+            raise WebStoreError("invalid Chrome extension id")
+        return ext_id
 
     # A near-miss deserves a specific message. Two things go wrong in practice and
     # they need different advice: an id the right shape but the wrong length is a

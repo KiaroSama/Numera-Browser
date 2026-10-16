@@ -24,11 +24,10 @@ pub fn run(
         "status" => {
             let unlocked = descriptor.filter(|v| truth(v)).is_none_or(|v| {
                 password.filter(|p| !p.is_empty()).is_some_and(|p| {
-                    vault::check_password(
-                        p,
-                        v["salt"].as_str().unwrap_or(""),
-                        v["verifier"].as_str().unwrap_or(""),
-                    )
+                    match (v["salt"].as_str(), v["verifier"].as_str()) {
+                        (Some(salt), Some(verifier)) => vault::check_password(p, salt, verifier),
+                        _ => false,
+                    }
                 })
             });
             Ok(Outcome::success(

@@ -71,7 +71,10 @@ def _lock_path(key: str, name: str) -> Path:
     # The readable part is for a human staring at the directory; the digest is
     # what makes it unique.
     safe = re.sub(r"[^A-Za-z0-9._-]", "_", name)[:40] or "lock"
-    return Path(f"{safe}.{digest}.lock")
+    filename = f"{safe}.{digest}.lock"
+    if not re.fullmatch(r"[A-Za-z0-9._-]{1,40}\.[0-9a-f]{16}\.lock", filename):
+        raise ValueError('Invalid lock filename')
+    return Path(filename)
 
 
 if os.name == "nt":

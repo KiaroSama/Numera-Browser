@@ -179,7 +179,11 @@ class Smoke:
             raise AssertionError('Packaged profile did not survive a process restart')
         secret = 'package-smoke-proxy-password'
         proxy_file = self.workspace / 'fixture-proxies.txt'
-        proxy_file.write_text(f'http://fixture:{secret}@203.0.113.7:8080\n', encoding='utf-8')
+        # This is deliberately public fixture input, but it still receives
+        # private exclusive storage and never replaces an existing user file.
+        with proxy_file.open('x', encoding='utf-8') as stream:
+            proxy_file.chmod(0o600)
+            stream.write(f'http://fixture:{secret}@203.0.113.7:8080\n')
         self.command('pool', 'add', str(proxy_file))
         self.command('--password', 'package-fixture-master', 'vault', 'enable', limit=90)
         stored = (self.data / 'proxies.json').read_text(encoding='utf-8')

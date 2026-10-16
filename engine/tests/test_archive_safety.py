@@ -221,3 +221,69 @@ def test_names_that_merely_look_like_devices_are_fine(ok):
     """The rule is exact-stem, not substring: refusing `console` would reject
     real ids for no reason."""
     assert _safe_id(ok) == ok
+
+
+@_pytest.mark.parametrize('bad', ['valid\n', 'valid\r\n', '../escape', 'a/b', 'a\\b'])
+def test_profile_id_requires_a_complete_portable_filename(bad):
+    with _pytest.raises(ValueError):
+        _safe_id(bad)
+
+
+def test_json_replacement_never_overwrites_an_unowned_temporary_file(tmp_path):
+    import os
+    import threading
+    from numera.paths import write_json
+
+    target = tmp_path / 'profile.json'
+    sentinel = tmp_path / 'unrelated.json'
+    sentinel.write_bytes(b'preserve')
+    temporary = target.with_name(f'{target.name}.tmp-{os.getpid()}-{threading.get_ident():x}')
+    # A preexisting ordinary file exercises the exclusive-create contract on
+    # every host. Symlink refusal uses the same O_EXCL path without privilege.
+    temporary.write_bytes(b'preexisting owner')
+    with pytest.raises(FileExistsError):
+        write_json(target, {'name': 'fixture'})
+    assert sentinel.read_bytes() == b'preserve'
+    assert not target.exists()
+    assert temporary.read_bytes() == b'preexisting owner', 'an unowned temporary file changed'
+
+
+def test_profile_path_never_resolves_one_id_into_another(tmp_path, monkeypatch):
+    from pathlib import Path
+    from numera.paths import id_path
+
+    target = tmp_path / 'first.json'
+    original = Path.is_symlink
+    monkeypatch.setattr(Path, 'is_symlink', lambda path: path == target or original(path))
+    with pytest.raises(ValueError, match='linked'):
+        id_path(tmp_path, 'first', '.json')
+
+
+def test_a_linked_session_claim_stays_owned_instead_of_appearing_absent(tmp_path, monkeypatch):
+    from pathlib import Path
+    from numera import sessions
+    from numera.paths import SessionBusy
+
+    directory = tmp_path / 'sessions'
+    directory.mkdir()
+    claim = directory / 'fixture.json'
+    claim.write_bytes(b'preserve uncertain owner')
+    original = Path.is_symlink
+    monkeypatch.setattr(Path, 'is_symlink', lambda path: path == claim or original(path))
+    assert sessions.read(tmp_path, 'fixture') is sessions.UNREADABLE
+    assert sessions.busy(tmp_path, 'fixture') is True
+    with pytest.raises(SessionBusy):
+        sessions.refuse_if_busy(tmp_path, 'fixture')
+    assert claim.read_bytes() == b'preserve uncertain owner'
+    assert sessions.read(tmp_path, '../escape') is None
+
+
+def test_json_replacement_uses_private_file_permissions_on_posix(tmp_path):
+    import os
+    from numera.paths import write_json
+
+    target = tmp_path / 'credentials.json'
+    write_json(target, {'fixture': 'synthetic'})
+    assert json.loads(target.read_text(encoding='utf-8')) == {'fixture': 'synthetic'}
+    if os.name != 'nt':
+        assert target.stat().st_mode & 0o777 == 0o600

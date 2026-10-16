@@ -47,8 +47,8 @@ def configure_admission(app, root):
                         work = admission.work('HTTP handler')
                         try:
                             await run_in_threadpool(work.__enter__)
-                        except UpdateBusy as error:
-                            raise HTTPException(409, str(error)) from error
+                        except UpdateBusy:
+                            raise HTTPException(409, 'An update has closed work admission') from None
                         try:
                             return await endpoint(**values)
                         finally:
@@ -61,8 +61,8 @@ def configure_admission(app, root):
                         try:
                             with admission.work('HTTP handler'):
                                 return endpoint(**values)
-                        except UpdateBusy as error:
-                            raise HTTPException(409, str(error)) from error
+                        except UpdateBusy:
+                            raise HTTPException(409, 'An update has closed work admission') from None
                 self.dependant.call = guarded
             return super().get_route_handler()
 
@@ -127,8 +127,12 @@ def register(app, store):
                     'gate': '.updates/admission.json'}
         except (ValueError, TypeError):
             return JSONResponse({'detail': 'invalid update request'}, status_code=400)
-        except (UpdateBusy, OSError) as error:
-            return JSONResponse({'detail': str(error), 'kind': 'UpdateBusy'}, status_code=409)
+        except UpdateBusy:
+            return JSONResponse({'detail': 'Active or uncertain work defers this update',
+                                 'kind': 'UpdateBusy'}, status_code=409)
+        except OSError:
+            return JSONResponse({'detail': 'Update state could not be accessed safely',
+                                 'kind': 'UpdateBusy'}, status_code=409)
 
     @app.post('/api/updates/resume', include_in_schema=False)
     async def resume(request: Request):
@@ -141,5 +145,9 @@ def register(app, store):
             return {'ok': True}
         except (ValueError, TypeError):
             return JSONResponse({'detail': 'invalid update request'}, status_code=400)
-        except (UpdateBusy, OSError) as error:
-            return JSONResponse({'detail': str(error), 'kind': 'UpdateBusy'}, status_code=409)
+        except UpdateBusy:
+            return JSONResponse({'detail': 'Active or uncertain work defers this update',
+                                 'kind': 'UpdateBusy'}, status_code=409)
+        except OSError:
+            return JSONResponse({'detail': 'Update state could not be accessed safely',
+                                 'kind': 'UpdateBusy'}, status_code=409)

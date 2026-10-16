@@ -40,3 +40,19 @@ def test_http_offer_decline_stale_and_approval_use_exact_owned_cli(tmp_path, mon
     assert argv[-5:] == ['engines', '--acquire-cloak', identity['offer_id'], '--approve', '--json']
     assert options['manager'] is app.state.helpers
     assert options['manager'].root == tmp_path
+
+
+@pytest.mark.parametrize('error_type', [ValueError, OSError])
+def test_acquisition_metadata_errors_do_not_expose_vendor_exception_text(tmp_path, monkeypatch, error_type):
+    from numera import cloak_acquisition
+    from numera.server import create_app
+
+    monkeypatch.setattr('numera.bundled.launch_options', lambda *args: {})
+    def broken_metadata():
+        raise error_type('internal-path/fixture-license-value')
+    monkeypatch.setattr(cloak_acquisition, '_sdk', broken_metadata)
+    with TestClient(create_app(str(tmp_path), start_scheduler=False)) as client:
+        response = client.get('/api/engines/cloak/acquisition')
+    assert response.status_code == 200
+    assert response.json()['reason'] == 'Cloak browser metadata could not be read safely'
+    assert 'internal-path' not in response.text and 'fixture-license-value' not in response.text

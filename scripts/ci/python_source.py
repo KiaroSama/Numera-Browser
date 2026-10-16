@@ -17,7 +17,7 @@ from run_owned import run
 from suites import python_sources
 
 
-def announce(sources: list[Path], index: int, logger) -> bool:
+def announce(sources: list[Path], index: int, logger, *, detail: str = '') -> bool:
     width = max(1, (len(sources) + 9) // 10)
     if index % width:
         return False
@@ -26,7 +26,7 @@ def announce(sources: list[Path], index: int, logger) -> bool:
         raise ValueError('Source diagnostic module name is invalid')
     # The runner recognizes this even through the outer sanitized log prefix.
     # Ten small timeline notices survive independently of final log upload.
-    logger.info('##[notice]Source block starting modules=%s', ','.join(names))
+    logger.info('##[notice]Source block starting modules=%s%s', ','.join(names), detail)
     return True
 
 
@@ -58,12 +58,20 @@ def verify(shard: int, shards: int, logger, *, block: int = 0, blocks: int = 1) 
     failed = []
     os.chdir(ROOT / 'engine')
     first, last = len(sources) * block // blocks, len(sources) * (block + 1) // blocks
+    # The failing step loses its final logs. Use its ten timeline slots for
+    # nine module starts and one outcome; other steps retain grouped notices.
+    precise = shard == 1 and shards == 4 and blocks == 4 and block == 2 and last - first <= 9
+    settled = []
     for index in range(first, last):
         source = sources[index]
         remaining = end - time.monotonic()
         if remaining <= 0:
             raise TimeoutError('Source partition exhausted its 600 second budget')
-        announce(sources, index, logger)
+        if precise:
+            announce(sources[first:last], index - first, logger,
+                     detail=f' remaining={remaining:.1f}s settled={",".join(settled) or "none"}')
+        else:
+            announce(sources, index, logger)
         record(output, source, 'start')
         logger.info('Source module starting name=%s remaining=%.1fs', source.name, remaining)
         command = [sys.executable, '-m', 'pytest', '-vv', '-s',
@@ -75,13 +83,19 @@ def verify(shard: int, shards: int, logger, *, block: int = 0, blocks: int = 1) 
             try:
                 code = run(command, remaining, min(120, remaining), module_log)
             except Exception as error:
+                if precise:
+                    logger.info('##[notice]Source module unproved name=%s type=%s settled=%s',
+                                source.name, type(error).__name__, ','.join(settled) or 'none')
                 record(output, source, 'unproved', error=type(error).__name__)
                 logger.error('Source module failed name=%s type=%s', source.name, type(error).__name__)
                 raise  # Unproved process cleanup cannot authorize another module.
+        settled.append(f'{source.name}:{code}')
         record(output, source, 'finish', exit=code)
         logger.info('Source module finished name=%s exit=%s', source.name, code)
         if code:
             failed.append(source.name)
+    if precise:
+        logger.info('##[notice]Source block settled modules=%s', ','.join(settled))
     state['next'] = block + 1
     with checkpoint.open('w', encoding='utf-8', newline='\n') as stream:
         stream.write(json.dumps(state) + '\n')

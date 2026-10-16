@@ -65,9 +65,12 @@ def offer():
         return {**identity, 'offer_id': offer_id, 'installed': installed,
                 'available': unavailable is None, 'reason': unavailable,
                 'notice': 'Vendor download, not a redistributed Numera binary; exact SDK compatibility is not certified.'}
-    except (ConsentRequired, ValueError, OSError) as error:
+    except ConsentRequired:
         return {'engine': 'cloak', 'available': False, 'installed': False,
-                'reason': str(error), 'offer_id': None}
+                'reason': 'The Cloak SDK or its version metadata is unavailable', 'offer_id': None}
+    except (ValueError, OSError):
+        return {'engine': 'cloak', 'available': False, 'installed': False,
+                'reason': 'Cloak browser metadata could not be read safely', 'offer_id': None}
 
 
 def acquire(offer_id: str, *, approved: bool):
