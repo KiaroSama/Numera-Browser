@@ -217,9 +217,14 @@ def safe_join(base: Path, member: str) -> Path:
     if absolute != str(base) and not absolute.startswith(str(base).rstrip(os.sep) + os.sep):
         raise ValueError(
             f"refusing archive member that escapes its folder: {member!r}")
-    # abspath is only the lexical gate: resolve the original member so a
-    # linked directory followed by '..' cannot be normalized away first.
-    target = (base / rel).resolve()
+    # Resolve the original member: abspath would erase a link before '..'.
+    physical = os.path.realpath(base / rel)
+    checked = os.path.normcase(physical)
+    boundary = os.path.normcase(str(base))
+    if checked != boundary and not checked.startswith(boundary.rstrip(os.sep) + os.sep):
+        raise ValueError(
+            f"refusing archive member that escapes its folder: {member!r}")
+    target = Path(physical).resolve()
     if target != base and base not in target.parents:
         raise ValueError(
             f"refusing archive member that escapes its folder: {member!r}")

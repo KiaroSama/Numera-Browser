@@ -59,7 +59,7 @@ def test_missing_source_license_or_cloak_binary_refuses_download(tmp_path):
     (b'', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'),
     (b'abc', 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'),
     (b'a' * 1000000, 'cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0'),
-])
+], ids=['empty', 'abc', 'million-a'])
 def test_asset_hashing_retains_python310_with_public_sha256_vectors(tmp_path, monkeypatch, payload, expected):
     import hashlib
 

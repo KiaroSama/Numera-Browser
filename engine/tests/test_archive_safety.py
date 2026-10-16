@@ -306,19 +306,53 @@ def test_physical_check_keeps_links_before_parent_components(tmp_path, monkeypat
     root = tmp_path / 'records'
     root.mkdir()
     member = root / 'linked' / '..' / 'target'
-    original = Path.resolve
+    import os
+    original = os.path.realpath
+    original_resolve = Path.resolve
+
+    def realpath(path, *args, **kwargs):
+        if Path(path) == member:
+            return str(tmp_path / 'outside' / 'target')
+        return original(path, *args, **kwargs)
 
     def resolve(path, *args, **kwargs):
         if path == member:
             return tmp_path / 'outside' / 'target'
-        return original(path, *args, **kwargs)
+        return original_resolve(path, *args, **kwargs)
 
+    # Python 3.10 caches its realpath accessor when pathlib is imported.
+    monkeypatch.setattr(os.path, 'realpath', realpath)
     monkeypatch.setattr(Path, 'resolve', resolve)
     with pytest.raises(ValueError, match='escapes'):
         if kind == 'archive':
             safe_join(root, 'linked/../target')
         else:
             id_path(root, 'linked', '/../target')
+
+
+def test_physical_sibling_is_refused_before_accessing_the_resolved_target(tmp_path, monkeypatch):
+    import os
+    from pathlib import Path
+    from numera.paths import safe_join
+
+    root = tmp_path / 'records'
+    root.mkdir()
+    outside = tmp_path / 'records-evil' / 'target'
+    original_realpath, original_resolve = os.path.realpath, Path.resolve
+
+    def realpath(path, *args, **kwargs):
+        if Path(path) == root / 'linked':
+            return str(outside)
+        return original_realpath(path, *args, **kwargs)
+
+    def resolve(path, *args, **kwargs):
+        assert path != outside, 'An outside physical target reached filesystem resolution'
+        return original_resolve(path, *args, **kwargs)
+
+    monkeypatch.setattr(os.path, 'realpath', realpath)
+    monkeypatch.setattr(Path, 'resolve', resolve)
+    with pytest.raises(ValueError, match='escapes'):
+        safe_join(root, 'linked')
 
 
 def test_profile_path_rejects_an_escaping_suffix_before_filesystem_access(tmp_path, monkeypatch):
