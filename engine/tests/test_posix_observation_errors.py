@@ -71,7 +71,9 @@ def test_process_table_listing_failure_is_unknown(monkeypatch):
     (1, '123 S 123\n', True),
     (0, 'invalid-row\n', True),
     (0, '123 Z 123\n', False),
+    (0, '123 Z+ 123\n', False),
     (0, '123 S 123\n', True),
+    (0, '123 S 0\n', True),
     (0, '987 S 987\n', False),
     (0, '', True),
 ])
@@ -84,6 +86,37 @@ def test_ps_fallback_checks_exit_and_row_integrity(monkeypatch, code, stdout, ex
     # the requested group is absent.
     pgid = 789 if code else 123
     assert posix_session._group_is_running(pgid) is expected
+
+
+def test_ps_failure_diagnostic_is_bounded_numeric_and_does_not_query_again(monkeypatch, capsys):
+    original = Path.is_dir
+    monkeypatch.setattr(Path, 'is_dir', lambda path: False if path == Path('/proc') else original(path))
+    calls = []
+
+    def query(*args, **kwargs):
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 0, stdout='123 S 456\n', stderr='private fixture text')
+
+    monkeypatch.setattr(subprocess, 'run', query)
+    assert posix_session._group_is_running(123)
+    assert not capsys.readouterr().err, 'ordinary observation must remain silent'
+    posix_session.report_group_failure(123, graceful=True, forced=False, verified=True)
+    output = capsys.readouterr().err
+    assert len(calls) == 1, 'failure diagnostics must not extend the cleanup deadline'
+    assert 'group=123' in output and 'pid=456' in output and 'state_codes=(83,)' in output
+    assert 'graceful_signal=True force_signal=False' in output
+    assert 'private fixture text' not in output
+
+
+def test_ps_failed_query_diagnostic_never_emits_raw_output(monkeypatch, capsys):
+    original = Path.is_dir
+    monkeypatch.setattr(Path, 'is_dir', lambda path: False if path == Path('/proc') else original(path))
+    monkeypatch.setattr(subprocess, 'run', lambda *a, **kw:
+                        subprocess.CompletedProcess(a, 1, stdout='private fixture text', stderr='secret data'))
+    assert posix_session._group_is_running(123)
+    posix_session.report_group_failure(123, graceful=False, forced=False, verified=True)
+    output = capsys.readouterr().err
+    assert 'query_exit=1' in output and 'private fixture' not in output and 'secret data' not in output
 
 
 def test_healthy_running_and_reaped_child_controls():

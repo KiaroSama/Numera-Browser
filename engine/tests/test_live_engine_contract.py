@@ -112,6 +112,10 @@ def test_every_supported_engine_is_required_on_both_platforms():
     assert "--test browser_adapter_live" in matrix and "--ignored" in matrix
     assert "continue-on-error" not in matrix
     assert "max-parallel: 2" in matrix and "timeout-minutes:" in matrix
+    windows = jobs['engine-windows']
+    assert 'timeout-minutes: 12' in windows
+    assert 'Tee-Object -FilePath ../build/source-windows-output.log -Encoding utf8' in windows
+    assert 'exit $LASTEXITCODE' in windows and 'build/source-windows-output.log' in windows
     for name in ("engine", "engine-windows", "engine-macos"):
         assert "--ignore-glob=tests/test_*_live.py" in jobs[name]
         assert "suites.py report --tier python" in jobs[name]

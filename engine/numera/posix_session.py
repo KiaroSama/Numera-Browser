@@ -15,8 +15,13 @@ import errno
 import os
 import signal
 import subprocess
+import sys
+import threading
 from pathlib import Path
 from typing import Optional
+
+
+_OBSERVATION = threading.local()
 
 
 def _group_is_running(pgid: int, ignore: int = 0) -> bool:
@@ -58,25 +63,45 @@ def _group_is_running(pgid: int, ignore: int = 0) -> bool:
         # A disappearing entry is normal; an unreadable one could belong to
         # this group. Do not turn incomplete observation into an empty tree.
         return uncertain
+    running, diagnostic = _ps_group(pgid, ignore)
+    _OBSERVATION.last = (pgid, diagnostic)
+    return running
+
+
+def _ps_group(pgid: int, ignore: int = 0):
+    """Return fail-closed state plus bounded numeric-only failure evidence."""
     try:
         out = subprocess.run(["ps", "-A", "-o", "pgid=,state=,pid="],
-                             capture_output=True, text=True, timeout=5)
+                             capture_output=True, text=True, encoding='utf-8', errors='strict', timeout=5)
         if out.returncode != 0 or not out.stdout.strip():
-            return True
-        for line in out.stdout.splitlines():
+            return True, f'query_exit={out.returncode} empty={not out.stdout.strip()}'
+        for index, line in enumerate(out.stdout.splitlines()):
             if not line.strip():
                 continue
             parts = line.split()
             if len(parts) != 3:
-                return True
+                return True, f'malformed_row={index} fields={len(parts)}'
             group, state, pid = int(parts[0]), parts[1], int(parts[2])
             if group < 0 or pid <= 0:
-                return True
+                return True, f'invalid_identity_row={index} group={group} pid={pid}'
             if group == pgid and not state.startswith("Z") and pid != ignore:
-                return True
-        return False
-    except Exception:  # An unavailable or incomplete process table is unknown.
-        return True
+                return True, f'group={group} pid={pid} state_codes={tuple(map(ord, state[:8]))}'
+        return False, 'no_live_members'
+    except Exception as error:  # An unavailable or incomplete table is unknown.
+        return True, f'query_error={type(error).__name__}'
+
+
+def report_group_failure(pgid: int, *, graceful: bool, forced: bool, verified: bool):
+    if Path('/proc').is_dir():
+        return
+    observed_group, evidence = getattr(_OBSERVATION, 'last', (None, 'no_ps_observation'))
+    if observed_group != pgid:
+        evidence = 'no_matching_ps_observation'
+    try:
+        print(f'POSIX cleanup unproved group={pgid} verified={verified} '
+              f'graceful_signal={graceful} force_signal={forced} {evidence}', file=sys.stderr)
+    except OSError:
+        pass  # Diagnostics never turn an unproved cleanup into a new exception.
 
 
 def _adopt_group() -> bool:

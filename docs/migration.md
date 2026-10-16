@@ -8,14 +8,17 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 16, 2026
 
-The latest pushed candidate is `3a64fa0`. Its manual hosted batch
-[38806506026](https://github.com/KiaroSama/Numera-Browser/actions/runs/38806506026)
-failed. Dashboard tests and type checking, source/history credential checks,
-Docker, dependency checks and six browser SDK legs passed. Dashboard lint,
-native Rust lint, both native Cloak legs and the independent CodeQL verdict
-blocked the aggregate. Dependent Python, rendered updater and distribution
-checks did not run; there is no signed release or completed updater acceptance.
-The retained Python application remains selected, including in portable distributions.
+The latest pushed candidate is `37ba2d6`. Its manual hosted batch
+[38825045401](https://github.com/KiaroSama/Numera-Browser/actions/runs/38825045401)
+failed overall. Dashboard tests/types/lint/build, native Windows/Linux contracts,
+all eight browser SDK legs, source/history credential checks, Docker and
+advisory/dependency checks passed. The rendered update interface also passed
+consent, keyboard, deferral and cancellation checks in dark and light themes;
+its synthetic bridge does not prove a real portable upgrade. Python fixture
+failures, unresolved macOS process cleanup, a cancelled Windows source suite and
+the independent CodeQL verdict still block distribution. There is no signed
+release or completed native updater acceptance. The retained Python application
+remains selected, including in portable distributions.
 
 - The portable updater and private quiescence protocol are drafted in the shell
   and retained engine. A durable commit prevents automatic downgrade after work
@@ -38,11 +41,13 @@ The retained Python application remains selected, including in portable distribu
   historical source triage does not turn that failed host check green. Signing
   requires a successful independent CodeQL verdict for the exact SHA, in addition
   to successful scanner jobs; missing verdicts block publication.
-- Current corrections preserve control-character validation without a lint waiver,
-  retain detached startup ownership behind a smaller Rust error, and hand the
-  already verified Cloak executable from CI preparation to native tests. The SDK
-  adapter still refuses missing selections instead of acquiring a browser during
-  launch. These corrections require a new hosted batch.
+- Hosted verification confirmed the control-character validation, smaller Rust
+  error retaining detached ownership, and existing Cloak executable handoff. The
+  SDK adapter still refuses missing selections instead of acquiring during launch.
+  The next correction maps the existing Cloak CLI capabilities, fixes a temporary
+  path fixture and removes a scheduling-sensitive deadline assertion. Bounded
+  diagnostics, not guessed repairs or longer deadlines, address the unresolved
+  macOS cleanup and Windows source-test stalls.
 
 The chronological seam inventory below records earlier scoped evidence and
 historical prepared work. Only an actual later check supersedes an earlier

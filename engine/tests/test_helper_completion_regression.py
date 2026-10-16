@@ -82,22 +82,34 @@ def test_direct_settle_cannot_resolve_an_unstarted_reservation():
         manager.fail_start(helper)
 
 
-def test_end_all_uses_one_budget_across_all_helpers():
+def test_end_all_uses_one_budget_across_all_helpers(monkeypatch):
+    from types import SimpleNamespace
     manager = helpers.HelperManager()
     pending = [manager.admit(('fixture',)) for _ in range(3)]
+    clock = [0.0]
+    attempts = []
+
+    class HeldLock:
+        def acquire(self, *, timeout):
+            attempts.append(timeout)
+            clock[0] += timeout
+            return False
+
     for helper in pending:
         manager.child_env(helper)
         manager.attach(helper, None, None)
-        helper.finish.acquire()
+        helper.finish = HeldLock()
     try:
-        started = time.monotonic()
-        left = manager.end_all(deadline=.08)
-        elapsed = time.monotonic() - started
-        assert len(left) == 3
-        assert elapsed < .17, f'one .08s budget became {elapsed:.3f}s'
+        with monkeypatch.context() as patch:
+            patch.setattr(helpers, 'time', SimpleNamespace(monotonic=lambda: clock[0]))
+            left = manager.end_all(deadline=.08)
+        assert left == pending
+        assert attempts == pytest.approx([.08, 0, 0])
+        assert clock[0] == pytest.approx(.08), 'each helper received a fresh budget'
+        assert {id(helper) for helper in manager.live()} == {id(helper) for helper in pending}
+        assert all(helper.straggler for helper in pending)
     finally:
         for helper in pending:
-            helper.finish.release()
             manager.fail_start(helper)
 
 

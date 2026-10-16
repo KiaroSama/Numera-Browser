@@ -150,10 +150,15 @@ def test_linux_temp_root_fits_chromium_socket_and_keeps_windows_contained(monkey
     helper = load('run_owned')
     monkeypatch.setattr(helper, 'Path', PurePosixPath)
     hosted = {'GITHUB_ACTIONS': 'true', 'RUNNER_TEMP': '/home/runner/work/_temp'}
-    root = PurePosixPath('/home/runner/work/Numera-Browser/Numera-Browser')
+    root = PurePosixPath('/srv/numera')
     selected = helper.temporary_parent(root, hosted, 'linux')
     assert selected == root / '.ci-work'
     assert len(str(selected / 't000000').encode('utf-8')) + len(helper.CHROMIUM_SOCKET_SUFFIX) <= 107
+    checkout = PurePosixPath('/home/runner/work/Numera-Browser/Numera-Browser')
+    assert helper.temporary_parent(checkout, hosted, 'linux') == PurePosixPath(hosted['RUNNER_TEMP'])
+    boundary = PurePosixPath('/' + 'a' * (107 - len('/.ci-work/t000000') - len(helper.CHROMIUM_SOCKET_SUFFIX) - 1))
+    assert helper.temporary_parent(boundary, hosted, 'linux') == boundary / '.ci-work'
+    assert helper.temporary_parent(PurePosixPath(str(boundary) + 'a'), hosted, 'linux') == PurePosixPath(hosted['RUNNER_TEMP'])
     long_root = PurePosixPath('/' + 'a' * 100)
     assert helper.temporary_parent(long_root, hosted, 'linux') == PurePosixPath(hosted['RUNNER_TEMP'])
     assert helper.temporary_parent(long_root, hosted, 'win32') == long_root / '.ci-work'

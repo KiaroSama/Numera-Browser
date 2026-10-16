@@ -160,7 +160,11 @@ jobs:
         run: python scripts/migration/run_owned.py --wall 120 --idle 60 -- python -m compileall -q engine/numera
       - name: Unit tests
         working-directory: engine
-        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python -m pytest -vv -s -o faulthandler_timeout=45 --ignore-glob=tests/test_*_live.py --junitxml=../build/source-results.xml --durations=10
+        timeout-minutes: 12
+        run: |
+          New-Item -ItemType Directory -Force ../build | Out-Null
+          python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python -m pytest -vv -s -o faulthandler_timeout=45 --ignore-glob=tests/test_*_live.py --junitxml=../build/source-results.xml --durations=10 2>&1 | Tee-Object -FilePath ../build/source-windows-output.log -Encoding utf8
+          exit $LASTEXITCODE
       - name: Reject missing suites and prerequisite skips
         if: always()
         run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py report --tier python --report build/source-results.xml
@@ -171,6 +175,7 @@ jobs:
           name: source-windows-diagnostics
           path: |
             build/source-results.xml
+            build/source-windows-output.log
             scripts/logs/*.log
           if-no-files-found: error
           retention-days: 7

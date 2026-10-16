@@ -157,3 +157,41 @@ def test_failed_acquisition_releases_only_its_cache_lease(vendor, monkeypatch):
     monkeypatch.setattr(download, 'ensure_binary', real_download)
     assert acquisition.acquire(target, approved=True)['installed']
     assert len(calls) == 1
+
+
+def test_cli_and_http_use_the_same_exact_offer_and_separate_approval(vendor, tmp_path, monkeypatch):
+    import json
+    from contextlib import redirect_stdout
+    from io import StringIO
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from numera import cli
+    from numera.server import routes_acquisition
+
+    acquisition, _binary, calls = vendor
+    from numera.cli import out
+    monkeypatch.setattr(out, '_JSON', out.json_mode())
+    root = tmp_path / 'application data'
+
+    def run(*arguments):
+        output = StringIO()
+        with redirect_stdout(output):
+            code = cli.main(['--data-dir', str(root), *arguments, '--json'])
+        assert code == 0, output.getvalue()
+        return output.getvalue()
+
+    app = FastAPI()
+    routes_acquisition.register(app, SimpleNamespace(root=root), run)
+    with TestClient(app) as client:
+        shown = json.loads(run('engines', '--cloak-offer'))
+        assert client.get('/api/engines/cloak/acquisition').json() == shown
+        assert not calls
+        path = '/api/engines/cloak/acquisition'
+        assert client.post(path, json={'offer_id': shown['offer_id'], 'approve': False}).status_code == 400
+        assert client.post(path, json={'offer_id': 'stale', 'approve': True}).status_code == 409
+        assert not calls
+        result = client.post(path, json={'offer_id': shown['offer_id'], 'approve': True})
+        assert result.status_code == 200, result.text
+        assert result.json() == {'engine': 'cloak', 'installed': True,
+                                 'version': shown['version'], 'offer_id': shown['offer_id']}
+        assert calls == [{'browser_version': shown['version']}]

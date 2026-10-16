@@ -473,6 +473,13 @@ def signal_tree(tree: Tree, *, force: bool = False) -> bool:
         return False
 
 
+def _report_unproved(tree, graceful, forced):
+    if tree is not None and tree.kind == 'pgid' and not _WINDOWS:
+        from .posix_session import report_group_failure
+        report_group_failure(int(tree.group), graceful=graceful, forced=forced, verified=tree.verified)
+    return False
+
+
 def end_tree(tree: Tree, *, grace: float = 5.0, kill_grace: float = 5.0,
              ends_at: Optional[float] = None) -> bool:
     """End every process in the tree and prove it. False means one survived.
@@ -483,20 +490,22 @@ def end_tree(tree: Tree, *, grace: float = 5.0, kill_grace: float = 5.0,
     if ends_at is not None:
         if not alive_tree(tree):
             return True
-        signal_tree(tree)
+        graceful = signal_tree(tree)
         left = max(0.0, ends_at - time.monotonic())
         if prove_empty(tree, deadline=left / 2.0):
             return True
-        signal_tree(tree, force=True)
-        return prove_empty(tree, deadline=max(0.0, ends_at - time.monotonic()))
+        forced = signal_tree(tree, force=True)
+        return (prove_empty(tree, deadline=max(0.0, ends_at - time.monotonic()))
+                or _report_unproved(tree, graceful, forced))
     if not alive_tree(tree):
         return True
-    if not signal_tree(tree) and not alive_tree(tree):
+    graceful = signal_tree(tree)
+    if not graceful and not alive_tree(tree):
         return True                     # refused because it had already gone
     if prove_empty(tree, deadline=grace):
         return True
-    signal_tree(tree, force=True)
-    return prove_empty(tree, deadline=kill_grace)
+    forced = signal_tree(tree, force=True)
+    return prove_empty(tree, deadline=kill_grace) or _report_unproved(tree, graceful, forced)
 
 
 def end_session(proc: subprocess.Popen, tree: Tree, *, grace: float = 5.0,
