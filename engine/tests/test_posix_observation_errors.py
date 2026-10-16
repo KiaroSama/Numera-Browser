@@ -9,7 +9,7 @@ import pytest
 from numera import posix_session, proctree
 
 pytestmark = pytest.mark.skipif(os.name == "nt", reason="POSIX process-group observation")
-requires_procfs = pytest.mark.skipif(not Path("/proc/self/stat").is_file(),
+requires_procfs = pytest.mark.skipif(os.name != "nt" and not Path("/proc/self/stat").is_file(),
                                      reason="requires Linux procfs")
 
 

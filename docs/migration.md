@@ -8,18 +8,20 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 16, 2026
 
-The latest completed source checkpoint is `4e06616`. Its manual hosted batch
-[38940090101](https://github.com/KiaroSama/Numera-Browser/actions/runs/38940090101)
+The latest completed source checkpoint is `6b79c70`. Its manual hosted batch
+[38946692797](https://github.com/KiaroSama/Numera-Browser/actions/runs/38946692797)
 failed overall. All three Linux source runtimes, macOS source tests, three Windows
 source partitions, dashboard tests/types/lint/build, native Windows/Linux
 contracts, all eight browser SDK legs, source/history credential checks, Docker
 and advisory/dependency checks passed. The rendered update interface also passed
 consent, keyboard, deferral and cancellation checks in dark and light themes;
 its synthetic bridge does not prove a real portable upgrade. The remaining
-Windows partition completed all 37 modules in 2 minutes 27 seconds without
-cancellation. Its release-distribution module reported two permission-fixture
-failures and 55 passes; later modules completed and the failure verdict was
-preserved. The independent CodeQL verdict still fails with the same 20 changed-line
+Windows partition completed all 37 module executions successfully, including all
+59 release-distribution tests. Its final report guard rejected inconsistent skip
+reasons in a wholly POSIX-specific module: a function's Linux-procfs reason took
+precedence over the module's Windows exclusion. The marker correction preserves
+the existing exclusions and strict report guard; hosted verification is pending.
+The independent CodeQL verdict still fails with the same 20 changed-line
 annotations, down from an earlier 26. Those annotations are not a whole-branch
 count: the Python and Rust analyses contain 32 and 30 results respectively.
 Removed annotations do not establish whole-branch security. Distribution,
@@ -50,20 +52,23 @@ rollback acceptance.
   local action run/upload pairs retain each completed module in the third block
   before starting the next; all nine checkpoints survived the latest run.
   A persisted cursor rejects repeats, skipped indices and uncertain cleanup;
-  both inner and outer process owners must settle before continuation. The latest
-  run retained the two ordinary test failures while executing later modules and
-  correctly failing the final report. Upload time consumes the original deadline.
+  both inner and outer process owners must settle before continuation. The previous
+  run retained two ordinary test failures while executing later modules and
+  correctly failing the final report; the latest run passed every module execution.
+  Upload time consumes the original deadline.
   One SHA256 vector previously generated a million-character verbose identifier
   before the test ran. Explicit short identifiers preserve all three vectors and
   assertions; the next hosted Windows run completed all 37 modules and its maximum
   job-log line was 602 characters. The prior runner masking/backpressure mechanism
   was not directly observed, so this is bounded completion evidence, not universal
-  hang-freedom. The two remaining release-fixture failures assumed Windows `chmod`
-  supplied POSIX execute bits. The fixture correction supplies only that unavailable
-  OS metadata for the exact file on Windows and checks executable and non-executable
-  inputs through real archive readback and manifest hashing. Unix keeps real
-  filesystem permissions; production permission behavior is unchanged. This
-  correction still requires hosted verification. Explicit byte fixtures and the
+  hang-freedom. The two release-fixture failures assumed Windows `chmod` supplied
+  POSIX execute bits. The fixture correction supplies only that unavailable OS
+  metadata for the exact file on Windows, retaining named metadata and fractional
+  timestamps. Executable and non-executable inputs pass real archive readback and
+  manifest hashing checks. Unix keeps real filesystem permissions; production
+  permission behavior is unchanged. All 59 release tests passed on Windows in
+  0.52 seconds. The remaining source-report failure concerns skip-marker precedence,
+  not these permission tests. Explicit byte fixtures and the
   CRLF array-line parser correction pass on Linux, macOS and Windows; raw-byte
   checksum authentication remains unchanged.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
