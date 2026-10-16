@@ -75,6 +75,13 @@ rollback acceptance.
   the final Windows report now passes. Explicit byte fixtures and the
   CRLF array-line parser correction pass on Linux, macOS and Windows; raw-byte
   checksum authentication remains unchanged.
+- A subsequent source review found that an inaccessible session-lease file was
+  treated as evidence that no other process held it. The correction conservatively
+  retains occupancy when directory creation or opening fails, preserving the
+  own-held and successfully observed free cases. Existing CLI/HTTP stop and status
+  regressions inject the exact OS failure and verify recovery after access returns;
+  hosted verification of this correction is pending. It does not resolve the
+  remaining CodeQL verdict or certify native updater acceptance.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths; that assessment is not
   a clean verdict for the current tree. Identifier, exclusive JSON creation,

@@ -274,9 +274,10 @@ class _SessionLease:
         self._guard.release()
 
     def held_by_other_process(self) -> bool:
-        """True when some *other* process holds this lease.
+        """True when another process may hold this lease.
 
-        Probes by taking the OS lock and dropping it again. A lease this
+        Probes by taking the OS lock and dropping it again. An inaccessible
+        lock is unknown, never evidence that the profile is free. A lease this
         process holds is invisible here - the OS lock is per handle and this
         one is ours - so callers pair it with their own session registry.
         """
@@ -285,8 +286,8 @@ class _SessionLease:
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
             fd = os.open(self._path, os.O_RDWR | os.O_CREAT, 0o600)
-        except OSError:                                          # pragma: no cover
-            return False
+        except OSError:
+            return True
         try:
             if _take(fd):
                 _drop(fd)

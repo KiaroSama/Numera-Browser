@@ -196,3 +196,54 @@ def test_stopping_a_profile_nobody_here_owns_says_so(tmp_path, capsys):
 
     assert code == 1, "a stop that stopped nothing reported success"
     assert "another process" in out, out
+
+
+@pytest.mark.parametrize("interface", ["cli", "http"])
+def test_unreadable_lease_cannot_report_a_profile_stopped(
+        tmp_path, monkeypatch, capsys, interface):
+    import json
+    from pathlib import Path
+    from numera import cli, data_locks, generate
+    from numera.models import Profile
+    from numera.repo import repo
+    from numera.store import ProfileStore
+
+    store = ProfileStore(tmp_path)
+    prof = repo(store).create(Profile(name="unobserved", fingerprint=generate(seed=1)))
+    original_open = data_locks.os.open
+    observed = []
+
+    def open_file(path, *args, **kwargs):
+        path = Path(path)
+        if path.parent == tmp_path / ".locks" and path.name.startswith("session-"):
+            observed.append(path)
+            raise PermissionError("fixture lease observation denied")
+        return original_open(path, *args, **kwargs)
+
+    if interface == "cli":
+        with monkeypatch.context() as patch:
+            patch.setattr(data_locks.os, "open", open_file)
+            code = cli.main(["--data-dir", str(tmp_path), "stop", prof.id, "--json"])
+            answer = json.loads(capsys.readouterr().out)
+        assert code == 1, "an unobserved session was reported stopped"
+        assert answer["ok"] is False and answer["stopped"] == []
+        assert "another process" in answer["error"]
+        assert cli.main(["--data-dir", str(tmp_path), "stop", prof.id, "--json"]) == 0
+        assert json.loads(capsys.readouterr().out)["ok"] is True
+    else:
+        pytest.importorskip("fastapi")
+        from fastapi.testclient import TestClient
+        from numera.server import create_app
+
+        app = create_app(data_dir=str(tmp_path), start_scheduler=False)
+        with TestClient(app) as client:
+            with monkeypatch.context() as patch:
+                patch.setattr(data_locks.os, "open", open_file)
+                rows = {p["id"]: p for p in client.get("/api/profiles").json()}
+                assert rows[prof.id]["status"] == "running", "unknown lease was reported free"
+                assert client.post(f"/api/profiles/{prof.id}/stop").status_code == 409
+            rows = {p["id"]: p for p in client.get("/api/profiles").json()}
+            assert rows[prof.id]["status"] == "stopped"
+            assert client.post(f"/api/profiles/{prof.id}/stop").status_code == 200
+    assert observed, "the OS lease observation was never attempted"
+    assert store.get(prof.id).name == "unobserved"
