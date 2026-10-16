@@ -8,19 +8,20 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 16, 2026
 
-The latest verified checkpoint is `1e70e04`. Its manual hosted batch
-[38855104001](https://github.com/KiaroSama/Numera-Browser/actions/runs/38855104001)
-failed overall. Dashboard tests/types/lint/build, native Windows/Linux contracts,
-all eight browser SDK legs, source/history credential checks, Docker and
-advisory/dependency checks passed. The rendered update interface also passed
+The latest tested source checkpoint is `8e493e6`. Its manual hosted batch
+[38858959204](https://github.com/KiaroSama/Numera-Browser/actions/runs/38858959204)
+failed overall. All three Linux source runtimes, macOS source tests, three Windows
+source partitions, dashboard tests/types/lint/build, native Windows/Linux
+contracts, all eight browser SDK legs, source/history credential checks, Docker
+and advisory/dependency checks passed. The rendered update interface also passed
 consent, keyboard, deferral and cancellation checks in dark and light themes;
-its synthetic bridge does not prove a real portable upgrade. The three macOS
-process-cleanup regressions passed, but a new CRLF scanner-configuration case
-failed in each source-platform suite. Two Windows partitions passed; another
-was cancelled without retrievable logs. The independent CodeQL verdict also
-blocks distribution. There is no signed release or completed native updater
-acceptance. The retained Python application remains selected, including in
-portable distributions.
+its synthetic bridge does not prove a real portable upgrade. The remaining
+Windows partition was cancelled during its third checkpoint block. Its first
+18 modules passed and their diagnostic artifacts were retained. The independent
+CodeQL verdict still fails with 21 annotations. Distribution, promotion and
+publication were skipped. There is no signed release or completed native updater
+acceptance. Python remains selected; a passing narrow tier does not complete the
+907-row capability ledger, replay, comparative performance or rollback acceptance.
 
 - The portable updater and private quiescence protocol are drafted in the shell
   and retained engine. A durable commit prevents automatic downgrade after work
@@ -39,15 +40,15 @@ portable distributions.
   Linux browser socket-path length, bounded cookie expiry and Windows MIME lookup.
   Windows source tests now partition every discovered module exactly once across
   four jobs, at most two concurrently, with a fresh owned interpreter and report
-  per module. One partition still stalls without retrievable logs or artifacts.
-  Block-start notices were retained for the working partition but not for the
-  stalled one. The affected partition now has four ordered checkpoint steps,
-  with immutable diagnostic uploads between them and one shared 600-second
-  deadline. Modules are not repeated, and incomplete cleanup prevents the next
-  block from running. This remains diagnosis, not a proven Windows root fix.
-  Explicit byte fixtures fixed the Windows checksum mismatch and exposed a
-  separate LF-only array-line parser. Its prepared CRLF correction runs after
-  unchanged raw-byte authentication; hosted regression proof is pending.
+  per module. The affected partition has four ordered checkpoint steps, with
+  immutable uploads between them and one shared 600-second deadline. Its first
+  two blocks passed; the third was cancelled without its own retrievable journal.
+  This narrows the unresolved failure to nine modules but does not establish a
+  whole-runner termination cause. Modules are not repeated, and incomplete cleanup
+  prevents the next block from running. Further diagnosis needs a retained
+  module-level boundary or runner evidence, not a longer timeout or weaker cleanup.
+  Explicit byte fixtures and the CRLF array-line parser correction now pass on
+  Linux, macOS and Windows. Raw-byte checksum authentication remains unchanged.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths. The latest check
   retains the same 21 annotations; source triage does not turn that failed host
