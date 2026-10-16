@@ -1,0 +1,150 @@
+"""Windows diagnostic partitions cover every source module exactly once."""
+import importlib.util
+from pathlib import Path
+import xml.etree.ElementTree as ET
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def coverage():
+    spec = importlib.util.spec_from_file_location('source_partition_coverage', ROOT / 'scripts/ci/suites.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def runner(monkeypatch):
+    monkeypatch.syspath_prepend(str(ROOT / 'scripts/ci'))
+    spec = importlib.util.spec_from_file_location('source_partition_runner', ROOT / 'scripts/ci/python_source.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_all_four_partitions_are_disjoint_complete_and_nonempty():
+    module = coverage()
+    expected = module.discover()['python']
+    partitions = [module.python_sources(index, 4) for index in range(4)]
+    actual = [path for part in partitions for path in part]
+    assert all(partitions)
+    assert len(actual) == len(set(actual)) == len(expected)
+    assert set(actual) == set(expected)
+    assert max(map(len, partitions)) - min(map(len, partitions)) <= 1
+    assert module.python_sources() == expected
+
+
+@pytest.mark.parametrize('index,count', [(-1, 4), (4, 4), (0, 0), (0, 5)])
+def test_invalid_partition_never_becomes_an_empty_success(index, count):
+    with pytest.raises(ValueError, match='partition'):
+        coverage().python_sources(index, count)
+
+
+@pytest.mark.parametrize('damage', [None, 'missing', 'foreign', 'duplicate', 'failure'])
+def test_partition_report_requires_every_selected_module(tmp_path, monkeypatch, damage):
+    module = coverage()
+    files = [Path(f'test_{name}.py') for name in ('one', 'two', 'three', 'four')]
+    monkeypatch.setattr(module, 'discover', lambda root: {'python': files})
+    selected = module.python_sources(0, 2)
+    suite = ET.Element('testsuite')
+    for path in selected:
+        ET.SubElement(suite, 'testcase', classname='tests.' + path.stem, name='test_contract')
+    if damage == 'missing':
+        suite.remove(suite[1])
+    elif damage == 'foreign':
+        suite[1].set('classname', 'tests.test_two')
+    elif damage == 'duplicate':
+        suite[1].set('classname', 'tests.test_one')
+    elif damage == 'failure':
+        ET.SubElement(suite[1], 'failure')
+    report = tmp_path / 'report.xml'
+    ET.ElementTree(suite).write(report, encoding='utf-8', xml_declaration=True)
+    if damage:
+        with pytest.raises(ValueError):
+            module.check_report(report, 'python', shard=0, shards=2)
+    else:
+        assert module.check_report(report, 'python', shard=0, shards=2) == {
+            'passed': 2, 'explicit_limits': 0, 'suites': 2}
+
+
+@pytest.mark.parametrize('damage', [None, 'missing', 'extra'])
+def test_report_directory_inventory_matches_the_partition(tmp_path, monkeypatch, damage):
+    module = coverage()
+    sources = [Path('test_one.py'), Path('test_two.py')]
+    monkeypatch.setattr(module, 'discover', lambda root: {'python': sources})
+    for source in sources:
+        suite = ET.Element('testsuite')
+        ET.SubElement(suite, 'testcase', classname='tests.' + source.stem, name='test_contract')
+        ET.ElementTree(suite).write(tmp_path / (source.stem + '.xml'), encoding='utf-8')
+    if damage == 'missing':
+        (tmp_path / 'test_two.xml').unlink()
+    elif damage == 'extra':
+        (tmp_path / 'test_foreign.xml').write_text('<testsuite/>', encoding='utf-8')
+    if damage:
+        with pytest.raises(ValueError, match='inventory differs'):
+            module.check_report(tmp_path, 'python')
+    else:
+        assert module.check_report(tmp_path, 'python')['suites'] == 2
+
+
+def test_module_failure_is_collected_without_repeating_or_omitting_other_modules(tmp_path, monkeypatch):
+    from contextlib import contextmanager
+    import logging
+
+    module = runner(monkeypatch)
+    (tmp_path / 'engine').mkdir()
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    files = [tmp_path / 'engine/tests' / f'test_{name}.py' for name in ('one', 'two')]
+    monkeypatch.setattr(module, 'python_sources', lambda *args: files)
+    clock = [0.0]
+    monkeypatch.setattr(module, 'time', __import__('types').SimpleNamespace(monotonic=lambda: clock[0]))
+    logger = logging.getLogger('source-partition-fixture')
+
+    @contextmanager
+    def log(*args):
+        yield logger
+
+    monkeypatch.setattr(module, 'run_log', log)
+    calls = []
+
+    def run(command, wall, idle, log):
+        calls.append((command, wall, idle))
+        clock[0] += 10
+        return 1 if len(calls) == 1 else 0
+
+    monkeypatch.setattr(module, 'run', run)
+    monkeypatch.chdir(tmp_path)
+    assert module.verify(0, 4, logger) == 1
+    assert [call[0][-1] for call in calls] == list(map(str, files))
+    assert [call[1] for call in calls] == [600, 590]
+    assert all(call[2] == 120 and call[0][:3] == [module.sys.executable, '-m', 'pytest'] for call in calls)
+    assert all('--junitxml=' in ' '.join(call[0]) for call in calls)
+
+
+def test_unproved_module_cleanup_stops_the_partition(tmp_path, monkeypatch):
+    from contextlib import contextmanager
+    import logging
+
+    module = runner(monkeypatch)
+    (tmp_path / 'engine').mkdir()
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    monkeypatch.setattr(module, 'python_sources', lambda *args: [Path('first.py'), Path('second.py')])
+    logger = logging.getLogger('source-partition-fixture')
+
+    @contextmanager
+    def log(*args):
+        yield logger
+
+    monkeypatch.setattr(module, 'run_log', log)
+    calls = []
+
+    def run(*args):
+        calls.append(args)
+        raise RuntimeError('fixture cleanup unproved')
+
+    monkeypatch.setattr(module, 'run', run)
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(RuntimeError, match='cleanup unproved'):
+        module.verify(0, 4, logger)
+    assert len(calls) == 1

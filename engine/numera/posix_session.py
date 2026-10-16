@@ -91,15 +91,30 @@ def _ps_group(pgid: int, ignore: int = 0):
         return True, f'query_error={type(error).__name__}'
 
 
+def record_identity_query(pid: int, code: int, size: int) -> None:
+    _OBSERVATION.identity = (pid, f'birth_query_exit={code} birth_query_bytes={size}')
+
+
+def record_signal(pgid: int, force: bool, reason: str) -> bool:
+    _OBSERVATION.signal = (pgid, f'force={force} reason={reason}')
+    return reason == 'delivered'
+
+
 def report_group_failure(pgid: int, *, graceful: bool, forced: bool, verified: bool):
     if Path('/proc').is_dir():
         return
     observed_group, evidence = getattr(_OBSERVATION, 'last', (None, 'no_ps_observation'))
     if observed_group != pgid:
         evidence = 'no_matching_ps_observation'
+    signal_group, outcome = getattr(_OBSERVATION, 'signal', (None, 'no_signal_observation'))
+    if signal_group != pgid:
+        outcome = 'no_matching_signal_observation'
+    identity_pid, identity = getattr(_OBSERVATION, 'identity', (None, 'no_birth_query'))
+    if identity_pid != pgid:
+        identity = 'no_matching_birth_query'
     try:
         print(f'POSIX cleanup unproved group={pgid} verified={verified} '
-              f'graceful_signal={graceful} force_signal={forced} {evidence}', file=sys.stderr)
+              f'graceful_signal={graceful} force_signal={forced} {outcome} {identity} {evidence}', file=sys.stderr)
     except OSError:
         pass  # Diagnostics never turn an unproved cleanup into a new exception.
 

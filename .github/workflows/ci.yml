@@ -139,10 +139,15 @@ jobs:
         run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py report --tier python --report build/source-results.xml
 
   engine-windows:
-    name: Engine tests (Windows)
+    name: Engine tests (Windows partition ${{ matrix.shard }})
     needs: [coverage, dashboard]
     runs-on: windows-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -163,18 +168,18 @@ jobs:
         timeout-minutes: 12
         run: |
           New-Item -ItemType Directory -Force ../build | Out-Null
-          python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python -m pytest -vv -s -o faulthandler_timeout=45 --ignore-glob=tests/test_*_live.py --junitxml=../build/source-results.xml --durations=10 2>&1 | Tee-Object -FilePath ../build/source-windows-output.log -Encoding utf8
+          python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python ../scripts/ci/python_source.py --shard ${{ matrix.shard }} --shards 4 2>&1 | Tee-Object -FilePath ../build/source-windows-output.log -Encoding utf8
           exit $LASTEXITCODE
       - name: Reject missing suites and prerequisite skips
         if: always()
-        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py report --tier python --report build/source-results.xml
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py report --tier python --report build/source-windows-${{ matrix.shard }} --shard ${{ matrix.shard }} --shards 4
       - name: Preserve Windows source failure diagnostics
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: source-windows-diagnostics
+          name: source-windows-diagnostics-${{ matrix.shard }}
           path: |
-            build/source-results.xml
+            build/source-windows-${{ matrix.shard }}/
             build/source-windows-output.log
             scripts/logs/*.log
           if-no-files-found: error

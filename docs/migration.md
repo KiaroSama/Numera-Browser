@@ -8,14 +8,14 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 16, 2026
 
-The latest pushed candidate is `37ba2d6`. Its manual hosted batch
-[38825045401](https://github.com/KiaroSama/Numera-Browser/actions/runs/38825045401)
-failed overall. Dashboard tests/types/lint/build, native Windows/Linux contracts,
-all eight browser SDK legs, source/history credential checks, Docker and
-advisory/dependency checks passed. The rendered update interface also passed
-consent, keyboard, deferral and cancellation checks in dark and light themes;
-its synthetic bridge does not prove a real portable upgrade. Python fixture
-failures, unresolved macOS process cleanup, a cancelled Windows source suite and
+The latest verified checkpoint is `f2fc6e4`. Its manual hosted batch
+[38835828133](https://github.com/KiaroSama/Numera-Browser/actions/runs/38835828133)
+failed overall. All three Linux Python versions, dashboard tests/types/lint/build,
+native Windows/Linux contracts, all eight browser SDK legs, source/history
+credential checks, Docker and advisory/dependency checks passed. The rendered
+update interface also passed consent, keyboard, deferral and cancellation checks
+in dark and light themes; its synthetic bridge does not prove a real portable
+upgrade. One macOS process-cleanup test, a cancelled Windows source suite and
 the independent CodeQL verdict still block distribution. There is no signed
 release or completed native updater acceptance. The retained Python application
 remains selected, including in portable distributions.
@@ -31,23 +31,30 @@ remains selected, including in portable distributions.
   one real resource, not full browser archive space/performance acceptance.
 - Parity tooling now reads the pinned original Git blobs rather than importing
   the mutable current Python application. Recorded original fixture expectations
-  and capability rows are unchanged. New source-freeze checks remain unexecuted.
+  and capability rows are unchanged. Source-freeze regression checks passed in
+  the latest hosted Linux and macOS source suites.
 - Source repairs address scanner configuration parsing, advisory input selection,
   Linux browser socket-path length, bounded cookie expiry and Windows MIME lookup.
-  The earlier Windows source-test stall remains unlocalized; the next hosted run
-  retains its deadlines and adds progress/stack diagnostics.
-- The earlier 31 CodeQL candidates were independently assessed against their exact
-  source paths. The latest check reports 21 candidates requiring fresh assessment;
-  historical source triage does not turn that failed host check green. Signing
+  The Windows source-test stall remains unlocalized: even the independent step
+  deadline produced no retrievable job log or diagnostic artifact. The next
+  diagnostic pass partitions every discovered source module exactly once across
+  four Windows jobs, at most two concurrently, and gives each module a fresh
+  owned interpreter and report within the existing wall/idle ceilings.
+- The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
+  independently assessed against their exact source paths. The latest check
+  retains the same 21 annotations; source triage does not turn that failed host
+  check green. Signing
   requires a successful independent CodeQL verdict for the exact SHA, in addition
   to successful scanner jobs; missing verdicts block publication.
 - Hosted verification confirmed the control-character validation, smaller Rust
   error retaining detached ownership, and existing Cloak executable handoff. The
   SDK adapter still refuses missing selections instead of acquiring during launch.
-  The next correction maps the existing Cloak CLI capabilities, fixes a temporary
-  path fixture and removes a scheduling-sensitive deadline assertion. Bounded
-  diagnostics, not guessed repairs or longer deadlines, address the unresolved
-  macOS cleanup and Windows source-test stalls.
+  The existing Cloak CLI capability map, temporary-path fixture and deterministic
+  shared-deadline correction now pass hosted Linux and macOS source checks. The
+  remaining macOS cleanup failure reports a live group after forced signaling
+  was refused. Numeric refusal-category diagnostics reuse that exact attempt;
+  ownership checks and time budgets remain unchanged. Windows module isolation
+  is diagnostic evidence collection, not a claim that its root cause is fixed.
 
 The chronological seam inventory below records earlier scoped evidence and
 historical prepared work. Only an actual later check supersedes an earlier

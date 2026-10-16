@@ -50,7 +50,8 @@ from typing import Optional
 from .handshake import ChildTerminationFailed, end_child
 from .driver_capture import Adopted, spawning_own_tree  # public capture API
 from .posix_session import (_adopt_group, _group_is_running,  # noqa: F401
-                            _rejoin, _restore_terminal, _terminal)  # noqa: F401
+                            _rejoin, _restore_terminal, _terminal,  # noqa: F401
+                            record_identity_query, record_signal)
 from .winjob import (_job_active, _job_assign, _job_assign_self,  # noqa: F401
                      _job_open, _job_structs, _job_terminate, _kernel32)  # noqa: F401
 
@@ -173,7 +174,8 @@ def started_at(pid: int) -> "Optional[int]":
             return int(text[text.rindex(")") + 2:].split()[19])
 
         out = subprocess.run(["ps", "-o", "lstart=", "-p", str(int(pid))],
-                             capture_output=True, text=True, timeout=5)
+                             capture_output=True, text=True, encoding='utf-8', timeout=5)
+        record_identity_query(pid, out.returncode, len(out.stdout.encode('utf-8')))
         line = " ".join(out.stdout.split())      # normalise ps's padding
         if not line:
             return None
@@ -445,20 +447,21 @@ def signal_tree(tree: Tree, *, force: bool = False) -> bool:
             f"Numera will not signal it: the number may belong to another "
             f"process by now.")
     if not owned(tree):
-        return False
+        return (record_signal(int(tree.group), force, 'ownership_mismatch')
+                if tree.kind == 'pgid' and tree.group and not _WINDOWS else False)
     if tree.kind == "job" and tree.group:
         # There is no graceful form. A job object is terminated or it is not,
         # and the call is idempotent, so both passes are the same one.
         return _job_terminate(str(tree.group))
     if tree.kind == "pgid" and tree.group and not _WINDOWS:
         pgid = int(tree.group)
-        if pgid == os.getpgrp():        # pragma: no cover - never ours to kill
-            return False
+        if pgid == os.getpgrp():
+            return record_signal(pgid, force, 'caller_group')
         try:
             os.killpg(pgid, signal.SIGKILL if force else signal.SIGTERM)
-            return True
-        except OSError:
-            return False
+            return record_signal(pgid, force, 'delivered')
+        except OSError as error:
+            return record_signal(pgid, force, f'signal_errno={error.errno}')
     # No tree primitive: the leader is all there is. Windows can still walk the
     # live parent links, which finds descendants only while the leader is
     # around - the weakness this module exists to fix, kept as the fallback for

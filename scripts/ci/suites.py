@@ -76,6 +76,15 @@ def discover(root: Path = ROOT) -> dict[str, list[Path]]:
     return result
 
 
+def python_sources(shard: int = 0, shards: int = 1, root: Path = ROOT) -> list[Path]:
+    if not 1 <= shards <= 4 or not 0 <= shard < shards:
+        raise ValueError('Invalid source verification partition')
+    selected = discover(root)['python'][shard::shards]
+    if not selected:
+        raise ValueError('Source verification partition is empty')
+    return selected
+
+
 BINARY_SUFFIXES = {'.png', '.ico', '.jpg', '.jpeg', '.gif', '.webp', '.woff', '.woff2',
                    '.ttf', '.otf', '.zip', '.gz', '.zst', '.whl', '.exe', '.dll'}
 
@@ -239,7 +248,8 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
         raise ValueError('Required verification must reject failed and skipped dependencies')
     checks = {
         'engine': ('--ignore-glob=tests/test_*_live.py', '--junitxml='),
-        'engine-windows': ('--ignore-glob=tests/test_*_live.py', '--junitxml='),
+        'engine-windows': ('python_source.py --shard ${{ matrix.shard }} --shards 4',
+                           'report --tier python', '--shard ${{ matrix.shard }} --shards 4'),
         'engine-macos': ('--ignore-glob=tests/test_*_live.py', '--junitxml='),
         'browser': ('tests/test_*_live.py', '--deselect=', 'xvfb-run', 'update_ui_smoke.py', 'rendered-update-ui'),
         'rust-core': ('suites.py native --phase build', 'suites.py native --phase test',
@@ -277,6 +287,10 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
     dashboard_text = json.dumps(workflows['dashboard']['jobs'])
     if 'npm test' not in dashboard_text or 'dashboard-dist' not in dashboard_text:
         raise ValueError('Dashboard suite and exact-run build artifact are not mapped')
+    windows_strategy = jobs['engine-windows']['strategy']
+    if (windows_strategy['matrix'] != {'shard': [0, 1, 2, 3]}
+            or windows_strategy['max-parallel'] != 2 or windows_strategy['fail-fast'] is not False):
+        raise ValueError('Windows source partitions must remain complete and independently diagnostic')
     if jobs['engine-live']['strategy']['matrix']['os'] != ['ubuntu-latest', 'windows-latest']:
         raise ValueError('SDK coverage must retain both supported native ownership platforms')
     if set(jobs['engine-live']['strategy']['matrix']['engine']) != {'playwright', 'patchright', 'camoufox', 'cloak'}:
@@ -314,9 +328,14 @@ def seam_command(phase: str, scope: str, root: Path = ROOT) -> list[str]:
     return command
 
 
-def check_report(path: Path, tier: str, root: Path = ROOT) -> dict[str, int]:
-    expected = {source.stem for source in discover(root)[tier]}
-    cases = list(ET.parse(path).iter('testcase'))
+def check_report(path: Path, tier: str, root: Path = ROOT, *,
+                 shard: int = 0, shards: int = 1) -> dict[str, int]:
+    sources = python_sources(shard, shards, root) if tier == 'python' else discover(root)[tier]
+    expected = {source.stem for source in sources}
+    reports = sorted(path.glob('*.xml')) if path.is_dir() else [path]
+    if path.is_dir() and {item.stem for item in reports} != expected:
+        raise ValueError('Source report inventory differs from its verification partition')
+    cases = [case for report in reports for case in ET.parse(report).iter('testcase')]
     if not cases:
         raise ValueError('Verification report is empty')
     observed = set()
@@ -386,6 +405,8 @@ def main() -> int:
     report = sub.add_parser('report')
     report.add_argument('--tier', choices=('python', 'browser', 'dashboard'), required=True)
     report.add_argument('--report', type=Path, required=True)
+    report.add_argument('--shard', type=int, default=0)
+    report.add_argument('--shards', type=int, default=1)
     args = parser.parse_args()
     with run_log('hosted-suite-coverage') as log:
         if args.command == 'coverage':
@@ -403,7 +424,7 @@ def main() -> int:
             log.info('Exact tracked secret scope staged files=%s', count)
         elif args.command == 'report':
             result = (check_dashboard(args.report) if args.tier == 'dashboard'
-                      else check_report(args.report, args.tier))
+                      else check_report(args.report, args.tier, shard=args.shard, shards=args.shards))
             log.info('Actual report verified tier=%s result=%s', args.tier, json.dumps(result))
         else:
             command = (seam_command(args.phase, args.scope) if args.command == 'seam'

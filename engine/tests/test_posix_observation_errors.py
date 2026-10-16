@@ -119,6 +119,53 @@ def test_ps_failed_query_diagnostic_never_emits_raw_output(monkeypatch, capsys):
     assert 'query_exit=1' in output and 'private fixture' not in output and 'secret data' not in output
 
 
+@pytest.mark.parametrize('refusal,reason', [
+    ('identity', 'ownership_mismatch'), ('own-group', 'caller_group'),
+    (errno.ESRCH, 'signal_errno=3'), (errno.EPERM, 'signal_errno=1'),
+])
+def test_signal_refusal_diagnostic_reuses_the_attempt_without_extra_queries(
+        monkeypatch, capsys, refusal, reason):
+    original = Path.is_dir
+    monkeypatch.setattr(Path, 'is_dir', lambda path: False if path == Path('/proc') else original(path))
+    tree = proctree.Tree(123456789, 7, 123456789, 'pgid')
+    queries, signals = [], []
+
+    def birth(pid):
+        queries.append(pid)
+        return 8 if refusal == 'identity' else 7
+
+    def signal_group(pgid, sig):
+        signals.append((pgid, sig))
+        raise OSError(refusal, 'private fixture text')
+
+    monkeypatch.setattr(proctree, 'started_at', birth)
+    monkeypatch.setattr(os, 'getpgrp', lambda: tree.group if refusal == 'own-group' else 1)
+    monkeypatch.setattr(os, 'killpg', signal_group)
+    assert proctree.signal_tree(tree, force=True) is False
+    assert queries == [tree.pid]
+    assert len(signals) == (0 if isinstance(refusal, str) else 1)
+    assert not capsys.readouterr().err
+    posix_session.report_group_failure(tree.group, graceful=True, forced=False, verified=True)
+    output = capsys.readouterr().err
+    assert reason in output and 'force=True' in output
+    assert 'private fixture text' not in output
+    assert queries == [tree.pid], 'reporting must not repeat the birth query'
+
+
+def test_delivered_group_signal_is_recorded_without_changing_ownership(monkeypatch, capsys):
+    original = Path.is_dir
+    monkeypatch.setattr(Path, 'is_dir', lambda path: False if path == Path('/proc') else original(path))
+    tree = proctree.Tree(123456789, 7, 123456789, 'pgid')
+    calls = []
+    monkeypatch.setattr(proctree, 'started_at', lambda pid: 7)
+    monkeypatch.setattr(os, 'getpgrp', lambda: 1)
+    monkeypatch.setattr(os, 'killpg', lambda *args: calls.append(args))
+    assert proctree.signal_tree(tree, force=True) is True
+    posix_session.report_group_failure(tree.group, graceful=True, forced=True, verified=True)
+    assert 'reason=delivered' in capsys.readouterr().err
+    assert calls == [(tree.group, __import__('signal').SIGKILL)]
+
+
 def test_healthy_running_and_reaped_child_controls():
     proc = subprocess.Popen([sys.executable, '-c', 'import time;time.sleep(30)'],
                             start_new_session=True)

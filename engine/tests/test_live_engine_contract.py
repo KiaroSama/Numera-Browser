@@ -116,8 +116,14 @@ def test_every_supported_engine_is_required_on_both_platforms():
     assert 'timeout-minutes: 12' in windows
     assert 'Tee-Object -FilePath ../build/source-windows-output.log -Encoding utf8' in windows
     assert 'exit $LASTEXITCODE' in windows and 'build/source-windows-output.log' in windows
-    for name in ("engine", "engine-windows", "engine-macos"):
+    assert 'python_source.py --shard ${{ matrix.shard }} --shards 4' in windows
+    assert 'shard: [0, 1, 2, 3]' in windows and 'fail-fast: false' in windows
+    assert 'max-parallel: 2' in windows
+    source = (ROOT / 'scripts/ci/python_source.py').read_text(encoding='utf-8')
+    assert '--ignore-glob=tests/test_*_live.py' in source and '--junitxml=' in source
+    for name in ("engine", "engine-macos"):
         assert "--ignore-glob=tests/test_*_live.py" in jobs[name]
+    for name in ("engine", "engine-windows", "engine-macos"):
         assert "suites.py report --tier python" in jobs[name]
     for test in live.TREE_TESTS:
         assert "--deselect=tests/test_session_tree_live.py::" + test in jobs["browser"]
