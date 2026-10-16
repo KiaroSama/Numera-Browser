@@ -210,6 +210,8 @@ def _name(folder: Path) -> str:
     _locales, which is more machinery than a label is worth. Fall back to the id
     when it cannot be read plainly."""
     import json
+    from .paths import safe_join
+
     try:
         manifest = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -218,15 +220,19 @@ def _name(folder: Path) -> str:
     if name.startswith("__MSG_"):
         key = name[6:-2] if name.endswith("__") else name[6:]
         for locale in ("en", "en_US", manifest.get("default_locale") or ""):
-            f = folder / "_locales" / locale / "messages.json"
-            if f.is_file():
-                try:
+            # A locale is one directory name, never a manifest-selected path.
+            if (not isinstance(locale, str) or not locale or locale in (".", "..")
+                    or any(separator in locale for separator in ("/", "\\", ":"))):
+                continue
+            try:
+                f = safe_join(folder, f"_locales/{locale}/messages.json")
+                if f.is_file():
                     msgs = json.loads(f.read_text(encoding="utf-8"))
                     got = msgs.get(key, {}).get("message")
                     if got:
                         return got
-                except (OSError, json.JSONDecodeError):
-                    pass
+            except (OSError, ValueError):
+                pass
         return folder.name
     return name or folder.name
 

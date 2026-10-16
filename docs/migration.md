@@ -82,8 +82,14 @@ rollback acceptance.
   original archive member and retains the final physical ancestry check. Its
   archive regressions passed in the latest hosted Windows suite, but the CodeQL
   annotations remain unchanged. Profile paths still return their original
-  nonlinked lexical identity. Passing regressions do not clear that verdict. The legacy
-  store-URL recognizer is not a download allowlist and
+  nonlinked lexical identity. Passing regressions do not clear that verdict.
+  A subsequent source trace found a separate concrete gap in extension labels:
+  a manifest's `default_locale` could select a catalog outside its extension.
+  The correction requires a single directory name and reuses physical containment
+  before catalog reads, preserving English/regional/default lookup order and
+  folder-name fallback. Traversal, absolute-path and linked-catalog regressions
+  are prepared; hosted verification is pending. This does not clear the other
+  path annotations. The legacy store-URL recognizer is not a download allowlist and
   retains original substring behavior for parity; its annotation is unresolved,
   not hidden by changing syntax or recorded expectations. Optional-vault plaintext
   storage also remains an explicitly documented limitation. Signing requires a

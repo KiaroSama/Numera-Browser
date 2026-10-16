@@ -100,14 +100,78 @@ def test_unpack_rejects_an_unknown_crx_version(tmp_path):
         webstore._unpack(b"Cr24" + struct.pack("<I", 9) + b"\0" * 8, tmp_path)
 
 
-def test_name_falls_back_to_the_locale_file(tmp_path):
-    ext = tmp_path / "ext"
-    (ext / "_locales" / "en").mkdir(parents=True)
-    (ext / "manifest.json").write_text(
-        '{"name": "__MSG_extName__", "default_locale": "en"}', encoding="utf-8")
-    (ext / "_locales" / "en" / "messages.json").write_text(
-        '{"extName": {"message": "Real Name"}}', encoding="utf-8")
-    assert webstore._name(ext) == "Real Name"
+@pytest.mark.parametrize('locales,expected', [
+    (['en', 'en_US', 'fr'], 'English'),
+    (['en_US', 'fr'], 'Regional'),
+    (['fr'], 'Default'),
+], ids=['english-first', 'regional-fallback', 'default-fallback'])
+def test_name_falls_back_to_the_locale_file(tmp_path, locales, expected):
+    names = {'en': 'English', 'en_US': 'Regional', 'fr': 'Default'}
+    ext = tmp_path / 'ext'
+    ext.mkdir()
+    (ext / 'manifest.json').write_text(json.dumps(
+        {'name': '__MSG_extName__', 'default_locale': 'fr'}), encoding='utf-8')
+    for locale in locales:
+        folder = ext / '_locales' / locale
+        folder.mkdir(parents=True)
+        (folder / 'messages.json').write_text(json.dumps(
+            {'extName': {'message': names[locale]}}), encoding='utf-8')
+    assert webstore.describe(ext)['name'] == expected
+
+
+@pytest.mark.parametrize('locale', ['traversal', 'absolute', '..', '.', '', 'en/fr',
+                                   'en\\fr', 'C:outside', None, 42])
+def test_description_refuses_locale_paths_outside_the_extension(tmp_path, monkeypatch, locale):
+    ext = tmp_path / 'ext'
+    (ext / '_locales').mkdir(parents=True)
+    outside = tmp_path / 'outside'
+    outside.mkdir()
+    payload = b'{"extName":{"message":"Outside catalog must not be returned"}}'
+    (outside / 'messages.json').write_bytes(payload)
+    # Dot and empty names must not select a catalog directly under _locales.
+    (ext / '_locales/messages.json').write_bytes(payload)
+    selected = {'traversal': '../../outside', 'absolute': str(outside)}.get(locale, locale)
+    (ext / 'manifest.json').write_text(json.dumps(
+        {'name': '__MSG_extName__', 'default_locale': selected}), encoding='utf-8')
+    original = Path.read_text
+
+    def read(path, *args, **kwargs):
+        if path.name == 'messages.json':
+            pytest.fail('An invalid locale reached catalog reading')
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'read_text', read)
+    assert webstore.describe(ext)['name'] == 'ext'
+    assert (outside / 'messages.json').read_bytes() == payload
+
+
+def test_description_refuses_a_locale_catalog_linked_outside_the_extension(tmp_path, monkeypatch):
+    import os
+
+    ext = tmp_path / 'ext'
+    catalog = ext / '_locales/en/messages.json'
+    catalog.parent.mkdir(parents=True)
+    payload = b'{"extName":{"message":"Outside catalog must not be returned"}}'
+    catalog.write_bytes(payload)
+    outside = tmp_path / 'outside/messages.json'
+    outside.parent.mkdir()
+    outside.write_bytes(payload)
+    (ext / 'manifest.json').write_text(
+        '{"name":"__MSG_extName__","default_locale":"en"}', encoding='utf-8')
+    original_realpath, original_read = os.path.realpath, Path.read_text
+
+    def realpath(path, *args, **kwargs):
+        return str(outside) if Path(path) == catalog else original_realpath(path, *args, **kwargs)
+
+    def read(path, *args, **kwargs):
+        if path in (catalog, outside):
+            pytest.fail('A linked outside locale catalog reached reading')
+        return original_read(path, *args, **kwargs)
+
+    monkeypatch.setattr(os.path, 'realpath', realpath)
+    monkeypatch.setattr(Path, 'read_text', read)
+    assert webstore.describe(ext)['name'] == 'ext'
+    assert outside.read_bytes() == payload
 
 
 def test_name_survives_a_broken_manifest(tmp_path):
