@@ -123,15 +123,9 @@ def sign_manifest(manifest: Path, signature: Path, public_key: Path) -> None:
     public_format = serialization.PublicFormat.Raw
     if key.public_key().public_bytes(raw, public_format) != public_ed25519(public_key).public_bytes(raw, public_format):
         raise ValueError('Protected release key differs from pinned public signer')
-    with private_directory() as private:
-        key_path = private / 'release-key.pem'
-        key_path.write_text(secret, encoding='utf-8')
-        key_path.chmod(0o600)
-        env = os.environ.copy()
-        for name in ('NUMERA_RELEASE_SIGNING_KEY', 'NUMERA_CODE_SIGNING_PFX', 'NUMERA_CODE_SIGNING_PASSWORD'):
-            env.pop(name, None)
-        execute(['openssl', 'pkeyutl', '-sign', '-rawin', '-inkey', str(key_path),
-                 '-in', str(manifest), '-out', str(signature)], env=env)
+    proof = key.sign(message)
+    with signature.open('xb') as stream:
+        stream.write(proof)
     verify_manifest(manifest, signature, public_key)
 
 

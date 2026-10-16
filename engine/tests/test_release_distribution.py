@@ -179,9 +179,18 @@ def test_ed25519_exact_manifest_rejects_tampering_wrong_key_and_size(tmp_path, m
     manifest = tmp_path / 'update-manifest.json'
     manifest.write_text('{"schema":1,"generation":42}\n', encoding='utf-8')
     signature = tmp_path / 'update-manifest.sig'
+    def forbidden_transport(*args, **kwargs):
+        pytest.fail('Manifest signing must not stage private keys or start signing subprocesses')
+    monkeypatch.setattr(module, 'private_directory', forbidden_transport)
+    monkeypatch.setattr(module, 'execute', forbidden_transport)
     module.sign_manifest(manifest, signature, public)
-    assert len(signature.read_bytes()) == 64
+    proof = signature.read_bytes()
+    assert len(proof) == 64
     module.verify_manifest(manifest, signature, public)
+    module.public_ed25519(public).verify(proof, manifest.read_bytes())
+    with pytest.raises(ValueError, match='destination new'):
+        module.sign_manifest(manifest, signature, public)
+    assert signature.read_bytes() == proof
     original = manifest.read_bytes()
     manifest.write_bytes(original.replace(b'42', b'43'))
     with pytest.raises(ValueError, match='signature'):
@@ -189,6 +198,10 @@ def test_ed25519_exact_manifest_rejects_tampering_wrong_key_and_size(tmp_path, m
     manifest.write_bytes(original)
     wrong = tmp_path / 'wrong-public.pem'
     module.fixture_ed25519(wrong)
+    refused = tmp_path / 'wrong-signer.sig'
+    with pytest.raises(ValueError, match='pinned public signer'):
+        module.sign_manifest(manifest, refused, public)
+    assert not refused.exists() and signature.read_bytes() == proof
     with pytest.raises(ValueError, match='signature'):
         module.verify_manifest(manifest, signature, wrong)
     signature.write_bytes(b'x' * 63)
