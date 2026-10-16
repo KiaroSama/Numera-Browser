@@ -40,6 +40,28 @@ def test_id_is_found_in_every_shape_of_link(text):
     assert webstore.extension_id(text) == "ddkjiahejlhfcafbddmgiahcphecmpfh"
 
 
+@pytest.mark.parametrize('ext_id', ['../outside', 'a' * 31, 'a' * 32 + '\n', 'A' * 32])
+def test_download_refuses_invalid_ids_before_constructing_a_request(monkeypatch, ext_id):
+    monkeypatch.setattr(webstore.urllib.request, 'Request', lambda *args, **kwargs: pytest.fail(
+        'An invalid extension ID reached network request construction'))
+    with pytest.raises(WebStoreError, match='invalid Chrome extension id'):
+        webstore._download(ext_id)
+
+
+def test_install_refuses_linked_extension_before_network_or_replacement(tmp_path, monkeypatch):
+    ext_id = 'a' * 32
+    dest = tmp_path / 'extensions' / ext_id
+    dest.mkdir(parents=True)
+    manifest = dest / 'manifest.json'
+    manifest.write_bytes(b'{"name":"Preserve"}')
+    original = Path.is_symlink
+    monkeypatch.setattr(Path, 'is_symlink', lambda path: path == dest or original(path))
+    monkeypatch.setattr(webstore, '_download', lambda *args: pytest.fail('A linked extension triggered download'))
+    with pytest.raises(ValueError, match='linked'):
+        webstore.install(ext_id, tmp_path, force=True)
+    assert manifest.read_bytes() == b'{"name":"Preserve"}'
+
+
 def test_a_truncated_id_says_so():
     # 31 characters: what you get by selecting the id in the address bar and
     # missing the last one. "not found" would send the user hunting in the

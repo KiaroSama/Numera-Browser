@@ -373,6 +373,46 @@ def test_embedded_promotion_gate_refuses_unverified_or_unsafe_state(tmp_path, mo
         assert output.read_text(encoding='utf-8') == f'base_sha={base}\n'
 
 
+@pytest.mark.parametrize('timeout', [False, True])
+def test_package_smoke_pipes_fixture_input_without_plaintext_staging(tmp_path, monkeypatch, timeout):
+    from types import SimpleNamespace
+    import subprocess
+
+    spec = importlib.util.spec_from_file_location('package_smoke', ROOT / 'scripts/build/smoke.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    received, settled = [], []
+    logger = SimpleNamespace(info=lambda *args: None)
+    smoke = module.Smoke(tmp_path / 'not-executed', tmp_path, 60, logger)
+
+    should_timeout = timeout
+
+    def communicate(input, timeout):
+        received.append(input)
+        assert 0 < timeout <= 60
+        if should_timeout:
+            raise subprocess.TimeoutExpired('fixture', timeout)
+
+    def spawn(command, **options):
+        assert command[3:] == ['pool', 'add', '-', '--json']
+        assert options['stdin'] is subprocess.PIPE
+        options['stdout'].write(b'{"ok":true}')
+        return SimpleNamespace(pid=42, returncode=0, communicate=communicate,
+                               stdin=SimpleNamespace(close=lambda: None)), object()
+
+    monkeypatch.setattr(module.proctree, 'spawn', spawn)
+    monkeypatch.setattr(module.proctree, 'end_session', lambda *args, **kwargs: settled.append(args[0].pid))
+    monkeypatch.setattr(module.unit_report, 'read', lambda *args: SimpleNamespace(trees=[], complete=True))
+    if timeout:
+        with pytest.raises(subprocess.TimeoutExpired):
+            smoke.command('pool', 'add', '-', input_text='public fixture α\n')
+    else:
+        assert smoke.command('pool', 'add', '-', input_text='public fixture α\n') == {'ok': True}
+    assert received == [b'public fixture \xce\xb1\n']
+    assert settled == [42] and not smoke.owned
+    assert not (tmp_path / 'fixture-proxies.txt').exists()
+
+
 def test_manual_ci_secrets_are_named_and_publish_requires_verified_promotion():
     ci = (ROOT/'.github/workflows/ci.yml').read_text(encoding='utf-8')
     triggers = ci.split('\non:\n', 1)[1].split('\n# Read-only', 1)[0]

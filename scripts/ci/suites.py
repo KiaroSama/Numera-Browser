@@ -212,6 +212,42 @@ def check_native_ignored(paths: list[Path]) -> None:
             raise ValueError(f'Native source has unmapped ignored tests: {path.name}')
 
 
+def check_source_module_action(action: dict) -> None:
+    steps = action.get('runs', {}).get('steps', [])
+    settled = "${{ steps.module_8.outputs.settled == 'true' && steps.checkpoint_8.outcome == 'success' }}"
+    if (action.get('runs', {}).get('using') != 'composite' or len(steps) != 18
+            or action.get('outputs', {}).get('settled', {}).get('value') != settled):
+        raise ValueError('Invalid source module checkpoint action topology')
+    for index in range(9):
+        run, upload = steps[index * 2:index * 2 + 2]
+        condition = '${{ !cancelled() }}' if index == 0 else (
+            "${{ (success() || failure()) && !cancelled() && steps.module_%s.outputs.settled == 'true' "
+            "&& steps.checkpoint_%s.outcome == 'success' }}" % (index - 1, index - 1))
+        upload_condition = ("${{ (success() || failure()) && !cancelled() "
+                            "&& steps.module_%s.outputs.settled == 'true' }}" % index)
+        command = run.get('run', '')
+        fragments = ['run_owned.py --wall 600 --idle 120',
+                     f'--shard 1 --shards 4 --block 2 --blocks 4 --module-index {index}',
+                     'if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }',
+                     f'--settled-index {index}',
+                     '$state = Get-Content -LiteralPath build/source-windows-1/checkpoint.json -Raw -Encoding utf8 | ConvertFrom-Json',
+                     f'$testExit = $state.module_results[{index}].exit', 'if ($testExit -notin @(0, 1))',
+                     "'settled=true'", 'exit [int]$testExit']
+        positions = [command.find(fragment) for fragment in fragments]
+        if (run.get('id') != f'module_{index}' or run.get('shell') != 'pwsh'
+                or run.get('if') != condition or upload.get('if') != upload_condition
+                or any(position < 0 for position in positions) or positions != sorted(positions)
+                or command.count('if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }') != 2
+                or 'run_owned.py --wall 30 --idle 15 -- python scripts/ci/python_source.py --settled-index' not in command
+                or run.get('continue-on-error') or upload.get('continue-on-error')
+                or upload.get('id') != f'checkpoint_{index}'
+                or upload.get('uses') != 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9'
+                or upload.get('with') != {'name': f'source-windows-checkpoint-2-module-{index}',
+                                         'path': 'build/source-windows-1/',
+                                         'if-no-files-found': 'error', 'retention-days': 7}):
+            raise ValueError('Unsafe or incomplete source module checkpoint step')
+
+
 def check_workflows(root: Path = ROOT) -> dict[str, int]:
     import yaml
 
@@ -291,11 +327,18 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
     for block in range(4):
         run = next((step for step in windows_steps if step.get('name') == f'Partition 1 block {block}'), {})
         upload = next((step for step in windows_steps if step.get('name') == f'Preserve partition 1 checkpoint {block}'), {})
-        if (f'--shard 1 --shards 4 --block {block} --blocks 4' not in run.get('run', '')
-                or run.get('if') != 'matrix.shard == 1 && !cancelled()'
-                or upload.get('if') != 'matrix.shard == 1 && !cancelled()'
+        correct_run = (run.get('uses') == './.github/actions/source-module-checkpoints'
+                       and run.get('id') == 'source_modules' if block == 2
+                       else f'--shard 1 --shards 4 --block {block} --blocks 4' in run.get('run', ''))
+        condition = 'matrix.shard == 1 && !cancelled()'
+        settled = " && steps.source_modules.outputs.settled == 'true'"
+        if (not correct_run or run.get('timeout-minutes') != 12
+                or run.get('if') != condition + (settled if block == 3 else '')
+                or upload.get('if') != condition + (settled if block == 2 else '')
                 or upload.get('with', {}).get('name') != f'source-windows-checkpoint-{block}'):
             raise ValueError('Missing complete bounded Windows checkpoint diagnostics')
+    action = root / '.github/actions/source-module-checkpoints/action.yml'
+    check_source_module_action(yaml.load(action.read_text(encoding='utf-8'), Loader=UniqueLoader))
     windows_strategy = jobs['engine-windows']['strategy']
     if (windows_strategy['matrix'] != {'shard': [0, 1, 2, 3]}
             or windows_strategy['max-parallel'] != 2 or windows_strategy['fail-fast'] is not False):

@@ -297,6 +297,153 @@ def test_problem_block_notices_identify_each_admitted_module_before_execution(tm
     assert rows[-1]['phase'] == ('unproved' if failure == 'unproved' else 'finish')
 
 
+@pytest.mark.parametrize('failure', [None, 'ordinary', 'cleanup', 'interrupted'])
+def test_single_module_checkpoints_keep_one_deadline_and_stop_on_uncertain_cleanup(tmp_path, monkeypatch, failure):
+    from contextlib import contextmanager
+    import json
+    from types import SimpleNamespace
+
+    module = runner(monkeypatch)
+    (tmp_path / 'engine').mkdir()
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    files = [Path(f'test_{index:02}.py') for index in range(37)]
+    monkeypatch.setattr(module, 'python_sources', lambda *args: files)
+    clock, calls = [20.0], []
+    monkeypatch.setattr(module, 'time', SimpleNamespace(monotonic=lambda: clock[0]))
+    logger = SimpleNamespace(info=lambda *args: None, error=lambda *args: None)
+
+    @contextmanager
+    def log(*args):
+        yield logger
+
+    monkeypatch.setattr(module, 'run_log', log)
+    output = tmp_path / 'build/source-windows-1'
+    output.mkdir(parents=True)
+    checkpoint = output / 'checkpoint.json'
+    state = dict(end=600, next=2, blocks=4, modules=[path.name for path in files])
+    checkpoint.write_text(json.dumps(state), encoding='utf-8')
+
+    def run(command, wall, idle, log):
+        name = Path(command[-1]).name
+        saved = json.loads(checkpoint.read_text(encoding='utf-8'))
+        assert saved['active'] == name, 'spawn began without a durable pending identity'
+        calls.append((name, wall, idle))
+        clock[0] += 10
+        if failure == 'cleanup' and len(calls) == 3:
+            raise RuntimeError('fixture cleanup unproved')
+        if failure == 'interrupted' and len(calls) == 3:
+            return 2
+        return int(failure == 'ordinary' and len(calls) == 1)
+
+    monkeypatch.setattr(module, 'run', run)
+    monkeypatch.chdir(tmp_path)
+    for index in range(9):
+        if failure in ('cleanup', 'interrupted') and index == 2:
+            with pytest.raises(RuntimeError):
+                module.verify(1, 4, logger, block=2, blocks=4, module_index=index)
+            assert json.loads(checkpoint.read_text(encoding='utf-8'))['active'] == files[20].name
+            with pytest.raises(ValueError, match='checkpoint'):
+                module.settled_exit(index)
+            for rejected in (index, index + 1):
+                with pytest.raises(ValueError, match='checkpoint'):
+                    module.verify(1, 4, logger, block=2, blocks=4, module_index=rejected)
+            with pytest.raises(ValueError, match='checkpoint'):
+                module.verify(1, 4, logger, block=2, blocks=4)
+            assert len(calls) == 3
+            break
+        # Protocol success follows cleanup, not the test verdict. The action
+        # publishes settled only after its outer owner also exits successfully.
+        assert module.verify(1, 4, logger, block=2, blocks=4, module_index=index) == 0
+        assert module.settled_exit(index) == int(failure == 'ordinary' and index == 0)
+        saved = json.loads(checkpoint.read_text(encoding='utf-8'))
+        assert saved['end'] == 600 and saved['module_next'] == index + 1 and 'active' not in saved
+        assert saved['next'] == (3 if index == 8 else 2)
+        if index < 8:
+            with pytest.raises(ValueError, match='checkpoint'):
+                module.verify(1, 4, logger, block=2, blocks=4, module_index=index)
+            with pytest.raises(ValueError, match='checkpoint'):
+                module.verify(1, 4, logger, block=2, blocks=4, module_index=index + 2)
+            with pytest.raises(ValueError, match='checkpoint'):
+                module.verify(1, 4, logger, block=2, blocks=4)
+        clock[0] += 5  # Completed immutable uploads consume the partition budget.
+    assert [call[0] for call in calls] == [path.name for path in files[18:18 + len(calls)]]
+    assert [call[1] for call in calls] == [580 - 15 * index for index in range(len(calls))]
+    assert all(call[2] == 120 for call in calls)
+    if failure in (None, 'ordinary'):
+        assert saved['module_results'] == [dict(module=path.name, exit=int(failure == 'ordinary' and index == 0))
+                                          for index, path in enumerate(files[18:27])]
+        clock[0] = 601
+        checkpoint.write_text(json.dumps(state), encoding='utf-8')
+        with pytest.raises(TimeoutError):
+            module.verify(1, 4, logger, block=2, blocks=4, module_index=0)
+        assert len(calls) == 9
+
+
+@pytest.mark.parametrize('damage', ['wrong-size', 'partial-json', 'wrong-inventory', 'bad-verdict'])
+def test_module_checkpoint_refuses_ambiguous_saved_state_before_spawn(tmp_path, monkeypatch, damage):
+    import json
+    from types import SimpleNamespace
+
+    module = runner(monkeypatch)
+    (tmp_path / 'engine').mkdir()
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    sources = [Path(f'test_{index:02}.py') for index in range(40 if damage == 'wrong-size' else 37)]
+    monkeypatch.setattr(module, 'python_sources', lambda *args: sources)
+    state = dict(end=600, next=2, blocks=4, modules=[path.name for path in sources])
+    if damage == 'wrong-inventory': state['modules'][0] = 'test_foreign.py'
+    if damage == 'bad-verdict':
+        state.update(module_next=1, module_results=[dict(module=sources[18].name, exit=124)])
+    output = tmp_path / 'build/source-windows-1'
+    output.mkdir(parents=True)
+    (output / 'checkpoint.json').write_text('{' if damage == 'partial-json' else json.dumps(state), encoding='utf-8')
+    monkeypatch.setattr(module, 'run', lambda *args: pytest.fail('Ambiguous checkpoint started a child'))
+    monkeypatch.setattr(module, 'time', SimpleNamespace(monotonic=lambda: 0))
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(ValueError):
+        module.verify(1, 4, SimpleNamespace(info=lambda *args: None), block=2, blocks=4,
+                      module_index=int(damage == 'bad-verdict'))
+
+
+def test_module_checkpoint_action_keeps_failures_and_requires_previous_cleanup_and_upload():
+    import copy
+    import yaml
+
+    path = ROOT / '.github/actions/source-module-checkpoints/action.yml'
+    action = yaml.safe_load(path.read_text(encoding='utf-8'))
+    module = coverage()
+    module.check_source_module_action(action)
+    assert action['runs']['using'] == 'composite'
+    steps = action['runs']['steps']
+    assert len(steps) == 18
+    assert action['outputs']['settled']['value'] == (
+        "${{ steps.module_8.outputs.settled == 'true' && steps.checkpoint_8.outcome == 'success' }}")
+    for index in range(9):
+        run, upload = steps[index * 2:index * 2 + 2]
+        assert run['id'] == f'module_{index}' and run['shell'] == 'pwsh'
+        command = run['run']
+        owner = command.index('run_owned.py --wall 600 --idle 120')
+        proof = command.index('if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }', owner)
+        settled_read = command.index(f'--settled-index {index}', proof)
+        read_proof = command.index('if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }', settled_read)
+        verdict = command.index(f'$testExit = $state.module_results[{index}].exit', read_proof)
+        publish = command.index('settled=true', verdict)
+        assert owner < proof < settled_read < read_proof < verdict < publish < command.index('exit [int]$testExit')
+        assert upload['id'] == f'checkpoint_{index}'
+        assert upload['with']['name'] == f'source-windows-checkpoint-2-module-{index}'
+    for damage in ('repeat', 'skip-proof', 'ignored-exit', 'read-owner', 'softened', 'artifact-collision', 'false-settled'):
+        broken = copy.deepcopy(action)
+        run, upload = broken['runs']['steps'][2:4]
+        if damage == 'repeat': run['run'] = run['run'].replace('--module-index 1', '--module-index 0')
+        elif damage == 'skip-proof': run['if'] = '${{ !cancelled() }}'
+        elif damage == 'ignored-exit': run['run'] = run['run'].replace('exit [int]$testExit', 'exit 0')
+        elif damage == 'read-owner': run['run'] = run['run'].replace('run_owned.py --wall 30 --idle 15', 'run_owned.py')
+        elif damage == 'softened': run['continue-on-error'] = True
+        elif damage == 'false-settled': broken['outputs']['settled']['value'] = '${{ true }}'
+        else: upload['with']['name'] = 'source-windows-checkpoint-2-module-0'
+        with pytest.raises(ValueError, match='module checkpoint'):
+            module.check_source_module_action(broken)
+
+
 def test_durable_notice_blocks_cover_every_module_with_at_most_ten_annotations(monkeypatch):
     reporter = runner(monkeypatch)
     files = [Path(f'test_{index:03}.py') for index in range(37)]

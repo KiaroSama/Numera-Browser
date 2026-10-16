@@ -47,7 +47,7 @@ class Smoke:
             raise TimeoutError('Packaged smoke exceeded its whole-run deadline')
         return min(limit, left)
 
-    def spawn(self, arguments: list[str]):
+    def spawn(self, arguments: list[str], *, input_text: str | None = None):
         number = self.sequence
         self.sequence += 1
         report = self.workspace / f'units-{number}.jsonl'
@@ -60,7 +60,7 @@ class Smoke:
         env = {**self.env, unit_report.UNITS_ENV: str(report)}
         try:
             proc, tree = proctree.spawn([str(self.engine), '--data-dir', str(self.data), *arguments],
-                                        env=env, stdin=subprocess.DEVNULL, stdout=sink,
+                                        env=env, stdin=subprocess.PIPE if input_text is not None else subprocess.DEVNULL, stdout=sink,
                                         stderr=err_sink)
         finally:
             sink.close()
@@ -91,19 +91,26 @@ class Smoke:
             self.owned.remove(owned)
 
     def command(self, *arguments: str, allow_failure: bool = False, limit: float = 60,
-                structured: bool = True):
+                structured: bool = True, input_text: str | None = None):
         argv = list(arguments) + (['--json'] if structured else [])
         timeout = self.remaining(limit)
-        owned = self.spawn(argv)
+        owned = self.spawn(argv, input_text=input_text)
         proc, _, _, output = owned
         try:
-            proc.wait(timeout=timeout)
+            if input_text is None:
+                proc.wait(timeout=timeout)
+            else:
+                proc.communicate(input=input_text.encode('utf-8'), timeout=timeout)
             text = output.read_text(encoding='utf-8', errors='strict')
             if proc.returncode and not allow_failure:
                 raise RuntimeError(f'Packaged command {arguments[0]} exited {proc.returncode}: {text[:1500]}')
             return json.loads(text) if structured else text
         finally:
-            self.settle(owned)
+            try:
+                self.settle(owned)
+            finally:
+                if proc.stdin is not None:
+                    proc.stdin.close()
 
     def http(self, port: int, path: str, *, method='GET', body=None):
         data = json.dumps(body).encode('utf-8') if body is not None else None
@@ -178,13 +185,7 @@ class Smoke:
         if self.command('list')['profiles'][0]['id'] != profile_id:
             raise AssertionError('Packaged profile did not survive a process restart')
         secret = 'package-smoke-proxy-password'
-        proxy_file = self.workspace / 'fixture-proxies.txt'
-        # This is deliberately public fixture input, but it still receives
-        # private exclusive storage and never replaces an existing user file.
-        with proxy_file.open('x', encoding='utf-8') as stream:
-            proxy_file.chmod(0o600)
-            stream.write(f'http://fixture:{secret}@203.0.113.7:8080\n')
-        self.command('pool', 'add', str(proxy_file))
+        self.command('pool', 'add', '-', input_text=f'http://fixture:{secret}@203.0.113.7:8080\n')
         self.command('--password', 'package-fixture-master', 'vault', 'enable', limit=90)
         stored = (self.data / 'proxies.json').read_text(encoding='utf-8')
         if secret in stored or 'enc:v' not in stored:

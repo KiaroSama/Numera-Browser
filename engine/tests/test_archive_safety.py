@@ -278,6 +278,59 @@ def test_a_linked_session_claim_stays_owned_instead_of_appearing_absent(tmp_path
     assert sessions.read(tmp_path, '../escape') is None
 
 
+@pytest.mark.parametrize('member', ['../outside', '../records-evil/file', 'child/../../outside'])
+def test_archive_path_is_refused_before_probing_an_outside_target(tmp_path, monkeypatch, member):
+    from pathlib import Path
+    from numera.paths import safe_join
+
+    root = tmp_path / 'records'
+    root.mkdir()
+    original = Path.resolve
+    probed = []
+    def resolve(path, *args, **kwargs):
+        if path != root:
+            probed.append(path)
+            raise AssertionError('An escaping member reached filesystem resolution')
+        return original(path, *args, **kwargs)
+    monkeypatch.setattr(Path, 'resolve', resolve)
+    with pytest.raises(ValueError, match='escapes'):
+        safe_join(root, member)
+    assert not probed
+
+
+@pytest.mark.parametrize('kind', ['archive', 'profile'])
+def test_physical_check_keeps_links_before_parent_components(tmp_path, monkeypatch, kind):
+    from pathlib import Path
+    from numera.paths import id_path, safe_join
+
+    root = tmp_path / 'records'
+    root.mkdir()
+    member = root / 'linked' / '..' / 'target'
+    original = Path.resolve
+
+    def resolve(path, *args, **kwargs):
+        if path == member:
+            return tmp_path / 'outside' / 'target'
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'resolve', resolve)
+    with pytest.raises(ValueError, match='escapes'):
+        if kind == 'archive':
+            safe_join(root, 'linked/../target')
+        else:
+            id_path(root, 'linked', '/../target')
+
+
+def test_profile_path_rejects_an_escaping_suffix_before_filesystem_access(tmp_path, monkeypatch):
+    from pathlib import Path
+    from numera.paths import id_path
+
+    monkeypatch.setattr(Path, 'is_symlink', lambda path: (_ for _ in ()).throw(
+        AssertionError('An escaping suffix reached a filesystem probe')))
+    with pytest.raises(ValueError, match='escapes'):
+        id_path(tmp_path, 'fixture', '/../../outside')
+
+
 def test_json_replacement_uses_private_file_permissions_on_posix(tmp_path):
     import os
     from numera.paths import write_json

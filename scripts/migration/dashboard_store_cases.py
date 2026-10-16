@@ -15,6 +15,9 @@ from numera.server.stores import DashboardStore
 def cases(parent: Path) -> list[dict]:
     base = to_dashboard_profile(Profile(id='fixture-dashboard',name='Dashboard α',
         fingerprint=generate(seed=42,os='windows'),created_at=1700000000.0,updated_at=1700000000.0))
+    if base['proxy'] is not None:
+        raise AssertionError('Dashboard storage fixture must not contain proxy credentials')
+    base['proxy'] = None
     base.update(id='fixture-dashboard',folder='Work',future={'retained':True})
     parent.mkdir(parents=True,exist_ok=True)
     found=[]

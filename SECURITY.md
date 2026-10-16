@@ -23,7 +23,9 @@ markers or install a root certificate merely to bypass a refusal. See
 [update trust and recovery](docs/updates.md).
 
 Profile identifiers must be complete portable filenames; a linked profile/session
-record is refused rather than resolved into another record. Atomic JSON writes
+record is refused rather than resolved into another record. Archive paths receive
+both lexical containment checks and physical resolution of the original member;
+normalization must not erase links before the physical check. Atomic JSON writes
 create a new temporary file exclusively, leaving any preexisting temporary file
 untouched. New temporary files use owner-only mode on POSIX; that mode does not
 establish a Windows ACL or encrypt the contents. Restrict access to the resolved

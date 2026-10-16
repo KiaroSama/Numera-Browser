@@ -308,13 +308,15 @@ def session_lease(root, profile_id: str) -> "_SessionLease":
     desktop and a CLI could open one Chromium profile directory at the same
     time, and delete/backup/restore could run against a live one.
     """
+    from .paths import safe_join
+
     resolved = Path(root).resolve()
     key = f"{resolved}\x00{profile_id}"
     with _LOCKS_GUARD:
         lease = _SESSION_LEASES.get(key)
         if lease is None:
             lease = _SESSION_LEASES[key] = _SessionLease(
-                resolved / ".locks" / _lock_path(key, f"session-{profile_id}"))
+                safe_join(resolved / ".locks", str(_lock_path(key, f"session-{profile_id}"))))
         return lease
 
 

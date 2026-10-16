@@ -213,6 +213,12 @@ def safe_join(base: Path, member: str) -> Path:
     if _DRIVE_PREFIX.match(rel):
         raise ValueError(
             f"{member!r} names a Windows drive and cannot be part of an archive")
+    absolute = os.path.abspath(base / rel)
+    if absolute != str(base) and not absolute.startswith(str(base).rstrip(os.sep) + os.sep):
+        raise ValueError(
+            f"refusing archive member that escapes its folder: {member!r}")
+    # abspath is only the lexical gate: resolve the original member so a
+    # linked directory followed by '..' cannot be normalized away first.
     target = (base / rel).resolve()
     if target != base and base not in target.parents:
         raise ValueError(
@@ -267,6 +273,9 @@ def id_path(base: Path, value, suffix: str = "") -> Path:
     """`<base>/<id><suffix>`, refusing anything that would leave `base`."""
     base = Path(base).resolve()
     target = base / f"{safe_id(value)}{suffix}"
+    absolute = os.path.abspath(target)
+    if not absolute.startswith(str(base).rstrip(os.sep) + os.sep):
+        raise ValueError('profile path escapes its data directory')
     if target.is_symlink() or target.resolve().parent != base:
         raise ValueError('profile path escapes its data directory or is linked')
     return target

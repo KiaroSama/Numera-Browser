@@ -198,12 +198,12 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - name: Partition 1 block 2
+        id: source_modules
         if: matrix.shard == 1 && !cancelled()
-        working-directory: engine
         timeout-minutes: 12
-        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python ../scripts/ci/python_source.py --shard 1 --shards 4 --block 2 --blocks 4
+        uses: ./.github/actions/source-module-checkpoints
       - name: Preserve partition 1 checkpoint 2
-        if: matrix.shard == 1 && !cancelled()
+        if: matrix.shard == 1 && !cancelled() && steps.source_modules.outputs.settled == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: source-windows-checkpoint-2
@@ -211,7 +211,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - name: Partition 1 block 3
-        if: matrix.shard == 1 && !cancelled()
+        if: matrix.shard == 1 && !cancelled() && steps.source_modules.outputs.settled == 'true'
         working-directory: engine
         timeout-minutes: 12
         run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python ../scripts/ci/python_source.py --shard 1 --shards 4 --block 3 --blocks 4

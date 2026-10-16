@@ -56,7 +56,7 @@ def extension_id(url_or_id: str) -> str:
     m = ID_RE.search(text)
     if m:
         ext_id = m.group(1)
-        if re.fullmatch(r"[a-p]{32}", ext_id) is None:
+        if not re.fullmatch(r"[a-p]{32}", ext_id):
             raise WebStoreError("invalid Chrome extension id")
         return ext_id
 
@@ -83,6 +83,8 @@ def extension_id(url_or_id: str) -> str:
 
 
 def _download(ext_id: str, timeout: int = 60) -> bytes:
+    if not re.fullmatch(r"[a-p]{32}", ext_id):
+        raise WebStoreError("invalid Chrome extension id")
     req = urllib.request.Request(CRX_URL.format(id=ext_id),
                                  headers={"User-Agent": USER_AGENT})
     try:
@@ -174,9 +176,11 @@ def install(url_or_id: str, data_dir: Path, *, force: bool = False) -> dict:
 
     Idempotent: an extension already installed is returned as-is unless `force`.
     """
+    from .paths import id_path
+
     ext_id = extension_id(url_or_id)
     root = Path(data_dir) / "extensions"
-    dest = root / ext_id
+    dest = id_path(root, ext_id)
 
     if dest.is_dir() and (dest / "manifest.json").is_file() and not force:
         return {"id": ext_id, "path": str(dest), "name": _name(dest), "reused": True}
