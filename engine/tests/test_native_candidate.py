@@ -169,6 +169,73 @@ def test_outer_cleanup_rereads_units_published_while_stopping_a_producer(tmp_pat
     assert 102 in calls, 'Late SDK ownership was omitted from outer cleanup'
 
 
+@pytest.mark.parametrize(('platform', 'engine'), [
+    ('linux', 'camoufox'), ('darwin', 'camoufox'),
+    ('win32', 'playwright'), ('win32', 'patchright'), ('win32', 'cloak'),
+])
+def test_candidate_cache_binding_does_not_add_other_sdk_prerequisites(platform, engine, monkeypatch):
+    import sys
+
+    candidate = load('candidate_acceptance')
+    monkeypatch.setattr(sys, 'platform', platform)
+    monkeypatch.setitem(sys.modules, 'platformdirs.windows', None)
+    env = {'HOME': 'synthetic', 'USERPROFILE': 'synthetic', 'XDG_CACHE_HOME': 'existing'}
+    candidate.bind_sdk_cache(env, engine)
+    assert env == {'HOME': 'synthetic', 'USERPROFILE': 'synthetic', 'XDG_CACHE_HOME': 'existing'}
+
+
+@pytest.mark.parametrize('prior', ['missing', 'relative', 'absolute'])
+def test_candidate_cache_binding_captures_effective_parent_root(tmp_path, monkeypatch, prior):
+    import sys
+    from types import SimpleNamespace
+
+    candidate = load('candidate_acceptance')
+    monkeypatch.setattr(sys, 'platform', 'win32')
+    home = tmp_path / 'original home'
+    home.mkdir()
+    root = tmp_path / 'effective local appdata'
+    root.mkdir()
+    key = 'WIN_PD_OVERRIDE_LOCAL_APPDATA'
+    monkeypatch.setenv('USERPROFILE', str(home))
+    monkeypatch.delenv(key, raising=False)
+    if prior != 'missing':
+        monkeypatch.setenv(key, 'relative' if prior == 'relative' else str(root))
+    calls = []
+
+    def resolve(name):
+        assert candidate.os.environ['USERPROFILE'] == str(home)
+        calls.append(name)
+        return str(root)
+
+    monkeypatch.setitem(sys.modules, 'platformdirs.windows', SimpleNamespace(get_win_folder=resolve))
+    env = dict(candidate.os.environ, HOME='synthetic', USERPROFILE='synthetic')
+    candidate.bind_sdk_cache(env, 'camoufox')
+    assert calls == ['CSIDL_LOCAL_APPDATA']
+    assert env[key] == str(root), 'Candidate lost the effective pre-isolation Camoufox cache root'
+    assert env['HOME'] == env['USERPROFILE'] == 'synthetic'
+    assert candidate.os.environ['USERPROFILE'] == str(home)
+    assert candidate.os.environ.get(key) == (None if prior == 'missing' else
+                                           'relative' if prior == 'relative' else str(root))
+
+
+@pytest.mark.parametrize('invalid', ['empty', 'relative', 'missing', 'file'])
+def test_candidate_cache_binding_refuses_unavailable_root(tmp_path, monkeypatch, invalid):
+    import sys
+    from types import SimpleNamespace
+
+    candidate = load('candidate_acceptance')
+    monkeypatch.setattr(sys, 'platform', 'win32')
+    file = tmp_path / 'file'
+    file.write_bytes(b'inert')
+    value = {'empty': '', 'relative': 'relative', 'missing': str(tmp_path / 'absent'), 'file': str(file)}[invalid]
+    monkeypatch.setitem(sys.modules, 'platformdirs.windows',
+                        SimpleNamespace(get_win_folder=lambda name: value))
+    env = {'USERPROFILE': 'synthetic'}
+    with pytest.raises(ValueError, match='Camoufox cache root'):
+        candidate.bind_sdk_cache(env, 'camoufox')
+    assert env == {'USERPROFILE': 'synthetic'}
+
+
 def test_candidate_failure_diagnostics_keep_only_bounded_safe_events(tmp_path, monkeypatch):
     import logging
 

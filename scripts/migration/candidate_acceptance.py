@@ -321,6 +321,19 @@ def exercise(binary, web, parent, engine, env, logger):
     logger.info('Relocated HTTP/auth/dashboard/browser restart/idempotence/stop passed engine=%s', engine)
 
 
+def bind_sdk_cache(env, engine):
+    if sys.platform != 'win32' or engine != 'camoufox':
+        return
+    from platformdirs.windows import get_win_folder
+
+    # Native known-folder lookup can follow USERPROFILE even with LOCALAPPDATA set.
+    # Resolve in the parent environment, before synthetic HOME reaches SDK children.
+    root = Path(get_win_folder('CSIDL_LOCAL_APPDATA'))
+    if not root.is_absolute() or not root.is_dir():
+        raise ValueError('Existing absolute Windows Camoufox cache root is required')
+    env['WIN_PD_OVERRIDE_LOCAL_APPDATA'] = str(root)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--report', type=Path, required=True)
@@ -345,6 +358,7 @@ def main():
             # Existing SDK/browser caches are explicit external prerequisites,
             # while application home/data stay synthetic. No browser is copied or downloaded.
             env['XDG_CACHE_HOME'] = os.environ.get('XDG_CACHE_HOME') or str(Path.home() / '.cache')
+            bind_sdk_cache(env, args.engine)
             env.update(NUMERA_SDK_PYTHON=sys.executable, NUMERA_LOG_DIR=str(parent / 'logs'),
                        PYTHONUTF8='1', PYTHONIOENCODING='utf-8', PYTHONDONTWRITEBYTECODE='1',
                        HOME=str(home), USERPROFILE=str(home))

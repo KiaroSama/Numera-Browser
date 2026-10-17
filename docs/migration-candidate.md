@@ -32,8 +32,11 @@ ancestry into a path with spaces and executes from an unrelated working director
 Application home, data and logs are synthetic isolated fixtures.
 
 The SDK interpreter and previously installed browser caches remain explicit
-external prerequisites. This is not a self-contained Python-free distribution,
-full browser-archive acceptance, Docker integration or desktop runtime selection.
+external prerequisites. Windows Camoufox binds its effective pre-isolation local
+application-data root through platformdirs' documented override; synthetic
+application home/data remain isolated. No browser is copied or downloaded.
+This is not a self-contained Python-free distribution, full browser-archive
+acceptance, Docker integration or desktop runtime selection.
 
 The external application scenario checks:
 
@@ -59,14 +62,16 @@ not uploaded.
 
 ## Acceptance status
 
-Source `e6f2cb7` ran in hosted batch
-[39050238103](https://github.com/KiaroSama/Numera-Browser/actions/runs/39050238103).
+Source `7c88397` ran in hosted batch
+[39059706094](https://github.com/KiaroSama/Numera-Browser/actions/runs/39059706094).
 All four relocated Linux cases and Windows Playwright, Patchright and Cloak passed.
 Windows Camoufox failed its first CLI cookie import; its source/library cases
-passed, but the relocated failure's root cause remains unknown. Both native tiers
-proved the historical metadata bytecode failure, restored fixed bytes and passed
-the current tests. The integrated batch failed; diagnostic retention changes
-await their own hosted verification, not a claimed Camoufox repair.
+passed. Safe retained diagnostics show import succeeded, then context open raised
+`CamoufoxNotInstalled`; the ownership report was complete and clean. The prepared
+Windows cache-root binding needs hosted verification against that same scenario;
+it is not yet a proven repair. Both native tiers previously proved the historical
+metadata bytecode failure, restored fixed bytes and passed the current tests.
+CodeQL and required verification still failed; the integrated batch is not green.
 
 See [migration status](migration.md). CodeQL, the 907-row capability ledger, complete
 application coverage, representative replay, repeated comparative time/peak-memory
