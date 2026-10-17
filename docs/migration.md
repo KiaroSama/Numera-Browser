@@ -122,6 +122,12 @@ performance or rollback acceptance.
   controls that must remain data. The combined cookie parity target passed on
   hosted Linux in 0.11 seconds and Windows in 0.25 seconds. No unfixed-code red
   run was observed; broader cookie, numeric and non-finite compatibility remain open.
+- Hosted native verification now includes a prepared historical failure-proof step
+  for those two regressions. It verifies the exact historical production bytes,
+  requires the named test to fail at its original symptom, and restores the fixed
+  source before the normal native pass. Compilation, timeout or unrelated failures
+  cannot count as regression proof. This addition is not yet runtime-verified and
+  does not clear the independent security verdict or full migration gates.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths; that assessment is not
   a clean verdict for the current tree. Identifier, exclusive JSON creation,

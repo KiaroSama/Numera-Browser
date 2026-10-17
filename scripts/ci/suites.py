@@ -486,6 +486,9 @@ def main() -> int:
                 import os
                 from baseline_source import ENVIRONMENT, reference
                 with reference() as original:
+                    if args.command == 'native':
+                        from native_regressions import prove
+                        prove(ROOT, original, log)
                     environment = {**os.environ, ENVIRONMENT: str(original), 'PYTHONDONTWRITEBYTECODE': '1'}
                     return subprocess.run(command, env=environment, stdin=subprocess.DEVNULL, check=False).returncode
             return subprocess.run(command, stdin=subprocess.DEVNULL, check=False).returncode
