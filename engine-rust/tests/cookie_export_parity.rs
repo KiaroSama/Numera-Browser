@@ -16,9 +16,9 @@ request = json.loads(sys.stdin.readline())
 print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}), flush=True)
 request = json.loads(sys.stdin.readline())
 from cookie_export_cases import cases
-from cookie_parse_cases import cases as parse_cases
+from cookie_parse_cases import cases as parse_cases, whitespace_cases
 from cookie_normalize_cases import cases as normalize_cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(), 'parse_cases':parse_cases(), 'normalization':normalize_cases()}}), flush=True)
+print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(), 'parse_cases':parse_cases(), 'normalization':normalize_cases(), 'whitespace':whitespace_cases()}}), flush=True)
 "#;
     let mut command = Command::new(python);
     command
@@ -121,6 +121,25 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
                 case["text"].as_str().ok_or("Input text missing")?
             )?)?,
             case["expected"]
+        );
+    }
+    let whitespace = observations["whitespace"]
+        .as_array()
+        .ok_or("Whitespace observations missing")?;
+    assert_eq!(whitespace.len(), 16);
+    for case in whitespace {
+        let text = case["text"].as_str().ok_or("Cookie text missing")?;
+        assert_eq!(
+            serde_json::to_value(cookie_normalize::parse(text)?)?,
+            case["parsed"],
+            "{} cookie format detection",
+            case["name"]
+        );
+        assert_eq!(
+            serde_json::to_value(cookie_format::parse_netscape(text)?)?,
+            case["netscape"],
+            "{} Netscape fields",
+            case["name"]
         );
     }
     assert!(cookie_format::to_netscape(&[Value::Null]).is_err());

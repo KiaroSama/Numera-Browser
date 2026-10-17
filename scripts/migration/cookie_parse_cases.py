@@ -4,7 +4,7 @@ from __future__ import annotations
 from baseline_source import activate
 activate()
 
-from numera.cookies import parse_netscape
+from numera.cookies import parse, parse_netscape
 
 
 def cases():
@@ -29,3 +29,30 @@ def cases():
             expected = {'failed': True}
         output.append({'name': name, 'text': text, 'expected': expected})
     return output
+
+
+def whitespace_cases():
+    import json
+
+    cookie = {'name': 'fixture', 'value': 'synthetic', 'domain': '.fixture.test'}
+    row = '.fixture.test\tTRUE\t/account\tTRUE\t1893456000\tfixture\tsynthetic'
+    document = json.dumps(cookie)
+    inputs = []
+    for space in ('\x1c', '\x1d', '\x1e', '\x1f'):
+        inputs.extend([
+            (f'json-padding-{ord(space):04x}', space + document + space),
+            (f'netscape-padding-{ord(space):04x}', space + row + space),
+        ])
+    inputs.extend([
+        ('unit-separator-fields', row.replace('\t', '\x1f')),
+        ('repeated-unit-separator-fields', row.replace('\t', '\x1f \x1f')),
+        ('tab-value-preserves-unit-separator', row + '\x1finside'),
+        ('json-value-preserves-unit-separator', json.dumps(dict(cookie, value='\x1f'))),
+    ])
+    for name, control in [('escape', '\x1b'), ('zero-width-space', chr(0x200b))]:
+        inputs.extend([
+            (f'json-nonspace-{name}', control + document + control),
+            (f'netscape-nonspace-{name}', control + row + control),
+        ])
+    return [{'name': name, 'text': text, 'parsed': parse(text),
+             'netscape': parse_netscape(text)} for name, text in inputs]

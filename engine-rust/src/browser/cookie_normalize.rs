@@ -1,4 +1,7 @@
-use super::{cookie_expiry::as_epoch, cookie_format::parse_netscape};
+use super::{
+    cookie_expiry::as_epoch,
+    cookie_format::{parse_netscape, whitespace},
+};
 use crate::{conversion::truth, validation::repr};
 use serde_json::{Value, json};
 use std::{io, path::Path};
@@ -68,7 +71,7 @@ pub fn normalize_many(rows: &[Value]) -> io::Result<Vec<Value>> {
 }
 
 pub fn parse(text: &str) -> io::Result<Vec<Value>> {
-    let text = text.trim();
+    let text = text.trim_matches(whitespace);
     if text.is_empty() {
         return Ok(Vec::new());
     }

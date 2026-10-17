@@ -8,9 +8,9 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 17, 2026
 
-The latest completed source checkpoint is `ef09a57`. Its manual hosted batch
-[38998281696](https://github.com/KiaroSama/Numera-Browser/actions/runs/38998281696)
-failed overall on October 17 at 03:30:17 UTC because the independent CodeQL
+The latest completed source checkpoint is `87bc602`. Its manual hosted batch
+[39005446877](https://github.com/KiaroSama/Numera-Browser/actions/runs/39005446877)
+failed overall on October 17 at 05:24:28 UTC because the independent CodeQL
 verdict and dependent required-verification gate failed. All Linux Python
 3.10/3.12/3.14, macOS and four Windows source jobs passed, as did dashboard
 tests/types/lint/build, native Windows/Linux contracts, all eight browser SDK
@@ -19,7 +19,7 @@ The rendered update interface passed consent, keyboard, deferral and cancellatio
 checks in dark and light themes; its synthetic bridge does not prove a real
 portable upgrade.
 
-The replacement resolves the previous `5d2e92e` listing regression without
+The earlier `ef09a57` replacement resolved the `5d2e92e` listing regression without
 relaxing the existing limit of 20 JSON read attempts. The Windows performance
 module passed all 16 tests, including the listing contract. The ownership module
 passed all 16 tests, including separate denied-stat/read cases and public CLI/HTTP
@@ -108,11 +108,19 @@ performance or rollback acceptance.
   or comparative latency improvement was reported.
 - Resumed native model review found that optional proxy reads only recognized an
   empty mapping, while the original also treats false, zero and empty strings or
-  lists as no proxy. The prepared shared-model correction reuses the existing JSON
-  truth policy and retains malformed truthy-proxy refusal. A bounded original-source
-  comparison covers 15 model/storage cases and unchanged stored bytes; the existing
-  35 recorded model cases are untouched. This correction awaits hosted verification;
-  broader wrong-type model compatibility and the capability ledger remain open.
+  lists as no proxy. The shared-model correction reuses the existing JSON truth
+  policy and retains malformed truthy-proxy refusal. Its bounded original-source
+  comparison passed all 15 model/storage cases on hosted Windows and Linux,
+  including unchanged stored bytes. The existing 35 recorded model cases are
+  untouched and passed too. No unfixed-code red run was observed; broader wrong-type
+  model compatibility and the capability ledger remain open.
+- Cookie input review found another bounded compatibility gap: Python treats four
+  ASCII separators as whitespace that Rust's standard predicate excludes. The
+  prepared cookie-only correction preserves JSON boundary trimming and Netscape
+  fallback field splitting without changing TAB-first parsing or line boundaries.
+  Sixteen additional original-source observations cover padding, field separation
+  and controls that must remain data. Hosted verification is still pending; this
+  does not settle broader cookie, numeric or non-finite compatibility.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths; that assessment is not
   a clean verdict for the current tree. Identifier, exclusive JSON creation,
