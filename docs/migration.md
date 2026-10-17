@@ -84,6 +84,14 @@ rollback acceptance.
   the two affected modules passed 9 and 10 tests respectively. This verifies the
   conservative status/stop correction, not the remaining CodeQL verdict or native
   updater acceptance.
+- A further source review found an ambiguous durable-claim existence probe:
+  Python 3.14 can return false for an inaccessible path as well as a missing one.
+  The prepared correction reads the claim directly, treating only a missing read
+  as absence and retaining unreadable ownership for path-resolution or access
+  failures. Existing public ownership and CLI/HTTP regression seams now cover
+  denied claim observation, unchanged claim bytes and recovery controls. This
+  correction has not yet run in hosted CI; the completed results above belong to
+  the earlier source checkpoint, not this changed tree.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths; that assessment is not
   a clean verdict for the current tree. Identifier, exclusive JSON creation,

@@ -198,9 +198,80 @@ def test_stopping_a_profile_nobody_here_owns_says_so(tmp_path, capsys):
     assert "another process" in out, out
 
 
+def _deny_claim_observation(monkeypatch, claim, error=PermissionError):
+    import io
+    import os
+
+    observed = []
+    original_stat, original_open = os.stat, io.open
+
+    def stat(path, *args, **kwargs):
+        if path in (claim, str(claim)):
+            observed.append("stat")
+            raise error("fixture claim observation denied")
+        return original_stat(path, *args, **kwargs)
+
+    def open_file(path, *args, **kwargs):
+        if path in (claim, str(claim)):
+            observed.append("read")
+            raise error("fixture claim reading denied")
+        return original_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(os, "stat", stat)
+    monkeypatch.setattr(io, "open", open_file)
+    return observed
+
+
+@pytest.mark.parametrize("error", [PermissionError, OSError])
+def test_an_unobservable_claim_is_not_reported_free(tmp_path, monkeypatch, error):
+    from numera import proctree, sessions
+    from numera.paths import SessionBusy
+
+    claim = tmp_path / "sessions/unobserved.json"
+    claim.parent.mkdir()
+    payload = b'{"session":"preserved","what":"fixture session"}'
+    claim.write_bytes(payload)
+    with monkeypatch.context() as patch:
+        observed = _deny_claim_observation(patch, claim, error)
+        assert sessions.read(tmp_path, "unobserved") is sessions.UNREADABLE, \
+            "an inaccessible claim was reported absent"
+        assert sessions.busy(tmp_path, "unobserved")
+        assert sessions.held(tmp_path, "unobserved")
+        with pytest.raises(SessionBusy):
+            sessions.take(tmp_path, "unobserved", proctree.Tree(pid=0, kind=""))
+    assert observed, "claim observation was never attempted"
+    assert claim.read_bytes() == payload
+    assert sessions.read(tmp_path, "unobserved")["session"] == "preserved"
+    claim.unlink()
+    assert sessions.read(tmp_path, "unobserved") is None
+    assert not sessions.busy(tmp_path, "unobserved")
+    assert sessions.read(tmp_path, "../invalid") is None
+
+
+def test_missing_directory_observation_is_not_a_missing_claim(tmp_path, monkeypatch):
+    from pathlib import Path
+    from numera import sessions
+
+    original = Path.mkdir
+    observed = []
+
+    def mkdir(path, *args, **kwargs):
+        if path == tmp_path / "sessions":
+            observed.append(path)
+            raise FileNotFoundError("fixture claim directory is unavailable")
+        return original(path, *args, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "mkdir", mkdir)
+        assert sessions.read(tmp_path, "unobserved") is sessions.UNREADABLE
+    assert observed
+    assert sessions.read(tmp_path, "unobserved") is None
+
+
 @pytest.mark.parametrize("interface", ["cli", "http"])
-def test_unreadable_lease_cannot_report_a_profile_stopped(
-        tmp_path, monkeypatch, capsys, interface):
+@pytest.mark.parametrize("observation", ["lease", "claim"])
+def test_unreadable_ownership_cannot_report_a_profile_stopped(
+        tmp_path, monkeypatch, capsys, interface, observation):
     import json
     from pathlib import Path
     from numera import cli, data_locks, generate
@@ -212,6 +283,11 @@ def test_unreadable_lease_cannot_report_a_profile_stopped(
     prof = repo(store).create(Profile(name="unobserved", fingerprint=generate(seed=1)))
     original_open = data_locks.os.open
     observed = []
+    claim = tmp_path / "sessions" / f"{prof.id}.json"
+    payload = b'{"session":"preserved","what":"fixture session"}'
+    if observation == "claim":
+        claim.parent.mkdir(exist_ok=True)
+        claim.write_bytes(payload)
 
     def open_file(path, *args, **kwargs):
         path = Path(path)
@@ -220,14 +296,26 @@ def test_unreadable_lease_cannot_report_a_profile_stopped(
             raise PermissionError("fixture lease observation denied")
         return original_open(path, *args, **kwargs)
 
+    def deny(patch):
+        if observation == "lease":
+            patch.setattr(data_locks.os, "open", open_file)
+            return observed
+        return _deny_claim_observation(patch, claim)
+
+    def clear_claim():
+        if observation == "claim":
+            assert claim.read_bytes() == payload
+            claim.unlink()
+
     if interface == "cli":
         with monkeypatch.context() as patch:
-            patch.setattr(data_locks.os, "open", open_file)
+            observed = deny(patch)
             code = cli.main(["--data-dir", str(tmp_path), "stop", prof.id, "--json"])
             answer = json.loads(capsys.readouterr().out)
         assert code == 1, "an unobserved session was reported stopped"
         assert answer["ok"] is False and answer["stopped"] == []
         assert "another process" in answer["error"]
+        clear_claim()
         assert cli.main(["--data-dir", str(tmp_path), "stop", prof.id, "--json"]) == 0
         assert json.loads(capsys.readouterr().out)["ok"] is True
     else:
@@ -238,12 +326,13 @@ def test_unreadable_lease_cannot_report_a_profile_stopped(
         app = create_app(data_dir=str(tmp_path), start_scheduler=False)
         with TestClient(app) as client:
             with monkeypatch.context() as patch:
-                patch.setattr(data_locks.os, "open", open_file)
+                observed = deny(patch)
                 rows = {p["id"]: p for p in client.get("/api/profiles").json()}
-                assert rows[prof.id]["status"] == "running", "unknown lease was reported free"
+                assert rows[prof.id]["status"] == "running", "unknown ownership was reported free"
                 assert client.post(f"/api/profiles/{prof.id}/stop").status_code == 409
+            clear_claim()
             rows = {p["id"]: p for p in client.get("/api/profiles").json()}
             assert rows[prof.id]["status"] == "stopped"
             assert client.post(f"/api/profiles/{prof.id}/stop").status_code == 200
-    assert observed, "the OS lease observation was never attempted"
+    assert observed, "the OS ownership observation was never attempted"
     assert store.get(prof.id).name == "unobserved"

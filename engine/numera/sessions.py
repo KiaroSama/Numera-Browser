@@ -77,9 +77,13 @@ def read(root, profile_id: str):
         return None
     try:
         path = _path(root, profile_id)
-        if not path.exists():
-            return None
+    except (OSError, ValueError):
+        return UNREADABLE
+    try:
+        # exists() also hides access errors; only a missing read proves absence.
         data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
     except (OSError, ValueError):
         return UNREADABLE
     return data if isinstance(data, dict) else UNREADABLE
