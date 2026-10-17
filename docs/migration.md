@@ -8,9 +8,9 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 17, 2026
 
-The latest completed source checkpoint is `87bc602`. Its manual hosted batch
-[39005446877](https://github.com/KiaroSama/Numera-Browser/actions/runs/39005446877)
-failed overall on October 17 at 05:24:28 UTC because the independent CodeQL
+The latest completed source checkpoint is `e0c79cb`. Its manual hosted batch
+[39011138110](https://github.com/KiaroSama/Numera-Browser/actions/runs/39011138110)
+failed overall on October 17 at 06:57:04 UTC because the independent CodeQL
 verdict and dependent required-verification gate failed. All Linux Python
 3.10/3.12/3.14, macOS and four Windows source jobs passed, as did dashboard
 tests/types/lint/build, native Windows/Linux contracts, all eight browser SDK
@@ -116,11 +116,12 @@ performance or rollback acceptance.
   model compatibility and the capability ledger remain open.
 - Cookie input review found another bounded compatibility gap: Python treats four
   ASCII separators as whitespace that Rust's standard predicate excludes. The
-  prepared cookie-only correction preserves JSON boundary trimming and Netscape
-  fallback field splitting without changing TAB-first parsing or line boundaries.
-  Sixteen additional original-source observations cover padding, field separation
-  and controls that must remain data. Hosted verification is still pending; this
-  does not settle broader cookie, numeric or non-finite compatibility.
+  cookie-only correction preserves JSON boundary trimming and Netscape fallback
+  field splitting without changing TAB-first parsing or line boundaries. Sixteen
+  additional original-source observations cover padding, field separation and
+  controls that must remain data. The combined cookie parity target passed on
+  hosted Linux in 0.11 seconds and Windows in 0.25 seconds. No unfixed-code red
+  run was observed; broader cookie, numeric and non-finite compatibility remain open.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths; that assessment is not
   a clean verdict for the current tree. Identifier, exclusive JSON creation,
