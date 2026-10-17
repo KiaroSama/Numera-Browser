@@ -3,6 +3,27 @@ use serde_json::Value;
 use std::{path::Path, process::Command, time::Duration};
 mod common;
 
+fn assert_numeric_expiry_cookie(actual: &Value, expected: &Value) {
+    let expiry = |cookie: &Value| {
+        cookie["expires"]
+            .as_f64()
+            .filter(|number| number.is_finite())
+            .expect("Cookie expiry must be finite")
+            .to_bits()
+    };
+    assert_eq!(expiry(actual), expiry(expected), "Cookie expiry differs");
+    let (mut actual, mut expected) = (actual.clone(), expected.clone());
+    actual
+        .as_object_mut()
+        .expect("Cookie must be an object")
+        .remove("expires");
+    expected
+        .as_object_mut()
+        .expect("Cookie must be an object")
+        .remove("expires");
+    assert_eq!(actual, expected, "Non-expiry cookie fields differ");
+}
+
 #[test]
 fn netscape_export_matches_original_bytes_and_refusals() -> Result<(), Box<dyn std::error::Error>> {
     let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
@@ -17,8 +38,8 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}), flush
 request = json.loads(sys.stdin.readline())
 from cookie_export_cases import cases
 from cookie_parse_cases import cases as parse_cases, whitespace_cases
-from cookie_normalize_cases import cases as normalize_cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(), 'parse_cases':parse_cases(), 'normalization':normalize_cases(), 'whitespace':whitespace_cases()}}), flush=True)
+from cookie_normalize_cases import cases as normalize_cases, expiry_overflow_cases
+print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(), 'parse_cases':parse_cases(), 'normalization':normalize_cases(), 'whitespace':whitespace_cases(), 'expiry_overflow':expiry_overflow_cases()}}), flush=True)
 "#;
     let mut command = Command::new(python);
     command
@@ -141,6 +162,50 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
             "{} Netscape fields",
             case["name"]
         );
+    }
+    let overflow = observations["expiry_overflow"]
+        .as_array()
+        .ok_or("Numeric expiry observations missing")?;
+    assert_eq!(overflow.len(), 16);
+    for case in overflow {
+        let actual = cookie_normalize::normalize(&case["input"]);
+        assert_eq!(
+            actual.is_err(),
+            case["normalized"]["failed"] == true,
+            "{} numeric expiry normalization verdict",
+            case["name"]
+        );
+        if let Ok(cookie) = actual {
+            assert_numeric_expiry_cookie(
+                &cookie.ok_or("Normalized expiry cookie missing")?,
+                &case["normalized"]["value"],
+            );
+        }
+        let parsed = case["parsed"]
+            .as_array()
+            .ok_or("Expiry parse observations missing")?;
+        assert_eq!(parsed.len(), 3);
+        for observation in parsed {
+            let text = observation["text"]
+                .as_str()
+                .ok_or("Expiry input text missing")?;
+            let actual = cookie_normalize::parse(text);
+            assert_eq!(
+                actual.is_err(),
+                observation["expected"]["failed"] == true,
+                "{} numeric expiry parse verdict",
+                case["name"]
+            );
+            if let Ok(cookies) = actual {
+                let expected = observation["expected"]["value"]
+                    .as_array()
+                    .ok_or("Parsed expiry cookies missing")?;
+                assert_eq!(cookies.len(), expected.len());
+                for (actual, expected) in cookies.iter().zip(expected) {
+                    assert_numeric_expiry_cookie(actual, expected);
+                }
+            }
+        }
     }
     assert!(cookie_format::to_netscape(&[Value::Null]).is_err());
     Ok(())

@@ -173,7 +173,9 @@ pub(crate) fn numeric_text(text: &str) -> Option<f64> {
 pub(super) fn as_epoch(value: &Value) -> io::Result<f64> {
     let number = match value {
         Value::Bool(value) => Some(f64::from(u8::from(*value))),
-        Value::Number(value) => value.as_f64(),
+        Value::Number(value) => Some(value.as_f64().ok_or_else(|| {
+            io::Error::new(io::ErrorKind::InvalidInput, "Cookie expiry is not finite")
+        })?),
         Value::String(value) => numeric_text(value),
         _ => None,
     }

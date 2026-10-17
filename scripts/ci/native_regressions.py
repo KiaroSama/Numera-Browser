@@ -32,6 +32,16 @@ REGRESSIONS = (
                 'a9f11c1651a1fef70b36380f5b89d09a80c3c36a1e07d5a9c194a5a08a9a97ee',
         },
     },
+    {
+        'target': 'cookie_export_parity',
+        'test': 'netscape_export_matches_original_bytes_and_refusals',
+        'symptom': '"positive-expires" numeric expiry normalization verdict',
+        'commit': '41917dfa020f107ca95f1ee66ffb961786b6be00',
+        'files': {
+            'engine-rust/src/browser/cookie_expiry.rs':
+                '50578cdaa9765e22754c430d910ae302eb1ae1fddc566ccba8fdefe9d23944e4',
+        },
+    },
 )
 
 

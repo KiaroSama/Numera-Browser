@@ -126,12 +126,12 @@ performance or rollback acceptance.
   The later historical failure-proof run observed the old parser lose the padded
   JSON cookie, then passed the restored target on Linux in 0.18 seconds and Windows
   in 0.43 seconds. Broader cookie, numeric and non-finite compatibility remain open.
-- Hosted native verification now proves both regressions fail on their exact
-  historical production bytes at the named assertion symptom, then restores the
-  fixed source before the normal native pass. Both Windows and Linux verified the
-  historical failures, fixed-byte restoration and passing fixed tests. Compilation,
-  timeout or unrelated failures cannot count as regression proof. These narrow
-  results do not clear the independent security verdict or full migration gates.
+- Hosted Windows/Linux verification proved both historical assertion failures,
+  fixed-byte restoration and passing fixed tests; build errors or timeouts cannot
+  count. A third correction now refuses oversized integer expiry instead of silently
+  creating a session cookie. Its 16 original-source inputs cover normalization and
+  48 parse envelopes; finite expiry compares exact float bits, other fields exactly.
+  This new correction awaits hosted proof; security and full migration gates stay open.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths; that assessment is not
   a clean verdict for the current tree. Identifier, exclusive JSON creation,

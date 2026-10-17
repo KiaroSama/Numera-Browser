@@ -40,3 +40,41 @@ def cases():
              json.dumps({'cookies': 'bad'}), 'not JSON']
     return {'normalize': normalized,
             'parse': [{'text': text, 'expected': cookies.parse(text)} for text in texts]}
+
+
+def expiry_overflow_cases():
+    base = {'name': 'fixture', 'value': 'synthetic', 'domain': '.fixture.test'}
+    huge = 10**400
+    inputs = [
+        ('positive-expires', dict(base, expires=huge)),
+        ('negative-expires', dict(base, expires=-huge)),
+        ('positive-expiration-date', dict(base, expirationDate=huge)),
+        ('negative-expiration-date', dict(base, expirationDate=-huge)),
+        ('finite-positive', dict(base, expires=10**308)),
+        ('finite-negative', dict(base, expires=-(10**308))),
+        ('session-positive', dict(base, expires=huge, session=True)),
+        ('session-negative', dict(base, expires=-huge, session=True)),
+        ('expires-precedence', dict(base, expires=1, expirationDate=huge)),
+        ('null-precedence', dict(base, expires=None, expirationDate=huge)),
+        ('zero-precedence', dict(base, expires=0, expirationDate=huge)),
+        ('malformed-text', dict(base, expires='bad')),
+        ('malformed-list', dict(base, expires=[])),
+        ('boolean', dict(base, expires=True)),
+        ('fractional', dict(base, expires=1.25)),
+        ('missing', base),
+    ]
+
+    def observe(operation, value):
+        try:
+            return {'failed': False, 'value': operation(value)}
+        except OverflowError:
+            return {'failed': True}
+
+    observations = []
+    for name, row in inputs:
+        texts = [json.dumps(envelope) for envelope in (row, [row], {'cookies': [row]})]
+        observations.append({'name': name, 'input': row,
+                             'normalized': observe(cookies.normalize, row),
+                             'parsed': [{'text': text, 'expected': observe(cookies.parse, text)}
+                                        for text in texts]})
+    return observations
