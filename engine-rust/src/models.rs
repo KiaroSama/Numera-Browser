@@ -134,11 +134,11 @@ pub struct Profile {
 impl Profile {
     pub fn from_record(record: &Value) -> Result<Self, serde_json::Error> {
         let mut stored = record.clone();
-        // Source storage treats an empty proxy mapping as no proxy; normalize
-        // that read view before typed parsing, not after it has already failed.
+        // Source storage treats every false JSON value as no proxy. Normalize
+        // only this optional read view; truthy malformed proxies still fail.
         if stored
             .get("proxy")
-            .is_some_and(|v| v.as_object().is_some_and(|m| m.is_empty()))
+            .is_some_and(|v| !crate::conversion::truth(v))
         {
             stored["proxy"] = Value::Null;
         }

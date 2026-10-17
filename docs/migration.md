@@ -106,6 +106,13 @@ performance or rollback acceptance.
   The replacement and public refusal/recovery cases passed hosted source suites;
   the unchanged listing read-count contract passed too. No exact final read count
   or comparative latency improvement was reported.
+- Resumed native model review found that optional proxy reads only recognized an
+  empty mapping, while the original also treats false, zero and empty strings or
+  lists as no proxy. The prepared shared-model correction reuses the existing JSON
+  truth policy and retains malformed truthy-proxy refusal. A bounded original-source
+  comparison covers 15 model/storage cases and unchanged stored bytes; the existing
+  35 recorded model cases are untouched. This correction awaits hosted verification;
+  broader wrong-type model compatibility and the capability ledger remain open.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths; that assessment is not
   a clean verdict for the current tree. Identifier, exclusive JSON creation,
