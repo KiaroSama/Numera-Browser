@@ -290,7 +290,7 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
         'browser': ('tests/test_*_live.py', '--deselect=', 'xvfb-run', 'update_ui_smoke.py', 'rendered-update-ui'),
         'rust-core': ('suites.py native --phase build', 'suites.py native --phase test',
                       'verify_oracles.py', 'verify_default.py'),
-        'engine-live': ('test_session_tree_live.py', '--ignored', '--test browser_adapter_live',
+        'engine-live': ('test_session_tree_live.py', './.github/actions/native-candidate-acceptance',
                         'report --engine ${{ matrix.engine }}'),
         'secrets': ('--redact=100', '--ignore-gitleaks-allow', '--timeout 240',
                     'stage-tracked', '--log-opts=--all', 'sha256sum --check --strict'),
@@ -339,6 +339,18 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
             raise ValueError('Missing complete bounded Windows checkpoint diagnostics')
     action = root / '.github/actions/source-module-checkpoints/action.yml'
     check_source_module_action(yaml.load(action.read_text(encoding='utf-8'), Loader=UniqueLoader))
+    candidate_action = yaml.load((root / '.github/actions/native-candidate-acceptance/action.yml')
+                                 .read_text(encoding='utf-8'), Loader=UniqueLoader)
+    candidate_steps = candidate_action.get('runs', {}).get('steps', [])
+    if (candidate_action.get('runs', {}).get('using') != 'composite' or len(candidate_steps) != 5
+            or any(step.get('continue-on-error') or step.get('if') for step in candidate_steps)):
+        raise ValueError('Native application acceptance must remain required and complete')
+    candidate_text = json.dumps(candidate_steps)
+    for fragment in ('--test browser_adapter_live', '--ignored', '--test-threads=1',
+                     'candidate_stage.py --report', 'candidate_acceptance.py --report',
+                     'ci-source.json', 'dashboard-dist', '--wall 600 --idle 150 --report-units'):
+        if fragment not in candidate_text:
+            raise ValueError('Missing required native application acceptance stage')
     windows_strategy = jobs['engine-windows']['strategy']
     if (windows_strategy['matrix'] != {'shard': [0, 1, 2, 3]}
             or windows_strategy['max-parallel'] != 2 or windows_strategy['fail-fast'] is not False):

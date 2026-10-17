@@ -23,6 +23,7 @@ pub mod jobs;
 pub mod mcp;
 pub mod mcp_command;
 pub mod models;
+pub mod native_build;
 pub mod native_detach;
 pub mod native_entry;
 pub mod native_environment;

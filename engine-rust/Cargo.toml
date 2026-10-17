@@ -6,6 +6,18 @@ rust-version = "1.99"
 description = "Parity-gated Numera Browser application core"
 license-file = "../LICENSE"
 publish = false
+autobins = false
+
+[features]
+default = []
+native-candidate = []
+
+[[bin]]
+name = "numera-native-candidate"
+path = "examples/native_candidate.rs"
+required-features = ["native-candidate"]
+test = false
+bench = false
 
 [dependencies]
 axum = { version = "0.8.9", default-features = false, features = ["json", "http1", "tokio"] }

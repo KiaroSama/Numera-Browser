@@ -2,9 +2,9 @@
 
 The accepted boundary is [ADR0001](adr/0001-parity-gated-rust-migration.md).
 The existing Python application remains the default and rollback implementation.
-`engine-rust` includes native domain/persistence services and an acceptance-only
-CLI/server example, **not an installed replacement**. Passing library or narrow
-entrypoint tests does not certify a finished product migration.
+`engine-rust` includes native domain/persistence services and an explicitly enabled
+[candidate executable](migration-candidate.md), **not an installed replacement**.
+Passing library or narrow entrypoint tests does not certify a finished migration.
 
 ## Current integration status — October 17, 2026
 

@@ -42,7 +42,7 @@ jobs:
           python-version: "3.14"
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
-          toolchain: 1.99.0
+          toolchain: 1.99.1
       - name: Install actual engine extras and the strict audit tool
         run: python scripts/migration/run_owned.py --wall 300 --idle 90 -- python -m pip install "./engine[api,launch,secure,desktop,dev]" pip-audit==2.10.1
       - name: Pin all resolved third-party inputs, excluding only the unpublished local distribution

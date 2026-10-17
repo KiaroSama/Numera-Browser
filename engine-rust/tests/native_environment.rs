@@ -72,6 +72,10 @@ def main():
     assert!(installed["playwright"]);
     assert!(!installed["camoufox"]);
     assert!(
+        !root.join("__pycache__").exists(),
+        "SDK metadata wrote bytecode into runtime inputs"
+    );
+    assert!(
         environment
             .browser
             .deployment

@@ -109,7 +109,13 @@ def test_every_supported_engine_is_required_on_both_platforms():
     assert "test_session_tree_live.py" in matrix
     assert "--strict-config" in matrix and "--timeout=120" in matrix
     assert "report --engine ${{ matrix.engine }}" in matrix
-    assert "--test browser_adapter_live" in matrix and "--ignored" in matrix
+    assert './.github/actions/native-candidate-acceptance' in matrix
+    candidate_action = (ROOT / '.github/actions/native-candidate-acceptance/action.yml').read_text(encoding='utf-8')
+    assert '--test browser_adapter_live' in candidate_action and '--ignored' in candidate_action
+    assert 'candidate_acceptance.py --report' in candidate_action and 'candidate_stage.py --report' in candidate_action
+    assert 'dashboard-dist' in candidate_action and 'ci-source.json' in candidate_action
+    assert '--report-units' in candidate_action
+    assert 'continue-on-error' not in candidate_action
     assert "continue-on-error" not in matrix
     assert "max-parallel: 2" in matrix and "timeout-minutes:" in matrix
     windows = jobs['engine-windows']

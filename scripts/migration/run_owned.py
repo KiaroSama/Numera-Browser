@@ -55,7 +55,24 @@ def create_temporary(root: Path, env: dict[str, str], platform: str) -> Path:
     raise OSError('Cannot create a unique owned verification temp directory')
 
 
-def run(command: list[str], wall: float, idle: float, logger) -> int:
+def settle_reported(path: Path, clean: bool, seconds: float) -> tuple[bool, int, bool]:
+    from numera import unit_report
+
+    deadline = time.monotonic() + seconds
+    # Stop reported producers, then reread: they may publish an SDK unit
+    # between a snapshot and termination. Unresolved intent stays unproved.
+    while True:
+        before = path.read_bytes()
+        receipt = unit_report.read(path)
+        for nested in receipt.trees:
+            clean = end_tree(nested, ends_at=deadline) and clean
+        if path.read_bytes() == before:
+            return receipt.complete and clean, len(receipt.trees), receipt.complete
+        if time.monotonic() >= deadline:
+            return False, len(receipt.trees), receipt.complete
+
+
+def run(command: list[str], wall: float, idle: float, logger, *, report_units: bool = False) -> int:
     if not command or wall <= 0 or idle <= 0 or not all(map(math.isfinite, (wall, idle))):
         raise ValueError('A command and finite positive wall/idle limits are required')
     env = os.environ.copy()
@@ -71,6 +88,15 @@ def run(command: list[str], wall: float, idle: float, logger) -> int:
     temporary = create_temporary(ROOT, env, sys.platform)
     logger.info('Owned verification temp path=%s socket_limit_exception=%s', temporary,
                 not temporary.is_relative_to(ROOT))
+    receipt_path = None
+    if report_units:
+        from numera import unit_report
+        jobs = temporary / 'jobs'
+        jobs.mkdir()
+        receipt_path = jobs / 'verification.units'
+        receipt_path.touch(exist_ok=False)
+        unit_report.initialize(receipt_path)
+        env[unit_report.UNITS_ENV] = str(receipt_path)
     env['NUMERA_TEST_TEMP'] = str(temporary)
     for key in ('TEMP', 'TMP', 'TMPDIR'):
         env[key] = str(temporary)
@@ -122,6 +148,9 @@ def run(command: list[str], wall: float, idle: float, logger) -> int:
     finally:
         logger.info('Verification phase=settle-tree pid=%s', proc.pid)
         clean = end_tree(tree, grace=2, kill_grace=3)
+        if receipt_path is not None:
+            clean, count, complete = settle_reported(receipt_path, clean, 10)
+            logger.info('Verification reported units=%s complete=%s clean=%s', count, complete, clean)
         logger.info('Verification phase=reap-leader pid=%s clean=%s', proc.pid, clean)
         proc.wait(timeout=5)
         logger.info('Verification phase=join-reader pid=%s', proc.pid)
@@ -142,6 +171,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--wall', type=float, required=True)
     parser.add_argument('--idle', type=float, required=True)
+    parser.add_argument('--report-units', action='store_true',
+                        help='Own versioned separately grouped child receipts through forced timeouts')
     parser.add_argument('command', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     command = args.command[1:] if args.command[:1] == ['--'] else args.command
@@ -152,7 +183,7 @@ def main() -> int:
     try:
         with run_log('migration-command') as logger:
             try:
-                code = run(command, args.wall, args.idle, logger)
+                code = run(command, args.wall, args.idle, logger, report_units=args.report_units)
             except TimeoutError:
                 logger.error('Command timeout exit=124')
                 raise CommandFailed(124) from None

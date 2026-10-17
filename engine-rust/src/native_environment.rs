@@ -84,7 +84,7 @@ impl Environment {
                 .collect());
         }
         let mut command = Command::new(&self.browser.python);
-        command.args(["-I", "-u", "-c", "import importlib.util,json,sys; s=importlib.util.spec_from_file_location('sdk_metadata',sys.argv[1]); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); data=m.available(); addons=[];\nif sys.argv[2]=='1' and data['camoufox']['installed']:\n from camoufox.addons import DefaultAddons\n addons=[v.name for v in DefaultAddons]\nprint(json.dumps({'backends':data,'default_addons':addons}),flush=True)"])
+        command.args(["-I", "-B", "-u", "-c", "import importlib.util,json,sys; s=importlib.util.spec_from_file_location('sdk_metadata',sys.argv[1]); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); data=m.available(); addons=[];\nif sys.argv[2]=='1' and data['camoufox']['installed']:\n from camoufox.addons import DefaultAddons\n addons=[v.name for v in DefaultAddons]\nprint(json.dumps({'backends':data,'default_addons':addons}),flush=True)"])
             .arg(&self.browser.adapter).arg(if addons { "1" } else { "0" })
             .env_remove("NUMERA_PASSWORD").env_remove("NUMERA_API_TOKEN");
         let result = capture::run(

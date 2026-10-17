@@ -42,6 +42,16 @@ REGRESSIONS = (
                 '50578cdaa9765e22754c430d910ae302eb1ae1fddc566ccba8fdefe9d23944e4',
         },
     },
+    {
+        'target': 'native_environment',
+        'test': 'metadata_discovery_uses_sdk_only_adapter_and_rejects_malformed_receipts',
+        'symptom': 'SDK metadata wrote bytecode into runtime inputs',
+        'commit': 'd1c443d4cdef191dcb7c4e82cf6194a2e85b2b33',
+        'files': {
+            'engine-rust/src/native_environment.rs':
+                '0fae0f236ffb9f71423a0d362a570edbe3e26c92d2b77b30377f060fa3ecaec5',
+        },
+    },
 )
 
 
