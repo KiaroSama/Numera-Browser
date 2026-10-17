@@ -6,8 +6,8 @@ import os
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / 'engine'))
+from baseline_source import activate
+activate()
 from numera.data_locks import transaction_lock, session_lease, _lock_for  # noqa: E402
 
 

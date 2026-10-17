@@ -65,9 +65,15 @@ def test_container_ci_requires_bundled_browser_without_network_or_host_cache():
     assert 'timeout --signal=TERM --kill-after=5s 60s' in smoke
     assert 'GITHUB_RUN_ID' in smoke and 'GITHUB_RUN_ATTEMPT' in smoke
     assert 'Remove an interrupted browser smoke container\n        if: always()' in docker
-    assert 'needs: [engine, engine-windows, engine-live, browser, rust, rust-core, docker, dashboard]' in ci
+    required = ci.split('\n  required:', 1)[1]
+    claimed = re.search(r'needs: \[([^\]]+)\]', required).group(1).split(', ')
+    assert set(claimed) == {'coverage', 'secrets', 'engine', 'engine-windows', 'engine-macos',
+                            'engine-live', 'browser', 'rust-core', 'docker',
+                            'dashboard', 'codeql', 'dependencies', 'distribution'}
+    assert 'if: always()' in required and 'job["result"] != "success"' in required
     triggers = ci.split('\non:\n', 1)[1].split('\n# Read-only', 1)[0]
-    assert set(re.findall(r'^  ([a-z_]+):', triggers, re.M)) == {'workflow_dispatch', 'workflow_call'}
+    assert set(re.findall(r'^  ([a-z_]+):', triggers, re.M)) == {'workflow_dispatch'}
+    assert 'trusted_sha:' in triggers and 'publish:' in triggers and 'self-hosted' not in ci
 
 
 def _wheel(directory, name, version, requires=()):

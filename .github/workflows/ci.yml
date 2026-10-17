@@ -1,78 +1,277 @@
 name: CI
 
-# Manual checkpoint on GitHub-hosted runners. The owner temporarily prohibits
-# local/self-hosted execution; dispatch does not start a runner on their machine.
-# Keep release reuse and every required verification job.
+# One hosted batch owns verification and the distributions consumed by release.
+# Narrow migration/dashboard dispatches are maintenance tools, not release evidence.
 on:
   workflow_dispatch:
-  workflow_call:
+    inputs:
+      trusted_sha:
+        description: Exact reviewed source SHA authorized to use owner signing inputs
+        type: string
+        required: true
+      publish:
+        description: Publish the verified signed build (trusted main only)
+        type: boolean
+        default: false
 
-# Read-only by default; nothing here writes to the repo.
+# Read-only by default; code scanning alone receives its upload permission.
 permissions:
   contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
+
+env:
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: utf-8
+  HOOKMAKER_MAX_TEST_WORKERS: "2"
+  CARGO_BUILD_JOBS: "2"
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
 
 jobs:
-  engine:
-    name: Engine tests (py${{ matrix.python-version }})
+  coverage:
+    name: Maintained suite coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Workflow parser prerequisite
+        run: python scripts/migration/run_owned.py --wall 120 --idle 60 -- python -m pip install PyYAML==6.0.3
+      - name: Fail on missing tiers, duplicate keys, non-UTF8 text or softened jobs
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py coverage
+      - name: Obtain the checksum-verified official workflow validator
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          directory="$RUNNER_TEMP/actionlint-1.7.12"
+          mkdir "$directory"
+          curl --fail --location --connect-timeout 10 --max-time 60 \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz \
+            --output "$directory/download.tar.gz"
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $directory/download.tar.gz" | sha256sum --check --strict
+          tar -xzf "$directory/download.tar.gz" -C "$directory" actionlint
+      - name: Validate every workflow with native schema and expression checks
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- "$RUNNER_TEMP/actionlint-1.7.12/actionlint" -shellcheck= -pyflakes=
+
+  secrets:
+    name: Redacted tracked-content and history secret gate
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Obtain the checksum-verified official scanner
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          directory="$RUNNER_TEMP/gitleaks-8.30.1"
+          mkdir "$directory"
+          curl --fail --location --connect-timeout 10 --max-time 60 \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            --output "$directory/download.tar.gz"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $directory/download.tar.gz" | sha256sum --check --strict
+          tar -xzf "$directory/download.tar.gz" -C "$directory" gitleaks
+          curl --fail --location --connect-timeout 10 --max-time 60 \
+            https://raw.githubusercontent.com/gitleaks/gitleaks/v8.30.1/config/gitleaks.toml \
+            --output "$directory/official.toml"
+      - name: Require official scanner rules without inherited tracked-path omissions
+        run: >-
+          python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py secret-config
+          --base "$RUNNER_TEMP/gitleaks-8.30.1/official.toml" --destination "$RUNNER_TEMP/gitleaks-8.30.1/strict.toml"
+      - name: Stage only the exact tracked publication scope
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py stage-tracked --destination "$RUNNER_TEMP/numera-tracked-scan"
+      - name: Reject tracked-content secrets with exact reviewed fixture exceptions
+        run: >-
+          python scripts/migration/run_owned.py --wall 300 --idle 120 --
+          "$RUNNER_TEMP/gitleaks-8.30.1/gitleaks" dir "$RUNNER_TEMP/numera-tracked-scan"
+          --config "$RUNNER_TEMP/gitleaks-8.30.1/strict.toml" --redact=100 --ignore-gitleaks-allow
+          --gitleaks-ignore-path "$RUNNER_TEMP/no-secret-exclusions" --timeout 240 --no-banner
+      - name: Reject secrets in all fetched branch and tag history
+        run: >-
+          python scripts/migration/run_owned.py --wall 300 --idle 120 --
+          "$RUNNER_TEMP/gitleaks-8.30.1/gitleaks" git . --log-opts=--all
+          --config "$RUNNER_TEMP/gitleaks-8.30.1/strict.toml" --redact=100 --ignore-gitleaks-allow
+          --gitleaks-ignore-path "$RUNNER_TEMP/no-secret-exclusions" --timeout 240 --no-banner
+
+  dashboard:
+    uses: ./.github/workflows/dashboard.yml
+
+  engine:
+    name: Engine tests (Linux py${{ matrix.python-version }})
+    needs: [coverage, dashboard]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
-        # Oldest and newest supported, plus the current default.
         python-version: ["3.10", "3.12", "3.14"]
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: engine/pyproject.toml
-      - name: Install engine
-        working-directory: engine
-        run: python -m pip install -e ".[api,dev]"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dashboard-dist
+          path: dashboard/dist
+      - name: Install engine and compose parser
+        run: python scripts/migration/run_owned.py --wall 300 --idle 90 -- python -m pip install -e "engine[api,dev]" PyYAML==6.0.3
       - name: Compile check
-        working-directory: engine
-        run: python -m compileall -q numera
+        run: python scripts/migration/run_owned.py --wall 120 --idle 60 -- python -m compileall -q engine/numera
       - name: Unit tests
         working-directory: engine
-        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python -m pytest -q --ignore-glob=tests/test_*_live.py --durations=10
+        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python -m pytest -q --ignore-glob=tests/test_*_live.py --junitxml=../build/source-results.xml --durations=10
+      - name: Reject missing suites and prerequisite skips
+        if: always()
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py report --tier python --report build/source-results.xml
 
   engine-windows:
-    # The storage locks are OS locks, and Windows takes an entirely different
-    # path: `msvcrt.locking` rather than `fcntl.flock`, byte-range rather than
-    # whole-file, and `os.replace` over a file another process has open is a
-    # documented failure there. None of that was exercised by a Linux-only
-    # matrix, so the cross-process tests only ever ran on the half of the code
-    # that already worked.
-    name: Engine tests (Windows)
+    name: Engine tests (Windows partition ${{ matrix.shard }})
+    needs: [coverage, dashboard]
     runs-on: windows-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
           cache: pip
           cache-dependency-path: engine/pyproject.toml
-      - name: Install engine
-        working-directory: engine
-        run: python -m pip install -e ".[api,dev]"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dashboard-dist
+          path: dashboard/dist
+      - name: Install engine and compose parser
+        run: python scripts/migration/run_owned.py --wall 300 --idle 90 -- python -m pip install -e "engine[api,dev]" PyYAML==6.0.3
       - name: Compile check
+        run: python scripts/migration/run_owned.py --wall 120 --idle 60 -- python -m compileall -q engine/numera
+      - name: Unit tests
+        if: matrix.shard != 1
         working-directory: engine
-        run: python -m compileall -q numera
+        timeout-minutes: 12
+        run: |
+          New-Item -ItemType Directory -Force ../build | Out-Null
+          python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python ../scripts/ci/python_source.py --shard ${{ matrix.shard }} --shards 4 2>&1 | Tee-Object -FilePath ../build/source-windows-output.log -Encoding utf8
+          exit $LASTEXITCODE
+      - name: Partition 1 block 0
+        if: matrix.shard == 1 && !cancelled()
+        working-directory: engine
+        timeout-minutes: 12
+        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python ../scripts/ci/python_source.py --shard 1 --shards 4 --block 0 --blocks 4
+      - name: Preserve partition 1 checkpoint 0
+        if: matrix.shard == 1 && !cancelled()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-windows-checkpoint-0
+          path: build/source-windows-1/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Partition 1 block 1
+        if: matrix.shard == 1 && !cancelled()
+        working-directory: engine
+        timeout-minutes: 12
+        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python ../scripts/ci/python_source.py --shard 1 --shards 4 --block 1 --blocks 4
+      - name: Preserve partition 1 checkpoint 1
+        if: matrix.shard == 1 && !cancelled()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-windows-checkpoint-1
+          path: build/source-windows-1/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Partition 1 block 2
+        id: source_modules
+        if: matrix.shard == 1 && !cancelled()
+        timeout-minutes: 12
+        uses: ./.github/actions/source-module-checkpoints
+      - name: Preserve partition 1 checkpoint 2
+        if: matrix.shard == 1 && !cancelled() && steps.source_modules.outputs.settled == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-windows-checkpoint-2
+          path: build/source-windows-1/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Partition 1 block 3
+        if: matrix.shard == 1 && !cancelled() && steps.source_modules.outputs.settled == 'true'
+        working-directory: engine
+        timeout-minutes: 12
+        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python ../scripts/ci/python_source.py --shard 1 --shards 4 --block 3 --blocks 4
+      - name: Preserve partition 1 checkpoint 3
+        if: matrix.shard == 1 && !cancelled()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-windows-checkpoint-3
+          path: build/source-windows-1/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Reject missing suites and prerequisite skips
+        if: always()
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py report --tier python --report build/source-windows-${{ matrix.shard }} --shard ${{ matrix.shard }} --shards 4
+      - name: Preserve Windows source failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-windows-diagnostics-${{ matrix.shard }}
+          path: |
+            build/source-windows-${{ matrix.shard }}/
+            build/source-windows-output.log
+            scripts/logs/*.log
+          if-no-files-found: error
+          retention-days: 7
+
+  engine-macos:
+    # Source runtime uses bounded ps-based ownership on macOS. This is not
+    # acceptance of the Rust candidate's unsupported macOS tree observer.
+    name: Engine tests (macOS arm64, original runtime)
+    needs: [coverage, dashboard]
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: engine/pyproject.toml
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dashboard-dist
+          path: dashboard/dist
+      - name: Install engine and compose parser
+        run: python scripts/migration/run_owned.py --wall 300 --idle 90 -- python -m pip install -e "engine[api,dev]" PyYAML==6.0.3
+      - name: Compile check
+        run: python scripts/migration/run_owned.py --wall 120 --idle 60 -- python -m compileall -q engine/numera
       - name: Unit tests
         working-directory: engine
-        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python -m pytest -q --ignore-glob=tests/test_*_live.py --durations=10
+        run: python ../scripts/migration/run_owned.py --wall 600 --idle 120 -- python -m pytest -q --ignore-glob=tests/test_*_live.py --junitxml=../build/source-results.xml --durations=10
+      - name: Reject missing suites and prerequisite skips
+        if: always()
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py report --tier python --report build/source-results.xml
 
   engine-live:
-    name: Required live engine (${{ matrix.os }}, ${{ matrix.engine }})
+    name: Required live source and native SDK (${{ matrix.os }}, ${{ matrix.engine }})
+    needs: [coverage, dashboard]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -89,176 +288,126 @@ jobs:
           - engine: cloak
             package: cloakbrowser==0.5.12
     env:
-      PYTHONUTF8: "1"
       NUMERA_TEST_ENGINE: ${{ matrix.engine }}
-      # Explicit key-free official build; no paid/free-key fallback or login.
-      # Internal CI use is permitted by CloakHQ's BINARY-LICENSE.md. This build
-      # proves lifecycle behavior, not compatibility with newer licensed builds.
+      NUMERA_NATIVE_LIVE_ENGINE: ${{ matrix.engine }}
+      # Internal key-free build only; never redistributed with a release.
       CLOAKBROWSER_VERSION: "146.0.7680.177.5"
       CLOAKBROWSER_AUTO_UPDATE: "false"
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.14"
+          # Keep the recorded source oracle's interpreter and framework pins.
+          python-version: "3.13.15"
           cache: pip
           cache-dependency-path: .github/workflows/ci.yml
-      - name: Install the selected engine and test dependencies
-        timeout-minutes: 5
-        run: python -m pip install -e "engine[api,dev]" "${{ matrix.package }}" "playwright==1.62.0"
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+        with:
+          toolchain: 1.99.1
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
+        with:
+          workspaces: engine-rust
+      - name: Install selected SDK and pinned source prerequisites
+        run: python scripts/migration/run_owned.py --wall 300 --idle 90 -- python -m pip install -e "engine[api,dev]" "${{ matrix.package }}" "playwright==1.62.0" "fastapi==0.142.3" "starlette==1.7.0"
       - name: Install Chromium system dependencies
         if: runner.os == 'Linux' && matrix.engine != 'camoufox'
-        timeout-minutes: 5
-        run: python -m playwright install-deps chromium
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python -m playwright install-deps chromium
       - name: Install Firefox system dependencies
         if: runner.os == 'Linux' && matrix.engine == 'camoufox'
-        timeout-minutes: 5
-        run: python -m playwright install-deps firefox
-      - name: Install the selected Chromium browser
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python -m playwright install-deps firefox
+      - name: Install selected Chromium
         if: matrix.engine == 'playwright' || matrix.engine == 'patchright'
-        timeout-minutes: 10
-        run: python -m ${{ matrix.engine }} install chromium
+        run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- python -m ${{ matrix.engine }} install chromium
       - name: Install Camoufox browser and data
         if: matrix.engine == 'camoufox'
-        timeout-minutes: 10
-        run: python -m camoufox fetch
-      - name: Fetch the pinned official Cloak binary
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python -m camoufox fetch
+      - name: Fetch pinned official Cloak binary
         if: matrix.engine == 'cloak'
-        timeout-minutes: 10
-        run: python scripts/live_engine.py prepare --engine cloak --fetch
-      - name: Require the selected package and browser binary
-        timeout-minutes: 2
-        run: python scripts/live_engine.py prepare --engine ${{ matrix.engine }}
-      - name: Required session-tree live tests
-        timeout-minutes: 5
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python scripts/live_engine.py prepare --engine cloak --fetch
+      - name: Require selected package and browser binary
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/live_engine.py prepare --engine ${{ matrix.engine }} --export-native
+      - name: Compile real SDK integration separately
+        run: python scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_adapter_live --no-run
+      - name: Required source session-tree live tests
         working-directory: engine
         run: >-
           python ../scripts/migration/run_owned.py --wall 240 --idle 150 -- python -m pytest -q tests/test_session_tree_live.py
           -k "every_installed_engine or hard_killed_owner"
           --timeout=120 --timeout-method=thread --strict-config
           --junitxml=../build/live-engine/results.xml --durations=10
-      - name: Reject missing or skipped engine coverage
+      - name: Reject missing or skipped selected source coverage
         if: always()
-        timeout-minutes: 1
-        run: python scripts/live_engine.py report --engine ${{ matrix.engine }} --report build/live-engine/results.xml
-      - name: Preserve the test report
-        # On failure only. The report is diagnostic material - it is read when a
-        # live engine breaks, never when it passes - and uploading it from every
-        # green run spent an account-wide artifact quota that is exhausted, so
-        # `Failed to CreateArtifact: Artifact storage quota has been hit` turned
-        # four jobs whose tests had all passed into failures. The step that
-        # actually enforces engine coverage is `Reject missing or skipped engine
-        # coverage` above, which keeps `if: always()`; nothing here is softened.
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/live_engine.py report --engine ${{ matrix.engine }} --report build/live-engine/results.xml
+      - name: Required native SDK context and cleanup
+        uses: ./.github/actions/native-candidate-acceptance
+        with:
+          engine: ${{ matrix.engine }}
+      - name: Preserve failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@v7
-        # No softening flag here, unlike the uploads in build-desktop.yml.
-        # `test_live_engine_contract.py` asserts that no step of this job
-        # carries one, by plain substring - so not even a comment may name it.
-        # Every supported engine is *required* on both platforms, and the guard
-        # keeps the whole job strict rather than trusting a reader to tell a
-        # retention step from a verification one.
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: live-engine-${{ matrix.os }}-${{ matrix.engine }}
           path: |
             build/live-engine/results.xml
             build/live-engine/logs/*.log
-          if-no-files-found: warn
+            scripts/logs/*.log
+          if-no-files-found: error
           retention-days: 7
 
   browser:
-    name: Live browser tests
+    name: Remaining browser-backed source contracts and rendered updater (Linux)
+    needs: [coverage, dashboard]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
           cache: pip
           cache-dependency-path: engine/pyproject.toml
-      - name: Install engine with the launcher
+      - name: Install engine launcher and test prerequisites
+        run: python scripts/migration/run_owned.py --wall 300 --idle 90 -- python -m pip install -e "engine[api,launch,dev]" "playwright==1.62.0"
+      - name: Install Chromium and system dependencies
+        run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- python -m playwright install --with-deps chromium
+      - name: Require Chromium before suite collection
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/live_engine.py prepare --engine playwright
+      - name: Browser-backed tests, excluding only matrix-owned cases
         working-directory: engine
-        run: python -m pip install -e ".[api,launch,dev]"
-      - name: Install Chromium
-        working-directory: engine
-        run: python -m playwright install --with-deps chromium
-      # Proves the flags actually take effect in the browser - the unit tests
-      # can pass while Chromium quietly ignores what we asked for. Globbed so a
-      # new *_live.py cannot silently go unrun: the jobs above install no
-      # browser, so these skip everywhere except here.
-      - name: Browser-backed tests
-        working-directory: engine
-        run: python ../scripts/migration/run_owned.py --wall 900 --idle 150 -- python -m pytest -q tests/test_*_live.py --durations=10
-
-  # The shell is half the product and nothing here compiled it. A Rust error
-  # only showed up in the release build, which runs on a tag - by then the
-  # version is cut.
-  rust:
-    name: Tauri shell (Rust)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+        run: >-
+          python ../scripts/migration/run_owned.py --wall 900 --idle 150 -- xvfb-run -a
+          python -m pytest -q tests/test_*_live.py
+          --deselect=tests/test_session_tree_live.py::test_every_installed_engine_gets_a_tree_of_its_own
+          --deselect=tests/test_session_tree_live.py::test_hard_killed_owner_releases_only_an_empty_real_browser_tree
+          --junitxml=../build/browser-results.xml --durations=10
+      - name: Reject missing browser suites and prerequisite skips
+        if: always()
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py report --tier browser --report build/browser-results.xml
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          components: rustfmt, clippy
-
-      # Tauri's Linux backend is WebKitGTK; without these the build fails at
-      # link time with missing pkg-config packages rather than anything that
-      # names Tauri.
-      - name: System dependencies
-        run: |
-          set -euo pipefail
-          packages=(libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev)
-          missing=()
-          for package in "${packages[@]}"; do
-            if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -qx 'install ok installed'; then
-              missing+=("$package")
-            fi
-          done
-          # A prepared self-hosted runner needs no unrelated apt repository refresh.
-          if [ "${#missing[@]}" -gt 0 ]; then
-            sudo apt-get update
-            sudo apt-get install -y "${missing[@]}"
-          fi
-
-      - uses: Swatinem/rust-cache@v2
+          name: dashboard-dist
+          path: dashboard/dist
+      - name: Real built updater consent and accessible UI flow
+        run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/ci/update_ui_smoke.py --dashboard dashboard/dist --output build/update-ui
+      - name: Preserve actual rendered updater evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          workspaces: desktop/src-tauri
-
-      # Explicit, and the same version the dashboard job pins. This step used
-      # the runner's ambient Node, so the Rust job's dashboard build ran on
-      # whatever the image happened to ship - a different toolchain from the
-      # one that actually gates the dashboard, and one that changes under us
-      # when the image is updated.
-      - uses: actions/setup-node@v7
-        with:
-          # Use current stable Node; jsdom's runtime floor is stricter than Vite's.
-          node-version: "26"
-          cache: npm
-          cache-dependency-path: dashboard/package-lock.json
-
-      # The shell reads the dashboard from a directory Tauri expects to exist.
-      - name: Build the dashboard
-        working-directory: dashboard
-        run: npm ci && npm run build
-
-      - name: Formatting
-        working-directory: desktop/src-tauri
-        run: cargo fmt --all --check
-
-      - name: Lint
-        working-directory: desktop/src-tauri
-        run: cargo clippy --all-targets --all-features -- -D warnings
-
-      - name: Tests
-        working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo test --all-features -- --test-threads=2
+          name: rendered-update-ui
+          path: |
+            build/update-ui/*.png
+            build/update-ui/result.json
+          if-no-files-found: error
+          retention-days: 7
 
   rust-core:
-    name: Rust migration core (${{ matrix.os }})
+    name: Native candidate contracts (${{ matrix.os }}; not selected)
+    needs: coverage
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         include:
           - os: linux
@@ -266,102 +415,115 @@ jobs:
           - os: windows
             runner: windows-latest
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 20
-    env:
-      CARGO_BUILD_JOBS: "2"
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
+          toolchain: 1.99.1
           components: rustfmt, clippy
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          # The original behavior/catalog fixtures were recorded on this exact
-          # interpreter. Keep Unicode classification drift visible, not hidden
-          # by normalizing fixtures against a newer runtime.
           python-version: "3.13.15"
-      - name: Source oracle prerequisites
-        # Original HTTP behavior includes framework-level CORS/body contracts.
-        # Pin the recorded oracle framework, not an arbitrary future release.
-        run: python -m pip install -e "engine[api,dev]" "fastapi==0.142.3" "starlette==1.7.0"
-      - uses: Swatinem/rust-cache@v2
+      - name: Pinned source oracle prerequisites
+        run: python scripts/migration/run_owned.py --wall 300 --idle 90 -- python -m pip install -e "engine[api,dev]" "fastapi==0.142.3" "starlette==1.7.0"
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
           workspaces: engine-rust
       - name: Source inventory and oracle drift
         run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/verify_oracles.py
       - name: Native formatting
         run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- cargo fmt --manifest-path engine-rust/Cargo.toml --all --check
-      - name: Native lint
+      - name: Compile all discovered non-live native suites separately
+        run: python scripts/migration/run_owned.py --wall 900 --idle 300 -- python scripts/ci/suites.py native --phase build
+      - name: Native strict lint
         run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --all-targets -- -D warnings
-      - name: Native parity seams
-        run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --all-targets -- --test-threads=2
+      - name: Build acceptance-only native entry once before public handoff tests
+        run: python scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo build --manifest-path engine-rust/Cargo.toml --locked --example native_candidate
+      - name: Bind native handoff tests to the actual candidate
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          name = "native_candidate.exe" if os.name == "nt" else "native_candidate"
+          candidate = (Path("engine-rust/target/debug/examples") / name).resolve(strict=True)
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as output:
+              output.write(f"NUMERA_NATIVE_CANDIDATE={candidate}\n")
+          PY
+      - name: Every discovered native non-live suite and library test
+        run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- python scripts/ci/suites.py native --phase test
+      - name: Native documentation tests
+        run: python scripts/migration/run_owned.py --wall 120 --idle 60 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --doc
+      - name: Actual native CLI and MCP parity
+        shell: bash
+        run: |
+          candidate=engine-rust/target/debug/examples/native_candidate
+          if [[ "$RUNNER_OS" == Windows ]]; then candidate="$candidate.exe"; fi
+          python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_entry_acceptance.py --candidate "$candidate"
+      - name: Actual native HTTP parity
+        shell: bash
+        run: |
+          candidate=engine-rust/target/debug/examples/native_candidate
+          if [[ "$RUNNER_OS" == Windows ]]; then candidate="$candidate.exe"; fi
+          python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_http_acceptance.py --candidate "$candidate"
+      - name: Native server parent-death acceptance
+        shell: bash
+        run: |
+          candidate=engine-rust/target/debug/examples/native_candidate
+          if [[ "$RUNNER_OS" == Windows ]]; then candidate="$candidate.exe"; fi
+          python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_parent_acceptance.py --candidate "$candidate"
+      - name: Windows hidden console acceptance
+        if: runner.os == 'Windows'
+        run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_console_acceptance.py --candidate engine-rust/target/debug/examples/native_candidate.exe
+      - name: Linux terminal password acceptance
+        if: runner.os == 'Linux'
+        run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_tty_acceptance.py --candidate engine-rust/target/debug/examples/native_candidate
+      - name: Linux detached ownership acceptance
+        if: runner.os == 'Linux'
+        run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_job_acceptance.py --candidate engine-rust/target/debug/examples/native_candidate
+      - name: Linux MCP signal and nested cleanup acceptance
+        if: runner.os == 'Linux'
+        run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_signal_acceptance.py --candidate engine-rust/target/debug/examples/native_candidate
       - name: Original runtime remains selected
         run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/migration/verify_default.py
 
   docker:
-    name: Container image
+    name: Container image and bundled-browser integration
+    needs: coverage
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
-
-      # Plain `docker build`, no buildx actions and no registry cache: the
-      # runner has Docker, the image is not published from here, and the point
-      # is to find out whether the Dockerfile still describes something that
-      # works. Most of the time is the Playwright base image, which is the same
-      # download a developer pays once.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
       - name: Build the image
-        run: docker build --pull --no-cache -t numera-browser:ci .
-
-      # Building proves the Dockerfile parses and `pip install ./engine[...]`
-      # resolves. It does not prove the container serves anything - and the
-      # engine it installs changes on nearly every commit, which is exactly the
-      # part a build alone would not catch.
+        run: python scripts/migration/run_owned.py --wall 1200 --idle 150 -- docker build --pull --no-cache -t numera-browser:ci .
       - name: The container serves, authenticates and stores
+        timeout-minutes: 3
         run: |
           set -euo pipefail
           token="ci-$RANDOM"
-          docker run -d --name numera-ci -e NUMERA_API_TOKEN="$token" \
-                     -p 18787:8787 numera-browser:ci
-
+          docker run -d --name numera-ci -e NUMERA_API_TOKEN="$token" -p 18787:8787 numera-browser:ci
           ready=""
           for _ in $(seq 1 60); do
-            if curl -sf --max-time 3 -H "Authorization: Bearer $token" \
-                    http://127.0.0.1:18787/api/health -o /tmp/health.json; then
+            if curl -sf --max-time 3 -H "Authorization: Bearer $token" http://127.0.0.1:18787/api/health -o "$RUNNER_TEMP/health.json"; then
               ready=1; break
             fi
             docker inspect -f '{{.State.Running}}' numera-ci | grep -q true || break
             sleep 1
           done
           if [ -z "$ready" ]; then
-            echo "the container never answered /api/health"; docker logs numera-ci; exit 1
+            echo "The container never answered /api/health"; docker logs numera-ci; exit 1
           fi
-          echo "health: $(cat /tmp/health.json)"
-
-          # The bind refuses 0.0.0.0 without a token by design, so an
-          # unauthenticated request must be refused rather than served.
-          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
-                       http://127.0.0.1:18787/api/health)"
-          [ "$code" = "401" ] || { echo "unauthenticated request got $code, not 401"; exit 1; }
-
-          # And it can actually write: a profile through the real API.
-          curl -sf --max-time 10 -X POST -H "Authorization: Bearer $token" \
-               -H "Content-Type: application/json" -d '{"name":"ci-smoke"}' \
-               http://127.0.0.1:18787/api/profiles > /dev/null
-          curl -sf --max-time 10 -H "Authorization: Bearer $token" \
-               http://127.0.0.1:18787/api/profiles | grep -q ci-smoke \
-            || { echo "the profile it reported creating is not in the list"; exit 1; }
-
-          # The vault backend has to be inside the image; `cryptography` lives
-          # in the `secure` extra and a container cannot be told to pip-install
-          # into itself.
-          docker run --rm --entrypoint python numera-browser:ci \
-                 -c "import cryptography, numera; print(numera.__version__, cryptography.__version__)"
-
-      # API readiness cannot prove the browser bundled in the final image
-      # matches its installed client. No host cache, network or root override.
+          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:18787/api/health)"
+          [ "$code" = "401" ] || { echo "Unauthenticated request got $code, not 401"; exit 1; }
+          curl -sf --max-time 10 -X POST -H "Authorization: Bearer $token" -H "Content-Type: application/json" -d '{"name":"ci-smoke"}' http://127.0.0.1:18787/api/profiles > /dev/null
+          curl -sf --max-time 10 -H "Authorization: Bearer $token" http://127.0.0.1:18787/api/profiles | grep -q ci-smoke
+          docker run --rm --entrypoint python numera-browser:ci -c "import cryptography, numera; print(numera.__version__, cryptography.__version__)"
       - name: The container launches its bundled Chromium
         timeout-minutes: 2
         run: |
@@ -371,39 +533,174 @@ jobs:
               --name "numera-browser-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
               --entrypoint python numera-browser:ci - \
               < scripts/smoke_container_browser.py
-
       - name: Remove an interrupted browser smoke container
         if: always()
         run: |
-          docker rm -f "numera-browser-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" 2>/dev/null || true
-
+          name="numera-browser-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          if docker container inspect "$name" >/dev/null 2>&1; then docker rm -f "$name"; fi
+          if docker container inspect "$name" >/dev/null 2>&1; then exit 1; fi
       - name: Container logs on failure
         if: failure()
-        run: docker logs numera-ci || true
-
-      - name: Stop the container
+        run: |
+          if docker container inspect numera-ci >/dev/null 2>&1; then docker logs numera-ci; fi
+      - name: Stop the container and verify absence
         if: always()
-        run: docker rm -f numera-ci || true
+        run: |
+          if docker container inspect numera-ci >/dev/null 2>&1; then docker rm -f numera-ci; fi
+          if docker container inspect numera-ci >/dev/null 2>&1; then exit 1; fi
 
-  dashboard:
-    uses: ./.github/workflows/dashboard.yml
+  codeql:
+    # Public repository eligibility only; private Code Security is not purchased
+    # or presumed. The aggregate records this sole inapplicable check explicitly.
+    if: github.event.repository.private == false
+    uses: ./.github/workflows/codeql.yml
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+      checks: read
+
+  dependencies:
+    needs: coverage
+    uses: ./.github/workflows/dependency-review.yml
+
+  distribution:
+    # Owner signing waits for every pre-distribution check. A private repository
+    # without authorized Code Security can omit only that inapplicable scan.
+    if: >-
+      ${{ !cancelled() && needs.coverage.result == 'success' && needs.secrets.result == 'success' &&
+          needs.engine.result == 'success' && needs.engine-windows.result == 'success' &&
+          needs.engine-macos.result == 'success' && needs.engine-live.result == 'success' &&
+          needs.browser.result == 'success' && needs.rust-core.result == 'success' &&
+          needs.docker.result == 'success' && needs.dashboard.result == 'success' &&
+          needs.dependencies.result == 'success' &&
+          (needs.codeql.result == 'success' || (github.event.repository.private && needs.codeql.result == 'skipped')) }}
+    needs: [coverage, secrets, engine, engine-windows, engine-macos, engine-live, browser, rust-core, docker, dashboard, codeql, dependencies]
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/build-desktop.yml
+    with:
+      dashboard_artifact: dashboard-dist
+      trusted_sha: ${{ inputs.trusted_sha }}
+      owner_signing: ${{ github.event_name == 'workflow_dispatch' && github.actor == 'KiaroSama' && inputs.trusted_sha == github.sha && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/migration/native-runtime-checkpoint-20261012') }}
+    secrets:
+      NUMERA_RELEASE_SIGNING_KEY: ${{ github.event_name == 'workflow_dispatch' && github.actor == 'KiaroSama' && inputs.trusted_sha == github.sha && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/migration/native-runtime-checkpoint-20261012') && secrets.NUMERA_RELEASE_SIGNING_KEY || '' }}
+      NUMERA_CODE_SIGNING_PFX: ${{ github.event_name == 'workflow_dispatch' && github.actor == 'KiaroSama' && inputs.trusted_sha == github.sha && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/migration/native-runtime-checkpoint-20261012') && secrets.NUMERA_CODE_SIGNING_PFX || '' }}
+      NUMERA_CODE_SIGNING_PASSWORD: ${{ github.event_name == 'workflow_dispatch' && github.actor == 'KiaroSama' && inputs.trusted_sha == github.sha && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/migration/native-runtime-checkpoint-20261012') && secrets.NUMERA_CODE_SIGNING_PASSWORD || '' }}
 
   required:
     name: Required verification
     if: always()
-    needs: [engine, engine-windows, engine-live, browser, rust, rust-core, docker, dashboard]
+    needs: [coverage, secrets, engine, engine-windows, engine-macos, engine-live, browser, rust-core, docker, dashboard, codeql, dependencies, distribution]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
       - name: Every required job succeeded
         env:
           RESULTS: ${{ toJSON(needs) }}
+          EXPECTED_SHA: ${{ github.sha }}
+          DISTRIBUTION_SHA: ${{ needs.distribution.outputs.source_sha }}
+          PRIVATE_REPOSITORY: ${{ github.event.repository.private }}
         run: |
           python - <<'PY'
           import json, os
           results = json.loads(os.environ["RESULTS"])
-          failed = [name for name, job in results.items() if job["result"] != "success"]
+          failed = [name for name, job in results.items() if job["result"] != "success"
+                    and not (name == "codeql" and job["result"] == "skipped"
+                             and os.environ["PRIVATE_REPOSITORY"] == "true")]
+          if os.environ["PRIVATE_REPOSITORY"] == "true" and results["codeql"]["result"] == "skipped":
+              print("CodeQL not applicable: private repository without authorized Code Security; no scan claimed")
           if failed:
               raise SystemExit("Required verification failed: " + ", ".join(failed))
-          print("All required verification jobs passed")
+          if os.environ["DISTRIBUTION_SHA"] != os.environ["EXPECTED_SHA"]:
+              raise SystemExit("Distribution source does not match the verified commit")
+          print("All required verification jobs passed for " + os.environ["EXPECTED_SHA"])
           PY
+
+  promote:
+    name: Promote exact verified source
+    needs: required
+    if: github.event_name == 'workflow_dispatch' && inputs.publish && needs.required.result == 'success' && github.actor == 'KiaroSama' && inputs.trusted_sha == github.sha && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/migration/native-runtime-checkpoint-20261012')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Verify same-batch success and unprotected fast-forward ancestry
+        id: candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.sha }}
+          TRUSTED_SHA: ${{ inputs.trusted_sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$REPOSITORY/branches/main" > branch.json
+          gh api --paginate --slurp "repos/$REPOSITORY/rules/branches/main?per_page=100" > rules.json
+          gh api --paginate --slurp "repos/$REPOSITORY/rulesets?includes_parents=true&per_page=100" > rulesets.json
+          gh api "repos/$REPOSITORY/actions/runs/$GITHUB_RUN_ID" > run.json
+          gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?filter=latest&per_page=100" > jobs.json
+          base="$(python3 -I -c 'import json; print(json.load(open("branch.json",encoding="utf-8"))["commit"]["sha"])')"
+          gh api "repos/$REPOSITORY/compare/$base...$EXPECTED_SHA" > comparison.json
+          python3 -I - <<'PY'
+          import json, os, pathlib, re
+          read = lambda name: json.loads(pathlib.Path(name + '.json').read_text(encoding='utf-8'))
+          branch, rules, rulesets, run, pages, comparison = map(read, ('branch','rules','rulesets','run','jobs','comparison'))
+          sha = os.environ['EXPECTED_SHA']
+          assert re.fullmatch('[0-9a-f]{40}', sha) and sha == os.environ['TRUSTED_SHA'], 'Unapproved source SHA'
+          assert os.environ['REPOSITORY'] == 'KiaroSama/Numera-Browser', 'Unapproved promotion repository'
+          assert branch['name'] == 'main' and branch['protected'] is False, 'Protected main requires owner PR handling'
+          assert isinstance(rules, list) and rules and all(isinstance(page, list) and not page for page in rules), 'Branch rules require owner handling'
+          assert isinstance(rulesets, list) and rulesets and all(isinstance(page, list) and not page for page in rulesets), 'Rulesets require owner handling'
+          assert comparison['base_commit']['sha'] == branch['commit']['sha'], 'Promotion base differs'
+          assert comparison['status'] in ('ahead', 'identical'), 'Promotion is not a fast-forward'
+          compared_sha = comparison['commits'][-1]['sha'] if comparison['status'] == 'ahead' else comparison['base_commit']['sha']
+          assert compared_sha == sha, 'Promotion comparison targets a different source'
+          assert run['id'] == int(os.environ['GITHUB_RUN_ID']) and run['head_sha'] == sha, 'Different verification batch/SHA'
+          assert run['name'] == 'CI' and run['path'] == '.github/workflows/ci.yml', 'Wrong verification workflow'
+          assert run['event'] == 'workflow_dispatch' and run['actor']['login'] == 'KiaroSama', 'Untrusted promotion event'
+          assert run['head_repository']['full_name'] == os.environ['REPOSITORY'], 'Untrusted promotion repository'
+          assert run['head_branch'] == os.environ['GITHUB_REF_NAME'] in ('main', 'migration/native-runtime-checkpoint-20261012'), 'Unapproved source ref'
+          required = [job for page in pages for job in page['jobs'] if job['name'] == 'Required verification']
+          assert len(required) == 1 and required[0]['conclusion'] == 'success', 'Required verification did not pass'
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f"base_sha={branch['commit']['sha']}\n")
+          PY
+      - name: Fast-forward only after verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.sha }}
+          BASE_SHA: ${{ steps.candidate.outputs.base_sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          current="$(gh api "repos/$REPOSITORY/git/ref/heads/main" --jq .object.sha)"
+          [[ "$current" == "$BASE_SHA" ]] || { echo 'Main moved; stop for owner reconciliation.'; exit 1; }
+          if [[ "$current" != "$EXPECTED_SHA" ]]; then
+            # The API rejects non-fast-forward updates. No force, bypass or credential fallback.
+            gh api --method PATCH "repos/$REPOSITORY/git/refs/heads/main" -f sha="$EXPECTED_SHA" -F force=false > promoted.json
+          fi
+      - name: Read back exact promoted main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          actual="$(gh api "repos/$REPOSITORY/git/ref/heads/main" --jq .object.sha)"
+          [[ "$actual" == "$EXPECTED_SHA" ]] || { echo 'Main is not the exact verified source; publication refused.'; exit 1; }
+
+  publish:
+    needs: [required, promote]
+    if: github.event_name == 'workflow_dispatch' && inputs.publish && needs.required.result == 'success' && needs.promote.result == 'success' && github.actor == 'KiaroSama' && inputs.trusted_sha == github.sha && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/migration/native-runtime-checkpoint-20261012')
+    permissions:
+      contents: write
+      actions: read
+    uses: ./.github/workflows/release.yml
+    with:
+      source_sha: ${{ github.sha }}
+      run_id: ${{ github.run_id }}
+    secrets:
+      NUMERA_RELEASE_SIGNING_KEY: ${{ secrets.NUMERA_RELEASE_SIGNING_KEY }}

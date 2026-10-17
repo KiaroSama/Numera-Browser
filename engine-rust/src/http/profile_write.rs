@@ -144,7 +144,7 @@ pub(super) async fn create(
     State(state): State<Arc<Profiles>>,
     ObjectBody(body): ObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || create_record(&state, body)).await {
+    match super::admission::blocking(move || create_record(&state, body)).await {
         Ok(Ok(profile)) => Json(profile).into_response(),
         Ok(Err(error)) => profile_errors::storage(error),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),
@@ -155,7 +155,7 @@ pub(super) async fn update(
     Path(id): Path<String>,
     ObjectBody(body): ObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || update_record(&state, &id, body)).await {
+    match super::admission::blocking(move || update_record(&state, &id, body)).await {
         Ok(Ok(Some(profile))) => Json(profile).into_response(),
         Ok(Ok(None)) => profile_errors::detail(StatusCode::NOT_FOUND, "profile not found"),
         Ok(Err(error)) => profile_errors::storage(error),

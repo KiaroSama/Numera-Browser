@@ -155,7 +155,11 @@ pub fn validate(fp: &Fingerprint) -> Result<Vec<String>, serde_json::Error> {
     if !(0..=20).contains(&fp.max_touch_points) {
         issues.push("maxTouchPoints outside the range real devices report".into());
     }
-    if !(0.5..=4.0).contains(&fp.device_pixel_ratio) {
+    if fp
+        .device_pixel_ratio
+        .as_f64()
+        .is_none_or(|value| !(0.5..=4.0).contains(&value))
+    {
         issues.push("devicePixelRatio outside the range real displays report".into());
     }
     if fp.os == "ios" && fp.device_memory.as_f64().is_some_and(|v| v != 0.0) {

@@ -21,6 +21,21 @@ pub struct OwnedTree {
 impl OwnedTree {
     /// Capability is withheld until the child belongs to its own kernel tree.
     pub fn spawn(command: &mut Command) -> io::Result<Self> {
+        let attempt = super::unit_report::begin_spawn()?;
+        // Failed creation can be uncertain after the OS accepted a child. Leave
+        // the intent pending rather than inventing a zero-unit cancellation.
+        let mut tree = Self::spawn_tree(command)?;
+        if let Err(error) = super::unit_report::record(&tree.record(), attempt.as_deref()) {
+            if tree.settle(Duration::from_secs(5)).is_ok() {
+                super::unit_report::cancel_spawn(attempt.as_deref())?;
+            } else {
+                super::capture::retain_tree(tree);
+            }
+            return Err(error);
+        }
+        Ok(tree)
+    }
+    fn spawn_tree(command: &mut Command) -> io::Result<Self> {
         #[cfg(windows)]
         {
             use std::os::windows::process::CommandExt;

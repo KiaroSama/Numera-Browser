@@ -57,6 +57,43 @@ fn pick(rng: &mut PythonRandom, values: &Value, weights: &Value) -> Result<Value
     Ok(values[index].clone())
 }
 
+pub fn user_agent(
+    os: &str,
+    chrome: &str,
+    version: &str,
+    model: &str,
+) -> Result<String, GenerationError> {
+    let data =
+        &catalog().map_err(|_| GenerationError("Cannot parse embedded device catalog"))?["catalog"];
+    let model = if model.is_empty() {
+        text(&data["ANDROID_MODELS"][0])?
+    } else {
+        model
+    };
+    let token = text(&data["OS_UA_TOKEN"][os])?
+        .replace("{v}", if version.is_empty() { "14" } else { version })
+        .replace(
+            "{v_}",
+            &if version.is_empty() {
+                "18.5".to_owned()
+            } else {
+                version.to_owned()
+            }
+            .replace('.', "_"),
+        )
+        .replace("{model}", model);
+    Ok(if os == "ios" {
+        format!(
+            "Mozilla/5.0 ({token}) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{chrome} Mobile/15E148 Safari/604.1"
+        )
+    } else {
+        format!(
+            "Mozilla/5.0 ({token}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome}{} Safari/537.36",
+            if os == "android" { " Mobile" } else { "" }
+        )
+    })
+}
+
 /// Explicit seed is required at this pure seam; entropy belongs at the CLI boundary.
 pub fn generate(options: GenerateOptions<'_>) -> Result<Fingerprint, GenerationError> {
     let root = catalog().map_err(|_| GenerationError("Cannot parse embedded device catalog"))?;
@@ -154,29 +191,7 @@ pub fn generate(options: GenerateOptions<'_>) -> Result<Fingerprint, GenerationE
         };
         (cameras, microphones, speakers)
     };
-    let token = text(&d["OS_UA_TOKEN"][&os])?
-        .replace("{v}", if version.is_empty() { "14" } else { version })
-        .replace(
-            "{v_}",
-            &if version.is_empty() {
-                "18.5".to_owned()
-            } else {
-                version.to_owned()
-            }
-            .replace('.', "_"),
-        )
-        .replace("{model}", &model);
-    let chrome_text = text(&chrome)?;
-    let ua = if os == "ios" {
-        format!(
-            "Mozilla/5.0 ({token}) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{chrome_text} Mobile/15E148 Safari/604.1"
-        )
-    } else {
-        format!(
-            "Mozilla/5.0 ({token}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_text}{} Safari/537.36",
-            if os == "android" { " Mobile" } else { "" }
-        )
-    };
+    let ua = user_agent(&os, text(&chrome)?, version, &model)?;
     Fingerprint::from_record(&json!({"os":os,"user_agent":ua,"platform":d["NAV_PLATFORM"][&os],"ch_platform":d["CH_PLATFORM"][&os],
         "chrome_version":chrome,"screen_width":sw,"screen_height":sh,"viewport_width":vw,"viewport_height":vh,
         "hardware_concurrency":cores,"device_memory":memory,"webgl_vendor":gpu[0],"webgl_renderer":gpu[1],

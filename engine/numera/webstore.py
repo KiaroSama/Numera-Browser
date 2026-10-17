@@ -55,7 +55,10 @@ def extension_id(url_or_id: str) -> str:
 
     m = ID_RE.search(text)
     if m:
-        return m.group(1)
+        ext_id = m.group(1)
+        if not re.fullmatch(r"[a-p]{32}", ext_id):
+            raise WebStoreError("invalid Chrome extension id")
+        return ext_id
 
     # A near-miss deserves a specific message. Two things go wrong in practice and
     # they need different advice: an id the right shape but the wrong length is a
@@ -80,6 +83,8 @@ def extension_id(url_or_id: str) -> str:
 
 
 def _download(ext_id: str, timeout: int = 60) -> bytes:
+    if not re.fullmatch(r"[a-p]{32}", ext_id):
+        raise WebStoreError("invalid Chrome extension id")
     req = urllib.request.Request(CRX_URL.format(id=ext_id),
                                  headers={"User-Agent": USER_AGENT})
     try:
@@ -171,9 +176,11 @@ def install(url_or_id: str, data_dir: Path, *, force: bool = False) -> dict:
 
     Idempotent: an extension already installed is returned as-is unless `force`.
     """
+    from .paths import id_path
+
     ext_id = extension_id(url_or_id)
     root = Path(data_dir) / "extensions"
-    dest = root / ext_id
+    dest = id_path(root, ext_id)
 
     if dest.is_dir() and (dest / "manifest.json").is_file() and not force:
         return {"id": ext_id, "path": str(dest), "name": _name(dest), "reused": True}
@@ -203,6 +210,8 @@ def _name(folder: Path) -> str:
     _locales, which is more machinery than a label is worth. Fall back to the id
     when it cannot be read plainly."""
     import json
+    from .paths import safe_join
+
     try:
         manifest = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -211,15 +220,19 @@ def _name(folder: Path) -> str:
     if name.startswith("__MSG_"):
         key = name[6:-2] if name.endswith("__") else name[6:]
         for locale in ("en", "en_US", manifest.get("default_locale") or ""):
-            f = folder / "_locales" / locale / "messages.json"
-            if f.is_file():
-                try:
+            # A locale is one directory name, never a manifest-selected path.
+            if (not isinstance(locale, str) or not locale or locale in (".", "..")
+                    or any(separator in locale for separator in ("/", "\\", ":"))):
+                continue
+            try:
+                f = safe_join(folder, f"_locales/{locale}/messages.json")
+                if f.is_file():
                     msgs = json.loads(f.read_text(encoding="utf-8"))
                     got = msgs.get(key, {}).get("message")
                     if got:
                         return got
-                except (OSError, json.JSONDecodeError):
-                    pass
+            except (OSError, ValueError):
+                pass
         return folder.name
     return name or folder.name
 

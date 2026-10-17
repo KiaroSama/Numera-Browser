@@ -51,6 +51,24 @@ pub fn open(
     } else {
         extensions::paths(&profile.extensions, launch.cwd, launch.home).map_err(failure)?
     };
+    let relay = if launch.relay.is_none()
+        && profile.proxy.as_ref().is_some_and(|proxy| {
+            let options = proxy.to_playwright();
+            options.get("username").is_some() || options.get("password").is_some()
+        }) {
+        Some(
+            crate::network::relay::Relay::start(
+                profile
+                    .proxy
+                    .as_ref()
+                    .ok_or_else(|| failure(io::Error::other("Proxy vanished")))?,
+            )
+            .map_err(failure)?,
+        )
+    } else {
+        None
+    };
+    let relay_url = relay.as_ref().map(crate::network::relay::Relay::url);
     let mut options = options::build(
         &profile,
         launch.backend,
@@ -59,7 +77,7 @@ pub fn open(
         launch.headless,
         launch.extra_args,
         &extensions,
-        launch.relay,
+        launch.relay.or(relay_url.as_deref()),
     )
     .map_err(failure)?
     .as_object()
@@ -67,7 +85,15 @@ pub fn open(
     .ok_or_else(|| failure(io::Error::other("Browser options missing")))?;
     // Only package-selected executable fields may augment application options.
     for (key, value) in launch.binary_options {
-        if key != "executable_path" || !value.is_string() {
+        let valid = match (launch.backend, key.as_str()) {
+            (_, "executable_path") => value.is_string(),
+            ("cloak", "browser_version") | ("camoufox", "ff_version") => value.is_string(),
+            ("camoufox", "addons" | "exclude_addons") => value
+                .as_array()
+                .is_some_and(|values| values.iter().all(Value::is_string)),
+            _ => false,
+        };
+        if !valid {
             return Err(failure(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "Invalid packaged browser option",
@@ -96,6 +122,9 @@ pub fn open(
     };
     let mut adapter =
         Adapter::spawn_admitted(session, command, Duration::from_secs(10)).map_err(failure)?;
+    if let Some(relay) = relay {
+        adapter.own_relay(relay).map_err(failure)?;
+    }
     if let Err(error) = adapter.open_configured(
         launch.backend,
         options,

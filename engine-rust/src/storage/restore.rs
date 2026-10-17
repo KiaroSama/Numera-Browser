@@ -51,10 +51,11 @@ fn read_profile(archive: &mut ZipArchive<fs::File>, source: &Path) -> Result<Pro
 fn unpack(archive: &mut ZipArchive<fs::File>, staging: &Path) -> Result<(), RepoError> {
     for index in 0..archive.len() {
         let mut file = archive.by_index(index).map_err(zip_error)?;
-        let Some(member) = file.name().strip_prefix("user-data/") else {
+        let name = file.name().map_err(zip_error)?;
+        let Some(member) = name.strip_prefix("user-data/") else {
             continue;
         };
-        if file.is_dir() || file.name().ends_with('/') {
+        if file.is_dir() || name.ends_with('/') {
             continue;
         }
         // ZIP link metadata is never honored; only regular bytes enter staging.

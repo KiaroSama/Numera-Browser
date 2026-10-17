@@ -118,11 +118,12 @@ export const forWrite = (p: ProfileWrite) => {
  * extension icon is image bytes. A second fetch written next to that one caller
  * would be a second place for the token, the 401 handler and the `detail`
  * unwrapping to drift out of step with this one. */
-async function send(method: string, path: string, body?: unknown): Promise<Response> {
+async function send(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<Response> {
   const res = await fetch(BASE + path, {
     method,
     ...(headers(body) ? { headers: headers(body)! } : {}),
     ...(body ? { body: JSON.stringify(body) } : {}),
+    ...(signal ? { signal } : {}),
   });
   if (!res.ok) {
     // Use the server's own explanation when it sent one. FastAPI puts it in
@@ -147,8 +148,8 @@ async function send(method: string, path: string, body?: unknown): Promise<Respo
   return res;
 }
 
-async function req(method: string, path: string, body?: unknown): Promise<unknown> {
-  const res = await send(method, path, body);
+async function req(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<unknown> {
+  const res = await send(method, path, body, signal);
   return res.status === 204 ? null : res.json();
 }
 
@@ -168,6 +169,9 @@ export const api = {
     }
   },
   engines: () => req("GET", "/api/engines").then(contracts.engines),
+  cloakOffer: (signal: AbortSignal) => req("GET", "/api/engines/cloak/acquisition", undefined, signal).then(contracts.cloakOffer),
+  acquireCloak: (offer_id: string, signal: AbortSignal) => req("POST", "/api/engines/cloak/acquisition", { offer_id, approve: true }, signal)
+    .then(contracts.shape({ engine: contracts.text, installed: contracts.boolean, version: contracts.text, offer_id: contracts.text })),
   getConfig: () => req("GET", "/api/config").then(contracts.config),
   setDefaultEngine: (name: string) => req("PUT", "/api/config", { default_engine: name }).then(contracts.config),
   setDefaultExtensions: (paths: string[]) => req("PUT", "/api/config", { default_extensions: paths }).then(contracts.config),

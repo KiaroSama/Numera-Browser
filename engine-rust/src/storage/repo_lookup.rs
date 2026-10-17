@@ -84,7 +84,19 @@ impl ProfileRepo {
         let lock = DataLock::transaction(&self.root)?;
         let _guard = lock.acquire(Duration::from_secs(30))?;
         self.require_settled()?;
-        if let Some(profile) = self.reconciled(reference, now)? {
+        // Case-insensitive filesystems can open an ID through a differently
+        // cased name. Keep the stored spelling without bypassing twin repair.
+        let canonical = if safe_id(reference).is_ok() {
+            ["profiles", "dashboard"].into_iter().find_map(|kind| {
+                Self::raw(&self.path(reference, kind).ok()?)?["id"]
+                    .as_str()
+                    .filter(|id| id.eq_ignore_ascii_case(reference))
+                    .map(str::to_owned)
+            })
+        } else {
+            None
+        };
+        if let Some(profile) = self.reconciled(canonical.as_deref().unwrap_or(reference), now)? {
             return Ok(Some(profile));
         }
         let mut matches = BTreeSet::new();

@@ -31,7 +31,7 @@ pub fn config(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
         ("maxTouchPoints", fp.max_touch_points.into()),
         (
             "devicePixelRatio",
-            serde_json::to_value(fp.device_pixel_ratio)?,
+            Value::Number(fp.device_pixel_ratio.clone()),
         ),
         ("languages", serde_json::to_value(&fp.languages)?),
         ("webglVendor", serde_json::to_value(&fp.webgl_vendor)?),
@@ -72,7 +72,7 @@ pub(crate) fn write_ascii_fragment<W: ?Sized + Write>(
     Ok(())
 }
 
-struct SourceJson;
+pub(crate) struct SourceJson;
 impl Formatter for SourceJson {
     fn begin_array_value<W: ?Sized + Write>(
         &mut self,

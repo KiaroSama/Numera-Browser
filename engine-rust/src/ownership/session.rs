@@ -19,6 +19,7 @@ pub struct Session {
     _lease: SessionLease,
     tree: Option<OwnedTree>,
     claim: Option<String>,
+    admission: Option<super::update_admission::Reservation>,
 }
 
 impl Session {
@@ -30,9 +31,10 @@ impl Session {
                 "Session host identity is missing",
             ));
         }
-        let lease = SessionLease::acquire(&SessionLease::path_for(root, id)?)?;
         let lock = DataLock::transaction(root)?;
         let _guard = lock.acquire(Duration::from_secs(30))?;
+        let admission = super::update_admission::Reservation::begin(root, "native-session")?;
+        let lease = SessionLease::acquire(&SessionLease::path_for(root, id)?)?;
         if claims::state(&claims::read(root, id), host) != claims::State::Free {
             return Err(io::Error::new(
                 io::ErrorKind::WouldBlock,
@@ -46,6 +48,7 @@ impl Session {
             _lease: lease,
             tree: None,
             claim: None,
+            admission: Some(admission),
         })
     }
 
@@ -58,7 +61,22 @@ impl Session {
                 "Session already owns a helper tree",
             ));
         }
-        self.tree = Some(OwnedTree::spawn(command)?);
+        if self.admission.is_none() {
+            return Err(io::Error::other("Session admission was already settled"));
+        }
+        let lock = DataLock::transaction(&self.root)?;
+        let _guard = lock.acquire(Duration::from_secs(30))?;
+        super::update_admission::assert_open_locked(&self.root)?;
+        self.tree = Some(match OwnedTree::spawn(command) {
+            Ok(tree) => tree,
+            Err(error) => {
+                // Spawn failures may retain an uncertain tree in capture quarantine.
+                if let Some(admission) = &mut self.admission {
+                    admission.retain();
+                }
+                return Err(error);
+            }
+        });
         let tree = self
             .tree
             .as_ref()
@@ -154,6 +172,10 @@ impl Session {
 
     pub fn finish_with_status(&mut self, budget: Duration) -> io::Result<Option<i32>> {
         let Some(tree) = self.tree.as_mut() else {
+            if let Some(admission) = &mut self.admission {
+                admission.release()?;
+                self.admission = None;
+            }
             return Ok(None);
         };
         tree.settle(budget)?;
@@ -170,13 +192,21 @@ impl Session {
         }
         self.claim = None;
         self.tree = None;
+        if let Some(admission) = &mut self.admission {
+            admission.release()?;
+            self.admission = None;
+        }
         Ok(code)
     }
 }
 
 impl Drop for Session {
     fn drop(&mut self) {
-        // A failed cleanup leaves the durable claim, never an invented free slot.
-        let _ = self.finish(Duration::from_secs(2));
+        // A failed cleanup leaves both durable owners, never an invented free slot.
+        if self.finish(Duration::from_secs(2)).is_err()
+            && let Some(admission) = &mut self.admission
+        {
+            admission.retain();
+        }
     }
 }

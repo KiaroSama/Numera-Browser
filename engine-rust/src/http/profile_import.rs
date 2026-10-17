@@ -25,81 +25,7 @@ fn named(record: &Value) -> Option<String> {
         .map(|name| name.trim().to_lowercase())
         .find(|name| ["camoufox", "cloak", "patchright", "playwright"].contains(&name.as_str()))
 }
-fn native(raw: &Value) -> Result<Option<Vec<Value>>, String> {
-    let Some(version) = raw
-        .as_object()
-        .and_then(|record| record.get("numeraProfiles"))
-    else {
-        return Ok(None);
-    };
-    if version != &json!(1) && version != &json!(1.0) && version != &json!(true) {
-        let next = if validation::kind(version) == "int"
-            && version.as_i64().is_some_and(|version| version > 1)
-        {
-            "It was written by a newer Numera - update this install, or re-export from that one."
-        } else {
-            "Re-export it from the install that wrote it."
-        };
-        return Err(format!(
-            "this file says it is Numera export format {}; this build reads format 1. {next}",
-            validation::repr(version)
-        ));
-    }
-    let entries = raw["profiles"]
-        .as_array()
-        .filter(|entries| entries.iter().all(Value::is_object))
-        .ok_or("a Numera export must carry 'profiles' as a list of objects")?;
-    Ok(Some(entries.clone()))
-}
-fn unwrap(raw: &Value) -> Vec<Value> {
-    if let Some(entries) = raw.as_array() {
-        return entries
-            .iter()
-            .filter(|entry| entry.is_object())
-            .cloned()
-            .collect();
-    }
-    if raw.is_object() {
-        for key in ["data", "profiles", "list", "items", "rows"] {
-            if let Some(entries) = raw[key].as_array() {
-                return entries
-                    .iter()
-                    .filter(|entry| entry.is_object())
-                    .cloned()
-                    .collect();
-            }
-        }
-        return vec![raw.clone()];
-    }
-    Vec::new()
-}
-fn looks_native(record: &Value) -> bool {
-    [
-        "webglVendor",
-        "webglRenderer",
-        "clientRects",
-        "webglImage",
-        "mediaDevices",
-        "mediaVideo",
-        "mediaAudio",
-        "mediaSpeakers",
-        "fontList",
-        "startupUrls",
-        "launchArgs",
-        "clearOnStart",
-        "switchedOff",
-        "ipBased",
-        "devicePixelRatio",
-        "maxTouchPoints",
-        "osVersion",
-        "deviceModel",
-        "lastActive",
-    ]
-    .iter()
-    .filter(|key| record.get(**key).is_some())
-    .count()
-        >= 6
-}
+use crate::import_format::{entries as unwrap, looks_native, native};
 enum Failure {
     Bad(String),
     Store(RepoError),
@@ -230,7 +156,7 @@ pub(super) async fn import(
     State(state): State<Arc<Profiles>>,
     ObjectBody(body): ObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || read(&state, body)).await {
+    match super::admission::blocking(move || read(&state, body)).await {
         Ok(Ok(value)) => Json(value).into_response(),
         Ok(Err(Failure::Bad(message))) => profile_errors::detail(StatusCode::BAD_REQUEST, message),
         Ok(Err(Failure::Store(error))) => profile_errors::storage(error),

@@ -197,29 +197,8 @@ pub fn validate_schedule(patch: &Value, partial: bool) -> Result<Map<String, Val
     }
     if object.contains_key("minutes") || !partial {
         let raw = object.get("minutes").cloned().unwrap_or(5.into());
-        let minutes = number(&raw).map_err(|_| {
-            RepoError::Message(format!(
-                "'minutes': minutes must be a number, got {}",
-                crate::validation::repr(&raw)
-            ))
-        })?;
-        if !minutes.is_finite() {
-            return Err(RepoError::Message(
-                "'minutes': minutes must be a finite number".into(),
-            ));
-        }
-        if minutes <= 0.0 {
-            return Err(RepoError::Message(format!(
-                "'minutes': minutes must be greater than zero, got {}",
-                general_number(minutes)
-            )));
-        }
-        if minutes > 480.0 {
-            return Err(RepoError::Message(format!(
-                "'minutes': minutes must be at most 480 (8h), got {}",
-                general_number(minutes)
-            )));
-        }
+        let minutes = crate::browser::warmup_policy::validate(&raw, None, None)
+            .map_err(|error| RepoError::Message(format!("'minutes': {error}")))?;
         out.insert("minutes".into(), minutes.into());
     }
     if let Some(preset) = object.get("preset") {
@@ -229,15 +208,8 @@ pub fn validate_schedule(patch: &Value, partial: bool) -> Result<Map<String, Val
                 crate::validation::kind(preset)
             )));
         }
-        if let Some(text) = preset.as_str()
-            && !["ads", "crypto", "ecommerce", "general", "news", "social"]
-                .contains(&text.to_lowercase().as_str())
-        {
-            return Err(RepoError::Message(format!(
-                "'preset': unknown preset {}. Known: ads, crypto, ecommerce, general, news, social",
-                crate::validation::repr(preset)
-            )));
-        }
+        crate::browser::warmup_policy::validate(&1.into(), Some(preset), None)
+            .map_err(|error| RepoError::Message(format!("'preset': {error}")))?;
         out.insert("preset".into(), preset.clone());
     }
     if let Some(enabled) = object.get("enabled") {
@@ -291,31 +263,6 @@ fn number(value: &Value) -> Result<f64, RepoError> {
         _ => Err(RepoError::InvalidRecord(
             "Stored schedule time must be numeric".into(),
         )),
-    }
-}
-fn general_number(value: f64) -> String {
-    if value == 0.0 {
-        return if value.is_sign_negative() { "-0" } else { "0" }.into();
-    }
-    let scientific = format!("{value:.5e}");
-    let (mantissa, exponent) = scientific
-        .split_once('e')
-        .expect("Rust scientific format has an exponent");
-    let exponent: i32 = exponent.parse().expect("Rust exponent is numeric");
-    if !(-4..6).contains(&exponent) {
-        format!(
-            "{}e{:+03}",
-            mantissa.trim_end_matches('0').trim_end_matches('.'),
-            exponent
-        )
-    } else {
-        let places = (5 - exponent).max(0) as usize;
-        let fixed = format!("{value:.places$}");
-        if fixed.contains('.') {
-            fixed.trim_end_matches('0').trim_end_matches('.').into()
-        } else {
-            fixed
-        }
     }
 }
 pub fn next_run_at(schedule: &Value) -> Result<f64, RepoError> {

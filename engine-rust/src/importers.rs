@@ -135,6 +135,47 @@ fn proxy(record: &Value) -> Result<(Option<Proxy>, Option<Value>), String> {
 }
 /// Vendor import generation is explicit at this pure seam; HTTP supplies OS entropy.
 pub fn profile(record: &Value, seed: i64, now: f64) -> Result<(Value, Vec<String>), String> {
+    let (_, dashboard, issues) = parse(record, seed, now)?;
+    Ok((dashboard, issues))
+}
+pub fn model(record: &Value, seed: i64, now: f64) -> Result<(Profile, Vec<String>), String> {
+    let (mut model, dashboard, issues) = parse(record, seed, now)?;
+    let mut original = serde_json::to_value(&model).map_err(|error| error.to_string())?;
+    for (field, dashboard_field) in [
+        ("timezone", "timezone"),
+        ("webgl_vendor", "webglVendor"),
+        ("webgl_renderer", "webglRenderer"),
+    ] {
+        original["fingerprint"][field] = dashboard[dashboard_field].clone();
+    }
+    original["notes"] = dashboard["notes"].clone();
+    original["tags"] = dashboard["tags"].clone();
+    if original["proxy"].is_object() {
+        for (field, dashboard_field) in [
+            ("username", "user"),
+            ("password", "pass"),
+            ("country", "country"),
+        ] {
+            let value = &dashboard["proxy"][dashboard_field];
+            if !value.is_null() && !value.is_string() {
+                original["proxy"][field] = value.clone();
+            }
+        }
+    }
+    let problems = validation::profile_problems(&original, "engine record")
+        .map_err(|error| error.to_string())?;
+    if !problems.is_empty() {
+        return Err(problems.into_iter().take(8).collect::<Vec<_>>().join("; "));
+    }
+    model.notes = dashboard["notes"]
+        .as_str()
+        .ok_or("Imported notes are not text")?
+        .into();
+    model.tags =
+        serde_json::from_value(dashboard["tags"].clone()).map_err(|error| error.to_string())?;
+    Ok((model, issues))
+}
+fn parse(record: &Value, seed: i64, now: f64) -> Result<(Profile, Value, Vec<String>), String> {
     let mut issues = Vec::new();
     let ua = first(
         record,
@@ -354,7 +395,8 @@ pub fn profile(record: &Value, seed: i64, now: f64) -> Result<(Value, Vec<String
     }
     let notes = first(record, &["notes", "description"], "".into());
     let (proxy, proxy_view) = proxy(record)?;
-    let model=Profile::from_record(&json!({"id":random_hex(6).map_err(|error|error.to_string())?,"name":first(record,&["name","title","profile_name"],"imported profile".into()),"fingerprint":fp,"proxy":proxy,"notes":"","tags":[],"created_at":now,"updated_at":now})).map_err(|error|error.to_string())?;
+    let mut model=Profile::from_record(&json!({"id":random_hex(6).map_err(|error|error.to_string())?,"name":first(record,&["name","title","profile_name"],"imported profile".into()),"fingerprint":fp,"proxy":null,"notes":"","tags":[],"created_at":now,"updated_at":now})).map_err(|error|error.to_string())?;
+    model.proxy = proxy;
     issues.extend(identity::validate(&model.fingerprint).map_err(|error| error.to_string())?);
     let mut dashboard = crate::conversion::to_dashboard(&model);
     if let Some(proxy) = proxy_view
@@ -373,5 +415,5 @@ pub fn profile(record: &Value, seed: i64, now: f64) -> Result<(Value, Vec<String
         .as_object_mut()
         .ok_or("Imported dashboard shape missing")?
         .remove("_new");
-    Ok((dashboard, issues))
+    Ok((model, dashboard, issues))
 }

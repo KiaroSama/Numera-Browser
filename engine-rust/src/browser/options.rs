@@ -159,7 +159,7 @@ pub fn build(
             json!({"user_data_dir":user_data_dir,"headless":headless,"proxy":proxy,"user_agent":fp.user_agent,"viewport":{"width":fp.viewport_width,"height":fp.viewport_height},"locale":fp.locale,"timezone":fp.timezone,"geoip":profile.proxy.is_some(),"args":args}),
         );
     }
-    let mut options = json!({"user_data_dir":user_data_dir,"headless":headless,"channel":if headless { Some("chromium") } else { None },"args":args,"ignore_default_args":["--enable-automation"],"user_agent":fp.user_agent,"locale":fp.locale,"timezone_id":fp.timezone,"viewport":{"width":fp.viewport_width,"height":fp.viewport_height},"screen":{"width":fp.screen_width,"height":fp.screen_height},"is_mobile":fp.is_mobile,"device_scale_factor":if fp.device_pixel_ratio != 0.0 { fp.device_pixel_ratio } else if fp.is_mobile { 2.0 } else { 1.0 },"has_touch":fp.max_touch_points>0});
+    let mut options = json!({"user_data_dir":user_data_dir,"headless":headless,"channel":if headless { Some("chromium") } else { None },"args":args,"ignore_default_args":["--enable-automation"],"user_agent":fp.user_agent,"locale":fp.locale,"timezone_id":fp.timezone,"viewport":{"width":fp.viewport_width,"height":fp.viewport_height},"screen":{"width":fp.screen_width,"height":fp.screen_height},"is_mobile":fp.is_mobile,"device_scale_factor":if fp.device_pixel_ratio.as_f64().is_some_and(|value| value != 0.0) { Value::Number(fp.device_pixel_ratio.clone()) } else if fp.is_mobile { json!(2.0) } else { json!(1.0) },"has_touch":fp.max_touch_points>0});
     let mut headers = identity::headers(fp).map_err(io::Error::other)?["low"].clone();
     headers["accept-language"] = fp
         .languages

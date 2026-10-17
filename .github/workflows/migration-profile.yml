@@ -1,10 +1,11 @@
 name: Migration profile seam
 
+# Maintenance-only narrow checks; a release requires the full CI workflow.
 on:
   workflow_dispatch:
     inputs:
       scope:
-        description: Profile contracts or isolated identity script seam
+        description: Full non-live native contracts or one isolated seam
         type: choice
         default: profiles
         options: [profiles, identity-script, browser-options, browser-admission, browser-resources, browser-ip, browser-hints, browser-cookies, browser-extensions, cookie-export]
@@ -16,69 +17,102 @@ jobs:
   profile:
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 45
     env:
+      PYTHONUTF8: "1"
+      HOOKMAKER_MAX_TEST_WORKERS: "2"
       CARGO_BUILD_JOBS: "2"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      SCOPE: ${{ inputs.scope }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
+          toolchain: 1.99.1
           components: rustfmt, clippy
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13.15"
-      - name: Source prerequisites
-        run: python -m pip install -e "engine[api,dev]" "fastapi==0.142.3" "starlette==1.7.0"
-      - uses: Swatinem/rust-cache@v2
+      - name: Pinned source prerequisites
+        run: python scripts/migration/run_owned.py --wall 300 --idle 90 -- python -m pip install -e "engine[api,dev]" "fastapi==0.142.3" "starlette==1.7.0"
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
           workspaces: engine-rust
       - name: Formatting
         run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- cargo fmt --manifest-path engine-rust/Cargo.toml --all --check
-      - name: Identity script contract
-        if: inputs.scope == 'identity-script'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test init_script_parity -- --test-threads=1
-      - name: Browser option contract
-        if: inputs.scope == 'browser-options'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_options_parity -- --test-threads=1
-      - name: Browser admission contract
-        if: inputs.scope == 'browser-admission'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_admission_parity -- --test-threads=1
-      - name: Browser resource contract
-        if: inputs.scope == 'browser-resources'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_resources_parity -- --test-threads=1
-      - name: Browser IP identity contract
-        if: inputs.scope == 'browser-ip'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_ip_parity -- --test-threads=1
-      - name: Browser hints contract
-        if: inputs.scope == 'browser-hints'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_hints_parity -- --test-threads=1
-      - name: Browser extension path contract
-        if: inputs.scope == 'browser-extensions'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_extensions_parity -- --test-threads=1
-      - name: Browser cookie policy contract
-        if: inputs.scope == 'browser-cookies'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_cookies_parity -- --test-threads=1 --nocapture
-      - name: Cookie export contract
-        if: inputs.scope == 'cookie-export'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test cookie_export_parity -- --test-threads=1
-      - name: Profile HTTP contracts
+      - name: Compile the requested seam separately
+        if: inputs.scope != 'profiles'
+        run: python scripts/migration/run_owned.py --wall 900 --idle 300 -- python scripts/ci/suites.py seam --phase build --scope ${{ inputs.scope }}
+      - name: Requested native seam
+        if: inputs.scope != 'profiles'
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python scripts/ci/suites.py seam --phase test --scope ${{ inputs.scope }}
+      - name: Source inventory and oracle drift
         if: inputs.scope == 'profiles'
-        run: >-
-          python scripts/migration/run_owned.py --wall 600 --idle 120 --
-          cargo test --manifest-path engine-rust/Cargo.toml --locked
-          --test profile_write_parity --test http_fields_parity
-          --test profile_application_parity --test dashboard_error_kinds
-          --test profile_overview_parity --test profile_batch_parity
-          --test profile_http_import_parity --test ready_parity
-          --test session_ready_lifecycle --test session_registry_lifecycle
-          --test profile_http_delete_parity --test profile_delete_owned_session
-          --test browser_adapter_protocol --test browser_launch_admission --test init_script_parity --test browser_options_parity --test browser_admission_parity --test browser_resources_parity --test browser_ip_parity --test browser_hints_parity --test browser_startup_parity --test browser_cookies_parity --test browser_extensions_parity --test session_stop_http --test cookie_export_parity
-          --no-fail-fast -- --test-threads=2
+        run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/verify_oracles.py
+      - name: Compile every discovered non-live native suite separately
+        if: inputs.scope == 'profiles'
+        run: python scripts/migration/run_owned.py --wall 900 --idle 300 -- python scripts/ci/suites.py native --phase build
+      - name: Build acceptance-only native entry once before public handoff tests
+        if: inputs.scope == 'profiles'
+        run: python scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo build --manifest-path engine-rust/Cargo.toml --locked --example native_candidate
+      - name: Bind native handoff tests to the actual candidate
+        if: inputs.scope == 'profiles'
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          name = "native_candidate.exe" if os.name == "nt" else "native_candidate"
+          candidate = (Path("engine-rust/target/debug/examples") / name).resolve(strict=True)
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as output:
+              output.write(f"NUMERA_NATIVE_CANDIDATE={candidate}\n")
+          PY
+      - name: Every non-live native contract and library test
+        if: inputs.scope == 'profiles'
+        run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- python scripts/ci/suites.py native --phase test
       - name: Native lint
         if: inputs.scope == 'profiles'
         run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --all-targets -- -D warnings
+      - name: Actual native CLI and MCP parity
+        if: inputs.scope == 'profiles'
+        shell: bash
+        run: |
+          candidate=engine-rust/target/debug/examples/native_candidate
+          if [[ "$RUNNER_OS" == Windows ]]; then candidate="$candidate.exe"; fi
+          python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_entry_acceptance.py --candidate "$candidate"
+      - name: Actual native HTTP parity
+        if: inputs.scope == 'profiles'
+        shell: bash
+        run: |
+          candidate=engine-rust/target/debug/examples/native_candidate
+          if [[ "$RUNNER_OS" == Windows ]]; then candidate="$candidate.exe"; fi
+          python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_http_acceptance.py --candidate "$candidate"
+      - name: Native server parent-death acceptance
+        if: inputs.scope == 'profiles'
+        shell: bash
+        run: |
+          candidate=engine-rust/target/debug/examples/native_candidate
+          if [[ "$RUNNER_OS" == Windows ]]; then candidate="$candidate.exe"; fi
+          python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_parent_acceptance.py --candidate "$candidate"
+      - name: Windows hidden console acceptance
+        if: inputs.scope == 'profiles' && runner.os == 'Windows'
+        run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_console_acceptance.py --candidate engine-rust/target/debug/examples/native_candidate.exe
+      - name: Linux terminal password acceptance
+        if: inputs.scope == 'profiles' && runner.os == 'Linux'
+        run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_tty_acceptance.py --candidate engine-rust/target/debug/examples/native_candidate
+      - name: Linux detached ownership acceptance
+        if: inputs.scope == 'profiles' && runner.os == 'Linux'
+        run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_job_acceptance.py --candidate engine-rust/target/debug/examples/native_candidate
+      - name: Linux MCP signal and nested cleanup acceptance
+        if: inputs.scope == 'profiles' && runner.os == 'Linux'
+        run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_signal_acceptance.py --candidate engine-rust/target/debug/examples/native_candidate
+      - name: Original runtime remains selected
+        if: inputs.scope == 'profiles'
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/migration/verify_default.py
