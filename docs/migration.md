@@ -8,9 +8,9 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 17, 2026
 
-The latest completed source checkpoint is `435e38f`. Its manual hosted batch
-[39016780783](https://github.com/KiaroSama/Numera-Browser/actions/runs/39016780783)
-failed overall on October 17 at 08:28:34 UTC because the independent CodeQL
+The latest completed source checkpoint is `214e39d`. Its manual hosted batch
+[39021793261](https://github.com/KiaroSama/Numera-Browser/actions/runs/39021793261)
+failed overall on October 17 at 09:48:05 UTC because the independent CodeQL
 verdict and dependent required-verification gate failed. All Linux Python
 3.10/3.12/3.14, macOS and four Windows source jobs passed, as did dashboard
 tests/types/lint/build, native Windows/Linux contracts, all eight browser SDK
@@ -126,12 +126,12 @@ performance or rollback acceptance.
   The later historical failure-proof run observed the old parser lose the padded
   JSON cookie, then passed the restored target on Linux in 0.18 seconds and Windows
   in 0.43 seconds. Broader cookie, numeric and non-finite compatibility remain open.
-- Hosted Windows/Linux verification proved both historical assertion failures,
+- Hosted Windows/Linux verification proved all three historical assertion failures,
   fixed-byte restoration and passing fixed tests; build errors or timeouts cannot
-  count. A third correction now refuses oversized integer expiry instead of silently
-  creating a session cookie. Its 16 original-source inputs cover normalization and
-  48 parse envelopes; finite expiry compares exact float bits, other fields exactly.
-  This new correction awaits hosted proof; security and full migration gates stay open.
+  count. Oversized integer expiry now refuses instead of creating a session cookie.
+  Its 16 original-source inputs cover normalization and 48 parse envelopes; finite
+  expiry compares exact float bits, other fields exactly. The combined cookie target
+  passed in 0.20 seconds on Linux and 0.37 on Windows; broader gates stay open.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths; that assessment is not
   a clean verdict for the current tree. Identifier, exclusive JSON creation,
