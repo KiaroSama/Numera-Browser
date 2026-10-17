@@ -8,9 +8,9 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 16, 2026
 
-The latest completed source checkpoint is `a6f7f8f`. Its manual hosted batch
-[38960117490](https://github.com/KiaroSama/Numera-Browser/actions/runs/38960117490)
-failed overall on October 16 at 20:21:41 UTC. All three Linux source runtimes,
+The latest completed source checkpoint is `0a4153d`. Its manual hosted batch
+[38981069303](https://github.com/KiaroSama/Numera-Browser/actions/runs/38981069303)
+failed overall on October 16 at 23:33:32 UTC. All three Linux source runtimes,
 macOS source tests, all four Windows source partitions, dashboard tests/types/
 lint/build, native Windows/Linux contracts, all eight browser SDK legs,
 source/history credential checks, Docker and advisory/dependency checks passed.
@@ -21,7 +21,7 @@ formerly failing Windows partition: 790 passes, 42 explicit platform limits and
 37 suites, including 59 release-distribution tests. The latest checkpoint also
 passed all 39 Web Store tests on Windows, including locale traversal, absolute
 paths, lookup priority and simulated outside-link rejection. Linux Python 3.14
-verified 2,772 passes, six explicit limits and all 147 source suites. The source
+verified 2,776 passes, six explicit limits and all 147 source suites. The source
 jobs for Python 3.10, Python 3.12 and macOS also passed. These corrections do not
 weaken the report guard or add platform skips.
 The independent CodeQL verdict still fails with the same 20 changed-line
@@ -79,9 +79,11 @@ rollback acceptance.
   treated as evidence that no other process held it. The correction conservatively
   retains occupancy when directory creation or opening fails, preserving the
   own-held and successfully observed free cases. Existing CLI/HTTP stop and status
-  regressions inject the exact OS failure and verify recovery after access returns;
-  hosted verification of this correction is pending. It does not resolve the
-  remaining CodeQL verdict or certify native updater acceptance.
+  regressions inject the exact OS failure and verify recovery after access returns.
+  All four new variants passed in hosted source suites, including Windows, where
+  the two affected modules passed 9 and 10 tests respectively. This verifies the
+  conservative status/stop correction, not the remaining CodeQL verdict or native
+  updater acceptance.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths; that assessment is not
   a clean verdict for the current tree. Identifier, exclusive JSON creation,
