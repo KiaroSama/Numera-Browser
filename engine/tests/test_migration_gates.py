@@ -46,6 +46,80 @@ def test_original_inventory_reads_frozen_bytes_instead_of_working_source(tmp_pat
     assert row['symbols'] == ['original_contract']
 
 
+def test_inventory_keeps_alternative_definitions_independently_addressable(tmp_path, monkeypatch):
+    inventory = load('inventory')
+    source = tmp_path / 'engine/numera/conditional.py'
+    source.parent.mkdir(parents=True)
+    source.write_text('''if WINDOWS:
+    def take(): pass
+else:
+    def take(): pass
+if OTHER:
+    def take(): pass
+
+def read():
+    if WINDOWS:
+        def pipe(): pass
+    else:
+        def pipe(): pass
+''', encoding='utf-8')
+    monkeypatch.setattr(inventory, 'source_root', lambda: tmp_path)
+    monkeypatch.setattr(inventory, 'tracked_paths',
+                        lambda prefix: [source] if prefix == 'engine/numera' else [])
+    def check(module):
+        result = module.discover()
+        assert result['files'][0]['symbols'] == ['take', 'take', 'take', 'read', 'read.pipe', 'read.pipe']
+        assert [row['id'] for row in result['capabilities']] == [
+            'engine/numera/conditional.py::take', 'engine/numera/conditional.py::take#2',
+            'engine/numera/conditional.py::take#3',
+            'engine/numera/conditional.py::read', 'engine/numera/conditional.py::read.pipe',
+            'engine/numera/conditional.py::read.pipe#2',
+        ], 'Alternative source definitions lost their distinct capability identities'
+        assert all(row['status'] == 'pending' and row['target'] is None and row['test'] is None
+                   for row in result['capabilities'])
+        assert module.discover() == result
+
+    import hashlib
+    import pytest
+
+    historical = (ROOT / 'engine/tests/fixtures/migration-inventory-before-occurrences.py.txt').read_bytes()
+    assert hashlib.sha256(historical).hexdigest() == \
+        '22de18dea172c6f67a991fa53ed47dfeaae220f1a139a39f93f5f9f76c274314'
+    # The exact reviewed historical implementation must fail this same assertion.
+    old_source = tmp_path / 'historical/inventory.py'
+    old_source.parent.mkdir()
+    old_source.write_bytes(historical)
+    with monkeypatch.context() as prior:
+        prior.setattr(sys, 'dont_write_bytecode', True)
+        prior.setattr(sys, 'path', [str(SCRIPTS), *sys.path])
+        spec = importlib.util.spec_from_file_location('historical_inventory', old_source)
+        old = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(old)
+        prior.setattr(old, 'source_root', lambda: tmp_path)
+        prior.setattr(old, 'tracked_paths', inventory.tracked_paths)
+        with pytest.raises(AssertionError, match='Alternative source definitions lost'):
+            check(old)
+    check(inventory)
+
+
+def test_capability_gate_accepts_distinct_occurrences_but_refuses_reused_ids(tmp_path, monkeypatch):
+    gate = load('check_coverage')
+    first = {'id': 'source.py::take', 'status': 'verified',
+             'target': 'scripts/migration/inventory.py', 'test': 'engine/tests/test_migration_gates.py'}
+    second = {**first, 'id': 'source.py::take#2'}
+    source = {'source_commit': 'frozen-fixture', 'files': [{'path': 'source.py'}],
+              'capabilities': [first, second]}
+    monkeypatch.setattr(gate, 'discover', lambda: source)
+    path = tmp_path / 'coverage.json'
+    path.write_text(json.dumps(source), encoding='utf-8')
+    assert gate.check(path) == []
+    for rows in ([first], [first, first], [first, {**second, 'status': 'pending'}]):
+        path.write_text(json.dumps({**source, 'capabilities': rows}), encoding='utf-8')
+        assert gate.check(path), 'A missing, reused or pending occurrence allowed selection'
+    path.write_text(json.dumps({**source, 'capabilities': [first, second, second]}), encoding='utf-8')
+    assert gate.check(path) == ['Duplicate capability: source.py::take#2']
+
+
 def test_frozen_reference_rejects_drift_and_keeps_current_python_modules(tmp_path, monkeypatch):
     import pytest
     baseline = load('baseline_source')

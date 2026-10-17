@@ -8,16 +8,16 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 17, 2026
 
-The latest completed source checkpoint is `7c88397`. Its manual hosted batch
-[39059706094](https://github.com/KiaroSama/Numera-Browser/actions/runs/39059706094)
-failed overall on October 17 at 19:00:48 UTC. All Linux Python 3.10/3.12/3.14,
+The latest completed source checkpoint is `d4e7735`. Its manual hosted batch
+[39067053772](https://github.com/KiaroSama/Numera-Browser/actions/runs/39067053772)
+failed overall on October 17 at 20:45 UTC. All Linux Python 3.10/3.12/3.14,
 macOS and four Windows source jobs passed, as did dashboard tests/types/lint/build,
 native Windows/Linux contracts, source/history credential checks, Docker and
-advisory/dependency checks. Seven of eight relocated native application cases
-passed; Windows Camoufox failed its first CLI cookie import, despite its source
-and native library cases passing. Retained safe diagnostics show SDK import
-succeeded, then context open raised `CamoufoxNotInstalled`. The Windows cache-root
-binding correction awaits hosted verification. CodeQL and required verification failed.
+advisory/dependency checks. All eight relocated native application cases passed.
+Windows Camoufox now passes CLI/MCP cookie persistence and HTTP/auth/dashboard,
+restart/idempotence/stop with 24 complete, clean ownership units. Binding its
+existing cache before synthetic home isolation resolves the previous open failure;
+no browser was copied or downloaded by this correction. CodeQL and required verification failed.
 The rendered update interface passed consent, keyboard, deferral and cancellation
 checks in dark and light themes; its synthetic bridge does not prove a real
 portable upgrade.
@@ -516,7 +516,9 @@ source tests, and CI checks their regeneration for drift.
 [The source capability ledger](migration-coverage.json) inventories the frozen
 original source and keeps its required symbols pending until their complete target
 and test evidence is reconciled. It intentionally refuses release/default switch.
-The inventory counts symbols, not user features or completed test cases.
+The inventory counts source-symbol occurrences, not user features or completed
+test cases. Alternative definitions keep separate deterministic occurrence IDs;
+all 907 rows remain required, with no inferred verification from an ID repair.
 
 Remaining application work includes complete dual-store operations and vault
 recovery; complete native browser/session/helper/job ownership; all browser adapters

@@ -50,12 +50,20 @@ def describe(path: Path) -> dict:
 def discover() -> dict:
     files = [describe(p) for prefix in ('engine/numera', 'engine/tests')
              for p in tracked_paths(prefix) if p.suffix == '.py']
-    return {'schema': 1, 'source_commit': BASELINE, 'files': files,
-            'capabilities': [
-                {'id': f'{row["path"]}::{name}', 'target': None, 'test': None, 'status': 'pending'}
-                for row in files for name in row['symbols']
-                if not row['path'].startswith('engine/tests/') and name.rsplit('.', 1)[-1] != '__init__'
-            ]}
+    capabilities, occurrences = [], {}
+    for row in files:
+        if row['path'].startswith('engine/tests/'):
+            continue
+        for name in row['symbols']:
+            if name.rsplit('.', 1)[-1] == '__init__':
+                continue
+            identifier = f'{row["path"]}::{name}'
+            count = occurrences[identifier] = occurrences.get(identifier, 0) + 1
+            # Frozen platform alternatives share names, not capability identity.
+            if count > 1:
+                identifier += f'#{count}'
+            capabilities.append({'id': identifier, 'target': None, 'test': None, 'status': 'pending'})
+    return {'schema': 1, 'source_commit': BASELINE, 'files': files, 'capabilities': capabilities}
 
 
 def main(argv=None) -> int:

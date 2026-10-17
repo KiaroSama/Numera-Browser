@@ -62,14 +62,13 @@ not uploaded.
 
 ## Acceptance status
 
-Source `7c88397` ran in hosted batch
-[39059706094](https://github.com/KiaroSama/Numera-Browser/actions/runs/39059706094).
-All four relocated Linux cases and Windows Playwright, Patchright and Cloak passed.
-Windows Camoufox failed its first CLI cookie import; its source/library cases
-passed. Safe retained diagnostics show import succeeded, then context open raised
-`CamoufoxNotInstalled`; the ownership report was complete and clean. The prepared
-Windows cache-root binding needs hosted verification against that same scenario;
-it is not yet a proven repair. Both native tiers previously proved the historical
+Source `d4e7735` ran in hosted batch
+[39067053772](https://github.com/KiaroSama/Numera-Browser/actions/runs/39067053772).
+All eight relocated Windows/Linux cases passed. Windows Camoufox now passes actual
+CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
+idempotence and stop, with 24 complete, clean ownership units. Its earlier
+`CamoufoxNotInstalled` context-open failure is resolved by preserving the effective
+pre-isolation cache root. Both native tiers previously proved the historical
 metadata bytecode failure, restored fixed bytes and passed the current tests.
 CodeQL and required verification still failed; the integrated batch is not green.
 
