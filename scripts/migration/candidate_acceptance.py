@@ -7,6 +7,7 @@ import http.client
 import json
 import os
 from pathlib import Path
+import re
 import socket
 import subprocess
 import sys
@@ -153,6 +154,65 @@ def settled(root, identifier, tree=None):
         raise AssertionError('Candidate retained a settled browser claim')
 
 
+def failure_diagnostics(directory, logger):
+    from itertools import islice
+
+    safe = {'Camoufox SDK import starting', 'Camoufox SDK import complete',
+            'Camoufox persistent context entering', 'Camoufox persistent context entered', 'Startup'}
+    types = {'FileNotFoundError', 'PermissionError', 'OSError', 'ValueError', 'TypeError',
+             'RuntimeError', 'TimeoutError', 'Error', 'TargetClosedError', 'CamoufoxNotInstalled',
+             'UnsupportedVersion', 'InvalidAddonPath', 'InvalidOS', 'InvalidPropertyType',
+             'ProfileDirectoryError', 'NonFirefoxFingerprint', 'ImportError', 'ModuleNotFoundError'}
+    emitted = omitted = 0
+    logger.warning('Candidate diagnostics start')
+    try:
+        if directory.is_symlink() or getattr(directory.lstat(), 'st_file_attributes', 0) & 0x400:
+            raise ValueError('Linked diagnostic directory')
+        for index, path in enumerate(islice(directory.iterdir(), 17)):
+            if index == 16:
+                omitted += 1
+                break
+            if (not path.name.startswith(('browser-adapter_', 'native-cli_')) or path.suffix != '.log'
+                    or path.is_symlink() or getattr(path.lstat(), 'st_file_attributes', 0) & 0x400
+                    or not path.is_file() or path.stat().st_size > 65536):
+                omitted += 1
+                continue
+            with path.open('rb') as stream:
+                raw = stream.read(65537)
+            if len(raw) > 65536:
+                omitted += 1
+                continue
+            for line in raw.decode('utf-8').splitlines():
+                match = re.fullmatch(
+                    r'\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC\] '
+                    r'\[(?:DEBUG|INFO|WARNING|ERROR|CRITICAL)\] '
+                    r'\[(?:numera\.browser-adapter|entry)\] (.+)', line)
+                if match is None:
+                    continue
+                event = match[1]
+                failure = re.fullmatch(
+                    r'Operation failed operation=(hello|open|close|inspect|navigate|mouse|route|evaluate|'
+                    r'cookies-read|cookies-clear|cookies-add|invalid) type=([A-Za-z_][A-Za-z_0-9]*)', event)
+                if failure:
+                    kind = failure[2] if failure[2] in types else 'unknown'
+                    event = f'Operation failed operation={failure[1]} type={kind}'
+                else:
+                    failure = re.fullmatch(r'(Protocol failed|SDK cleanup failed) type=([A-Za-z_][A-Za-z_0-9]*)', event)
+                    if failure:
+                        kind = failure[2] if failure[2] in types else 'unknown'
+                        event = f'{failure[1]} type={kind}'
+                    elif event not in safe:
+                        continue
+                if emitted >= 63:
+                    omitted += 1
+                    break
+                logger.warning('Candidate event %s', event)
+                emitted += 1
+    except (OSError, UnicodeError, ValueError):
+        omitted += 1
+    logger.warning('Candidate diagnostics omitted=%s', omitted)
+
+
 def exercise(binary, web, parent, engine, env, logger):
     cwd = parent / 'unrelated working directory'
     cwd.mkdir()
@@ -171,6 +231,8 @@ def exercise(binary, web, parent, engine, env, logger):
     def cli(*arguments, expected_exit=0):
         code, stdout, stderr = execute([str(candidate), '--data-dir', str(root), *arguments, '--json'], env, cwd)
         if code != expected_exit or stderr:
+            logger.error('Candidate CLI failed operation=%s exit=%s stdout_bytes=%s stderr_bytes=%s',
+                         arguments[0], code, len(stdout), len(stderr))
             raise AssertionError(f'Candidate CLI failed operation={arguments[0]} exit={code}')
         return json.loads(stdout)
 
@@ -286,7 +348,11 @@ def main():
             env.update(NUMERA_SDK_PYTHON=sys.executable, NUMERA_LOG_DIR=str(parent / 'logs'),
                        PYTHONUTF8='1', PYTHONIOENCODING='utf-8', PYTHONDONTWRITEBYTECODE='1',
                        HOME=str(home), USERPROFILE=str(home))
-            exercise(artifact(args.report), args.dashboard.resolve(strict=True), parent, args.engine, env, logger)
+            try:
+                exercise(artifact(args.report), args.dashboard.resolve(strict=True), parent, args.engine, env, logger)
+            except BaseException:
+                failure_diagnostics(parent / 'logs', logger)
+                raise
     return 0
 
 

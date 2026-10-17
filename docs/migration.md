@@ -8,13 +8,16 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 17, 2026
 
-The latest completed source checkpoint is `214e39d`. Its manual hosted batch
-[39021793261](https://github.com/KiaroSama/Numera-Browser/actions/runs/39021793261)
-failed overall on October 17 at 09:48:05 UTC because the independent CodeQL
-verdict and dependent required-verification gate failed. All Linux Python
-3.10/3.12/3.14, macOS and four Windows source jobs passed, as did dashboard
-tests/types/lint/build, native Windows/Linux contracts, all eight browser SDK
-legs, source/history credential checks, Docker and advisory/dependency checks.
+The latest completed source checkpoint is `e6f2cb7`. Its manual hosted batch
+[39050238103](https://github.com/KiaroSama/Numera-Browser/actions/runs/39050238103)
+failed overall on October 17 at 16:56:23 UTC. All Linux Python 3.10/3.12/3.14,
+macOS and four Windows source jobs passed, as did dashboard tests/types/lint/build,
+native Windows/Linux contracts, source/history credential checks, Docker and
+advisory/dependency checks. Seven of eight relocated native application cases
+passed; Windows Camoufox failed its first CLI cookie import, despite its source
+and native library cases passing. The error stage/type was not retained, so its
+root cause is unknown. Bounded safe diagnostic retention is prepared, not a proven
+Camoufox fix. The independent CodeQL and required-verification gates also failed.
 The rendered update interface passed consent, keyboard, deferral and cancellation
 checks in dark and light themes; its synthetic bridge does not prove a real
 portable upgrade.

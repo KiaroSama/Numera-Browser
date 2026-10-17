@@ -52,18 +52,23 @@ CLI/MCP commands must prove those trees empty before fallback cleanup. Emergency
 cleanup runs on failure, but cannot turn a failed
 lifecycle assertion into a pass. File logs use the existing sanitized UTF-8 UTC
 per-run migration logger and isolated native/adapter log directories; no real
-profiles, credentials or command payloads belong in those logs.
+profiles, credentials or command payloads belong in those logs. Failed acceptance
+projects only bounded, allowlisted lifecycle events and exception types into the
+existing CI log before temporary cleanup; raw SDK messages and command output are
+not uploaded.
 
 ## Acceptance status
 
-The executable/staging/application scenarios are prepared and have not yet run on
-their integrated source SHA. The explicit metadata `-B` correction prevents the
-isolated SDK metadata interpreter from writing bytecode into runtime inputs; its
-existing native test and exact historical-source failure proof also await that
-hosted run. Formatting or source review is not runtime verification.
+Source `e6f2cb7` ran in hosted batch
+[39050238103](https://github.com/KiaroSama/Numera-Browser/actions/runs/39050238103).
+All four relocated Linux cases and Windows Playwright, Patchright and Cloak passed.
+Windows Camoufox failed its first CLI cookie import; its source/library cases
+passed, but the relocated failure's root cause remains unknown. Both native tiers
+proved the historical metadata bytecode failure, restored fixed bytes and passed
+the current tests. The integrated batch failed; diagnostic retention changes
+await their own hosted verification, not a claimed Camoufox repair.
 
-The last completed checkpoint remains the failed source/run documented in
-[migration status](migration.md). CodeQL, the 907-row capability ledger, complete
+See [migration status](migration.md). CodeQL, the 907-row capability ledger, complete
 application coverage, representative replay, repeated comparative time/peak-memory
 measurements, exercised rollback, native updater/signature acceptance and release
 gates remain open. Python selection and its oracle fixtures are unchanged.

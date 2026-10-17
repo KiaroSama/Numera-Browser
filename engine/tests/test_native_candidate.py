@@ -167,3 +167,50 @@ def test_outer_cleanup_rereads_units_published_while_stopping_a_producer(tmp_pat
     monkeypatch.setattr(runner, 'end_tree', end)
     assert runner.settle_reported(report, True, 10) == (True, 2, True)
     assert 102 in calls, 'Late SDK ownership was omitted from outer cleanup'
+
+
+def test_candidate_failure_diagnostics_keep_only_bounded_safe_events(tmp_path, monkeypatch):
+    import logging
+
+    candidate = load('candidate_acceptance')
+    messages = []
+
+    class Capture(logging.Handler):
+        def emit(self, record):
+            messages.append(record.getMessage())
+
+    logger = logging.Logger('candidate-diagnostics-fixture')
+    logger.addHandler(Capture())
+    logs = tmp_path / 'logs'
+    logs.mkdir()
+    prefix = '[2026-10-17 16:54:37 UTC] [INFO] [numera.browser-adapter] '
+    (logs / 'browser-adapter_fixture.log').write_text(
+        prefix + 'Camoufox SDK import complete\n'
+        + prefix + 'Operation failed operation=open type=FileNotFoundError\n'
+        + prefix + 'Operation failed operation=open type=private_fixture_value\n'
+        + prefix + 'secret=private_fixture_value\n'
+        + 'unstructured private_fixture_value\n', encoding='utf-8')
+    (logs / 'native-cli_fixture.log').write_text(
+        '[2026-10-17 16:54:37 UTC] [INFO] [entry] Startup\n', encoding='utf-8')
+    (logs / 'unapproved.log').write_text(prefix + 'Camoufox persistent context entered\n', encoding='utf-8')
+    (logs / 'browser-adapter_large.log').write_bytes(b'x' * 65537)
+    linked = logs / 'browser-adapter_link.log'
+    linked.write_text(prefix + 'Camoufox persistent context entered\n', encoding='utf-8')
+    original = Path.is_symlink
+    monkeypatch.setattr(Path, 'is_symlink', lambda path: path == linked or original(path))
+    candidate.failure_diagnostics(logs, logger)
+    text = '\n'.join(messages)
+    assert 'Camoufox SDK import complete' in text
+    assert 'operation=open type=FileNotFoundError' in text
+    assert 'type=unknown' in text
+    assert 'Startup' in text
+    assert 'private_fixture_value' not in text
+    assert 'persistent context entered' not in text
+    assert 'omitted=3' in text
+    assert len(messages) <= 65
+    assert (logs / 'browser-adapter_large.log').stat().st_size == 65537
+    messages.clear()
+    (logs / 'browser-adapter_fixture.log').write_text(
+        (prefix + 'Camoufox SDK import complete\n') * 100, encoding='utf-8')
+    candidate.failure_diagnostics(logs, logger)
+    assert len(messages) == 65, 'Candidate diagnostics exceeded their event bound'
