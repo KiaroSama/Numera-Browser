@@ -8,9 +8,9 @@ entrypoint tests does not certify a finished product migration.
 
 ## Current integration status — October 17, 2026
 
-The latest completed source checkpoint is `e0c79cb`. Its manual hosted batch
-[39011138110](https://github.com/KiaroSama/Numera-Browser/actions/runs/39011138110)
-failed overall on October 17 at 06:57:04 UTC because the independent CodeQL
+The latest completed source checkpoint is `435e38f`. Its manual hosted batch
+[39016780783](https://github.com/KiaroSama/Numera-Browser/actions/runs/39016780783)
+failed overall on October 17 at 08:28:34 UTC because the independent CodeQL
 verdict and dependent required-verification gate failed. All Linux Python
 3.10/3.12/3.14, macOS and four Windows source jobs passed, as did dashboard
 tests/types/lint/build, native Windows/Linux contracts, all eight browser SDK
@@ -112,22 +112,26 @@ performance or rollback acceptance.
   policy and retains malformed truthy-proxy refusal. Its bounded original-source
   comparison passed all 15 model/storage cases on hosted Windows and Linux,
   including unchanged stored bytes. The existing 35 recorded model cases are
-  untouched and passed too. No unfixed-code red run was observed; broader wrong-type
-  model compatibility and the capability ledger remain open.
+  untouched and passed too. The later historical failure-proof run observed the
+  old code reject the false-proxy case, then passed the restored model target on
+  Linux in 0.19 seconds and Windows in 0.42 seconds. Broader wrong-type model
+  compatibility and the capability ledger remain open.
 - Cookie input review found another bounded compatibility gap: Python treats four
   ASCII separators as whitespace that Rust's standard predicate excludes. The
   cookie-only correction preserves JSON boundary trimming and Netscape fallback
   field splitting without changing TAB-first parsing or line boundaries. Sixteen
   additional original-source observations cover padding, field separation and
   controls that must remain data. The combined cookie parity target passed on
-  hosted Linux in 0.11 seconds and Windows in 0.25 seconds. No unfixed-code red
-  run was observed; broader cookie, numeric and non-finite compatibility remain open.
-- Hosted native verification now includes a prepared historical failure-proof step
-  for those two regressions. It verifies the exact historical production bytes,
-  requires the named test to fail at its original symptom, and restores the fixed
-  source before the normal native pass. Compilation, timeout or unrelated failures
-  cannot count as regression proof. This addition is not yet runtime-verified and
-  does not clear the independent security verdict or full migration gates.
+  hosted Linux in 0.11 seconds and Windows in 0.25 seconds on the earlier checkpoint.
+  The later historical failure-proof run observed the old parser lose the padded
+  JSON cookie, then passed the restored target on Linux in 0.18 seconds and Windows
+  in 0.43 seconds. Broader cookie, numeric and non-finite compatibility remain open.
+- Hosted native verification now proves both regressions fail on their exact
+  historical production bytes at the named assertion symptom, then restores the
+  fixed source before the normal native pass. Both Windows and Linux verified the
+  historical failures, fixed-byte restoration and passing fixed tests. Compilation,
+  timeout or unrelated failures cannot count as regression proof. These narrow
+  results do not clear the independent security verdict or full migration gates.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths; that assessment is not
   a clean verdict for the current tree. Identifier, exclusive JSON creation,
