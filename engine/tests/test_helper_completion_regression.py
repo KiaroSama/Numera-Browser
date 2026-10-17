@@ -191,6 +191,36 @@ import json,sys,time,threading
 from pathlib import Path
 from numera.server import helpers
 m=helpers.HelperManager();start=time.monotonic()
+phases=[]
+settle=m._settle_locked
+def measured_settle(helper,ends_at):
+    begin=time.monotonic()
+    def measure(name,method):
+        def observed(budget):
+            entered=time.monotonic()
+            row={'phase':name,'budget':budget,'remaining_enter':ends_at-entered}
+            try:
+                return method(budget)
+            finally:
+                finished=time.monotonic()
+                row.update(elapsed=finished-entered,remaining_exit=ends_at-finished)
+                if name=='close':
+                    row['readers']=[{'name':r.thread.name,'ident':r.thread.ident,
+                        'alive':r.thread.is_alive(),'cancel':r.cancel.is_set(),
+                        'eof':r.ended.is_set(),'pipe_closed':r.pipe.closed,
+                        'error':type(r.error).__name__ if r.error else None}
+                        for r in helper.streams.readers]
+                phases.append(row)
+        return observed
+    if helper.streams is not None:
+        for name in ('collect','close'):
+            setattr(helper.streams,name,measure(name,getattr(helper.streams,name)))
+    try:
+        return settle(helper,ends_at)
+    finally:
+        phases.append({'phase':'settle','ends_at':ends_at,
+                       'elapsed':time.monotonic()-begin})
+m._settle_locked=measured_settle
 try:
     helpers.run_helper([sys.executable,'-c',sys.argv[3],sys.argv[1],sys.argv[2],sys.argv[4]],5,manager=m,cleanup=.4)
     result={'error':None}
@@ -198,7 +228,8 @@ except helpers.HelperFailed as e:
     result={'error':type(e).__name__}
 reported=json.loads(Path(sys.argv[1]).read_text())['reported_at']
 result.update(elapsed=time.monotonic()-start,cleanup_elapsed=time.monotonic()-reported,retained=len(m.live()),readers=[t.name for t in threading.enumerate() if t.name.startswith('helper-')])
-Path(sys.argv[5]).write_text(json.dumps(result))
+result['phases']=phases
+Path(sys.argv[5]).write_text(json.dumps(result),encoding='utf-8')
 '''
     worker = subprocess.Popen([sys.executable, '-c', worker_code, str(receipt), damage,
                                helper_code, child_code, str(outcome)], stdout=subprocess.PIPE,

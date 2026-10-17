@@ -6,32 +6,38 @@ The existing Python application remains the default and rollback implementation.
 CLI/server example, **not an installed replacement**. Passing library or narrow
 entrypoint tests does not certify a finished product migration.
 
-## Current integration status — October 16, 2026
+## Current integration status — October 17, 2026
 
-The latest completed source checkpoint is `0a4153d`. Its manual hosted batch
-[38981069303](https://github.com/KiaroSama/Numera-Browser/actions/runs/38981069303)
-failed overall on October 16 at 23:33:32 UTC. All three Linux source runtimes,
-macOS source tests, all four Windows source partitions, dashboard tests/types/
-lint/build, native Windows/Linux contracts, all eight browser SDK legs,
-source/history credential checks, Docker and advisory/dependency checks passed.
-The rendered update interface also passed consent, keyboard, deferral and
-cancellation checks in dark and light themes; its synthetic bridge does not
-prove a real portable upgrade. The earlier `7020a0a` checkpoint verified the
-formerly failing Windows partition: 790 passes, 42 explicit platform limits and
-37 suites, including 59 release-distribution tests. The latest checkpoint also
-passed all 39 Web Store tests on Windows, including locale traversal, absolute
-paths, lookup priority and simulated outside-link rejection. Linux Python 3.14
-verified 2,776 passes, six explicit limits and all 147 source suites. The source
-jobs for Python 3.10, Python 3.12 and macOS also passed. These corrections do not
-weaken the report guard or add platform skips.
-The independent CodeQL verdict still fails with the same 20 changed-line
-annotations, down from an earlier 26. Those annotations are not a whole-branch
-count: the Python and Rust analyses contain 32 and 30 results respectively.
-Removed annotations do not establish whole-branch security. Distribution,
-promotion and publication were skipped. There is no signed release or completed
-native updater acceptance. Python remains selected; a passing narrow tier does
-not complete the 907-row capability ledger, replay, comparative performance or
-rollback acceptance.
+The latest completed source checkpoint is `5d2e92e`. Its manual hosted batch
+[38994582965](https://github.com/KiaroSama/Numera-Browser/actions/runs/38994582965)
+failed overall on October 17 at 02:32:37 UTC. Dashboard tests/types/lint/build,
+native Windows/Linux contracts, all eight browser SDK legs, source/history
+credential checks, Docker and advisory/dependency checks passed. The rendered
+update interface passed consent, keyboard, deferral and cancellation checks in
+dark and light themes; its synthetic bridge does not prove a real portable upgrade.
+
+The source suites exposed a profile-listing regression: six absent session
+claims caused 24 JSON read attempts against the existing limit of 20. Python 3.10
+also exposed four fault-fixture failures because pathlib caches its OS accessors.
+macOS additionally failed one malformed-report case: reader threads were still
+visible at the immediate cleanup snapshot, although the worker exited without
+supervisor rescue. Persistent leakage and its exact cause are not established.
+Windows source partitions 0, 1 and 3 passed; partition 2 and all Linux/macOS
+source jobs failed. Prepared corrections retain the read-count limit and all
+cleanup assertions, adding fixture-local phase diagnostics rather than a guessed
+production fix. They await replacement hosted verification.
+
+The previous `0a4153d` batch passed every source platform and all four new lease
+variants. Its Linux Python 3.14 result was 2,776 passes, six explicit limits and
+all 147 source suites. The earlier `7020a0a` checkpoint verified Windows partition
+1 with 790 passes, 42 explicit platform limits and 37 suites, including 59
+release-distribution tests. These historical results do not certify the changed tree.
+The latest independent CodeQL verdict still fails with 19 changed-line annotations,
+down from 20; that is not a whole-branch finding count or security clearance.
+Distribution, promotion and publication were skipped. There is no signed release
+or completed native updater acceptance. Python remains selected; narrow passing
+tiers do not complete the 907-row capability ledger, replay, comparative
+performance or rollback acceptance.
 
 - The portable updater and private quiescence protocol are drafted in the shell
   and retained engine. A durable commit prevents automatic downgrade after work
@@ -86,12 +92,13 @@ rollback acceptance.
   updater acceptance.
 - A further source review found an ambiguous durable-claim existence probe:
   Python 3.14 can return false for an inaccessible path as well as a missing one.
-  The prepared correction reads the claim directly, treating only a missing read
-  as absence and retaining unreadable ownership for path-resolution or access
-  failures. Existing public ownership and CLI/HTTP regression seams now cover
-  denied claim observation, unchanged claim bytes and recovery controls. This
-  correction has not yet run in hosted CI; the completed results above belong to
-  the earlier source checkpoint, not this changed tree.
+  The initial direct-read correction exposed the read-count regression above.
+  Its replacement uses explicit `stat` to distinguish an absent claim without
+  opening it, retaining unreadable ownership for path-resolution or access
+  failures. Existing public ownership and CLI/HTTP regression seams retain denied
+  observation, unchanged claim bytes and recovery controls. Python 3.10 fixtures
+  now substitute the exact path accessors rather than functions cached at import.
+  This replacement has not yet run in hosted CI.
 - The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
   independently assessed against their exact source paths; that assessment is not
   a clean verdict for the current tree. Identifier, exclusive JSON creation,

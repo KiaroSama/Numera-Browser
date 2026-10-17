@@ -198,32 +198,42 @@ def test_stopping_a_profile_nobody_here_owns_says_so(tmp_path, capsys):
     assert "another process" in out, out
 
 
-def _deny_claim_observation(monkeypatch, claim, error=PermissionError):
-    import io
+def _deny_claim_observation(monkeypatch, claim, error=PermissionError, *, operation="both"):
     import os
+    from pathlib import Path
 
     observed = []
-    original_stat, original_open = os.stat, io.open
+    original_stat, original_path_stat, original_open = os.stat, Path.stat, Path.open
 
     def stat(path, *args, **kwargs):
-        if path in (claim, str(claim)):
+        if (operation != "read" and path in (claim, str(claim))
+                and kwargs.get("follow_symlinks", True)):
             observed.append("stat")
             raise error("fixture claim observation denied")
         return original_stat(path, *args, **kwargs)
 
+    def path_stat(path, *args, **kwargs):
+        if operation != "read" and path == claim and kwargs.get("follow_symlinks", True):
+            observed.append("stat")
+            raise error("fixture claim observation denied")
+        return original_path_stat(path, *args, **kwargs)
+
     def open_file(path, *args, **kwargs):
-        if path in (claim, str(claim)):
+        if path == claim:
             observed.append("read")
             raise error("fixture claim reading denied")
         return original_open(path, *args, **kwargs)
 
+    # Python 3.10 caches the OS functions in pathlib's accessor at import time.
     monkeypatch.setattr(os, "stat", stat)
-    monkeypatch.setattr(io, "open", open_file)
+    monkeypatch.setattr(Path, "stat", path_stat)
+    monkeypatch.setattr(Path, "open", open_file)
     return observed
 
 
 @pytest.mark.parametrize("error", [PermissionError, OSError])
-def test_an_unobservable_claim_is_not_reported_free(tmp_path, monkeypatch, error):
+@pytest.mark.parametrize("operation", ["stat", "read"])
+def test_an_unobservable_claim_is_not_reported_free(tmp_path, monkeypatch, error, operation):
     from numera import proctree, sessions
     from numera.paths import SessionBusy
 
@@ -232,14 +242,14 @@ def test_an_unobservable_claim_is_not_reported_free(tmp_path, monkeypatch, error
     payload = b'{"session":"preserved","what":"fixture session"}'
     claim.write_bytes(payload)
     with monkeypatch.context() as patch:
-        observed = _deny_claim_observation(patch, claim, error)
+        observed = _deny_claim_observation(patch, claim, error, operation=operation)
         assert sessions.read(tmp_path, "unobserved") is sessions.UNREADABLE, \
             "an inaccessible claim was reported absent"
         assert sessions.busy(tmp_path, "unobserved")
         assert sessions.held(tmp_path, "unobserved")
         with pytest.raises(SessionBusy):
             sessions.take(tmp_path, "unobserved", proctree.Tree(pid=0, kind=""))
-    assert observed, "claim observation was never attempted"
+    assert operation in observed, "claim observation was never attempted"
     assert claim.read_bytes() == payload
     assert sessions.read(tmp_path, "unobserved")["session"] == "preserved"
     claim.unlink()

@@ -80,7 +80,8 @@ def read(root, profile_id: str):
     except (OSError, ValueError):
         return UNREADABLE
     try:
-        # exists() also hides access errors; only a missing read proves absence.
+        # exists() hides access errors; stat distinguishes missing from unreadable.
+        path.stat()
         data = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
         return None
