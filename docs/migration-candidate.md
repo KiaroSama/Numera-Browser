@@ -75,14 +75,36 @@ encrypted; unknown fields and exact synthetic session bytes must survive restore
 
 This scenario reuses the entry harness's per-command 15-second process ownership
 and existing 180-second wall/90-second idle owner. Only fixed operation/verdict
-metadata is logged. It is prepared, not yet verified in hosted execution. A small
-binary session marker is not a real browser database, a crash-recovery drill or
-complete migration rollback acceptance.
+metadata is logged. Hosted batch `39082712186` passed the complete sequence on
+Windows and Linux, with both outer owners reporting exit 0 and clean trees.
+A small binary session marker is not a real browser database, a crash-recovery
+drill or complete migration rollback acceptance.
+
+## Representative release performance
+
+The existing native job now prepares an optimized, current Cargo artifact for
+four foreground CLI scenarios: seeded creation, a 32-profile list, an unlocked
+vault read and backup. One warm-up pair precedes seven alternating measured
+pairs. Identical synthetic input stores are copied outside the measured interval;
+returned profiles, both stored copies and backup contents must agree too.
+
+Each fresh observer records elapsed monotonic nanoseconds and an OS lifetime
+memory peak. Linux reports its sole child's maximum resident set; Windows uses
+a job assigned at process creation and reports peak committed bytes. These are
+different metrics and are compared only between runtimes on the same host, never
+aggregated across operating systems. All individual numeric samples, source/build
+identity and the binary hash are retained in the hosted performance artifact.
+
+Disjoint lower native ranges establish no regression for a measured scenario;
+disjoint higher ranges report regression. Overlapping ranges are inconclusive,
+not accepted under an arbitrary percentage allowance. Failed or inconclusive
+measurement blocks the native job. This new harness is not yet runtime-verified;
+it does not cover API/browser performance or complete migration acceptance.
 
 ## Acceptance status
 
-Source `8120895` ran in hosted batch
-[39076441495](https://github.com/KiaroSama/Numera-Browser/actions/runs/39076441495).
+Source `6bd5420` ran in hosted batch
+[39082712186](https://github.com/KiaroSama/Numera-Browser/actions/runs/39082712186).
 All source-platform, native and eight relocated Windows/Linux cases passed.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier

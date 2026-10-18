@@ -457,12 +457,8 @@ jobs:
         run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- python scripts/ci/suites.py native --phase test
       - name: Native documentation tests
         run: python scripts/migration/run_owned.py --wall 120 --idle 60 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --doc
-      - name: Actual native CLI and MCP parity
-        shell: bash
-        run: |
-          candidate=engine-rust/target/debug/examples/native_candidate
-          if [[ "$RUNNER_OS" == Windows ]]; then candidate="$candidate.exe"; fi
-          python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_entry_acceptance.py --candidate "$candidate"
+      - name: Actual native entry replay and optimized performance
+        uses: ./.github/actions/native-entry-performance
       - name: Actual native HTTP parity
         shell: bash
         run: |

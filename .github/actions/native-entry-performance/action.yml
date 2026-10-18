@@ -1,0 +1,33 @@
+name: Native entry replay and representative performance
+description: Preserve executable parity and measure the optimized candidate without selecting it.
+runs:
+  using: composite
+  steps:
+    - name: Actual native CLI MCP and sequential source rollback
+      shell: bash
+      run: |
+        candidate=engine-rust/target/debug/examples/native_candidate
+        if [[ "$RUNNER_OS" == Windows ]]; then candidate="$candidate.exe"; fi
+        python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_entry_acceptance.py --candidate "$candidate"
+    - name: Build the exact optimized candidate for comparable measurements
+      shell: bash
+      run: >-
+        python scripts/migration/run_owned.py --wall 960 --idle 330 --
+        python scripts/migration/candidate_stage.py --release
+        --report build/native-performance/cargo-release.jsonl
+    - name: Alternating representative original and native CLI measurements
+      shell: bash
+      run: >-
+        python scripts/migration/run_owned.py --wall 180 --idle 90 --report-units --
+        python scripts/migration/benchmark.py --report build/native-performance/cargo-release.jsonl
+        --destination build/native-performance/measurements.json
+    - name: Retain sanitized numeric performance evidence
+      if: always()
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: native-performance-${{ runner.os }}
+        path: |
+          build/native-performance/measurements.json
+          scripts/logs/native-performance_*.log
+        if-no-files-found: warn
+        retention-days: 14

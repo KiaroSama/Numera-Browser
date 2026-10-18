@@ -62,6 +62,26 @@ def test_cargo_report_requires_success_and_one_current_enabled_binary(tmp_path):
             stage.artifact(report)
 
 
+def test_candidate_release_artifact_requires_current_optimized_profile(tmp_path):
+    stage = load('candidate_stage')
+    artifact = {'reason': 'compiler-artifact', 'manifest_path': str(ROOT / 'engine-rust/Cargo.toml'),
+                'target': {'name': stage.BINARY, 'kind': ['bin']},
+                'features': ['native-candidate'], 'profile': {'test': False, 'opt_level': '3',
+                                                             'debug_assertions': False},
+                'executable': str(ROOT / 'engine-rust/target/release' / stage.executable_name())}
+    report = tmp_path / 'release.jsonl'
+    complete = {'reason': 'build-finished', 'success': True}
+    report.write_text('\n'.join(map(json.dumps, (artifact, complete))), encoding='utf-8')
+    assert stage.artifact(report, release=True) == Path(artifact['executable']).resolve()
+    for profile in ({'test': False, 'opt_level': '0', 'debug_assertions': False},
+                    {'test': False, 'opt_level': '3', 'debug_assertions': True},
+                    {'test': False}):
+        report.write_text('\n'.join(map(json.dumps, ({**artifact, 'profile': profile}, complete))),
+                          encoding='utf-8')
+        with pytest.raises(ValueError, match='optimized'):
+            stage.artifact(report, release=True)
+
+
 def test_candidate_layout_readback_detects_mutation_missing_and_unlisted_files(tmp_path, monkeypatch):
     stage = load('candidate_stage')
     source = tmp_path / 'source'

@@ -165,6 +165,122 @@ def test_replay_snapshot_tracks_exact_store_and_session_bytes(tmp_path):
     assert replay.protected_bytes(tmp_path) != before
 
 
+def test_benchmark_range_verdict_refuses_noise_regression_and_invalid_samples():
+    import pytest
+
+    benchmark = load('benchmark')
+    assert benchmark.verdict([1, 2, 3], [4, 5, 6]) == 'no-regression'
+    assert benchmark.verdict([3, 3, 3], [3, 3, 3]) == 'inconclusive'
+    assert benchmark.verdict([7, 8, 9], [4, 5, 6]) == 'regression'
+    assert benchmark.verdict([3, 5, 7], [4, 5, 6]) == 'inconclusive'
+    for sample in ([], [0], [-1], [True], [1.0], ['1']):
+        with pytest.raises(ValueError, match='positive integer'):
+            benchmark.verdict(sample, [1, 2, 3])
+        with pytest.raises(ValueError, match='positive integer'):
+            benchmark.verdict([1, 2, 3], sample)
+
+
+def test_benchmark_peak_requires_supported_platform_and_positive_os_observation(monkeypatch):
+    import pytest
+    from types import SimpleNamespace
+
+    sample = load('benchmark_sample')
+    calls = []
+    monkeypatch.setitem(sys.modules, 'resource', SimpleNamespace(
+        RUSAGE_CHILDREN=-1,
+        getrusage=lambda who: calls.append(who) or SimpleNamespace(ru_maxrss=1234)))
+    monkeypatch.setattr(sys, 'platform', 'linux')
+    assert sample.linux_peak() == {'metric': 'peak-child-rss-bytes', 'bytes': 1234 * 1024}
+    assert calls == [-1]
+    for invalid in (0, -1, True, 1.5):
+        monkeypatch.setitem(sys.modules, 'resource', SimpleNamespace(
+            RUSAGE_CHILDREN=-1, getrusage=lambda who, value=invalid: SimpleNamespace(ru_maxrss=value)))
+        with pytest.raises(ValueError, match='positive integer'):
+            sample.linux_peak()
+    monkeypatch.setattr(sys, 'platform', 'darwin')
+    with pytest.raises(ValueError, match='Linux'):
+        sample.linux_peak()
+
+
+def test_benchmark_windows_assigns_job_at_birth_and_closes_failed_creation(monkeypatch):
+    import pytest
+    from types import SimpleNamespace
+
+    windows = load('benchmark_windows')
+    events = []
+    fail = [False]
+
+    class Kernel:
+        def InitializeProcThreadAttributeList(self, buffer, count, flags, size):
+            assert count == 2
+            size._obj.value = 128
+            return True
+        def UpdateProcThreadAttribute(self, buffer, flags, attribute, values, size, unused, previous):
+            events.append(attribute)
+            return True
+        def DeleteProcThreadAttributeList(self, buffer):
+            events.append('delete-attributes')
+        def CreateProcessW(self, app, command, security, thread_security, inherit, flags,
+                           environment, cwd, startup, info):
+            assert events == [0x2000D, 0x20002]
+            assert flags & 0x80000 and flags & 0x08000000 and inherit
+            assert startup._obj.flags == 0x100
+            events.append('create')
+            if fail[0]:
+                raise OSError('synthetic creation refusal')
+            info._obj.process, info._obj.thread, info._obj.pid = 123, 456, 789
+            return True
+        def CloseHandle(self, handle):
+            events.append(('close', handle))
+            return True
+
+    kernel = Kernel()
+    monkeypatch.setattr(windows, 'api', lambda: kernel)
+    monkeypatch.setitem(sys.modules, 'msvcrt', SimpleNamespace(get_osfhandle=lambda fd: fd))
+    monkeypatch.setitem(sys.modules, 'numera.winjob', SimpleNamespace(_job_open=lambda name: 99))
+    process, tree, job = windows.spawn(['fixture.exe', '--json'], {'PYTHONUTF8': '1'})
+    assert tree.pid == 789 and tree.kind == 'job' and job == 99
+    assert events[-1] == ('close', 456) and ('close', 99) not in events
+    process.stdout.close()
+    process.stderr.close()
+    process.close()
+    kernel.CloseHandle(job)
+    assert ('close', 123) in events
+    events.clear()
+    fail[0] = True
+    with pytest.raises(OSError, match='synthetic creation refusal'):
+        windows.spawn(['fixture.exe'], {})
+    assert events[-1] == ('close', 99)
+
+
+def test_benchmark_creation_compares_new_dashboard_content_not_just_existence(tmp_path, monkeypatch):
+    import pytest
+
+    benchmark = load('benchmark')
+    template = tmp_path / 'template'
+    template.mkdir()
+    dashboard = [{'id': 'new', 'name': 'Measured creation', '_rev': 1, '_created': 1000.0}]
+
+    def observe(argv, env, **kwargs):
+        root = Path(argv[argv.index('--data-dir') + 1])
+        profile = {'id': 'new', 'name': 'Measured creation', 'created_at': 1000.0, 'updated_at': 1001.0}
+        for directory, record in (('profiles', profile), ('dashboard', dashboard[0])):
+            (root / directory).mkdir()
+            (root / directory / 'new.json').write_text(json.dumps(record), encoding='utf-8')
+        return 0, json.dumps({'elapsed_ns': 1, 'memory': {'metric': 'fixture', 'bytes': 1},
+                             'payload': {'ok': True, 'profile': profile}}), ''
+
+    monkeypatch.setattr(benchmark, 'execute', observe)
+    args = (tmp_path / 'candidate', tmp_path, tmp_path, template, {}, 'native', 'create', '')
+    _, expected = benchmark.observation(*args)
+    dashboard[0] = {**dashboard[0], 'name': 'lost identity'}
+    _, changed = benchmark.observation(*args)
+    assert changed != expected, 'Benchmark discarded the new dashboard fields before comparison'
+    dashboard[0] = {}
+    with pytest.raises(ValueError, match='dashboard identity'):
+        benchmark.observation(*args)
+
+
 def test_frozen_reference_rejects_drift_and_keeps_current_python_modules(tmp_path, monkeypatch):
     import pytest
     baseline = load('baseline_source')

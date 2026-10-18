@@ -19,7 +19,7 @@ def executable_name() -> str:
     return BINARY + ('.exe' if os.name == 'nt' else '')
 
 
-def artifact(report: Path) -> Path:
+def artifact(report: Path, *, release: bool = False) -> Path:
     if report.stat().st_size > 16 * 1024 * 1024:
         raise ValueError('Cargo artifact report exceeds its bound')
     records = [json.loads(line) for line in report.read_text(encoding='utf-8').splitlines() if line]
@@ -34,6 +34,9 @@ def artifact(report: Path) -> Path:
             or 'native-candidate' not in row.get('features', []) or row.get('profile', {}).get('test') is not False
             or not isinstance(row.get('executable'), str)):
         raise ValueError('Cargo candidate identity, features or profile differ')
+    if release and (row['profile'].get('opt_level') != '3'
+                    or row['profile'].get('debug_assertions') is not False):
+        raise ValueError('Performance candidate must use the optimized release profile')
     path = Path(row['executable']).resolve()
     if not path.is_relative_to((ROOT / 'engine-rust/target').resolve()):
         raise ValueError('Cargo candidate artifact is outside its build root')
@@ -92,7 +95,7 @@ def stage(binary: Path, web: Path, destination: Path, identity: dict) -> None:
     verify(destination)
 
 
-def build(report: Path, logger) -> Path:
+def build(report: Path, logger, *, release: bool = False) -> Path:
     import logging
     from run_owned import run
 
@@ -117,9 +120,12 @@ def build(report: Path, logger) -> Path:
     capture = Artifacts()
     logger.addHandler(capture)
     try:
-        code = run(['cargo', 'build', '--manifest-path', str(ROOT / 'engine-rust/Cargo.toml'),
-                    '--locked', '--features', 'native-candidate', '--bin', BINARY,
-                    '--message-format=json'], 900, 300, logger)
+        command = ['cargo', 'build', '--manifest-path', str(ROOT / 'engine-rust/Cargo.toml'),
+                   '--locked', '--features', 'native-candidate', '--bin', BINARY,
+                   '--message-format=json']
+        if release:
+            command.append('--release')
+        code = run(command, 900, 300, logger)
         if code:
             raise ValueError('Native candidate build failed')
     finally:
@@ -128,7 +134,7 @@ def build(report: Path, logger) -> Path:
     report.parent.mkdir(parents=True, exist_ok=True)
     with report.open('x', encoding='utf-8', newline='\n') as stream:
         stream.write(''.join(json.dumps(row) + '\n' for row in records))
-    return artifact(report)
+    return artifact(report, release=release)
 
 
 def verify(directory: Path) -> dict:
@@ -149,7 +155,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--report', type=Path, required=True)
+    parser.add_argument('--release', action='store_true', help='Require optimized performance inputs')
     args = parser.parse_args()
     with run_log('native-candidate-build') as logger:
-        path = build(args.report, logger)
+        path = build(args.report, logger, release=args.release)
         logger.info('Current candidate artifact observed name=%s', path.name)

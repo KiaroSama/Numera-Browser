@@ -289,7 +289,7 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
         'engine-macos': ('--ignore-glob=tests/test_*_live.py', '--junitxml='),
         'browser': ('tests/test_*_live.py', '--deselect=', 'xvfb-run', 'update_ui_smoke.py', 'rendered-update-ui'),
         'rust-core': ('suites.py native --phase build', 'suites.py native --phase test',
-                      'verify_oracles.py', 'verify_default.py'),
+                      'verify_oracles.py', 'verify_default.py', './.github/actions/native-entry-performance'),
         'engine-live': ('test_session_tree_live.py', './.github/actions/native-candidate-acceptance',
                         'report --engine ${{ matrix.engine }}'),
         'secrets': ('--redact=100', '--ignore-gitleaks-allow', '--timeout 240',
@@ -351,6 +351,20 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
                      'ci-source.json', 'dashboard-dist', '--wall 600 --idle 150 --report-units'):
         if fragment not in candidate_text:
             raise ValueError('Missing required native application acceptance stage')
+    performance = yaml.load((root / '.github/actions/native-entry-performance/action.yml')
+                            .read_text(encoding='utf-8'), Loader=UniqueLoader)
+    steps = performance.get('runs', {}).get('steps', [])
+    if (performance.get('runs', {}).get('using') != 'composite' or len(steps) != 4
+            or any(step.get('continue-on-error') or step.get('if') for step in steps[:3])
+            or steps[3].get('if') != 'always()'):
+        raise ValueError('Native replay and performance checks must remain required')
+    for step, fragments in zip(steps, (
+            ('native_entry_acceptance.py', '--wall 180 --idle 90'),
+            ('candidate_stage.py --release', '--wall 960 --idle 330'),
+            ('benchmark.py --report', '--wall 180 --idle 90 --report-units'),
+            ('measurements.json', 'native-performance-${{ runner.os }}'))):
+        if any(fragment not in json.dumps(step) for fragment in fragments):
+            raise ValueError('Missing native replay, optimized measurement or evidence stage')
     windows_strategy = jobs['engine-windows']['strategy']
     if (windows_strategy['matrix'] != {'shard': [0, 1, 2, 3]}
             or windows_strategy['max-parallel'] != 2 or windows_strategy['fail-fast'] is not False):
