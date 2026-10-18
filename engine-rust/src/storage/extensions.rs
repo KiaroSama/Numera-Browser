@@ -91,6 +91,19 @@ fn display_name(folder: &Path, manifest: Option<&Value>) -> io::Result<Value> {
     }
 }
 
+fn icon_size(key: &str) -> (bool, String) {
+    let integer = crate::decimal::integer(key)
+        .filter(|value| value.trim_start_matches('-').len() <= 4300)
+        .unwrap_or_else(|| "0".into());
+    let negative = integer.starts_with('-');
+    let magnitude = integer.trim_start_matches('-').trim_start_matches('0');
+    if magnitude.is_empty() {
+        (false, "0".into())
+    } else {
+        (negative, magnitude.into())
+    }
+}
+
 fn icon(folder: &Path, manifest: Option<&Value>) -> Option<PathBuf> {
     let manifest = manifest?;
     let mut icons = manifest["icons"].as_object().cloned().unwrap_or_default();
@@ -109,13 +122,22 @@ fn icon(folder: &Path, manifest: Option<&Value>) -> Option<PathBuf> {
             _ => {}
         }
     }
-    let mut choices: Vec<_> = icons.into_iter().collect();
+    let mut choices: Vec<_> = icons
+        .into_iter()
+        .map(|(key, value)| (icon_size(&key), value))
+        .collect();
     // Stable order preserves manifest insertion order for equally sized keys.
     choices.sort_by(|(left, _), (right, _)| {
-        right
-            .parse::<i128>()
-            .unwrap_or(0)
-            .cmp(&left.parse::<i128>().unwrap_or(0))
+        let magnitude = right
+            .1
+            .len()
+            .cmp(&left.1.len())
+            .then_with(|| right.1.cmp(&left.1));
+        left.0.cmp(&right.0).then(if left.0 {
+            magnitude.reverse()
+        } else {
+            magnitude
+        })
     });
     choices
         .into_iter()

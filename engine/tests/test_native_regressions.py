@@ -74,7 +74,7 @@ def test_historical_execution_requires_the_exact_clean_hosted_source(monkeypatch
         assert len(calls) == 2
 
 
-@pytest.mark.parametrize('damage', [None, 'launch', 'assertion', 'integrity'])
+@pytest.mark.parametrize('damage', [None, 'warm', 'launch', 'assertion', 'integrity'])
 def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch, damage):
     module = load()
     source = tmp_path / 'engine-rust/src/models.rs'
@@ -83,14 +83,14 @@ def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch
     source.write_bytes(current)
     case = dict(module.REGRESSIONS[0], files={
         'engine-rust/src/models.rs': hashlib.sha256(historical).hexdigest()})
-    monkeypatch.setattr(module, 'REGRESSIONS', (case,))
+    monkeypatch.setattr(module, 'REGRESSIONS', (case, case) if damage is None else (case,))
     sha = 'a' * 40
     monkeypatch.setenv('GITHUB_ACTIONS', 'true')
     monkeypatch.setenv('GITHUB_REPOSITORY', 'KiaroSama/Numera-Browser')
     monkeypatch.setenv('GITHUB_SHA', sha)
     monkeypatch.setenv('NUMERA_ORACLE_SOURCE_ROOT', 'prior-original-root')
     monkeypatch.delenv('PYTHONDONTWRITEBYTECODE', raising=False)
-    calls = []
+    calls, warmups = [], []
 
     def git(root, *arguments):
         if arguments == ('rev-parse', 'HEAD'):
@@ -119,13 +119,24 @@ def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch
                     '1 filtered out; finished in 0.01s')
         return 101
 
+    def warmup(command, **options):
+        assert source.read_bytes() == historical
+        assert command == ['cargo', 'test', '--manifest-path', str(tmp_path / 'engine-rust/Cargo.toml'),
+                           '--locked', '--offline', '--test', case['target'], '--no-run']
+        assert options == {'stdin': module.subprocess.DEVNULL, 'check': True}
+        warmups.append(command)
+        if damage == 'warm':
+            raise module.subprocess.CalledProcessError(1, command)
+        return SimpleNamespace(returncode=0)
+
     monkeypatch.setattr(module, 'git', git)
+    monkeypatch.setattr(module.subprocess, 'run', warmup)
     monkeypatch.setitem(sys.modules, 'run_owned', SimpleNamespace(run=run))
     monkeypatch.setitem(sys.modules, 'baseline_source',
                         SimpleNamespace(ENVIRONMENT='NUMERA_ORACLE_SOURCE_ROOT'))
     logger = logging.Logger('native-regression-fixture', level=logging.INFO)
     if damage:
-        with pytest.raises((ValueError, TimeoutError)):
+        with pytest.raises((ValueError, TimeoutError, module.subprocess.CalledProcessError)):
             module.prove(tmp_path, tmp_path / 'original', logger)
     else:
         module.prove(tmp_path, tmp_path / 'original', logger)
@@ -135,4 +146,5 @@ def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch
     assert os.environ['NUMERA_ORACLE_SOURCE_ROOT'] == 'prior-original-root'
     assert 'PYTHONDONTWRITEBYTECODE' not in os.environ
     assert logger.handlers == []
-    assert len(calls) == (0 if damage == 'integrity' else 1)
+    assert len(calls) == (2 if damage is None else 0 if damage in ('integrity', 'warm') else 1)
+    assert len(warmups) == (0 if damage == 'integrity' else 1)

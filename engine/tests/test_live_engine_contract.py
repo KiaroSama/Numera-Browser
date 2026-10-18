@@ -247,6 +247,89 @@ def test_discovered_native_targets_are_all_selected_and_build_is_separate():
     assert coverage.check_workflows()['native'] == len(targets)
 
 
+@pytest.mark.parametrize('damage', [None, 'fetch', 'proof'])
+def test_native_history_precedes_fixed_build_and_never_runs_in_fixed_test(monkeypatch, damage):
+    import argparse
+    import hashlib
+    import subprocess
+    import sys
+
+    coverage = _coverage()
+    events = []
+
+    @contextmanager
+    def logger(*args):
+        yield SimpleNamespace(info=lambda *args: None)
+
+    @contextmanager
+    def reference():
+        events.append('original')
+        try:
+            yield ROOT / 'original-fixture'
+        finally:
+            events.append('original-closed')
+
+    def prove(root, original, log):
+        assert root == ROOT and original == ROOT / 'original-fixture'
+        events.append('proof')
+        if damage == 'proof':
+            raise ValueError('fixture proof failed')
+
+    def run(command, **options):
+        if command[1] == 'fetch':
+            assert command == ['cargo', 'fetch', '--manifest-path',
+                               str(ROOT / 'engine-rust/Cargo.toml'), '--locked']
+            assert options == {'stdin': subprocess.DEVNULL, 'check': True}
+            events.append('fetch')
+            if damage == 'fetch':
+                raise subprocess.CalledProcessError(1, command)
+        else:
+            assert command == coverage.native_command('build')
+            assert '--no-run' in command
+            events.append('fixed-build')
+        return SimpleNamespace(returncode=0)
+
+    def fixed_test(command, environment):
+        assert command == coverage.native_command('test')
+        assert environment['NUMERA_ORACLE_SOURCE_ROOT'] == str(ROOT / 'original-fixture')
+        assert environment['PYTHONDONTWRITEBYTECODE'] == '1'
+        events.append('fixed-test')
+        return 0
+
+    monkeypatch.setattr(coverage, 'run_log', logger)
+    monkeypatch.setattr(coverage, 'run_native', fixed_test)
+    monkeypatch.setattr(subprocess, 'run', run)
+    monkeypatch.setitem(sys.modules, 'baseline_source', SimpleNamespace(
+        ENVIRONMENT='NUMERA_ORACLE_SOURCE_ROOT', reference=reference))
+    monkeypatch.setitem(sys.modules, 'native_regressions', SimpleNamespace(prove=prove))
+    phase = 'build'
+    monkeypatch.setattr(argparse.ArgumentParser, 'parse_args',
+                        lambda _: SimpleNamespace(command='native', phase=phase))
+    if damage:
+        with pytest.raises((ValueError, subprocess.CalledProcessError)):
+            coverage.main()
+        assert events == (['fetch'] if damage == 'fetch' else
+                          ['fetch', 'original', 'proof', 'original-closed'])
+        return
+
+    expected = ['fetch', 'original', 'proof', 'original-closed', 'fixed-build']
+    historical = (ROOT / 'engine/tests/fixtures/native-phase-before-separation.py.txt').read_bytes()
+    assert hashlib.sha256(historical).hexdigest() == \
+        '4732b4ca79120a3ae0bde753798e3490918d63b9f97c258c700ac218c56dc08c'
+    namespace = {**coverage.main.__globals__}
+    exec(compile(historical, 'native-phase-before-separation.py.txt', 'exec'), namespace)
+    namespace['main']()
+    with pytest.raises(AssertionError, match='Historical proofs must precede'):
+        assert events == expected, 'Historical proofs must precede the fixed native build'
+    events.clear()
+    assert coverage.main() == 0
+    assert events == expected, 'Historical proofs must precede the fixed native build'
+    events.clear()
+    phase = 'test'
+    assert coverage.main() == 0
+    assert events == ['original', 'fixed-test', 'original-closed']
+
+
 @pytest.mark.parametrize('exit_code', [0, 101])
 def test_native_progress_projects_artifacts_without_exposing_cargo_payloads(monkeypatch, capsys, exit_code):
     import io

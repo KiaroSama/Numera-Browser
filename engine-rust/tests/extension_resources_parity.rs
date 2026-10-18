@@ -228,6 +228,131 @@ with run_log('extension-utf8-oracle',root/'logs') as log:
 }
 
 #[test]
+fn extension_icon_integer_ranking_matches_original_selection()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("extension-ranking")?;
+    let inputs: PathBuf = temporary.path().components().collect();
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,sys
+from pathlib import Path
+repository,root=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import webstore
+from run_logging import run_log
+
+with run_log('extension-ranking-oracle',root/'logs') as log:
+    keys=['1'+'0'*40,'-'+'1'+'0'*40,'128','+128','000128','-0','+0',
+          '1_000','1__000','_128','128_','+_128','128.0','1e3','0x80',
+          '', 'invalid','-2','-128',chr(0x661)+chr(0x662)+chr(0x668),
+          ''.join(map(chr,[0xff11,0xff12,0xff18])),
+          '  256\t',chr(0x2003)+'256'+chr(0x3000),
+          chr(0x1c)+'256'+chr(0x1f),'0'*4297+'128','0'*4298+'128',
+          '9'*4300,'9'*4301,'1_'*4299+'1','1_'*4300+'1']
+    variants=[]
+    for index,key in enumerate(keys):
+        for reverse in [False,True]:
+            pairs=[('128','first.png'),(key,'second.png')]
+            if reverse:
+                pairs.reverse()
+            variants.append((f'key-{index}-{int(reverse)}',
+                             {'icons':dict(pairs)}))
+    variants.extend([
+        ('negative-order',{'icons':{'-2':'first.png','-1':'second.png'}}),
+        ('zero-tie',{'icons':{'-0':'first.png','invalid':'second.png'}}),
+        ('skip-missing',{'icons':{'9'*40:'absent.png','128':'first.png'}}),
+        ('skip-outside',{'icons':{'9'*40:'../outside.png','128':'first.png'}}),
+        ('skip-nontext',{'icons':{'9'*40:True,'128':'first.png'}}),
+        ('action-size',{'icons':{'128':'first.png'},
+                        'action':{'default_icon':{'1_000':'second.png'}}}),
+        ('icons-win',{'icons':{'1_000':'first.png'},
+                      'action':{'default_icon':{'1_000':'second.png'}}}),
+        ('action-fallback',{'icons':{'-1':'first.png'},
+                            'action':{'default_icon':'second.png'}}),
+    ])
+    rows=[]
+    for label,variant in variants:
+        for operation in ['describe','installed']:
+            case=root/'cases'/str(len(rows))
+            folder=case/'extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+            files={'manifest.json':json.dumps({'name':'Fixture',**variant},ensure_ascii=False),
+                   'first.png':'first','second.png':'second'}
+            folder.mkdir(parents=True)
+            for name,text in files.items():
+                (folder/name).write_bytes(text.encode('utf-8'))
+            result=(webstore.describe(folder) if operation=='describe'
+                    else webstore.installed(case))
+            rows.append({'label':label,'operation':operation,'result':result,'files':files,
+                         'unchanged':[(folder/name).read_bytes()==text.encode('utf-8')
+                                      for name,text in files.items()]})
+    log.info('Observed extension icon ranking cases=%s',len(rows))
+    print(json.dumps({'digit_limit':sys.get_int_max_str_digits(),'cases':rows},ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .arg(&inputs)
+        .env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 1048576,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original icon ranking observer failed");
+    let observed: Value = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(
+        observed["digit_limit"], 4300,
+        "Original integer limit differs"
+    );
+    let cases = observed["cases"].as_array().ok_or("Icon cases missing")?;
+    assert_eq!(cases.len(), 136, "Icon ranking observations missing");
+    for (index, case) in cases.iter().enumerate() {
+        let root = inputs.join("cases").join(index.to_string());
+        let folder = root
+            .join("extensions")
+            .join("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        let result = match case["operation"].as_str() {
+            Some("describe") => serde_json::to_value(extensions::describe(&folder)?)?,
+            Some("installed") => serde_json::to_value(extensions::installed(&root)?)?,
+            _ => return Err("Unknown icon observation".into()),
+        };
+        assert_eq!(
+            result, case["result"],
+            "Extension icon integer ranking differs: case={index} label={}",
+            case["label"]
+        );
+        assert_eq!(case["unchanged"], serde_json::json!([true, true, true]));
+        for (name, text) in case["files"].as_object().ok_or("Icon files missing")? {
+            assert_eq!(
+                fs::read(folder.join(name))?,
+                text.as_str().ok_or("Icon fixture is not text")?.as_bytes(),
+                "Icon selection changed fixture bytes"
+            );
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn installed_extensions_preserve_localized_name_and_contained_icon_selection()
 -> Result<(), Box<dyn std::error::Error>> {
     let fixture: Value = serde_json::from_str(include_str!("fixtures/extension-resources.json"))?;

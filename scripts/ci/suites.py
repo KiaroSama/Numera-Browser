@@ -536,13 +536,17 @@ def main() -> int:
             command = (seam_command(args.phase, args.scope) if args.command == 'seam'
                        else native_command(args.phase))
             log.info('Native phase=%s tier=%s workers=2', args.phase, args.command)
+            if args.command == 'native' and args.phase == 'build':
+                from baseline_source import reference
+                from native_regressions import prove
+                subprocess.run(['cargo', 'fetch', '--manifest-path', str(ROOT / 'engine-rust/Cargo.toml'),
+                                '--locked'], stdin=subprocess.DEVNULL, check=True)
+                with reference() as original:
+                    prove(ROOT, original, log)
             if args.phase == 'test':
                 import os
                 from baseline_source import ENVIRONMENT, reference
                 with reference() as original:
-                    if args.command == 'native':
-                        from native_regressions import prove
-                        prove(ROOT, original, log)
                     environment = {**os.environ, ENVIRONMENT: str(original), 'PYTHONDONTWRITEBYTECODE': '1'}
                     if args.command == 'native':
                         return run_native(command, environment)

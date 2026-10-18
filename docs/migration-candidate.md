@@ -216,11 +216,19 @@ are unchanged.
 Extension manifest and localized-name reads now propagate invalid UTF-8 through
 the existing `describe`/`installed` results, rather than silently returning fallback
 data. Ordinary read errors and valid UTF-8 JSON syntax fallback remain unchanged.
-Twenty-four original-derived cases compare complete results, refusal categories
-and exact fixture bytes. An exact historical admission-failure proof is prepared;
-hosted execution is pending. The test rebuilds its entire input path from native
-components, avoiding mixed Windows separators without normalizing returned data
-or weakening full-result comparison. Containment and icon ordering are unchanged.
+Twenty-four original-derived cases passed on Windows and Linux in batch
+`39154868069`, including exact historical admission failure and fixed-byte
+restoration. They compare complete results, refusal categories and fixture bytes.
+The test rebuilds its entire input path from native components, avoiding mixed
+Windows separators without normalizing returned data or weakening comparison.
+Containment is unchanged.
+
+Icon ranking now uses normalized signed decimal magnitudes instead of `i128`.
+This preserves large values, Unicode decimal digits, underscores, stable numeric
+ties and the frozen interpreter's default 4,300-digit limit without a new numeric
+dependency. One hundred thirty-six original-derived public-result observations
+and an exact historical failure proof are prepared; hosted verification is pending.
+Custom interpreter limits and broader manifest/path domains remain incomplete.
 
 The additional settings/folder references document existing implementations and
 known gaps, including configuration caching, direct setter contracts, malformed
@@ -230,22 +238,24 @@ helpers are nearest equivalents, not new public APIs or complete parity. Native
 containment, transport bounds, private errors and staged rollback are retained;
 frozen-source differences and missing acceptance remain explicit in the ledger.
 
-Historical source swaps can invalidate the earlier native prebuild. The full test
-command now projects actual Cargo artifact completions and build success while
-Cargo renders compiler diagnostics normally. Raw build-script/environment/path
-records are discarded. Phase ordering, all discovered targets, two workers and
-the 600-second wall/120-second idle limits remain unchanged; no heartbeat or
-increased timeout masks inactivity. A single compilation unit silent for more
-than 120 seconds still fails. Batch `39144820589` recorded actual artifact events
-and completed the full test phase on Linux in 323 seconds and Windows in 404
-seconds, within the unchanged limits. This is not a compilation speedup claim.
+Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
+compilation inside the test deadline. The build phase now fetches locked inputs,
+compiles the first exact historical target, proves every named historical failure
+with fixed-byte restoration, then compiles all current targets without running them.
+Cold compilation stays inside the existing 900-second wall/300-second idle build
+owner; each historical assertion keeps its 180-second wall/90-second idle owner.
+The complete current test phase retains all discovered targets, two workers and
+600-second wall/120-second idle limits. Cargo progress is projected without raw
+build-script/environment/path records. No timeout is increased, proof skipped or
+heartbeat added. Hosted phase-order, failure-cleanup and timing evidence is pending;
+no compilation speedup or cold-cache completion is claimed.
 
 ## Acceptance status
 
-Source `573b743` ran in hosted batch
-[39151673690](https://github.com/KiaroSama/Numera-Browser/actions/runs/39151673690).
+Source `195e15e` ran in hosted batch
+[39154868069](https://github.com/KiaroSama/Numera-Browser/actions/runs/39154868069).
 All source platforms, both native tiers and all eight relocated Windows/Linux
-cases passed. Both native tiers passed strict lint, all twelve historical
+cases passed. Both native tiers passed strict lint, all thirteen historical
 failure/restoration proofs and current tests. macOS passed 2,825 tests with 13
 explicit platform limits. Its earlier unresolved-report reader snapshot's cause
 remains unproved: a passing replacement does not establish why it failed, and the

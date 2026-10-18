@@ -142,6 +142,16 @@ REGRESSIONS = (
                 '46636571378a748deee180593862b2005ce6a6f7d7439f35a33ae0e97768ef69',
         },
     },
+    {
+        'target': 'extension_resources_parity',
+        'test': 'extension_icon_integer_ranking_matches_original_selection',
+        'symptom': 'Extension icon integer ranking differs',
+        'commit': '195e15e84342749bcbee6570931a8be5aa4662ec',
+        'files': {
+            'engine-rust/src/storage/extensions.rs':
+                '640b01c025fe2df3f58c927f05a66042dbf4eb8af5e492cc0ffd616b6afce570',
+        },
+    },
 )
 
 
@@ -225,11 +235,16 @@ def prove(root: Path, original: Path, logger) -> None:
     previous = {key: os.environ.get(key) for key in keys}
     os.environ.update({ENVIRONMENT: str(original), 'PYTHONDONTWRITEBYTECODE': '1'})
     try:
-        for case in REGRESSIONS:
+        for index, case in enumerate(REGRESSIONS):
             evidence = FailureEvidence(case)
             logger.addHandler(evidence)
             try:
                 with historical_sources(root, case):
+                    if index == 0:
+                        # Cold dependency compilation belongs to the outer build budget.
+                        subprocess.run(['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
+                                        '--locked', '--offline', '--test', case['target'], '--no-run'],
+                                       stdin=subprocess.DEVNULL, check=True)
                     command = ['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
                                '--locked', '--offline', '--test', case['target'], '--', case['test'],
                                '--exact', '--test-threads=1', '--color=never']
