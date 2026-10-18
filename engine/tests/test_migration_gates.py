@@ -260,13 +260,22 @@ def test_benchmark_creation_compares_new_dashboard_content_not_just_existence(tm
     template = tmp_path / 'template'
     template.mkdir()
     dashboard = [{'id': 'new', 'name': 'Measured creation', '_rev': 1, '_created': 1000.0}]
+    lock_content = [b'']
+    extra_lock = [False]
 
     def observe(argv, env, **kwargs):
         root = Path(argv[argv.index('--data-dir') + 1])
         profile = {'id': 'new', 'name': 'Measured creation', 'created_at': 1000.0, 'updated_at': 1001.0}
         for directory, record in (('profiles', profile), ('dashboard', dashboard[0])):
             (root / directory).mkdir()
-            (root / directory / 'new.json').write_text(json.dumps(record), encoding='utf-8')
+            path = root / directory / 'new.json'
+            path.write_text(json.dumps(record), encoding='utf-8')
+            import hashlib
+            lock = path.parent / '.locks' / f'new.json.{hashlib.sha256(str(path.resolve()).encode("utf-8")).hexdigest()[:16]}.lock'
+            lock.parent.mkdir()
+            lock.write_bytes(lock_content[0])
+            if extra_lock[0]:
+                (lock.parent / 'unrelated.lock').write_bytes(b'')
         return 0, json.dumps({'elapsed_ns': 1, 'memory': {'metric': 'fixture', 'bytes': 1},
                              'payload': {'ok': True, 'profile': profile}}), ''
 
@@ -278,6 +287,14 @@ def test_benchmark_creation_compares_new_dashboard_content_not_just_existence(tm
     assert changed != expected, 'Benchmark discarded the new dashboard fields before comparison'
     dashboard[0] = {}
     with pytest.raises(ValueError, match='dashboard identity'):
+        benchmark.observation(*args)
+    dashboard[0] = {'id': 'new', 'name': 'Measured creation', '_rev': 1, '_created': 1000.0}
+    lock_content[0] = b'not bookkeeping'
+    with pytest.raises(ValueError, match='unrelated protected record'):
+        benchmark.observation(*args)
+    lock_content[0] = b''
+    extra_lock[0] = True
+    with pytest.raises(ValueError, match='unrelated protected record'):
         benchmark.observation(*args)
 
 

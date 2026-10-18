@@ -98,14 +98,20 @@ identity and the binary hash are retained in the hosted performance artifact.
 Disjoint lower native ranges establish no regression for a measured scenario;
 disjoint higher ranges report regression. Overlapping ranges are inconclusive,
 not accepted under an arbitrary percentage allowance. Failed or inconclusive
-measurement blocks the native job. This new harness is not yet runtime-verified;
-it does not cover API/browser performance or complete migration acceptance.
+measurement blocks the native job. The first hosted run built both optimized
+binaries but refused the initial creation sample: its snapshot mistook the two
+new empty per-profile lock files for unrelated data changes. The harness now
+allows only those exact newly created empty locks; existing locks and all other
+protected bytes remain checked. That correction is not yet hosted-verified. No
+completed comparative measurements or API/browser performance acceptance exist.
 
 ## Acceptance status
 
-Source `6bd5420` ran in hosted batch
-[39082712186](https://github.com/KiaroSama/Numera-Browser/actions/runs/39082712186).
-All source-platform, native and eight relocated Windows/Linux cases passed.
+Source `1fec03c` ran in hosted batch
+[39091174921](https://github.com/KiaroSama/Numera-Browser/actions/runs/39091174921).
+All source-platform and eight relocated Windows/Linux cases passed. Both native
+jobs passed their earlier contracts and replay, then failed the new performance
+snapshot check described above; neither completed the full native tier.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier
 `CamoufoxNotInstalled` context-open failure is resolved by preserving the effective

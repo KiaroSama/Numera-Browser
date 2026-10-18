@@ -8,12 +8,13 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 18, 2026
 
-The latest completed source checkpoint is `6bd5420`. Its manual hosted batch
-[39082712186](https://github.com/KiaroSama/Numera-Browser/actions/runs/39082712186)
-failed overall on October 18 at 00:38 UTC. All Linux Python 3.10/3.12/3.14,
+The latest completed source checkpoint is `1fec03c`. Its manual hosted batch
+[39091174921](https://github.com/KiaroSama/Numera-Browser/actions/runs/39091174921)
+failed overall on October 18 at 03:01 UTC. All Linux Python 3.10/3.12/3.14,
 macOS and four Windows source jobs passed, as did dashboard tests/types/lint/build,
-native Windows/Linux contracts, source/history credential checks, Docker and
-advisory/dependency checks. All eight relocated native application cases passed.
+source/history credential checks, Docker and advisory/dependency checks. Both
+native tiers built optimized binaries but failed the new performance snapshot
+check; no comparative performance result exists. All eight relocated cases passed.
 Windows Camoufox now passes CLI/MCP cookie persistence and HTTP/auth/dashboard,
 restart/idempotence/stop with 24 complete, clean ownership units. Binding its
 existing cache before synthetic home isolation resolves the previous open failure;

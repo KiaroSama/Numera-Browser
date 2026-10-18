@@ -107,6 +107,12 @@ def observation(candidate, original, parent, template, env, runtime, scenario, p
                 if relative in before or relative not in after:
                     raise ValueError('Measured creation overwrote or omitted a profile copy')
                 del after[relative]
+            from numera.data_locks import _lock_path
+            for directory in ('profiles', 'dashboard'):
+                record = (root / directory / (profile['id'] + '.json')).resolve()
+                relative = (record.parent / '.locks' / _lock_path(str(record), record.name)).relative_to(root.resolve()).as_posix()
+                if relative not in before and after.get(relative) == b'':
+                    del after[relative]
             if after != before:
                 raise ValueError('Measured creation changed an unrelated protected record')
             profile = {key: value for key, value in profile.items()
