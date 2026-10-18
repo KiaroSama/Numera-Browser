@@ -132,6 +132,16 @@ REGRESSIONS = (
                 'e9ddc94cd7db3cb867f9c118a94a858592786ad02eea92a517b9dbadc3b78f6f',
         },
     },
+    {
+        'target': 'extension_resources_parity',
+        'test': 'malformed_extension_text_matches_original_refusal_without_changing_bytes',
+        'symptom': 'Extension resource text admission differs',
+        'commit': '573b743f7c444f2f3cba672ee12ac9d25e3d2aec',
+        'files': {
+            'engine-rust/src/storage/extensions.rs':
+                '46636571378a748deee180593862b2005ce6a6f7d7439f35a33ae0e97768ef69',
+        },
+    },
 )
 
 

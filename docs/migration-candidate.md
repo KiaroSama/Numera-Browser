@@ -208,9 +208,19 @@ on Windows and Linux in batch `39148402244`. Read/cache/direct-setter behavior
 is unchanged and its known differences remain open.
 
 The shared extension-path validator now also preserves Python boundary trimming,
-including U+001C–U+001F. Seventy-two original-derived validation cases and an exact
-historical assertion-failure proof are prepared; hosted verification is pending.
-Home expansion, dynamic input conversion and unrelated text parsers are unchanged.
+including U+001C–U+001F. Seventy-two original-derived validation cases passed on
+Windows and Linux in batch `39151673690`, after exact historical assertion failure
+and fixed-byte restoration. Home expansion, dynamic conversion and other parsers
+are unchanged.
+
+Extension manifest and localized-name reads now propagate invalid UTF-8 through
+the existing `describe`/`installed` results, rather than silently returning fallback
+data. Ordinary read errors and valid UTF-8 JSON syntax fallback remain unchanged.
+Twenty-four original-derived cases compare complete results, refusal categories
+and exact fixture bytes. An exact historical admission-failure proof is prepared;
+hosted execution is pending. The test rebuilds its entire input path from native
+components, avoiding mixed Windows separators without normalizing returned data
+or weakening full-result comparison. Containment and icon ordering are unchanged.
 
 The additional settings/folder references document existing implementations and
 known gaps, including configuration caching, direct setter contracts, malformed
@@ -232,10 +242,10 @@ seconds, within the unchanged limits. This is not a compilation speedup claim.
 
 ## Acceptance status
 
-Source `4b84da3` ran in hosted batch
-[39148402244](https://github.com/KiaroSama/Numera-Browser/actions/runs/39148402244).
+Source `573b743` ran in hosted batch
+[39151673690](https://github.com/KiaroSama/Numera-Browser/actions/runs/39151673690).
 All source platforms, both native tiers and all eight relocated Windows/Linux
-cases passed. Both native tiers passed strict lint, all eleven historical
+cases passed. Both native tiers passed strict lint, all twelve historical
 failure/restoration proofs and current tests. macOS passed 2,825 tests with 13
 explicit platform limits. Its earlier unresolved-report reader snapshot's cause
 remains unproved: a passing replacement does not establish why it failed, and the
