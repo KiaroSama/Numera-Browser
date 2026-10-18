@@ -7,6 +7,11 @@ use std::{
     time::Duration,
 };
 
+// Python strip also recognizes these four ASCII separators as whitespace.
+fn trim_name(name: &str) -> &str {
+    name.trim_matches(|c: char| c.is_whitespace() || matches!(c, '\u{1c}'..='\u{1f}'))
+}
+
 pub struct Folders {
     root: PathBuf,
 }
@@ -182,7 +187,7 @@ impl Folders {
     }
     pub fn create(&self, name: &str) -> io::Result<Vec<String>> {
         self.change(|batch| {
-            let name = name.trim();
+            let name = trim_name(name);
             if name.is_empty() {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
@@ -196,7 +201,7 @@ impl Folders {
     }
     pub fn rename(&self, source: &str, target: &str) -> io::Result<Vec<String>> {
         self.change(|batch| {
-            let (source, target) = (source.trim(), target.trim());
+            let (source, target) = (trim_name(source), trim_name(target));
             if source.is_empty() || target.is_empty() {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
@@ -219,14 +224,14 @@ impl Folders {
     }
     pub fn delete(&self, name: &str, target: Option<&str>) -> io::Result<Vec<String>> {
         self.change(|batch| {
-            let name = name.trim();
+            let name = trim_name(name);
             if name.is_empty() {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
                     "folder name required",
                 ));
             }
-            let target = target.unwrap_or("Unfiled").trim();
+            let target = trim_name(target.unwrap_or("Unfiled"));
             let target = if target.is_empty() { "Unfiled" } else { target };
             for (path, mut profile) in self.profiles()? {
                 if profile["folder"] == name {

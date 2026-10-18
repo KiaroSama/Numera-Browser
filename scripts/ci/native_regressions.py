@@ -92,6 +92,16 @@ REGRESSIONS = (
                 '43b7b97c20df8722a8acc5f9108c06441372302439fe1abff624b0e0de69d538',
         },
     },
+    {
+        'target': 'folder_parity',
+        'test': 'folder_name_whitespace_matches_original_operations',
+        'symptom': 'Folder name normalization differs',
+        'commit': 'bb829418b9bd15bebd86030666a4ac91d45d55af',
+        'files': {
+            'engine-rust/src/storage/folders.rs':
+                '614fd00e19b151103eea2d61d17ef91ee65e15b182430b4723f0be2ce0dc5171',
+        },
+    },
 )
 
 

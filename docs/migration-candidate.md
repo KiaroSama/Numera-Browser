@@ -182,18 +182,35 @@ Rust's direct integer parser, although HTTP validation and conversion already us
 the compatible decimal-text helper. The core branch now reuses that helper without
 changing bounds, diagnostic wording or the shared parser. A 46-input frozen-original
 comparison covers core and HTTP verdicts for Unicode/underscore/sign grammar,
-boundaries and invalid values. Its exact historical assertion-failure proof and
-current hosted execution remain pending; no default or complete parity is claimed.
+boundaries and invalid values. Hosted batch `39130990824` proved the exact
+historical assertion failure and fixed-byte restoration on both systems; the
+current test passed on Linux. Windows timed out during the following fixed-tree
+compilation before current tests ran, so its fixed-pass evidence remains pending.
+
+The next folder correction preserves Python boundary trimming for U+001C–U+001F
+in native create, rename, delete and reassignment. One original-source observer
+compares 96 operation cases, returned lists/refusals, parsed metadata/profile state
+and each file's byte-preservation verdict. Exact historical failure and current
+hosted acceptance are pending; locks, rollback and serialization are unchanged.
+
+Historical source swaps can invalidate the earlier native prebuild. The full test
+command now projects actual Cargo artifact completions and build success while
+Cargo renders compiler diagnostics normally. Raw build-script/environment/path
+records are discarded. Phase ordering, all discovered targets, two workers and
+the 600-second wall/120-second idle limits remain unchanged; no heartbeat or
+increased timeout masks inactivity. A single compilation unit silent for more
+than 120 seconds still fails. Hosted proof of this correction remains pending.
 
 ## Acceptance status
 
-Source `22e0e59` ran in hosted batch
-[39125230921](https://github.com/KiaroSama/Numera-Browser/actions/runs/39125230921).
-All source platforms, both complete native tiers and all eight relocated
-Windows/Linux cases passed, including replay and the four measured CLI scenarios.
-The macOS settlement-lock replacement passed: it observes the remaining
-acquisition budget deterministically while retaining existing real-lock
-integration controls; no production deadline is increased.
+Source `bb82941` ran in hosted batch
+[39130990824](https://github.com/KiaroSama/Numera-Browser/actions/runs/39130990824).
+All source platforms, Linux native and all eight relocated Windows/Linux cases
+passed. Windows proved every historical assertion and restored fixed bytes, but
+its next full compilation hit the idle limit before current tests or later replay
+and performance stages. No compiler deadlock is established. The preceding
+`22e0e59` batch passed both complete native tiers, replay and four CLI measurements;
+that historical success does not verify the changed Windows tree.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier
 `CamoufoxNotInstalled` context-open failure is resolved by preserving the effective

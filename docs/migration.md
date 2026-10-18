@@ -8,14 +8,14 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 18, 2026
 
-The latest completed source checkpoint is `22e0e59`. Its manual hosted batch
-[39125230921](https://github.com/KiaroSama/Numera-Browser/actions/runs/39125230921)
-failed overall on October 18 at 12:16 UTC. All source platforms, both complete
-native tiers, eight relocated cases, dashboard and other nondependent checks passed.
-Both native tiers proved the historical Unicode-envelope assertion failure,
-restored fixed bytes and passed 832 classification controls and ten collision cases.
-The next packed-screen parser correction and its 46 original-derived core/HTTP
-verdict comparisons await hosted proof; broader acceptance remains open.
+The latest completed source checkpoint is `bb82941`. Its manual hosted batch
+[39130990824](https://github.com/KiaroSama/Numera-Browser/actions/runs/39130990824)
+failed overall on October 18 at 13:31 UTC. All source platforms, Linux native,
+eight relocated cases and dashboard checks passed. Both native tiers proved the
+packed-screen historical assertion failure and restored fixed bytes; Linux passed
+the current 46-input comparison. Windows then hit the compilation idle limit before
+current tests ran. The [candidate status](migration-candidate.md) describes the
+pending real-progress/folder corrections; broader acceptance remains open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

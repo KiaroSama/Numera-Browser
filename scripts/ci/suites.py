@@ -389,8 +389,36 @@ def native_command(phase: str, root: Path = ROOT) -> list[str]:
     if phase == 'build':
         command.append('--no-run')
     else:
-        command.extend(('--', '--test-threads=2'))
+        command.extend(('--message-format=json,json-render-diagnostics', '--', '--test-threads=2'))
     return command
+
+
+def run_native(command: list[str], environment: dict[str, str]) -> int:
+    # The outer run_owned owner retains the existing wall/idle/tree limits.
+    with subprocess.Popen(command, env=environment, stdin=subprocess.DEVNULL,
+                          stdout=subprocess.PIPE, text=True, encoding='utf-8', errors='strict') as child:
+        finished = False
+        for line in child.stdout:
+            if finished or not line.lstrip().startswith('{'):
+                print(line, end='', flush=True)
+                continue
+            # Build-script records can contain environment values. Never forward raw JSON.
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(event, dict):
+                continue
+            if event.get('reason') == 'compiler-artifact':
+                target = event.get('target')
+                name = target.get('name') if isinstance(target, dict) else None
+                fresh = event.get('fresh')
+                if isinstance(name, str) and re.fullmatch(r'[A-Za-z0-9_-]{1,128}', name) and type(fresh) is bool:
+                    print(f'Cargo artifact target={name} fresh={str(fresh).lower()}', flush=True)
+            elif event.get('reason') == 'build-finished' and type(event.get('success')) is bool:
+                print(f"Cargo build finished success={str(event['success']).lower()}", flush=True)
+                finished = True
+        return child.wait()
 
 
 def seam_command(phase: str, scope: str, root: Path = ROOT) -> list[str]:
@@ -516,6 +544,8 @@ def main() -> int:
                         from native_regressions import prove
                         prove(ROOT, original, log)
                     environment = {**os.environ, ENVIRONMENT: str(original), 'PYTHONDONTWRITEBYTECODE': '1'}
+                    if args.command == 'native':
+                        return run_native(command, environment)
                     return subprocess.run(command, env=environment, stdin=subprocess.DEVNULL, check=False).returncode
             return subprocess.run(command, stdin=subprocess.DEVNULL, check=False).returncode
     return 0

@@ -224,8 +224,79 @@ def test_discovered_native_targets_are_all_selected_and_build_is_separate():
     assert targets == {path.stem for path in suites['native']}
     assert 'browser_adapter_live' not in targets
     assert '--lib' in test and '--no-fail-fast' in test and '--test-threads=2' in test
-    assert '--no-run' in coverage.native_command('build') and '--no-run' not in test
+    build = coverage.native_command('build')
+    assert '--no-run' in build and '--no-run' not in test
+    format_option = '--message-format=json,json-render-diagnostics'
+
+    def require_progress(command):
+        assert format_option in command and command.index(format_option) < command.index('--'), \
+            'Native compilation progress is missing before the test boundary'
+
+    import hashlib
+
+    historical = (ROOT / 'engine/tests/fixtures/native-command-before-progress.py.txt').read_bytes()
+    assert hashlib.sha256(historical).hexdigest() == \
+        'a3d38dc210a8348e6e7de703a24cf23a13f6bef8190339219fdf27b0f0f741bc'
+    namespace = {'Path': Path, 'ROOT': ROOT, 'discover': coverage.discover}
+    exec(compile(historical, 'native-command-before-progress.py.txt', 'exec'), namespace)
+    with pytest.raises(AssertionError, match='Native compilation progress is missing'):
+        require_progress(namespace['native_command']('test'))
+    require_progress(test)
+    assert format_option not in build
+    assert format_option not in coverage.seam_command('test', 'identity-script')
     assert coverage.check_workflows()['native'] == len(targets)
+
+
+@pytest.mark.parametrize('exit_code', [0, 101])
+def test_native_progress_projects_artifacts_without_exposing_cargo_payloads(monkeypatch, capsys, exit_code):
+    import io
+    import json
+    import subprocess
+
+    coverage = _coverage()
+    private = 'synthetic-build-environment-value'
+    records = [
+        {'reason': 'compiler-artifact', 'target': {'name': 'numera_core'}, 'fresh': False,
+         'filenames': [private], 'manifest_path': private},
+        {'reason': 'build-script-executed', 'env': [['BUILD_VALUE', private]]},
+        {'reason': 'compiler-message', 'message': {'rendered': private}},
+        {'reason': 'future-event', 'value': private},
+        {'reason': 'compiler-artifact', 'target': {'name': private + '\n::error::'}, 'fresh': True},
+        {'reason': 'compiler-artifact', 'target': None, 'fresh': False},
+        {'reason': 'compiler-artifact', 'target': {'name': 'wrong_flag'}, 'fresh': 1},
+        {'reason': 'compiler-artifact', 'target': {'name': 'x' * 129}, 'fresh': False},
+        {'reason': 'compiler-artifact', 'target': {'name': 'cached-dependency'}, 'fresh': True},
+        {'reason': 'build-finished', 'success': 'true'},
+        {'reason': 'build-finished', 'success': exit_code == 0},
+    ]
+    output = '{malformed-build-record\n' + '\n'.join(json.dumps(record) for record in records) + '\n'
+    output += '{"ordinary":"test-payload"}\nrunning 1 test\ntest contract ... ' + ('ok' if exit_code == 0 else 'FAILED') + '\n'
+    calls = []
+    stream = io.StringIO(output)
+
+    @contextmanager
+    def child(command, **kwargs):
+        calls.append((command, kwargs))
+        try:
+            yield SimpleNamespace(stdout=stream, wait=lambda: exit_code)
+        finally:
+            stream.close()
+
+    monkeypatch.setattr(coverage.subprocess, 'Popen', child)
+    command = coverage.native_command('test')
+    environment = {'SYNTHETIC_SOURCE': 'source with spaces'}
+    assert coverage.run_native(command, environment) == exit_code
+    assert calls == [(command, {'env': environment, 'stdin': subprocess.DEVNULL,
+                               'stdout': subprocess.PIPE, 'text': True,
+                               'encoding': 'utf-8', 'errors': 'strict'})]
+    captured = capsys.readouterr()
+    assert captured.err == ''  # Cargo-rendered diagnostics inherit stderr, not a pipe.
+    assert captured.out == (
+        'Cargo artifact target=numera_core fresh=false\n'
+        'Cargo artifact target=cached-dependency fresh=true\n'
+        f'Cargo build finished success={str(exit_code == 0).lower()}\n'
+        '{"ordinary":"test-payload"}\nrunning 1 test\ntest contract ... ' + ('ok' if exit_code == 0 else 'FAILED') + '\n')
+    assert private not in captured.out and stream.closed
 
 
 @pytest.mark.parametrize('damage', [None, 'missing', 'prerequisite-skip', 'failed', 'unexpected',
