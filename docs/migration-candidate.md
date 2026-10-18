@@ -115,25 +115,35 @@ memory ranges showed no regression. The retained artifact binds the samples to
 source `8cab68a` and hosted generation `39099198902`. This is foreground CLI
 coverage only, not API/browser or complete migration performance acceptance.
 
-Windows returned its first creation sample, then refused the protected-data
-snapshot. Creation explicitly sets the default engine, so its settings write is
-checked against the complete expected JSON document separately from unrelated
-byte preservation. The original Windows text writer uses CRLF while the native
-writer uses LF; neither format is silently applied to unrelated files. Persistent
-controls reject lost, extra, mistyped or unexpected settings. This harness repair
-awaits hosted verification. The earlier opaque observer failure did not recur;
-its cause remains unestablished, and no Windows API repair is claimed.
+Creation explicitly sets the default engine, so its settings write is checked
+against the complete expected JSON document separately from unrelated byte
+preservation. The original Windows text writer uses CRLF while the native writer
+uses LF; neither format is silently applied to unrelated files. Persistent controls
+reject lost, extra, mistyped or unexpected settings. The replacement Windows run
+passed these checks through earlier creation samples, then refused the final
+native creation observation at its single immediate tree-empty query. Leader exit
+and drained output do not prove the job's descendants or accounting are settled.
+
+The observer now uses existing observation-only tree polling within the remaining
+original 15-second deadline. Expiry and persistent active/unknown state still fail;
+successful natural settlement is included in elapsed time before peak accounting.
+Emergency cleanup cannot manufacture an accepted sample. The job/process handles,
+peak metric and comparison thresholds are unchanged. Deterministic controls cover
+transient occupation, persistent active/unknown state and expired/late observations,
+including a required assertion failure on exact historical observer bytes. This
+correction awaits hosted verification; the physical cause of the earlier occupied
+or unknown job observation remains unestablished. No Windows API repair is claimed.
 
 ## Acceptance status
 
-Source `8cab68a` ran in hosted batch
-[39099198902](https://github.com/KiaroSama/Numera-Browser/actions/runs/39099198902).
-Linux's complete native tier and all eight relocated Windows/Linux cases passed.
-Windows passed its earlier native contracts, replay and optimized build, then
-failed the creation snapshot. The macOS source suite separately failed a
-scheduler-sensitive settlement-lock timing assertion. Its replacement observes
-the remaining acquisition budget deterministically while retaining the existing
-real-lock integration controls; no production deadline is increased.
+Source `8bcf23f` ran in hosted batch
+[39102366377](https://github.com/KiaroSama/Numera-Browser/actions/runs/39102366377).
+All source platforms, Linux's complete native tier and all eight relocated
+Windows/Linux cases passed. Windows passed native contracts, replay, optimized
+build and earlier creation samples, then failed the natural-tree-empty observation.
+The macOS settlement-lock replacement passed: it observes the remaining
+acquisition budget deterministically while retaining existing real-lock
+integration controls; no production deadline is increased.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier
 `CamoufoxNotInstalled` context-open failure is resolved by preserving the effective

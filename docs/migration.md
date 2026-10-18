@@ -8,15 +8,17 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 18, 2026
 
-The latest completed source checkpoint is `8cab68a`. Its manual hosted batch
-[39099198902](https://github.com/KiaroSama/Numera-Browser/actions/runs/39099198902)
-failed overall on October 18 at 05:21 UTC. Linux Python 3.10/3.12/3.14 and four
-Windows source jobs passed, as did dashboard tests/types/lint/build, credential,
-Docker and advisory/dependency checks. Encrypted-read regression proof passed on
-both native platforms; Linux completed all four foreground CLI performance cases
-without time or memory regression. Windows failed creation-side-effect accounting;
-macOS failed a scheduler-sensitive lock test. The [harness corrections](migration-candidate.md#representative-release-performance)
-await hosted verification. All eight relocated cases passed.
+The latest completed source checkpoint is `8bcf23f`. Its manual hosted batch
+[39102366377](https://github.com/KiaroSama/Numera-Browser/actions/runs/39102366377)
+failed overall on October 18 at 06:13 UTC. All source platforms, the Linux native
+tier, eight relocated cases, dashboard and other nondependent checks passed.
+Encrypted-read historical-failure/restoration/current-pass proof remains verified
+on both native platforms. The deterministic macOS lock-budget correction passed.
+Windows passed creation settings accounting until a later native observation
+failed its single immediate natural-tree-empty query after successful leader exit.
+The [observer correction](migration-candidate.md#representative-release-performance)
+uses the remaining existing deadline and includes natural settlement in elapsed
+time; its hosted verification is pending. No forced-cleanup result is accepted.
 Windows Camoufox now passes CLI/MCP cookie persistence and HTTP/auth/dashboard,
 restart/idempotence/stop with 24 complete, clean ownership units. Binding its
 existing cache before synthetic home isolation resolves the previous open failure;

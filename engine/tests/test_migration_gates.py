@@ -217,6 +217,123 @@ def test_benchmark_spawn_failure_reports_phase_without_touching_uncreated_proces
     assert messages == ['Observation failed phase=spawn type=OSError winerror=5']
 
 
+def test_benchmark_requires_natural_settlement_inside_the_original_deadline(monkeypatch):
+    import hashlib
+    import io
+    import pytest
+    from importlib.machinery import SourceFileLoader
+    from types import SimpleNamespace
+    from numera import winjob
+
+    sample = load('benchmark_sample')
+    structures = winjob._job_structs
+
+    def check(module, mode):
+        clock, events, queries = [0.0], [], []
+        closed = {'process': False, 'job': False}
+        forced = [False]
+        tree = module.proctree.Tree(123, None, 'synthetic-job', 'job')
+
+        def sleep(seconds):
+            assert 0 <= seconds <= .05
+            clock[0] += seconds
+
+        def wait(timeout):
+            events.append(('wait', timeout))
+            if timeout == 1:
+                clock[0] += 15 if mode == 'expired' else .2
+            return 0
+
+        def close():
+            closed['process'] = True
+            events.append('process-close')
+
+        process = SimpleNamespace(stdout=io.BytesIO(b'{"ok":true}'), stderr=io.BytesIO(),
+                                  poll=lambda: 0, wait=wait, close=close)
+
+        def active(name):
+            assert name == tree.group and not any(closed.values()) and not forced[0]
+            queries.append(clock[0])
+            if mode == 'late':
+                clock[0] = 15.1
+                return True, 0
+            if mode == 'unknown':
+                return False, 0
+            return True, int(mode == 'active' or clock[0] < .25)
+
+        def cleanup(*args, **kwargs):
+            events.append('cleanup')
+            forced[0] = True
+            return True
+
+        class Kernel:
+            def QueryInformationJobObject(self, handle, kind, counters, size, unused):
+                assert handle == 99 and kind == 9 and not any(closed.values()) and not forced[0]
+                events.append(('peak', clock[0]))
+                counters._obj.PeakJobMemoryUsed = 1234
+                return True
+
+            def CloseHandle(self, handle):
+                assert handle == 99
+                closed['job'] = True
+                events.append('job-close')
+
+        fake_time = SimpleNamespace(monotonic=lambda: clock[0], sleep=sleep,
+                                    perf_counter_ns=lambda: int(clock[0] * 1_000_000_000))
+        logger = SimpleNamespace(error=lambda *args: events.append('error'))
+        with monkeypatch.context() as patch:
+            patch.setattr(sys, 'platform', 'win32')
+            patch.setitem(sys.modules, 'benchmark_windows', SimpleNamespace(
+                spawn=lambda *args: (process, tree, 99)))
+            patch.setitem(sys.modules, 'numera.winjob', SimpleNamespace(
+                _kernel32=Kernel, _job_structs=structures))
+            patch.setattr(module, 'time', fake_time)
+            patch.setattr(module.proctree, 'time', fake_time)
+            patch.setattr(module.proctree, '_job_active', active)
+            patch.setattr(module.proctree, 'end_tree', cleanup)
+            patch.setattr(module, 'pipe_reader', lambda pipe: lambda: pipe.read())
+            patch.setattr(module.unit_report, 'begin_spawn', lambda: 'synthetic-intent')
+            patch.setattr(module.unit_report, 'record', lambda *args, **kwargs: None)
+            if mode == 'transient':
+                try:
+                    result = module.observe(['synthetic.exe'], {}, logger)
+                except ValueError as error:
+                    raise AssertionError('Natural benchmark settlement was refused') from error
+                assert result['payload'] == {'ok': True}
+                assert result['memory'] == {'metric': 'peak-job-committed-bytes', 'bytes': 1234}
+                peak = next(event[1] for event in events if isinstance(event, tuple) and event[0] == 'peak')
+                assert result['elapsed_ns'] == int(peak * 1_000_000_000) >= 250_000_000
+                assert len(queries) == 2 and events.index(('peak', peak)) < events.index('cleanup')
+            else:
+                with pytest.raises(ValueError, match='benchmark'):
+                    module.observe(['synthetic.exe'], {}, logger)
+                assert not any(isinstance(event, tuple) and event[0] == 'peak' for event in events)
+                if mode in ('active', 'unknown'):
+                    assert 15 <= clock[0] < 15.05, 'Settlement reset or exceeded the original budget'
+                elif mode == 'expired':
+                    assert not queries, 'An exhausted deadline still attempted natural acceptance'
+                else:
+                    assert len(queries) == 1, 'A late empty observation was accepted or retried'
+        assert process.stdout.closed and process.stderr.closed and all(closed.values())
+        assert events[-2:] == ['process-close', 'job-close'] and events.count('cleanup') == 1
+
+    # Exact historical bytes must fail the same transient-settlement contract.
+    path = ROOT / 'engine/tests/fixtures/benchmark-sample-before-settlement.py.txt'
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == \
+        'e9e65689ecff7dd714e7e1f349c442c02f4ad4992c77532d58c45a7bd2f2aaa1'
+    loader = SourceFileLoader('historical_benchmark_sample', str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    old = importlib.util.module_from_spec(spec)
+    with monkeypatch.context() as patch:
+        patch.setattr(sys, 'dont_write_bytecode', True)
+        patch.setattr(sys, 'path', [str(SCRIPTS), *sys.path])
+        loader.exec_module(old)
+        with pytest.raises(AssertionError, match='Natural benchmark settlement was refused'):
+            check(old, 'transient')
+    for mode in ('transient', 'active', 'unknown', 'expired', 'late'):
+        check(sample, mode)
+
+
 def test_benchmark_peak_requires_supported_platform_and_positive_os_observation(monkeypatch):
     import pytest
     from types import SimpleNamespace

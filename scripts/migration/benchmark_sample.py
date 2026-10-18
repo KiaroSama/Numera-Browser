@@ -94,7 +94,6 @@ def observe(argv, environment, logger):
                         raise ValueError('Benchmark child output exceeded its bound')
             if not progress:
                 time.sleep(min(0.001, max(0, deadline - time.monotonic())))
-        elapsed = time.perf_counter_ns() - started
         phase = 'exit'
         code = process.wait(timeout=1)
         if code != 0 or buffers[1]:
@@ -102,8 +101,11 @@ def observe(argv, environment, logger):
                          code, len(buffers[0]), len(buffers[1]))
             raise ValueError('Benchmark child failed or wrote unexpected stderr')
         phase = 'tree-empty'
-        if proctree.alive_tree(tree):
-            raise ValueError('Foreground benchmark child left an active owned tree')
+        remaining = deadline - time.monotonic()
+        if (remaining <= 0 or not proctree.prove_empty(tree, deadline=remaining)
+                or time.monotonic() >= deadline):
+            raise ValueError('Foreground benchmark tree did not settle within its deadline')
+        elapsed = time.perf_counter_ns() - started
         phase = 'memory'
         memory = windows_peak(query) if query is not None else linux_peak()
         phase = 'json'
