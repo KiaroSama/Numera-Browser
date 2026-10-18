@@ -52,6 +52,16 @@ REGRESSIONS = (
                 '0fae0f236ffb9f71423a0d362a570edbe3e26c92d2b77b30377f060fa3ecaec5',
         },
     },
+    {
+        'target': 'repo_lookup_parity',
+        'test': 'ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift',
+        'symptom': 'Ordinary encrypted read rewrote protected bytes',
+        'commit': '6fe0b77f09f1e4c02e3bb1a02e8aa4b1c53cea4c',
+        'files': {
+            'engine-rust/src/storage/repo_lookup.rs':
+                'a787c5c83d09becd8f76aadc5892493a3fd071efdd135e15183696bd09ab19af',
+        },
+    },
 )
 
 

@@ -74,6 +74,17 @@ impl ProfileRepo {
     }
 
     fn reconciled(&self, id: &str, now: f64) -> Result<Option<Profile>, RepoError> {
+        if safe_id(id).is_ok()
+            && let (Some(engine), Some(dashboard)) = (
+                Self::raw(&self.path(id, "profiles")?),
+                Self::raw(&self.path(id, "dashboard")?),
+            )
+            && !self.read_disagrees(&engine, &dashboard, now)
+        {
+            // Reading a healthy pair must not choose between equivalent ciphertexts.
+            // Explicit launch coherence still performs its stricter materialization.
+            return self.get(id);
+        }
         match self.coherent(id, now) {
             Err(RepoError::Diverged(_)) | Err(RepoError::InvalidRecord(_)) => self.get(id),
             result => result,

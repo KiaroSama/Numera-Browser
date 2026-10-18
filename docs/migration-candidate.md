@@ -99,19 +99,31 @@ Disjoint lower native ranges establish no regression for a measured scenario;
 disjoint higher ranges report regression. Overlapping ranges are inconclusive,
 not accepted under an arbitrary percentage allowance. Failed or inconclusive
 measurement blocks the native job. The first hosted run built both optimized
-binaries but refused the initial creation sample: its snapshot mistook the two
-new empty per-profile lock files for unrelated data changes. The harness now
-allows only those exact newly created empty locks; existing locks and all other
-protected bytes remain checked. That correction is not yet hosted-verified. No
-completed comparative measurements or API/browser performance acceptance exist.
+binaries but refused creation because its snapshot mistook two new empty record
+locks for unrelated data changes. The correction allows only those exact new
+empty locks; existing locks and all other protected bytes remain checked.
+
+The replacement Linux run completed all creation and listing pairs, then refused
+the first native encrypted read because it rewrote protected bytes. Ordinary read
+reconciliation now checks for actual source-equivalent disagreement before
+materializing a record; explicit launch coherence and credential-conflict refusal
+are unchanged. A 26-case original-source comparison checks results, records and
+per-file byte preservation, with the same test required to detect the historical
+implementation first. This repair has not yet run in hosted verification.
+
+Windows separately refused its first native creation observer. Its inner cause is
+not established; bounded phase, exception-type and numeric OS-error diagnostics
+now replace the previous opaque refusal without exposing command or profile data.
+No Windows API repair is assumed. No complete four-scenario performance artifact,
+accepted verdict or API/browser performance acceptance exists.
 
 ## Acceptance status
 
-Source `1fec03c` ran in hosted batch
-[39091174921](https://github.com/KiaroSama/Numera-Browser/actions/runs/39091174921).
+Source `6fe0b77` ran in hosted batch
+[39093885775](https://github.com/KiaroSama/Numera-Browser/actions/runs/39093885775).
 All source-platform and eight relocated Windows/Linux cases passed. Both native
-jobs passed their earlier contracts and replay, then failed the new performance
-snapshot check described above; neither completed the full native tier.
+jobs passed their earlier contracts, replay and optimized builds, then failed the
+performance checks described above; neither completed the full native tier.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier
 `CamoufoxNotInstalled` context-open failure is resolved by preserving the effective

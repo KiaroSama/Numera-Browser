@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import sys
 import tempfile
@@ -74,6 +75,18 @@ def baseline(parent, env):
     return root, locked, password
 
 
+def observation_failure(stderr):
+    for line in stderr[:16384].splitlines():
+        match = re.fullmatch(
+            r'.*\[numera\.migration-benchmark-sample\] Observation failed '
+            r'phase=(spawn|pipe-setup|capture|exit|tree-empty|memory|json) '
+            r'type=(ValueError|OSError|TimeoutError|RuntimeError|JSONDecodeError|UnicodeDecodeError) '
+            r'winerror=(None|[0-9]{1,10})', line)
+        if match:
+            return f'phase={match[1]} type={match[2]} winerror={match[3]}'
+    return 'phase=unknown type=unknown winerror=None'
+
+
 def observation(candidate, original, parent, template, env, runtime, scenario, password):
     with tempfile.TemporaryDirectory(prefix='pair-', dir=parent) as temporary:
         workspace = Path(temporary)
@@ -92,7 +105,8 @@ def observation(candidate, original, parent, template, env, runtime, scenario, p
              '--candidate', str(candidate), '--original', str(original), '--runtime', runtime,
              '--', '--data-dir', str(root), *commands[scenario], '--json'], environment, timeout=25)
         if code or len(stdout.encode('utf-8')) > 131072:
-            raise ValueError(f'Benchmark observation refused runtime={runtime} scenario={scenario} exit={code}')
+            raise ValueError(f'Benchmark observation refused runtime={runtime} scenario={scenario} exit={code} '
+                             + observation_failure(stderr))
         sample = json.loads(stdout)
         payload = sample.pop('payload')
         if scenario == 'create':

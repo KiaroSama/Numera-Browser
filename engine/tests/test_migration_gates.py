@@ -180,6 +180,43 @@ def test_benchmark_range_verdict_refuses_noise_regression_and_invalid_samples():
             benchmark.verdict([1, 2, 3], sample)
 
 
+def test_benchmark_failure_projection_retains_only_known_stage_type_and_error_code():
+    benchmark = load('benchmark')
+    safe = ('[2026-10-18 00:00:00 UTC] [ERROR] [numera.migration-benchmark-sample] '
+            'Observation failed phase=memory type=OSError winerror=5')
+    assert benchmark.observation_failure(safe) == 'phase=memory type=OSError winerror=5'
+    assert benchmark.observation_failure(safe.replace('memory', 'spawn')) == 'phase=spawn type=OSError winerror=5'
+    for value in (safe + ' password=synthetic-private', safe.replace('memory', 'private-path'),
+                  safe.replace('OSError', 'SyntheticSensitiveError'), 'raw synthetic-private traceback'):
+        assert benchmark.observation_failure(value) == 'phase=unknown type=unknown winerror=None'
+
+
+def test_benchmark_spawn_failure_reports_phase_without_touching_uncreated_process(monkeypatch):
+    import pytest
+    from types import SimpleNamespace
+
+    sample = load('benchmark_sample')
+    error = OSError('synthetic-private spawn failure')
+    error.winerror = 5
+    messages = []
+    events = []
+
+    def refuse(*args):
+        events.append('spawn')
+        raise error
+
+    monkeypatch.setattr(sys, 'platform', 'win32')
+    monkeypatch.setitem(sys.modules, 'benchmark_windows', SimpleNamespace(spawn=refuse))
+    monkeypatch.setattr(sample.unit_report, 'begin_spawn', lambda: events.append('intent') or 'fixture')
+    monkeypatch.setattr(sample.unit_report, 'cancel_spawn', lambda attempt: pytest.fail('Uncertain intent cancelled'))
+    monkeypatch.setattr(sample.proctree, 'end_tree', lambda *args, **kwargs: pytest.fail('No returned tree exists'))
+    logger = SimpleNamespace(error=lambda message, *args: messages.append(message % args))
+    with pytest.raises(OSError) as observed:
+        sample.observe(['fixture.exe'], {}, logger)
+    assert observed.value is error and events == ['intent', 'spawn']
+    assert messages == ['Observation failed phase=spawn type=OSError winerror=5']
+
+
 def test_benchmark_peak_requires_supported_platform_and_positive_os_observation(monkeypatch):
     import pytest
     from types import SimpleNamespace

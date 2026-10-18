@@ -18,6 +18,7 @@ pub mod pool;
 pub mod repo;
 mod repo_delete;
 mod repo_lookup;
+mod repo_reconcile;
 mod repo_write;
 mod restore;
 pub mod schedules;

@@ -51,7 +51,7 @@ def windows_peak(query):
     return {'metric': 'peak-job-committed-bytes', 'bytes': peak}
 
 
-def observe(argv, environment):
+def observe(argv, environment, logger):
     if sys.platform not in ('linux', 'win32'):
         raise ValueError('Benchmark observation requires Windows or Linux')
     if sys.platform == 'linux':
@@ -60,19 +60,23 @@ def observe(argv, environment):
             raise ValueError('Each Linux sample requires a fresh observer process')
     attempt = unit_report.begin_spawn()
     query = None
+    process = None
+    phase = 'spawn'
     started = time.perf_counter_ns()
-    if sys.platform == 'win32':
-        from benchmark_windows import spawn
-        process, tree, query = spawn(argv, environment)
-    else:
-        process, tree = proctree.spawn(argv, env=environment, stdin=subprocess.DEVNULL,
-                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
+        if sys.platform == 'win32':
+            from benchmark_windows import spawn
+            process, tree, query = spawn(argv, environment)
+        else:
+            process, tree = proctree.spawn(argv, env=environment, stdin=subprocess.DEVNULL,
+                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         unit_report.record(tree, attempt=attempt)
+        phase = 'pipe-setup'
         readers = [pipe_reader(process.stdout), pipe_reader(process.stderr)]
         buffers = [bytearray(), bytearray()]
         ended = set()
         deadline = time.monotonic() + 15
+        phase = 'capture'
         while len(ended) != 2 or process.poll() is None:
             if time.monotonic() >= deadline:
                 raise TimeoutError('Benchmark child exceeded its 15-second deadline')
@@ -91,25 +95,37 @@ def observe(argv, environment):
             if not progress:
                 time.sleep(min(0.001, max(0, deadline - time.monotonic())))
         elapsed = time.perf_counter_ns() - started
-        if process.wait(timeout=1) != 0 or buffers[1]:
+        phase = 'exit'
+        code = process.wait(timeout=1)
+        if code != 0 or buffers[1]:
+            logger.error('Target refused exit=%s stdout_bytes=%s stderr_bytes=%s',
+                         code, len(buffers[0]), len(buffers[1]))
             raise ValueError('Benchmark child failed or wrote unexpected stderr')
+        phase = 'tree-empty'
         if proctree.alive_tree(tree):
             raise ValueError('Foreground benchmark child left an active owned tree')
+        phase = 'memory'
         memory = windows_peak(query) if query is not None else linux_peak()
+        phase = 'json'
         return {'elapsed_ns': elapsed, 'memory': memory,
                 'payload': json.loads(buffers[0].decode('utf-8'))}
+    except Exception as error:
+        logger.error('Observation failed phase=%s type=%s winerror=%s', phase, type(error).__name__,
+                     getattr(error, 'winerror', None) if isinstance(getattr(error, 'winerror', None), int) else None)
+        raise
     finally:
-        try:
-            if not proctree.end_tree(tree, grace=1, kill_grace=3):
-                raise RuntimeError('Benchmark child cleanup could not be proved')
-            process.wait(timeout=5)
-        finally:
-            for pipe in (process.stdout, process.stderr):
-                pipe.close()
-            if query is not None:
-                from numera.winjob import _kernel32
-                process.close()
-                _kernel32().CloseHandle(query)
+        if process is not None:
+            try:
+                if not proctree.end_tree(tree, grace=1, kill_grace=3):
+                    raise RuntimeError('Benchmark child cleanup could not be proved')
+                process.wait(timeout=5)
+            finally:
+                for pipe in (process.stdout, process.stderr):
+                    pipe.close()
+                if query is not None:
+                    from numera.winjob import _kernel32
+                    process.close()
+                    _kernel32().CloseHandle(query)
 
 
 def main():
@@ -125,7 +141,7 @@ def main():
     environment = dict(os.environ, PYTHONPATH=str(args.original / 'engine'))
     with run_log('benchmark-sample', Path(os.environ['NUMERA_LOG_DIR'])) as logger:
         logger.info('Observing runtime=%s', args.runtime)
-        result = observe([*executable, *arguments], environment)
+        result = observe([*executable, *arguments], environment, logger)
         print(json.dumps(result, allow_nan=False), flush=True)
     return 0
 
