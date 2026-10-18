@@ -8,14 +8,14 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 18, 2026
 
-The latest completed source checkpoint is `bb82941`. Its manual hosted batch
-[39130990824](https://github.com/KiaroSama/Numera-Browser/actions/runs/39130990824)
-failed overall on October 18 at 13:31 UTC. All source platforms, Linux native,
-eight relocated cases and dashboard checks passed. Both native tiers proved the
-packed-screen historical assertion failure and restored fixed bytes; Linux passed
-the current 46-input comparison. Windows then hit the compilation idle limit before
-current tests ran. The [candidate status](migration-candidate.md) describes the
-pending real-progress/folder corrections; broader acceptance remains open.
+The latest completed source checkpoint is `86c0084`. Its manual hosted batch
+[39140064540](https://github.com/KiaroSama/Numera-Browser/actions/runs/39140064540)
+failed overall on October 18 at 15:34 UTC. All source platforms, eight relocated
+cases and dashboard checks passed. Both native jobs compiled but strict lint
+rejected an invisible character in a raw-string test fixture before tests ran.
+The correction preserves the exact 12 marker scalars through numeric construction;
+no lint rule or case is removed. The [candidate status](migration-candidate.md)
+describes pending progress/folder proof and 73 mapped references; broader acceptance is open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The
@@ -522,7 +522,7 @@ source tests, and CI checks their regeneration for drift.
 ## Coverage and unfinished work
 
 [The source capability ledger](migration-coverage.json) retains all 907 frozen
-source occurrences and hashes. Forty-seven rows now have inspected target/test
+source occurrences and hashes. Seventy-three rows now have inspected target/test
 references and explicit remaining gaps: 906 pending, one implemented, zero verified.
 It intentionally refuses default switch; references are not acceptance evidence.
 Alternative definitions retain separate deterministic IDs. The verified leaf cases

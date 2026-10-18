@@ -24,7 +24,15 @@ impl Folders {
     }
     fn metadata(&self) -> io::Result<Value> {
         let value = match fs::read(self.meta_path()) {
-            Ok(bytes) => serde_json::from_slice::<Value>(&bytes).unwrap_or_else(|_| json!({})),
+            Ok(bytes) => {
+                let text = std::str::from_utf8(&bytes).map_err(|_| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Stored folder metadata is not UTF-8; nothing was written",
+                    )
+                })?;
+                serde_json::from_str::<Value>(text).unwrap_or_else(|_| json!({}))
+            }
             Err(error) if error.kind() == io::ErrorKind::NotFound => json!({}),
             Err(error) => return Err(error),
         };
@@ -49,7 +57,14 @@ impl Folders {
             if path.extension().is_none_or(|v| v != "json") {
                 continue;
             }
-            if let Ok(value) = serde_json::from_slice::<Value>(&fs::read(&path)?) {
+            let bytes = fs::read(&path)?;
+            let text = std::str::from_utf8(&bytes).map_err(|_| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Stored folder profile is not UTF-8; nothing was written",
+                )
+            })?;
+            if let Ok(value) = serde_json::from_str::<Value>(text) {
                 if !value.is_object() {
                     return Err(io::Error::other(
                         "Stored folder profile is not an object; nothing was written",

@@ -128,7 +128,12 @@ def test_mapped_occurrences_retain_frozen_inventory_and_block_selection(tmp_path
     assert len(identifiers) == len(set(identifiers)) == 907
     assert document['source_commit'] == '13b6d9c6973281fe123353eaec05b29d65781a2d'
     mapped = [row for row in rows if row['target'] is not None]
-    assert len(mapped) >= 46, 'Reviewed occurrence mappings were lost'
+    assert len(mapped) >= 73, 'Reviewed occurrence mappings were lost'
+    for module in ('config_store', 'folders'):
+        selected = [row for row in rows if row['id'].startswith(f'engine/numera/{module}.py::')]
+        assert len(selected) == 13
+        assert all(row['target'] and row['test'] and row['status'] == 'pending' for row in selected), \
+            f'{module} mappings must retain their incomplete acceptance status'
     for row in mapped:
         for key in ('target', 'test'):
             value = row[key]

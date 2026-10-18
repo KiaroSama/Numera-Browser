@@ -102,6 +102,16 @@ REGRESSIONS = (
                 '614fd00e19b151103eea2d61d17ef91ee65e15b182430b4723f0be2ce0dc5171',
         },
     },
+    {
+        'target': 'folder_parity',
+        'test': 'malformed_folder_text_refuses_without_replacing_source_bytes',
+        'symptom': 'Folder text admission differs',
+        'commit': '86c0084eed5a170385a6653024e9e9e5e2c9809a',
+        'files': {
+            'engine-rust/src/storage/folders.rs':
+                'ae1558078e57a802b067aa17fcc65ccd960fe8bf38c8242a3f2335842bb6962a',
+        },
+    },
 )
 
 

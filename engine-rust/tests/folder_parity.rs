@@ -4,6 +4,143 @@ use std::{fs, path::PathBuf};
 mod common;
 
 #[test]
+fn malformed_folder_text_refuses_without_replacing_source_bytes()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("folder-text")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,sys
+from pathlib import Path
+repository,root=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import folders
+from run_logging import run_log
+
+def parsed(raw):
+    try:
+        return json.loads(raw.decode('utf-8'))
+    except (UnicodeDecodeError,json.JSONDecodeError):
+        return None
+
+with run_log('folder-text-oracle',root/'logs') as log:
+    initial={'dashboard-config.json':{'folders':['source','alpha'],'future':'α'},
+             'dashboard/a.json':{'id':'a','folder':'source','future':[7]},
+             'dashboard/b.json':{'id':'b','folder':'alpha'}}
+    rows=[]
+    for location in ['dashboard-config.json','dashboard/b.json']:
+        valid=dict(initial[location],future='日本語')
+        for payload in [b'\xff',b'{"future":"\xc3("}',b'{"future":"\xe2\x82',
+                        b'{broken',json.dumps(valid,ensure_ascii=False).encode('utf-8')]:
+            for operation,args in [('listing',[]),('create',['new']),
+                                   ('rename',['source','target']),('delete',['source'])]:
+                case=root/'source'/str(len(rows))
+                (case/'dashboard').mkdir(parents=True)
+                inputs={name:json.dumps(value).encode('utf-8') for name,value in initial.items()}
+                inputs[location]=payload
+                for name,raw in inputs.items():
+                    (case/name).write_bytes(raw)
+                try:
+                    result,error=getattr(folders,operation)(case,*args),None
+                except (UnicodeDecodeError,ValueError) as exc:
+                    result,error=None,type(exc).__name__
+                after={name:(case/name).read_bytes() for name in inputs}
+                rows.append({'operation':operation,'args':args,'location':location,
+                             'inputs':{name:raw.hex() for name,raw in inputs.items()},
+                             'result':result,'error':error,
+                             'written':{name:parsed(raw) for name,raw in after.items()},
+                             'unchanged':{name:raw==after[name] for name,raw in inputs.items()}})
+    log.info('Observed folder text cases=%s',len(rows))
+    print(json.dumps(rows,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .arg(temporary.path())
+        .env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 262144,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original folder text observer failed");
+    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(cases.len(), 40, "Folder text observations missing");
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join("native").join(index.to_string());
+        fs::create_dir_all(root.join("dashboard"))?;
+        let mut before = Vec::new();
+        for (name, raw) in case["inputs"].as_object().ok_or("Inputs missing")? {
+            let raw = raw.as_str().ok_or("Input bytes missing")?;
+            let bytes = (0..raw.len())
+                .step_by(2)
+                .map(|offset| u8::from_str_radix(&raw[offset..offset + 2], 16))
+                .collect::<Result<Vec<_>, _>>()?;
+            fs::write(root.join(name), &bytes)?;
+            before.push((name, bytes));
+        }
+        let folders = Folders::new(root.clone());
+        let outcome = match case["operation"].as_str() {
+            Some("listing") => folders.listing(),
+            Some("create") => folders.create("new"),
+            Some("rename") => folders.rename("source", "target"),
+            Some("delete") => folders.delete("source", None),
+            _ => return Err("Unknown folder operation".into()),
+        };
+        assert_eq!(
+            outcome.is_ok(),
+            case["error"].is_null(),
+            "Folder text admission differs: case={index} operation={} location={}",
+            case["operation"],
+            case["location"]
+        );
+        match outcome {
+            Ok(names) => assert_eq!(serde_json::to_value(names)?, case["result"]),
+            Err(error) => {
+                assert_eq!(case["error"], "UnicodeDecodeError");
+                assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+                assert!(error.to_string().contains("UTF-8"));
+            }
+        }
+        for (name, original) in before {
+            let after = fs::read(root.join(name))?;
+            assert_eq!(
+                Value::Bool(after == original),
+                case["unchanged"][name],
+                "Folder text byte preservation differs: case={index} file={name}"
+            );
+            if !case["error"].is_null() {
+                assert_eq!(after, original, "Refused folder text changed bytes");
+            }
+            let parsed = serde_json::from_slice::<Value>(&after).unwrap_or(Value::Null);
+            assert_eq!(
+                parsed, case["written"][name],
+                "Folder text state differs: case={index} file={name}"
+            );
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn folder_name_whitespace_matches_original_operations() -> Result<(), Box<dyn std::error::Error>> {
     use numera_core::ownership::capture;
     use std::{path::Path, process::Command, time::Duration};
@@ -34,8 +171,8 @@ with run_log('folder-whitespace-oracle',root/'logs') as log:
     profiles={'a.json':{'id':'a','folder':'source','future':[7]},
               'b.json':{'id':'b','folder':'alpha'}}
     rows=[]
-    for marker in ['\x1c','\x1d','\x1e','\x1f','\x85',' ',
-                   ' ',' ','　','\x1b','​','﻿']:
+    for marker in map(chr,[0x1c,0x1d,0x1e,0x1f,0x85,0xa0,
+                           0x2003,0x202f,0x3000,0x1b,0x200b,0xfeff]):
         variants=[('create',[marker+'new'+marker]),('create',[marker]),
                   ('create',['inner'+marker+'name']),
                   ('rename',[marker+'source'+marker,'target']),

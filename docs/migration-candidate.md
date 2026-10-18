@@ -155,7 +155,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 47 individually inspected implementation/test
+The capability ledger now records 73 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -193,6 +193,16 @@ compares 96 operation cases, returned lists/refusals, parsed metadata/profile st
 and each file's byte-preservation verdict. Exact historical failure and current
 hosted acceptance are pending; locks, rollback and serialization are unchanged.
 
+Folder metadata and profile readers now reject invalid UTF-8 before parsing JSON,
+rather than treating undecodable bytes as empty metadata or a skippable profile.
+Forty original-derived operation cases compare admission, resulting records and
+exact input-byte preservation on refusal. Valid UTF-8 malformed-JSON fallback is
+unchanged. Historical failure and current hosted verification remain pending.
+
+The additional settings/folder references document existing implementations and
+known gaps, including configuration caching, direct setter contracts, malformed
+values, contention and rollback. All 26 newly mapped rows remain pending.
+
 Historical source swaps can invalidate the earlier native prebuild. The full test
 command now projects actual Cargo artifact completions and build success while
 Cargo renders compiler diagnostics normally. Raw build-script/environment/path
@@ -203,14 +213,14 @@ than 120 seconds still fails. Hosted proof of this correction remains pending.
 
 ## Acceptance status
 
-Source `bb82941` ran in hosted batch
-[39130990824](https://github.com/KiaroSama/Numera-Browser/actions/runs/39130990824).
-All source platforms, Linux native and all eight relocated Windows/Linux cases
-passed. Windows proved every historical assertion and restored fixed bytes, but
-its next full compilation hit the idle limit before current tests or later replay
-and performance stages. No compiler deadlock is established. The preceding
-`22e0e59` batch passed both complete native tiers, replay and four CLI measurements;
-that historical success does not verify the changed Windows tree.
+Source `86c0084` ran in hosted batch
+[39140064540](https://github.com/KiaroSama/Numera-Browser/actions/runs/39140064540).
+All source platforms and all eight relocated Windows/Linux cases passed. Both
+native jobs compiled, then strict lint rejected a literal invisible test character
+before historical or current tests ran. Numeric construction now preserves the
+same 12 marker scalars without suppressing lint. Native folder and real-progress
+verification remains pending; the earlier `bb82941` Windows compile timeout is
+not yet resolved by runtime evidence. Earlier complete results remain historical.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier
 `CamoufoxNotInstalled` context-open failure is resolved by preserving the effective
