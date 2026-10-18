@@ -220,7 +220,9 @@ pub fn unloadable(entries: &[String]) -> Vec<String> {
     let mut problems = Vec::new();
     for entry in entries
         .iter()
-        .map(|entry| entry.trim())
+        .map(|entry| {
+            entry.trim_matches(|c: char| c.is_whitespace() || matches!(c, '\u{1c}'..='\u{1f}'))
+        })
         .filter(|entry| !entry.is_empty())
     {
         let quoted = crate::validation::repr(&Value::String(entry.into()));

@@ -122,6 +122,16 @@ REGRESSIONS = (
                 'a803a3e5c3ce12cae8b4200e4f54ae5dec1a05e38d3cac5b99e966f360180c01',
         },
     },
+    {
+        'target': 'extension_resources_parity',
+        'test': 'extension_path_whitespace_matches_original_validation',
+        'symptom': 'Extension path boundary whitespace differs',
+        'commit': '4b84da3a5502ef54123f78e76a70e245593cadee',
+        'files': {
+            'engine-rust/src/storage/extensions.rs':
+                'e9ddc94cd7db3cb867f9c118a94a858592786ad02eea92a517b9dbadc3b78f6f',
+        },
+    },
 )
 
 

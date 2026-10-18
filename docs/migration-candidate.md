@@ -155,7 +155,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 73 individually inspected implementation/test
+The capability ledger now records 89 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -203,13 +203,22 @@ in batch `39144820589`.
 
 Nonempty settings mutations now also reject invalid UTF-8 before JSON fallback,
 rather than overwriting the damaged file with a fresh object. Eighteen
-original-derived cases and an exact historical failure proof are prepared;
-hosted verification is pending. Read/cache/direct-setter behavior is unchanged
-and its known differences remain open.
+original-derived cases and the exact historical failure/restoration proof passed
+on Windows and Linux in batch `39148402244`. Read/cache/direct-setter behavior
+is unchanged and its known differences remain open.
+
+The shared extension-path validator now also preserves Python boundary trimming,
+including U+001C–U+001F. Seventy-two original-derived validation cases and an exact
+historical assertion-failure proof are prepared; hosted verification is pending.
+Home expansion, dynamic input conversion and unrelated text parsers are unchanged.
 
 The additional settings/folder references document existing implementations and
 known gaps, including configuration caching, direct setter contracts, malformed
-values, contention and rollback. All 26 newly mapped rows remain pending.
+values, contention and rollback. All 26 settings/folder rows remain pending.
+Sixteen additional extension references also remain pending: private/inlined
+helpers are nearest equivalents, not new public APIs or complete parity. Native
+containment, transport bounds, private errors and staged rollback are retained;
+frozen-source differences and missing acceptance remain explicit in the ledger.
 
 Historical source swaps can invalidate the earlier native prebuild. The full test
 command now projects actual Cargo artifact completions and build success while
@@ -223,16 +232,15 @@ seconds, within the unchanged limits. This is not a compilation speedup claim.
 
 ## Acceptance status
 
-Source `1c0d77d` ran in hosted batch
-[39144820589](https://github.com/KiaroSama/Numera-Browser/actions/runs/39144820589).
-Both native tiers passed strict lint, all ten historical failure/restoration
-proofs and current tests. All eight relocated Windows/Linux cases passed. The
-original macOS tier failed one unresolved-report reader snapshot: `helper-stderr`
-was still present, while the worker exited without supervisor rescue. The failure
-output abbreviated existing phase timings and flags; a failure-only full JSON
-projection is prepared without changing assertions, waits or production behavior.
-Its root cause remains unproved. CodeQL and dependent required verification also
-failed; distribution, promotion and publication were skipped.
+Source `4b84da3` ran in hosted batch
+[39148402244](https://github.com/KiaroSama/Numera-Browser/actions/runs/39148402244).
+All source platforms, both native tiers and all eight relocated Windows/Linux
+cases passed. Both native tiers passed strict lint, all eleven historical
+failure/restoration proofs and current tests. macOS passed 2,825 tests with 13
+explicit platform limits. Its earlier unresolved-report reader snapshot's cause
+remains unproved: a passing replacement does not establish why it failed, and the
+failure-only phase projection was not exercised by this pass. CodeQL and dependent
+required verification failed; distribution, promotion and publication were skipped.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier
 `CamoufoxNotInstalled` context-open failure is resolved by preserving the effective
