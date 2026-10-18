@@ -82,6 +82,16 @@ REGRESSIONS = (
                 'ecbe0ae8c19f4ca8c15c71fab2dab37ecac024a6a05d784b5041db12ccc12dd8',
         },
     },
+    {
+        'target': 'validation_parity',
+        'test': 'packed_screen_integer_grammar_matches_original',
+        'symptom': 'Packed screen integer grammar differs',
+        'commit': '22e0e596732041039759ea27d02efc160b8712b6',
+        'files': {
+            'engine-rust/src/validation.rs':
+                '43b7b97c20df8722a8acc5f9108c06441372302439fe1abff624b0e0de69d538',
+        },
+    },
 )
 
 

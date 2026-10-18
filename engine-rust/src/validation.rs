@@ -340,12 +340,13 @@ pub fn profile_problems(record: &Value, shape: &str) -> Result<Vec<String>, serd
             if let Some(problem) = text_problem("screen", value, true, false) {
                 found.push(problem);
             } else if let Some(screen) = value.as_str() {
-                let sides: Result<Vec<i64>, _> = screen
+                let sides: Option<Vec<i64>> = screen
                     .to_lowercase()
                     .split('x')
-                    .map(|s| s.trim().parse::<i64>())
+                    .map(|part| crate::decimal::integer(part)?.parse::<i64>().ok())
                     .collect();
-                if !sides.is_ok_and(|v| v.len() == 2 && v.iter().all(|v| (1..=65536).contains(v))) {
+                if !sides.is_some_and(|v| v.len() == 2 && v.iter().all(|v| (1..=65536).contains(v)))
+                {
                     found.push(format!("profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got {}. Nothing was written.",repr(&Value::String(screen.chars().take(40).collect()))));
                 }
             }

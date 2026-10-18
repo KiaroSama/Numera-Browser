@@ -8,13 +8,14 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 18, 2026
 
-The latest completed source checkpoint is `2c51d1a`. Its manual hosted batch
-[39114556651](https://github.com/KiaroSama/Numera-Browser/actions/runs/39114556651)
-failed overall on October 18 at 09:34 UTC. All source platforms, both complete
+The latest completed source checkpoint is `22e0e59`. Its manual hosted batch
+[39125230921](https://github.com/KiaroSama/Numera-Browser/actions/runs/39125230921)
+failed overall on October 18 at 12:16 UTC. All source platforms, both complete
 native tiers, eight relocated cases, dashboard and other nondependent checks passed.
-Both native tiers proved the historical integer-seed admission failure, restored
-fixed bytes and passed 26 command outcomes/14 identities/eight unchanged write
-refusals (Windows 0.74 seconds, Linux 0.47 seconds).
+Both native tiers proved the historical Unicode-envelope assertion failure,
+restored fixed bytes and passed 832 classification controls and ten collision cases.
+The next packed-screen parser correction and its 46 original-derived core/HTTP
+verdict comparisons await hosted proof; broader acceptance remains open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The
@@ -521,11 +522,11 @@ source tests, and CI checks their regeneration for drift.
 ## Coverage and unfinished work
 
 [The source capability ledger](migration-coverage.json) retains all 907 frozen
-source occurrences and hashes. Forty-six rows now have inspected target/test
+source occurrences and hashes. Forty-seven rows now have inspected target/test
 references and explicit remaining gaps: 906 pending, one implemented, zero verified.
 It intentionally refuses default switch; references are not acceptance evidence.
-Alternative definitions retain separate deterministic IDs. The prepared pure-leaf
-repairs and their unexecuted cases are detailed in the [candidate notes](migration-candidate.md#occurrence-level-reconciliation).
+Alternative definitions retain separate deterministic IDs. The verified leaf cases
+and pending screen repair are detailed in the [candidate notes](migration-candidate.md#occurrence-level-reconciliation).
 
 Remaining application work includes complete dual-store operations and vault
 recovery; complete native browser/session/helper/job ownership; all browser adapters

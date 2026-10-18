@@ -155,7 +155,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 46 individually inspected implementation/test
+The capability ledger now records 47 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -169,19 +169,26 @@ pinned Unicode decimal catalog instead of ASCII-only digits, preserving opaque
 future envelopes rather than treating them as plaintext. Decryption, KDF rounds
 and error policy are unchanged.
 
-Ten original-derived collision cases and 832 string-envelope observations are
-prepared in existing native targets. They cover stable grouping ties, repeated
-occurrences, Unicode decimal ranges and neighboring characters, malformed prefixes
-and locked-envelope preservation. Exact historical ASCII-only source must fail the
-named classification assertion before the restored complete native suite passes.
-These new leaf cases have source review only; hosted execution is still pending.
-Dynamic/nonstring model inputs, numeric collision equality and broader vault
-compatibility remain explicitly incomplete.
+Ten original-derived collision cases and 832 string-envelope observations passed
+on hosted Windows and Linux in batch `39125230921`. They cover stable grouping
+ties, repeated occurrences, Unicode decimal ranges and neighboring characters,
+malformed prefixes and locked-envelope preservation. Both systems first observed
+the exact historical ASCII-only implementation fail the named Unicode assertion,
+then passed the current tests after fixed-byte restoration. Dynamic/nonstring model
+inputs, numeric collision equality and broader vault compatibility remain incomplete.
+
+A subsequent core-validation review found that packed screen dimensions still used
+Rust's direct integer parser, although HTTP validation and conversion already used
+the compatible decimal-text helper. The core branch now reuses that helper without
+changing bounds, diagnostic wording or the shared parser. A 46-input frozen-original
+comparison covers core and HTTP verdicts for Unicode/underscore/sign grammar,
+boundaries and invalid values. Its exact historical assertion-failure proof and
+current hosted execution remain pending; no default or complete parity is claimed.
 
 ## Acceptance status
 
-Source `2c51d1a` ran in hosted batch
-[39114556651](https://github.com/KiaroSama/Numera-Browser/actions/runs/39114556651).
+Source `22e0e59` ran in hosted batch
+[39125230921](https://github.com/KiaroSama/Numera-Browser/actions/runs/39125230921).
 All source platforms, both complete native tiers and all eight relocated
 Windows/Linux cases passed, including replay and the four measured CLI scenarios.
 The macOS settlement-lock replacement passed: it observes the remaining
