@@ -72,6 +72,16 @@ REGRESSIONS = (
                 '8f104af04b864e076e35a8ad41494ed819e84a44e9cfbf2fcf574dd8da931d5c',
         },
     },
+    {
+        'target': 'vault_parity',
+        'test': 'envelope_classification_matches_original_unicode_and_prefix_contracts',
+        'symptom': 'Unicode envelope classification differs',
+        'commit': '2c51d1ad66e5da28e8035de77ecb32d3998870ea',
+        'files': {
+            'engine-rust/src/vault/mod.rs':
+                'ecbe0ae8c19f4ca8c15c71fab2dab37ecac024a6a05d784b5041db12ccc12dd8',
+        },
+    },
 )
 
 

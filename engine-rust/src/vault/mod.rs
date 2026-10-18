@@ -45,7 +45,8 @@ pub fn is_envelope(value: &str) -> bool {
     let Some((version, _)) = rest.split_once(':') else {
         return false;
     };
-    !version.is_empty() && version.chars().all(|c| c.is_ascii_digit())
+    // Python's envelope regex uses Unicode Nd, not ASCII-only digits.
+    !version.is_empty() && crate::pool::decimal_ascii(version).is_some()
 }
 
 fn cipher(password: &str, salt: &str, rounds: u32) -> Result<Fernet, VaultError> {

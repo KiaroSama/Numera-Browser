@@ -8,15 +8,16 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 18, 2026
 
-The latest completed source checkpoint is `348bac2`. Its manual hosted batch
-[39106678127](https://github.com/KiaroSama/Numera-Browser/actions/runs/39106678127)
-failed overall on October 18 at 07:29 UTC. All source platforms, both complete
+The latest completed source checkpoint is `2c51d1a`. Its manual hosted batch
+[39114556651](https://github.com/KiaroSama/Numera-Browser/actions/runs/39114556651)
+failed overall on October 18 at 09:34 UTC. All source platforms, both complete
 native tiers, eight relocated cases, dashboard and other nondependent checks passed.
-Encrypted-read historical-failure/restoration/current-pass proof remains verified
-on both native platforms. The deterministic macOS lock-budget correction passed.
-All four foreground CLI scenarios completed seven alternating measured pairs on
-both systems, with disjoint lower native time and memory ranges. These are bounded
-CLI results, not API/browser or full migration acceptance. The
+Both native tiers proved the historical integer-seed admission failure, restored
+fixed bytes and passed 26 command outcomes/14 identities/eight unchanged write
+refusals (Windows 0.74 seconds, Linux 0.47 seconds).
+The previous `348bac2` measurements completed seven alternating pairs for all four
+foreground CLI scenarios on both systems, with lower native time/memory ranges.
+These are CLI results, not API/browser or full migration acceptance. The
 [observer correction](migration-candidate.md#representative-release-performance)
 passed its historical-failure and natural-settlement controls within the unchanged
 deadline. No forced-cleanup result is accepted; the earlier query's cause is unproved.
@@ -519,12 +520,12 @@ source tests, and CI checks their regeneration for drift.
 
 ## Coverage and unfinished work
 
-[The source capability ledger](migration-coverage.json) inventories the frozen
-original source and keeps its required symbols pending until their complete target
-and test evidence is reconciled. It intentionally refuses release/default switch.
-The inventory counts source-symbol occurrences, not user features or completed
-test cases. Alternative definitions keep separate deterministic occurrence IDs;
-all 907 rows remain required, with no inferred verification from an ID repair.
+[The source capability ledger](migration-coverage.json) retains all 907 frozen
+source occurrences and hashes. Forty-six rows now have inspected target/test
+references and explicit remaining gaps: 906 pending, one implemented, zero verified.
+It intentionally refuses default switch; references are not acceptance evidence.
+Alternative definitions retain separate deterministic IDs. The prepared pure-leaf
+repairs and their unexecuted cases are detailed in the [candidate notes](migration-candidate.md#occurrence-level-reconciliation).
 
 Remaining application work includes complete dual-store operations and vault
 recovery; complete native browser/session/helper/job ownership; all browser adapters

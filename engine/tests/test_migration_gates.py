@@ -113,11 +113,40 @@ def test_capability_gate_accepts_distinct_occurrences_but_refuses_reused_ids(tmp
     path = tmp_path / 'coverage.json'
     path.write_text(json.dumps(source), encoding='utf-8')
     assert gate.check(path) == []
-    for rows in ([first], [first, first], [first, {**second, 'status': 'pending'}]):
+    for rows in ([first], [first, first], [first, {**second, 'status': 'pending'}],
+                 [first, {**second, 'status': 'implemented'}]):
         path.write_text(json.dumps({**source, 'capabilities': rows}), encoding='utf-8')
-        assert gate.check(path), 'A missing, reused or pending occurrence allowed selection'
+        assert gate.check(path), 'A missing, reused or unverified occurrence allowed selection'
     path.write_text(json.dumps({**source, 'capabilities': [first, second, second]}), encoding='utf-8')
     assert gate.check(path) == ['Duplicate capability: source.py::take#2']
+
+
+def test_mapped_occurrences_retain_frozen_inventory_and_block_selection(tmp_path, monkeypatch):
+    document = json.loads((ROOT / 'docs/migration-coverage.json').read_text(encoding='utf-8'))
+    rows = document['capabilities']
+    identifiers = [row['id'] for row in rows]
+    assert len(identifiers) == len(set(identifiers)) == 907
+    assert document['source_commit'] == '13b6d9c6973281fe123353eaec05b29d65781a2d'
+    mapped = [row for row in rows if row['target'] is not None]
+    assert len(mapped) >= 46, 'Reviewed occurrence mappings were lost'
+    for row in mapped:
+        for key in ('target', 'test'):
+            value = row[key]
+            assert isinstance(value, str) and not Path(value).is_absolute()
+            path = (ROOT / value).resolve()
+            assert path.is_relative_to(ROOT.resolve()) and path.is_file(), row['id']
+        if row['status'] != 'verified':
+            assert isinstance(row.get('remaining'), str) and row['remaining'].strip(), row['id']
+    # Actual implementations and file references alone cannot establish parity.
+    gate = load('check_coverage')
+    monkeypatch.setattr(gate, 'discover', lambda: document)
+    for status in ('pending', 'implemented'):
+        candidate = {**document, 'capabilities': [{**row, 'status': status} for row in rows]}
+        path = tmp_path / f'{status}.json'
+        path.write_text(json.dumps(candidate), encoding='utf-8')
+        problems = gate.check(path)
+        assert len(problems) == len(rows)
+        assert all(problem.startswith('Unverified capability: ') for problem in problems)
 
 
 def test_replay_comparison_preserves_identity_secret_and_creation_time():

@@ -138,23 +138,50 @@ unestablished. No Windows API repair is claimed.
 
 ## Integer seed compatibility
 
-The next native correction preserves complete signed integer seed values during
+The verified integer-seed correction preserves complete signed seed values during
 pure generation, model serialization, dashboard numeric conversion and init-script
 configuration. MT19937 initialization consumes every 32-bit magnitude word rather
 than truncating at `i64`; no new random generator or dependency is introduced.
 
 This does not widen write admission. The original single-profile create refuses
 seeds outside `0..2^53` before persistence, while bulk creation uses its input seed
-only to choose bounded per-profile seeds. The prepared differential test checks
+only to choose bounded per-profile seeds. The differential test passed
 26 command outcomes and 14 complete identities, including a pure seed longer than
-624 words, against the frozen original. It also checks refusal messages, both
-stored copies, settings preservation and collision output. These new cases await
-hosted compilation/execution; source review is not a passing test result.
+624 words, against the frozen original. It also checks eight expected create
+refusals, both stored copies, settings preservation and collision output. Hosted
+batch `39114556651` proved the historical bulk admission assertion failure,
+restored fixed source bytes and passed the current test on Windows (0.74 seconds)
+and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
+
+## Occurrence-level reconciliation
+
+The capability ledger now records 46 individually inspected implementation/test
+references with explicit remaining gaps: 906 rows are pending, one is implemented
+but not verified, and none is verified. All 907 frozen occurrence IDs, source
+hashes and the source commit are retained. A file reference or a passing broad job
+cannot establish complete parity or authorize default selection.
+
+This review found two missing pure helpers. The native collision module now
+provides the original four-field summary, counting profile occurrences rather
+than distinct IDs. Vault policy now distinguishes supported version prefixes from
+successful token authentication. General envelope recognition uses the existing
+pinned Unicode decimal catalog instead of ASCII-only digits, preserving opaque
+future envelopes rather than treating them as plaintext. Decryption, KDF rounds
+and error policy are unchanged.
+
+Ten original-derived collision cases and 832 string-envelope observations are
+prepared in existing native targets. They cover stable grouping ties, repeated
+occurrences, Unicode decimal ranges and neighboring characters, malformed prefixes
+and locked-envelope preservation. Exact historical ASCII-only source must fail the
+named classification assertion before the restored complete native suite passes.
+These new leaf cases have source review only; hosted execution is still pending.
+Dynamic/nonstring model inputs, numeric collision equality and broader vault
+compatibility remain explicitly incomplete.
 
 ## Acceptance status
 
-Source `348bac2` ran in hosted batch
-[39106678127](https://github.com/KiaroSama/Numera-Browser/actions/runs/39106678127).
+Source `2c51d1a` ran in hosted batch
+[39114556651](https://github.com/KiaroSama/Numera-Browser/actions/runs/39114556651).
 All source platforms, both complete native tiers and all eight relocated
 Windows/Linux cases passed, including replay and the four measured CLI scenarios.
 The macOS settlement-lock replacement passed: it observes the remaining

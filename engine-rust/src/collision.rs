@@ -35,3 +35,16 @@ pub fn find(profiles: &[Profile]) -> Vec<Value> {
     groups.sort_by_key(|group| std::cmp::Reverse(group["members"].as_array().map_or(0, Vec::len)));
     groups
 }
+
+pub fn summary(profiles: &[Profile]) -> Value {
+    let groups = find(profiles);
+    let clashing: usize = groups
+        .iter()
+        .map(|group| group["members"].as_array().map_or(0, Vec::len))
+        .sum();
+    let identical = groups
+        .iter()
+        .filter(|group| group["identical"] == true)
+        .count();
+    json!({"total": profiles.len(), "groups": groups.len(), "clashing": clashing, "identical": identical})
+}
