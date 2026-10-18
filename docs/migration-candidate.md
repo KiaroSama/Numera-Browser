@@ -155,7 +155,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 89 individually inspected implementation/test
+The capability ledger now records 125 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -232,19 +232,32 @@ assertion failed and fixed bytes were restored. Custom interpreter limits and
 broader manifest/path domains remain incomplete.
 
 First-run summaries now include the original `source` and `destination` fields.
-Eight prepared immutable-original observations compare complete direct/automatic
-import results, repeat decisions, binary copy bytes, destination-wins behavior and
-existing marker preservation in Unicode/spaced paths. Existing four path-independent
-fixtures are unchanged. The exact historical omission must fail the complete-summary
-assertion before current acceptance; hosted verification of this correction is pending.
+Eight immutable-original observations passed on Windows and Linux in batch
+`39162383046`, comparing complete direct/automatic import results, repeat decisions,
+binary copy bytes, destination-wins behavior and existing marker preservation in
+Unicode/spaced paths. Existing four path-independent fixtures are unchanged.
+Both systems first proved the exact historical complete-summary assertion failure,
+then restored fixed bytes before current acceptance.
 
 The additional settings/folder references document existing implementations and
 known gaps, including configuration caching, direct setter contracts, malformed
 values, contention and rollback. All 26 settings/folder rows remain pending.
 Sixteen additional extension references also remain pending: private/inlined
-helpers are nearest equivalents, not new public APIs or complete parity. Native
-containment, transport bounds, private errors and staged rollback are retained;
-frozen-source differences and missing acceptance remain explicit in the ledger.
+helpers are nearest equivalents, not new public APIs or complete parity. Thirty-six
+path/archive/first-run references bring the mapped total to 125; all 36 remain
+pending for concrete input, serialization, concurrency, recovery and error gaps.
+The data-root fixture pre-expands its tilde case, so it does not prove home
+expansion. Native containment, transport bounds, private errors and staged rollback
+are retained; missing acceptance remains explicit in the ledger.
+
+The shared atomic JSON writer now preserves the original ASCII Unicode escapes
+and Windows structural CRLF, reusing the existing UTF-16 escaping helper. Twelve
+prepared original-derived byte comparisons cover ASCII/control/BMP/astral strings,
+Unicode keys, nesting, ordering and empty documents. Exact historical byte failure
+and current acceptance remain unverified. Serialization precedes publication;
+exclusive creation, sync, rename/retry and exact byte rollback are unchanged.
+General numeric/nonfinite/surrogate domains and direct export/ZIP formatting remain
+separate incomplete contracts.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -263,10 +276,10 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `fa2bcf0` ran in hosted batch
-[39158418936](https://github.com/KiaroSama/Numera-Browser/actions/runs/39158418936).
+Source `323db4f` ran in hosted batch
+[39162383046](https://github.com/KiaroSama/Numera-Browser/actions/runs/39162383046).
 All source platforms, both native tiers and all eight relocated Windows/Linux
-cases passed. Both native tiers passed strict lint, all fourteen historical
+cases passed. Both native tiers passed strict lint, all fifteen historical
 failure/restoration proofs and current tests. macOS passed 2,829 tests with 13
 explicit platform limits. Its earlier unresolved-report reader snapshot's cause
 remains unproved: a passing replacement does not establish why it failed, and the

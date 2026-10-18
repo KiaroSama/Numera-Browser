@@ -162,6 +162,16 @@ REGRESSIONS = (
                 '43ba84c3feff481e7c9bb3949be68fc56ffdf8427d1f1a31f948ec657f8e822b',
         },
     },
+    {
+        'target': 'storage_parity',
+        'test': 'persisted_json_text_matches_original_escaping_and_platform_newlines',
+        'symptom': 'Persisted JSON bytes differ',
+        'commit': '323db4f514bc24b03d0a8ef3594bd3924769f6ba',
+        'files': {
+            'engine-rust/src/storage/atomic.rs':
+                'd02177de1a44ef62ebe74a4c2bd6bc17b588b5d2f0342d33a7eca20a4aa8c7dd',
+        },
+    },
 )
 
 
