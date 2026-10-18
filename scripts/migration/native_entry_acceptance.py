@@ -16,6 +16,7 @@ from numera.store import ProfileStore
 from numera.models import Profile
 from numera.fingerprint import generate
 from run_logging import run_log
+from replay_rollback import run as replay_rollback
 
 
 def execute(argv, env, stdin=None):
@@ -87,6 +88,7 @@ def main(candidate, log):
         if results[0] != results[1]:
             raise AssertionError(f'MCP entry mismatch: {results!r}')
         log.info('MCP ping and actual native child list matched; all owned trees settled')
+        replay_rollback(candidate, ORIGINAL, parent, env, execute, log)
     return 0
 
 

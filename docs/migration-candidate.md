@@ -60,12 +60,31 @@ projects only bounded, allowlisted lifecycle events and exception types into the
 existing CI log before temporary cleanup; raw SDK messages and command output are
 not uploaded.
 
+## Sequential replay and source rollback
+
+The existing native entry acceptance step also runs a sequential original/native
+scenario once on Windows and Linux, not once per browser. It uses the immutable
+original Python CLI and the current native executable over one fresh synthetic
+store: source creation, native edits and vault enable, source decryption and
+edits, both backup/restore directions, then source key rotation and native writes.
+The original runtime must reopen the final state. Complete profile comparisons
+permit only `updated_at` to change; identity, creation time, fingerprint and the
+synthetic proxy password must survive. Locked exports must refuse without
+changing protected store/session bytes. Both stored credential copies must remain
+encrypted; unknown fields and exact synthetic session bytes must survive restore.
+
+This scenario reuses the entry harness's per-command 15-second process ownership
+and existing 180-second wall/90-second idle owner. Only fixed operation/verdict
+metadata is logged. It is prepared, not yet verified in hosted execution. A small
+binary session marker is not a real browser database, a crash-recovery drill or
+complete migration rollback acceptance.
+
 ## Acceptance status
 
-Source `d4e7735` ran in hosted batch
-[39067053772](https://github.com/KiaroSama/Numera-Browser/actions/runs/39067053772).
-All eight relocated Windows/Linux cases passed. Windows Camoufox now passes actual
-CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
+Source `8120895` ran in hosted batch
+[39076441495](https://github.com/KiaroSama/Numera-Browser/actions/runs/39076441495).
+All source-platform, native and eight relocated Windows/Linux cases passed.
+Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier
 `CamoufoxNotInstalled` context-open failure is resolved by preserving the effective
 pre-isolation cache root. Both native tiers previously proved the historical

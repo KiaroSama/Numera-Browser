@@ -6,11 +6,11 @@ The existing Python application remains the default and rollback implementation.
 [candidate executable](migration-candidate.md), **not an installed replacement**.
 Passing library or narrow entrypoint tests does not certify a finished migration.
 
-## Current integration status — October 17, 2026
+## Current integration status — October 18, 2026
 
-The latest completed source checkpoint is `d4e7735`. Its manual hosted batch
-[39067053772](https://github.com/KiaroSama/Numera-Browser/actions/runs/39067053772)
-failed overall on October 17 at 20:45 UTC. All Linux Python 3.10/3.12/3.14,
+The latest completed source checkpoint is `8120895`. Its manual hosted batch
+[39076441495](https://github.com/KiaroSama/Numera-Browser/actions/runs/39076441495)
+failed overall on October 17 at 23:00 UTC. All Linux Python 3.10/3.12/3.14,
 macOS and four Windows source jobs passed, as did dashboard tests/types/lint/build,
 native Windows/Linux contracts, source/history credential checks, Docker and
 advisory/dependency checks. All eight relocated native application cases passed.

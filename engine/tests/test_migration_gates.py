@@ -120,6 +120,51 @@ def test_capability_gate_accepts_distinct_occurrences_but_refuses_reused_ids(tmp
     assert gate.check(path) == ['Duplicate capability: source.py::take#2']
 
 
+def test_replay_comparison_preserves_identity_secret_and_creation_time():
+    import pytest
+
+    replay = load('replay_rollback')
+    expected = {'id': 'fixture', 'created_at': 1000.0, 'updated_at': 1001.0,
+                'notes': 'original', 'fingerprint': {'seed': 42},
+                'proxy': {'password': 'synthetic'}, 'future': [42, True]}
+    observed = {**expected, 'updated_at': 1002.0}
+    replay.require_profile(observed, expected)
+    assert expected['updated_at'] == 1001.0 and observed['updated_at'] == 1002.0
+    for changed in (
+        {**observed, 'id': 'other'}, {**observed, 'created_at': 1002.0},
+        {**observed, 'notes': 'lost'}, {**observed, 'fingerprint': {'seed': 43}},
+        {**observed, 'proxy': {'password': None}},
+        {**observed, 'future': [42, 1]}, {**observed, 'future': [42.0, True]},
+    ):
+        with pytest.raises(AssertionError, match='Cross-runtime profile changed'):
+            replay.require_profile(changed, expected)
+    for timestamp in (None, True, '1002', float('nan'), float('inf'), -1.0):
+        with pytest.raises(AssertionError, match='timestamp'):
+            replay.require_profile({**observed, 'updated_at': timestamp}, expected)
+
+
+def test_replay_snapshot_tracks_exact_store_and_session_bytes(tmp_path):
+    replay = load('replay_rollback')
+    (tmp_path / 'profiles').mkdir()
+    (tmp_path / 'user-data/fixture/Default').mkdir(parents=True)
+    (tmp_path / 'logs').mkdir()
+    profile = tmp_path / 'profiles/fixture.json'
+    profile.write_bytes(b'{"id":"fixture"}\n')
+    session = tmp_path / 'user-data/fixture/Default/Cookies'
+    session.write_bytes(b'\x00\xffsynthetic session')
+    (tmp_path / 'config.json').write_bytes(b'{"future":true}')
+    (tmp_path / 'dashboard-config.json').write_bytes(b'{"folders":[]}')
+    before = replay.protected_bytes(tmp_path)
+    assert before == {'profiles/fixture.json': b'{"id":"fixture"}\n',
+                      'user-data/fixture/Default/Cookies': b'\x00\xffsynthetic session',
+                      'config.json': b'{"future":true}',
+                      'dashboard-config.json': b'{"folders":[]}'}
+    (tmp_path / 'logs/run.log').write_text('ignored operational log', encoding='utf-8')
+    assert replay.protected_bytes(tmp_path) == before
+    session.write_bytes(b'changed')
+    assert replay.protected_bytes(tmp_path) != before
+
+
 def test_frozen_reference_rejects_drift_and_keeps_current_python_modules(tmp_path, monkeypatch):
     import pytest
     baseline = load('baseline_source')
