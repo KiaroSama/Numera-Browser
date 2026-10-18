@@ -261,7 +261,12 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
     } else {
         "unsaved".into()
     };
-    let seed = number(&d["seed"], 0.0, true);
+    let seed = d["seed"]
+        .as_number()
+        .filter(|number| !number.to_string().contains(['.', 'e', 'E']))
+        .cloned()
+        .map(Value::Number)
+        .unwrap_or_else(|| number(&d["seed"], 0.0, true));
     let seed = if truth(&seed) {
         seed
     } else {

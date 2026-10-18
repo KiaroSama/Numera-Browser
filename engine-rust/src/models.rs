@@ -6,6 +6,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 fn one() -> i64 {
     1
 }
+fn zero_seed() -> serde_json::Number {
+    0.into()
+}
 fn one_float() -> serde_json::Number {
     serde_json::Number::from_f64(1.0).expect("Finite default pixel ratio")
 }
@@ -52,8 +55,8 @@ pub struct Fingerprint {
     pub languages: Vec<String>,
     #[serde(default)]
     pub is_mobile: bool,
-    #[serde(default)]
-    pub seed: i64,
+    #[serde(default = "zero_seed")]
+    pub seed: serde_json::Number,
     #[serde(default)]
     pub fonts: Vec<String>,
     #[serde(default = "one")]

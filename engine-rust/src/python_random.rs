@@ -14,6 +14,34 @@ impl PythonRandom {
         if magnitude >> 32 != 0 {
             key.push((magnitude >> 32) as u32);
         }
+        Self::from_words(&key)
+    }
+
+    pub(crate) fn from_number(seed: &serde_json::Number) -> Option<Self> {
+        if let Some(seed) = seed.as_i64() {
+            return Some(Self::new(seed));
+        }
+        let text = seed.to_string();
+        let digits = text.strip_prefix('-').unwrap_or(&text);
+        if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+            return None;
+        }
+        let mut words = vec![0u32];
+        for digit in digits.bytes() {
+            let mut carry = u64::from(digit - b'0');
+            for word in &mut words {
+                let value = u64::from(*word) * 10 + carry;
+                *word = value as u32;
+                carry = value >> 32;
+            }
+            if carry != 0 {
+                words.push(carry as u32);
+            }
+        }
+        Some(Self::from_words(&words))
+    }
+
+    fn from_words(key: &[u32]) -> Self {
         let mut rng = Self {
             state: [0; 624],
             index: 624,

@@ -166,9 +166,9 @@ pub fn apply(
     Ok(changed)
 }
 
-pub struct GenerateBatch<'a> {
+pub struct GenerateBatch<'a, S = i64> {
     pub count: usize,
-    pub seed: i64,
+    pub seed: S,
     pub oses: &'a [String],
     pub locales: &'a [String],
     pub chrome_versions: &'a [String],
@@ -179,8 +179,8 @@ pub struct GenerateBatch<'a> {
     pub tags: &'a [String],
     pub mobile: bool,
 }
-pub fn generate(
-    options: GenerateBatch<'_>,
+pub fn generate<S: Into<serde_json::Number>>(
+    options: GenerateBatch<'_, S>,
     mut identity: impl FnMut() -> io::Result<String>,
     time: f64,
 ) -> io::Result<Vec<Profile>> {
@@ -190,7 +190,9 @@ pub fn generate(
     } else {
         options.oses
     };
-    let mut rng = PythonRandom::new(options.seed);
+    let mut rng = PythonRandom::from_number(&options.seed.into()).ok_or_else(|| {
+        io::Error::new(io::ErrorKind::InvalidInput, "Batch seed must be an integer")
+    })?;
     let mut profiles = Vec::new();
     for i in 0..options.count {
         let os = oses[i % oses.len()].to_lowercase();

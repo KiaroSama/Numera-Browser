@@ -62,6 +62,16 @@ REGRESSIONS = (
                 'a787c5c83d09becd8f76aadc5892493a3fd071efdd135e15183696bd09ab19af',
         },
     },
+    {
+        'target': 'integer_seed_parity',
+        'test': 'complete_integer_seed_identities_and_commands_match_original',
+        'symptom': 'Integer seed command admission differs',
+        'commit': '348bac29ca7e522dad0c7dc64ab2e7349152f790',
+        'files': {
+            'engine-rust/src/cli/bulk_commands.rs':
+                '8f104af04b864e076e35a8ad41494ed819e84a44e9cfbf2fcf574dd8da931d5c',
+        },
+    },
 )
 
 

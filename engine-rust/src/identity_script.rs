@@ -37,7 +37,7 @@ pub fn config(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
         ("webglVendor", serde_json::to_value(&fp.webgl_vendor)?),
         ("webglRenderer", serde_json::to_value(&fp.webgl_renderer)?),
         ("webglImage", serde_json::to_value(&fp.webgl_image)?),
-        ("seed", fp.seed.into()),
+        ("seed", fp.seed.clone().into()),
         ("fonts", serde_json::to_value(&fp.fonts)?),
         ("cameras", fp.cameras.into()),
         ("microphones", fp.microphones.into()),

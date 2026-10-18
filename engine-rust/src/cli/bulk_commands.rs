@@ -45,8 +45,11 @@ impl Profiles<'_> {
             .map(str::to_owned)
             .unwrap_or_else(|| value_text(&self.config.default_engine(self.installed)));
         let seed = match args.get("seed").filter(|v| !v.is_null()) {
-            Some(_) => whole(args, "seed", 0)?,
-            None => entropy()?,
+            Some(value) => value
+                .as_number()
+                .cloned()
+                .ok_or_else(|| RepoError::Message("Batch seed must be an integer".into()))?,
+            None => entropy()?.into(),
         };
         let profiles = bulk::generate(
             bulk::GenerateBatch {

@@ -12,8 +12,8 @@ impl fmt::Display for GenerationError {
 impl Error for GenerationError {}
 
 #[derive(Default)]
-pub struct GenerateOptions<'a> {
-    pub seed: i64,
+pub struct GenerateOptions<'a, S = i64> {
+    pub seed: S,
     pub os: Option<&'a str>,
     pub locale: Option<&'a str>,
     pub country: Option<&'a str>,
@@ -95,11 +95,15 @@ pub fn user_agent(
 }
 
 /// Explicit seed is required at this pure seam; entropy belongs at the CLI boundary.
-pub fn generate(options: GenerateOptions<'_>) -> Result<Fingerprint, GenerationError> {
+pub fn generate<S: Into<serde_json::Number>>(
+    options: GenerateOptions<'_, S>,
+) -> Result<Fingerprint, GenerationError> {
+    let seed = options.seed.into();
     let root = catalog().map_err(|_| GenerationError("Cannot parse embedded device catalog"))?;
     let d = &root["catalog"];
     let w = &d["WEIGHTS"];
-    let mut rng = PythonRandom::new(options.seed);
+    let mut rng = PythonRandom::from_number(&seed)
+        .ok_or(GenerationError("Fingerprint seed must be an integer"))?;
     let os = match options.os.filter(|v| !v.is_empty()) {
         Some(os) => os.to_lowercase(),
         None if options.mobile => {
@@ -195,7 +199,7 @@ pub fn generate(options: GenerateOptions<'_>) -> Result<Fingerprint, GenerationE
     Fingerprint::from_record(&json!({"os":os,"user_agent":ua,"platform":d["NAV_PLATFORM"][&os],"ch_platform":d["CH_PLATFORM"][&os],
         "chrome_version":chrome,"screen_width":sw,"screen_height":sh,"viewport_width":vw,"viewport_height":vh,
         "hardware_concurrency":cores,"device_memory":memory,"webgl_vendor":gpu[0],"webgl_renderer":gpu[1],
-        "locale":locale,"timezone":locales[&locale][0],"languages":locales[&locale][1],"is_mobile":mobile,"seed":options.seed,
+        "locale":locale,"timezone":locales[&locale][0],"languages":locales[&locale][1],"is_mobile":mobile,"seed":seed,
         "fonts":fonts,"cameras":cameras,"microphones":microphones,"speakers":speakers,"os_version":version,"device_model":model,
         "max_touch_points":touch,"device_pixel_ratio":dpr})).map_err(|_| GenerationError("Generated identity is invalid"))
 }

@@ -1,6 +1,6 @@
 use crate::models::Profile;
 use serde_json::{Value, json};
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 
 fn signals(profile: &Profile) -> Value {
     let fp = &profile.fingerprint;
@@ -28,9 +28,9 @@ pub fn find(profiles: &[Profile]) -> Vec<Value> {
         buckets[index].1.push(profile);
     }
     let mut groups = buckets.into_iter().filter(|(_, members)| members.len() > 1).map(|(signals, members)| {
-        let seeds = members.iter().map(|profile| profile.fingerprint.seed).collect::<BTreeSet<_>>();
+        let identical = members.iter().all(|profile| profile.fingerprint.seed == members[0].fingerprint.seed);
         json!({"members":members.iter().map(|profile| json!({"id":profile.id,"name":profile.name,"seed":profile.fingerprint.seed})).collect::<Vec<_>>(),
-            "identical":seeds.len() == 1,"signals":signals})
+            "identical":identical,"signals":signals})
     }).collect::<Vec<_>>();
     groups.sort_by_key(|group| std::cmp::Reverse(group["members"].as_array().map_or(0, Vec::len)));
     groups

@@ -110,10 +110,11 @@ Both Windows and Linux proved that the same 26-case original-source comparison
 fails on the historical implementation, then passes after fixed-byte restoration.
 It checks results, records and each file's own byte-preservation verdict.
 
-Linux completed all four scenarios with seven measured pairs each: both time and
-memory ranges showed no regression. The retained artifact binds the samples to
-source `8cab68a` and hosted generation `39099198902`. This is foreground CLI
-coverage only, not API/browser or complete migration performance acceptance.
+Windows and Linux completed all four scenarios with seven measured pairs each:
+both time and memory ranges showed no regression within each host. The retained
+artifacts bind the samples to source `348bac2`, hosted generation `39106678127`
+and each optimized binary's hash. This is foreground CLI coverage only, not
+API/browser or complete migration performance acceptance.
 
 Creation explicitly sets the default engine, so its settings write is checked
 against the complete expected JSON document separately from unrelated byte
@@ -130,17 +131,32 @@ successful natural settlement is included in elapsed time before peak accounting
 Emergency cleanup cannot manufacture an accepted sample. The job/process handles,
 peak metric and comparison thresholds are unchanged. Deterministic controls cover
 transient occupation, persistent active/unknown state and expired/late observations,
-including a required assertion failure on exact historical observer bytes. This
-correction awaits hosted verification; the physical cause of the earlier occupied
-or unknown job observation remains unestablished. No Windows API repair is claimed.
+including a required assertion failure on exact historical observer bytes. These
+controls and both complete benchmark tiers passed in the replacement hosted run;
+the physical cause of the earlier occupied or unknown job observation remains
+unestablished. No Windows API repair is claimed.
+
+## Integer seed compatibility
+
+The next native correction preserves complete signed integer seed values during
+pure generation, model serialization, dashboard numeric conversion and init-script
+configuration. MT19937 initialization consumes every 32-bit magnitude word rather
+than truncating at `i64`; no new random generator or dependency is introduced.
+
+This does not widen write admission. The original single-profile create refuses
+seeds outside `0..2^53` before persistence, while bulk creation uses its input seed
+only to choose bounded per-profile seeds. The prepared differential test checks
+26 command outcomes and 14 complete identities, including a pure seed longer than
+624 words, against the frozen original. It also checks refusal messages, both
+stored copies, settings preservation and collision output. These new cases await
+hosted compilation/execution; source review is not a passing test result.
 
 ## Acceptance status
 
-Source `8bcf23f` ran in hosted batch
-[39102366377](https://github.com/KiaroSama/Numera-Browser/actions/runs/39102366377).
-All source platforms, Linux's complete native tier and all eight relocated
-Windows/Linux cases passed. Windows passed native contracts, replay, optimized
-build and earlier creation samples, then failed the natural-tree-empty observation.
+Source `348bac2` ran in hosted batch
+[39106678127](https://github.com/KiaroSama/Numera-Browser/actions/runs/39106678127).
+All source platforms, both complete native tiers and all eight relocated
+Windows/Linux cases passed, including replay and the four measured CLI scenarios.
 The macOS settlement-lock replacement passed: it observes the remaining
 acquisition budget deterministically while retaining existing real-lock
 integration controls; no production deadline is increased.

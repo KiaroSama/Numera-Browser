@@ -111,15 +111,16 @@ impl Profiles<'_> {
         let text = |key: &str| args.get(key).and_then(Value::as_str);
         let proxy = parse_proxy(text("proxy"), text("country"))?;
         let seed = match args.get("seed").filter(|v| !v.is_null()) {
-            Some(value) => value.as_i64().ok_or_else(|| {
-                RepoError::Message("Fingerprint seed is outside the native supported range".into())
-            })?,
+            Some(value) => value
+                .as_number()
+                .cloned()
+                .ok_or_else(|| RepoError::Message("Fingerprint seed must be an integer".into()))?,
             None => loop {
                 let mut bytes = [0u8; 4];
                 getrandom::fill(&mut bytes).map_err(std::io::Error::other)?;
                 let seed = u32::from_ne_bytes(bytes) & 0x7fff_ffff;
                 if seed != 0 {
-                    break i64::from(seed);
+                    break serde_json::Number::from(seed);
                 }
             },
         };

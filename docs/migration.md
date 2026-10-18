@@ -8,17 +8,18 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 18, 2026
 
-The latest completed source checkpoint is `8bcf23f`. Its manual hosted batch
-[39102366377](https://github.com/KiaroSama/Numera-Browser/actions/runs/39102366377)
-failed overall on October 18 at 06:13 UTC. All source platforms, the Linux native
-tier, eight relocated cases, dashboard and other nondependent checks passed.
+The latest completed source checkpoint is `348bac2`. Its manual hosted batch
+[39106678127](https://github.com/KiaroSama/Numera-Browser/actions/runs/39106678127)
+failed overall on October 18 at 07:29 UTC. All source platforms, both complete
+native tiers, eight relocated cases, dashboard and other nondependent checks passed.
 Encrypted-read historical-failure/restoration/current-pass proof remains verified
 on both native platforms. The deterministic macOS lock-budget correction passed.
-Windows passed creation settings accounting until a later native observation
-failed its single immediate natural-tree-empty query after successful leader exit.
-The [observer correction](migration-candidate.md#representative-release-performance)
-uses the remaining existing deadline and includes natural settlement in elapsed
-time; its hosted verification is pending. No forced-cleanup result is accepted.
+All four foreground CLI scenarios completed seven alternating measured pairs on
+both systems, with disjoint lower native time and memory ranges. These are bounded
+CLI results, not API/browser or full migration acceptance. The
+[observer correction](migration-candidate.md#representative-release-performance)
+passed its historical-failure and natural-settlement controls within the unchanged
+deadline. No forced-cleanup result is accepted; the earlier query's cause is unproved.
 Windows Camoufox now passes CLI/MCP cookie persistence and HTTP/auth/dashboard,
 restart/idempotence/stop with 24 complete, clean ownership units. Binding its
 existing cache before synthetic home isolation resolves the previous open failure;
