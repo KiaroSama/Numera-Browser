@@ -8,14 +8,14 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 18, 2026
 
-The latest completed source checkpoint is `195e15e`. Its manual hosted batch
-[39154868069](https://github.com/KiaroSama/Numera-Browser/actions/runs/39154868069)
-failed overall on October 18 at 18:57 UTC. All source platforms, both native tiers,
-eight relocated cases and dashboard checks passed. Both native tiers proved the
-historical extension-resource UTF-8 failure, restored fixed bytes and passed all
-24 current refusal/result cases. macOS passed, but its prior reader snapshot's
-cause remains unproved. CodeQL and required verification still failed. Icon ranking
-has 136 prepared cases; its correction and separated build/proof phases await CI.
+The latest completed source checkpoint is `fa2bcf0`. Its manual hosted batch
+[39158418936](https://github.com/KiaroSama/Numera-Browser/actions/runs/39158418936)
+failed overall at 19:42 UTC. Source, both native tiers, eight relocated cases and
+dashboard checks passed. Both native tiers proved all 14 historical failures,
+restored fixed bytes and passed the current suite, including 136 icon-ranking
+observations. Build/proof and current-test phases stayed within unchanged bounds.
+macOS passed, but its prior reader snapshot's cause remains unproved.
+CodeQL still failed. Eight complete first-run comparisons await hosted proof.
 The [candidate status](migration-candidate.md) records 89 mapped references; broader acceptance is open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.

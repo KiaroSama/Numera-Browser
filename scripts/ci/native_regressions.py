@@ -152,6 +152,16 @@ REGRESSIONS = (
                 '640b01c025fe2df3f58c927f05a66042dbf4eb8af5e492cc0ffd616b6afce570',
         },
     },
+    {
+        'target': 'first_run_parity',
+        'test': 'complete_first_run_summaries_match_original_paths_and_copy_results',
+        'symptom': 'Complete first-run summary differs',
+        'commit': 'fa2bcf0198323354420f109ad6c947d54fabcb29',
+        'files': {
+            'engine-rust/src/storage/first_run.rs':
+                '43ba84c3feff481e7c9bb3949be68fc56ffdf8427d1f1a31f948ec657f8e822b',
+        },
+    },
 )
 
 

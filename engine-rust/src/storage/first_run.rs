@@ -3,7 +3,7 @@ use serde::Serialize;
 use std::{
     fs::{self, File, FileTimes, OpenOptions},
     io,
-    path::Path,
+    path::{Path, PathBuf},
     time::Duration,
 };
 
@@ -22,6 +22,8 @@ const ITEMS: &[&str] = &[
 
 #[derive(Default, Serialize)]
 pub struct Summary {
+    pub source: PathBuf,
+    pub destination: PathBuf,
     pub copied: Vec<String>,
     pub skipped: Vec<String>,
     pub failed: Vec<String>,
@@ -113,7 +115,11 @@ fn merge_dir(source: &Path, destination: &Path, depth: usize) -> io::Result<(usi
 
 pub fn import_from(source: &Path, destination: &Path) -> io::Result<Summary> {
     fs::create_dir_all(destination)?;
-    let mut summary = Summary::default();
+    let mut summary = Summary {
+        source: source.to_owned(),
+        destination: destination.to_owned(),
+        ..Summary::default()
+    };
     for name in ITEMS {
         let src = source.join(name);
         let dst = destination.join(name);

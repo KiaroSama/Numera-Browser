@@ -227,8 +227,16 @@ Icon ranking now uses normalized signed decimal magnitudes instead of `i128`.
 This preserves large values, Unicode decimal digits, underscores, stable numeric
 ties and the frozen interpreter's default 4,300-digit limit without a new numeric
 dependency. One hundred thirty-six original-derived public-result observations
-and an exact historical failure proof are prepared; hosted verification is pending.
-Custom interpreter limits and broader manifest/path domains remain incomplete.
+passed on both systems in batch `39158418936`, after the exact historical ranking
+assertion failed and fixed bytes were restored. Custom interpreter limits and
+broader manifest/path domains remain incomplete.
+
+First-run summaries now include the original `source` and `destination` fields.
+Eight prepared immutable-original observations compare complete direct/automatic
+import results, repeat decisions, binary copy bytes, destination-wins behavior and
+existing marker preservation in Unicode/spaced paths. Existing four path-independent
+fixtures are unchanged. The exact historical omission must fail the complete-summary
+assertion before current acceptance; hosted verification of this correction is pending.
 
 The additional settings/folder references document existing implementations and
 known gaps, including configuration caching, direct setter contracts, malformed
@@ -247,16 +255,19 @@ owner; each historical assertion keeps its 180-second wall/90-second idle owner.
 The complete current test phase retains all discovered targets, two workers and
 600-second wall/120-second idle limits. Cargo progress is projected without raw
 build-script/environment/path records. No timeout is increased, proof skipped or
-heartbeat added. Hosted phase-order, failure-cleanup and timing evidence is pending;
-no compilation speedup or cold-cache completion is claimed.
+heartbeat added. Batch `39158418936` passed phase-order/failure-cleanup controls
+and all fourteen historical proofs on both systems. Build/proof and current-test
+owners took 180.168/177.586 seconds on Linux and 382.926/208.296 seconds on Windows,
+respectively, with clean trees. These observations are not repeated comparable
+speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `195e15e` ran in hosted batch
-[39154868069](https://github.com/KiaroSama/Numera-Browser/actions/runs/39154868069).
+Source `fa2bcf0` ran in hosted batch
+[39158418936](https://github.com/KiaroSama/Numera-Browser/actions/runs/39158418936).
 All source platforms, both native tiers and all eight relocated Windows/Linux
-cases passed. Both native tiers passed strict lint, all thirteen historical
-failure/restoration proofs and current tests. macOS passed 2,825 tests with 13
+cases passed. Both native tiers passed strict lint, all fourteen historical
+failure/restoration proofs and current tests. macOS passed 2,829 tests with 13
 explicit platform limits. Its earlier unresolved-report reader snapshot's cause
 remains unproved: a passing replacement does not establish why it failed, and the
 failure-only phase projection was not exercised by this pass. CodeQL and dependent
