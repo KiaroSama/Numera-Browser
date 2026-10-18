@@ -243,15 +243,39 @@ def test_failed_report_cleanup_is_not_released(tmp_path, monkeypatch):
     assert not manager.live()
 
 
-def test_no_unbounded_wait_for_settlement_owner():
-    manager=helpers.HelperManager(); h=manager.admit(('locked',));h.finish.acquire()
+def test_no_unbounded_wait_for_settlement_owner(monkeypatch):
+    from types import SimpleNamespace
+
+    manager = helpers.HelperManager()
+    helper = manager.admit(('locked',))
+    attempts = []
+
+    class HeldLock:
+        def acquire(self, *, timeout):
+            attempts.append(timeout)
+            assert timeout == pytest.approx(.03), 'Acquisition did not use the remaining budget'
+            return False
+
+        def release(self):
+            pytest.fail('Settlement released a lock it never acquired')
+
+    held = HeldLock()
+    with pytest.raises(TypeError):
+        held.acquire()
+    with pytest.raises(AssertionError, match='remaining budget'):
+        held.acquire(timeout=.05)
+    attempts.clear()
+    helper.finish = held
+    clock = iter((0.0, .02))
     try:
-        start=time.monotonic()
-        assert not manager.settle(h,deadline=.05)
-        assert time.monotonic()-start < .15
-        assert h in manager.live()
+        with monkeypatch.context() as patch:
+            patch.setattr(helpers, 'time', SimpleNamespace(monotonic=lambda: next(clock)))
+            assert manager.settle(helper, deadline=.05) is False
+        assert attempts == pytest.approx([.03])
+        assert helper in manager.live() and not helper.resolved.is_set()
+        assert helper.state == helpers.STARTING and helper.straggler
     finally:
-        h.finish.release();manager.fail_start(h)
+        manager.fail_start(helper)
 
 
 def _assert_fixture_process_ended(pid, token, deadline=5.0):

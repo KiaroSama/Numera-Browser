@@ -117,6 +117,15 @@ def observation(candidate, original, parent, template, env, runtime, scenario, p
             if exact_json(stored) != exact_json(profile):
                 raise ValueError('Measured creation did not persist its returned profile')
             after = protected_bytes(root)
+            # --engine also writes settings; Windows source text I/O uses CRLF.
+            previous = json.loads(before.get('config.json', b'{}'))
+            settings = json.loads(after.get('config.json', b'null'))
+            if (not isinstance(previous, dict)
+                    or exact_json(settings) != exact_json({**previous, 'default_engine': 'playwright'})):
+                raise ValueError('Measured creation changed settings beyond its requested engine')
+            after['config.json'] = before.get('config.json', b'')
+            if 'config.json' not in before:
+                del after['config.json']
             for relative in (f'profiles/{profile["id"]}.json', f'dashboard/{profile["id"]}.json'):
                 if relative in before or relative not in after:
                     raise ValueError('Measured creation overwrote or omitted a profile copy')

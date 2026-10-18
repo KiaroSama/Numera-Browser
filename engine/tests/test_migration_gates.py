@@ -296,12 +296,17 @@ def test_benchmark_creation_compares_new_dashboard_content_not_just_existence(tm
     benchmark = load('benchmark')
     template = tmp_path / 'template'
     template.mkdir()
+    config = {'default_engine': 'playwright', 'future': {'items': [42, True]}}
+    (template / 'config.json').write_bytes(json.dumps(config, indent=2).replace('\n', '\r\n').encode('utf-8'))
+    settings = [config]
+    newline = ['\n']
     dashboard = [{'id': 'new', 'name': 'Measured creation', '_rev': 1, '_created': 1000.0}]
     lock_content = [b'']
     extra_lock = [False]
 
     def observe(argv, env, **kwargs):
         root = Path(argv[argv.index('--data-dir') + 1])
+        (root / 'config.json').write_bytes(json.dumps(settings[0], indent=2).replace('\n', newline[0]).encode('utf-8'))
         profile = {'id': 'new', 'name': 'Measured creation', 'created_at': 1000.0, 'updated_at': 1001.0}
         for directory, record in (('profiles', profile), ('dashboard', dashboard[0])):
             (root / directory).mkdir()
@@ -319,6 +324,15 @@ def test_benchmark_creation_compares_new_dashboard_content_not_just_existence(tm
     monkeypatch.setattr(benchmark, 'execute', observe)
     args = (tmp_path / 'candidate', tmp_path, tmp_path, template, {}, 'native', 'create', '')
     _, expected = benchmark.observation(*args)
+    newline[0] = '\r\n'
+    assert benchmark.observation(*args)[1] == expected
+    for changed in ({**config, 'default_engine': 'camoufox'},
+                    {**config, 'future': {'items': [42, 1]}},
+                    {'default_engine': 'playwright'}, {**config, 'unexpected': True}, None):
+        settings[0] = changed
+        with pytest.raises(ValueError, match='settings beyond its requested engine'):
+            benchmark.observation(*args)
+    settings[0] = config
     dashboard[0] = {**dashboard[0], 'name': 'lost identity'}
     _, changed = benchmark.observation(*args)
     assert changed != expected, 'Benchmark discarded the new dashboard fields before comparison'
