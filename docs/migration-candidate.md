@@ -182,22 +182,30 @@ Rust's direct integer parser, although HTTP validation and conversion already us
 the compatible decimal-text helper. The core branch now reuses that helper without
 changing bounds, diagnostic wording or the shared parser. A 46-input frozen-original
 comparison covers core and HTTP verdicts for Unicode/underscore/sign grammar,
-boundaries and invalid values. Hosted batch `39130990824` proved the exact
-historical assertion failure and fixed-byte restoration on both systems; the
-current test passed on Linux. Windows timed out during the following fixed-tree
-compilation before current tests ran, so its fixed-pass evidence remains pending.
+boundaries and invalid values. Hosted batch `39144820589` proved the exact
+historical assertion failure, fixed-byte restoration and current test success on
+both systems. This closes the earlier missing Windows fixed-pass evidence;
+broader screen/model compatibility remains incomplete.
 
 The next folder correction preserves Python boundary trimming for U+001C–U+001F
 in native create, rename, delete and reassignment. One original-source observer
 compares 96 operation cases, returned lists/refusals, parsed metadata/profile state
 and each file's byte-preservation verdict. Exact historical failure and current
-hosted acceptance are pending; locks, rollback and serialization are unchanged.
+acceptance passed on both systems in batch `39144820589`; locks, rollback and
+serialization are unchanged.
 
 Folder metadata and profile readers now reject invalid UTF-8 before parsing JSON,
 rather than treating undecodable bytes as empty metadata or a skippable profile.
 Forty original-derived operation cases compare admission, resulting records and
 exact input-byte preservation on refusal. Valid UTF-8 malformed-JSON fallback is
-unchanged. Historical failure and current hosted verification remain pending.
+unchanged. Historical failure and current verification passed on both systems
+in batch `39144820589`.
+
+Nonempty settings mutations now also reject invalid UTF-8 before JSON fallback,
+rather than overwriting the damaged file with a fresh object. Eighteen
+original-derived cases and an exact historical failure proof are prepared;
+hosted verification is pending. Read/cache/direct-setter behavior is unchanged
+and its known differences remain open.
 
 The additional settings/folder references document existing implementations and
 known gaps, including configuration caching, direct setter contracts, malformed
@@ -209,18 +217,22 @@ Cargo renders compiler diagnostics normally. Raw build-script/environment/path
 records are discarded. Phase ordering, all discovered targets, two workers and
 the 600-second wall/120-second idle limits remain unchanged; no heartbeat or
 increased timeout masks inactivity. A single compilation unit silent for more
-than 120 seconds still fails. Hosted proof of this correction remains pending.
+than 120 seconds still fails. Batch `39144820589` recorded actual artifact events
+and completed the full test phase on Linux in 323 seconds and Windows in 404
+seconds, within the unchanged limits. This is not a compilation speedup claim.
 
 ## Acceptance status
 
-Source `86c0084` ran in hosted batch
-[39140064540](https://github.com/KiaroSama/Numera-Browser/actions/runs/39140064540).
-All source platforms and all eight relocated Windows/Linux cases passed. Both
-native jobs compiled, then strict lint rejected a literal invisible test character
-before historical or current tests ran. Numeric construction now preserves the
-same 12 marker scalars without suppressing lint. Native folder and real-progress
-verification remains pending; the earlier `bb82941` Windows compile timeout is
-not yet resolved by runtime evidence. Earlier complete results remain historical.
+Source `1c0d77d` ran in hosted batch
+[39144820589](https://github.com/KiaroSama/Numera-Browser/actions/runs/39144820589).
+Both native tiers passed strict lint, all ten historical failure/restoration
+proofs and current tests. All eight relocated Windows/Linux cases passed. The
+original macOS tier failed one unresolved-report reader snapshot: `helper-stderr`
+was still present, while the worker exited without supervisor rescue. The failure
+output abbreviated existing phase timings and flags; a failure-only full JSON
+projection is prepared without changing assertions, waits or production behavior.
+Its root cause remains unproved. CodeQL and dependent required verification also
+failed; distribution, promotion and publication were skipped.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier
 `CamoufoxNotInstalled` context-open failure is resolved by preserving the effective

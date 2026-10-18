@@ -8,14 +8,15 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 18, 2026
 
-The latest completed source checkpoint is `86c0084`. Its manual hosted batch
-[39140064540](https://github.com/KiaroSama/Numera-Browser/actions/runs/39140064540)
-failed overall on October 18 at 15:34 UTC. All source platforms, eight relocated
-cases and dashboard checks passed. Both native jobs compiled but strict lint
-rejected an invisible character in a raw-string test fixture before tests ran.
-The correction preserves the exact 12 marker scalars through numeric construction;
-no lint rule or case is removed. The [candidate status](migration-candidate.md)
-describes pending progress/folder proof and 73 mapped references; broader acceptance is open.
+The latest completed source checkpoint is `1c0d77d`. Its manual hosted batch
+[39144820589](https://github.com/KiaroSama/Numera-Browser/actions/runs/39144820589)
+failed overall on October 18 at 16:40 UTC. Both native tiers passed strict lint,
+all ten historical-failure/restoration proofs and current tests; eight relocated
+cases and dashboard checks passed. macOS failed one unresolved-report reader
+snapshot, whose production cause remains unproved; CodeQL and required verification
+also failed. The next settings UTF-8 refusal and failure-only reader diagnostics
+are prepared, not runtime-verified. The [candidate status](migration-candidate.md)
+describes the narrow native evidence and 73 mapped references; broader acceptance is open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

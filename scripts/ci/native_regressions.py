@@ -112,6 +112,16 @@ REGRESSIONS = (
                 'ae1558078e57a802b067aa17fcc65ccd960fe8bf38c8242a3f2335842bb6962a',
         },
     },
+    {
+        'target': 'config_parity',
+        'test': 'malformed_settings_text_refuses_without_replacing_source_bytes',
+        'symptom': 'Settings text mutation admission differs',
+        'commit': '1c0d77d23ec72aaa67f69d680378ebd8e6fc89d7',
+        'files': {
+            'engine-rust/src/storage/config.rs':
+                'a803a3e5c3ce12cae8b4200e4f54ae5dec1a05e38d3cac5b99e966f360180c01',
+        },
+    },
 )
 
 

@@ -253,6 +253,9 @@ Path(sys.argv[5]).write_text(json.dumps(result),encoding='utf-8')
     assert observed['elapsed'] < 6.4, observed
     assert observed['cleanup_elapsed'] < 1.0, observed
     assert observed['retained'] == 1, observed
+    if observed['readers']:
+        print(json.dumps({'readers': observed['readers'], 'phases': observed.get('phases', [])},
+                         sort_keys=True), flush=True)
     assert observed['readers'] == [], observed
 
 

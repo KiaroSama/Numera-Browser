@@ -95,10 +95,18 @@ impl ConfigStore {
         let path = self.root.join("config.json");
         let file_lock = DataLock::for_file(&path)?;
         let _file = file_lock.acquire(Duration::from_secs_f64(limit))?;
-        let current = fs::read(&path)
-            .ok()
-            .and_then(|bytes| serde_json::from_slice::<Value>(&bytes).ok())
-            .unwrap_or_else(|| Value::Object(Map::new()));
+        let current = match fs::read(&path) {
+            Ok(bytes) => {
+                let text = std::str::from_utf8(&bytes).map_err(|_| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Stored settings are not UTF-8; nothing was written",
+                    )
+                })?;
+                serde_json::from_str::<Value>(text).unwrap_or_else(|_| Value::Object(Map::new()))
+            }
+            Err(_) => Value::Object(Map::new()),
+        };
         let mut current = match current {
             Value::Object(value) => value,
             _ => return Err(ConfigError::WrongContainer("AttributeError")),
