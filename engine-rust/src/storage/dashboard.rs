@@ -16,7 +16,27 @@ use crate::{
     },
 };
 use serde_json::{Map, Value};
-use std::{fs, io, path::PathBuf, time::Duration};
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+    time::Duration,
+};
+
+fn read_text(path: &Path) -> io::Result<String> {
+    fs::read_to_string(path).map_err(|error| {
+        if error.kind() == io::ErrorKind::InvalidData {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "Stored dashboard file {} is not valid UTF-8",
+                    path.display()
+                ),
+            )
+        } else {
+            error
+        }
+    })
+}
 
 pub struct DashboardStore {
     pub(crate) root: PathBuf,
@@ -30,14 +50,14 @@ impl DashboardStore {
         }
     }
     pub fn get_meta(&self) -> Result<Value, RepoError> {
-        let bytes = match fs::read(self.root.join("dashboard-config.json")) {
-            Ok(bytes) => bytes,
+        let text = match read_text(&self.root.join("dashboard-config.json")) {
+            Ok(text) => text,
             Err(error) if error.kind() == io::ErrorKind::NotFound => {
                 return Ok(serde_json::json!({}));
             }
             Err(error) => return Err(error.into()),
         };
-        Ok(serde_json::from_slice(&bytes).unwrap_or_else(|_| serde_json::json!({})))
+        Ok(serde_json::from_str(&text).unwrap_or_else(|_| serde_json::json!({})))
     }
     pub fn set_meta(&self, metadata: Value) -> Result<Value, RepoError> {
         let path = self.root.join("dashboard-config.json");
@@ -67,12 +87,12 @@ impl DashboardStore {
         let lock = DataLock::transaction(&self.root)?;
         let _guard = lock.acquire(Duration::from_secs(30))?;
         self.repo.require_settled()?;
-        let bytes = match fs::read(self.repo.path(id, "dashboard")?) {
-            Ok(bytes) => bytes,
+        let text = match read_text(&self.repo.path(id, "dashboard")?) {
+            Ok(text) => text,
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
             Err(error) => return Err(error.into()),
         };
-        let record = serde_json::from_slice(&bytes).map_err(|_| {
+        let record = serde_json::from_str(&text).map_err(|_| {
             RepoError::InvalidRecord("Stored dashboard profile cannot be decoded".into())
         })?;
         Ok(Some(self.decrypted(record)))
@@ -101,7 +121,7 @@ impl DashboardStore {
         let mut records = Vec::new();
         for path in paths {
             if path.extension().is_some_and(|ext| ext == "json")
-                && let Ok(record) = serde_json::from_slice::<Value>(&fs::read(path)?)
+                && let Ok(record) = serde_json::from_str::<Value>(&read_text(&path)?)
             {
                 records.push(self.decrypted(record));
             }

@@ -207,6 +207,16 @@ REGRESSIONS = (
                 '949ec2682b55d039eaa915d8c83298dbaa0adc7f89df4d2d7c1495836c071808',
         },
     },
+    {
+        'target': 'dashboard_store_parity',
+        'test': 'dashboard_readers_preserve_strict_text_admission_and_original_fallbacks',
+        'symptom': 'Dashboard text admission differs',
+        'commit': 'e2437340a4ea92a0f84a4bb15a0a31b8f07c9b78',
+        'files': {
+            'engine-rust/src/storage/dashboard.rs':
+                'c38a06af763503c9dbf9b74068a48c82527f82c7b5a0d65551d49ebbb1cd1f0a',
+        },
+    },
 )
 
 
