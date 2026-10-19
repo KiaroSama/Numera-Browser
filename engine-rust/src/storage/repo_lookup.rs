@@ -28,6 +28,19 @@ impl ProfileRepo {
         Ok(ids)
     }
 
+    /// Report stored differences without repairing or decrypting either copy in place.
+    pub fn divergence(&self, id: &str, now: f64) -> Result<Vec<String>, RepoError> {
+        if safe_id(id).is_err() {
+            return Ok(Vec::new());
+        }
+        let lock = DataLock::transaction(&self.root)?;
+        let _guard = lock.acquire(Duration::from_secs(30))?;
+        self.require_settled()?;
+        let engine = Self::raw(&self.path(id, "profiles")?)?.unwrap_or(Value::Null);
+        let dashboard = Self::raw(&self.path(id, "dashboard")?)?.unwrap_or(Value::Null);
+        Ok(self.disagreements(&engine, &dashboard, now, usize::MAX))
+    }
+
     /// Credential-aware read never hands an encrypted blob to a browser as a password.
     pub fn get(&self, id: &str) -> Result<Option<Profile>, RepoError> {
         if safe_id(id).is_err() {

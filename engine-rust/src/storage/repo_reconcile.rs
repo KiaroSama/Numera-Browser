@@ -2,6 +2,7 @@
 use super::repo::ProfileRepo;
 use crate::conversion::{to_engine, truth};
 use serde_json::{Map, Value};
+use std::collections::BTreeSet;
 
 fn numeric(value: &Value) -> Option<(String, bool)> {
     match value {
@@ -93,25 +94,37 @@ impl ProfileRepo {
     }
 
     pub(crate) fn read_disagrees(&self, engine: &Value, dashboard: &Value, now: f64) -> bool {
+        !self.disagreements(engine, dashboard, now, 1).is_empty()
+    }
+
+    pub(crate) fn disagreements(
+        &self,
+        engine: &Value,
+        dashboard: &Value,
+        now: f64,
+        limit: usize,
+    ) -> Vec<String> {
+        let mut out = Vec::new();
         if !truth(engine) || !truth(dashboard) {
-            return false;
+            return out;
         }
         let Some(engine) = engine.as_object() else {
-            return false;
+            return out;
         };
         let Ok(profile) = to_engine(dashboard, now) else {
-            return false;
+            return out;
         };
         let Ok(Value::Object(fresh)) = serde_json::to_value(profile) else {
-            return false;
+            return out;
         };
-        engine.keys().chain(fresh.keys()).any(|key| {
+        let keys: BTreeSet<_> = engine.keys().chain(fresh.keys()).collect();
+        for key in keys {
             if ["id", "created_at", "updated_at"].contains(&key.as_str()) {
-                return false;
+                continue;
             }
             let left = engine.get(key).unwrap_or(&Value::Null);
             let right = fresh.get(key).unwrap_or(&Value::Null);
-            match key.as_str() {
+            let changed = match key.as_str() {
                 "fingerprint" => !equal(
                     &without(left, &["viewport_width", "viewport_height"]),
                     &without(right, &["viewport_width", "viewport_height"]),
@@ -119,7 +132,10 @@ impl ProfileRepo {
                 "proxy" => {
                     if self.secret_disagrees(left["password"].as_str(), right["password"].as_str())
                     {
-                        return true;
+                        out.push("proxy.password".into());
+                        if out.len() == limit {
+                            return out;
+                        }
                     }
                     let left = without(left, &["password"]);
                     let right = without(right, &["password"]);
@@ -129,7 +145,14 @@ impl ProfileRepo {
                     )
                 }
                 _ => !equal(left, right),
+            };
+            if changed {
+                out.push(key.clone());
+                if out.len() == limit {
+                    return out;
+                }
             }
-        })
+        }
+        out
     }
 }

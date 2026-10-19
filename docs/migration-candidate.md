@@ -155,7 +155,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 161 individually inspected implementation/test
+The capability ledger now records 223 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -292,8 +292,25 @@ Standalone dashboard `get`, `list` and `get_meta` now have a separate strict-tex
 repair. They retain their individual missing-file, I/O and valid-UTF-8 JSON-syntax
 policies, ordering and decryption. Eighteen frozen-source observations cover invalid
 text, valid Unicode, malformed JSON and missing files, with healthy listing neighbors
-and exact byte preservation. Historical-failure and fixed-current proof are pending;
-this does not establish broader dynamic/error-domain or full migration acceptance.
+and exact byte preservation. Batch `39223897493` proved the historical refusal and
+fixed-current success on both systems; broader dynamic/error-domain acceptance is incomplete.
+
+Thirty-nine repository and 23 dashboard-store references bring the mapped total to
+223, all 62 newly mapped rows pending. References identify the nearest implementation
+and test, not complete APIs: native batch patching is not the source single-edit API.
+Optional engine-free dashboard construction, legacy mirror behavior, dynamic records,
+faults and concurrency remain explicit gaps. ID-validated path joins do not establish
+physical or symlink containment.
+
+Public native `ProfileRepo::divergence` now reports the complete ordered field list,
+including `proxy.password` before `proxy`, without repairing either stored copy.
+It reuses credential-aware and Python-compatible comparisons, excludes identity,
+timestamps and viewport-only differences, and retains root/recovery/text guards.
+One frozen-original observer prepares 47 comparisons covering full lists, numeric
+and Unicode ordering, proxy normalization, encrypted states, malformed text/JSON
+and missing records, with exact input-byte preservation. Hosted acceptance is pending;
+the ordinary reader still stops after its first disagreement. No historical runtime
+failure is invented for an API that did not previously exist.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -312,16 +329,16 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `e243734` ran in hosted batch
-[39217826831](https://github.com/KiaroSama/Numera-Browser/actions/runs/39217826831).
+Source `286a077` ran in hosted batch
+[39223897493](https://github.com/KiaroSama/Numera-Browser/actions/runs/39223897493).
 All source platforms, both native tiers, eight relocated cases and current native suites
-passed; strict lint and 17 Linux/18 Windows historical failure/restoration proofs passed.
-All four CLI time/peak-memory ranges passed the unchanged seven-pair criterion on both
-systems. The earlier Linux creation overlap remains an inconclusive observation, not
-a diagnosed regression or a reason to trim samples. macOS passed 2,834 with 13 explicit
-limits, not proof of its earlier reader snapshot's cause. CodeQL reported 24 annotations:
-prior 20 plus four crypto fallback flows in touched storage modules. Required verification
-failed; distribution, promotion and publication were skipped.
+passed; strict lint and 18 Linux/19 Windows historical failure/restoration proofs passed.
+The 18 dashboard reader cases passed after exact historical refusal and byte restoration.
+The earlier Linux creation overlap remains inconclusive, not a diagnosed regression
+or a reason to trim samples. macOS passed 2,834 with 13 explicit limits, not proof
+of its earlier reader snapshot's cause. CodeQL reported the same 24 annotation claims:
+prior 20 plus four crypto fallback flows. Required verification failed; distribution,
+promotion and publication were skipped.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier
 `CamoufoxNotInstalled` context-open failure is resolved by preserving the effective
