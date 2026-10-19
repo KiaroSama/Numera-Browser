@@ -31,7 +31,13 @@ impl ProxyPool {
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
             Err(error) => return Err(error.into()),
         };
-        let Some(rows) = serde_json::from_slice::<Value>(&bytes)
+        let text = std::str::from_utf8(&bytes).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Stored proxy pool is not UTF-8; nothing was written",
+            )
+        })?;
+        let Some(rows) = serde_json::from_str::<Value>(text)
             .ok()
             .and_then(|value| value.as_array().cloned())
         else {
@@ -196,9 +202,16 @@ impl ProxyPool {
     ) -> Result<Option<Value>, RepoError> {
         let mut patches = Map::new();
         patches.insert(id.into(), Value::Object(changes));
-        Ok(self.update_many(patches)?.into_iter().next())
+        Ok(self.update_records(patches, true)?.into_iter().next())
     }
     pub fn update_many(&self, patches: Map<String, Value>) -> Result<Vec<Value>, RepoError> {
+        self.update_records(patches, false)
+    }
+    fn update_records(
+        &self,
+        patches: Map<String, Value>,
+        keep_empty: bool,
+    ) -> Result<Vec<Value>, RepoError> {
         if patches.is_empty() {
             return Ok(Vec::new());
         }
@@ -218,7 +231,7 @@ impl ProxyPool {
             if let Some(id) = row["id"].as_str()
                 && let Some(patch) = patches
                     .get(id)
-                    .filter(|patch| crate::conversion::truth(patch))
+                    .filter(|patch| keep_empty || crate::conversion::truth(patch))
             {
                 let patch = patch
                     .as_object()

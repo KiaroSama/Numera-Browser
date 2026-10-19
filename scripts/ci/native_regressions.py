@@ -282,6 +282,38 @@ REGRESSIONS = (
                 '2077705d1d09bc686361406d68b65ac99de9a049c6957bbd12974237c25935cd',
         },
     },
+    {
+        'target': 'pool_parse_parity',
+        'test': 'pooled_proxy_text_boundaries_match_original_full_results',
+        'symptom': 'Pooled proxy text boundaries differ',
+        'commit': 'ef6ebe26ba183fbbd9892d077d70fdcd8f7f7c64',
+        'files': {
+            'engine-rust/src/pool.rs':
+                '5381266449dafc5eca9009fe1d900c3aed760da00a3855b8d122dc58772bb5ab',
+            'engine-rust/src/pool_normalize.rs':
+                'f97331c9da3246f9ad993df1cacfe80f9d59d5494fd6db4c9c8cd26b05cd17e7',
+        },
+    },
+    {
+        'target': 'pool_normalize_parity',
+        'test': 'pooled_proxy_integer_and_whitespace_normalization_matches_original',
+        'symptom': 'Pooled proxy normalization differs',
+        'commit': 'ef6ebe26ba183fbbd9892d077d70fdcd8f7f7c64',
+        'files': {
+            'engine-rust/src/pool_normalize.rs':
+                'f97331c9da3246f9ad993df1cacfe80f9d59d5494fd6db4c9c8cd26b05cd17e7',
+        },
+    },
+    {
+        'target': 'pool_store_parity',
+        'test': 'malformed_pool_text_refuses_without_replacing_original_bytes',
+        'symptom': 'Pool storage text admission differs',
+        'commit': 'ef6ebe26ba183fbbd9892d077d70fdcd8f7f7c64',
+        'files': {
+            'engine-rust/src/storage/pool.rs':
+                'e42ab23148d1e1a757e2486e3c7ae164b068d87902ddd260329c66bd8cfbfa3b',
+        },
+    },
 )
 
 

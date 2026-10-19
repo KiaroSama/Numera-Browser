@@ -8,15 +8,15 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed source checkpoint is `ab061c8`. Its manual hosted batch
-[39312135957](https://github.com/KiaroSama/Numera-Browser/actions/runs/39312135957)
-failed overall on October 19 at 20:00 UTC. There were 27 successful nondependent jobs:
-most source platforms, both native tiers, eight relocated cases and dashboard checks. Native
+The latest completed source checkpoint is `ef6ebe2`. Its manual hosted batch
+[39327015878](https://github.com/KiaroSama/Numera-Browser/actions/runs/39327015878)
+failed overall on October 19 at 21:48 UTC. All 28 nondependent jobs passed:
+source platforms, both native tiers, eight relocated cases and dashboard checks. Native
 suites restored historical source/test companions and passed current contracts.
-The 71 direct-settings/transaction-ownership cases passed on both systems, alongside prior activity/conversion/storage cases.
+The expanded shared-store settings/folder/encrypted-pool replay passed on both systems, retaining all prior profile/vault/archive assertions.
 All four CLI latency/memory comparisons passed; prior Linux vault-read/creation overlaps remain unexplained, not erased by this result.
-Windows partition 0 failed an immediate identified-PID observation; its bounded-observation correction is pending. CodeQL/required verification still fail.
-The [candidate status](migration-candidate.md) retains 239 nearest references and pending full occurrence acceptance.
+Windows process observation passed within its unchanged total deadline. CodeQL/required verification still fail.
+The [candidate status](migration-candidate.md) records 262 nearest references and pending full occurrence acceptance.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

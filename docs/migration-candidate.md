@@ -90,8 +90,10 @@ credential. Removal/reimport exercises the supported keyed path instead.
 It uses the actual returned pool IDs on the same store, not normalized random IDs.
 Both runtimes must agree on complete read/refusal payloads, exact protected bytes,
 unknown fields and encrypted-at-rest secrets across vault enable and key rotation.
-The existing per-command and outer budgets are unchanged. This expanded acceptance
-is source-reviewed work in progress, not yet a passing hosted result.
+The existing per-command and outer budgets are unchanged. Batch
+[39327015878](https://github.com/KiaroSama/Numera-Browser/actions/runs/39327015878)
+passed this expanded sequence on Windows and Linux. It does not establish complete
+crash/selector/browser-database rollback or acceptance of every source occurrence.
 
 ## Representative release performance
 
@@ -393,11 +395,11 @@ No new core API, route, dependency or timeout is introduced.
 Native settings now expose direct selected-value, engine, headless and string-list extension
 setters. Extension validation checks only new entries inside the root transaction. Whole-map
 replacement requires ownership of that root by the current thread; another thread or root
-does not authorize it. Existing CLI/HTTP validation is unchanged. A prepared 71-case frozen
+does not authorize it. Existing CLI/HTTP validation is unchanged. A 71-case frozen
 source comparison covers return values, refusal categories, stored state, unchanged bytes
-and six ownership states. Acceptance is pending; settings caching, arbitrary dynamic input
-and complete fault/concurrency coverage remain open. The earlier malformed-settings proof
-uses its exact pre-addition test companion so it still reaches the original assertion.
+and six ownership states; batch `39312135957` passed it on both systems. Settings caching,
+arbitrary dynamic input and complete fault/concurrency coverage remain open. The earlier
+malformed-settings proof uses its exact pre-addition test companion to reach the original assertion.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -414,21 +416,38 @@ owners took 180.168/177.586 seconds on Linux and 382.926/208.296 seconds on Wind
 respectively, with clean trees. These observations are not repeated comparable
 speedup measurements or proof of a completely cold cache.
 
+## Pooled proxy compatibility batch
+
+Prepared pool text handling preserves Python whitespace and line boundaries. Port
+normalization reuses the existing Unicode decimal/underscore parser, retains the
+4,300-digit limit, and compares canonical magnitude before the unchanged 1–65535
+range check. Stored pool text is decoded strictly before the existing JSON-syntax
+fallback, so malformed encoding refuses instead of replacing the file. Direct
+empty updates retain the matched-row result/save; an empty batch still returns
+before reading. Lock, atomic-write, secret and network-URL policies are unchanged.
+
+Source observers add 50 full parse/render/batch cases, 47 normalization cases with
+matching single-entry batch verdicts, and 100 stored-file operations. Three exact
+historical source assertions and fixed-byte restoration are prepared. The 23 new
+nearest references raise the ledger to 262; every new row remains pending. This
+batch is not yet runtime-verified; dynamic values, network, fault and concurrency
+domains remain incomplete.
+
 ## Acceptance status
 
-Source `ab061c8` ran in hosted batch
-[39312135957](https://github.com/KiaroSama/Numera-Browser/actions/runs/39312135957).
-There were 27 successful nondependent jobs: most source platforms, both native tiers,
-eight relocated cases and dashboard checks. Current native suites and strict lint passed,
-including 71 direct-settings/transaction-ownership cases and exact historical-test restoration.
+Source `ef6ebe2` ran in hosted batch
+[39327015878](https://github.com/KiaroSama/Numera-Browser/actions/runs/39327015878).
+All 28 nondependent jobs passed: source platforms, both native tiers, eight relocated
+cases and dashboard checks. Expanded shared-store replay, bounded process observation,
+current native suites, strict lint and exact historical-test restoration passed.
 Both platforms reported no regression in all four foreground CLI latency/memory scenarios.
 Earlier Linux vault-read overlap remains recorded: native 71.302–339.860 ms versus
 original 294.654–304.417 ms on `e04e4fc`; this and the earlier creation overlap still
 have no proved cause. Passing later measurements do not diagnose or erase those results.
 Samples and acceptance criteria are unchanged. macOS passed, not proof of its earlier
-reader snapshot's cause. Windows partition 0 failed an immediate identified-PID assertion;
-the prepared observer correction retains the same total deadline and persistent-survivor refusal.
-CodeQL and required verification failed; distribution, promotion and publication were skipped.
+reader snapshot's cause. Windows partition 0 passed all four process variants and four
+observer controls, including persistent survivors and sub-10-ms budgets, without increasing
+the original envelope. CodeQL and required verification failed; publication stages were skipped.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier
 `CamoufoxNotInstalled` context-open failure is resolved by preserving the effective
