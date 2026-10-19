@@ -227,6 +227,16 @@ REGRESSIONS = (
                 '5fd4c1691c48c219514875526ab26bc8d43736f428ce8ee5eea18dadef2c108c',
         },
     },
+    {
+        'target': 'conversion_parity',
+        'test': 'reverse_proxy_conversion_matches_original_without_canonicalizing_records',
+        'symptom': 'Reverse proxy conversion differs',
+        'commit': 'e04e4fce1042e0a1862503db89f688efeceee585',
+        'files': {
+            'engine-rust/src/conversion.rs':
+                '075d140ff7ec579549192429042da4438f382563d44c069bb3da013d5e5ecf9f',
+        },
+    },
 )
 
 

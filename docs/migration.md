@@ -8,15 +8,15 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 19, 2026
 
-The latest completed source checkpoint is `1a2b09f`. Its manual hosted batch
-[39246782529](https://github.com/KiaroSama/Numera-Browser/actions/runs/39246782529)
-failed overall on October 19 at 12:05 UTC. All source platforms, both native tiers,
-eight relocated cases and dashboard checks passed. Both native tiers proved 18 Linux/
-19 Windows historical failures, restored fixed bytes and passed current tests.
-The 52 profile-text and 18 dashboard-reader cases passed on both systems after their
-historical refusal assertions failed on old code. The previous Linux creation overlap remains unexplained, not a diagnosed regression.
-macOS passed, but its prior reader snapshot's cause remains unproved. CodeQL has 24
-changed-line annotations and required verification failed; [candidate status](migration-candidate.md) records 223 nearest references, passing 47 divergence/28 edit cases and pending converter-text proof, not complete occurrence acceptance.
+The latest completed source checkpoint is `e04e4fc`. Its manual hosted batch
+[39253919503](https://github.com/KiaroSama/Numera-Browser/actions/runs/39253919503)
+failed overall on October 19 at 13:03 UTC. All source platforms, Windows native,
+eight relocated cases and dashboard checks passed. Both native suites proved 19 Linux/
+20 Windows historical failures, restored fixed bytes and passed current tests.
+The 69 converter-text cases passed on both systems, alongside prior storage cases.
+Linux native acceptance failed at overlapping vault-read latency ranges; its cause and the previous creation overlap remain unexplained.
+macOS passed, but its prior reader snapshot's cause remains unproved. CodeQL has the same 24
+annotation claims and required verification failed; [candidate status](migration-candidate.md) records 223 nearest references, passing converter-text cases and prepared reverse-proxy proof, not complete occurrence acceptance.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

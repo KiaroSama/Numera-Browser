@@ -105,6 +105,105 @@ with run_log('conversion-text-oracle',parent/'logs') as log:
 }
 
 #[test]
+fn reverse_proxy_conversion_matches_original_without_canonicalizing_records()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("conversion-proxy")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import copy,json,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.convert import to_dashboard_profile
+from numera.models import Profile
+from run_logging import run_log
+fixture=json.loads((repository/'engine-rust/tests/fixtures/conversion.json').read_text(encoding='utf-8'))
+base=next(case['input'] for case in fixture['cases'] if case['operation']=='to-dashboard')
+base=dict(base,id='conversion-proxy')
+rows=[]
+def add(label,server,**credentials):
+    proxy=dict(server=server,username='user α',password='synthetic-value 😀',country='ZZ')
+    proxy.update(credentials)
+    rows.append((label,proxy))
+for scheme in ('socks','socks5h','http','https','socks4','socks5','unknown',''):
+    for spelling in dict.fromkeys((scheme,scheme.upper(),scheme.capitalize())):
+        add('scheme-'+str(len(rows)),spelling+'://Proxy.Example:0080')
+whitespace=[*range(9,14),*range(0x1c,0x20),0x20,0x85,0xa0,0x1680,
+            *range(0x2000,0x200b),0x2028,0x2029,0x202f,0x205f,0x3000]
+for value in whitespace+[0x200b,0,0xfeff]:
+    marker=chr(value)
+    add('boundary-'+hex(value),marker+'SoCkS5H://[2001:db8::1]:01080'+marker)
+    add('only-'+hex(value),marker)
+for server in ('','proxy.test','proxy.test:','proxy.test:port','proxy.test:1:2',
+               ':1080',':','HTTP://','://host:port','http://host:80://tail',
+               '[2001:db8::1]:1080','[2001:db8::1]','2001:db8::1',
+               '[2001:db8::1','[]:80','[::1]suffix','[::1]:80:tail',
+               'http://host/path?q=1#fragment','http://user:pass@host:80',
+               'socks5://日本語.test:080','http:// host : 0080 '):
+    add('host-'+str(len(rows)),server)
+for value in (None,'',' value α 😀 ','enc:v2:synthetic-envelope'):
+    add('credentials-'+str(len(rows)),'https://Proxy.Example:00443',
+        username=value,password=value,country=value)
+rows.append(('absent-proxy',None))
+observed=[]
+with run_log('conversion-proxy-oracle',parent/'logs') as log:
+    for label,proxy in rows:
+        record=dict(copy.deepcopy(base),proxy=proxy)
+        source_input=copy.deepcopy(record)
+        profile=Profile.from_dict(record)
+        before=copy.deepcopy(profile.to_dict())
+        dashboard=to_dashboard_profile(profile)
+        assert profile.to_dict()==before,'Original reverse conversion mutated its profile'
+        assert record==source_input,'Original profile read mutated its input'
+        observed.append({'label':label,'proxy':proxy,'dashboard':dashboard})
+    log.info('Observed reverse proxy conversion cases=%s',len(observed))
+    print(json.dumps({'base':base,'cases':observed},ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 1_048_576,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original reverse proxy observer failed");
+    let oracle: Value = serde_json::from_slice(&observed.stdout)?;
+    let cases = oracle["cases"].as_array().ok_or("Proxy cases missing")?;
+    assert_eq!(cases.len(), 112, "Reverse proxy observations missing");
+    for case in cases {
+        let mut record = oracle["base"].clone();
+        record["proxy"] = case["proxy"].clone();
+        let profile = Profile::from_record(&record)?;
+        let before = serde_json::to_value(&profile)?;
+        assert_eq!(
+            to_dashboard(&profile),
+            case["dashboard"],
+            "Reverse proxy conversion differs: {}",
+            case["label"]
+        );
+        assert_eq!(
+            serde_json::to_value(&profile)?,
+            before,
+            "Reverse conversion mutated its profile"
+        );
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn profile_shapes_and_secret_intent_match_source() -> Result<(), Box<dyn std::error::Error>> {
     let oracle: Value = serde_json::from_str(include_str!("fixtures/conversion.json"))?;
     let cases = oracle["cases"]

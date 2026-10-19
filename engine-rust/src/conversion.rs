@@ -386,10 +386,21 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
 
 pub fn to_dashboard(profile: &Profile) -> Value {
     let fp = &profile.fingerprint;
-    let proxy=profile.proxy.as_ref().map_or(Value::Null,|p|{
-        let record=p.to_record();let (scheme,hostport)=p.server.split_once("://").unwrap_or(("http",&p.server));
-        let (host,port)=if let Some(v)=hostport.strip_prefix('['){v.split_once(']').map_or((hostport,""),|(host,tail)|(host,tail.strip_prefix(':').unwrap_or("")))}else if hostport.matches(':').count()==1{hostport.split_once(':').unwrap_or((hostport,""))}else{(hostport,"")};
-        json!({"type":match scheme{"https"=>"HTTPS","socks4"=>"SOCKS4","socks5"=>"SOCKS5",_=>"HTTP"},"host":host,"port":port,"user":record["username"].as_str().unwrap_or(""),"pass":record["password"].as_str().unwrap_or(""),"country":record["country"].as_str().unwrap_or("")})});
+    let proxy = profile.proxy.as_ref().filter(|p| !p.server.is_empty()).map_or(Value::Null, |p| {
+        let record = p.to_record();
+        let server = trim(&p.server);
+        let (scheme, hostport) = server.split_once("://").unwrap_or(("http", server));
+        let (host, port) = if let Some(value) = hostport.strip_prefix('[') {
+            value.split_once(']').map_or((hostport, ""), |(host, tail)| {
+                (host, tail.strip_prefix(':').unwrap_or(""))
+            })
+        } else if hostport.matches(':').count() == 1 {
+            hostport.split_once(':').unwrap_or((hostport, ""))
+        } else {
+            (hostport, "")
+        };
+        json!({"type":match scheme.to_lowercase().as_str(){"https"=>"HTTPS","socks4"=>"SOCKS4","socks"|"socks5h"|"socks5"=>"SOCKS5",_=>"HTTP"},"host":host,"port":port,"user":record["username"].as_str().unwrap_or(""),"pass":record["password"].as_str().unwrap_or(""),"country":record["country"].as_str().unwrap_or("")})
+    });
     let mut output = json!({"name":profile.name,"folder":"Facebook Ads","status":"stopped","os":dash_os(&fp.os),"engine":if profile.engine.is_empty(){"playwright"}else{&profile.engine},"browser":"Chrome","browserVersion":fp.chrome_version,"userAgent":fp.user_agent,"screen":format!("{}x{}",fp.screen_width,fp.screen_height),"cores":fp.hardware_concurrency,"memory":fp.device_memory,"webglVendor":fp.webgl_vendor,"webglRenderer":fp.webgl_renderer});
     let signals = json!({"canvas":capitalize(&fp.canvas),"webrtc":capitalize(&fp.webrtc),"audio":capitalize(&fp.audio),"fonts":capitalize(&fp.font_mode),"clientRects":capitalize(&fp.client_rects),"webglImage":capitalize(&fp.webgl_image),"mediaDevices":capitalize(&fp.media_mode),"locale":fp.locale,"timezone":fp.timezone,"geo":capitalize(&fp.geolocation),"mediaVideo":fp.cameras,"mediaAudio":fp.microphones,"mediaSpeakers":fp.speakers,"fontList":fp.fonts.join("\n"),"osVersion":fp.os_version,"deviceModel":fp.device_model,"maxTouchPoints":fp.max_touch_points,"devicePixelRatio":fp.device_pixel_ratio,"seed":fp.seed,"dnt":fp.do_not_track});
     let extras = json!({"proxy":proxy,"notes":profile.notes,"tags":profile.tags,"startupUrls":profile.startup_urls.join("\n"),"extensions":profile.extensions.join("\n"),"launchArgs":profile.launch_args.join("\n"),"bookmarks":profile.bookmarks.iter().filter(|b|truth(&b["url"])).map(|b|{let url=text(&b["url"],"");let name=text(&b["name"],"");if name.is_empty()||name==url{url}else{format!("{name} | {url}")}}).collect::<Vec<_>>().join("\n"),"dns":profile.dns,"ipBased":profile.ip_based,"clearOnStart":profile.clear_on_start,"switchedOff":profile.switched_off,"lastActive":"never"});

@@ -328,8 +328,16 @@ Converter text boundaries now match the original Unicode line splitting and trim
 String fields split at the original separators while array items remain whole; URL comma
 handling and numeric conversion are unchanged. One frozen-original observer compares 69
 complete profiles and dashboard roundtrips, including all source whitespace boundaries,
-nonseparator controls and nontext inputs. Exact historical failure/restoration and current
-Windows/Linux acceptance are pending.
+nonseparator controls and nontext inputs. Batch `39253919503` proved the exact historical
+failure, restored fixed bytes and passed all 69 cases on Windows and Linux.
+
+Reverse proxy conversion now trims complete server boundaries, matches explicit schemes
+case-insensitively and recognizes `socks`/`socks5h` as SOCKS5. Empty original servers return
+null, while nonempty whitespace-only servers retain the source's empty-host object.
+Host/port spelling, bracketed/bare IPv6, unknown-scheme HTTP fallback and credentials are
+preserved without network URL canonicalization. A 112-case frozen-original public
+`to_dashboard` observer compares complete results and unchanged input state. Exact `e04e4fc`
+historical assertion failure/restoration and current Windows/Linux acceptance are pending.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -348,14 +356,17 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `1a2b09f` ran in hosted batch
-[39246782529](https://github.com/KiaroSama/Numera-Browser/actions/runs/39246782529).
-All source platforms, both native tiers, eight relocated cases and current native suites
-passed; strict lint and 18 Linux/19 Windows historical failure/restoration proofs passed.
-The 28 single-edit and 47 ordered-divergence cases passed on both systems, alongside prior reader proofs.
-The earlier Linux creation overlap remains inconclusive, not a diagnosed regression
-or a reason to trim samples. macOS passed 2,834 with 13 explicit limits, not proof
-of its earlier reader snapshot's cause. CodeQL reported the same 24 annotation claims:
+Source `e04e4fc` ran in hosted batch
+[39253919503](https://github.com/KiaroSama/Numera-Browser/actions/runs/39253919503).
+All source platforms, Windows native, eight relocated cases and current native suites
+passed; strict lint and 19 Linux/20 Windows historical failure/restoration proofs passed.
+The 69 converter-text cases passed on both systems, alongside prior edit/divergence/reader proofs.
+Linux native acceptance failed: vault-read latency was inconclusive, with native ranges
+71.302–339.860 ms versus original 294.654–304.417 ms across seven alternating pairs.
+The other three Linux latency and all four memory ranges passed; Windows passed all four
+latency/memory comparisons. Neither this overlap nor the earlier creation overlap has a
+proved cause; samples and acceptance criteria are unchanged. macOS passed, not proof of
+its earlier reader snapshot's cause. CodeQL reported the same 24 annotation claims:
 prior 20 plus four crypto fallback flows. Required verification failed; distribution,
 promotion and publication were skipped.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
