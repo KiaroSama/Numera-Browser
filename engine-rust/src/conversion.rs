@@ -50,9 +50,21 @@ fn number(v: &Value, default: f64, whole: bool) -> Value {
         json!(n)
     }
 }
+fn trim(value: &str) -> &str {
+    value.trim_matches(|c: char| c.is_whitespace() || matches!(c, '\u{1c}'..='\u{1f}'))
+}
 fn lines(v: &Value) -> Vec<String> {
     let parts = if let Some(v) = v.as_str() {
-        v.lines().map(str::to_owned).collect()
+        // Empty CRLF segments are discarded below, along with blank source lines.
+        v.split(|c| {
+            matches!(
+                c,
+                '\n' | '\r' | '\u{b}' | '\u{c}' | '\u{1c}'
+                    ..='\u{1e}' | '\u{85}' | '\u{2028}' | '\u{2029}'
+            )
+        })
+        .map(str::to_owned)
+        .collect()
     } else {
         v.as_array()
             .into_iter()
@@ -63,7 +75,7 @@ fn lines(v: &Value) -> Vec<String> {
     };
     parts
         .into_iter()
-        .map(|v| v.trim().to_owned())
+        .map(|v| trim(&v).to_owned())
         .filter(|v| !v.is_empty())
         .collect()
 }
@@ -132,7 +144,7 @@ fn urls(v: &Value) -> Vec<String> {
     }
     entries
         .into_iter()
-        .map(|v| v.trim().to_owned())
+        .map(|v| trim(&v).to_owned())
         .filter(|v| !v.is_empty())
         .map(|v| {
             if !v.contains("://") && !v.starts_with("about:") {
@@ -149,7 +161,7 @@ fn bookmarks(v: &Value) -> Vec<Value> {
         .filter_map(|line| {
             let (name, url) = line
                 .rsplit_once('|')
-                .map_or(("", line.as_str()), |(name, url)| (name.trim(), url.trim()));
+                .map_or(("", line.as_str()), |(name, url)| (trim(name), trim(url)));
             if url.is_empty() {
                 None
             } else {
@@ -189,8 +201,8 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
     };
     let locale = text(&d["locale"], "en-US");
     let language = c["LOCALES"].get(&locale).unwrap_or(&c["LOCALES"]["en-US"]);
-    let mut renderer = text(&d["webglRenderer"], "").trim().to_owned();
-    let mut vendor = text(&d["webglVendor"], "").trim().to_owned();
+    let mut renderer = trim(&text(&d["webglRenderer"], "")).to_owned();
+    let mut vendor = trim(&text(&d["webglVendor"], "")).to_owned();
     if renderer.is_empty() {
         renderer = text(&c["WEBGL"][os][0][1], "");
         vendor = text(&c["WEBGL"][os][0][0], "");
@@ -274,7 +286,7 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
     };
     let mode = |key: &str, default: &str| {
         if truth(&d[key]) {
-            value_text(&d[key]).trim().to_lowercase()
+            trim(&value_text(&d[key])).to_lowercase()
         } else {
             default.into()
         }
@@ -348,7 +360,7 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
         launch_args: lines(&d["launchArgs"]),
         bookmarks: bookmarks(&d["bookmarks"]),
         dns: if truth(&d["dns"]) {
-            value_text(&d["dns"]).trim().into()
+            trim(&value_text(&d["dns"])).into()
         } else {
             String::new()
         },

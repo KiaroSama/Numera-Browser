@@ -217,6 +217,16 @@ REGRESSIONS = (
                 'c38a06af763503c9dbf9b74068a48c82527f82c7b5a0d65551d49ebbb1cd1f0a',
         },
     },
+    {
+        'target': 'conversion_parity',
+        'test': 'conversion_text_boundaries_match_original_profiles_and_roundtrips',
+        'symptom': 'Conversion text boundaries differ',
+        'commit': '1a2b09f7cd996f9f81a88e99f7f5a68a9297a007',
+        'files': {
+            'engine-rust/src/conversion.rs':
+                '5fd4c1691c48c219514875526ab26bc8d43736f428ce8ee5eea18dadef2c108c',
+        },
+    },
 )
 
 

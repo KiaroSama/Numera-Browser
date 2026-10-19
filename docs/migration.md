@@ -8,15 +8,15 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 19, 2026
 
-The latest completed source checkpoint is `be5cc6d`. Its manual hosted batch
-[39236792303](https://github.com/KiaroSama/Numera-Browser/actions/runs/39236792303)
-failed overall on October 19 at 10:38 UTC. All source platforms, both native tiers,
+The latest completed source checkpoint is `1a2b09f`. Its manual hosted batch
+[39246782529](https://github.com/KiaroSama/Numera-Browser/actions/runs/39246782529)
+failed overall on October 19 at 12:05 UTC. All source platforms, both native tiers,
 eight relocated cases and dashboard checks passed. Both native tiers proved 18 Linux/
 19 Windows historical failures, restored fixed bytes and passed current tests.
 The 52 profile-text and 18 dashboard-reader cases passed on both systems after their
 historical refusal assertions failed on old code. The previous Linux creation overlap remains unexplained, not a diagnosed regression.
 macOS passed, but its prior reader snapshot's cause remains unproved. CodeQL has 24
-changed-line annotations and required verification failed; [candidate status](migration-candidate.md) records 223 nearest references, 47 passing divergence comparisons and pending single-edit acceptance, not complete occurrence acceptance.
+changed-line annotations and required verification failed; [candidate status](migration-candidate.md) records 223 nearest references, passing 47 divergence/28 edit cases and pending converter-text proof, not complete occurrence acceptance.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

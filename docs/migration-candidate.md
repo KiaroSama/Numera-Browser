@@ -297,7 +297,7 @@ fixed-current success on both systems; broader dynamic/error-domain acceptance i
 
 Thirty-nine repository and 23 dashboard-store references bring the mapped total to
 223, all 62 newly mapped rows pending. References identify the nearest implementation
-and test, not complete acceptance: single-edit callback verification remains pending.
+and test, not complete acceptance: full dynamic and failure-domain coverage remains pending.
 Optional engine-free dashboard construction, legacy mirror behavior, dynamic records,
 faults and concurrency remain explicit gaps. ID-validated path joins do not establish
 physical or symlink containment.
@@ -320,8 +320,16 @@ recovery and atomic-write safeguards remain, as do current CLI/batch behavior.
 A 28-case frozen-original observer compares callback-entry views/counts, complete results,
 refusals and both stored copies/config, with exact preservation where the source writes
 nothing. It includes ID/name/missing references, in-place/replacement callbacks, retained
-dashboard metadata and locked/unlocked credential decisions. Hosted acceptance is pending;
-arbitrary dynamic callbacks, concurrent races and complete fault coverage remain open.
+dashboard metadata and locked/unlocked credential decisions. Batch `39246782529` passed
+all 28 cases on Windows and Linux; arbitrary dynamic callbacks, concurrent races and
+complete fault coverage remain open.
+
+Converter text boundaries now match the original Unicode line splitting and trimming.
+String fields split at the original separators while array items remain whole; URL comma
+handling and numeric conversion are unchanged. One frozen-original observer compares 69
+complete profiles and dashboard roundtrips, including all source whitespace boundaries,
+nonseparator controls and nontext inputs. Exact historical failure/restoration and current
+Windows/Linux acceptance are pending.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -340,11 +348,11 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `be5cc6d` ran in hosted batch
-[39236792303](https://github.com/KiaroSama/Numera-Browser/actions/runs/39236792303).
+Source `1a2b09f` ran in hosted batch
+[39246782529](https://github.com/KiaroSama/Numera-Browser/actions/runs/39246782529).
 All source platforms, both native tiers, eight relocated cases and current native suites
 passed; strict lint and 18 Linux/19 Windows historical failure/restoration proofs passed.
-The 47 complete ordered-divergence cases passed on both systems, alongside prior reader proofs.
+The 28 single-edit and 47 ordered-divergence cases passed on both systems, alongside prior reader proofs.
 The earlier Linux creation overlap remains inconclusive, not a diagnosed regression
 or a reason to trim samples. macOS passed 2,834 with 13 explicit limits, not proof
 of its earlier reader snapshot's cause. CodeQL reported the same 24 annotation claims:
