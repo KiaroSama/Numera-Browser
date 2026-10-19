@@ -126,6 +126,22 @@ impl ProfileRepo {
             .collect())
     }
 
+    pub fn edit(
+        &self,
+        reference: &str,
+        apply: impl FnOnce(&mut Profile) -> Result<Option<Profile>, RepoError>,
+        now: f64,
+    ) -> Result<Option<Profile>, RepoError> {
+        let root = DataLock::transaction(&self.root)?;
+        let _root = root.acquire(Duration::from_secs(30))?;
+        self.require_settled()?;
+        let Some(mut current) = self.resolve(reference, now)? else {
+            return Ok(None);
+        };
+        let updated = apply(&mut current)?.unwrap_or(current);
+        self.save(updated, now).map(Some)
+    }
+
     pub fn patch_many(
         &self,
         references: &[String],

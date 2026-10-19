@@ -297,7 +297,7 @@ fixed-current success on both systems; broader dynamic/error-domain acceptance i
 
 Thirty-nine repository and 23 dashboard-store references bring the mapped total to
 223, all 62 newly mapped rows pending. References identify the nearest implementation
-and test, not complete APIs: native batch patching is not the source single-edit API.
+and test, not complete acceptance: single-edit callback verification remains pending.
 Optional engine-free dashboard construction, legacy mirror behavior, dynamic records,
 faults and concurrency remain explicit gaps. ID-validated path joins do not establish
 physical or symlink containment.
@@ -306,11 +306,22 @@ Public native `ProfileRepo::divergence` now reports the complete ordered field l
 including `proxy.password` before `proxy`, without repairing either stored copy.
 It reuses credential-aware and Python-compatible comparisons, excludes identity,
 timestamps and viewport-only differences, and retains root/recovery/text guards.
-One frozen-original observer prepares 47 comparisons covering full lists, numeric
-and Unicode ordering, proxy normalization, encrypted states, malformed text/JSON
-and missing records, with exact input-byte preservation. Hosted acceptance is pending;
+One frozen-original observer compares 47 cases covering full lists, numeric and Unicode
+ordering, proxy normalization, encrypted states, malformed text/JSON and missing records,
+with exact input-byte preservation. Batch `39236792303` passed them on Windows and Linux;
 the ordinary reader still stops after its first disagreement. No historical runtime
 failure is invented for an API that did not previously exist.
+
+Public native `ProfileRepo::edit` now resolves and invokes its callback inside the root
+transaction, saves either its returned replacement or mutated current profile, and
+returns one saved profile. Missing targets do not invoke the callback; callback errors
+propagate before its changes are published. Existing validation, name, credential,
+recovery and atomic-write safeguards remain, as do current CLI/batch behavior.
+A 28-case frozen-original observer compares callback-entry views/counts, complete results,
+refusals and both stored copies/config, with exact preservation where the source writes
+nothing. It includes ID/name/missing references, in-place/replacement callbacks, retained
+dashboard metadata and locked/unlocked credential decisions. Hosted acceptance is pending;
+arbitrary dynamic callbacks, concurrent races and complete fault coverage remain open.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -329,11 +340,11 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `286a077` ran in hosted batch
-[39223897493](https://github.com/KiaroSama/Numera-Browser/actions/runs/39223897493).
+Source `be5cc6d` ran in hosted batch
+[39236792303](https://github.com/KiaroSama/Numera-Browser/actions/runs/39236792303).
 All source platforms, both native tiers, eight relocated cases and current native suites
 passed; strict lint and 18 Linux/19 Windows historical failure/restoration proofs passed.
-The 18 dashboard reader cases passed after exact historical refusal and byte restoration.
+The 47 complete ordered-divergence cases passed on both systems, alongside prior reader proofs.
 The earlier Linux creation overlap remains inconclusive, not a diagnosed regression
 or a reason to trim samples. macOS passed 2,834 with 13 explicit limits, not proof
 of its earlier reader snapshot's cause. CodeQL reported the same 24 annotation claims:
