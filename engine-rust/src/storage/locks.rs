@@ -119,6 +119,11 @@ impl DataLock {
         &self.path
     }
 
+    pub fn owned_by_current_thread(&self) -> io::Result<bool> {
+        let state = self.shared.state.lock().map_err(|_| poisoned())?;
+        Ok(state.depth > 0 && state.owner == Some(thread::current().id()))
+    }
+
     pub fn transaction(root: &Path) -> io::Result<Self> {
         let root = resolved(root)?;
         let key = root

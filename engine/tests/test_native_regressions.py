@@ -75,15 +75,21 @@ def test_historical_execution_requires_the_exact_clean_hosted_source(monkeypatch
 
 
 @pytest.mark.parametrize('platform', ['win32', 'linux'])
-@pytest.mark.parametrize('damage', [None, 'warm', 'launch', 'assertion', 'integrity'])
+@pytest.mark.parametrize('damage', [None, 'warm', 'launch', 'assertion', 'integrity', 'companion'])
 def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch, damage, platform):
     module = load()
     source = tmp_path / 'engine-rust/src/models.rs'
     source.parent.mkdir(parents=True)
     current, historical = b'fixed production bytes\n', b'historical production bytes\n'
     source.write_bytes(current)
+    companion = tmp_path / 'engine-rust/tests/config_parity.rs'
+    companion.parent.mkdir(parents=True)
+    fixed_test, old_test = b'fixed test bytes\n', b'original assertion bytes\n'
+    companion.write_bytes(fixed_test)
     case = dict(module.REGRESSIONS[0], files={
-        'engine-rust/src/models.rs': hashlib.sha256(historical).hexdigest()})
+        'engine-rust/src/models.rs': hashlib.sha256(historical).hexdigest()},
+        companions={'engine-rust/tests/config_parity.rs': {
+            'commit': 'companion-commit', 'sha256': hashlib.sha256(old_test).hexdigest()}})
     excluded = dict(case, platform='linux' if platform == 'win32' else 'win32',
                     commit='excluded-source-must-not-be-read')
     selected = dict(case, platform=platform)
@@ -103,6 +109,8 @@ def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch
             return sha.encode('ascii')
         if arguments[0] == 'diff':
             return b''
+        if arguments == ('show', 'companion-commit:engine-rust/tests/config_parity.rs'):
+            return old_test + (b'changed' if damage == 'companion' else b'')
         assert arguments == ('show', f"{case['commit']}:engine-rust/src/models.rs")
         return historical + (b'changed' if damage == 'integrity' else b'')
 
@@ -111,6 +119,7 @@ def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch
 
         calls.append(command)
         assert source.read_bytes() == historical
+        assert companion.read_bytes() == old_test
         assert (wall, idle) == (180, 90)
         assert command[-4:] == [case['test'], '--exact', '--test-threads=1', '--color=never']
         assert '--locked' in command and '--offline' in command
@@ -127,6 +136,7 @@ def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch
 
     def warmup(command, **options):
         assert source.read_bytes() == historical
+        assert companion.read_bytes() == old_test
         assert command == ['cargo', 'test', '--manifest-path', str(tmp_path / 'engine-rust/Cargo.toml'),
                            '--locked', '--offline', '--test', case['target'], '--no-run']
         assert options == {'stdin': module.subprocess.DEVNULL, 'check': True}
@@ -149,8 +159,9 @@ def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch
     import os
 
     assert source.read_bytes() == current
+    assert companion.read_bytes() == fixed_test
     assert os.environ['NUMERA_ORACLE_SOURCE_ROOT'] == 'prior-original-root'
     assert 'PYTHONDONTWRITEBYTECODE' not in os.environ
     assert logger.handlers == []
-    assert len(calls) == (2 if damage is None else 0 if damage in ('integrity', 'warm') else 1)
-    assert len(warmups) == (0 if damage == 'integrity' else 1)
+    assert len(calls) == (2 if damage is None else 0 if damage in ('integrity', 'companion', 'warm') else 1)
+    assert len(warmups) == (0 if damage in ('integrity', 'companion') else 1)

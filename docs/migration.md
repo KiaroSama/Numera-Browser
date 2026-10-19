@@ -8,15 +8,15 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 19, 2026
 
-The latest completed source checkpoint is `199eb08`. Its manual hosted batch
-[39278753551](https://github.com/KiaroSama/Numera-Browser/actions/runs/39278753551)
-failed overall on October 19 at 16:20 UTC. All 28 nondependent workflow jobs passed:
+The latest completed source checkpoint is `03041ce`. Its manual hosted batch
+[39297993608](https://github.com/KiaroSama/Numera-Browser/actions/runs/39297993608)
+failed overall on October 19 at 18:13 UTC. All 28 nondependent workflow jobs passed:
 source platforms, both native tiers, eight relocated cases and dashboard checks. Native
-suites proved 22 Linux/23 Windows historical failures, restored fixed bytes and passed.
-The 30 core-coherence cases passed on both systems, alongside prior fractional/integer/proxy/text/storage cases.
+suites proved 23 Linux/24 Windows historical failures, restored fixed bytes and passed.
+The 24 activity-label cases passed on both systems, alongside prior coherence/conversion/storage cases.
 All four CLI latency/memory comparisons passed; prior Linux vault-read/creation overlaps remain unexplained, not erased by this result.
 macOS passed, but its prior reader snapshot's cause remains unproved. CodeQL has the same 24
-annotation claims and required verification failed; [candidate status](migration-candidate.md) records 239 nearest references, passing core coherence and pending activity-label acceptance, not complete occurrence acceptance.
+annotation claims and required verification failed; [candidate status](migration-candidate.md) records 239 nearest references, passing activity labels and pending direct-settings acceptance, not complete occurrence acceptance.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

@@ -129,6 +129,13 @@ REGRESSIONS = (
             'engine-rust/src/storage/config.rs':
                 'a803a3e5c3ce12cae8b4200e4f54ae5dec1a05e38d3cac5b99e966f360180c01',
         },
+        'companions': {
+            # Preserve the old assertion without compiling APIs added afterward.
+            'engine-rust/tests/config_parity.rs': {
+                'commit': '03041cedae816d5d360352ab6186a6b485e4d60f',
+                'sha256': '3bdc096885588ad4640650934e1118c5068c112afb045d9815be6586f4432c1a',
+            },
+        },
     },
     {
         'target': 'extension_resources_parity',
@@ -293,7 +300,8 @@ def require_hosted_source(root: Path) -> str:
             or not re.fullmatch('[0-9a-f]{40}', sha)
             or git(root, 'rev-parse', 'HEAD').decode('ascii').strip() != sha):
         raise ValueError('Historical regression execution requires the exact owning hosted source')
-    files = [name for case in REGRESSIONS for name in case['files']]
+    files = [name for case in REGRESSIONS
+             for name in (*case['files'], *case.get('companions', {}))]
     git(root, 'diff', '--exit-code', 'HEAD', '--', *files)
     return sha
 
@@ -301,8 +309,11 @@ def require_hosted_source(root: Path) -> str:
 @contextmanager
 def historical_sources(root: Path, case: dict):
     originals, replacements = {}, {}
-    for name, expected in case['files'].items():
-        raw = git(root, 'show', f"{case['commit']}:{name}")
+    sources = {name: (case['commit'], expected) for name, expected in case['files'].items()}
+    sources.update({name: (item['commit'], item['sha256'])
+                    for name, item in case.get('companions', {}).items()})
+    for name, (commit, expected) in sources.items():
+        raw = git(root, 'show', f'{commit}:{name}')
         if len(raw) > 32768 or hashlib.sha256(raw).hexdigest() != expected:
             raise ValueError('Historical regression source integrity differs')
         raw.decode('utf-8', errors='strict')

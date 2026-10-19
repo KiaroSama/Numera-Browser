@@ -369,13 +369,22 @@ four older converter proofs passed with their exact historical HTTP-route compan
 
 Profile-list activity labels now accept boolean `true` as timestamp one, preserve false
 values as `never`, and use the original sequential divisions and decimal integer labels.
-Malformed truthy values still refuse through the existing HTTP error path. A prepared
+Malformed truthy values still refuse through the existing HTTP error path. The
 24-case frozen-original HTTP comparison checks complete responses and exact stored-byte
 preservation, including future, fractional and wide timestamps. Each original observation
 uses both actual native request clock endpoints and must agree before comparison; there
-are no sleeps, retries or label normalization. Exact `199eb08` historical bytes must fail
-the named HTTP status assertion. Windows/Linux execution is pending; no new core API,
-route, dependency or timeout is introduced.
+are no sleeps, retries or label normalization. Batch `39297993608` proved the exact
+`199eb08` historical status failure, restored fixed bytes and passed on Windows/Linux.
+No new core API, route, dependency or timeout is introduced.
+
+Native settings now expose direct selected-value, engine, headless and string-list extension
+setters. Extension validation checks only new entries inside the root transaction. Whole-map
+replacement requires ownership of that root by the current thread; another thread or root
+does not authorize it. Existing CLI/HTTP validation is unchanged. A prepared 71-case frozen
+source comparison covers return values, refusal categories, stored state, unchanged bytes
+and six ownership states. Acceptance is pending; settings caching, arbitrary dynamic input
+and complete fault/concurrency coverage remain open. The earlier malformed-settings proof
+uses its exact pre-addition test companion so it still reaches the original assertion.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -394,11 +403,11 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `199eb08` ran in hosted batch
-[39278753551](https://github.com/KiaroSama/Numera-Browser/actions/runs/39278753551).
+Source `03041ce` ran in hosted batch
+[39297993608](https://github.com/KiaroSama/Numera-Browser/actions/runs/39297993608).
 All 28 nondependent workflow jobs passed: source platforms, both native tiers, eight
-relocated cases and dashboard checks. Strict lint, current native suites and 22 Linux/
-23 Windows historical failure/restoration proofs passed, including 30 core-coherence cases.
+relocated cases and dashboard checks. Strict lint, current native suites and 23 Linux/
+24 Windows historical failure/restoration proofs passed, including 24 activity-label cases.
 Both platforms reported no regression in all four foreground CLI latency/memory scenarios.
 Earlier Linux vault-read overlap remains recorded: native 71.302–339.860 ms versus
 original 294.654–304.417 ms on `e04e4fc`; this and the earlier creation overlap still

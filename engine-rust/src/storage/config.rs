@@ -6,12 +6,16 @@ use std::{error::Error, fmt, fs, io, path::PathBuf, time::Duration};
 pub enum ConfigError {
     Io(io::Error),
     WrongContainer(&'static str),
+    TransactionRequired,
+    InvalidExtensions(String),
 }
 impl ConfigError {
     pub fn source_kind(&self) -> &'static str {
         match self {
             Self::Io(_) => "OSError",
             Self::WrongContainer(kind) => kind,
+            Self::TransactionRequired => "RuntimeError",
+            Self::InvalidExtensions(_) => "ValueError",
         }
     }
 }
@@ -22,6 +26,8 @@ impl fmt::Display for ConfigError {
             Self::WrongContainer(_) => {
                 f.write_str("Stored settings are not an object; nothing was written")
             }
+            Self::TransactionRequired => f.write_str("Settings may only be replaced wholesale inside the root transaction that read them; use set_many for ordinary changes"),
+            Self::InvalidExtensions(message) => f.write_str(message),
         }
     }
 }
@@ -34,6 +40,15 @@ impl From<io::Error> for ConfigError {
 
 pub struct ConfigStore {
     root: PathBuf,
+}
+
+fn lock_limit() -> Duration {
+    let limit = std::env::var("NUMERA_LOCK_TIMEOUT")
+        .ok()
+        .and_then(|value| value.parse::<f64>().ok())
+        .filter(|value| value.is_finite() && *value >= 0.0 && *value <= 9_223_372_036.0)
+        .unwrap_or(30.0);
+    Duration::from_secs_f64(limit)
 }
 impl ConfigStore {
     pub fn new(root: PathBuf) -> Self {
@@ -65,8 +80,11 @@ impl ConfigStore {
     }
 
     pub fn default_extensions(&self) -> Result<Vec<Value>, ConfigError> {
-        match self
-            .read()
+        Self::extensions_from(&self.read())
+    }
+
+    fn extensions_from(values: &Map<String, Value>) -> Result<Vec<Value>, ConfigError> {
+        match values
             .get("default_extensions")
             .filter(|value| crate::conversion::truth(value))
         {
@@ -81,21 +99,97 @@ impl ConfigStore {
         }
     }
 
+    pub fn headless_launch(&self) -> bool {
+        crate::conversion::truth(self.read().get("headless_launch").unwrap_or(&Value::Null))
+    }
+
+    pub fn set(&self, key: &str, value: Value) -> Result<Value, ConfigError> {
+        self.change(Map::from_iter([(key.into(), value.clone())]), "TypeError")?;
+        Ok(value)
+    }
+
+    pub fn set_default_engine(&self, name: Value) -> Result<Value, ConfigError> {
+        self.set("default_engine", name)
+    }
+
+    pub fn set_headless_launch(&self, value: &Value) -> Result<bool, ConfigError> {
+        let enabled = crate::conversion::truth(value);
+        self.set("headless_launch", enabled.into())?;
+        Ok(enabled)
+    }
+
+    pub fn set_default_extensions(&self, wanted: Vec<String>) -> Result<Vec<String>, ConfigError> {
+        let root_lock = DataLock::transaction(&self.root)?;
+        let _root = root_lock.acquire(lock_limit())?;
+        let record = self.read_for_change()?;
+        let values = record.as_object().cloned().unwrap_or_default();
+        let current = Self::extensions_from(&values).map_err(|error| match error {
+            ConfigError::WrongContainer(_) => ConfigError::WrongContainer("TypeError"),
+            error => error,
+        })?;
+        let fresh = wanted
+            .iter()
+            .filter(|entry| {
+                !current
+                    .iter()
+                    .any(|old| old.as_str() == Some(entry.as_str()))
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+        let problems = super::extensions::unloadable(&fresh);
+        if !problems.is_empty() {
+            return Err(ConfigError::InvalidExtensions(problems.join("; ")));
+        }
+        self.set("default_extensions", serde_json::json!(wanted))?;
+        Ok(wanted)
+    }
+
+    /// A replacement must belong to the transaction that read its snapshot.
+    pub fn replace_locked(
+        &self,
+        values: Map<String, Value>,
+    ) -> Result<Map<String, Value>, ConfigError> {
+        let root_lock = DataLock::transaction(&self.root)?;
+        if !root_lock.owned_by_current_thread()? {
+            return Err(ConfigError::TransactionRequired);
+        }
+        let path = self.root.join("config.json");
+        let file_lock = DataLock::for_file(&path)?;
+        let _file = file_lock.acquire(lock_limit())?;
+        write_json(&path, &Value::Object(values.clone()))?;
+        Ok(values)
+    }
+
     pub fn set_many(&self, changes: Map<String, Value>) -> Result<Map<String, Value>, ConfigError> {
         if changes.is_empty() {
             return Ok(self.read());
         }
-        let limit = std::env::var("NUMERA_LOCK_TIMEOUT")
-            .ok()
-            .and_then(|value| value.parse::<f64>().ok())
-            .filter(|value| value.is_finite() && *value >= 0.0 && *value <= 9_223_372_036.0)
-            .unwrap_or(30.0);
+        self.change(changes, "AttributeError")
+    }
+
+    fn change(
+        &self,
+        changes: Map<String, Value>,
+        wrong_container: &'static str,
+    ) -> Result<Map<String, Value>, ConfigError> {
+        let limit = lock_limit();
         let root_lock = DataLock::transaction(&self.root)?;
-        let _root = root_lock.acquire(Duration::from_secs_f64(limit))?;
+        let _root = root_lock.acquire(limit)?;
         let path = self.root.join("config.json");
         let file_lock = DataLock::for_file(&path)?;
-        let _file = file_lock.acquire(Duration::from_secs_f64(limit))?;
-        let current = match fs::read(&path) {
+        let _file = file_lock.acquire(limit)?;
+        let current = self.read_for_change()?;
+        let mut current = match current {
+            Value::Object(value) => value,
+            _ => return Err(ConfigError::WrongContainer(wrong_container)),
+        };
+        current.extend(changes);
+        write_json(&path, &Value::Object(current.clone()))?;
+        Ok(current)
+    }
+
+    fn read_for_change(&self) -> Result<Value, ConfigError> {
+        Ok(match fs::read(self.root.join("config.json")) {
             Ok(bytes) => {
                 let text = std::str::from_utf8(&bytes).map_err(|_| {
                     io::Error::new(
@@ -106,13 +200,6 @@ impl ConfigStore {
                 serde_json::from_str::<Value>(text).unwrap_or_else(|_| Value::Object(Map::new()))
             }
             Err(_) => Value::Object(Map::new()),
-        };
-        let mut current = match current {
-            Value::Object(value) => value,
-            _ => return Err(ConfigError::WrongContainer("AttributeError")),
-        };
-        current.extend(changes);
-        write_json(&path, &Value::Object(current.clone()))?;
-        Ok(current)
+        })
     }
 }
