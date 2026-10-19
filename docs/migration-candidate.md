@@ -155,7 +155,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 125 individually inspected implementation/test
+The capability ledger now records 149 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -248,16 +248,27 @@ path/archive/first-run references bring the mapped total to 125; all 36 remain
 pending for concrete input, serialization, concurrency, recovery and error gaps.
 The data-root fixture pre-expands its tilde case, so it does not prove home
 expansion. Native containment, transport bounds, private errors and staged rollback
-are retained; missing acceptance remains explicit in the ledger.
+are retained; missing acceptance remains explicit in the ledger. Twenty-four
+additional data-lock references bring the total to 149 and remain pending: explicit
+native acquisition budgets are not the original per-acquisition timeout policy,
+thread-bound guards do not supply a public ownership predicate, and registry lease
+checks are not the original standalone cached-lease probe.
 
 The shared atomic JSON writer now preserves the original ASCII Unicode escapes
 and Windows structural CRLF, reusing the existing UTF-16 escaping helper. Twelve
-prepared original-derived byte comparisons cover ASCII/control/BMP/astral strings,
-Unicode keys, nesting, ordering and empty documents. Exact historical byte failure
-and current acceptance remain unverified. Serialization precedes publication;
-exclusive creation, sync, rename/retry and exact byte rollback are unchanged.
+original-derived byte comparisons passed on Windows and Linux in batch `39169080131`,
+covering ASCII/control/BMP/astral strings, Unicode keys, nesting, order and empty
+documents. Both systems first proved the exact historical byte assertion failure,
+then restored fixed bytes before current acceptance. Serialization still precedes
+publication; exclusive creation, sync, rename/retry and exact byte rollback are unchanged.
 General numeric/nonfinite/surrogate domains and direct export/ZIP formatting remain
 separate incomplete contracts.
+
+Existing cross-runtime session-path contention uses `DataLock`, not the native
+`SessionLease` lifecycle. A direct public acquire/drop scenario is prepared for both
+contention directions, explicit refusal categories, continued exclusion after a
+refused contender and successful reacquisition after release. It retains the existing
+data-lock scenario. Hosted execution is pending; no production defect or repair is claimed.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -276,10 +287,10 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `323db4f` ran in hosted batch
-[39162383046](https://github.com/KiaroSama/Numera-Browser/actions/runs/39162383046).
+Source `9a03042` ran in hosted batch
+[39169080131](https://github.com/KiaroSama/Numera-Browser/actions/runs/39169080131).
 All source platforms, both native tiers and all eight relocated Windows/Linux
-cases passed. Both native tiers passed strict lint, all fifteen historical
+cases passed. Both native tiers passed strict lint, all sixteen historical
 failure/restoration proofs and current tests. macOS passed 2,829 tests with 13
 explicit platform limits. Its earlier unresolved-report reader snapshot's cause
 remains unproved: a passing replacement does not establish why it failed, and the

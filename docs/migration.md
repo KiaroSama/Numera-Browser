@@ -6,17 +6,17 @@ The existing Python application remains the default and rollback implementation.
 [candidate executable](migration-candidate.md), **not an installed replacement**.
 Passing library or narrow entrypoint tests does not certify a finished migration.
 
-## Current integration status — October 18, 2026
+## Current integration status — October 19, 2026
 
-The latest completed source checkpoint is `323db4f`. Its manual hosted batch
-[39162383046](https://github.com/KiaroSama/Numera-Browser/actions/runs/39162383046)
-failed overall at 20:35 UTC. Source, both native tiers, eight relocated cases and
-dashboard checks passed. Both native tiers proved all 15 historical failures,
-restored fixed bytes and passed the current suite, including eight complete
-first-run summaries. Build/proof and current-test phases stayed within unchanged bounds.
+The latest completed source checkpoint is `9a03042`. Its manual hosted batch
+[39169080131](https://github.com/KiaroSama/Numera-Browser/actions/runs/39169080131)
+failed overall on October 18 at 22:05 UTC. Source, both native tiers, eight relocated
+cases and dashboard checks passed. Both native tiers proved all 16 historical
+failures, restored fixed bytes and passed the current suite, including 12 exact
+persisted-JSON byte comparisons. Build/proof and test phases kept unchanged bounds.
 macOS passed, but its prior reader snapshot's cause remains unproved.
-CodeQL still failed. Twelve exact persisted-JSON byte comparisons await hosted proof.
-The [candidate status](migration-candidate.md) records 125 mapped references; broader acceptance is open.
+CodeQL and required verification still failed. Direct native session-lease acceptance is prepared, not verified.
+The [candidate status](migration-candidate.md) records 149 mapped references; broader acceptance is open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The
