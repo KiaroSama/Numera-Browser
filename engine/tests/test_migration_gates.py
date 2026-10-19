@@ -128,9 +128,9 @@ def test_mapped_occurrences_retain_frozen_inventory_and_block_selection(tmp_path
     assert len(identifiers) == len(set(identifiers)) == 907
     assert document['source_commit'] == '13b6d9c6973281fe123353eaec05b29d65781a2d'
     mapped = [row for row in rows if row['target'] is not None]
-    assert len(mapped) >= 223, 'Reviewed occurrence mappings were lost'
+    assert len(mapped) >= 239, 'Reviewed occurrence mappings were lost'
     for prefix, count in [('config_store.py::', 13), ('folders.py::', 13), ('paths.py::', 24), ('data_locks.py::', 24),
-                          ('webstore.py::', 15), ('store.py::unloadable_extensions', 1), ('archive.py::', 6), ('firstrun.py::', 6), ('cookies.py::', 9), ('cli/browser.py::cmd_cookies_', 3), ('repo.py::', 39), ('server/stores.py::DashboardStore', 23)]:
+                          ('webstore.py::', 15), ('store.py::unloadable_extensions', 1), ('archive.py::', 6), ('firstrun.py::', 6), ('cookies.py::', 9), ('cli/browser.py::cmd_cookies_', 3), ('repo.py::', 39), ('server/stores.py::DashboardStore', 23), ('convert.py::', 15), ('server/convert.py::', 1)]:
         selected = [row for row in rows if row['id'].startswith(f'engine/numera/{prefix}')]
         assert len(selected) == count
         assert all(row['target'] and row['test'] and row['status'] == 'pending' for row in selected), \

@@ -237,6 +237,16 @@ REGRESSIONS = (
                 '075d140ff7ec579549192429042da4438f382563d44c069bb3da013d5e5ecf9f',
         },
     },
+    {
+        'target': 'conversion_parity',
+        'test': 'integer_conversion_matches_original_grammar_defaults_and_seed_magnitude',
+        'symptom': 'Integer conversion differs',
+        'commit': '67f6ac34073fc56bc7bffe4d577c22c7ef4049be',
+        'files': {
+            'engine-rust/src/conversion.rs':
+                '7c187a074ae65c892eddd20732685fb1e3e0af08d4e8cb4875c3bfa4b8301033',
+        },
+    },
 )
 
 

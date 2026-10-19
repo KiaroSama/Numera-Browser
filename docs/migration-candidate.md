@@ -155,7 +155,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 223 individually inspected implementation/test
+The capability ledger now records 239 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -295,8 +295,9 @@ text, valid Unicode, malformed JSON and missing files, with healthy listing neig
 and exact byte preservation. Batch `39223897493` proved the historical refusal and
 fixed-current success on both systems; broader dynamic/error-domain acceptance is incomplete.
 
-Thirty-nine repository and 23 dashboard-store references bring the mapped total to
-223, all 62 newly mapped rows pending. References identify the nearest implementation
+Thirty-nine repository and 23 dashboard-store references brought the mapped total to
+223; sixteen converter references now bring it to 239, all newly mapped rows pending.
+References identify the nearest implementation
 and test, not complete acceptance: full dynamic and failure-domain coverage remains pending.
 Optional engine-free dashboard construction, legacy mirror behavior, dynamic records,
 faults and concurrency remain explicit gaps. ID-validated path joins do not establish
@@ -336,8 +337,19 @@ case-insensitively and recognizes `socks`/`socks5h` as SOCKS5. Empty original se
 null, while nonempty whitespace-only servers retain the source's empty-host object.
 Host/port spelling, bracketed/bare IPv6, unknown-scheme HTTP fallback and credentials are
 preserved without network URL canonicalization. A 112-case frozen-original public
-`to_dashboard` observer compares complete results and unchanged input state. Exact `e04e4fc`
-historical assertion failure/restoration and current Windows/Linux acceptance are pending.
+`to_dashboard` observer compares complete results and unchanged input state. Batch
+`39261214144` proved the exact `e04e4fc` historical failure, restored fixed bytes and
+passed all 112 cases on Windows and Linux.
+
+Integer conversion now separates numeric truncation from integer-text parsing: decimal
+and exponent strings fall back to the field default, while signed Unicode decimal digits,
+single digit underscores and permitted boundary whitespace are accepted. Seed magnitude
+is retained without a float roundtrip or saturating cast; integer text keeps the original
+4,300-digit limit. Fractional-memory/pixel-ratio conversion and model validation are
+unchanged. An 80-case frozen-original public conversion observer compares full profiles,
+dashboard roundtrips and input preservation. Exact `67f6ac3` historical failure/restoration
+and current Windows/Linux acceptance are pending. Counts beyond the typed model's range
+remain an incomplete domain, not a claim of arbitrary-model parity.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -356,19 +368,19 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `e04e4fc` ran in hosted batch
-[39253919503](https://github.com/KiaroSama/Numera-Browser/actions/runs/39253919503).
-All source platforms, Windows native, eight relocated cases and current native suites
-passed; strict lint and 19 Linux/20 Windows historical failure/restoration proofs passed.
-The 69 converter-text cases passed on both systems, alongside prior edit/divergence/reader proofs.
-Linux native acceptance failed: vault-read latency was inconclusive, with native ranges
-71.302–339.860 ms versus original 294.654–304.417 ms across seven alternating pairs.
-The other three Linux latency and all four memory ranges passed; Windows passed all four
-latency/memory comparisons. Neither this overlap nor the earlier creation overlap has a
-proved cause; samples and acceptance criteria are unchanged. macOS passed, not proof of
-its earlier reader snapshot's cause. CodeQL reported the same 24 annotation claims:
-prior 20 plus four crypto fallback flows. Required verification failed; distribution,
-promotion and publication were skipped.
+Source `67f6ac3` ran in hosted batch
+[39261214144](https://github.com/KiaroSama/Numera-Browser/actions/runs/39261214144).
+All 28 nondependent workflow jobs passed: source platforms, both native tiers, eight
+relocated cases and dashboard checks. Strict lint, current native suites and 20 Linux/
+21 Windows historical failure/restoration proofs passed, including 112 reverse-proxy cases.
+Both platforms reported no regression in all four foreground CLI latency/memory scenarios.
+Earlier Linux vault-read overlap remains recorded: native 71.302–339.860 ms versus
+original 294.654–304.417 ms on `e04e4fc`; this and the earlier creation overlap still
+have no proved cause. Passing later measurements do not diagnose or erase those results.
+Samples and acceptance criteria are unchanged. macOS passed, not proof of its earlier
+reader snapshot's cause. CodeQL reported the same 24 annotation claims: prior 20 plus
+four crypto fallback flows. Required verification failed; distribution, promotion and
+publication were skipped.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier
 `CamoufoxNotInstalled` context-open failure is resolved by preserving the effective

@@ -36,7 +36,46 @@ pub(crate) fn value_text(v: &Value) -> String {
         _ => v.to_string(),
     }
 }
+fn integer_number(value: &Value) -> Option<Value> {
+    let integer = match value {
+        Value::String(text) => {
+            let integer = crate::decimal::integer(text)?;
+            if integer.trim_start_matches('-').len() > 4300 {
+                return None;
+            }
+            integer
+        }
+        Value::Number(number) => {
+            let text = number.to_string();
+            if !text.contains(['.', 'e', 'E']) {
+                text
+            } else {
+                format!(
+                    "{:.0}",
+                    number.as_f64().filter(|value| value.is_finite())?.trunc()
+                )
+            }
+        }
+        _ => return None,
+    };
+    let negative = integer.starts_with('-');
+    let digits = integer.trim_start_matches('-').trim_start_matches('0');
+    let normalized = if digits.is_empty() {
+        "0".into()
+    } else if negative {
+        format!("-{digits}")
+    } else {
+        digits.to_owned()
+    };
+    normalized
+        .parse::<serde_json::Number>()
+        .ok()
+        .map(Value::Number)
+}
 fn number(v: &Value, default: f64, whole: bool) -> Value {
+    if whole {
+        return integer_number(v).unwrap_or_else(|| json!(default as i64));
+    }
     let out = if v.is_boolean() {
         None
     } else {
@@ -44,7 +83,7 @@ fn number(v: &Value, default: f64, whole: bool) -> Value {
             .or_else(|| v.as_str().and_then(|v| v.parse::<f64>().ok()))
     };
     let n = out.filter(|v| v.is_finite()).unwrap_or(default);
-    if whole || n.fract() == 0.0 {
+    if n.fract() == 0.0 {
         json!(n as i64)
     } else {
         json!(n)
@@ -273,12 +312,7 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
     } else {
         "unsaved".into()
     };
-    let seed = d["seed"]
-        .as_number()
-        .filter(|number| !number.to_string().contains(['.', 'e', 'E']))
-        .cloned()
-        .map(Value::Number)
-        .unwrap_or_else(|| number(&d["seed"], 0.0, true));
+    let seed = number(&d["seed"], 0.0, true);
     let seed = if truth(&seed) {
         seed
     } else {

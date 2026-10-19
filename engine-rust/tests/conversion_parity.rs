@@ -204,6 +204,118 @@ with run_log('conversion-proxy-oracle',parent/'logs') as log:
 }
 
 #[test]
+fn integer_conversion_matches_original_grammar_defaults_and_seed_magnitude()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("conversion-integer")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import copy,json,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import convert
+from run_logging import run_log
+fixture=json.loads((repository/'engine-rust/tests/fixtures/conversion.json').read_text(encoding='utf-8'))
+base=next(case['input'] for case in fixture['cases'] if case['operation']=='to-engine')
+base=dict(base,id='conversion-integer')
+original=convert.Profile
+def clocked(*args,**kwargs):
+    kwargs.setdefault('created_at',1700000000.0)
+    kwargs.setdefault('updated_at',1700000000.0)
+    return original(*args,**kwargs)
+convert.Profile=clocked
+rows=[]
+def add(label,value,seed_only=False):
+    changes={'seed':value}
+    if not seed_only:
+        changes.update({key:value for key in ('cores','mediaVideo','mediaAudio','mediaSpeakers','maxTouchPoints')})
+    rows.append((label,changes))
+values=['3.5','1e2','-3.5','+1_024','١٢','۱۲','１２','𝟙𝟚','1__2','_12','12_',
+        '+_12','+ 12','0x10','²','',None,True,False,[],{},0,12,-12,3.9,-3.9,
+        9007199254740993,-9007199254740993,1e18,-1e18,'-000','+00012']
+for index,value in enumerate(values):
+    add('value-'+str(index),value)
+whitespace=[*range(9,14),*range(0x1c,0x20),0x20,0x85,0xa0,0x1680,
+            *range(0x2000,0x200b),0x2028,0x2029,0x202f,0x205f,0x3000]
+for scalar in whitespace+[0x200b,0,0xfeff]:
+    marker=chr(scalar)
+    add('boundary-'+hex(scalar),marker+'+١_٢'+marker)
+for value in ('NaN','Infinity','-inf','9'*4301,'0'*4301):
+    add('invalid-'+str(len(rows)),value)
+for value in (2**80+1,-(2**80+1),str(2**80+1),'-'+str(2**80+1),
+              '+000'+str(2**80+1),'9'*4300,'0'*4299+'1','1_'*4299+'1',
+              1e100,-1e100,1.7976931348623157e308):
+    add('seed-'+str(len(rows)),value,True)
+observed=[]
+with run_log('conversion-integer-oracle',parent/'logs') as log:
+    for label,changes in rows:
+        record=dict(copy.deepcopy(base),**changes)
+        before=copy.deepcopy(record)
+        profile=convert.to_engine_profile(record)
+        observed.append({'label':label,'changes':changes,'profile':profile.to_dict(),
+                         'dashboard':convert.to_dashboard_profile(profile)})
+        assert record==before,'Original integer conversion mutated its input'
+    log.info('Observed integer conversion cases=%s',len(observed))
+    print(json.dumps({'base':base,'cases':observed},ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 1_048_576,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        observed.exit, 0,
+        "Original integer conversion observer failed"
+    );
+    let oracle: Value = serde_json::from_slice(&observed.stdout)?;
+    let cases = oracle["cases"].as_array().ok_or("Integer cases missing")?;
+    assert_eq!(cases.len(), 80, "Integer conversion observations missing");
+    for case in cases {
+        let mut record = oracle["base"].clone();
+        record
+            .as_object_mut()
+            .ok_or("Profile input missing")?
+            .extend(
+                case["changes"]
+                    .as_object()
+                    .ok_or("Numeric changes missing")?
+                    .clone(),
+            );
+        let before = record.clone();
+        let profile = to_engine(&record, 1700000000.0)?;
+        assert_eq!(
+            serde_json::to_value(&profile)?,
+            case["profile"],
+            "Integer conversion differs: {}",
+            case["label"]
+        );
+        assert_eq!(
+            to_dashboard(&profile),
+            case["dashboard"],
+            "Integer conversion roundtrip differs: {}",
+            case["label"]
+        );
+        assert_eq!(record, before, "Integer conversion mutated its input");
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn profile_shapes_and_secret_intent_match_source() -> Result<(), Box<dyn std::error::Error>> {
     let oracle: Value = serde_json::from_str(include_str!("fixtures/conversion.json"))?;
     let cases = oracle["cases"]
