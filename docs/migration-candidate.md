@@ -155,7 +155,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 149 individually inspected implementation/test
+The capability ledger now records 161 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -264,11 +264,22 @@ publication; exclusive creation, sync, rename/retry and exact byte rollback are 
 General numeric/nonfinite/surrogate domains and direct export/ZIP formatting remain
 separate incomplete contracts.
 
-Existing cross-runtime session-path contention uses `DataLock`, not the native
-`SessionLease` lifecycle. A direct public acquire/drop scenario is prepared for both
-contention directions, explicit refusal categories, continued exclusion after a
-refused contender and successful reacquisition after release. It retains the existing
-data-lock scenario. Hosted execution is pending; no production defect or repair is claimed.
+The earlier cross-runtime session-path scenario uses `DataLock`. A separate direct
+native `SessionLease` acquire/drop scenario passed on Windows and Linux in batch
+`39204028426`: both contention directions, explicit refusal categories, continued
+exclusion after a refused contender and successful reacquisition after release.
+The existing data-lock scenario also passed. This adds lifecycle acceptance, not a
+production repair; crash, duplicate-handle and full fault domains remain incomplete.
+
+Nine cookie-format/SDK references and three cookie CLI references bring the mapped
+total to 161; all twelve remain pending. Dynamic values, numeric spelling, malformed
+formats, SDK failures, contention and broader browser acceptance remain incomplete.
+The cookie CLI file writer now translates every LF on Windows before unchanged atomic
+publication, matching the original text-mode output. Returned format strings and HTTP
+output are unchanged. Existing CLI scenarios now compare actual original file bytes,
+including Unicode and embedded controls, rather than normalizing CRLF away. Hosted
+proof is pending; the exact historical-byte failure applies only to Windows, while
+the complete current suite still runs on both systems.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -287,8 +298,8 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `9a03042` ran in hosted batch
-[39169080131](https://github.com/KiaroSama/Numera-Browser/actions/runs/39169080131).
+Source `06b6966` ran in hosted batch
+[39204028426](https://github.com/KiaroSama/Numera-Browser/actions/runs/39204028426).
 All source platforms, both native tiers and all eight relocated Windows/Linux
 cases passed. Both native tiers passed strict lint, all sixteen historical
 failure/restoration proofs and current tests. macOS passed 2,829 tests with 13

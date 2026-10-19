@@ -171,6 +171,9 @@ impl Cookies<'_> {
             }
         });
         let output = cookie_format::dumps(&rows, format)?;
+        // The original text-mode export translates every LF on Windows, including embedded CRLF.
+        #[cfg(windows)]
+        let output = output.replace('\n', "\r\n");
         crate::storage::atomic::write_bytes(file, output.as_bytes())?;
         Ok(Outcome::success(
             json!({"ok":true,"count":rows.len(),"file":file,"format":format}),

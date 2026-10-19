@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 
 REGRESSIONS = (
     {
@@ -172,6 +173,17 @@ REGRESSIONS = (
                 'd02177de1a44ef62ebe74a4c2bd6bc17b588b5d2f0342d33a7eca20a4aa8c7dd',
         },
     },
+    {
+        'target': 'cli_cookie_parity',
+        'test': 'cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy',
+        'symptom': 'Cookie CLI persisted export bytes differ',
+        'commit': '06b69660cb5378588167654fd0f7c51e4a64724d',
+        'platform': 'win32',
+        'files': {
+            'engine-rust/src/cli/cookie_commands.rs':
+                '0eb9dc93b3279e5bfa52bedecf1a2411286a07caa356ace94859faf4d2cbb521',
+        },
+    },
 )
 
 
@@ -255,7 +267,9 @@ def prove(root: Path, original: Path, logger) -> None:
     previous = {key: os.environ.get(key) for key in keys}
     os.environ.update({ENVIRONMENT: str(original), 'PYTHONDONTWRITEBYTECODE': '1'})
     try:
-        for index, case in enumerate(REGRESSIONS):
+        applicable = (case for case in REGRESSIONS
+                      if case.get('platform', sys.platform) == sys.platform)
+        for index, case in enumerate(applicable):
             evidence = FailureEvidence(case)
             logger.addHandler(evidence)
             try:

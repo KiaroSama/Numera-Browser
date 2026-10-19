@@ -74,8 +74,9 @@ def test_historical_execution_requires_the_exact_clean_hosted_source(monkeypatch
         assert len(calls) == 2
 
 
+@pytest.mark.parametrize('platform', ['win32', 'linux'])
 @pytest.mark.parametrize('damage', [None, 'warm', 'launch', 'assertion', 'integrity'])
-def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch, damage):
+def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch, damage, platform):
     module = load()
     source = tmp_path / 'engine-rust/src/models.rs'
     source.parent.mkdir(parents=True)
@@ -83,7 +84,12 @@ def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch
     source.write_bytes(current)
     case = dict(module.REGRESSIONS[0], files={
         'engine-rust/src/models.rs': hashlib.sha256(historical).hexdigest()})
-    monkeypatch.setattr(module, 'REGRESSIONS', (case, case) if damage is None else (case,))
+    excluded = dict(case, platform='linux' if platform == 'win32' else 'win32',
+                    commit='excluded-source-must-not-be-read')
+    selected = dict(case, platform=platform)
+    monkeypatch.setattr(module, 'sys', SimpleNamespace(platform=platform))
+    monkeypatch.setattr(module, 'REGRESSIONS',
+                        (excluded, selected, case) if damage is None else (excluded, selected))
     sha = 'a' * 40
     monkeypatch.setenv('GITHUB_ACTIONS', 'true')
     monkeypatch.setenv('GITHUB_REPOSITORY', 'KiaroSama/Numera-Browser')

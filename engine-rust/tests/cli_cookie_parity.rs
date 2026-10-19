@@ -63,6 +63,14 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
     let row = json!({"name":"fixture","value":"synthetic","domain":".fixture.test","path":"/","expires":-1.0,"httpOnly":false,"secure":false,"sameSite":"Lax"});
     std::fs::write(native.join("empty.json"), "[]")?;
     std::fs::write(native.join("rows.json"), serde_json::to_vec(&json!([row]))?)?;
+    let read_rows = document["cases"][0]["read_rows"]
+        .as_array()
+        .ok_or("Source SDK cookies missing")?;
+    assert_eq!(read_rows.len(), 2);
+    std::fs::write(
+        native.join("sdk-cookies.json"),
+        serde_json::to_vec(read_rows)?,
+    )?;
     let adapter = native.join("sdk.py");
     std::fs::write(
         &adapter,
@@ -73,7 +81,7 @@ for line in sys.stdin:
     request=json.loads(line);op=request['operation'];seen.append(op)
     if op=='hello': result={'backends':{'playwright':{'installed':True}}}
     elif op=='open': result={'opened':True,'backend':request['backend']}
-    elif op=='cookies-read': result={'cookies':[{'name':'fixture','value':'synthetic','domain':'.fixture.test'}]}
+    elif op=='cookies-read': result={'cookies':json.loads(pathlib.Path(__file__).with_name('sdk-cookies.json').read_text(encoding='utf-8'))}
     elif op=='cookies-clear': result={'cleared':True}
     elif op=='cookies-add': result={'added':True}
     else: result={'closing':True}
@@ -185,10 +193,13 @@ for line in sys.stdin:
             case["exit"].as_i64().ok_or("Exit missing")? as i32
         );
         assert_eq!(outcome.payload, case["payload"], "{original:?}");
-        if let Some(expected) = case["output"].as_str() {
+        if original[1] == "export" {
+            let expected: Vec<u8> = serde_json::from_value(case["output_bytes"].clone())?;
+            assert!(!expected.is_empty(), "Original export bytes missing");
             assert_eq!(
-                std::fs::read_to_string(file.ok_or("Export file missing")?)?.replace("\r\n", "\n"),
-                expected
+                std::fs::read(file.ok_or("Export file missing")?)?,
+                expected,
+                "Cookie CLI persisted export bytes differ: {original:?}"
             );
         }
         let activated = seen.exists();

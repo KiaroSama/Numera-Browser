@@ -22,6 +22,8 @@ def cases(parent, human=False, tty=False):
     root=parent/'store';store=ProfileStore(root)
     store.save(Profile(id='fixture',name='Fixture',fingerprint=generate(seed=42)))
     row=cookies.normalize({'name':'fixture','value':'synthetic','domain':'.fixture.test'})
+    read_rows=[row, cookies.normalize({'name':'α فارسی 😀','value':'synthetic\tline\ncarriage\r\nend',
+                                       'domain':'.fixture.test','path':'/space path'})]
     (parent/'empty.json').write_text('[]',encoding='utf-8')
     (parent/'rows.json').write_text(json.dumps([row]),encoding='utf-8')
     operations=[['cookies','list','Fixture','--json'],
@@ -47,7 +49,7 @@ def cases(parent, human=False, tty=False):
             return len(jar)
         with contextlib.ExitStack() as stack:
             stack.enter_context(contextlib.redirect_stdout(output))
-            stack.enter_context(patch.object(cookies,'read',return_value=[row]))
+            stack.enter_context(patch.object(cookies,'read',return_value=read_rows))
             stack.enter_context(patch.object(cookies,'write',side_effect=write))
             if human: stack.enter_context(patch.object(handlers,'emit',side_effect=emit))
             code=args.func(args,store)
@@ -57,5 +59,7 @@ def cases(parent, human=False, tty=False):
             payload['error']='no usable cookies found in '+Path(args.file).name
         produced=Path(args.file).read_text(encoding='utf-8') if argv[1]=='export' else None
         stdout=output.getvalue().replace(str(parent),'fixture-files') if human else None
-        result.append({'argv':original,'exit':code,'payload':payload,'written':seen,'output':produced,'stdout':stdout,'tty':tty})
+        produced_bytes=list(Path(args.file).read_bytes()) if argv[1]=='export' else None
+        result.append({'argv':original,'exit':code,'payload':payload,'written':seen,'output':produced,
+                       'output_bytes':produced_bytes,'read_rows':read_rows,'stdout':stdout,'tty':tty})
     return result
