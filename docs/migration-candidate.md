@@ -345,11 +345,19 @@ Integer conversion now separates numeric truncation from integer-text parsing: d
 and exponent strings fall back to the field default, while signed Unicode decimal digits,
 single digit underscores and permitted boundary whitespace are accepted. Seed magnitude
 is retained without a float roundtrip or saturating cast; integer text keeps the original
-4,300-digit limit. Fractional-memory/pixel-ratio conversion and model validation are
-unchanged. An 80-case frozen-original public conversion observer compares full profiles,
-dashboard roundtrips and input preservation. Exact `67f6ac3` historical failure/restoration
-and current Windows/Linux acceptance are pending. Counts beyond the typed model's range
-remain an incomplete domain, not a claim of arbitrary-model parity.
+4,300-digit limit. An 80-case frozen-original public conversion observer compares full
+profiles, dashboard roundtrips and input preservation. Batch `39267690547` proved the
+exact `67f6ac3` historical failure, restored fixed bytes and passed all 80 cases on both
+systems. The sixteen pending converter references were consumed in the same batch.
+Counts beyond the typed model's range remain incomplete, not arbitrary-model parity.
+
+Fractional memory and pixel-ratio text now reuse the existing Unicode decimal/underscore
+parser. Finite whole memory values retain their full integer value instead of saturating
+at i64; fractional values, zero/default and iOS behavior remain distinct. An 82-case
+frozen-original observer compares full profiles and dashboard roundtrips, exact integer
+memory and finite float bits, with unchanged inputs. Exact `ba29315` historical failure/
+restoration and current Windows/Linux acceptance are pending. Models, validation and the
+shared parser itself are unchanged.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -368,11 +376,11 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `67f6ac3` ran in hosted batch
-[39261214144](https://github.com/KiaroSama/Numera-Browser/actions/runs/39261214144).
+Source `ba29315` ran in hosted batch
+[39267690547](https://github.com/KiaroSama/Numera-Browser/actions/runs/39267690547).
 All 28 nondependent workflow jobs passed: source platforms, both native tiers, eight
-relocated cases and dashboard checks. Strict lint, current native suites and 20 Linux/
-21 Windows historical failure/restoration proofs passed, including 112 reverse-proxy cases.
+relocated cases and dashboard checks. Strict lint, current native suites and 21 Linux/
+22 Windows historical failure/restoration proofs passed, including 80 integer cases.
 Both platforms reported no regression in all four foreground CLI latency/memory scenarios.
 Earlier Linux vault-read overlap remains recorded: native 71.302–339.860 ms versus
 original 294.654–304.417 ms on `e04e4fc`; this and the earlier creation overlap still

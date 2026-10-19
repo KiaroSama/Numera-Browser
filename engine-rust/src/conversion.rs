@@ -72,19 +72,21 @@ fn integer_number(value: &Value) -> Option<Value> {
         .ok()
         .map(Value::Number)
 }
+fn finite_number(value: &Value) -> Option<f64> {
+    match value {
+        Value::Number(number) => number.as_f64(),
+        Value::String(text) => crate::browser::cookie_expiry::numeric_text(text),
+        _ => None,
+    }
+    .filter(|number| number.is_finite())
+}
 fn number(v: &Value, default: f64, whole: bool) -> Value {
     if whole {
         return integer_number(v).unwrap_or_else(|| json!(default as i64));
     }
-    let out = if v.is_boolean() {
-        None
-    } else {
-        v.as_f64()
-            .or_else(|| v.as_str().and_then(|v| v.parse::<f64>().ok()))
-    };
-    let n = out.filter(|v| v.is_finite()).unwrap_or(default);
+    let n = finite_number(v).unwrap_or(default);
     if n.fract() == 0.0 {
-        json!(n as i64)
+        integer_number(&json!(n)).expect("Finite whole conversion number")
     } else {
         json!(n)
     }
@@ -325,14 +327,8 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
             default.into()
         }
     };
-    let ratio = d["devicePixelRatio"]
-        .as_f64()
-        .or_else(|| {
-            d["devicePixelRatio"]
-                .as_str()
-                .and_then(|value| value.parse::<f64>().ok())
-        })
-        .filter(|value| value.is_finite() && *value != 0.0)
+    let ratio = finite_number(&d["devicePixelRatio"])
+        .filter(|value| *value != 0.0)
         .map_or_else(|| c["PIXEL_RATIOS"][os][0].clone(), |value| json!(value));
     let fp=Fingerprint::from_record(&json!({"os":os,"user_agent":ua,"platform":c["NAV_PLATFORM"][os],"ch_platform":c["CH_PLATFORM"][os],"chrome_version":chrome,
         "screen_width":sw,"screen_height":sh,"viewport_width":sw,"viewport_height":(sh-if os=="ios"{113}else if mobile{80}else{88}).max(1),

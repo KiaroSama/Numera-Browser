@@ -8,15 +8,15 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 19, 2026
 
-The latest completed source checkpoint is `67f6ac3`. Its manual hosted batch
-[39261214144](https://github.com/KiaroSama/Numera-Browser/actions/runs/39261214144)
-failed overall on October 19 at 13:57 UTC. All 28 nondependent workflow jobs passed:
+The latest completed source checkpoint is `ba29315`. Its manual hosted batch
+[39267690547](https://github.com/KiaroSama/Numera-Browser/actions/runs/39267690547)
+failed overall on October 19 at 14:32 UTC. All 28 nondependent workflow jobs passed:
 source platforms, both native tiers, eight relocated cases and dashboard checks. Native
-suites proved 20 Linux/21 Windows historical failures, restored fixed bytes and passed.
-The 112 reverse-proxy and 69 converter-text cases passed on both systems, alongside prior storage cases.
+suites proved 21 Linux/22 Windows historical failures, restored fixed bytes and passed.
+The 80 integer-conversion cases passed on both systems, alongside prior proxy/text/storage cases.
 All four CLI latency/memory comparisons passed; prior Linux vault-read/creation overlaps remain unexplained, not erased by this result.
 macOS passed, but its prior reader snapshot's cause remains unproved. CodeQL has the same 24
-annotation claims and required verification failed; [candidate status](migration-candidate.md) records 239 nearest references, passing proxy conversion and prepared integer proof, not complete occurrence acceptance.
+annotation claims and required verification failed; [candidate status](migration-candidate.md) records 239 nearest references, passing integer conversion and prepared fractional proof, not complete occurrence acceptance.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

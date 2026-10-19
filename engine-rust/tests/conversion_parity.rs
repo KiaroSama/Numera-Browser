@@ -316,6 +316,149 @@ with run_log('conversion-integer-oracle',parent/'logs') as log:
 }
 
 #[test]
+fn fractional_conversion_matches_original_numeric_values_and_defaults()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("conversion-fractional")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import copy,json,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import convert
+from run_logging import run_log
+fixture=json.loads((repository/'engine-rust/tests/fixtures/conversion.json').read_text(encoding='utf-8'))
+base=next(case['input'] for case in fixture['cases'] if case['operation']=='to-engine')
+base=dict(base,id='conversion-fractional')
+original=convert.Profile
+def clocked(*args,**kwargs):
+    kwargs.setdefault('created_at',1700000000.0)
+    kwargs.setdefault('updated_at',1700000000.0)
+    return original(*args,**kwargs)
+convert.Profile=clocked
+rows=[]
+def add(label,value,os='Windows'):
+    rows.append((label,{'memory':value,'devicePixelRatio':value,'os':os}))
+values=[' 0.25 ','١.٢٥','۱.۲۵','１.２５','𝟙.𝟚𝟝','1_0.2_5e-1','+2.','-.25',
+        '1e2','1e100','-1e100',1e100,-1e100,2**80+1,9007199254740993,
+        0.25,0.5,0,0.0,-0.0,'-0','0e3',None,True,False,[],{},'',
+        '1__2','_1','1_','1_.0','1._0','1e_2','1e+_2','1,25','0x1p2',
+        'NaN','+Infinity','-inf','1e9999','1e-9999','5e-324','1.7976931348623157e308']
+for index,value in enumerate(values): add('value-'+str(index),value)
+whitespace=[*range(9,14),*range(0x1c,0x20),0x20,0x85,0xa0,0x1680,
+            *range(0x2000,0x200b),0x2028,0x2029,0x202f,0x205f,0x3000]
+for scalar in whitespace+[0x200b,0,0xfeff]:
+    marker=chr(scalar)
+    add('boundary-'+hex(scalar),marker+'+١.٢_٥'+marker)
+for value in (' 0.25 ','1e100','NaN',0,None,False):
+    add('ios-'+str(len(rows)),value,'iOS')
+observed=[]
+with run_log('conversion-fractional-oracle',parent/'logs') as log:
+    for label,changes in rows:
+        record=dict(copy.deepcopy(base),**changes)
+        before=copy.deepcopy(record)
+        profile=convert.to_engine_profile(record)
+        observed.append({'label':label,'changes':changes,'profile':profile.to_dict(),
+                         'memory_float':isinstance(profile.fingerprint.device_memory,float),
+                         'dashboard':convert.to_dashboard_profile(profile)})
+        assert record==before,'Original fractional conversion mutated its input'
+    log.info('Observed fractional conversion cases=%s',len(observed))
+    print(json.dumps({'base':base,'cases':observed},ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 1_048_576,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original fractional observer failed");
+    let oracle: Value = serde_json::from_slice(&observed.stdout)?;
+    let cases = oracle["cases"]
+        .as_array()
+        .ok_or("Fractional cases missing")?;
+    assert_eq!(
+        cases.len(),
+        82,
+        "Fractional conversion observations missing"
+    );
+    for case in cases {
+        let mut record = oracle["base"].clone();
+        record
+            .as_object_mut()
+            .ok_or("Profile input missing")?
+            .extend(
+                case["changes"]
+                    .as_object()
+                    .ok_or("Numeric changes missing")?
+                    .clone(),
+            );
+        let before = record.clone();
+        let profile = to_engine(&record, 1700000000.0)?;
+        for (mut actual, mut expected, memory, ratio) in [
+            (
+                serde_json::to_value(&profile)?,
+                case["profile"].clone(),
+                "/fingerprint/device_memory",
+                "/fingerprint/device_pixel_ratio",
+            ),
+            (
+                to_dashboard(&profile),
+                case["dashboard"].clone(),
+                "/memory",
+                "/devicePixelRatio",
+            ),
+        ] {
+            for path in [ratio]
+                .into_iter()
+                .chain((case["memory_float"] == true).then_some(memory))
+            {
+                let bits = |record: &Value| {
+                    record
+                        .pointer(path)
+                        .and_then(Value::as_f64)
+                        .filter(|number| number.is_finite())
+                        .map(f64::to_bits)
+                };
+                let observed = bits(&actual).ok_or("Converted numeric field is not finite")?;
+                let original = bits(&expected).ok_or("Original numeric field is not finite")?;
+                assert_eq!(
+                    observed, original,
+                    "Fractional conversion differs: {} {path}",
+                    case["label"]
+                );
+                *actual
+                    .pointer_mut(path)
+                    .ok_or("Converted numeric field missing")? = Value::Null;
+                *expected
+                    .pointer_mut(path)
+                    .ok_or("Original numeric field missing")? = Value::Null;
+            }
+            assert_eq!(
+                actual, expected,
+                "Fractional conversion differs: {}",
+                case["label"]
+            );
+        }
+        assert_eq!(record, before, "Fractional conversion mutated its input");
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn profile_shapes_and_secret_intent_match_source() -> Result<(), Box<dyn std::error::Error>> {
     let oracle: Value = serde_json::from_str(include_str!("fixtures/conversion.json"))?;
     let cases = oracle["cases"]

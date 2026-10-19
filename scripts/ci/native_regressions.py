@@ -247,6 +247,16 @@ REGRESSIONS = (
                 '7c187a074ae65c892eddd20732685fb1e3e0af08d4e8cb4875c3bfa4b8301033',
         },
     },
+    {
+        'target': 'conversion_parity',
+        'test': 'fractional_conversion_matches_original_numeric_values_and_defaults',
+        'symptom': 'Fractional conversion differs',
+        'commit': 'ba29315bc8a3bf5990252e2acb900cc5fa6733df',
+        'files': {
+            'engine-rust/src/conversion.rs':
+                '555663bfd93960c5a46fb92641093c288aa735ac6def3cff2521ddc0e0216c49',
+        },
+    },
 )
 
 
