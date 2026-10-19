@@ -80,6 +80,19 @@ Windows and Linux, with both outer owners reporting exit 0 and clean trees.
 A small binary session marker is not a real browser database, a crash-recovery
 drill or complete migration rollback acceptance.
 
+The prepared expansion retains that sequence and adds settings writes/reopen and
+all-or-nothing invalid-extension refusal; folder rename chains, retired-name
+recreation and reassignment; and proxy-pool import/deduplication, metadata edits,
+archive/restore, locked refusal, export, credential clearing, encrypted reimport and removal.
+The frozen CLI shares the nonempty pool `--pass` destination with the master key;
+that ambiguous edit must refuse without changing bytes, not pretend to replace a
+credential. Removal/reimport exercises the supported keyed path instead.
+It uses the actual returned pool IDs on the same store, not normalized random IDs.
+Both runtimes must agree on complete read/refusal payloads, exact protected bytes,
+unknown fields and encrypted-at-rest secrets across vault enable and key rotation.
+The existing per-command and outer budgets are unchanged. This expanded acceptance
+is source-reviewed work in progress, not yet a passing hosted result.
+
 ## Representative release performance
 
 The existing native job now prepares an optimized, current Cargo artifact for
@@ -403,19 +416,19 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `03041ce` ran in hosted batch
-[39297993608](https://github.com/KiaroSama/Numera-Browser/actions/runs/39297993608).
-All 28 nondependent workflow jobs passed: source platforms, both native tiers, eight
-relocated cases and dashboard checks. Strict lint, current native suites and 23 Linux/
-24 Windows historical failure/restoration proofs passed, including 24 activity-label cases.
+Source `ab061c8` ran in hosted batch
+[39312135957](https://github.com/KiaroSama/Numera-Browser/actions/runs/39312135957).
+There were 27 successful nondependent jobs: most source platforms, both native tiers,
+eight relocated cases and dashboard checks. Current native suites and strict lint passed,
+including 71 direct-settings/transaction-ownership cases and exact historical-test restoration.
 Both platforms reported no regression in all four foreground CLI latency/memory scenarios.
 Earlier Linux vault-read overlap remains recorded: native 71.302–339.860 ms versus
 original 294.654–304.417 ms on `e04e4fc`; this and the earlier creation overlap still
 have no proved cause. Passing later measurements do not diagnose or erase those results.
 Samples and acceptance criteria are unchanged. macOS passed, not proof of its earlier
-reader snapshot's cause. CodeQL reported the same 24 annotation claims: prior 20 plus
-four crypto fallback flows. Required verification failed; distribution, promotion and
-publication were skipped.
+reader snapshot's cause. Windows partition 0 failed an immediate identified-PID assertion;
+the prepared observer correction retains the same total deadline and persistent-survivor refusal.
+CodeQL and required verification failed; distribution, promotion and publication were skipped.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier
 `CamoufoxNotInstalled` context-open failure is resolved by preserving the effective

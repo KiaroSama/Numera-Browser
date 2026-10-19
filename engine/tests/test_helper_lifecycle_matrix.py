@@ -61,16 +61,12 @@ if sys.argv[3]=='True':time.sleep(30)
             result = helpers.run_helper([sys.executable, '-c', program, str(receipt), str(separate), str(timed_out)],
                                         timeout, manager=manager, cleanup=1)
             assert result.stdout == 'TAIL'
-        assert time.monotonic() - start < timeout + 2, 'cleanup overran the deadline plus its grace'
+        assert not manager.live(), 'helper ownership was not settled before observation'
         assert receipt.exists(), 'fixture never created the relevant child'
-        child = json.loads(receipt.read_text())
-        stat = Path(f"/proc/{child['pid']}/stat")
-        if os.name != 'nt' and stat.exists():
-            state = stat.read_text().rsplit(')', 1)[1].split()[0]
-            assert state == 'Z', 'a non-zombie fixture child survived'
-        else:
-            assert not proctree.alive(child['pid'], child['token'])
-        assert not manager.live()
+        child = json.loads(receipt.read_text(encoding='utf-8'))
+        remaining = max(0.0, start + timeout + 2 - time.monotonic())
+        _assert_fixture_process_ended(child['pid'], child['token'], deadline=remaining)
+        assert time.monotonic() - start < timeout + 2, 'cleanup overran the deadline plus its grace'
     finally:
         for h in manager.live():
             manager.settle(h, deadline=1)
@@ -300,9 +296,50 @@ def _assert_fixture_process_ended(pid, token, deadline=5.0):
         assert path.read_text().rsplit(')', 1)[1].split()[0] == 'Z'
         return
     end = time.monotonic() + deadline
-    while proctree.alive(pid, token) and time.monotonic() < end:
-        time.sleep(.01)
+    while proctree.alive(pid, token):
+        remaining = end - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(.01, remaining))
     assert not proctree.alive(pid, token)
+
+
+@pytest.mark.parametrize('disappears,budget', [(True, .05), (False, .05), (False, .005), (False, 0.0)])
+def test_fixture_process_observation_preserves_identity_deadline_and_survivor_failure(
+        monkeypatch, disappears, budget):
+    from types import SimpleNamespace
+
+    calls, waits = [], []
+    clock = [0.0]
+
+    def alive(pid, token):
+        calls.append((pid, token))
+        return not disappears or clock[0] < .02
+
+    def sleep(seconds):
+        assert 0 < seconds <= budget - clock[0]
+        waits.append(seconds)
+        clock[0] += seconds
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError('Observation must not terminate or settle a process')
+
+    monkeypatch.setattr(sys.modules[__name__], 'os', SimpleNamespace(name='nt'))
+    monkeypatch.setattr(sys.modules[__name__], 'time',
+                        SimpleNamespace(monotonic=lambda: clock[0], sleep=sleep))
+    monkeypatch.setattr(proctree, 'alive', alive)
+    monkeypatch.setattr(proctree, 'end_tree', forbidden)
+    monkeypatch.setattr(helpers.HelperManager, 'settle', forbidden)
+    monkeypatch.setattr(subprocess.Popen, 'kill', forbidden)
+    if disappears:
+        _assert_fixture_process_ended(123, 456, deadline=budget)
+        assert waits and clock[0] == pytest.approx(.02)
+    else:
+        with pytest.raises(AssertionError):
+            _assert_fixture_process_ended(123, 456, deadline=budget)
+        assert bool(waits) == (budget > 0)
+    assert calls and set(calls) == {(123, 456)}
+    assert clock[0] <= budget
 
 
 def test_failed_report_after_a_descendant_exists_ends_the_whole_tree(tmp_path, monkeypatch):
