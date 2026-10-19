@@ -363,9 +363,19 @@ Public `conversion::dashboard_coherence` now composes tolerant conversion and id
 validation in the native core. Recoverable errors become a single validation issue; the
 existing HTTP route reuses the helper without changing authentication or body admission.
 A 30-case frozen-original observer compares complete ordered issues, HTTP responses and
-input preservation. Windows/Linux acceptance is pending. No historical runtime failure
-is invented for an API that did not previously exist; older converter proofs restore
-their exact historical HTTP-route companion so the current delegate still compiles.
+input preservation. Batch `39278753551` passed all 30 cases on Windows and Linux. No
+historical runtime failure is invented for an API that did not previously exist; all
+four older converter proofs passed with their exact historical HTTP-route companions.
+
+Profile-list activity labels now accept boolean `true` as timestamp one, preserve false
+values as `never`, and use the original sequential divisions and decimal integer labels.
+Malformed truthy values still refuse through the existing HTTP error path. A prepared
+24-case frozen-original HTTP comparison checks complete responses and exact stored-byte
+preservation, including future, fractional and wide timestamps. Each original observation
+uses both actual native request clock endpoints and must agree before comparison; there
+are no sleeps, retries or label normalization. Exact `199eb08` historical bytes must fail
+the named HTTP status assertion. Windows/Linux execution is pending; no new core API,
+route, dependency or timeout is introduced.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -384,11 +394,11 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `93f8f8b` ran in hosted batch
-[39272776764](https://github.com/KiaroSama/Numera-Browser/actions/runs/39272776764).
+Source `199eb08` ran in hosted batch
+[39278753551](https://github.com/KiaroSama/Numera-Browser/actions/runs/39278753551).
 All 28 nondependent workflow jobs passed: source platforms, both native tiers, eight
 relocated cases and dashboard checks. Strict lint, current native suites and 22 Linux/
-23 Windows historical failure/restoration proofs passed, including 82 fractional cases.
+23 Windows historical failure/restoration proofs passed, including 30 core-coherence cases.
 Both platforms reported no regression in all four foreground CLI latency/memory scenarios.
 Earlier Linux vault-read overlap remains recorded: native 71.302–339.860 ms versus
 original 294.654–304.417 ms on `e04e4fc`; this and the earlier creation overlap still

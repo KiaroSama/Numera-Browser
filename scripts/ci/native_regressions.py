@@ -265,6 +265,16 @@ REGRESSIONS = (
                 '6d9a0ef84108e4ba75bcc7531adbe95069f1177f227739f2575d14bf7cc1d11e',
         },
     },
+    {
+        'target': 'profile_read_parity',
+        'test': 'relative_activity_http_matches_original_without_rewriting_storage',
+        'symptom': 'Relative activity HTTP status differs',
+        'commit': '199eb08a6a7114395513ad4ad8aba985504c91a0',
+        'files': {
+            'engine-rust/src/http/profile_routes.rs':
+                '2077705d1d09bc686361406d68b65ac99de9a049c6957bbd12974237c25935cd',
+        },
+    },
 )
 
 

@@ -201,18 +201,25 @@ fn relative_time(value: &Value, now: f64) -> Result<String, RepoError> {
     if !truth(value) {
         return Ok("never".into());
     }
-    let timestamp = value.as_f64().ok_or_else(|| {
-        RepoError::InvalidRecord("Stored activity timestamp is not numeric".into())
-    })?;
+    let timestamp = match value {
+        Value::Bool(true) => 1.0,
+        _ => value.as_f64().ok_or_else(|| {
+            RepoError::InvalidRecord("Stored activity timestamp is not numeric".into())
+        })?,
+    };
     let seconds = (now - timestamp).max(0.0);
-    Ok(if seconds < 60.0 {
-        "just now".into()
-    } else if seconds < 3600.0 {
-        format!("{}m ago", (seconds / 60.0).trunc())
-    } else if seconds < 86400.0 {
-        format!("{}h ago", (seconds / 3600.0).trunc())
+    if seconds < 60.0 {
+        return Ok("just now".into());
+    }
+    let minutes = seconds / 60.0;
+    if minutes < 60.0 {
+        return Ok(format!("{:.0}m ago", minutes.trunc()));
+    }
+    let hours = minutes / 60.0;
+    Ok(if hours < 24.0 {
+        format!("{:.0}h ago", hours.trunc())
     } else {
-        format!("{}d ago", (seconds / 86400.0).trunc())
+        format!("{:.0}d ago", (hours / 24.0).trunc())
     })
 }
 pub(super) fn decorate(state: &Profiles, mut profile: Value, now: f64) -> Result<Value, RepoError> {
