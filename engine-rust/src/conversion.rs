@@ -414,6 +414,15 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
     })
 }
 
+pub fn dashboard_coherence(record: &Value, now: f64) -> Vec<String> {
+    let profile = match to_engine(record, now) {
+        Ok(profile) => profile,
+        Err(error) => return vec![format!("could not validate: {error}")],
+    };
+    crate::identity::validate(&profile.fingerprint)
+        .unwrap_or_else(|error| vec![format!("could not validate: {error}")])
+}
+
 pub fn to_dashboard(profile: &Profile) -> Value {
     let fp = &profile.fingerprint;
     let proxy = profile.proxy.as_ref().filter(|p| !p.server.is_empty()).map_or(Value::Null, |p| {

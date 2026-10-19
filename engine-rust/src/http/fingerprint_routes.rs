@@ -20,15 +20,11 @@ pub(crate) fn routes() -> Router {
 }
 async fn validate(ObjectBody(body): ObjectBody) -> Response {
     match super::admission::blocking(move || {
-        let profile = match crate::conversion::to_engine(&Value::Object(body), 0.0) {
-            Ok(profile) => profile,
-            Err(error) => return Ok(vec![format!("could not validate: {error}")]),
-        };
-        crate::identity::validate(&profile.fingerprint)
+        crate::conversion::dashboard_coherence(&Value::Object(body), 0.0)
     })
     .await
     {
-        Ok(Ok(issues)) => Json(json!({"issues":issues})).into_response(),
+        Ok(issues) => Json(json!({"issues":issues})).into_response(),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),
     }
 }

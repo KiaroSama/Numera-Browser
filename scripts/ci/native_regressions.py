@@ -225,6 +225,8 @@ REGRESSIONS = (
         'files': {
             'engine-rust/src/conversion.rs':
                 '5fd4c1691c48c219514875526ab26bc8d43736f428ce8ee5eea18dadef2c108c',
+            'engine-rust/src/http/fingerprint_routes.rs':
+                '6d9a0ef84108e4ba75bcc7531adbe95069f1177f227739f2575d14bf7cc1d11e',
         },
     },
     {
@@ -235,6 +237,8 @@ REGRESSIONS = (
         'files': {
             'engine-rust/src/conversion.rs':
                 '075d140ff7ec579549192429042da4438f382563d44c069bb3da013d5e5ecf9f',
+            'engine-rust/src/http/fingerprint_routes.rs':
+                '6d9a0ef84108e4ba75bcc7531adbe95069f1177f227739f2575d14bf7cc1d11e',
         },
     },
     {
@@ -245,6 +249,8 @@ REGRESSIONS = (
         'files': {
             'engine-rust/src/conversion.rs':
                 '7c187a074ae65c892eddd20732685fb1e3e0af08d4e8cb4875c3bfa4b8301033',
+            'engine-rust/src/http/fingerprint_routes.rs':
+                '6d9a0ef84108e4ba75bcc7531adbe95069f1177f227739f2575d14bf7cc1d11e',
         },
     },
     {
@@ -255,6 +261,8 @@ REGRESSIONS = (
         'files': {
             'engine-rust/src/conversion.rs':
                 '555663bfd93960c5a46fb92641093c288aa735ac6def3cff2521ddc0e0216c49',
+            'engine-rust/src/http/fingerprint_routes.rs':
+                '6d9a0ef84108e4ba75bcc7531adbe95069f1177f227739f2575d14bf7cc1d11e',
         },
     },
 )

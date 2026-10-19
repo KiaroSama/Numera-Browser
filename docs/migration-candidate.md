@@ -355,9 +355,17 @@ Fractional memory and pixel-ratio text now reuse the existing Unicode decimal/un
 parser. Finite whole memory values retain their full integer value instead of saturating
 at i64; fractional values, zero/default and iOS behavior remain distinct. An 82-case
 frozen-original observer compares full profiles and dashboard roundtrips, exact integer
-memory and finite float bits, with unchanged inputs. Exact `ba29315` historical failure/
-restoration and current Windows/Linux acceptance are pending. Models, validation and the
-shared parser itself are unchanged.
+memory and finite float bits, with unchanged inputs. Batch `39272776764` proved the exact
+`ba29315` historical failure, restored fixed bytes and passed all 82 cases on Windows and
+Linux. Models, validation and the shared parser itself are unchanged.
+
+Public `conversion::dashboard_coherence` now composes tolerant conversion and identity
+validation in the native core. Recoverable errors become a single validation issue; the
+existing HTTP route reuses the helper without changing authentication or body admission.
+A 30-case frozen-original observer compares complete ordered issues, HTTP responses and
+input preservation. Windows/Linux acceptance is pending. No historical runtime failure
+is invented for an API that did not previously exist; older converter proofs restore
+their exact historical HTTP-route companion so the current delegate still compiles.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -376,11 +384,11 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `ba29315` ran in hosted batch
-[39267690547](https://github.com/KiaroSama/Numera-Browser/actions/runs/39267690547).
+Source `93f8f8b` ran in hosted batch
+[39272776764](https://github.com/KiaroSama/Numera-Browser/actions/runs/39272776764).
 All 28 nondependent workflow jobs passed: source platforms, both native tiers, eight
-relocated cases and dashboard checks. Strict lint, current native suites and 21 Linux/
-22 Windows historical failure/restoration proofs passed, including 80 integer cases.
+relocated cases and dashboard checks. Strict lint, current native suites and 22 Linux/
+23 Windows historical failure/restoration proofs passed, including 82 fractional cases.
 Both platforms reported no regression in all four foreground CLI latency/memory scenarios.
 Earlier Linux vault-read overlap remains recorded: native 71.302–339.860 ms versus
 original 294.654–304.417 ms on `e04e4fc`; this and the earlier creation overlap still
