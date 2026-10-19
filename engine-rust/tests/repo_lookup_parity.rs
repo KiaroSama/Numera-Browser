@@ -4,6 +4,197 @@ use std::{fs, path::PathBuf};
 mod common;
 
 #[test]
+fn damaged_profile_text_refuses_before_repair_or_replacement()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{
+        models::Profile,
+        ownership::capture,
+        storage::{dashboard::DashboardStore, repo::RepoError},
+    };
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("profile-text-admission")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import copy,json,os,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+os.environ.pop('NUMERA_PASSWORD',None)
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import convert
+from numera.models import Profile
+from numera.repo import ProfileRepo
+from numera.store import ProfileStore
+from numera.server.stores import DashboardStore
+from run_logging import run_log
+base=json.loads((repository/'engine-rust/tests/fixtures/repo.json').read_text(encoding='utf-8'))['cases'][0]
+original=convert.Profile
+def clocked(*args,**kwargs):
+    kwargs.setdefault('created_at',1700000000.0)
+    kwargs.setdefault('updated_at',1700000000.0)
+    return original(*args,**kwargs)
+convert.Profile=clocked
+payloads=[b'\xff',b'{"notes":"\xff"}',b'{"notes":"\xe2\x82',b'{broken']
+operations=('materialize','adopt','coherent','resolve','list','save','dash-save','dash-patch')
+observed=[]
+with run_log('profile-text-oracle',parent/'logs') as log:
+    for damaged in ('profiles','dashboard'):
+        for payload in payloads:
+            for operation in operations:
+                if payload==b'{broken' and operation not in ('materialize','adopt'):
+                    continue
+                root=parent/str(len(observed))
+                store=ProfileStore(root)
+                repo=ProfileRepo(store)
+                dashboard=DashboardStore(root,store)
+                paths=[root/'profiles/fixture00001.json',root/'dashboard/fixture00001.json']
+                for path,value in zip(paths,(base['engine'],base['dashboard'])):
+                    path.write_text(json.dumps(value),encoding='utf-8')
+                (root/damaged/'fixture00001.json').write_bytes(payload)
+                before=[path.read_bytes() for path in paths]
+                try:
+                    if operation=='materialize': result=repo.materialize_current('fixture00001')
+                    elif operation=='adopt': result=repo.adopt_engine_record('fixture00001')
+                    elif operation=='coherent': result=repo.coherent('fixture00001')
+                    elif operation=='resolve': result=store.resolve('fixture00001')
+                    elif operation=='list': result=store.list()
+                    elif operation=='save': result=repo.create(Profile.from_dict(copy.deepcopy(base['engine'])),unique_name=False)
+                    elif operation=='dash-save': result=dashboard.save(copy.deepcopy(base['dashboard']))
+                    else: result=dashboard.patch('fixture00001',lambda value:(dict(value,notes='changed'),{}))
+                    result=([value.to_dict() for value in result] if isinstance(result,list)
+                            else result.to_dict() if isinstance(result,Profile) else result)
+                    error=None
+                except UnicodeDecodeError:
+                    result,error=None,'UnicodeDecodeError'
+                after=[path.read_bytes() for path in paths]
+                unchanged=[a==b for a,b in zip(before,after)]
+                if error=='UnicodeDecodeError':
+                    assert all(unchanged),'Original refusal replaced damaged profile bytes'
+                observed.append({'operation':operation,'files':[list(raw) for raw in before],
+                                 'result':result,'error':error,'unchanged':unchanged,
+                                 'written':[json.loads(raw) if changed else None
+                                            for raw,changed in zip(after,(not value for value in unchanged))]})
+    log.info('Observed damaged profile text cases=%s',len(observed))
+    print(json.dumps({'cases':observed,'profile':base['engine'],'dashboard':base['dashboard']}))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 1_048_576,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original profile text observer failed");
+    let document: Value = serde_json::from_slice(&observed.stdout)?;
+    let cases = document["cases"]
+        .as_array()
+        .ok_or("Profile text cases missing")?;
+    assert_eq!(cases.len(), 52, "Profile text observations missing");
+    assert_eq!(
+        cases
+            .iter()
+            .filter(|case| case["error"] == "UnicodeDecodeError")
+            .count(),
+        48,
+        "Original damaged profile refusals missing"
+    );
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        let paths = [
+            root.join("profiles/fixture00001.json"),
+            root.join("dashboard/fixture00001.json"),
+        ];
+        for (path, bytes) in paths
+            .iter()
+            .zip(case["files"].as_array().ok_or("Input bytes missing")?)
+        {
+            fs::create_dir_all(path.parent().ok_or("Profile parent missing")?)?;
+            let expected = serde_json::from_value::<Vec<u8>>(bytes.clone())?;
+            fs::write(path, &expected)?;
+            assert_eq!(fs::read(path)?, expected, "Profile text input bytes differ");
+        }
+        let before = paths.iter().map(fs::read).collect::<Result<Vec<_>, _>>()?;
+        let repo = ProfileRepo::new(root.clone(), None);
+        let dashboard = DashboardStore::new(root, None);
+        let time = 1700000000.0;
+        let result = match case["operation"].as_str() {
+            Some("materialize") => repo
+                .materialize("fixture00001", time)
+                .map(serde_json::to_value),
+            Some("adopt") => repo.adopt("fixture00001", time).map(serde_json::to_value),
+            Some("coherent") => repo
+                .coherent("fixture00001", time)
+                .map(serde_json::to_value),
+            Some("resolve") => repo.resolve("fixture00001", time).map(serde_json::to_value),
+            Some("list") => repo.list(time).map(serde_json::to_value),
+            Some("save") => repo
+                .save(Profile::from_record(&document["profile"])?, time)
+                .map(serde_json::to_value),
+            Some("dash-save") => dashboard
+                .save(document["dashboard"].clone(), Map::new(), None, None, time)
+                .map(serde_json::to_value),
+            Some("dash-patch") => dashboard
+                .patch(
+                    "fixture00001",
+                    |mut record| {
+                        record["notes"] = "changed".into();
+                        Ok((record, Map::new()))
+                    },
+                    None,
+                    None,
+                    time,
+                )
+                .map(serde_json::to_value),
+            _ => return Err("Unknown profile text operation".into()),
+        };
+        let invalid = matches!(&result, Err(RepoError::Io(error)) if error.kind() == std::io::ErrorKind::InvalidData);
+        assert_eq!(
+            invalid,
+            case["error"] == "UnicodeDecodeError",
+            "Profile text admission differs: case={index} operation={}",
+            case["operation"]
+        );
+        if !invalid {
+            assert_eq!(
+                result??, case["result"],
+                "Profile text result differs: case={index}"
+            );
+        }
+        for (position, (path, before)) in paths.iter().zip(before).enumerate() {
+            let after = fs::read(path)?;
+            assert_eq!(
+                Value::Bool(before == after),
+                case["unchanged"][position],
+                "Profile text byte preservation differs: case={index}"
+            );
+            if invalid {
+                assert_eq!(
+                    after, before,
+                    "Damaged profile bytes replaced: case={index}"
+                );
+            } else if case["unchanged"][position] == false {
+                assert_eq!(
+                    serde_json::from_slice::<Value>(&after)?,
+                    case["written"][position],
+                    "Valid UTF8 fallback state differs: case={index}"
+                );
+            }
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn lookup_reconciles_both_copies_and_refuses_ambiguous_names()
 -> Result<(), Box<dyn std::error::Error>> {
     let oracle: Value = serde_json::from_str(include_str!("fixtures/repo-lookup.json"))?;

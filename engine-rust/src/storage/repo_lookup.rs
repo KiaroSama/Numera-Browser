@@ -60,8 +60,8 @@ impl ProfileRepo {
         let lock = DataLock::transaction(&self.root)?;
         let _guard = lock.acquire(Duration::from_secs(30))?;
         self.require_settled()?;
-        let engine = Self::raw(&self.path(id, "profiles")?);
-        let dash = Self::raw(&self.path(id, "dashboard")?);
+        let engine = Self::raw(&self.path(id, "profiles")?)?;
+        let dash = Self::raw(&self.path(id, "dashboard")?)?;
         if engine.is_none() && dash.is_none() {
             return Ok(None);
         }
@@ -76,8 +76,8 @@ impl ProfileRepo {
     fn reconciled(&self, id: &str, now: f64) -> Result<Option<Profile>, RepoError> {
         if safe_id(id).is_ok()
             && let (Some(engine), Some(dashboard)) = (
-                Self::raw(&self.path(id, "profiles")?),
-                Self::raw(&self.path(id, "dashboard")?),
+                Self::raw(&self.path(id, "profiles")?)?,
+                Self::raw(&self.path(id, "dashboard")?)?,
             )
             && !self.read_disagrees(&engine, &dashboard, now)
         {
@@ -97,16 +97,22 @@ impl ProfileRepo {
         self.require_settled()?;
         // Case-insensitive filesystems can open an ID through a differently
         // cased name. Keep the stored spelling without bypassing twin repair.
-        let canonical = if safe_id(reference).is_ok() {
-            ["profiles", "dashboard"].into_iter().find_map(|kind| {
-                Self::raw(&self.path(reference, kind).ok()?)?["id"]
-                    .as_str()
-                    .filter(|id| id.eq_ignore_ascii_case(reference))
-                    .map(str::to_owned)
-            })
-        } else {
-            None
-        };
+        let mut canonical = None;
+        if safe_id(reference).is_ok() {
+            for kind in ["profiles", "dashboard"] {
+                let Ok(path) = self.path(reference, kind) else {
+                    continue;
+                };
+                if let Some(value) = Self::raw(&path)?
+                    && let Some(id) = value["id"]
+                        .as_str()
+                        .filter(|id| id.eq_ignore_ascii_case(reference))
+                {
+                    canonical = Some(id.to_owned());
+                    break;
+                }
+            }
+        }
         if let Some(profile) = self.reconciled(canonical.as_deref().unwrap_or(reference), now)? {
             return Ok(Some(profile));
         }
@@ -116,7 +122,8 @@ impl ProfileRepo {
                 continue;
             }
             for kind in ["profiles", "dashboard"] {
-                if Self::raw(&self.path(&id, kind)?).is_some_and(|value| value["name"] == reference)
+                if Self::raw(&self.path(&id, kind)?)?
+                    .is_some_and(|value| value["name"] == reference)
                 {
                     matches.insert(id.clone());
                 }
@@ -152,8 +159,8 @@ impl ProfileRepo {
             if safe_id(&id).is_err() {
                 continue;
             }
-            let engine = Self::raw(&self.path(&id, "profiles")?);
-            let dash = Self::raw(&self.path(&id, "dashboard")?);
+            let engine = Self::raw(&self.path(&id, "profiles")?)?;
+            let dash = Self::raw(&self.path(&id, "dashboard")?)?;
             // Malformed engine-only records cannot be adopted and must not end
             // the entire listing. Filesystem failures still propagate.
             if dash.is_none()

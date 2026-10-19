@@ -8,15 +8,15 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 19, 2026
 
-The latest completed source checkpoint is `06b6966`. Its manual hosted batch
-[39204028426](https://github.com/KiaroSama/Numera-Browser/actions/runs/39204028426)
-failed overall on October 19 at 05:41 UTC. Source, both native tiers, eight relocated
-cases and dashboard checks passed. Both native tiers proved all 16 historical
-failures, restored fixed bytes and passed the current suite, including direct native
-session-lease contention, release and reacquisition against the frozen original.
-Build/proof and test phases kept unchanged bounds. macOS passed, but its prior
-reader snapshot's cause remains unproved. CodeQL and required verification still failed.
-The [candidate status](migration-candidate.md) records 161 mapped references; cookie export-byte proof is pending.
+The latest completed source checkpoint is `5c5d7b8`. Its manual hosted batch
+[39210495203](https://github.com/KiaroSama/Numera-Browser/actions/runs/39210495203)
+failed overall on October 19 at 06:50 UTC. Source, eight relocated cases and dashboard
+checks passed. Both native current suites passed after 16 Linux/17 Windows historical
+failure/restoration proofs. The Windows cookie export-byte defect was caught on old
+code and fixed output passed on both systems. Windows native acceptance passed;
+Linux creation latency was inconclusive, so its performance gate refused acceptance.
+macOS passed, but its prior reader snapshot's cause remains unproved. CodeQL and
+required verification failed. The [candidate status](migration-candidate.md) records 161 mapped references and the unverified damaged-profile-text repair.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

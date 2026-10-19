@@ -277,9 +277,17 @@ formats, SDK failures, contention and broader browser acceptance remain incomple
 The cookie CLI file writer now translates every LF on Windows before unchanged atomic
 publication, matching the original text-mode output. Returned format strings and HTTP
 output are unchanged. Existing CLI scenarios now compare actual original file bytes,
-including Unicode and embedded controls, rather than normalizing CRLF away. Hosted
-proof is pending; the exact historical-byte failure applies only to Windows, while
-the complete current suite still runs on both systems.
+including Unicode and embedded controls, rather than normalizing CRLF away. Batch
+`39210495203` proved the historical-byte failure and restoration on Windows, then
+passed the current cookie cases on both systems. Linux has no invented historical failure.
+
+Shared profile-twin reads now validate UTF-8 before JSON fallback and propagate an
+`InvalidData` refusal instead of replacing undecodable state as if absent. Existing
+read-I/O and valid-UTF-8 malformed-JSON fallback remain unchanged. A single frozen-source
+observer compares 48 damaged-text read/repair/write cases and four syntax-fallback
+controls through public operations, including exact preserved bytes. The exact four-module
+historical proof and fixed-current acceptance are prepared but not yet executed.
+Standalone dashboard readers and broader dynamic/error domains remain outside this repair.
 
 Historical source swaps invalidated the earlier fixed prebuild, causing duplicate
 compilation inside the test deadline. The build phase now fetches locked inputs,
@@ -298,15 +306,16 @@ speedup measurements or proof of a completely cold cache.
 
 ## Acceptance status
 
-Source `06b6966` ran in hosted batch
-[39204028426](https://github.com/KiaroSama/Numera-Browser/actions/runs/39204028426).
-All source platforms, both native tiers and all eight relocated Windows/Linux
-cases passed. Both native tiers passed strict lint, all sixteen historical
-failure/restoration proofs and current tests. macOS passed 2,829 tests with 13
-explicit platform limits. Its earlier unresolved-report reader snapshot's cause
-remains unproved: a passing replacement does not establish why it failed, and the
-failure-only phase projection was not exercised by this pass. CodeQL and dependent
-required verification failed; distribution, promotion and publication were skipped.
+Source `5c5d7b8` ran in hosted batch
+[39210495203](https://github.com/KiaroSama/Numera-Browser/actions/runs/39210495203).
+All source platforms, eight relocated Windows/Linux cases and current native suites
+passed; strict lint and 16 Linux/17 Windows historical failure/restoration proofs passed.
+Windows native acceptance passed. Linux creation latency was inconclusive: native
+8.378–174.537 ms overlapped original 164.734–172.131 ms across seven alternating pairs.
+Other CLI time ranges and all peak-memory ranges passed their unchanged criterion;
+this is neither a proven regression nor performance acceptance. macOS passed 2,834
+with 13 explicit limits, not proof of its earlier reader snapshot's cause. CodeQL's
+same 20 annotations and required verification failed; distribution/promotion/publication skipped.
 Windows Camoufox now passes actual CLI/MCP cookie import/list/export and HTTP/auth/dashboard/browser restart,
 idempotence and stop, with 24 complete, clean ownership units. Its earlier
 `CamoufoxNotInstalled` context-open failure is resolved by preserving the effective

@@ -71,10 +71,22 @@ impl ProfileRepo {
     pub(crate) fn path(&self, id: &str, kind: &str) -> Result<PathBuf, RepoError> {
         id_path(&self.root.join(kind), id, ".json").map_err(|e| RepoError::Message(e.to_string()))
     }
-    pub(crate) fn raw(path: &Path) -> Option<Value> {
-        fs::read(path)
-            .ok()
-            .and_then(|b| serde_json::from_slice(&b).ok())
+    pub(crate) fn raw(path: &Path) -> io::Result<Option<Value>> {
+        let bytes = match fs::read(path) {
+            Ok(bytes) => bytes,
+            Err(_) => return Ok(None),
+        };
+        // Undecodable text is damaged state, not an absent twin safe to replace.
+        let text = std::str::from_utf8(&bytes).map_err(|error| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "Stored profile {} is not valid UTF-8: {error}",
+                    path.display()
+                ),
+            )
+        })?;
+        Ok(serde_json::from_str(text).ok())
     }
     fn secret(value: &Value, key: &str) -> Option<String> {
         value["proxy"][key].as_str().map(str::to_owned)
@@ -149,11 +161,11 @@ impl ProfileRepo {
         let lock = DataLock::transaction(&self.root)?;
         let _guard = lock.acquire(Duration::from_secs(30))?;
         self.require_settled()?;
-        let Some(dash) = Self::raw(&self.path(id, "dashboard")?) else {
+        let Some(dash) = Self::raw(&self.path(id, "dashboard")?)? else {
             return Ok(None);
         };
         let path = self.path(id, "profiles")?;
-        let current = Self::raw(&path);
+        let current = Self::raw(&path)?;
         let mut profile =
             to_engine(&dash, now).map_err(|e| RepoError::InvalidRecord(e.to_string()))?;
         profile.id = id.into();
@@ -222,11 +234,11 @@ impl ProfileRepo {
         let lock = DataLock::transaction(&self.root)?;
         let _guard = lock.acquire(Duration::from_secs(30))?;
         self.require_settled()?;
-        let Some(engine) = Self::raw(&self.path(id, "profiles")?) else {
+        let Some(engine) = Self::raw(&self.path(id, "profiles")?)? else {
             return Ok(false);
         };
         let path = self.path(id, "dashboard")?;
-        if Self::raw(&path).is_some() {
+        if Self::raw(&path)?.is_some() {
             return Ok(false);
         }
         let profile = Profile::from_record(&engine).map_err(|_| {

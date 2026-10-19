@@ -176,7 +176,7 @@ impl ProfileRepo {
                 if path.extension().is_none_or(|v| v != "json") {
                     continue;
                 }
-                if let Some(value) = Self::raw(&path).filter(Value::is_object)
+                if let Some(value) = Self::raw(&path)?.filter(Value::is_object)
                     && crate::conversion::truth(&value["name"])
                 {
                     let id = value["id"]
@@ -205,8 +205,8 @@ impl ProfileRepo {
     ) -> Result<(Profile, Value, Value), RepoError> {
         let engine_path = self.path(&profile.id, "profiles")?;
         let dash_path = self.path(&profile.id, "dashboard")?;
-        let previous = Self::raw(&dash_path).unwrap_or(Value::Null);
-        let current = Self::raw(&engine_path).unwrap_or(Value::Null);
+        let previous = Self::raw(&dash_path)?.unwrap_or(Value::Null);
+        let current = Self::raw(&engine_path)?.unwrap_or(Value::Null);
         let old = current["proxy"]["password"].as_str();
         let twin = previous["proxy"]["pass"].as_str();
         let config = Value::Object(ConfigStore::new(self.root.clone()).read());

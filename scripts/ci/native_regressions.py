@@ -59,8 +59,15 @@ REGRESSIONS = (
         'symptom': 'Ordinary encrypted read rewrote protected bytes',
         'commit': '6fe0b77f09f1e4c02e3bb1a02e8aa4b1c53cea4c',
         'files': {
+            # Keep the shared raw-reader signature consistent with every historical caller.
+            'engine-rust/src/storage/repo.rs':
+                '1169cbe37db745c440570f31ce14cb398448e74751383c09f07e50e50a2d229a',
             'engine-rust/src/storage/repo_lookup.rs':
                 'a787c5c83d09becd8f76aadc5892493a3fd071efdd135e15183696bd09ab19af',
+            'engine-rust/src/storage/repo_write.rs':
+                '93cd77e5c4af0de5e2b8d9440099defae9e17dd93f2deae3ec050af5343d5bbf',
+            'engine-rust/src/storage/dashboard.rs':
+                '949ec2682b55d039eaa915d8c83298dbaa0adc7f89df4d2d7c1495836c071808',
         },
     },
     {
@@ -182,6 +189,22 @@ REGRESSIONS = (
         'files': {
             'engine-rust/src/cli/cookie_commands.rs':
                 '0eb9dc93b3279e5bfa52bedecf1a2411286a07caa356ace94859faf4d2cbb521',
+        },
+    },
+    {
+        'target': 'repo_lookup_parity',
+        'test': 'damaged_profile_text_refuses_before_repair_or_replacement',
+        'symptom': 'Profile text admission differs',
+        'commit': '5c5d7b8c1af91d72a5ed08fbf5dd7bc3101581c2',
+        'files': {
+            'engine-rust/src/storage/repo.rs':
+                '1169cbe37db745c440570f31ce14cb398448e74751383c09f07e50e50a2d229a',
+            'engine-rust/src/storage/repo_lookup.rs':
+                'b1fc30eacfc5fce2e8390e08e2bb34d260bd2fe1d72adf7e33d77d0bc316ba16',
+            'engine-rust/src/storage/repo_write.rs':
+                '93cd77e5c4af0de5e2b8d9440099defae9e17dd93f2deae3ec050af5343d5bbf',
+            'engine-rust/src/storage/dashboard.rs':
+                '949ec2682b55d039eaa915d8c83298dbaa0adc7f89df4d2d7c1495836c071808',
         },
     },
 )

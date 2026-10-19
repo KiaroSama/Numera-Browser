@@ -83,7 +83,7 @@ impl DashboardStore {
         }
         let lock = DataLock::transaction(&self.root)?;
         let _guard = lock.acquire(Duration::from_secs(30))?;
-        Ok(ProfileRepo::raw(&self.repo.path(id, "dashboard")?))
+        Ok(ProfileRepo::raw(&self.repo.path(id, "dashboard")?)?)
     }
     pub fn list(&self) -> Result<Vec<Value>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
@@ -127,11 +127,11 @@ impl DashboardStore {
             .to_owned();
         let old = match previous {
             Some((_, engine)) => engine.clone(),
-            None => ProfileRepo::raw(&self.repo.path(&id, "profiles")?).unwrap_or(Value::Null),
+            None => ProfileRepo::raw(&self.repo.path(&id, "profiles")?)?.unwrap_or(Value::Null),
         };
         let stored = match previous {
             Some((dashboard, _)) => dashboard.clone(),
-            None => ProfileRepo::raw(&self.repo.path(&id, "dashboard")?).unwrap_or(Value::Null),
+            None => ProfileRepo::raw(&self.repo.path(&id, "dashboard")?)?.unwrap_or(Value::Null),
         };
         let engine_secret = old["proxy"]["password"].as_str();
         let dash_secret = stored["proxy"]["pass"].as_str();
@@ -265,7 +265,7 @@ impl DashboardStore {
             .ok_or_else(|| RepoError::InvalidRecord("Dashboard profile lost object shape".into()))?
             .entry("_created")
             .or_insert(now.into());
-        let stored = ProfileRepo::raw(&path).unwrap_or(Value::Null);
+        let stored = ProfileRepo::raw(&path)?.unwrap_or(Value::Null);
         if let Some(expected) = expect_rev
             && let Some(current) = stored.get("_rev").filter(|value| !value.is_null())
             && value_text(current) != value_text(expected)
@@ -396,7 +396,9 @@ impl DashboardStore {
                 .to_owned();
             let stored = match pending.get(&id) {
                 Some((dashboard, _)) => dashboard.clone(),
-                None => ProfileRepo::raw(&self.repo.path(&id, "dashboard")?).unwrap_or(Value::Null),
+                None => {
+                    ProfileRepo::raw(&self.repo.path(&id, "dashboard")?)?.unwrap_or(Value::Null)
+                }
             };
             let chosen = intent.unwrap_or_else(|| conversion::secret_intent(&record));
             let (mut record, twin) = self.prepare(record, chosen, now, pending.get(&id))?;
@@ -420,7 +422,7 @@ impl DashboardStore {
         let path = self.repo.path(id, "dashboard")?;
         let file = DataLock::for_file(&path)?;
         let _file = file.acquire(Duration::from_secs(30))?;
-        let Some(stored) = ProfileRepo::raw(&path).filter(truth) else {
+        let Some(stored) = ProfileRepo::raw(&path)?.filter(truth) else {
             return Ok(None);
         };
         let (merged, changes) = apply(stored)?;
