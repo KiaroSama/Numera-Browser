@@ -38,7 +38,7 @@ impl ProfileRepo {
         self.require_settled()?;
         let engine = Self::raw(&self.path(id, "profiles")?)?.unwrap_or(Value::Null);
         let dashboard = Self::raw(&self.path(id, "dashboard")?)?.unwrap_or(Value::Null);
-        Ok(self.disagreements(&engine, &dashboard, now, usize::MAX))
+        self.disagreements(&engine, &dashboard, now, usize::MAX)
     }
 
     /// Credential-aware read never hands an encrypted blob to a browser as a password.
@@ -56,9 +56,11 @@ impl ProfileRepo {
         };
         let mut data: Value = serde_json::from_slice(&bytes)
             .map_err(|_| RepoError::InvalidRecord("Stored profile cannot be decoded".into()))?;
+        // The engine's read contract checks settings even without a proxy secret.
+        self.vault()?;
         if let Some(secret) = data["proxy"]["password"].as_str().map(str::to_owned) {
             data["proxy"]["password"] = self
-                .readable_secret(Some(&secret))
+                .readable_secret(Some(&secret))?
                 .map_or(Value::Null, Value::String);
         }
         Profile::from_record(&data)
@@ -92,7 +94,7 @@ impl ProfileRepo {
                 Self::raw(&self.path(id, "profiles")?)?,
                 Self::raw(&self.path(id, "dashboard")?)?,
             )
-            && !self.read_disagrees(&engine, &dashboard, now)
+            && !self.read_disagrees(&engine, &dashboard, now)?
         {
             // Reading a healthy pair must not choose between equivalent ciphertexts.
             // Explicit launch coherence still performs its stricter materialization.

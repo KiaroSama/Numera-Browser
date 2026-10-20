@@ -593,7 +593,7 @@ sequential ownership and existing deadline remains required. Batch `39411399239`
 Windows build/proofs in 570.762 seconds versus the prior 900.052-second timeout, with one
 additional proof. This resolves that run's timeout, not a repeated comparable speedup claim.
 
-## Prepared settings text and filename selection
+## Settings text and filename selection
 
 Existing fallible settings APIs (`default_extensions` and an empty `set_many`) now
 use a checked cached read. Invalid UTF-8 propagates without altering bytes or the prior
@@ -609,18 +609,32 @@ long-s suffixes. Existing sorting, file-kind, ID, link and error policies are re
 Fifty original/native observations cover folder listing/rename, dashboard listing,
 first-run profile counts and completion diagnostics with exact input-byte verdicts.
 General glob faults, races, non-Unicode names and every repository/HTTP consumer are not
-independently certified. Both corrections have exact historical semantic-failure controls
-prepared; current compilation, regression proofs and runtime acceptance are unverified.
+independently certified. Batch `39439030544` proved both historical semantic failures,
+restored fixed bytes and passed the current observations on Windows and Linux.
+
+## Prepared storage settings error propagation
+
+Repository status, credential reads, reconciliation and dashboard/pool/archive consumers
+now propagate typed settings decoding errors instead of treating invalid UTF-8 as an
+absent vault. Existing fallible cached snapshots and fresh mutation snapshots are reused.
+Source-specific short circuits remain: engine profile reads always inspect settings;
+plain dashboard/pool reads do not, and withheld materialization retains stored credentials
+without reading unrelated settings. Pool deletion decrypts before filtering its rows.
+One observer in the existing repository target compares 189 immutable-original outcomes,
+complete success values, persisted records and exact changed/unchanged input bytes.
+A coherent seven-source historical group and compatible earlier companions retain named
+semantic-failure proof. These changes are source-reviewed, not yet compiled or run in CI;
+remaining infallible settings getters, CLI/HTTP paths and full migration acceptance stay open.
 
 ## Acceptance status
 
-Latest completed source `7b49a20` ran in batch
-[39419005226](https://github.com/KiaroSama/Numera-Browser/actions/runs/39419005226).
+Latest completed source `bec3797` ran in batch
+[39439030544](https://github.com/KiaroSama/Numera-Browser/actions/runs/39439030544).
 All 28 nondependent jobs passed: source platforms, both native tiers, eight relocated SDK
-cases and dashboard checks. Windows proved 37 historical failures/restorations and Linux 36;
-both passed repository cache ownership, 48 observations and four late-journal controls.
-CodeQL and required verification failed; publication stages were skipped. The new settings
-UTF-8 and platform JSON filename corrections are prepared, not yet runtime-verified.
+cases and dashboard checks. Windows proved 39 historical failures/restorations and Linux 38;
+both passed 20 settings-read and 50 filename-selection observations after fixed-byte restoration.
+CodeQL and required verification failed; publication stages were skipped. The new storage
+settings error-propagation changes are source-reviewed, not yet runtime-verified.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and

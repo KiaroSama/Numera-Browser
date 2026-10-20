@@ -68,16 +68,15 @@ impl DashboardStore {
     pub fn delete(&self, id: &str, host: &str, now: f64) -> Result<bool, RepoError> {
         self.repo.delete(id, host, now)
     }
-    fn decrypted(&self, mut record: Value) -> Value {
+    fn decrypted(&self, mut record: Value) -> Result<Value, RepoError> {
         if record["proxy"].is_object() {
-            let secret = record["proxy"]["pass"].as_str();
-            let value = secret.map_or_else(
-                || Some(String::new()),
-                |secret| self.repo.readable_secret(Some(secret)),
-            );
+            let value = match record["proxy"]["pass"].as_str() {
+                Some(secret) => self.repo.readable_secret(Some(secret))?,
+                None => Some(String::new()),
+            };
             record["proxy"]["pass"] = value.map_or(Value::Null, Value::String);
         }
-        record
+        Ok(record)
     }
     pub fn get(&self, id: &str) -> Result<Option<Value>, RepoError> {
         if safe_id(id).is_err() {
@@ -94,7 +93,7 @@ impl DashboardStore {
         let record = serde_json::from_str(&text).map_err(|_| {
             RepoError::InvalidRecord("Stored dashboard profile cannot be decoded".into())
         })?;
-        Ok(Some(self.decrypted(record)))
+        self.decrypted(record).map(Some)
     }
     pub fn raw(&self, id: &str) -> Result<Option<Value>, RepoError> {
         if safe_id(id).is_err() {
@@ -122,7 +121,7 @@ impl DashboardStore {
             if super::paths::json_filename(&path)
                 && let Ok(record) = serde_json::from_str::<Value>(&read_text(&path)?)
             {
-                records.push(self.decrypted(record));
+                records.push(self.decrypted(record)?);
             }
         }
         records.sort_by(|left, right| {
@@ -154,8 +153,27 @@ impl DashboardStore {
         };
         let engine_secret = old["proxy"]["password"].as_str();
         let dash_secret = stored["proxy"]["pass"].as_str();
-        let config = Value::Object(self.repo.config.read());
-        let descriptor = &config["vault"];
+        if intent == "preserve" {
+            self.repo
+                .refuse_unresolved_secret(&id, engine_secret, dash_secret)?;
+        }
+        if intent == "remove"
+            && old["proxy"]
+                .as_object()
+                .is_some_and(|proxy| !proxy.is_empty())
+            && !truth(&stored["proxy"])
+        {
+            return Err(ProfileRepo::diverged(&id, "proxy"));
+        }
+        let descriptor = if intent == "remove"
+            || record["proxy"].is_object()
+                && intent != "preserve"
+                && (intent == "clear" || record["proxy"]["pass"].is_string())
+        {
+            self.repo.vault()?.unwrap_or(Value::Null)
+        } else {
+            Value::Null
+        };
         let password = self.repo.password.as_deref().unwrap_or("");
         let salt = descriptor["salt"].as_str().unwrap_or("");
         let state = if descriptor.is_null() {
@@ -172,18 +190,7 @@ impl DashboardStore {
             VaultState::Locked
         };
         let seal = |value: &str| vault::encrypt(password, salt, value);
-        if intent == "preserve" {
-            self.repo
-                .refuse_unresolved_secret(&id, engine_secret, dash_secret)?;
-        }
         if intent == "remove" {
-            if old["proxy"]
-                .as_object()
-                .is_some_and(|proxy| !proxy.is_empty())
-                && !truth(&stored["proxy"])
-            {
-                return Err(ProfileRepo::diverged(&id, "proxy"));
-            }
             for secret in [engine_secret, dash_secret] {
                 write_secret(state, Some(""), secret, seal)
                     .map_err(|error| RepoError::VaultLocked(error.to_string()))?;
@@ -217,6 +224,8 @@ impl DashboardStore {
             )));
         }
         let profile=conversion::to_engine(&record,now).map_err(|error|RepoError::UnconvertibleProfile(format!("profile {id} cannot be converted for the engine, so neither copy was written: {error}")))?;
+        // Mirroring reaches the engine secret gate even when no credential was supplied.
+        self.repo.vault()?;
         let mut twin = serde_json::to_value(profile)
             .map_err(|_| RepoError::Message("Engine twin cannot be serialized".into()))?;
         if twin["proxy"].is_object() {
@@ -332,7 +341,7 @@ impl DashboardStore {
                 batch.write(&self.repo.path(id, "profiles")?, twin)?;
             }
             if !changes.is_empty() {
-                let mut config = ConfigStore::new(self.root.clone()).read();
+                let mut config = ConfigStore::new(self.root.clone()).set_many(Map::new())?;
                 config.extend(changes);
                 batch.write(&config_path, &Value::Object(config))?;
             }

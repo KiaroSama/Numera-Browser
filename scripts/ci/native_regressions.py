@@ -497,6 +497,42 @@ REGRESSIONS = (
 )
 
 
+# Option-returning historical secret readers require their coherent caller group.
+# Selected defect files and earlier compatibility snapshots always take precedence.
+_STORAGE_READERS_COMMIT = 'bec37974fee24319633a515321cd24d280c68a86'
+_STORAGE_READERS = {
+    'engine-rust/src/storage/repo.rs':
+        '5190d3963d0445188ed9637717012c5e182692218a0f7d580b3f5fffa39db143',
+    'engine-rust/src/storage/repo_lookup.rs':
+        '8e9302ebeb78527a8e11b2718087079b57ed59eb5e6baadec8649523b4553fc8',
+    'engine-rust/src/storage/repo_reconcile.rs':
+        '3abbe60377f64cb60a3805ee680705cd0636db8195ca2cefd65c30e123e5c0fa',
+    'engine-rust/src/storage/repo_write.rs':
+        '07310ce8d5bee16afdc5bc0fc4115f568878adad8ba49f7c9efccc164a8e327e',
+    'engine-rust/src/storage/dashboard.rs':
+        '70d0c8558d9ed892067437bdf1d29a815e5b3feb20eafd5d6468623b70425417',
+    'engine-rust/src/storage/pool.rs':
+        '38bc50a2381a5c18a025361ff5fd5d8d2ee060a9efe24cf957e3723e16ed8707',
+    'engine-rust/src/storage/archive.rs':
+        '8c8e6fcec5412a5f7d603cbaf9bb0f878636af294a8db72ea81e78a2dbdd696b',
+}
+REGRESSIONS = tuple(
+    dict(case, companions={
+        **{name: {'commit': _STORAGE_READERS_COMMIT, 'sha256': expected}
+           for name, expected in _STORAGE_READERS.items() if name not in case['files']},
+        **case.get('companions', {}),
+    }) if _STORAGE_READERS.keys() & (case['files'].keys() | case.get('companions', {}).keys())
+    else case
+    for case in REGRESSIONS
+) + ({
+    'target': 'repo_parity',
+    'test': 'settings_errors::storage_settings_errors_match_original_lazy_reads_and_preserve_bytes',
+    'symptom': 'Storage settings admission differs',
+    'commit': _STORAGE_READERS_COMMIT,
+    'files': _STORAGE_READERS,
+},)
+
+
 def git(root: Path, *arguments: str) -> bytes:
     return subprocess.run(
         ['git', '-C', str(root), *arguments], stdin=subprocess.DEVNULL,

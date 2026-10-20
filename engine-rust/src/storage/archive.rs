@@ -48,9 +48,13 @@ impl ProfileRepo {
         let Ok(raw) = serde_json::from_str::<Value>(text) else {
             return Ok(false);
         };
-        Ok(raw["proxy"]["password"].as_str().is_some_and(|secret| {
-            vault::is_envelope(secret) && self.readable_secret(Some(secret)).is_none()
-        }))
+        let Some(secret) = raw["proxy"]["password"]
+            .as_str()
+            .filter(|secret| vault::is_envelope(secret))
+        else {
+            return Ok(false);
+        };
+        Ok(self.readable_secret(Some(secret))?.is_none())
     }
 
     /// Refuse incomplete credentials before serializing or touching the destination.

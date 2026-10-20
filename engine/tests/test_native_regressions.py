@@ -1,4 +1,5 @@
 """Historical failure proof rejects unrelated failures and restores fixed source."""
+import ast
 import hashlib
 import importlib.util
 import logging
@@ -17,6 +18,39 @@ def load():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def test_option_reader_companions_preserve_selected_defects_and_prior_snapshots():
+    module = load()
+    current = {(case['target'], case['test'], case['commit']): case for case in module.REGRESSIONS}
+    original_tree = ast.parse(
+        (ROOT / 'scripts/ci/native_regressions.py').read_text(encoding='utf-8'))
+    first_registry = next(node.value for node in original_tree.body
+                          if isinstance(node, ast.Assign)
+                          and any(isinstance(target, ast.Name)
+                                  and target.id == 'REGRESSIONS' for target in node.targets))
+    original = ast.literal_eval(first_registry)
+    assert len(module.REGRESSIONS) == len(original) + 1
+    grouped = 0
+    for before in original:
+        after = current[(before['target'], before['test'], before['commit'])]
+        assert {key: after[key] for key in before if key != 'companions'} == {
+            key: value for key, value in before.items() if key != 'companions'}
+        for name, source in before.get('companions', {}).items():
+            assert after['companions'][name] == source
+        touched = set(before['files']) | set(before.get('companions', {}))
+        if touched & module._STORAGE_READERS.keys():
+            grouped += 1
+            assert set(module._STORAGE_READERS) <= set(after['files']) | set(after['companions'])
+            assert not set(after['files']) & set(after['companions'])
+        else:
+            assert after == before
+    assert grouped == 9
+    added = module.REGRESSIONS[-1]
+    assert added['test'] == 'settings_errors::storage_settings_errors_match_original_lazy_reads_and_preserve_bytes'
+    assert added['files'] == module._STORAGE_READERS
+    assert added['commit'] == module._STORAGE_READERS_COMMIT
+    assert added['symptom'] == 'Storage settings admission differs'
 
 
 @pytest.mark.parametrize('damage', [None, 'exit', 'empty', 'name', 'symptom', 'summary'])

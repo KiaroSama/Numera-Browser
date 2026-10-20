@@ -8,16 +8,16 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed checkpoint `7b49a20` ran in manual hosted batch
-[39419005226](https://github.com/KiaroSama/Numera-Browser/actions/runs/39419005226),
-which failed on October 20 at 12:29 UTC only at CodeQL and required verification.
+The latest completed checkpoint `bec3797` ran in manual hosted batch
+[39439030544](https://github.com/KiaroSama/Numera-Browser/actions/runs/39439030544),
+which failed on October 20 at 14:53 UTC only at CodeQL and required verification.
 All 28 nondependent jobs passed, including every source platform, eight relocated SDK
-cases and dashboard checks. Both native tiers passed journal/completion/recovery,
-typed errors and 11 sequential settings-cache observations after historical failure proofs.
-Windows completed the build in 570.762 seconds within the unchanged 900-second ceiling;
-this single result resolves that timeout, not a repeated performance-improvement claim.
-Repository cache reuse passed 48 observations and four late-journal controls on both systems,
-retaining three explicit absent-vault safety differences rather than exposing stored ciphertext.
+cases and dashboard checks. Both native tiers proved the historical failure, fixed-byte
+restoration and current success for 20 settings-read and 50 filename-selection observations.
+Windows proved 39 historical cases and Linux 38; all four foreground CLI time/memory
+comparisons reported no regression. These results do not diagnose earlier overlap causes.
+Repository cache reuse retains 48 observations and four late-journal controls, including
+three explicit absent-vault safety differences rather than exposing stored ciphertext.
 The [candidate status](migration-candidate.md) records 320 nearest references; full occurrence acceptance and earlier Linux performance-overlap causes remain open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.

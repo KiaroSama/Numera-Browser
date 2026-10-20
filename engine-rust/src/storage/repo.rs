@@ -1,4 +1,9 @@
-use super::{atomic::write_json, config::ConfigStore, locks::DataLock, paths::id_path};
+use super::{
+    atomic::write_json,
+    config::{ConfigError, ConfigStore},
+    locks::DataLock,
+    paths::id_path,
+};
 use crate::{
     conversion::{to_dashboard, to_engine},
     models::Profile,
@@ -44,6 +49,14 @@ impl fmt::Display for RepoError {
     }
 }
 impl Error for RepoError {}
+impl From<ConfigError> for RepoError {
+    fn from(error: ConfigError) -> Self {
+        match error {
+            ConfigError::Io(error) => Self::Io(error),
+            error => Self::Message(error.to_string()),
+        }
+    }
+}
 impl From<io::Error> for RepoError {
     fn from(e: io::Error) -> Self {
         Self::Io(e)
@@ -79,7 +92,7 @@ impl ProfileRepo {
         self.require_settled()?;
         Ok(self
             .config
-            .read()
+            .set_many(serde_json::Map::new())?
             .remove("vault")
             .filter(|value| !value.is_null()))
     }
@@ -166,27 +179,42 @@ impl ProfileRepo {
     fn secret(value: &Value, key: &str) -> Option<String> {
         value["proxy"][key].as_str().map(str::to_owned)
     }
-    pub(crate) fn readable_secret(&self, value: Option<&str>) -> Option<String> {
-        let value = value?;
+    pub(crate) fn readable_secret(&self, value: Option<&str>) -> Result<Option<String>, RepoError> {
+        let Some(value) = value else {
+            return Ok(None);
+        };
         if !vault::is_envelope(value) {
-            return Some(value.into());
+            return Ok(Some(value.into()));
         }
-        let password = self.password.as_deref()?;
-        let config = Value::Object(self.config.read());
-        let descriptor = &config["vault"];
-        let salt = descriptor["salt"].as_str()?;
-        let verifier = descriptor["verifier"].as_str()?;
+        // Envelope readers inspect vault state before a missing password short-circuits.
+        let descriptor = self.vault()?.unwrap_or(Value::Null);
+        let Some(password) = self.password.as_deref().filter(|value| !value.is_empty()) else {
+            return Ok(None);
+        };
+        let (Some(salt), Some(verifier)) =
+            (descriptor["salt"].as_str(), descriptor["verifier"].as_str())
+        else {
+            return Ok(None);
+        };
         if !vault::check_password(password, salt, verifier) {
-            return None;
+            return Ok(None);
         }
-        vault::decrypt(password, salt, value).ok()
+        Ok(vault::decrypt(password, salt, value).ok())
     }
-    pub(crate) fn same_secret(&self, left: Option<&str>, right: Option<&str>) -> bool {
-        left == right
-            || left.filter(|v| !v.is_empty()).is_some_and(|v| {
-                self.readable_secret(Some(v))
-                    .is_some_and(|plain| Some(plain) == self.readable_secret(right))
-            })
+    pub(crate) fn same_secret(
+        &self,
+        left: Option<&str>,
+        right: Option<&str>,
+    ) -> Result<bool, RepoError> {
+        if left == right {
+            return Ok(true);
+        }
+        if left.is_none_or(str::is_empty) || right.is_none_or(str::is_empty) {
+            return Ok(false);
+        }
+        let left = self.readable_secret(left)?;
+        let right = self.readable_secret(right)?;
+        Ok(left.is_some() && left == right)
     }
     pub fn refuse_unresolved_secret(
         &self,
@@ -195,10 +223,11 @@ impl ProfileRepo {
         twin: Option<&str>,
     ) -> Result<(), RepoError> {
         let missing = stored.is_none_or(str::is_empty) || twin.is_none_or(str::is_empty);
-        if !self.same_secret(stored, twin)
+        if !self.same_secret(stored, twin)?
             && !(stored.is_none_or(str::is_empty) && twin.is_none_or(str::is_empty))
             && (missing
-                || (self.readable_secret(stored).is_some() && self.readable_secret(twin).is_some()))
+                || (self.readable_secret(stored)?.is_some()
+                    && self.readable_secret(twin)?.is_some()))
         {
             return Err(Self::diverged(id, "password"));
         }
@@ -225,13 +254,13 @@ impl ProfileRepo {
         {
             return Ok(());
         }
-        let readable = |value: &Value| {
-            !value.as_str().is_some_and(vault::is_envelope)
-                || self.readable_secret(value.as_str()).is_some()
+        let readable = |value: &Value| -> Result<bool, RepoError> {
+            Ok(!value.as_str().is_some_and(vault::is_envelope)
+                || self.readable_secret(value.as_str())?.is_some())
         };
         if !crate::conversion::truth(stored)
             || !crate::conversion::truth(twin)
-            || (readable(stored) && readable(twin))
+            || (readable(stored)? && readable(twin)?)
         {
             return Err(Self::diverged(id, "password"));
         }
@@ -316,20 +345,30 @@ impl ProfileRepo {
         let mut record = serde_json::to_value(&profile)
             .map_err(|_| RepoError::Message("Profile cannot be serialized".into()))?;
         let old = current.as_ref().and_then(|v| Self::secret(v, "password"));
-        let input = Self::secret(&dash, "pass");
-        let config = Value::Object(self.config.read());
-        let descriptor = &config["vault"];
-        match self.incoming_secret(input.as_deref(), descriptor) {
+        let input = Self::secret(&record, "password");
+        let descriptor = if input.is_some() {
+            self.vault()?.unwrap_or(Value::Null)
+        } else {
+            Value::Null
+        };
+        let fresh = match input.as_deref() {
+            Some(input) => self.incoming_secret(Some(input), &descriptor),
+            None => Ok(old
+                .clone()
+                .filter(|value| !value.is_empty())
+                .or_else(|| Self::secret(&dash, "pass").filter(|value| !value.is_empty()))),
+        };
+        match fresh {
             Ok(fresh) => {
                 if profile.proxy.is_some() {
                     let selected = if old.as_deref().is_none_or(str::is_empty)
-                        || self.same_secret(old.as_deref(), fresh.as_deref())
+                        || self.same_secret(old.as_deref(), fresh.as_deref())?
                     {
                         fresh
                     } else if fresh.as_deref().is_none_or(str::is_empty) {
                         return Err(Self::diverged(id, "password"));
-                    } else if self.readable_secret(old.as_deref()).is_none()
-                        || self.readable_secret(fresh.as_deref()).is_none()
+                    } else if self.readable_secret(old.as_deref())?.is_none()
+                        || self.readable_secret(fresh.as_deref())?.is_none()
                     {
                         old
                     } else {

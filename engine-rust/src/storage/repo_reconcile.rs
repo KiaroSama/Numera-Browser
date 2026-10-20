@@ -1,5 +1,5 @@
 //! Source-compatible read repair; explicit launch coherence remains a separate gate.
-use super::repo::ProfileRepo;
+use super::repo::{ProfileRepo, RepoError};
 use crate::conversion::{to_engine, truth};
 use serde_json::{Map, Value};
 use std::collections::BTreeSet;
@@ -80,21 +80,30 @@ fn without(value: &Value, fields: &[&str]) -> Value {
 }
 
 impl ProfileRepo {
-    fn secret_disagrees(&self, stored: Option<&str>, fresh: Option<&str>) -> bool {
-        if self.same_secret(stored, fresh) {
-            return false;
+    fn secret_disagrees(
+        &self,
+        stored: Option<&str>,
+        fresh: Option<&str>,
+    ) -> Result<bool, RepoError> {
+        if self.same_secret(stored, fresh)? {
+            return Ok(false);
         }
         if stored.is_none_or(str::is_empty) {
-            return fresh.is_some_and(|value| !value.is_empty());
+            return Ok(fresh.is_some_and(|value| !value.is_empty()));
         }
         if fresh.is_none_or(str::is_empty) {
-            return false;
+            return Ok(false);
         }
-        self.readable_secret(stored).is_some() && self.readable_secret(fresh).is_some()
+        Ok(self.readable_secret(stored)?.is_some() && self.readable_secret(fresh)?.is_some())
     }
 
-    pub(crate) fn read_disagrees(&self, engine: &Value, dashboard: &Value, now: f64) -> bool {
-        !self.disagreements(engine, dashboard, now, 1).is_empty()
+    pub(crate) fn read_disagrees(
+        &self,
+        engine: &Value,
+        dashboard: &Value,
+        now: f64,
+    ) -> Result<bool, RepoError> {
+        Ok(!self.disagreements(engine, dashboard, now, 1)?.is_empty())
     }
 
     pub(crate) fn disagreements(
@@ -103,19 +112,19 @@ impl ProfileRepo {
         dashboard: &Value,
         now: f64,
         limit: usize,
-    ) -> Vec<String> {
+    ) -> Result<Vec<String>, RepoError> {
         let mut out = Vec::new();
         if !truth(engine) || !truth(dashboard) {
-            return out;
+            return Ok(out);
         }
         let Some(engine) = engine.as_object() else {
-            return out;
+            return Ok(out);
         };
         let Ok(profile) = to_engine(dashboard, now) else {
-            return out;
+            return Ok(out);
         };
         let Ok(Value::Object(fresh)) = serde_json::to_value(profile) else {
-            return out;
+            return Ok(out);
         };
         let keys: BTreeSet<_> = engine.keys().chain(fresh.keys()).collect();
         for key in keys {
@@ -130,11 +139,12 @@ impl ProfileRepo {
                     &without(right, &["viewport_width", "viewport_height"]),
                 ),
                 "proxy" => {
-                    if self.secret_disagrees(left["password"].as_str(), right["password"].as_str())
+                    if self
+                        .secret_disagrees(left["password"].as_str(), right["password"].as_str())?
                     {
                         out.push("proxy.password".into());
                         if out.len() == limit {
-                            return out;
+                            return Ok(out);
                         }
                     }
                     let left = without(left, &["password"]);
@@ -149,10 +159,10 @@ impl ProfileRepo {
             if changed {
                 out.push(key.clone());
                 if out.len() == limit {
-                    return out;
+                    return Ok(out);
                 }
             }
         }
-        out
+        Ok(out)
     }
 }

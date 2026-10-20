@@ -104,7 +104,8 @@ impl ProfileRepo {
                 batch.write(&self.path(&profile.id, "dashboard")?, dashboard)?;
             }
             if !changes.is_empty() {
-                let mut config = ConfigStore::new(self.root.clone()).read();
+                let mut config =
+                    ConfigStore::new(self.root.clone()).set_many(serde_json::Map::new())?;
                 config.extend(changes);
                 batch.write(&self.root.join("config.json"), &Value::Object(config))?;
             }
@@ -225,8 +226,15 @@ impl ProfileRepo {
         let current = Self::raw(&engine_path)?.unwrap_or(Value::Null);
         let old = current["proxy"]["password"].as_str();
         let twin = previous["proxy"]["pass"].as_str();
-        let config = Value::Object(self.config.read());
-        let descriptor = &config["vault"];
+        let descriptor = if profile
+            .proxy
+            .as_ref()
+            .is_none_or(|proxy| proxy.password_intent() != "preserve")
+        {
+            self.vault()?.unwrap_or(Value::Null)
+        } else {
+            Value::Null
+        };
         let salt = descriptor["salt"].as_str().unwrap_or("");
         let password = self.password.as_deref().unwrap_or("");
         let state = if descriptor.is_null() {

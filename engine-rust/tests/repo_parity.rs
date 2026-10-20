@@ -213,6 +213,9 @@ with run_log('repository-settings-cache-oracle',parent/'logs') as log:
     Ok(())
 }
 
+#[path = "repo_parity/settings_errors.rs"]
+mod settings_errors;
+
 #[test]
 fn public_divergence_reports_all_ordered_fields_without_mutation()
 -> Result<(), Box<dyn std::error::Error>> {
