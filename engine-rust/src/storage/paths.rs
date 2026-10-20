@@ -15,6 +15,16 @@ impl fmt::Display for InvalidId {
 }
 impl Error for InvalidId {}
 
+/// Match Python's platform-default `*.json`, including the hidden `.json` name.
+pub(crate) fn json_filename(path: &Path) -> bool {
+    let name = path.file_name().unwrap_or_default().as_encoded_bytes();
+    name.ends_with(b".json")
+        || cfg!(windows)
+            && (name[name.len().saturating_sub(5)..].eq_ignore_ascii_case(b".json")
+                // Python Unicode IGNORECASE also matches long s in this suffix.
+                || name[name.len().saturating_sub(6)..].eq_ignore_ascii_case(b".j\xc5\xbfon"))
+}
+
 /// IDs are portable opaque tokens, never caller-controlled path fragments.
 pub fn safe_id(value: &str) -> Result<&str, InvalidId> {
     // The original regex's $ also accepts one final newline. That is a source

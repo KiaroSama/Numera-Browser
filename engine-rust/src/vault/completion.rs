@@ -34,7 +34,7 @@ pub(crate) fn sites(root: &Path) -> io::Result<Vec<Site>> {
             .collect::<io::Result<Vec<_>>>()?;
         paths.sort();
         for path in paths {
-            if path.extension().is_some_and(|v| v == "json") && path.is_file() {
+            if crate::storage::paths::json_filename(&path) && path.is_file() {
                 found.push(Site {
                     path,
                     node: Some("proxy"),

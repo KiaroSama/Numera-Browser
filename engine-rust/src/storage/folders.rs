@@ -53,7 +53,7 @@ impl Folders {
         paths.sort();
         let mut found = Vec::new();
         for path in paths {
-            if path.extension().is_none_or(|v| v != "json") {
+            if !super::paths::json_filename(&path) {
                 continue;
             }
             let bytes = fs::read(&path)?;

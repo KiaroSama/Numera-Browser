@@ -9,6 +9,126 @@ use std::{
 mod common;
 
 #[test]
+fn fallible_settings_reads_preserve_original_utf8_refusal_and_cache()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("fallible-settings")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import json,os,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.config_store import ConfigStore
+from run_logging import run_log
+valid=b'{"default_extensions":["kept"]}'
+invalid=bytes([255])+valid[1:]
+steps=[(valid,0),(invalid,0),(invalid,1),(invalid,0),
+       (bytes([0xc3,0x28]),2),(bytes([0xe2,0x82]),3),
+       (b'{broken',4),(b'[]',5),(None,6),(valid,7)]
+observed=[]
+with run_log('fallible-settings-oracle',parent/'logs') as log:
+    for operation in ('extensions','empty-update'):
+        root=parent/operation;root.mkdir(parents=True)
+        store=ConfigStore();store.root=root;store.config_path=root/'config.json'
+        for raw,tick in steps:
+            path=store.config_path
+            if raw is None:path.unlink()
+            else:
+                path.write_bytes(raw)
+                stamp=1800000000*1000000000+tick*100
+                os.utime(path,ns=(stamp,stamp))
+                assert path.stat().st_mtime_ns==stamp,'Fixture timestamp was not retained'
+            try:
+                value=store.get_default_extensions() if operation=='extensions' else store.set_config_many({})
+                result={'ok':True,'value':value}
+            except UnicodeDecodeError:
+                result={'ok':False}
+            assert (path.read_bytes() if path.exists() else None)==raw
+            observed.append({'operation':operation,'raw':list(raw) if raw is not None else None,
+                             'tick':tick,'result':result})
+    log.info('Observed fallible settings reads=%s',len(observed))
+    print(json.dumps(observed,ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let original = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 65536,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        original.exit, 0,
+        "Original fallible settings observer failed"
+    );
+    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    assert_eq!(cases.len(), 20);
+    for operation in ["extensions", "empty-update"] {
+        let root = temporary.path().join(operation);
+        fs::create_dir(&root)?;
+        let path = root.join("config.json");
+        let store = ConfigStore::new(root);
+        for case in cases.iter().filter(|case| case["operation"] == operation) {
+            let raw: Option<Vec<u8>> = serde_json::from_value(case["raw"].clone())?;
+            if let Some(raw) = &raw {
+                fs::write(&path, raw)?;
+                let stamp = UNIX_EPOCH
+                    + Duration::from_secs(1_800_000_000)
+                    + Duration::from_nanos(case["tick"].as_u64().ok_or("Tick missing")? * 100);
+                fs::OpenOptions::new()
+                    .write(true)
+                    .open(&path)?
+                    .set_modified(stamp)?;
+                assert_eq!(
+                    fs::metadata(&path)?.modified()?,
+                    stamp,
+                    "Fixture timestamp was not retained"
+                );
+            } else {
+                fs::remove_file(&path)?;
+            }
+            let result = if operation == "extensions" {
+                store.default_extensions().map(Value::Array)
+            } else {
+                store.set_many(serde_json::Map::new()).map(Value::Object)
+            };
+            assert_eq!(
+                result.is_ok(),
+                case["result"]["ok"],
+                "Fallible settings read admission differs: {operation} tick={}",
+                case["tick"]
+            );
+            match result {
+                Ok(value) => assert_eq!(
+                    value, case["result"]["value"],
+                    "Fallible settings cached value differs"
+                ),
+                Err(error) => assert!(
+                    matches!(error,
+                    numera_core::storage::config::ConfigError::Io(ref e)
+                        if e.kind() == std::io::ErrorKind::InvalidData),
+                    "Malformed settings did not report InvalidData"
+                ),
+            }
+            assert_eq!(fs::read(&path).ok(), raw, "Settings read changed evidence");
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn settings_instance_cache_matches_original_file_identity_and_detached_results()
 -> Result<(), Box<dyn std::error::Error>> {
     use numera_core::ownership::capture;

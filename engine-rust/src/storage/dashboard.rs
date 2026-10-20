@@ -119,7 +119,7 @@ impl DashboardStore {
         paths.sort();
         let mut records = Vec::new();
         for path in paths {
-            if path.extension().is_some_and(|ext| ext == "json")
+            if super::paths::json_filename(&path)
                 && let Ok(record) = serde_json::from_str::<Value>(&read_text(&path)?)
             {
                 records.push(self.decrypted(record));

@@ -576,14 +576,14 @@ size changes, deletion/recreation and independent instances, without sleeps or f
 by reads. Batch `39411399239` proved the exact pre-cache semantic failure, byte restoration
 and current success on both platforms. Strict UTF-8 error propagation remains open.
 
-Prepared repository changes retain one settings reader per repository and reuse it through
+Repository instances retain one settings reader and reuse it through
 its dashboard/pool storage consumers. An existing-target observer retains 48 sequential
 source/native observations and four warmed-cache late-journal refusals. Three main profile
 observations explicitly retain a stronger native guard: when an absent descriptor makes the
 original return ciphertext, native returns null. These are documented differences, not
 full parity or skipped cases. Independent instances, precise invalidation and unchanged
 input bytes remain required. Mutation snapshots still use fresh readers; no global cache
-or measured application speedup is introduced. This repository-level change is unverified.
+or measured application speedup is introduced. Batch `39419005226` passed these cases on both platforms.
 
 The pinned cache action disables incremental compilation for cross-job caching. Historical
 proofs repeatedly replace source in one build tree instead. Their runner now temporarily
@@ -593,15 +593,34 @@ sequential ownership and existing deadline remains required. Batch `39411399239`
 Windows build/proofs in 570.762 seconds versus the prior 900.052-second timeout, with one
 additional proof. This resolves that run's timeout, not a repeated comparable speedup claim.
 
+## Prepared settings text and filename selection
+
+Existing fallible settings APIs (`default_extensions` and an empty `set_many`) now
+use a checked cached read. Invalid UTF-8 propagates without altering bytes or the prior
+successful cache; ordinary I/O, JSON syntax and nonobject fallbacks remain unchanged.
+Twenty sequential original/native observations include a same-key cache hit over invalid
+bytes and cache recovery after a changed-key decoding refusal. The infallible `read`,
+default-engine/headless getters and their remaining consumers still need strict-error
+propagation; this bounded correction does not certify that domain.
+
+Storage and vault enumeration now share a filename predicate for the original platform
+`*.json` selection: literal `.json`, leading-dot names, and Windows mixed-case/Unicode
+long-s suffixes. Existing sorting, file-kind, ID, link and error policies are retained.
+Fifty original/native observations cover folder listing/rename, dashboard listing,
+first-run profile counts and completion diagnostics with exact input-byte verdicts.
+General glob faults, races, non-Unicode names and every repository/HTTP consumer are not
+independently certified. Both corrections have exact historical semantic-failure controls
+prepared; current compilation, regression proofs and runtime acceptance are unverified.
+
 ## Acceptance status
 
-Latest completed source `371fe47` ran in batch
-[39411399239](https://github.com/KiaroSama/Numera-Browser/actions/runs/39411399239).
+Latest completed source `7b49a20` ran in batch
+[39419005226](https://github.com/KiaroSama/Numera-Browser/actions/runs/39419005226).
 All 28 nondependent jobs passed: source platforms, both native tiers, eight relocated SDK
-cases and dashboard checks. Windows proved all 36 historical failures/restorations and
-completed the fixed build, strict lint, current recovery/cache tests and later acceptance.
-CodeQL and required verification failed; publication stages were skipped. Prepared
-repository cache ownership changes are not covered by that earlier successful native tier.
+cases and dashboard checks. Windows proved 37 historical failures/restorations and Linux 36;
+both passed repository cache ownership, 48 observations and four late-journal controls.
+CodeQL and required verification failed; publication stages were skipped. The new settings
+UTF-8 and platform JSON filename corrections are prepared, not yet runtime-verified.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and

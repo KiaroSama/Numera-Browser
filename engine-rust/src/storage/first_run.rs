@@ -158,7 +158,7 @@ pub fn import_from(source: &Path, destination: &Path) -> io::Result<Summary> {
     let profiles = destination.join("profiles");
     if profiles.is_dir() {
         for entry in fs::read_dir(profiles)? {
-            if entry?.path().extension().is_some_and(|v| v == "json") {
+            if super::paths::json_filename(&entry?.path()) {
                 summary.profiles += 1;
             }
         }

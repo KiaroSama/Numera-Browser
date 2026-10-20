@@ -266,7 +266,7 @@ fn listing(state: &Profiles) -> Result<Vec<Value>, RepoError> {
     paths.sort();
     let mut engines = Vec::new();
     for path in paths {
-        if path.extension().is_none_or(|extension| extension != "json") {
+        if !crate::storage::paths::json_filename(&path) {
             continue;
         }
         let Some(id) = path

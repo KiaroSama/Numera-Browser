@@ -4,6 +4,126 @@ use std::{fs, path::PathBuf};
 mod common;
 
 #[test]
+fn json_filename_selection_matches_original_storage_consumers()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{
+        ownership::capture,
+        storage::{dashboard::DashboardStore, first_run},
+    };
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("json-filename-selection")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import json,os,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+os.environ.pop('NUMERA_PASSWORD',None)
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import folders,firstrun
+from numera.store import ProfileStore
+from numera.server.stores import DashboardStore
+from numera.vault_recovery import completion_problems
+from run_logging import run_log
+names=['.json','a.json','b.JSON','c.JsOn','.hidden.json','double.json.json',
+       'near.jsonx','nojson','not.json.bak','long.j'+chr(0x17f)+'on']
+descriptor=json.loads((repository/'engine-rust/tests/fixtures/completion.json').read_text(encoding='utf-8'))['cases'][1]['descriptor']
+rows=[]
+with run_log('json-filename-oracle',parent/'logs') as log:
+    for operation in ['folders','rename','dashboard','first-run','completion']:
+        for name in names:
+            root=parent/str(len(rows))
+            root.mkdir(parents=True)
+            record={'id':'fixture','name':'fixture','folder':'source','_created':1,'future':['α',True]}
+            if operation=='completion':record['proxy']={'pass':'plain-fixture'}
+            inputs={'dashboard/'+name:json.dumps(record,ensure_ascii=True).encode('utf-8')}
+            if operation=='first-run':inputs={'profiles/'+name:b'{}'}
+            for relative,raw in inputs.items():
+                path=root/relative;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(raw)
+            if operation=='folders':result=folders.listing(root)
+            elif operation=='rename':result=folders.rename(root,'source','target')
+            elif operation=='dashboard':result=DashboardStore(root,ProfileStore(root)).list()
+            elif operation=='first-run':result=firstrun.import_from(root,root/'destination')['profiles']
+            else:result=[p._asdict() for p in completion_problems(root,descriptor,None)]
+            after={relative:(root/relative).read_bytes() for relative in inputs}
+            rows.append({'operation':operation,'filename':name,
+                         'inputs':{relative:list(raw) for relative,raw in inputs.items()},
+                         'result':result,'after':{relative:json.loads(raw) for relative,raw in after.items()},
+                         'unchanged':{relative:raw==inputs[relative] for relative,raw in after.items()}})
+    log.info('Observed JSON filename selection cases=%s',len(rows))
+    print(json.dumps({'descriptor':descriptor,'cases':rows},ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let original = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 131072,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(original.exit, 0, "Original filename observer failed");
+    let observed: Value = serde_json::from_slice(&original.stdout)?;
+    let cases = observed["cases"]
+        .as_array()
+        .ok_or("Filename cases missing")?;
+    assert_eq!(cases.len(), 50);
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        fs::create_dir(&root)?;
+        let inputs = case["inputs"].as_object().ok_or("Input files missing")?;
+        for (relative, raw) in inputs {
+            let path = root.join(relative);
+            fs::create_dir_all(path.parent().ok_or("Parent missing")?)?;
+            fs::write(path, serde_json::from_value::<Vec<u8>>(raw.clone())?)?;
+        }
+        let folders = Folders::new(root.clone());
+        let result =
+            match case["operation"].as_str() {
+                Some("folders") => serde_json::to_value(folders.listing()?)?,
+                Some("rename") => serde_json::to_value(folders.rename("source", "target")?)?,
+                Some("dashboard") => {
+                    serde_json::to_value(DashboardStore::new(root.clone(), None).list()?)?
+                }
+                Some("first-run") => serde_json::to_value(
+                    first_run::import_from(&root, &root.join("destination"))?.profiles,
+                )?,
+                Some("completion") => serde_json::to_value(
+                    numera_core::vault::completion::problems(&root, &observed["descriptor"], None)?,
+                )?,
+                _ => return Err("Unknown filename operation".into()),
+            };
+        assert_eq!(
+            result, case["result"],
+            "JSON filename selection differs: operation={} filename={}",
+            case["operation"], case["filename"]
+        );
+        for (relative, raw) in inputs {
+            let after = fs::read(root.join(relative))?;
+            assert_eq!(
+                serde_json::from_slice::<Value>(&after)?,
+                case["after"][relative],
+                "Filename operation changed unexpected data"
+            );
+            assert_eq!(
+                after == serde_json::from_value::<Vec<u8>>(raw.clone())?,
+                case["unchanged"][relative],
+                "Filename operation changed protected bytes"
+            );
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn malformed_folder_text_refuses_without_replacing_source_bytes()
 -> Result<(), Box<dyn std::error::Error>> {
     use numera_core::ownership::capture;

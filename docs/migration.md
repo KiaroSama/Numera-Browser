@@ -8,16 +8,16 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed checkpoint `371fe47` ran in manual hosted batch
-[39411399239](https://github.com/KiaroSama/Numera-Browser/actions/runs/39411399239),
-which failed on October 20 at 11:23 UTC only at CodeQL and required verification.
+The latest completed checkpoint `7b49a20` ran in manual hosted batch
+[39419005226](https://github.com/KiaroSama/Numera-Browser/actions/runs/39419005226),
+which failed on October 20 at 12:29 UTC only at CodeQL and required verification.
 All 28 nondependent jobs passed, including every source platform, eight relocated SDK
 cases and dashboard checks. Both native tiers passed journal/completion/recovery,
 typed errors and 11 sequential settings-cache observations after historical failure proofs.
 Windows completed the build in 570.762 seconds within the unchanged 900-second ceiling;
 this single result resolves that timeout, not a repeated performance-improvement claim.
-The prepared repository cache reuse adds 48 observations, retaining three explicit
-original/native absent-vault safety differences rather than exposing stored ciphertext.
+Repository cache reuse passed 48 observations and four late-journal controls on both systems,
+retaining three explicit absent-vault safety differences rather than exposing stored ciphertext.
 The [candidate status](migration-candidate.md) records 320 nearest references; full occurrence acceptance and earlier Linux performance-overlap causes remain open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
@@ -49,10 +49,10 @@ variants. Its Linux Python 3.14 result was 2,776 passes, six explicit limits and
 all 147 source suites. The earlier `7020a0a` checkpoint verified Windows partition
 1 with 790 passes, 42 explicit platform limits and 37 suites, including 59
 release-distribution tests. These historical results do not certify the changed tree.
-The latest independent CodeQL check fails with 51 changed-line annotations:
-19 path flows, the legacy URL recognizer, a synthetic replay credential and 30
-cryptographic-value flows, including synthetic fixtures. Counts alone do not prove exploitable use.
-These are not whole-branch finding counts or security clearance.
+The latest independent CodeQL check fails; its full analyses contain 33 Python and 34 Rust
+results, not a current changed-line annotation count. A bounded independent source review
+rejected 20 of 23 selected rows and left three empty-salt storage paths needing validation.
+No cross-principal exploit was confirmed; this does not clear the host gate or the whole product.
 Distribution, promotion and publication were skipped. There is no signed release
 or completed native updater acceptance. Python remains selected; narrow passing
 tiers do not complete the 907-row capability ledger, replay, comparative

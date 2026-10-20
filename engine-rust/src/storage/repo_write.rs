@@ -189,7 +189,7 @@ impl ProfileRepo {
             };
             for entry in entries {
                 let path = entry?.path();
-                if path.extension().is_none_or(|v| v != "json") {
+                if !super::paths::json_filename(&path) {
                     continue;
                 }
                 if let Some(value) = Self::raw(&path)?.filter(Value::is_object)

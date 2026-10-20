@@ -60,6 +60,10 @@ impl ConfigStore {
     /// Cache successful object reads by the original size/mtime identity.
     /// Returns detached maps; read/parse failures retain the last successful cache.
     pub fn read(&self) -> Map<String, Value> {
+        self.read_checked().unwrap_or_default()
+    }
+
+    fn read_checked(&self) -> Result<Map<String, Value>, ConfigError> {
         let mut cache = self.cache.lock().unwrap_or_else(|poisoned| {
             let mut cache = poisoned.into_inner();
             *cache = None;
@@ -73,24 +77,30 @@ impl ConfigStore {
             Ok(key) => key,
             Err(_) => {
                 *cache = None;
-                return Map::new();
+                return Ok(Map::new());
             }
         };
         if let Some(cached) = cache.as_ref().filter(|cached| cached.key == key) {
-            return cached.values.clone();
+            return Ok(cached.values.clone());
         }
-        let Some(values) = fs::read(path)
+        let bytes = match fs::read(path) {
+            Ok(bytes) => bytes,
+            Err(_) => return Ok(Map::new()),
+        };
+        let text = std::str::from_utf8(&bytes).map_err(|_| {
+            io::Error::new(io::ErrorKind::InvalidData, "Stored settings are not UTF-8")
+        })?;
+        let Some(values) = serde_json::from_str::<Value>(text)
             .ok()
-            .and_then(|bytes| serde_json::from_slice::<Value>(&bytes).ok())
             .and_then(|value| value.as_object().cloned())
         else {
-            return Map::new();
+            return Ok(Map::new());
         };
         *cache = Some(CachedConfig {
             key,
             values: values.clone(),
         });
-        values
+        Ok(values)
     }
 
     pub fn default_engine(&self, installed: &std::collections::BTreeMap<String, bool>) -> Value {
@@ -108,7 +118,7 @@ impl ConfigStore {
     }
 
     pub fn default_extensions(&self) -> Result<Vec<Value>, ConfigError> {
-        Self::extensions_from(&self.read())
+        Self::extensions_from(&self.read_checked()?)
     }
 
     fn extensions_from(values: &Map<String, Value>) -> Result<Vec<Value>, ConfigError> {
@@ -190,7 +200,7 @@ impl ConfigStore {
 
     pub fn set_many(&self, changes: Map<String, Value>) -> Result<Map<String, Value>, ConfigError> {
         if changes.is_empty() {
-            return Ok(self.read());
+            return self.read_checked();
         }
         self.change(changes, "AttributeError")
     }

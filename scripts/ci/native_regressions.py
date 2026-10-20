@@ -459,6 +459,32 @@ REGRESSIONS = (
         },
     },
     {
+        'target': 'config_parity',
+        'test': 'fallible_settings_reads_preserve_original_utf8_refusal_and_cache',
+        'symptom': 'Fallible settings read admission differs',
+        'commit': '7b49a201b2d9d552b2f2aa228ee331dce1610f44',
+        'files': {
+            'engine-rust/src/storage/config.rs':
+                '45013f4fffc3dfa0d96f0e4c115ad57c5c56105564fc97cd461158c822e20612',
+        },
+    },
+    {
+        'target': 'folder_parity',
+        'test': 'json_filename_selection_matches_original_storage_consumers',
+        'symptom': 'JSON filename selection differs',
+        'commit': '7b49a201b2d9d552b2f2aa228ee331dce1610f44',
+        'files': {
+            'engine-rust/src/storage/folders.rs':
+                'c640ac042356cbf9042d13364c63fc203043be2c0ff390044fe0702db1687f33',
+            'engine-rust/src/storage/dashboard.rs':
+                'fe9c2fe120bdf2b7db8865804d81b8c40308a7c466ab6bb90f3ee07997fc3a3f',
+            'engine-rust/src/storage/first_run.rs':
+                '0727f60e4856dbf6771d971f80ff1815e49290b0feeb2d412386e32832cff65d',
+            'engine-rust/src/vault/completion.rs':
+                '688be8a375ba1300ff09752a7da5157f664ffb5cf439c2a9ce54ceacd9ef72fa',
+        },
+    },
+    {
         'target': 'rotation_recovery_parity',
         'test': 'committed_rotation_metadata_matches_original_without_rewriting_generation',
         'symptom': 'Committed rotation metadata differs',

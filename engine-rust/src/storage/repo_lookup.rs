@@ -18,7 +18,7 @@ impl ProfileRepo {
             };
             for entry in entries {
                 let path = entry?.path();
-                if path.extension().is_some_and(|v| v == "json")
+                if super::paths::json_filename(&path)
                     && let Some(id) = path.file_stem().and_then(|v| v.to_str())
                 {
                     ids.insert(id.into());
