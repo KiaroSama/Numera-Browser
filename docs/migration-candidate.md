@@ -633,14 +633,14 @@ selected defects and proved the named CLI admission failure before fixed-byte re
 
 ## Acceptance status
 
-Latest completed source `3612a8a` ran in batch
-[39486565418](https://github.com/KiaroSama/Numera-Browser/actions/runs/39486565418).
+Latest completed source `b8e589f` ran in batch
+[39496109626](https://github.com/KiaroSama/Numera-Browser/actions/runs/39496109626).
 All 131 strict settings observations and complete native jobs passed on both systems, after
-40 Linux and 41 Windows named historical failures and fixed-byte restoration. All eight SDK legs
-and source platforms passed. Both systems reported no regression in four CLI time/memory comparisons.
-The 27 passing jobs do not clear Cargo advisories, CodeQL or required verification; publication
-was skipped. Stable TLS patches address two newly issued advisories, but remain hosted-unverified.
-Earlier lock/performance causes remain unproved; full migration acceptance is still open.
+40 Linux and 41 Windows named historical failures and fixed-byte restoration. Both patched
+Cargo locks passed advisory checks; all eight SDK legs, source platforms and 28 workflow jobs passed.
+CodeQL/required verification still failed and publication was skipped. A prepared setter correction
+preserves malformed stored extension lists and cached admission; its 60 original-derived cases
+remain unexecuted. Earlier lock/performance causes and full migration acceptance remain open.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and

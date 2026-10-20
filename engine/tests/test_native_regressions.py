@@ -64,7 +64,7 @@ def test_settings_signature_companions_preserve_all_existing_proofs():
     module = load()
     history = module.native_settings_history
     previous = module._STORAGE_REGRESSIONS
-    assert len(module.REGRESSIONS) == len(previous) + 1
+    assert len(module.REGRESSIONS) == len(previous) + 2
     for before, after in zip(previous, module.REGRESSIONS):
         assert {key: after[key] for key in before if key != 'companions'} == {
             key: value for key, value in before.items() if key != 'companions'}
@@ -79,12 +79,22 @@ def test_settings_signature_companions_preserve_all_existing_proofs():
                     assert after['companions'][name] == {'commit': history.COMMIT, 'sha256': expected}
         else:
             assert after == before
-    added = module.REGRESSIONS[-1]
+    added = module.REGRESSIONS[-2]
     assert added['target'] == 'cli_settings_parity'
     assert added['test'] == 'strict_settings::settings_commands_preserve_original_decoding_refusals_and_early_errors'
     assert added['symptom'] == 'Strict settings CLI admission differs'
     assert added['commit'] == history.COMMIT
     assert added['files'] == history.SOURCES
+    extension = module.REGRESSIONS[-1]
+    assert extension == {
+        'target': 'config_parity',
+        'test': 'extension_admission::extension_setter_preserves_original_stored_set_admission_and_cache',
+        'symptom': 'Stored extension set admission differs',
+        'commit': 'b8e589f28e57e5734be2bacbd000bb11cc454ba2',
+        'files': {'engine-rust/src/storage/config.rs':
+                  '2c037f3fcb63a1d210c84437a72285a371a9c1fe89d85d510fe3c649142c406f'},
+    }
+    assert not extension['files'].keys() & extension.get('companions', {}).keys()
 
 
 @pytest.mark.parametrize('damage', [None, 'exit', 'empty', 'name', 'symptom', 'summary'])

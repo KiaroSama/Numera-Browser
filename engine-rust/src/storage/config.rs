@@ -167,12 +167,17 @@ impl ConfigStore {
     pub fn set_default_extensions(&self, wanted: Vec<String>) -> Result<Vec<String>, ConfigError> {
         let root_lock = DataLock::transaction(&self.root)?;
         let _root = root_lock.acquire_configured()?;
-        let record = self.read_for_change()?;
-        let values = record.as_object().cloned().unwrap_or_default();
-        let current = Self::extensions_from(&values).map_err(|error| match error {
+        let current = self.default_extensions().map_err(|error| match error {
             ConfigError::WrongContainer(_) => ConfigError::WrongContainer("TypeError"),
             error => error,
         })?;
+        // The original builds a set before validating or replacing the stored list.
+        if current
+            .iter()
+            .any(|value| value.is_array() || value.is_object())
+        {
+            return Err(ConfigError::WrongContainer("TypeError"));
+        }
         let fresh = wanted
             .iter()
             .filter(|entry| {

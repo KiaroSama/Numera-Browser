@@ -8,17 +8,17 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed checkpoint `3612a8a` ran in manual hosted batch
-[39486565418](https://github.com/KiaroSama/Numera-Browser/actions/runs/39486565418),
-which failed on October 20 at 20:15 UTC at dependency advisories, CodeQL and required verification.
-The other 27 jobs passed. Both systems proved historical settings-admission failure, fixed-byte
-restoration and all 33 core, 56 CLI and 42 HTTP observations through the strict settings interfaces.
-All 40 Linux and 41 Windows historical proofs passed; the complete native jobs also passed.
+The latest completed checkpoint `b8e589f` ran in manual hosted batch
+[39496109626](https://github.com/KiaroSama/Numera-Browser/actions/runs/39496109626),
+which failed on October 20 at 21:24 UTC at CodeQL and required verification; 28 other jobs passed.
+Both authoritative Cargo audits passed after compatible TLS patches, without advisory waivers.
+Both systems passed all 33 core, 56 CLI and 42 HTTP strict-settings observations, with
+40 Linux and 41 Windows historical failures and fixed-byte restoration; complete native jobs passed.
 All four foreground CLI time/memory comparisons reported no regression on both systems.
-Earlier Linux creation/vault-read overlaps and the Windows lock timeout still have no proved cause;
-a later pass does not diagnose them. No samples were trimmed or thresholds relaxed.
-Two newly issued TLS advisories require stable transitive patches in both authoritative Cargo locks.
-Those lock corrections remain hosted-unverified; [candidate status](migration-candidate.md) records 320 nearest references, with full occurrence acceptance open.
+Earlier Linux overlaps and the Windows lock timeout still have no proved cause; later passes
+neither diagnose them nor relax the criteria. The next correction preserves malformed extension
+settings when the original setter refuses an unhashable stored list; 60 cases are prepared,
+not executed. [Candidate status](migration-candidate.md) retains 320 nearest references and open full occurrence acceptance.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

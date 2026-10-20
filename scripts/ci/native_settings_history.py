@@ -59,4 +59,13 @@ def compatible(cases: tuple, storage_readers: dict) -> tuple:
         'symptom': 'Strict settings CLI admission differs',
         'commit': COMMIT,
         'files': SOURCES,
-    },)
+    }, {
+        'target': 'config_parity',
+        'test': 'extension_admission::extension_setter_preserves_original_stored_set_admission_and_cache',
+        'symptom': 'Stored extension set admission differs',
+        'commit': 'b8e589f28e57e5734be2bacbd000bb11cc454ba2',
+        'files': {
+            'engine-rust/src/storage/config.rs':
+                '2c037f3fcb63a1d210c84437a72285a371a9c1fe89d85d510fe3c649142c406f',
+        },
+    })

@@ -7,6 +7,8 @@ use std::{
 };
 
 mod common;
+#[path = "config_parity/extension_admission.rs"]
+mod extension_admission;
 #[path = "config_parity/strict_reads.rs"]
 mod strict_reads;
 
