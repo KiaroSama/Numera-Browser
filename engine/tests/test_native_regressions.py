@@ -76,7 +76,9 @@ def test_historical_execution_requires_the_exact_clean_hosted_source(monkeypatch
 
 @pytest.mark.parametrize('platform', ['win32', 'linux'])
 @pytest.mark.parametrize('damage', [None, 'warm', 'launch', 'assertion', 'integrity', 'companion'])
-def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch, damage, platform):
+@pytest.mark.parametrize('incremental', [None, '0', '1'])
+def test_historical_runner_restores_source_and_environment(
+        tmp_path, monkeypatch, damage, platform, incremental):
     module = load()
     source = tmp_path / 'engine-rust/src/models.rs'
     source.parent.mkdir(parents=True)
@@ -102,6 +104,10 @@ def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch
     monkeypatch.setenv('GITHUB_SHA', sha)
     monkeypatch.setenv('NUMERA_ORACLE_SOURCE_ROOT', 'prior-original-root')
     monkeypatch.delenv('PYTHONDONTWRITEBYTECODE', raising=False)
+    if incremental is None:
+        monkeypatch.delenv('CARGO_INCREMENTAL', raising=False)
+    else:
+        monkeypatch.setenv('CARGO_INCREMENTAL', incremental)
     calls, warmups = [], []
 
     def git(root, *arguments):
@@ -125,6 +131,7 @@ def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch
         assert '--locked' in command and '--offline' in command
         assert os.environ['NUMERA_ORACLE_SOURCE_ROOT'] == str(tmp_path / 'original')
         assert os.environ['PYTHONDONTWRITEBYTECODE'] == '1'
+        assert os.environ['CARGO_INCREMENTAL'] == '1'
         if damage == 'launch':
             raise TimeoutError('fixture runner timeout')
         logger.info('running 1 test')
@@ -135,6 +142,9 @@ def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch
         return 101
 
     def warmup(command, **options):
+        import os
+
+        assert os.environ['CARGO_INCREMENTAL'] == '1'
         assert source.read_bytes() == historical
         assert companion.read_bytes() == old_test
         assert command == ['cargo', 'test', '--manifest-path', str(tmp_path / 'engine-rust/Cargo.toml'),
@@ -162,6 +172,7 @@ def test_historical_runner_restores_source_and_environment(tmp_path, monkeypatch
     assert companion.read_bytes() == fixed_test
     assert os.environ['NUMERA_ORACLE_SOURCE_ROOT'] == 'prior-original-root'
     assert 'PYTHONDONTWRITEBYTECODE' not in os.environ
+    assert os.environ.get('CARGO_INCREMENTAL') == incremental
     assert logger.handlers == []
     assert len(calls) == (2 if damage is None else 0 if damage in ('integrity', 'companion', 'warm') else 1)
     assert len(warmups) == (0 if damage in ('integrity', 'companion') else 1)

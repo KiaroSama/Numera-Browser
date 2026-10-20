@@ -417,6 +417,16 @@ REGRESSIONS = (
         },
     },
     {
+        'target': 'config_parity',
+        'test': 'settings_instance_cache_matches_original_file_identity_and_detached_results',
+        'symptom': 'Settings cache result differs',
+        'commit': '813a4c6c490fbe8438a1604a3c25d7fddf6ba9db',
+        'files': {
+            'engine-rust/src/storage/config.rs':
+                '808535a3970096c53c68151cca8965f5ef261175e3eb54f85daea21ee1f4b002',
+        },
+    },
+    {
         'target': 'rotation_recovery_parity',
         'test': 'committed_rotation_metadata_matches_original_without_rewriting_generation',
         'symptom': 'Committed rotation metadata differs',
@@ -509,9 +519,11 @@ def prove(root: Path, original: Path, logger) -> None:
     from baseline_source import ENVIRONMENT
 
     sha = require_hosted_source(root)
-    keys = (ENVIRONMENT, 'PYTHONDONTWRITEBYTECODE')
+    keys = (ENVIRONMENT, 'PYTHONDONTWRITEBYTECODE', 'CARGO_INCREMENTAL')
     previous = {key: os.environ.get(key) for key in keys}
-    os.environ.update({ENVIRONMENT: str(original), 'PYTHONDONTWRITEBYTECODE': '1'})
+    # rust-cache disables this for cross-job caches; these source swaps share one build tree.
+    os.environ.update({ENVIRONMENT: str(original), 'PYTHONDONTWRITEBYTECODE': '1',
+                       'CARGO_INCREMENTAL': '1'})
     try:
         applicable = (case for case in REGRESSIONS
                       if case.get('platform', sys.platform) == sys.platform)

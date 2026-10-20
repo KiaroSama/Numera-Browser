@@ -8,17 +8,17 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed checkpoint `955c7ab` ran in manual hosted batch
-[39397136419](https://github.com/KiaroSama/Numera-Browser/actions/runs/39397136419),
-which failed on October 20 at 09:15 UTC at native strict lint and CodeQL/required verification.
-All 26 other jobs passed, including every source platform, eight relocated SDK cases
-and dashboard checks. Both native tiers proved four new historical journal/completion/
-recovery assertions and fixed-byte restoration, then lint rejected a literal zero-width
-space in the journal observer. An explicit code-point expression preserves that input;
-current fixed-tree tests and cache-locality timing remain unverified. Earlier crypto
-145-case/four-readback and public vault/terminal acceptance remains valid, not full parity.
-Authentication and KDF algorithms are unchanged; earlier Linux performance overlaps remain unexplained. Python stays selected.
-The [candidate status](migration-candidate.md) records 320 nearest references and pending full occurrence acceptance.
+The latest completed checkpoint `813a4c6` ran in manual hosted batch
+[39402856263](https://github.com/KiaroSama/Numera-Browser/actions/runs/39402856263),
+which failed on October 20 at 10:02 UTC at the Windows build deadline and CodeQL/required verification.
+All 27 other jobs passed, including every source platform, eight relocated SDK cases
+and dashboard checks. Linux passed the new journal/completion/recovery and typed-error
+cases. Windows proved all 35 historical failures and fixed-byte restorations, then
+exhausted the 900-second build ceiling before current-tree compilation completed.
+The prepared proof runner restores incremental compilation during its source swaps;
+all assertions and deadlines remain unchanged, with no measured speedup claimed.
+The prepared settings cache adds timestamp/size and detached-result observations; authentication and KDF algorithms are unchanged.
+Earlier Linux performance overlaps remain unexplained. The [candidate status](migration-candidate.md) records 320 nearest references and pending full occurrence acceptance.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

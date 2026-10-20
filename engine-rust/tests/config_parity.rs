@@ -9,6 +9,125 @@ use std::{
 mod common;
 
 #[test]
+fn settings_instance_cache_matches_original_file_identity_and_detached_results()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("settings-instance-cache")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,os,sys
+from pathlib import Path
+repository,root=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.config_store import ConfigStore
+from run_logging import run_log
+root.mkdir(parents=True)
+store=ConfigStore();store.root=root;store.config_path=root/'config.json'
+a=b'{"nested":{"value":"A"}}';b=a.replace(b'A',b'B')
+steps=[(a,0),(b,0),(b,1),(b+b' ',1),(None,1),(a,1),
+       (b'{broken',2),(b,1),(b'[]',3),(b,1),(b,4)]
+observed=[]
+with run_log('settings-instance-cache-oracle',root/'logs') as log:
+    for raw,tick in steps:
+        path=store.config_path
+        if raw is None:path.unlink()
+        else:
+            path.write_bytes(raw)
+            stamp=1800000000*1000000000+tick*100
+            os.utime(path,ns=(stamp,stamp))
+            assert path.stat().st_mtime_ns==stamp,'Fixture timestamp was not retained'
+        first=store.get_config()
+        detached=json.loads(json.dumps(first))
+        if isinstance(first.get('nested'),dict):first['nested']['value']='changed-return'
+        first['injected']=['changed-return']
+        again=store.get_config()
+        fresh=ConfigStore();fresh.root=root;fresh.config_path=path
+        independent=fresh.get_config()
+        assert (path.read_bytes() if path.exists() else None)==raw
+        observed.append({'raw':list(raw) if raw is not None else None,'tick':tick,
+                         'first':detached,'again':again,'independent':independent})
+    log.info('Observed sequential settings cache steps=%s',len(observed))
+    print(json.dumps(observed,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .arg(temporary.path().join("source"));
+    let original = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 32768,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(original.exit, 0, "Original settings cache observer failed");
+    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    assert_eq!(cases.len(), 11);
+    let root = temporary.path().join("native");
+    fs::create_dir(&root)?;
+    let path = root.join("config.json");
+    let store = ConfigStore::new(root.clone());
+    for (index, case) in cases.iter().enumerate() {
+        let raw: Option<Vec<u8>> = serde_json::from_value(case["raw"].clone())?;
+        if let Some(raw) = &raw {
+            fs::write(&path, raw)?;
+            let stamp = UNIX_EPOCH
+                + Duration::from_secs(1_800_000_000)
+                + Duration::from_nanos(case["tick"].as_u64().ok_or("Tick missing")? * 100);
+            fs::OpenOptions::new()
+                .write(true)
+                .open(&path)?
+                .set_modified(stamp)?;
+            assert_eq!(
+                fs::metadata(&path)?.modified()?,
+                stamp,
+                "Fixture timestamp was not retained"
+            );
+        } else {
+            fs::remove_file(&path)?;
+        }
+        let mut first = store.read();
+        assert_eq!(
+            Value::Object(first.clone()),
+            case["first"],
+            "Settings cache result differs at step {index}"
+        );
+        if let Some(Value::Object(nested)) = first.get_mut("nested") {
+            nested.insert("value".into(), "changed-return".into());
+        }
+        first.insert("injected".into(), serde_json::json!(["changed-return"]));
+        assert_eq!(
+            Value::Object(store.read()),
+            case["again"],
+            "Settings cache detached result differs at step {index}"
+        );
+        assert_eq!(
+            Value::Object(ConfigStore::new(root.clone()).read()),
+            case["independent"],
+            "Independent settings instance differs at step {index}"
+        );
+        assert_eq!(fs::read(&path).ok(), raw, "Settings read changed evidence");
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn direct_settings_and_current_thread_replacement_match_original()
 -> Result<(), Box<dyn std::error::Error>> {
     use numera_core::{ownership::capture, storage::locks::DataLock};

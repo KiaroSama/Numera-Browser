@@ -1,6 +1,6 @@
 use super::{atomic::write_json, locks::DataLock};
 use serde_json::{Map, Value};
-use std::{error::Error, fmt, fs, io, path::PathBuf};
+use std::{error::Error, fmt, fs, io, path::PathBuf, sync::Mutex, time::SystemTime};
 
 #[derive(Debug)]
 pub enum ConfigError {
@@ -39,23 +39,58 @@ impl From<io::Error> for ConfigError {
     }
 }
 
+struct CachedConfig {
+    key: (SystemTime, u64),
+    values: Map<String, Value>,
+}
+
 pub struct ConfigStore {
     root: PathBuf,
+    cache: Mutex<Option<CachedConfig>>,
 }
 
 impl ConfigStore {
     pub fn new(root: PathBuf) -> Self {
-        Self { root }
+        Self {
+            root,
+            cache: Mutex::new(None),
+        }
     }
 
-    /// Original read view is empty for missing/damaged/non-object settings.
-    /// It does not rewrite that file or discard unknown fields in a valid one.
+    /// Cache successful object reads by the original size/mtime identity.
+    /// Returns detached maps; read/parse failures retain the last successful cache.
     pub fn read(&self) -> Map<String, Value> {
-        fs::read(self.root.join("config.json"))
+        let mut cache = self.cache.lock().unwrap_or_else(|poisoned| {
+            let mut cache = poisoned.into_inner();
+            *cache = None;
+            self.cache.clear_poison();
+            cache
+        });
+        let path = self.root.join("config.json");
+        let key = match fs::metadata(&path)
+            .and_then(|metadata| Ok((metadata.modified()?, metadata.len())))
+        {
+            Ok(key) => key,
+            Err(_) => {
+                *cache = None;
+                return Map::new();
+            }
+        };
+        if let Some(cached) = cache.as_ref().filter(|cached| cached.key == key) {
+            return cached.values.clone();
+        }
+        let Some(values) = fs::read(path)
             .ok()
             .and_then(|bytes| serde_json::from_slice::<Value>(&bytes).ok())
             .and_then(|value| value.as_object().cloned())
-            .unwrap_or_default()
+        else {
+            return Map::new();
+        };
+        *cache = Some(CachedConfig {
+            key,
+            values: values.clone(),
+        });
+        values
     }
 
     pub fn default_engine(&self, installed: &std::collections::BTreeMap<String, bool>) -> Value {
