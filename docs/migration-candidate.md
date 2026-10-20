@@ -626,21 +626,21 @@ A coherent seven-source historical group and compatible earlier companions retai
 semantic-failure proof. Batch `39460478283` exposed a late fixture-clock binding; replacement
 `39470005037` proved historical failure/restoration and all 189 current cases on both systems.
 The earlier Windows lock timeout also passed, without establishing its cause.
-Prepared core read/default-engine/headless APIs now return typed errors; CLI/HTTP callers
-retain lazy fallback and validation order. Existing targets add 33 core, 56 CLI and 42 HTTP
-original-derived observations. Compatible exact historical callers retain selected defects and
-named assertions. These new interface changes remain uncompiled and runtime-unverified.
+Core read/default-engine/headless APIs return typed errors; CLI/HTTP callers retain lazy
+fallback and original error order. Batch `39486565418` passed all 33 core, 56 CLI and 42 HTTP
+original-derived observations on both systems. Compatible exact historical callers retained
+selected defects and proved the named CLI admission failure before fixed-byte restoration.
 
 ## Acceptance status
 
-Latest completed source `6c8a5bb` ran in batch
-[39470005037](https://github.com/KiaroSama/Numera-Browser/actions/runs/39470005037).
-All current storage observations and configured-lock checks passed on both systems; historical
-admission failure/restoration remained required. The other 27 jobs passed, but Linux creation
-time was inconclusive: native 12.679–359.974 ms versus original 163.626–170.001 ms.
-Windows reported no regression in all four CLI time/memory comparisons. CodeQL and required
-verification failed; publication stages were skipped. Earlier lock/performance causes remain
-unproved; prepared strict interface changes require their own hosted evidence.
+Latest completed source `3612a8a` ran in batch
+[39486565418](https://github.com/KiaroSama/Numera-Browser/actions/runs/39486565418).
+All 131 strict settings observations and complete native jobs passed on both systems, after
+40 Linux and 41 Windows named historical failures and fixed-byte restoration. All eight SDK legs
+and source platforms passed. Both systems reported no regression in four CLI time/memory comparisons.
+The 27 passing jobs do not clear Cargo advisories, CodeQL or required verification; publication
+was skipped. Stable TLS patches address two newly issued advisories, but remain hosted-unverified.
+Earlier lock/performance causes remain unproved; full migration acceptance is still open.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and

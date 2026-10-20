@@ -8,18 +8,17 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed checkpoint `6c8a5bb` ran in manual hosted batch
-[39470005037](https://github.com/KiaroSama/Numera-Browser/actions/runs/39470005037),
-which failed on October 20 at 18:13 UTC at Linux performance, CodeQL and required verification.
+The latest completed checkpoint `3612a8a` ran in manual hosted batch
+[39486565418](https://github.com/KiaroSama/Numera-Browser/actions/runs/39486565418),
+which failed on October 20 at 20:15 UTC at dependency advisories, CodeQL and required verification.
 The other 27 jobs passed. Both systems proved historical settings-admission failure, fixed-byte
-restoration and all 189 current storage observations after binding the fixture clock before imports.
-Configured-lock acceptance also passed; its earlier Windows timeout still has no established cause.
-Linux creation latency overlapped: native 12.679–359.974 ms versus original 163.626–170.001 ms.
-The unchanged criterion correctly refused inconclusive evidence; all four Windows comparisons
-reported no regression. No samples were trimmed or thresholds relaxed. The prepared next slice
-propagates strict settings reads through core/CLI/HTTP, with 33/56/42 original-derived cases.
-Those new interfaces and historical compatibility companions have not yet run in hosted CI.
-The [candidate status](migration-candidate.md) records 320 nearest references; full occurrence acceptance and earlier Linux performance-overlap causes remain open.
+restoration and all 33 core, 56 CLI and 42 HTTP observations through the strict settings interfaces.
+All 40 Linux and 41 Windows historical proofs passed; the complete native jobs also passed.
+All four foreground CLI time/memory comparisons reported no regression on both systems.
+Earlier Linux creation/vault-read overlaps and the Windows lock timeout still have no proved cause;
+a later pass does not diagnose them. No samples were trimmed or thresholds relaxed.
+Two newly issued TLS advisories require stable transitive patches in both authoritative Cargo locks.
+Those lock corrections remain hosted-unverified; [candidate status](migration-candidate.md) records 320 nearest references, with full occurrence acceptance open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The
