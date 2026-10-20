@@ -361,11 +361,10 @@ class HelperManager:
         leader_gone = helper.proc is None or helper.proc.poll() is not None
         resources_done = True
         if helper.streams is not None:
-            # Unproved ownership already prevents success; keep the remaining
-            # budget for cancellation instead of waiting for unaccounted EOF.
+            # A lost report cannot be repaired by EOF. With a complete report,
+            # preserve real EOF so a later cleanup can settle retained trees.
             reserve = min(0.1, remaining() / 2.0)
-            drain = (max(0.0, remaining() - reserve)
-                     if report.complete and not left and leader_gone else 0.0)
+            drain = max(0.0, remaining() - reserve) if report.complete else 0.0
             helper.output = helper.streams.collect(drain)
             retained = helper.streams.close(remaining())
             resources_done = not retained

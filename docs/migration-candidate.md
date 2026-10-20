@@ -488,33 +488,47 @@ missing/locked/wrong-key refusal and repeat successful exports. Stored integer t
 retain their exact value rather than passing through the typed floating-point read view.
 Other dynamic model and numeric-spelling domains remain incomplete. Two pinned historical
 archive controls must fail their named semantic assertions before restored current success.
-These credential/export changes are not yet hosted-verified. Batch `39360978136`
-failed during the old lookup proof's compilation before these cases could run:
-the old repository reader returns `Option`, while the current archive caller expects
-`Result`. Both old lookup swaps now retain a pinned compatible archive companion;
-the named semantic-failure and fixed-byte restoration requirements are unchanged.
+Batch `39365718715` passed all 101 conflict, 14 withheld-text and 13 export-byte
+observations on Windows and Linux. Both systems proved the named historical
+archive failures and restored fixed bytes before current success. Pinned compatible
+archive companions resolve the earlier old-lookup compilation failure without
+weakening semantic-failure or fixed-byte restoration requirements.
 
 ## Failed-helper cancellation
 
-The same batch's macOS incomplete-report case recorded a 0.424-second collection
-against a 0.300-second budget, leaving no cancellation/join time. The worker exited
-without supervisor rescue, so this does not establish a permanent leaked thread.
-Prepared settlement code skips positive EOF waiting only when the report or owned
-process evidence already prevents success. It still collects available output,
-cancels and joins readers under the same total deadline, and retains uncertainty.
-Five deterministic real-pipe cases exercise missing/malformed/invalid-UTF8 reports,
-unproved trees and unreaped leaders. Each must reject the hash-pinned historical
-method at the cancellation-budget assertion before accepting current behavior.
-Existing real-worker, healthy-output, late-EOF and read-error cases and all deadlines
-remain unchanged. This repair is source-reviewed only until hosted verification.
+The earlier macOS incomplete-report case recorded a 0.424-second collection against
+its 0.300-second budget, leaving no cancellation/join time. The worker exited without
+supervisor rescue; a permanent leak was not established. The first repair passed its
+controls but cancelled complete-report readers before genuine EOF, breaking later
+settlement and error classification. The replacement skips positive waiting only for
+incomplete reports; complete reports retain the original bounded drain. Three real-pipe
+historical budget proofs and two complete-report real-EOF controls cover that distinction.
+Windows PID observation now retains process identity and uses only the remaining original
+helper-plus-cleanup deadline, with four deterministic transient/persistent/expired controls.
+Registry settlement must precede observation; termination cannot manufacture success.
+Existing worker, terminal, late-EOF and read-error assertions/deadlines are unchanged;
+the replacement remains unexecuted.
+
+## Public vault store lifecycle
+
+Prepared `ProfileRepo` methods expose descriptor, enabled/unlocked state, enable,
+password change and resume through existing root transactions and durable recovery.
+Successful enable/rotation updates the same instance only after commit-and-prove;
+refusals leave its password unchanged. Enabled distinguishes null from falsey values.
+Four immutable-original observers cover 47 status/enable/rotation/resume cases and 15
+unresolved-journal refusals across five public operations. They check all three secret
+sites, authenticated readback, unknown metadata, exact refusal bytes, journals and binary
+session preservation. These checks are unexecuted; malformed dynamic descriptors, config
+caching, concurrency and complete fault coverage remain open. Cryptography is unchanged.
 
 ## Acceptance status
 
-Latest completed source `03c23a5` ran in batch
-[39360978136](https://github.com/KiaroSama/Numera-Browser/actions/runs/39360978136).
-It failed at both native historical-proof builds, one macOS cleanup case, CodeQL
-and required verification. Credential/export acceptance did not run; distribution,
-promotion and publication were skipped. The corrections above remain unverified.
+Latest completed source `32515a6` ran in batch
+[39365718715](https://github.com/KiaroSama/Numera-Browser/actions/runs/39365718715).
+Both native tiers, eight relocated SDK cases and dashboard checks passed. Source
+jobs failed at complete-report cleanup and Windows one-shot PID observation;
+CodeQL/required verification failed and publication stages were skipped. The
+replacement cleanup/observer and public vault-store changes above remain unverified.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and

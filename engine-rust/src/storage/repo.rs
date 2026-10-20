@@ -70,6 +70,73 @@ impl ProfileRepo {
             .map_err(RepoError::Recovery)?;
         Ok(Self::new(root, password))
     }
+    pub fn vault(&self) -> Result<Option<Value>, RepoError> {
+        self.require_settled()?;
+        Ok(ConfigStore::new(self.root.clone())
+            .read()
+            .remove("vault")
+            .filter(|value| !value.is_null()))
+    }
+
+    pub fn vault_enabled(&self) -> Result<bool, RepoError> {
+        Ok(self.vault()?.is_some())
+    }
+
+    pub fn unlocked(&self) -> Result<bool, RepoError> {
+        let Some(descriptor) = self.vault()?.filter(crate::conversion::truth) else {
+            return Ok(true);
+        };
+        Ok(self
+            .password
+            .as_deref()
+            .filter(|value| !value.is_empty())
+            .is_some_and(|password| {
+                match (descriptor["salt"].as_str(), descriptor["verifier"].as_str()) {
+                    (Some(salt), Some(verifier)) => vault::check_password(password, salt, verifier),
+                    _ => false,
+                }
+            }))
+    }
+
+    pub fn enable_vault(&mut self, password: &str) -> Result<usize, RepoError> {
+        let lock = DataLock::transaction(&self.root)?;
+        let _guard = lock.acquire_configured()?;
+        if self.vault_enabled()? {
+            return Err(RepoError::Message("A vault is already set up. Use `numera vault change` to rotate the master password.".into()));
+        }
+        let count =
+            vault::transaction::enable(&self.root, password).map_err(RepoError::Recovery)?;
+        self.password = Some(password.to_owned());
+        Ok(count)
+    }
+
+    pub fn change_vault_password(
+        &mut self,
+        old_password: &str,
+        new_password: &str,
+    ) -> Result<usize, RepoError> {
+        if new_password.is_empty() {
+            return Err(RepoError::Message(
+                "the new master password cannot be empty".into(),
+            ));
+        }
+        let lock = DataLock::transaction(&self.root)?;
+        let _guard = lock.acquire_configured()?;
+        self.require_settled()?;
+        let count = vault::transaction::rotate(&self.root, old_password, new_password)
+            .map_err(RepoError::Recovery)?;
+        self.password = Some(new_password.to_owned());
+        Ok(count)
+    }
+
+    pub fn resume_vault(
+        root: PathBuf,
+        old_password: &str,
+        new_password: &str,
+    ) -> Result<Self, RepoError> {
+        Self::open(root, Some(new_password.to_owned()), Some(old_password))
+    }
+
     pub(crate) fn path(&self, id: &str, kind: &str) -> Result<PathBuf, RepoError> {
         id_path(&self.root.join(kind), id, ".json").map_err(|e| RepoError::Message(e.to_string()))
     }

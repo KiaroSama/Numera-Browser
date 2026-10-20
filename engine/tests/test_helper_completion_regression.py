@@ -277,8 +277,9 @@ def test_failed_settlement_preserves_cancellation_budget(monkeypatch, failure):
     exec(compile(historical, 'historical-helper-settlement', 'exec'), namespace)
     old = helpers.HelperManager()
     old._settle_locked = namespace['_settle_locked'].__get__(old)
-    with pytest.raises(AssertionError, match='Failed settlement spent cancellation budget'):
-        check(old)
+    if failure not in ('tree', 'leader'):
+        with pytest.raises(AssertionError, match='Failed settlement spent cancellation budget'):
+            check(old)
     check(helpers.HelperManager())
 
 
@@ -303,14 +304,17 @@ def _assert_failed_settlement_budget(monkeypatch, failure, manager):
     pipes = []
     clock = [0.0]
     close_budgets = []
+    drain_joins = []
     join = threading.Thread.join
 
     def scheduled_join(thread, timeout=None):
         if (thread.name.startswith('helper-') and timeout and
                 not all(reader.cancel.is_set() for reader in helper.streams.readers)):
-            # Model the hosted timed-join overrun, not a successful read or exit.
-            clock[0] += timeout + .125
-            return join(thread, 0)
+            drain_joins.append(timeout)
+            if failure not in ('tree', 'leader'):
+                # Model the hosted timed-join overrun, not a successful read or exit.
+                clock[0] += timeout + .125
+                return join(thread, 0)
         return join(thread, timeout)
 
     try:
@@ -321,6 +325,13 @@ def _assert_failed_settlement_budget(monkeypatch, failure, manager):
         helper.streams = helper_streams.Streams(
             SimpleNamespace(stdout=pipes[0], stderr=pipes[1]))
         manager.attach(helper, helper.proc, helper.tree)
+        if failure in ('tree', 'leader'):
+            for writer in writers:
+                os.close(writer)
+            writers.clear()
+            for reader in helper.streams.readers:
+                reader.thread.join(1)
+            assert helper.streams.complete, 'Control did not reach real EOF'
         close = helper.streams.close
 
         def observed_close(budget):
@@ -336,12 +347,14 @@ def _assert_failed_settlement_budget(monkeypatch, failure, manager):
             'Failed settlement spent cancellation budget waiting for unprovable EOF')
         assert helper in manager.live() and helper.state == helpers.STRANDED
         assert helper.units_path == report and helper.straggler
-        assert helper.output == ('', '', False), 'cancellation is not EOF'
         assert all(not reader.thread.is_alive() and reader.pipe.closed
                    for reader in helper.streams.readers)
         if failure not in ('tree', 'leader'):
-            assert helper.units_problem
+            assert helper.output == ('', '', False), 'cancellation is not EOF'
+            assert helper.units_problem and not drain_joins
         else:
+            assert drain_joins, 'Complete reports must retain the ordinary EOF drain'
+            assert helper.output == ('', '', True)
             assert 'owned processes remain' in helper.straggler
     finally:
         for writer in writers:
