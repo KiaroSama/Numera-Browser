@@ -435,7 +435,7 @@ Dynamic values, network, fault and concurrency domains remain incomplete.
 
 ## Configured data-lock deadlines
 
-The next source batch centralizes `NUMERA_LOCK_TIMEOUT` beside `DataLock` and
+The source centralizes `NUMERA_LOCK_TIMEOUT` beside `DataLock` and
 routes 73 ordinary acquisitions across 25 modules through it, including updater
 admission and direct settings. Each acquisition reads the policy separately;
 root/file order, reentrancy and the shared local/OS deadline are unchanged.
@@ -450,12 +450,32 @@ Only a completed refusal received while the acknowledged frozen owner still hold
 the lock counts; setup errors, capture timeouts and late results do not. Protected
 bytes must remain identical, and the released operations must succeed. The exact
 old pool caller must fail the named runtime assertion while current lock APIs stay
-available. These new tests are not yet hosted-verified. Fork, poison, fault and
-complete cross-domain concurrency acceptance remain open.
+available. Hosted batch `39348825678` passed the 20 policy values, seven direct
+operations and required historical assertion/restoration on both platforms. Its first
+CLI scenario failed because frozen read-only settings do not take the root lock;
+that scenario now uses pool listing. Corrected CLI verification, fork, poison, fault
+and complete cross-domain concurrency acceptance remain open.
+
+## Direct profile storage operations
+
+Prepared APIs expose name-only lookup separately from ID-first resolution, validated
+session-directory creation, and standalone session deletion. Deletion takes the immediate
+session lease, refuses occupied or unverifiable claims, and detaches before reclaiming
+outside the lease. Both profile copies and claim/configuration bytes remain untouched.
+Name lookup reuses reconciliation rather than a second implementation. Combined profile
+deletion shares the guarded detach operation.
+
+Prepared acceptance compares 14 original name-lookup cases and 19 original path/session
+cases, plus actual original-held lease refusal and post-release deletion. Existing
+historical lookup proofs retain pinned test companions so a later API's absence cannot
+masquerade as a runtime regression. These APIs are not yet hosted-verified.
 
 ## Acceptance status
 
-Source `0de3fab` ran in hosted batch
+Latest source `0cb635a` failed batch
+[39348825678](https://github.com/KiaroSama/Numera-Browser/actions/runs/39348825678):
+the native CLI fixture failed as described above; CodeQL/required verification also failed.
+Performance and publication did not run. The previous source `0de3fab` ran in hosted batch
 [39336995688](https://github.com/KiaroSama/Numera-Browser/actions/runs/39336995688).
 All 28 nondependent jobs passed: source platforms, both native tiers, eight relocated
 cases and dashboard checks. Expanded shared-store replay, bounded process observation,

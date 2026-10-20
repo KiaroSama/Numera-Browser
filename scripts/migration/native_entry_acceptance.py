@@ -47,7 +47,7 @@ def configured_lock_acceptance(candidate, parent, environment, log):
 
     fixture = ROOT / 'scripts/migration/lock_fixture.py'
     cases = [
-        ('root', ['config']),
+        ('root', ['pool', 'list']),
         ('dashboard-config.json', ['folder', 'create', 'After release']),
         ('config.json', ['config', '--headless-launch', 'on']),
         ('tokens.json', ['token', 'revoke', 'missing']),

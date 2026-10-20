@@ -69,6 +69,12 @@ REGRESSIONS = (
             'engine-rust/src/storage/dashboard.rs':
                 '949ec2682b55d039eaa915d8c83298dbaa0adc7f89df4d2d7c1495836c071808',
         },
+        'companions': {
+            'engine-rust/tests/repo_lookup_parity.rs': {
+                'commit': '0cb635a85fc639eec6926304291a3f91a4f6e637',
+                'sha256': '3267e368991ce775f580b66f2068211d2835dddcf98eb37c205a2e371386d406',
+            },
+        },
     },
     {
         'target': 'integer_seed_parity',
@@ -212,6 +218,12 @@ REGRESSIONS = (
                 '93cd77e5c4af0de5e2b8d9440099defae9e17dd93f2deae3ec050af5343d5bbf',
             'engine-rust/src/storage/dashboard.rs':
                 '949ec2682b55d039eaa915d8c83298dbaa0adc7f89df4d2d7c1495836c071808',
+        },
+        'companions': {
+            'engine-rust/tests/repo_lookup_parity.rs': {
+                'commit': '0cb635a85fc639eec6926304291a3f91a4f6e637',
+                'sha256': '3267e368991ce775f580b66f2068211d2835dddcf98eb37c205a2e371386d406',
+            },
         },
     },
     {

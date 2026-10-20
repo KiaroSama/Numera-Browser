@@ -8,14 +8,16 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed source checkpoint is `0de3fab`. Its manual hosted batch
-[39336995688](https://github.com/KiaroSama/Numera-Browser/actions/runs/39336995688)
-failed overall on October 19 at 23:06 UTC. All 28 nondependent jobs passed:
-source platforms, both native tiers, eight relocated cases and dashboard checks. Native
-suites restored historical source/test companions and passed current contracts.
-The expanded shared-store settings/folder/encrypted-pool replay passed on both systems, retaining all prior profile/vault/archive assertions.
-All four CLI latency/memory comparisons passed; prior Linux vault-read/creation overlaps remain unexplained, not erased by this result.
-Windows process observation passed within its unchanged total deadline. CodeQL/required verification still fail.
+The latest completed source checkpoint is `0cb635a`. Its manual hosted batch
+[39348825678](https://github.com/KiaroSama/Numera-Browser/actions/runs/39348825678)
+failed on October 20 at 00:51 UTC. Source platforms, eight relocated cases and dashboard
+checks passed. Both native tiers passed current library suites, strict lint and historical
+assertion/restoration controls, including configured-lock policy and seven direct operations.
+The expanded shared-store replay passed, but the new CLI fixture incorrectly expected a
+read-only settings command to contend on the frozen runtime's root lock. That scenario now
+uses pool listing; corrected CLI acceptance remains unverified. Performance did not run in
+this batch. Earlier CLI comparisons passed, but prior Linux vault-read/creation overlaps
+remain unexplained. CodeQL/required verification still fail.
 The [candidate status](migration-candidate.md) records 262 nearest references and pending full occurrence acceptance.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.

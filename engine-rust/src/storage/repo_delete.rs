@@ -9,6 +9,85 @@ use serde_json::Value;
 use std::{fs, io, path::PathBuf};
 
 impl ProfileRepo {
+    fn session_path(&self, id: &str) -> Result<PathBuf, RepoError> {
+        let path = id_path(&self.root.join("user-data"), id, "")
+            .map_err(|error| RepoError::Message(error.to_string()))?;
+        match fs::symlink_metadata(&path) {
+            Ok(metadata) => {
+                #[cfg(windows)]
+                let linked = {
+                    use std::os::windows::fs::MetadataExt;
+                    metadata.file_attributes() & 0x400 != 0
+                };
+                #[cfg(not(windows))]
+                let linked = false;
+                if metadata.file_type().is_symlink() || linked {
+                    return Err(RepoError::Message(
+                        "profile path escapes its data directory or is linked".into(),
+                    ));
+                }
+            }
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
+        Ok(path)
+    }
+
+    pub fn user_data_path(&self, id: &str) -> Result<PathBuf, RepoError> {
+        let path = self.session_path(id)?;
+        fs::create_dir_all(&path)?;
+        Ok(path)
+    }
+
+    fn detach_session(&self, id: &str) -> Result<Option<PathBuf>, RepoError> {
+        let session = self.session_path(id)?;
+        if !session.try_exists()? {
+            return Ok(None);
+        }
+        let suffix = super::archive_paths::random_hex(4)?;
+        let tomb = session.with_file_name(format!("{id}.deleting-{suffix}"));
+        if tomb.try_exists()? {
+            return Err(RepoError::Message(
+                "Session tombstone already exists; nothing was deleted".into(),
+            ));
+        }
+        fs::rename(session, &tomb)?;
+        Ok(Some(tomb))
+    }
+
+    pub fn delete_session(&self, id: &str, host: &str) -> Result<(), RepoError> {
+        let tomb = {
+            let _lease = SessionLease::acquire(&SessionLease::path_for(&self.root, id)?).map_err(
+                |error| {
+                    if error.kind() == io::ErrorKind::WouldBlock {
+                        RepoError::SessionBusy(error.to_string())
+                    } else {
+                        error.into()
+                    }
+                },
+            )?;
+            claims::refuse_if_busy(&self.root, id, host)
+                .map_err(|error| RepoError::SessionBusy(error.to_string()))?;
+            if super::paths::safe_id(id).is_err() {
+                return Ok(());
+            }
+            self.detach_session(id)?
+        };
+        // Detached bytes no longer belong to the active profile; reclaim outside the lease.
+        if let Some(tomb) = tomb {
+            let _ = fs::remove_dir_all(&tomb);
+            if tomb.try_exists()? {
+                return Err(RepoError::Message(format!(
+                    "the session for {id} was detached to {} but could not be deleted - remove it by hand once nothing holds it",
+                    tomb.file_name()
+                        .and_then(|name| name.to_str())
+                        .unwrap_or("<unreadable>")
+                )));
+            }
+        }
+        Ok(())
+    }
+
     /// Candidate lookup happens before the lease; the target is re-read inside
     /// root ownership before detaching session bytes or deleting either record.
     pub fn delete(&self, reference: &str, host: &str, now: f64) -> Result<bool, RepoError> {
@@ -43,25 +122,8 @@ impl ProfileRepo {
                 )));
             }
             let paths = [self.path(&id, "dashboard")?, self.path(&id, "profiles")?];
-            let session = id_path(&self.root.join("user-data"), &id, "")
-                .map_err(|e| RepoError::Message(e.to_string()))?;
-            tomb = if session.exists() {
-                let mut nonce = [0u8; 4];
-                getrandom::fill(&mut nonce).map_err(|e| {
-                    RepoError::Message(format!("Session tombstone randomness unavailable: {e}"))
-                })?;
-                let suffix = nonce.iter().map(|b| format!("{b:02x}")).collect::<String>();
-                let path = session.with_file_name(format!("{id}.deleting-{suffix}"));
-                if path.exists() {
-                    return Err(RepoError::Message(
-                        "Session tombstone already exists; nothing was deleted".into(),
-                    ));
-                }
-                fs::rename(&session, &path)?;
-                Some(path)
-            } else {
-                None
-            };
+            let session = self.session_path(&id)?;
+            tomb = self.detach_session(&id)?;
             let mut batch = Batch::default();
             let result = (|| -> io::Result<()> {
                 for path in paths {

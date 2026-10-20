@@ -417,6 +417,57 @@ fn native_session_lease_excludes_original_until_drop_and_reacquires_after_releas
 }
 
 #[test]
+fn standalone_session_deletion_refuses_original_lease_then_preserves_profile_records()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::storage::repo::{ProfileRepo, RepoError};
+
+    let temporary = common::TempDirectory::new("standalone-session-lease")?;
+    let root = temporary.path();
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let fixture = repository.join("scripts/migration/lock_fixture.py");
+    let repo = ProfileRepo::new(root.to_owned(), None);
+    let session = repo.user_data_path("fixture-profile")?;
+    let binary = session.join("session.bin");
+    let bytes = b"\x00\xff\n\r\n";
+    fs::write(&binary, bytes)?;
+    let metadata = [
+        root.join("profiles/fixture-profile.json"),
+        root.join("dashboard/fixture-profile.json"),
+    ];
+    for path in &metadata {
+        fs::create_dir_all(path.parent().ok_or("Profile parent missing")?)?;
+        fs::write(path, b"{\"future\":\"untouched\"}")?;
+    }
+    let mut original = Holder::start(Path::new(&python), &fixture, "session", root)?;
+    match repo.delete_session("fixture-profile", "fixture-host") {
+        Err(RepoError::SessionBusy(message)) => assert_eq!(
+            message,
+            "another process has this profile's browser session open. Close it there, or wait for it to finish."
+        ),
+        Err(error) => {
+            return Err(format!("Session deletion failed for a non-lease reason: {error}").into());
+        }
+        Ok(()) => return Err("Session deletion ignored the original lease".into()),
+    }
+    assert_eq!(fs::read(&binary)?, bytes);
+    original.release()?;
+    drop(original);
+    repo.delete_session("fixture-profile", "fixture-host")?;
+    assert!(!session.exists());
+    for path in metadata {
+        assert_eq!(fs::read(path)?, b"{\"future\":\"untouched\"}");
+    }
+    let original = Holder::start(Path::new(&python), &fixture, "session", root)?;
+    drop(original);
+    repo.delete_session("fixture-profile", "fixture-host")?;
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn python_and_rust_contend_on_the_same_root_file_and_session()
 -> Result<(), Box<dyn std::error::Error>> {
     let python = PathBuf::from(

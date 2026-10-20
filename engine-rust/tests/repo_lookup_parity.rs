@@ -4,6 +4,156 @@ use std::{fs, path::PathBuf};
 mod common;
 
 #[test]
+fn direct_name_lookup_matches_original_without_id_precedence()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("direct-name-lookup")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import copy,json,os,sys,warnings
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+os.environ.pop('NUMERA_PASSWORD',None)
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import convert
+from numera.store import ProfileStore
+from run_logging import run_log
+fixture=json.loads((repository/'engine-rust/tests/fixtures/repo-lookup.json').read_text(encoding='utf-8'))['cases']
+original=convert.Profile
+def clocked(*args,**kwargs):
+    kwargs.setdefault('created_at',1700000000.0)
+    kwargs.setdefault('updated_at',1700000000.0)
+    return original(*args,**kwargs)
+convert.Profile=clocked
+variants=[(copy.deepcopy(fixture[i]['files']),reference) for i,reference in
+          [(0,'alpha'),(0,'fixture-a'),(1,'alpha'),(2,'missing'),(3,'alpha'),(4,'alpha'),(7,'alpha')]]
+files=copy.deepcopy(fixture[0]['files'])
+other=copy.deepcopy(files['profiles/fixture-a.json'])
+other.update(id='fixture-b',name='fixture-a')
+files['profiles/fixture-b.json']=other
+variants.extend((copy.deepcopy(files),reference) for reference in ['fixture-a','fixture-b','alpha',''])
+for stored_id,name,reference in [('fixture-a','',''),('missing-id','needle','needle'),('', 'alpha','alpha')]:
+    files=copy.deepcopy(fixture[0]['files'])
+    files['profiles/fixture-a.json'].update(id=stored_id,name=name)
+    variants.append((files,reference))
+observed=[]
+with run_log('direct-name-oracle',parent/'logs') as log,warnings.catch_warnings():
+    warnings.simplefilter('ignore',RuntimeWarning)
+    for index,(files,reference) in enumerate(variants):
+        root=parent/str(index)
+        store=ProfileStore(root)
+        for name,value in files.items():
+            path=root/name
+            path.parent.mkdir(parents=True,exist_ok=True)
+            path.write_text(json.dumps(value),encoding='utf-8')
+        before={name:(root/name).read_bytes() for name in files}
+        try:
+            found=store.find_by_name(reference)
+            result=None if found is None else found.to_dict()
+            error=None
+        except RuntimeError as exc:
+            result,error=None,str(exc)
+        disk={str(p.relative_to(root)).replace('\\','/'):json.loads(p.read_text(encoding='utf-8'))
+              for kind in ['profiles','dashboard'] for p in (root/kind).glob('*.json')}
+        observed.append({'files':files,'reference':reference,'result':result,'error':error,'disk':disk,
+                         'unchanged':{name:(root/name).read_bytes()==raw for name,raw in before.items()}})
+    log.info('Observed direct name lookup cases=%s',len(observed))
+    print(json.dumps(observed))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let original = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 1_048_576,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(original.exit, 0, "Original direct-name observer failed");
+    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    assert_eq!(cases.len(), 14);
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        fs::create_dir_all(root.join("profiles"))?;
+        let files = case["files"].as_object().ok_or("Lookup files missing")?;
+        let mut before = Map::new();
+        for (name, value) in files {
+            let path = root.join(name);
+            fs::create_dir_all(path.parent().ok_or("Lookup parent missing")?)?;
+            let bytes = serde_json::to_vec(value)?;
+            fs::write(path, &bytes)?;
+            before.insert(name.clone(), serde_json::json!(bytes));
+        }
+        let repo = ProfileRepo::new(root.clone(), None);
+        let actual = repo.find_by_name(
+            case["reference"].as_str().ok_or("Lookup name missing")?,
+            1700000000.0,
+        );
+        match actual {
+            Ok(found) => {
+                assert!(
+                    case["error"].is_null(),
+                    "Direct name lookup unexpectedly succeeded: {index}"
+                );
+                assert_eq!(
+                    serde_json::to_value(found)?,
+                    case["result"],
+                    "Direct name lookup differs: {index}"
+                );
+            }
+            Err(error) => assert_eq!(
+                Some(error.to_string().as_str()),
+                case["error"].as_str(),
+                "Direct name refusal differs: {index}"
+            ),
+        }
+        let mut disk = Map::new();
+        for kind in ["profiles", "dashboard"] {
+            let directory = root.join(kind);
+            if !directory.exists() {
+                continue;
+            }
+            for entry in fs::read_dir(directory)? {
+                let path = entry?.path();
+                if path.extension().is_none_or(|value| value != "json") {
+                    continue;
+                }
+                let name = format!(
+                    "{kind}/{}",
+                    path.file_name()
+                        .and_then(|name| name.to_str())
+                        .ok_or("Lookup filename missing")?
+                );
+                disk.insert(name, serde_json::from_slice(&fs::read(path)?)?);
+            }
+        }
+        assert_eq!(
+            Value::Object(disk),
+            case["disk"],
+            "Direct name lookup disk differs: {index}"
+        );
+        for (name, bytes) in before {
+            assert_eq!(
+                Value::Bool(serde_json::json!(fs::read(root.join(&name))?) == bytes),
+                case["unchanged"][&name],
+                "Direct name preservation differs: {index}"
+            );
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn damaged_profile_text_refuses_before_repair_or_replacement()
 -> Result<(), Box<dyn std::error::Error>> {
     use numera_core::{

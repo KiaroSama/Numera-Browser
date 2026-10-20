@@ -129,16 +129,29 @@ impl ProfileRepo {
         if let Some(profile) = self.reconciled(canonical.as_deref().unwrap_or(reference), now)? {
             return Ok(Some(profile));
         }
+        self.find_by_name(reference, now)
+    }
+
+    pub fn find_by_name(&self, name: &str, now: f64) -> Result<Option<Profile>, RepoError> {
+        let lock = DataLock::transaction(&self.root)?;
+        let _guard = lock.acquire_configured()?;
+        self.require_settled()?;
         let mut matches = BTreeSet::new();
         for id in self.all_ids()? {
             if safe_id(&id).is_err() {
                 continue;
             }
             for kind in ["profiles", "dashboard"] {
-                if Self::raw(&self.path(&id, kind)?)?
-                    .is_some_and(|value| value["name"] == reference)
-                {
-                    matches.insert(id.clone());
+                if let Some(value) = Self::raw(&self.path(&id, kind)?)?.filter(|value| {
+                    crate::conversion::truth(&value["name"]) && value["name"] == name
+                }) {
+                    let selected = value["id"]
+                        .as_str()
+                        .filter(|id| !id.is_empty())
+                        .unwrap_or(&id);
+                    if safe_id(selected).is_ok() {
+                        matches.insert(selected.to_owned());
+                    }
                 }
             }
         }
@@ -146,7 +159,7 @@ impl ProfileRepo {
             return Err(RepoError::Message(format!(
                 "{} profiles are called {}: {}. Use an id instead, or rename one of them - a command that changes or deletes 'by name' cannot be told which you mean.",
                 matches.len(),
-                validation::repr(&Value::String(reference.into())),
+                validation::repr(&Value::String(name.into())),
                 matches.into_iter().collect::<Vec<_>>().join(", ")
             )));
         }
@@ -154,10 +167,7 @@ impl ProfileRepo {
             return Ok(None);
         };
         let profile = self.reconciled(&id, now)?;
-        if profile
-            .as_ref()
-            .is_some_and(|profile| profile.name != reference)
-        {
+        if profile.as_ref().is_some_and(|profile| profile.name != name) {
             return Err(Self::diverged(&id, "password"));
         }
         Ok(profile)
