@@ -47,7 +47,7 @@ for new in [None,{},False,0,'',[],True,1,'bad',[1],{'salt':salt},good]:
 for candidate in [salt,salt[:-3]+'x==','QQ==','QR==','QUI=','QUJ=',
                   'QUJD','QUJD=',salt+'=',salt.rstrip('='),'=='+salt,
                   salt[:4]+'='+salt[4:],' '+salt,salt+'é','',None,False,1]:
-    for verifier in ['opaque-verifier',' \t','\x1c','\x1f','​','',None]:
+    for verifier in ['opaque-verifier',' \t','\x1c','\x1f',chr(0x200b),'',None]:
         records.append({'version':1,'op':'enable','new':{'salt':candidate,'verifier':verifier}})
 records += [{'version':1,'op':'rotate','new':good,'old':old} for old in
             [None,{},False,1,'bad',good,{'salt':'QR==','verifier':' '}]]

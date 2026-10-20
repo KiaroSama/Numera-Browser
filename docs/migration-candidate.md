@@ -546,8 +546,8 @@ instead of substituting legacy fields. Descriptor text uses Python-compatible bo
 strict Base64 rejects alphabet junk and bad padding but accepts unused trailing bits. Authentication
 still separately proves the verifier and every stored secret. An existing-target immutable-original
 observer compares 145 descriptor/selection/classification results and exact retained journal bytes.
-Its pinned historical semantic failure and fixed-byte restoration are unexecuted. Recovery ownership,
-durable rollback and all prior fixtures remain unchanged.
+Both platforms proved its pinned historical semantic failure and fixed-byte restoration in batch
+`39397136419`; strict lint then stopped acceptance. Recovery ownership and prior fixtures are unchanged.
 
 ## Authenticated recovery results
 
@@ -562,18 +562,18 @@ existing codes, role and message. Unreadable active settings, including a direct
 `config.json`, retain the same structured cause and leave evidence untouched. Existing
 observers add 36 completion cases, five config failures repeated twice, ten committed
 rotation cases repeated twice, and 15 typed error projections. Exact historical completion,
-config-cause and metadata assertions must fail before fixed-byte restoration and current
-hosted acceptance. These prepared changes are unexecuted; callback-induced persisted-readback,
-crash, complete dynamic-value and concurrency domains remain incomplete.
+config-cause and metadata assertions failed as required on both platforms in batch `39397136419`,
+with fixed-byte restoration. Strict lint then stopped the current green leg; callback-induced
+readback, crash, complete dynamic-value and concurrency domains remain incomplete.
 
 ## Acceptance status
 
-Latest completed source `0147a3c` ran in batch
-[39377575857](https://github.com/KiaroSama/Numera-Browser/actions/runs/39377575857).
-All 28 nondependent jobs passed: source platforms, both native crypto tiers,
-eight relocated SDK cases and dashboard checks. CodeQL/required verification failed
-and publication stages were skipped. Prepared journal, completion, structured-recovery and
-cache-locality changes are not covered by that earlier SHA and remain unverified.
+Latest completed source `955c7ab` ran in batch
+[39397136419](https://github.com/KiaroSama/Numera-Browser/actions/runs/39397136419).
+All 26 other jobs passed: source platforms, eight relocated SDK cases and dashboard checks.
+Both native tiers proved four new historical failures/restoration, then strict lint rejected
+a literal zero-width space in the journal observer. An explicit code-point expression preserves
+that input. Current acceptance and cache timing remain unverified; CodeQL/required also failed.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and
