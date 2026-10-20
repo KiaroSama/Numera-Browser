@@ -8,16 +8,16 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed checkpoint `32515a6` ran in manual hosted batch
-[39365718715](https://github.com/KiaroSama/Numera-Browser/actions/runs/39365718715),
-which failed on October 20 at 04:05 UTC. Both native tiers passed the credential
-conflict, strict-text and exact export-byte cases, including historical assertion
-failures and fixed-byte restoration. Complete-report helper cleanup regressed:
-readers were cancelled before genuine EOF, preventing later settlement. The
-prepared correction bypasses EOF waiting only for incomplete reports; complete
-reports retain their bounded drain. Windows identified-process observation and six
-public vault-store APIs also have prepared, unexecuted acceptance checks.
-CodeQL/required verification remain failed. Earlier Linux performance overlaps remain unexplained; Python stays selected.
+The latest completed checkpoint `2345048` ran in manual hosted batch
+[39372271823](https://github.com/KiaroSama/Numera-Browser/actions/runs/39372271823),
+which failed on October 20 at 05:15 UTC solely at CodeQL/required verification.
+All 28 nondependent jobs passed, including every source platform, both native tiers,
+eight relocated SDK cases and dashboard checks. Four public vault-store tests
+passed 47 cases and 15 unresolved-journal refusals on Windows and Linux. Complete
+reports now retain genuine EOF drain; original terminal-state tests and Windows
+identified-process observation passed without increased deadlines. Crypto text
+admission and native-token readback are prepared, not executed; authentication
+and KDF algorithms are unchanged. Earlier Linux performance overlaps remain unexplained; Python stays selected.
 The [candidate status](migration-candidate.md) records 266 nearest references and pending full occurrence acceptance.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
@@ -49,9 +49,9 @@ variants. Its Linux Python 3.14 result was 2,776 passes, six explicit limits and
 all 147 source suites. The earlier `7020a0a` checkpoint verified Windows partition
 1 with 790 passes, 42 explicit platform limits and 37 suites, including 59
 release-distribution tests. These historical results do not certify the changed tree.
-The latest independent CodeQL check fails with 35 changed-line annotations:
-19 path flows, the legacy URL recognizer, a synthetic replay credential and 14
-cryptographic-value flows. Scanner output alone does not prove exploitable use.
+The latest independent CodeQL check fails with 45 changed-line annotations:
+19 path flows, the legacy URL recognizer, a synthetic replay credential and 24
+cryptographic-value flows, including synthetic fixtures. Counts alone do not prove exploitable use.
 These are not whole-branch finding counts or security clearance.
 Distribution, promotion and publication were skipped. There is no signed release
 or completed native updater acceptance. Python remains selected; narrow passing

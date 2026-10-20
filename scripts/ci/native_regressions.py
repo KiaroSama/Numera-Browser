@@ -364,6 +364,16 @@ REGRESSIONS = (
                 '6382da3256a98870707a45d25a17a7f2933902ae8171b4044b3a305e2e354ec5',
         },
     },
+    {
+        'target': 'vault_parity',
+        'test': 'crypto_text_admission_matches_original_and_new_tokens_reopen_there',
+        'symptom': 'Crypto text admission differs',
+        'commit': '234504803ef8ac92c9cb076aeec9bc942f4553d3',
+        'files': {
+            'engine-rust/src/vault/mod.rs':
+                '5fbf9a042308ce8405b66c8e2276372272157566cc2e420594e0aa9e1ae677fd',
+        },
+    },
 )
 
 

@@ -90,6 +90,151 @@ with run_log('envelope-classification-oracle',root/'logs') as log:
 }
 
 #[test]
+fn crypto_text_admission_matches_original_and_new_tokens_reopen_there()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{ownership::capture, vault::check_password};
+    use std::{fs, path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("crypto-text-admission")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import itertools,json,sys
+from pathlib import Path
+repository,root=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import crypto
+from run_logging import run_log
+fixtures=json.loads((repository/'engine-rust/tests/fixtures/vault.json').read_text(encoding='utf-8'))['cases']
+salt=fixtures[0]['salt'];password=fixtures[0]['password']
+rows=[]
+def observe(salt,value,key=password):
+    try:result,error=crypto.decrypt(key,salt,value),None
+    except (RuntimeError,ValueError) as exc:result,error=None,str(exc)
+    rows.append({'salt':salt,'value':value,'password':key,'result':result,'error':error,
+                 'check':crypto.check_password(key,salt,value)})
+with run_log('crypto-text-admission-oracle',root/'logs') as log:
+    for case in [fixtures[2],fixtures[6],fixtures[10],fixtures[14]]:
+        token=case['token'];prefix,body=token.rsplit(':',1)
+        for candidate in [salt,' \n'+salt+'\t','!'+salt[:8]+'\x00'+salt[8:]+'?',
+                          salt+'===','=='+salt,salt[:6]+'='+salt[6:],
+                          salt.rstrip('='),salt[:-1],salt+'A',salt+'é',
+                          salt[:-3]+'x==',salt[:-3]+'w==']:
+            observe(candidate,token)
+        for candidate in [body,' \n'+body+'\t','!'+body[:8]+'\x00'+body[8:]+'?',
+                          body+'===','=='+body,body[:6]+'='+body[6:],body.rstrip('='),
+                          body[:-1],body.replace('-','+').replace('_','/'),body+'A',
+                          body[:12]+('A' if body[12]!='A' else 'B')+body[13:]]:
+            observe(salt,prefix+':'+candidate)
+        for candidate in ['xxxxxxx'+body,'é漢🙂xxxx'+body,'enc:'+body,'',
+                          prefix+':'+body+':ignored','enc:v9:'+body,'enc:v01:'+body]:
+            observe(salt,candidate)
+        for candidate in [body[:5]+'é'+body[6:],body[:5]+'漢🙂'+body[7:]]:
+            observe(salt,prefix+':'+candidate)
+        observe(salt,token,'wrong-fixture-password')
+    # Short malformed salts cover padding grammar without a large KDF matrix.
+    verifier=fixtures[14]['token']
+    for length in range(3):
+        for symbols in itertools.product('A=!',repeat=length):
+            candidate=''.join(symbols)
+            observe(candidate,verifier)
+    log.info('Observed crypto text cases=%s',len(rows))
+    print(json.dumps(rows,ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 262144,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original crypto text observer failed");
+    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(cases.len(), 145, "Crypto text observations missing");
+    for (index, case) in cases.iter().enumerate() {
+        let password = case["password"].as_str().ok_or("Password missing")?;
+        let salt = case["salt"].as_str().ok_or("Salt missing")?;
+        let value = case["value"].as_str().ok_or("Ciphertext missing")?;
+        let (result, error) = match decrypt(password, salt, value) {
+            Ok(value) => (Some(value), None),
+            Err(error) => (None, Some(error.to_string())),
+        };
+        assert_eq!(
+            serde_json::json!({"result":result,"error":error,
+                "check":check_password(password,salt,value)}),
+            serde_json::json!({"result":case["result"],"error":case["error"],"check":case["check"]}),
+            "Crypto text admission differs for case {index}"
+        );
+    }
+    let fixture: Value = serde_json::from_str(include_str!("fixtures/vault.json"))?;
+    let password = fixture["cases"][0]["password"]
+        .as_str()
+        .ok_or("Password missing")?;
+    let salt = fixture["cases"][0]["salt"].as_str().ok_or("Salt missing")?;
+    let rows = ["", "fixture-value", "Unicode α فارسی", "numera-vault-ok"]
+        .into_iter()
+        .map(|plaintext| {
+            let token = encrypt(password, salt, plaintext)?;
+            Ok(serde_json::json!({"password":password,"salt":salt,"token":token,"expected":plaintext}))
+        })
+        .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
+    let input = temporary.path().join("native-tokens.json");
+    fs::write(&input, serde_json::to_vec(&rows)?)?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,sys
+from pathlib import Path
+repository,path,root=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import crypto
+from run_logging import run_log
+rows=json.loads(path.read_text(encoding='utf-8'))
+with run_log('native-token-reopen-oracle',root/'logs') as log:
+    for row in rows:
+        assert crypto.decrypt(row['password'],row['salt'],row['token'])==row['expected']
+    log.info('Authenticated native token readback cases=%s',len(rows))
+    print(len(rows))
+"#,
+        ])
+        .arg(repository)
+        .arg(input)
+        .arg(temporary.path().join("reopen"));
+    let reopened = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 8192,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        reopened.exit, 0,
+        "Original refused authenticated native tokens"
+    );
+    assert_eq!(String::from_utf8(reopened.stdout)?.trim(), "4");
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn original_ciphertext_and_errors_are_interoperable() -> Result<(), Box<dyn std::error::Error>> {
     let oracle: Value = serde_json::from_str(include_str!("fixtures/vault.json"))?;
     let cases = oracle["cases"].as_array().ok_or("Missing vault oracle")?;

@@ -506,29 +506,44 @@ historical budget proofs and two complete-report real-EOF controls cover that di
 Windows PID observation now retains process identity and uses only the remaining original
 helper-plus-cleanup deadline, with four deterministic transient/persistent/expired controls.
 Registry settlement must precede observation; termination cannot manufacture success.
-Existing worker, terminal, late-EOF and read-error assertions/deadlines are unchanged;
-the replacement remains unexecuted.
+Existing worker, terminal, late-EOF and read-error assertions/deadlines are unchanged.
+Batch `39372271823` passed all source platforms, including the original failed terminal
+cases, Windows driver observation, three worker variants and five cancellation controls.
 
 ## Public vault store lifecycle
 
-Prepared `ProfileRepo` methods expose descriptor, enabled/unlocked state, enable,
+Public `ProfileRepo` methods expose descriptor, enabled/unlocked state, enable,
 password change and resume through existing root transactions and durable recovery.
 Successful enable/rotation updates the same instance only after commit-and-prove;
 refusals leave its password unchanged. Enabled distinguishes null from falsey values.
 Four immutable-original observers cover 47 status/enable/rotation/resume cases and 15
 unresolved-journal refusals across five public operations. They check all three secret
 sites, authenticated readback, unknown metadata, exact refusal bytes, journals and binary
-session preservation. These checks are unexecuted; malformed dynamic descriptors, config
-caching, concurrency and complete fault coverage remain open. Cryptography is unchanged.
+session preservation. All four tests passed on Windows and Linux in batch `39372271823`;
+malformed dynamic descriptors, config caching, concurrency and complete fault coverage
+remain open. Cryptography is unchanged.
+
+## Crypto text admission
+
+Prepared native decoding preserves the frozen interpreter's ASCII salt admission,
+ignored nonalphabet characters, intermediate/excess padding and trailing bits. Version
+selection counts colons; payload slicing counts Unicode characters, matching the source
+rather than assuming a valid prefix. Permissively decoded tokens are canonicalized before
+unchanged Fernet authentication; modified ciphertext must still fail verification.
+An existing-target observer compares 145 original decrypt/password-check outcomes,
+including exact refusal text, and reopens four new native tokens through the original.
+A pinned historical semantic failure and fixed-byte restoration remain required. These
+checks are unexecuted. No KDF rounds, cipher, MAC, randomness, journals or default changed;
+nonstring/backend/cache-fault and complete Unicode error domains remain incomplete.
 
 ## Acceptance status
 
-Latest completed source `32515a6` ran in batch
-[39365718715](https://github.com/KiaroSama/Numera-Browser/actions/runs/39365718715).
-Both native tiers, eight relocated SDK cases and dashboard checks passed. Source
-jobs failed at complete-report cleanup and Windows one-shot PID observation;
-CodeQL/required verification failed and publication stages were skipped. The
-replacement cleanup/observer and public vault-store changes above remain unverified.
+Latest completed source `2345048` ran in batch
+[39372271823](https://github.com/KiaroSama/Numera-Browser/actions/runs/39372271823).
+All 28 nondependent jobs passed: source platforms, native vault/cleanup acceptance,
+eight relocated SDK cases and dashboard checks. CodeQL/required verification failed
+and publication stages were skipped. Prepared crypto text-admission changes are not
+covered by that earlier SHA and remain unverified.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and
