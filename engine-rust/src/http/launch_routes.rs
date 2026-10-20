@@ -36,11 +36,10 @@ fn launch(state: &Profiles, id: &str, body: Map<String, Value>) -> Result<Respon
         return Ok(Json(decorate(state, record, now()?)?).into_response());
     }
     state.engine.materialize(id, now()?)?;
-    let configured = ConfigStore::new(state.root.clone()).read();
-    let headless = body
-        .get("headless")
-        .filter(|value| !value.is_null())
-        .unwrap_or_else(|| configured.get("headless_launch").unwrap_or(&Value::Null));
+    let headless = match body.get("headless").filter(|value| !value.is_null()) {
+        Some(value) => truth(value),
+        None => ConfigStore::new(state.root.clone()).headless_launch()?,
+    };
     let runtime = match &state.browser {
         Some(runtime) => runtime,
         None => {
@@ -57,7 +56,7 @@ fn launch(state: &Profiles, id: &str, body: Map<String, Value>) -> Result<Respon
                 runtime.open(
                     session,
                     profile,
-                    truth(headless),
+                    headless,
                     now().map_err(|error| crate::ownership::ready::StartupFailed {
                         kind: "failed".into(),
                         message: error.to_string(),

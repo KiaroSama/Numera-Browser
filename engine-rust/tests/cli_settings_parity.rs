@@ -5,6 +5,8 @@ use numera_core::{
 use serde_json::{Value, json};
 use std::{collections::BTreeMap, path::Path, process::Command, time::Duration};
 mod common;
+#[path = "cli_settings_parity/strict_settings.rs"]
+mod strict_settings;
 
 #[test]
 fn settings_folder_token_and_schedule_services_match_original_verdicts()

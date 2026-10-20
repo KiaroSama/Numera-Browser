@@ -8,16 +8,17 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed checkpoint `c519a2c` ran in manual hosted batch
-[39460478283](https://github.com/KiaroSama/Numera-Browser/actions/runs/39460478283),
-which failed on October 20 at 17:08 UTC in both native tiers, CodeQL and required verification.
-The other 26 jobs passed, including source platforms, eight relocated SDK cases and dashboard
-checks. Both native tiers proved the new historical settings-admission failure and restored
-fixed bytes, but the current 189-case observer failed on generated timestamps: its fixture
-clock was installed after dataclass factories captured the real clock. The prepared correction
-binds the clock before original model imports and asserts both factories; full comparisons remain.
-Windows configured-lock acceptance also timed out; operation/phase context is diagnostic only,
-not a cause or repair. Deadlines/assertions remain; prior `bec3797` passed 20 settings-read and 50 filename-selection observations on both systems.
+The latest completed checkpoint `6c8a5bb` ran in manual hosted batch
+[39470005037](https://github.com/KiaroSama/Numera-Browser/actions/runs/39470005037),
+which failed on October 20 at 18:13 UTC at Linux performance, CodeQL and required verification.
+The other 27 jobs passed. Both systems proved historical settings-admission failure, fixed-byte
+restoration and all 189 current storage observations after binding the fixture clock before imports.
+Configured-lock acceptance also passed; its earlier Windows timeout still has no established cause.
+Linux creation latency overlapped: native 12.679–359.974 ms versus original 163.626–170.001 ms.
+The unchanged criterion correctly refused inconclusive evidence; all four Windows comparisons
+reported no regression. No samples were trimmed or thresholds relaxed. The prepared next slice
+propagates strict settings reads through core/CLI/HTTP, with 33/56/42 original-derived cases.
+Those new interfaces and historical compatibility companions have not yet run in hosted CI.
 The [candidate status](migration-candidate.md) records 320 nearest references; full occurrence acceptance and earlier Linux performance-overlap causes remain open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.

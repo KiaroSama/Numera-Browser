@@ -85,9 +85,7 @@ pub fn defaults(
     let config = ConfigStore::new(root.into());
     let lock = DataLock::transaction(root)?;
     let _guard = lock.acquire_configured()?;
-    let mut current = config
-        .default_extensions()
-        .map_err(|e| RepoError::Message(e.to_string()))?;
+    let mut current = config.default_extensions().map_err(RepoError::from)?;
     if verb == "default-list" {
         return Ok(Outcome::success(json!({"extensions":current})));
     }
@@ -126,7 +124,7 @@ pub fn defaults(
             "default_extensions".into(),
             json!(current),
         )]))
-        .map_err(|e| RepoError::Message(e.to_string()))?;
+        .map_err(RepoError::from)?;
     Ok(Outcome::success(
         json!({"ok":true,"extensions":current,"changed":true}),
     ))
@@ -202,9 +200,7 @@ fn install_observed(
         let lock = DataLock::transaction(root)?;
         let _guard = lock.acquire_configured()?;
         let config = ConfigStore::new(root.into());
-        let mut current = config
-            .default_extensions()
-            .map_err(|e| RepoError::Message(e.to_string()))?;
+        let mut current = config.default_extensions().map_err(RepoError::from)?;
         let path = serde_json::to_value(&result.path).map_err(io::Error::other)?;
         if !current.contains(&path) {
             current.push(path);
@@ -213,7 +209,7 @@ fn install_observed(
                     "default_extensions".into(),
                     json!(current),
                 )]))
-                .map_err(|e| RepoError::Message(e.to_string()))?;
+                .map_err(RepoError::from)?;
             added_default = true;
         }
     }

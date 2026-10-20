@@ -133,9 +133,10 @@ impl Profiles<'_> {
         })
         .map_err(|e| RepoError::Message(e.to_string()))?;
         let explicit = text("engine").filter(|v| !v.is_empty());
-        let engine = explicit
-            .map(str::to_owned)
-            .unwrap_or_else(|| value_text(&self.config.default_engine(self.installed)));
+        let engine = match explicit {
+            Some(engine) => engine.to_owned(),
+            None => value_text(&self.config.default_engine(self.installed)?),
+        };
         let installed = !["playwright", "patchright", "camoufox", "cloak"]
             .contains(&engine.as_str())
             || self.installed.get(&engine) == Some(&true);
@@ -143,10 +144,7 @@ impl Profiles<'_> {
             notice(&engine)?;
         }
         let id = crate::storage::archive_paths::random_hex(6)?;
-        let extensions = self
-            .config
-            .default_extensions()
-            .map_err(|e| RepoError::Message(e.to_string()))?;
+        let extensions = self.config.default_extensions()?;
         let mut profile = Profile::from_record(&json!({"id":id,"name":text("name").unwrap_or(""),"fingerprint":fingerprint,"proxy":null,"engine":engine,
             "notes":text("notes").unwrap_or(""),"tags":args.get("tag").filter(|v|v.is_array()).cloned().unwrap_or_else(||json!([])),
             "extensions":extensions,"created_at":time,"updated_at":time})).map_err(std::io::Error::other)?;

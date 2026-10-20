@@ -41,9 +41,10 @@ impl Profiles<'_> {
             .get("engine")
             .and_then(Value::as_str)
             .filter(|v| !v.is_empty());
-        let engine = explicit
-            .map(str::to_owned)
-            .unwrap_or_else(|| value_text(&self.config.default_engine(self.installed)));
+        let engine = match explicit {
+            Some(engine) => engine.to_owned(),
+            None => value_text(&self.config.default_engine(self.installed)?),
+        };
         let seed = match args.get("seed").filter(|v| !v.is_null()) {
             Some(value) => value
                 .as_number()

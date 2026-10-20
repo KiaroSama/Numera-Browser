@@ -17,11 +17,11 @@ pub fn run(
     new_password: Option<&str>,
 ) -> Result<Outcome, RepoError> {
     ProfileRepo::new(root.into(), password.map(str::to_owned)).require_settled()?;
-    let config = ConfigStore::new(root.into()).read();
-    let descriptor = config.get("vault");
-    let enabled = descriptor.is_some_and(|v| !v.is_null());
     match verb {
         "status" => {
+            let config = ConfigStore::new(root.into()).read()?;
+            let descriptor = config.get("vault");
+            let enabled = descriptor.is_some_and(|v| !v.is_null());
             let unlocked = descriptor.filter(|v| truth(v)).is_none_or(|v| {
                 password.filter(|p| !p.is_empty()).is_some_and(|p| {
                     match (v["salt"].as_str(), v["verifier"].as_str()) {
@@ -51,7 +51,7 @@ pub fn run(
         }
         // Resume is performed by store-open with both passwords before dispatch.
         "resume" => Ok(Outcome::success(
-            json!({"ok":true,"resumed":true,"enabled":enabled}),
+            json!({"ok":true,"resumed":true,"enabled":ProfileRepo::new(root.into(), password.map(str::to_owned)).vault_enabled()?}),
         )),
         _ => Ok(Outcome::failed(format!("unknown vault command '{verb}'"))),
     }

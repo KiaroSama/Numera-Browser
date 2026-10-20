@@ -317,7 +317,7 @@ impl Application<'_> {
             ),
             "stop" => profiles.stop(self.root, reference, time),
             "jobs" => job_commands::run(self.root, self.host, args, time),
-            "engines" => Ok(settings.engines()),
+            "engines" => settings.engines(),
             "default-engine" => settings.default_engine(text(args, "name")),
             "config" => settings.config(args, self.home),
             "folder" => settings.folder(required(args, "folder_command")?, args),

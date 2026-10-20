@@ -532,6 +532,11 @@ REGRESSIONS = tuple(
     'files': _STORAGE_READERS,
 },)
 
+# Settings signature swaps must keep all affected historical callers coherent.
+import native_settings_history
+_STORAGE_REGRESSIONS = REGRESSIONS
+REGRESSIONS = native_settings_history.compatible(REGRESSIONS, _STORAGE_READERS)
+
 
 def git(root: Path, *arguments: str) -> bytes:
     return subprocess.run(

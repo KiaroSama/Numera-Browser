@@ -85,7 +85,9 @@ fn read(state: &Profiles, body: Map<String, Value>) -> Result<Value, Failure> {
             )
             .map_err(RepoError::UnconvertibleProfile)?;
             if !chose {
-                entry["engine"] = config.default_engine(&state.installed);
+                entry["engine"] = config
+                    .default_engine(&state.installed)
+                    .map_err(RepoError::from)?;
             }
             let mut issues = identity::validate(
                 &to_engine(entry, time)

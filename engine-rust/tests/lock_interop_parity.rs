@@ -337,9 +337,9 @@ fn configured_store_acquisitions_honor_original_lock_owners()
             "Released configured operation did not acquire"
         );
         match operation {
-            "config" => assert_eq!(ConfigStore::new(root).read()["accepted"], true),
+            "config" => assert_eq!(ConfigStore::new(root).read()?["accepted"], true),
             "folder" => assert_eq!(Folders::new(root).listing()?, vec!["After release"]),
-            "vault" => assert!(ConfigStore::new(root).read().contains_key("vault")),
+            "vault" => assert!(ConfigStore::new(root).read()?.contains_key("vault")),
             _ => {
                 for (name, bytes) in &protected {
                     assert_eq!(

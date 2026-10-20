@@ -16,13 +16,20 @@ def load():
     spec = importlib.util.spec_from_file_location(
         'native_regressions_fixture', ROOT / 'scripts/ci/native_regressions.py')
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    helper_spec = importlib.util.spec_from_file_location(
+        'native_settings_history', ROOT / 'scripts/ci/native_settings_history.py')
+    helper = importlib.util.module_from_spec(helper_spec)
+    helper_spec.loader.exec_module(helper)
+    from unittest.mock import patch
+
+    with patch.dict(sys.modules, {'native_settings_history': helper}):
+        spec.loader.exec_module(module)
     return module
 
 
 def test_option_reader_companions_preserve_selected_defects_and_prior_snapshots():
     module = load()
-    current = {(case['target'], case['test'], case['commit']): case for case in module.REGRESSIONS}
+    current = {(case['target'], case['test'], case['commit']): case for case in module._STORAGE_REGRESSIONS}
     original_tree = ast.parse(
         (ROOT / 'scripts/ci/native_regressions.py').read_text(encoding='utf-8'))
     first_registry = next(node.value for node in original_tree.body
@@ -30,7 +37,7 @@ def test_option_reader_companions_preserve_selected_defects_and_prior_snapshots(
                           and any(isinstance(target, ast.Name)
                                   and target.id == 'REGRESSIONS' for target in node.targets))
     original = ast.literal_eval(first_registry)
-    assert len(module.REGRESSIONS) == len(original) + 1
+    assert len(module._STORAGE_REGRESSIONS) == len(original) + 1
     grouped = 0
     for before in original:
         after = current[(before['target'], before['test'], before['commit'])]
@@ -46,11 +53,38 @@ def test_option_reader_companions_preserve_selected_defects_and_prior_snapshots(
         else:
             assert after == before
     assert grouped == 9
-    added = module.REGRESSIONS[-1]
+    added = module._STORAGE_REGRESSIONS[-1]
     assert added['test'] == 'settings_errors::storage_settings_errors_match_original_lazy_reads_and_preserve_bytes'
     assert added['files'] == module._STORAGE_READERS
     assert added['commit'] == module._STORAGE_READERS_COMMIT
     assert added['symptom'] == 'Storage settings admission differs'
+
+
+def test_settings_signature_companions_preserve_all_existing_proofs():
+    module = load()
+    history = module.native_settings_history
+    previous = module._STORAGE_REGRESSIONS
+    assert len(module.REGRESSIONS) == len(previous) + 1
+    for before, after in zip(previous, module.REGRESSIONS):
+        assert {key: after[key] for key in before if key != 'companions'} == {
+            key: value for key, value in before.items() if key != 'companions'}
+        for name, source in before.get('companions', {}).items():
+            assert after['companions'][name] == source
+        touched = before['files'].keys() | before.get('companions', {}).keys()
+        if touched & (history.SOURCES.keys() | module._STORAGE_READERS.keys()):
+            assert history.SOURCES.keys() <= after['files'].keys() | after['companions'].keys()
+            assert not after['files'].keys() & after['companions'].keys()
+            for name, expected in history.SOURCES.items():
+                if name not in touched:
+                    assert after['companions'][name] == {'commit': history.COMMIT, 'sha256': expected}
+        else:
+            assert after == before
+    added = module.REGRESSIONS[-1]
+    assert added['target'] == 'cli_settings_parity'
+    assert added['test'] == 'strict_settings::settings_commands_preserve_original_decoding_refusals_and_early_errors'
+    assert added['symptom'] == 'Strict settings CLI admission differs'
+    assert added['commit'] == history.COMMIT
+    assert added['files'] == history.SOURCES
 
 
 @pytest.mark.parametrize('damage', [None, 'exit', 'empty', 'name', 'symptom', 'summary'])

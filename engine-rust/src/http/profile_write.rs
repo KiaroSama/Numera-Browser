@@ -56,9 +56,7 @@ pub(super) fn extensions(record: &mut Value, config: &ConfigStore) -> Result<(),
         .as_str()
         .is_none_or(|text| text.trim().is_empty())
     {
-        let defaults = config
-            .default_extensions()
-            .map_err(|error| RepoError::Io(io::Error::other(error)))?;
+        let defaults = config.default_extensions()?;
         if !defaults.is_empty() {
             let text = defaults
                 .iter()
@@ -76,12 +74,12 @@ pub(super) fn extensions(record: &mut Value, config: &ConfigStore) -> Result<(),
 }
 fn create_record(state: &Profiles, mut body: Map<String, Value>) -> Result<Value, RepoError> {
     let chose = body.get("engine").is_some_and(truth);
+    let config = ConfigStore::new(state.root.clone());
+    let default = config.default_engine(&state.installed)?;
     strip(&mut body)?;
     let body = Value::Object(body);
     check(&body, false)?;
     let time = now()?;
-    let config = ConfigStore::new(state.root.clone());
-    let default = config.default_engine(&state.installed);
     let mut profile = profile_fields::complete(body, &random_hex(6)?, Some(&default), time)
         .map_err(RepoError::UnconvertibleProfile)?;
     extensions(&mut profile, &config)?;

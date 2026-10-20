@@ -147,7 +147,7 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
         "Delete left a profile or duplicate create wrote another"
     );
     assert_eq!(
-        config.read()["default_engine"],
+        config.read()?["default_engine"],
         "playwright",
         "Refused create changed default engine"
     );

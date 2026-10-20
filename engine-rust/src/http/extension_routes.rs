@@ -87,7 +87,10 @@ fn listing(root: PathBuf) -> io::Result<Value> {
         .map(serde_json::to_value)
         .collect::<Result<Vec<_>, _>>()
         .map_err(io::Error::other)?;
-    let config = ConfigStore::new(root).read();
+    let config = ConfigStore::new(root).read().map_err(|error| match error {
+        crate::storage::config::ConfigError::Io(error) => error,
+        error => io::Error::other(error),
+    })?;
     let defaults = match config
         .get("default_extensions")
         .filter(|value| truth(value))

@@ -7,6 +7,8 @@ use std::{
 };
 
 mod common;
+#[path = "config_parity/strict_reads.rs"]
+mod strict_reads;
 
 #[test]
 fn fallible_settings_reads_preserve_original_utf8_refusal_and_cache()
@@ -221,7 +223,7 @@ with run_log('settings-instance-cache-oracle',root/'logs') as log:
         } else {
             fs::remove_file(&path)?;
         }
-        let mut first = store.read();
+        let mut first = store.read()?;
         assert_eq!(
             Value::Object(first.clone()),
             case["first"],
@@ -232,12 +234,12 @@ with run_log('settings-instance-cache-oracle',root/'logs') as log:
         }
         first.insert("injected".into(), serde_json::json!(["changed-return"]));
         assert_eq!(
-            Value::Object(store.read()),
+            Value::Object(store.read()?),
             case["again"],
             "Settings cache detached result differs at step {index}"
         );
         assert_eq!(
-            Value::Object(ConfigStore::new(root.clone()).read()),
+            Value::Object(ConfigStore::new(root.clone()).read()?),
             case["independent"],
             "Independent settings instance differs at step {index}"
         );
@@ -393,7 +395,7 @@ with run_log('direct-settings-oracle',parent/'logs') as log:
                 "set" => store.set("selected", case["value"].clone()),
                 "engine" => store.set_default_engine(case["value"].clone()),
                 "headless" => store.set_headless_launch(&case["value"]).map(Value::Bool),
-                "headless-read" => Ok(json!(store.headless_launch())),
+                "headless-read" => store.headless_launch().map(Value::Bool),
                 "extensions" => store
                     .set_default_extensions(
                         case["value"]
@@ -652,7 +654,7 @@ fn settings_read_merge_and_refusal_match_source_without_losing_unknown_keys()
             }
             let before = fs::read(&path).ok();
             let store = ConfigStore::new(root.clone());
-            assert_eq!(Value::Object(store.read()), case["read"]);
+            assert_eq!(Value::Object(store.read()?), case["read"]);
             let changes = case["changes"].as_object().ok_or("Missing changes")?;
             match store.set_many(changes.clone()) {
                 Ok(value) => {

@@ -203,7 +203,7 @@ with run_log('integer-seed-oracle',root/'logs') as log:
         normalize_ids(&mut records, &ids);
         assert_eq!(payload, case["payload"], "Integer seed command payload");
         assert_eq!(records, case["records"], "Integer seed persisted records");
-        assert_eq!(Value::Object(config.read()), case["config"]);
+        assert_eq!(Value::Object(config.read()?), case["config"]);
         assert_eq!(
             json!(fs::read(config_path)? == initial),
             case["configUnchanged"]

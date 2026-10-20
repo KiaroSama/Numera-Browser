@@ -59,8 +59,8 @@ impl ConfigStore {
 
     /// Cache successful object reads by the original size/mtime identity.
     /// Returns detached maps; read/parse failures retain the last successful cache.
-    pub fn read(&self) -> Map<String, Value> {
-        self.read_checked().unwrap_or_default()
+    pub fn read(&self) -> Result<Map<String, Value>, ConfigError> {
+        self.read_checked()
     }
 
     fn read_checked(&self) -> Result<Map<String, Value>, ConfigError> {
@@ -103,8 +103,12 @@ impl ConfigStore {
         Ok(values)
     }
 
-    pub fn default_engine(&self, installed: &std::collections::BTreeMap<String, bool>) -> Value {
-        self.read()
+    pub fn default_engine(
+        &self,
+        installed: &std::collections::BTreeMap<String, bool>,
+    ) -> Result<Value, ConfigError> {
+        Ok(self
+            .read_checked()?
             .get("default_engine")
             .filter(|value| crate::conversion::truth(value))
             .cloned()
@@ -114,7 +118,7 @@ impl ConfigStore {
                     .find(|name| installed.get(*name) == Some(&true))
                     .unwrap_or("playwright")
                     .into()
-            })
+            }))
     }
 
     pub fn default_extensions(&self) -> Result<Vec<Value>, ConfigError> {
@@ -137,8 +141,12 @@ impl ConfigStore {
         }
     }
 
-    pub fn headless_launch(&self) -> bool {
-        crate::conversion::truth(self.read().get("headless_launch").unwrap_or(&Value::Null))
+    pub fn headless_launch(&self) -> Result<bool, ConfigError> {
+        Ok(crate::conversion::truth(
+            self.read_checked()?
+                .get("headless_launch")
+                .unwrap_or(&Value::Null),
+        ))
     }
 
     pub fn set(&self, key: &str, value: Value) -> Result<Value, ConfigError> {

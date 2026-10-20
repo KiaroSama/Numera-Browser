@@ -30,14 +30,12 @@ fn attach(state: &Profiles, id: &str, body: Map<String, Value>) -> Result<Respon
             ),
         });
     }
-    let config = ConfigStore::new(state.root.clone()).read();
-    let engine = record
-        .get("engine")
-        .filter(|value| truth(value))
-        .and_then(Value::as_str)
-        .or_else(|| config.get("default_engine").and_then(Value::as_str))
-        .unwrap_or("playwright");
-    if !["playwright", "patchright", "cloak"].contains(&engine) {
+    let engine = match record.get("engine").filter(|value| truth(value)) {
+        Some(engine) => engine.clone(),
+        None => ConfigStore::new(state.root.clone()).default_engine(&state.installed)?,
+    };
+    let engine = value_text(&engine);
+    if !["playwright", "patchright", "cloak"].contains(&engine.as_str()) {
         return Ok(profile_errors::detail(
             StatusCode::BAD_REQUEST,
             format!(

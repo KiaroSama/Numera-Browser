@@ -81,7 +81,9 @@ fn create(state: &Profiles, body: Map<String, Value>) -> Result<Value, Failure> 
         .next_back()
         .cloned();
     let config = ConfigStore::new(state.root.clone());
-    let default = config.default_engine(&state.installed);
+    let default = config
+        .default_engine(&state.installed)
+        .map_err(RepoError::from)?;
     let time = clock()?;
     for record in &mut incoming {
         *record = profile_fields::complete(

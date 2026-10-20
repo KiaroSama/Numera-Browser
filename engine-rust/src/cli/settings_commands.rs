@@ -19,17 +19,17 @@ pub struct Settings<'a> {
     pub environment_token: bool,
 }
 impl Settings<'_> {
-    pub fn engines(&self) -> Outcome {
+    pub fn engines(&self) -> Result<Outcome, RepoError> {
         let config = ConfigStore::new(self.root.into());
-        Outcome::success(
-            json!({"engines":self.installed,"default":config.default_engine(self.installed)}),
-        )
+        Ok(Outcome::success(
+            json!({"engines":self.installed,"default":config.default_engine(self.installed)?}),
+        ))
     }
     pub fn default_engine(&self, name: Option<&str>) -> Result<Outcome, RepoError> {
         let config = ConfigStore::new(self.root.into());
         let Some(name) = name.filter(|v| !v.is_empty()) else {
             return Ok(Outcome::success(
-                json!({"default_engine":config.default_engine(self.installed)}),
+                json!({"default_engine":config.default_engine(self.installed)?}),
             ));
         };
         if !["playwright", "patchright", "camoufox", "cloak"].contains(&name) {
@@ -38,9 +38,7 @@ impl Settings<'_> {
                 payload: json!({"ok":false,"error":format!("unknown engine '{name}'"),"known":["camoufox","cloak","patchright","playwright"]}),
             });
         }
-        config
-            .set_many(Map::from_iter([("default_engine".into(), name.into())]))
-            .map_err(|e| RepoError::Message(e.to_string()))?;
+        config.set_many(Map::from_iter([("default_engine".into(), name.into())]))?;
         Ok(Outcome::success(
             json!({"default_engine":name,"installed":self.installed.get(name)==Some(&true)}),
         ))
@@ -71,9 +69,7 @@ impl Settings<'_> {
                 .filter(|v| !v.is_empty())
                 .map(|v| expand(v, home))
                 .collect::<Result<Vec<_>, _>>()?;
-            let current = config
-                .default_extensions()
-                .map_err(|e| RepoError::Message(e.to_string()))?;
+            let current = config.default_extensions()?;
             let fresh = wanted
                 .iter()
                 .filter(|v| !current.iter().any(|old| old == v.as_str()))
@@ -85,13 +81,12 @@ impl Settings<'_> {
             }
             patch.insert("default_extensions".into(), json!(wanted));
         }
-        config
-            .set_many(patch)
-            .map_err(|e| RepoError::Message(e.to_string()))?;
-        let values = config.read();
+        if !patch.is_empty() {
+            config.set_many(patch)?;
+        }
         Ok(Outcome::success(
-            json!({"default_engine":config.default_engine(self.installed),"default_extensions":config.default_extensions().map_err(|e|RepoError::Message(e.to_string()))?,
-            "headless_launch":truth(&values.get("headless_launch").cloned().unwrap_or(Value::Null)),"root":self.root,"version":env!("CARGO_PKG_VERSION")}),
+            json!({"default_engine":config.default_engine(self.installed)?,"default_extensions":config.default_extensions()?,
+            "headless_launch":config.headless_launch()?,"root":self.root,"version":env!("CARGO_PKG_VERSION")}),
         ))
     }
     pub fn folder(&self, verb: &str, args: &Map<String, Value>) -> Result<Outcome, RepoError> {
