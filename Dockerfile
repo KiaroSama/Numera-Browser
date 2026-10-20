@@ -26,7 +26,7 @@ RUN npm run build
 # because a browser build newer than its client is exactly how launches start
 # failing with protocol errors. Held at 1.62: camoufox 0.5.7 requires
 # playwright<1.63, and the desktop extra installs both.
-FROM mcr.microsoft.com/playwright/python:v1.62.0-noble
+FROM mcr.microsoft.com/playwright/python:v1.64.0-noble
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
