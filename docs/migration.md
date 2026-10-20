@@ -8,16 +8,16 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed checkpoint `bec3797` ran in manual hosted batch
-[39439030544](https://github.com/KiaroSama/Numera-Browser/actions/runs/39439030544),
-which failed on October 20 at 14:53 UTC only at CodeQL and required verification.
-All 28 nondependent jobs passed, including every source platform, eight relocated SDK
-cases and dashboard checks. Both native tiers proved the historical failure, fixed-byte
-restoration and current success for 20 settings-read and 50 filename-selection observations.
-Windows proved 39 historical cases and Linux 38; all four foreground CLI time/memory
-comparisons reported no regression. These results do not diagnose earlier overlap causes.
-Repository cache reuse retains 48 observations and four late-journal controls, including
-three explicit absent-vault safety differences rather than exposing stored ciphertext.
+The latest completed checkpoint `c519a2c` ran in manual hosted batch
+[39460478283](https://github.com/KiaroSama/Numera-Browser/actions/runs/39460478283),
+which failed on October 20 at 17:08 UTC in both native tiers, CodeQL and required verification.
+The other 26 jobs passed, including source platforms, eight relocated SDK cases and dashboard
+checks. Both native tiers proved the new historical settings-admission failure and restored
+fixed bytes, but the current 189-case observer failed on generated timestamps: its fixture
+clock was installed after dataclass factories captured the real clock. The prepared correction
+binds the clock before original model imports and asserts both factories; full comparisons remain.
+Windows configured-lock acceptance also timed out; operation/phase context is diagnostic only,
+not a cause or repair. Deadlines/assertions remain; prior `bec3797` passed 20 settings-read and 50 filename-selection observations on both systems.
 The [candidate status](migration-candidate.md) records 320 nearest references; full occurrence acceptance and earlier Linux performance-overlap causes remain open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.

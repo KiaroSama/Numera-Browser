@@ -623,18 +623,23 @@ without reading unrelated settings. Pool deletion decrypts before filtering its 
 One observer in the existing repository target compares 189 immutable-original outcomes,
 complete success values, persisted records and exact changed/unchanged input bytes.
 A coherent seven-source historical group and compatible earlier companions retain named
-semantic-failure proof. These changes are source-reviewed, not yet compiled or run in CI;
-remaining infallible settings getters, CLI/HTTP paths and full migration acceptance stay open.
+semantic-failure proof. Batch `39460478283` compiled them and proved the historical failure,
+then the current observer failed on generated timestamps on both platforms. Its prepared
+fixture correction binds the clock before model imports and checks both dataclass factories;
+full results and byte assertions remain. Windows configured-lock acceptance also timed out;
+operation/phase diagnostics are prepared, not a proven cause or repair. Remaining infallible
+settings getters, CLI/HTTP paths and full migration acceptance stay open.
 
 ## Acceptance status
 
-Latest completed source `bec3797` ran in batch
-[39439030544](https://github.com/KiaroSama/Numera-Browser/actions/runs/39439030544).
-All 28 nondependent jobs passed: source platforms, both native tiers, eight relocated SDK
-cases and dashboard checks. Windows proved 39 historical failures/restorations and Linux 38;
-both passed 20 settings-read and 50 filename-selection observations after fixed-byte restoration.
-CodeQL and required verification failed; publication stages were skipped. The new storage
-settings error-propagation changes are source-reviewed, not yet runtime-verified.
+Latest completed source `c519a2c` ran in batch
+[39460478283](https://github.com/KiaroSama/Numera-Browser/actions/runs/39460478283).
+The other 26 jobs passed, but both native tiers failed the current storage-settings observer's
+timestamp comparison; Windows also failed configured-lock capture with an unidentified phase.
+Historical settings-admission failure and fixed-byte restoration succeeded on both systems.
+CodeQL and required verification failed; publication stages were skipped. The prepared clock
+correction and lock diagnostics require hosted evidence; storage error propagation is not accepted.
+Prior `bec3797` passed 20 settings-read and 50 filename-selection observations on both systems.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and

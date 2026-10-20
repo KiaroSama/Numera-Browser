@@ -290,10 +290,12 @@ fn configured_store_acquisitions_honor_original_lock_owners()
             "Original lock holder ended before observation"
         );
         released?;
-        let result = result??;
+        let result = result?.map_err(|error| {
+            format!("Configured lock operation={operation} phase=held: {error:?}")
+        })?;
         assert_eq!(
             result.exit, 0,
-            "Configured lock contender failed unexpectedly"
+            "Configured lock contender failed unexpectedly: operation={operation} phase=held"
         );
         let output = String::from_utf8(result.stdout)?;
         assert_eq!(
@@ -320,8 +322,14 @@ fn configured_store_acquisitions_honor_original_lock_owners()
         let result = capture::run(
             &mut configured_contender(&root, operation),
             configured_limits(),
-        )?;
-        assert_eq!(result.exit, 0, "Released configured operation failed");
+        )
+        .map_err(|error| {
+            format!("Configured lock operation={operation} phase=released: {error:?}")
+        })?;
+        assert_eq!(
+            result.exit, 0,
+            "Released configured operation failed: operation={operation}"
+        );
         assert!(
             String::from_utf8(result.stdout)?
                 .lines()

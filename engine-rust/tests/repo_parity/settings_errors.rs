@@ -24,14 +24,17 @@ repository,parent=map(Path,sys.argv[1:])
 os.environ.pop('NUMERA_PASSWORD',None)
 sys.path.insert(0,str(repository/'scripts/migration'))
 from baseline_source import activate
+# Bind dataclass default factories to the fixture clock before baseline imports.
+time.time=lambda:1700000000.0
 activate()
 from numera.store import ProfileStore
 from numera.repo import ProfileRepo
 from numera.models import Profile
 from numera.server.stores import DashboardStore,ProxyPool
 from run_logging import run_log
+assert Profile.__dataclass_fields__['created_at'].default_factory()==1700000000.0
+assert Profile.__dataclass_fields__['updated_at'].default_factory()==1700000000.0
 base=json.loads((repository/'engine-rust/tests/fixtures/repo.json').read_text(encoding='utf-8'))['cases'][0]
-time.time=lambda:1700000000.0
 operations=['vault','profile','profile-empty','dashboard-plain','dashboard-envelope',
             'pool-plain','pool-envelope','pool-withheld','profile-withheld','divergence',
             'refuse','refuse-missing','materialize','materialize-empty','materialize-null',
@@ -261,7 +264,8 @@ with run_log('storage-settings-errors-oracle',parent/'logs') as log:
                         .map(|bytes| serde_json::from_slice::<Value>(&bytes))
                         .transpose()?
                         .unwrap_or(Value::Null),
-                    case["written"][*name]
+                    case["written"][*name],
+                    "Stored result differs: operation={operation} case={index} file={name}"
                 );
             }
         }
