@@ -431,7 +431,7 @@ matching single-entry batch verdicts, and 100 stored-file operations. Three exac
 historical source assertions failed as required, fixed bytes were restored, and
 current cases passed on hosted Windows/Linux in batch `39336995688`. The 23 new
 nearest references raised the ledger to 262; four direct profile-storage references
-now bring it to 266, all still pending complete occurrence acceptance.
+brought it to 266. Another 54 vault-domain references bring it to 320; all new rows remain pending.
 Dynamic values, network, fault and concurrency domains remain incomplete.
 
 ## Configured data-lock deadlines
@@ -532,18 +532,48 @@ rather than assuming a valid prefix. Permissively decoded tokens are canonicaliz
 unchanged Fernet authentication; modified ciphertext must still fail verification.
 An existing-target observer compares 145 original decrypt/password-check outcomes,
 including exact refusal text, and reopens four new native tokens through the original.
-A pinned historical semantic failure and fixed-byte restoration remain required. These
-checks are unexecuted. No KDF rounds, cipher, MAC, randomness, journals or default changed;
-nonstring/backend/cache-fault and complete Unicode error domains remain incomplete.
+Batch `39377575857` proved the pinned historical semantic failure, fixed-byte restoration
+and current success on Windows and Linux. No KDF rounds, cipher, MAC, randomness, journals
+or default changed; nonstring/backend/cache-fault and complete Unicode error domains remain
+incomplete. The Windows test exceeded 60 seconds; prepared fixture ordering groups identical
+raw password/salt keys while preserving every input, original output order and assertion.
+Its timing improvement is unmeasured and no timeout or production cache changed.
+
+## Recovery descriptor boundaries
+
+Prepared journal selection retains truthy malformed `new` values for unreadable classification
+instead of substituting legacy fields. Descriptor text uses Python-compatible boundary trimming;
+strict Base64 rejects alphabet junk and bad padding but accepts unused trailing bits. Authentication
+still separately proves the verifier and every stored secret. An existing-target immutable-original
+observer compares 145 descriptor/selection/classification results and exact retained journal bytes.
+Its pinned historical semantic failure and fixed-byte restoration are unexecuted. Recovery ownership,
+durable rollback and all prior fixtures remain unchanged.
+
+## Authenticated recovery results
+
+Prepared completion diagnostics count distinct full paths, deduplicating only displayed
+basenames. A malformed container still refuses, but independently readable ciphertext
+also contributes its wrong-generation cause. A committed rotation accepts extra descriptor
+metadata only after usable salt/verifier identity, authenticated data, durable bytes and
+persisted readback are proved; matching salt alone never suffices.
+
+Recovery errors now retain an explicit kind and ordered code/detail problems alongside
+existing codes, role and message. Unreadable active settings, including a directory at
+`config.json`, retain the same structured cause and leave evidence untouched. Existing
+observers add 36 completion cases, five config failures repeated twice, ten committed
+rotation cases repeated twice, and 15 typed error projections. Exact historical completion,
+config-cause and metadata assertions must fail before fixed-byte restoration and current
+hosted acceptance. These prepared changes are unexecuted; callback-induced persisted-readback,
+crash, complete dynamic-value and concurrency domains remain incomplete.
 
 ## Acceptance status
 
-Latest completed source `2345048` ran in batch
-[39372271823](https://github.com/KiaroSama/Numera-Browser/actions/runs/39372271823).
-All 28 nondependent jobs passed: source platforms, native vault/cleanup acceptance,
+Latest completed source `0147a3c` ran in batch
+[39377575857](https://github.com/KiaroSama/Numera-Browser/actions/runs/39377575857).
+All 28 nondependent jobs passed: source platforms, both native crypto tiers,
 eight relocated SDK cases and dashboard checks. CodeQL/required verification failed
-and publication stages were skipped. Prepared crypto text-admission changes are not
-covered by that earlier SHA and remain unverified.
+and publication stages were skipped. Prepared journal, completion, structured-recovery and
+cache-locality changes are not covered by that earlier SHA and remain unverified.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and

@@ -4,6 +4,110 @@ use std::{fs, path::PathBuf};
 mod common;
 
 #[test]
+fn recovery_error_data_matches_original_without_parsing_messages()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{ownership::capture, vault::recovery::RecoveryError};
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("recovery-error-data")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import json,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.vault_recovery import recover
+from numera.paths import write_json
+from run_logging import run_log
+fixture=repository/'engine-rust/tests/fixtures'
+enables=json.loads((fixture/'recovery.json').read_text(encoding='utf-8'))['cases']
+rotations=json.loads((fixture/'rotation-recovery.json').read_text(encoding='utf-8'))['cases']
+inputs=[]
+for case in enables:
+    if case['error'] is not None:
+        inputs.append({'files':{**case['files'],'config.json':{},'vault-migration.json':case['journal']},
+                       'password':case['password'],'old':None})
+for case in rotations:
+    if case['error'] is not None:
+        inputs.append({'files':{'proxies.json':case['pool'],'config.json':case['config'],
+                               'vault-migration.json':case['journal']},
+                       'password':case['password'],'old':case['old_password']})
+for journal in [{},{'version':99}, {'version':1,'op':'enable','new':{'salt':'bad'}}]:
+    inputs.append({'files':{'config.json':{},'vault-migration.json':journal},'password':None,'old':None})
+observed=[]
+with run_log('recovery-error-data-oracle',parent/'logs') as log:
+    for index,case in enumerate(inputs):
+        root=parent/str(index);root.mkdir(parents=True);before={}
+        for name,value in case['files'].items():
+            path=root/name;path.parent.mkdir(parents=True,exist_ok=True)
+            raw=json.dumps(value).encode('utf-8');path.write_bytes(raw);before[name]=raw
+        try:
+            recover(root,lambda:json.loads((root/'config.json').read_text(encoding='utf-8')),
+                    lambda value:write_json(root/'config.json',value),case['password'],case['old'])
+        except RuntimeError as exc:
+            expected={'kind':type(exc).__name__,'codes':sorted(getattr(exc,'codes',set())),
+                      'role':getattr(exc,'role',None),
+                      'problems':[p._asdict() for p in getattr(exc,'problems',[])]}
+        else:raise AssertionError('Original refusal control succeeded')
+        assert all((root/name).read_bytes()==raw for name,raw in before.items())
+        observed.append({**case,'expected':expected})
+    log.info('Observed recovery error data cases=%s',len(observed))
+    print(json.dumps(observed,ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let original = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 131072,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        original.exit, 0,
+        "Original recovery error-data observer failed"
+    );
+    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    assert_eq!(cases.len(), 15);
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        fs::create_dir_all(&root)?;
+        let mut before = Vec::new();
+        for (name, value) in case["files"].as_object().ok_or("Files missing")? {
+            let path = root.join(name);
+            fs::create_dir_all(path.parent().ok_or("Parent missing")?)?;
+            let bytes = serde_json::to_vec(value)?;
+            fs::write(path, &bytes)?;
+            before.push((name, bytes));
+        }
+        let error: RecoveryError = numera_core::vault::recovery::recover(
+            &root,
+            case["password"].as_str(),
+            case["old"].as_str(),
+        )
+        .expect_err("Native refusal succeeded");
+        assert_eq!(
+            serde_json::json!({"kind":error.kind,"codes":error.codes,
+            "role":error.role,"problems":error.problems}),
+            case["expected"],
+            "Recovery error data differs for case {index}"
+        );
+        for (name, bytes) in before {
+            assert_eq!(fs::read(root.join(name))?, bytes);
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn public_vault_status_matches_original_without_mutating_settings()
 -> Result<(), Box<dyn std::error::Error>> {
     use numera_core::{ownership::capture, storage::repo::ProfileRepo};

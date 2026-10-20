@@ -154,6 +154,132 @@ with run_log('vault-store-resume-oracle',parent/'logs') as log:
 }
 
 #[test]
+fn committed_rotation_metadata_matches_original_without_rewriting_generation()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("rotation-metadata")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import copy,json,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.vault_recovery import recover
+from numera.paths import write_json
+from run_logging import run_log
+cases=json.loads((repository/'engine-rust/tests/fixtures/rotation-recovery.json').read_text(encoding='utf-8'))['cases']
+base=cases[2];inputs=[]
+for metadata in [{'future':{'format':3}}, {}, {'extra':None}, {'label':'α فارسی'}]:
+    case=copy.deepcopy(base);case['config']['vault'].update(metadata);inputs.append(case)
+for change in ['verifier','missing-verifier','salt','stale','no-key','wrong-key']:
+    case=copy.deepcopy(base)
+    if change=='verifier':case['config']['vault']['verifier']='enc:v9:fixture'
+    elif change=='missing-verifier':case['config']['vault'].pop('verifier')
+    elif change=='salt':case['config']['vault']['salt']=cases[0]['journal']['old']['salt']
+    elif change=='stale':case['pool']=cases[1]['pool']
+    elif change=='no-key':case['password']=None
+    elif change=='wrong-key':case['password']='fixture-wrong-master'
+    inputs.append(case)
+observed=[]
+with run_log('rotation-metadata-oracle',parent/'logs') as log:
+    for index,case in enumerate(inputs):
+        root=parent/str(index);root.mkdir(parents=True)
+        token=case['pool'][0]['pass']
+        files={'config.json':case['config'],'vault-migration.json':case['journal'],
+               'proxies.json':case['pool'],'profiles/a.json':{'proxy':{'password':token}},
+               'dashboard/a.json':{'proxy':{'pass':token}}}
+        before={}
+        for name,value in files.items():
+            path=root/name;path.parent.mkdir(parents=True,exist_ok=True)
+            raw=json.dumps(value).encode('utf-8');path.write_bytes(raw);before[name]=raw
+        marker=root/'user-data/kept/session.bin';marker.parent.mkdir(parents=True)
+        marker.write_bytes(b'\x00\xff\r\n')
+        attempts=[]
+        for _ in range(2):
+            try:
+                result=recover(root,lambda:json.loads((root/'config.json').read_text(encoding='utf-8')),
+                               lambda value:write_json(root/'config.json',value),password=case['password'])
+                error=None;codes=[];role=None
+            except RuntimeError as exc:
+                result,error,codes,role=None,str(exc),sorted(getattr(exc,'codes',set())),getattr(exc,'role',None)
+            unchanged={name:(root/name).exists() and (root/name).read_bytes()==raw for name,raw in before.items()}
+            assert all(kept for name,kept in unchanged.items() if name!='vault-migration.json')
+            assert marker.read_bytes()==b'\x00\xff\r\n'
+            attempts.append({'result':result,'error':error,'codes':codes,'role':role,
+                             'unchanged':unchanged,'journal':(root/'vault-migration.json').exists()})
+        observed.append({'files':files,'password':case['password'],'attempts':attempts})
+    log.info('Observed committed rotation metadata cases=%s',len(observed))
+    print(json.dumps(observed,ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let original = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 131072,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        original.exit, 0,
+        "Original rotation metadata observer failed"
+    );
+    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    assert_eq!(cases.len(), 10);
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        fs::create_dir_all(&root)?;
+        let mut before = Vec::new();
+        for (name, value) in case["files"].as_object().ok_or("Files missing")? {
+            let path = root.join(name);
+            fs::create_dir_all(path.parent().ok_or("Parent missing")?)?;
+            let bytes = serde_json::to_vec(value)?;
+            fs::write(path, &bytes)?;
+            before.push((name, bytes));
+        }
+        let marker = root.join("user-data/kept/session.bin");
+        fs::create_dir_all(marker.parent().ok_or("Marker parent missing")?)?;
+        fs::write(&marker, b"\0\xff\r\n")?;
+        for expected in case["attempts"].as_array().ok_or("Attempts missing")? {
+            let mut actual = match recover(&root, case["password"].as_str(), None) {
+                Ok(result) => {
+                    serde_json::json!({"result":result,"error":null,"codes":[],"role":null})
+                }
+                Err(error) => serde_json::json!({"result":null,"error":error.to_string(),
+                    "codes":error.codes,"role":error.role}),
+            };
+            let unchanged: serde_json::Map<String, Value> = before
+                .iter()
+                .map(|(name, bytes)| {
+                    (
+                        (*name).clone(),
+                        Value::Bool(fs::read(root.join(name)).ok().as_ref() == Some(bytes)),
+                    )
+                })
+                .collect();
+            actual["unchanged"] = unchanged.into();
+            actual["journal"] = root.join("vault-migration.json").exists().into();
+            assert_eq!(
+                actual, *expected,
+                "Committed rotation metadata differs for case {index}"
+            );
+            assert_eq!(fs::read(&marker)?, b"\0\xff\r\n");
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn interrupted_rotation_authenticates_both_keys_or_retains_its_journal()
 -> Result<(), Box<dyn std::error::Error>> {
     let fixture: Value = serde_json::from_str(include_str!("fixtures/rotation-recovery.json"))?;

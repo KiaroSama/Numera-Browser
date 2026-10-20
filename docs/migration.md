@@ -8,17 +8,17 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed checkpoint `2345048` ran in manual hosted batch
-[39372271823](https://github.com/KiaroSama/Numera-Browser/actions/runs/39372271823),
-which failed on October 20 at 05:15 UTC solely at CodeQL/required verification.
+The latest completed checkpoint `0147a3c` ran in manual hosted batch
+[39377575857](https://github.com/KiaroSama/Numera-Browser/actions/runs/39377575857),
+which failed on October 20 at 06:28 UTC solely at CodeQL/required verification.
 All 28 nondependent jobs passed, including every source platform, both native tiers,
-eight relocated SDK cases and dashboard checks. Four public vault-store tests
-passed 47 cases and 15 unresolved-journal refusals on Windows and Linux. Complete
-reports now retain genuine EOF drain; original terminal-state tests and Windows
-identified-process observation passed without increased deadlines. Crypto text
-admission and native-token readback are prepared, not executed; authentication
-and KDF algorithms are unchanged. Earlier Linux performance overlaps remain unexplained; Python stays selected.
-The [candidate status](migration-candidate.md) records 266 nearest references and pending full occurrence acceptance.
+eight relocated SDK cases and dashboard checks. Crypto text admission passed 145
+original-derived cases and four native-token readbacks on Windows and Linux after
+historical semantic failure and fixed-byte restoration. Earlier public vault and
+terminal-state acceptance remains valid. Recovery descriptor, authenticated completion,
+structured-error corrections and cache-locality test optimization are prepared, not executed;
+authentication and KDF algorithms are unchanged. Earlier Linux performance overlaps remain unexplained; Python stays selected.
+The [candidate status](migration-candidate.md) records 320 nearest references and pending full occurrence acceptance.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

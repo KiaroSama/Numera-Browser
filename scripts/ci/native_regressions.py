@@ -313,6 +313,12 @@ REGRESSIONS = (
             'engine-rust/src/pool_normalize.rs':
                 'f97331c9da3246f9ad993df1cacfe80f9d59d5494fd6db4c9c8cd26b05cd17e7',
         },
+        'companions': {
+            'engine-rust/src/vault/journal.rs': {
+                'commit': '0147a3cafbab1c0912484db576bc5b5169b2dc75',
+                'sha256': '406542fa8f85431a0ef72a922b1815fbc149bac136f4ff291afaaf76c5a5fade',
+            },
+        },
     },
     {
         'target': 'pool_normalize_parity',
@@ -372,6 +378,52 @@ REGRESSIONS = (
         'files': {
             'engine-rust/src/vault/mod.rs':
                 '5fbf9a042308ce8405b66c8e2276372272157566cc2e420594e0aa9e1ae677fd',
+        },
+    },
+    {
+        'target': 'journal_parity',
+        'test': 'journal_descriptor_boundaries_match_original_without_repairing_evidence',
+        'symptom': 'Journal descriptor boundary differs',
+        'commit': '0147a3cafbab1c0912484db576bc5b5169b2dc75',
+        'files': {
+            'engine-rust/src/vault/journal.rs':
+                '406542fa8f85431a0ef72a922b1815fbc149bac136f4ff291afaaf76c5a5fade',
+        },
+    },
+    {
+        'target': 'completion_parity',
+        'test': 'completion_diagnostics_match_original_distinct_paths_and_readable_holders',
+        'symptom': 'Completion diagnostic differs',
+        'commit': '0147a3cafbab1c0912484db576bc5b5169b2dc75',
+        'files': {
+            'engine-rust/src/vault/completion.rs':
+                '17f08839d708f47f1b2d926b6e55f32691706d99d294647ae576d87cbc98f8ce',
+        },
+    },
+    {
+        'target': 'recovery_parity',
+        'test': 'unreadable_active_config_preserves_original_recovery_causes_and_bytes',
+        'symptom': 'Active config recovery causes differ',
+        'commit': '0147a3cafbab1c0912484db576bc5b5169b2dc75',
+        'files': {
+            'engine-rust/src/vault/recovery.rs':
+                'a86dd9cb60e15f03b20fd0d56e4e1e1767df08cc40746b949a75f432a6b6512b',
+        },
+        'companions': {
+            'engine-rust/src/vault/rotation_recovery.rs': {
+                'commit': '0147a3cafbab1c0912484db576bc5b5169b2dc75',
+                'sha256': '113218c52d07a1af318ee0f05d073443334159612f561a335e66523f12738837',
+            },
+        },
+    },
+    {
+        'target': 'rotation_recovery_parity',
+        'test': 'committed_rotation_metadata_matches_original_without_rewriting_generation',
+        'symptom': 'Committed rotation metadata differs',
+        'commit': '0147a3cafbab1c0912484db576bc5b5169b2dc75',
+        'files': {
+            'engine-rust/src/vault/rotation_recovery.rs':
+                '113218c52d07a1af318ee0f05d073443334159612f561a335e66523f12738837',
         },
     },
 )

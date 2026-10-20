@@ -75,7 +75,11 @@ pub(crate) fn commit_and_verify(
     write_json(&path, &config)?;
     sync_config(root)?;
     let persisted = read_config(root)?;
-    if persisted["vault"] != *descriptor {
+    let active = &persisted["vault"];
+    if !super::journal::usable_descriptor(active)
+        || active["salt"] != descriptor["salt"]
+        || active["verifier"] != descriptor["verifier"]
+    {
         return Err(refusal(
             "Persisted descriptor disagrees with the verified generation; recovery evidence retained",
         ));

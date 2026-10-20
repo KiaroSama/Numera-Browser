@@ -113,12 +113,9 @@ from numera import crypto
 from run_logging import run_log
 fixtures=json.loads((repository/'engine-rust/tests/fixtures/vault.json').read_text(encoding='utf-8'))['cases']
 salt=fixtures[0]['salt'];password=fixtures[0]['password']
-rows=[]
+rows=[];inputs=[]
 def observe(salt,value,key=password):
-    try:result,error=crypto.decrypt(key,salt,value),None
-    except (RuntimeError,ValueError) as exc:result,error=None,str(exc)
-    rows.append({'salt':salt,'value':value,'password':key,'result':result,'error':error,
-                 'check':crypto.check_password(key,salt,value)})
+    inputs.append((key,salt,value))
 with run_log('crypto-text-admission-oracle',root/'logs') as log:
     for case in [fixtures[2],fixtures[6],fixtures[10],fixtures[14]]:
         token=case['token'];prefix,body=token.rsplit(':',1)
@@ -144,6 +141,13 @@ with run_log('crypto-text-admission-oracle',root/'logs') as log:
         for symbols in itertools.product('A=!',repeat=length):
             candidate=''.join(symbols)
             observe(candidate,verifier)
+    # Keep each raw KDF key adjacent; restore original observation order afterward.
+    for index,(key,salt,value) in sorted(enumerate(inputs),key=lambda row:(row[1][0],row[1][1])):
+        try:result,error=crypto.decrypt(key,salt,value),None
+        except (RuntimeError,ValueError) as exc:result,error=None,str(exc)
+        rows.append((index,{'salt':salt,'value':value,'password':key,'result':result,'error':error,
+                            'check':crypto.check_password(key,salt,value)}))
+    rows=[row for _,row in sorted(rows)]
     log.info('Observed crypto text cases=%s',len(rows))
     print(json.dumps(rows,ensure_ascii=True))
 "#]).arg(repository).arg(temporary.path().join("source"));
@@ -159,7 +163,12 @@ with run_log('crypto-text-admission-oracle',root/'logs') as log:
     assert_eq!(observed.exit, 0, "Original crypto text observer failed");
     let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
     assert_eq!(cases.len(), 145, "Crypto text observations missing");
-    for (index, case) in cases.iter().enumerate() {
+    let mut order: Vec<_> = cases.iter().enumerate().collect();
+    order.sort_by(|(_, a), (_, b)| {
+        (a["password"].as_str(), a["salt"].as_str())
+            .cmp(&(b["password"].as_str(), b["salt"].as_str()))
+    });
+    for (index, case) in order {
         let password = case["password"].as_str().ok_or("Password missing")?;
         let salt = case["salt"].as_str().ok_or("Salt missing")?;
         let value = case["value"].as_str().ok_or("Ciphertext missing")?;
