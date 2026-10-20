@@ -115,6 +115,56 @@ impl ProfileRepo {
                     .is_some_and(|plain| Some(plain) == self.readable_secret(right))
             })
     }
+    pub fn refuse_unresolved_secret(
+        &self,
+        id: &str,
+        stored: Option<&str>,
+        twin: Option<&str>,
+    ) -> Result<(), RepoError> {
+        let missing = stored.is_none_or(str::is_empty) || twin.is_none_or(str::is_empty);
+        if !self.same_secret(stored, twin)
+            && !(stored.is_none_or(str::is_empty) && twin.is_none_or(str::is_empty))
+            && (missing
+                || (self.readable_secret(stored).is_some() && self.readable_secret(twin).is_some()))
+        {
+            return Err(Self::diverged(id, "password"));
+        }
+        Ok(())
+    }
+
+    pub fn refuse_conflicting_write(&self, id: &str, intent: &str) -> Result<(), RepoError> {
+        if intent != "preserve" || super::paths::safe_id(id).is_err() {
+            return Ok(());
+        }
+        let engine = Self::raw(&self.path(id, "profiles")?)?.unwrap_or(Value::Null);
+        let dashboard = Self::raw(&self.path(id, "dashboard")?)?.unwrap_or(Value::Null);
+        let stored = &engine["proxy"]["password"];
+        let twin = &dashboard["proxy"]["pass"];
+        if [stored, twin]
+            .iter()
+            .all(|value| value.is_null() || value.is_string())
+        {
+            return self.refuse_unresolved_secret(id, stored.as_str(), twin.as_str());
+        }
+        // Stored JSON may predate typed writes; a non-text secret is not absence.
+        if super::repo_reconcile::equal(stored, twin)
+            || (!crate::conversion::truth(stored) && !crate::conversion::truth(twin))
+        {
+            return Ok(());
+        }
+        let readable = |value: &Value| {
+            !value.as_str().is_some_and(vault::is_envelope)
+                || self.readable_secret(value.as_str()).is_some()
+        };
+        if !crate::conversion::truth(stored)
+            || !crate::conversion::truth(twin)
+            || (readable(stored) && readable(twin))
+        {
+            return Err(Self::diverged(id, "password"));
+        }
+        Ok(())
+    }
+
     pub(crate) fn diverged(id: &str, field: &str) -> RepoError {
         RepoError::Diverged(if field == "proxy" {
             format!(

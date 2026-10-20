@@ -1,5 +1,5 @@
 use super::{
-    atomic::write_bytes,
+    atomic::write_json,
     locks::DataLock,
     paths::safe_id,
     repo::{ProfileRepo, RepoError},
@@ -39,7 +39,13 @@ impl ProfileRepo {
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(false),
             Err(error) => return Err(error.into()),
         };
-        let Ok(raw) = serde_json::from_slice::<Value>(&bytes) else {
+        let text = std::str::from_utf8(&bytes).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Stored profile is not valid UTF-8",
+            )
+        })?;
+        let Ok(raw) = serde_json::from_str::<Value>(text) else {
             return Ok(false);
         };
         Ok(raw["proxy"]["password"].as_str().is_some_and(|secret| {
@@ -60,9 +66,18 @@ impl ProfileRepo {
                 value_text(&profile.name)
             )));
         }
-        let bytes = serde_json::to_vec_pretty(&profile)
+        let mut record = serde_json::to_value(&profile)
             .map_err(|_| RepoError::Message("Profile cannot be serialized for export".into()))?;
-        write_bytes(destination, &bytes)?;
+        let stored = Self::raw(&self.path(id, "profiles")?)?.unwrap_or(Value::Null);
+        // The typed read view uses f64; exporting must not round stored integer times.
+        for field in ["created_at", "updated_at"] {
+            if let Some(value @ Value::Number(number)) = stored.get(field)
+                && !number.to_string().contains(['.', 'e', 'E'])
+            {
+                record[field] = value.clone();
+            }
+        }
+        write_json(destination, &record)?;
         Ok(Some(destination.to_owned()))
     }
 }

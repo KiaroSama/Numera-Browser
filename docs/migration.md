@@ -8,17 +8,17 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed source checkpoint is `0cb635a`. Its manual hosted batch
-[39348825678](https://github.com/KiaroSama/Numera-Browser/actions/runs/39348825678)
-failed on October 20 at 00:51 UTC. Source platforms, eight relocated cases and dashboard
-checks passed. Both native tiers passed current library suites, strict lint and historical
-assertion/restoration controls, including configured-lock policy and seven direct operations.
-The expanded shared-store replay passed, but the new CLI fixture incorrectly expected a
-read-only settings command to contend on the frozen runtime's root lock. That scenario now
-uses pool listing; corrected CLI acceptance remains unverified. Performance did not run in
-this batch. Earlier CLI comparisons passed, but prior Linux vault-read/creation overlaps
-remain unexplained. CodeQL/required verification still fail.
-The [candidate status](migration-candidate.md) records 262 nearest references and pending full occurrence acceptance.
+The latest completed source checkpoint is `01be6df`. Its manual hosted batch
+[39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784)
+failed on October 20 at 02:14 UTC solely on CodeQL and dependent required verification.
+All 28 nondependent jobs passed: source platforms, eight relocated cases, dashboard and
+both native tiers. Direct name/session APIs, historical assertion/restoration controls,
+configured-lock policy, seven direct operations and all four corrected CLI contention
+cases passed on Windows/Linux. All four foreground CLI latency/memory comparisons
+reported no regression; earlier Linux vault-read/creation overlaps remain unexplained.
+The next credential-guard, strict-text and exact export-byte changes are prepared but
+not yet hosted-verified. Python selection and complete migration gates remain unchanged.
+The [candidate status](migration-candidate.md) records 266 nearest references and pending full occurrence acceptance.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

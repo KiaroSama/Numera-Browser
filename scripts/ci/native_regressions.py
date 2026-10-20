@@ -336,6 +336,26 @@ REGRESSIONS = (
                 'bfb4199d7423b264e4f2c61901ec0a2d9431b39fe28aa6de7802c805027967ec',
         },
     },
+    {
+        'target': 'profile_export_parity',
+        'test': 'withheld_text_admission_matches_original_without_replacing_bytes',
+        'symptom': 'Withheld text admission differs',
+        'commit': '01be6dfe20c04d4cbabe3b4bdce63c8270c45535',
+        'files': {
+            'engine-rust/src/storage/archive.rs':
+                '6382da3256a98870707a45d25a17a7f2933902ae8171b4044b3a305e2e354ec5',
+        },
+    },
+    {
+        'target': 'profile_export_parity',
+        'test': 'exported_profile_bytes_match_original_text_format_and_preserve_refusals',
+        'symptom': 'Profile export bytes differ',
+        'commit': '01be6dfe20c04d4cbabe3b4bdce63c8270c45535',
+        'files': {
+            'engine-rust/src/storage/archive.rs':
+                '6382da3256a98870707a45d25a17a7f2933902ae8171b4044b3a305e2e354ec5',
+        },
+    },
 )
 
 

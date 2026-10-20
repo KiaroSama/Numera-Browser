@@ -245,15 +245,7 @@ impl ProfileRepo {
         let seal = |value: &str| vault::encrypt(password, salt, value);
         let (left, right) = if let Some(proxy) = &profile.proxy {
             if proxy.password_intent() == "preserve" {
-                let missing = old.is_none_or(str::is_empty) || twin.is_none_or(str::is_empty);
-                let both_readable =
-                    self.readable_secret(old).is_some() && self.readable_secret(twin).is_some();
-                if !self.same_secret(old, twin)
-                    && !(old.is_none_or(str::is_empty) && twin.is_none_or(str::is_empty))
-                    && (missing || both_readable)
-                {
-                    return Err(Self::diverged(&profile.id, "password"));
-                }
+                self.refuse_unresolved_secret(&profile.id, old, twin)?;
                 (old.map(str::to_owned), twin.map(str::to_owned))
             } else {
                 let asked = proxy.to_record()["password"].as_str().map(str::to_owned);

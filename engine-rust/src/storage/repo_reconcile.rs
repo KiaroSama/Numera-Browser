@@ -45,7 +45,7 @@ fn number_equal(left: (String, bool), right: (String, bool)) -> bool {
     }
 }
 
-fn equal(left: &Value, right: &Value) -> bool {
+pub(super) fn equal(left: &Value, right: &Value) -> bool {
     if let (Some(left), Some(right)) = (numeric(left), numeric(right)) {
         return number_equal(left, right);
     }

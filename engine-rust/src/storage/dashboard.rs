@@ -173,17 +173,8 @@ impl DashboardStore {
         };
         let seal = |value: &str| vault::encrypt(password, salt, value);
         if intent == "preserve" {
-            let missing =
-                engine_secret.is_none_or(str::is_empty) || dash_secret.is_none_or(str::is_empty);
-            let readable = self.repo.readable_secret(engine_secret).is_some()
-                && self.repo.readable_secret(dash_secret).is_some();
-            if !self.repo.same_secret(engine_secret, dash_secret)
-                && !(engine_secret.is_none_or(str::is_empty)
-                    && dash_secret.is_none_or(str::is_empty))
-                && (missing || readable)
-            {
-                return Err(ProfileRepo::diverged(&id, "password"));
-            }
+            self.repo
+                .refuse_unresolved_secret(&id, engine_secret, dash_secret)?;
         }
         if intent == "remove" {
             if old["proxy"]

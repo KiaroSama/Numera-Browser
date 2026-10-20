@@ -201,6 +201,152 @@ with run_log('repo-single-edit-oracle',parent/'logs') as log, warnings.catch_war
 }
 
 #[test]
+fn public_credential_conflict_guards_match_original_without_writes()
+-> Result<(), Box<dyn std::error::Error>> {
+    use base64::{Engine, engine::general_purpose::STANDARD};
+    use numera_core::{ownership::capture, storage::repo::RepoError};
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("credential-conflict-guards")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import base64,json,os,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+os.environ.pop('NUMERA_PASSWORD',None)
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.repo import ProfileRepo
+from numera.store import ProfileStore
+from run_logging import run_log
+fixture=json.loads((repository/'engine-rust/tests/fixtures/repo.json').read_text(encoding='utf-8'))['cases'][11]
+config=fixture['config']
+left=fixture['engine']['proxy']['password']
+right=fixture['dashboard']['proxy']['pass']
+pairs=[(None,None),('',None),(None,''),('',''),('same','same'),('left','right'),
+       ('left',None),(None,'right'),('left',''),('', 'right'),(left,left),(left,right),
+       (left,'enc:v9:opaque'),('enc:v9:opaque','enc:v8:opaque'),(left,'plain')]
+pairs.extend([(7,None),([1],None),({'keep':1},None),(None,7),(None,[1]),
+              (None,{'keep':1}),(7,7),([1],[1]),({'keep':1},{'keep':1}),
+              (7,8),([1],[2]),({'keep':1},{'keep':2}),(0,None),([],None),
+              ({},None),(1,True),(left,7),(7,left)])
+rows=[]
+with run_log('credential-conflict-oracle',parent/'logs') as log:
+    for password in (None,'fixture-master','wrong-fixture-password'):
+        for stored,twin in pairs:
+            root=parent/str(len(rows)); store=ProfileStore(root,password=password); repo=ProfileRepo(store)
+            files={'config.json':json.dumps(config).encode('utf-8'),
+                   'profiles/fixture-conflict.json':json.dumps({'proxy':{'password':stored},'future':[True,7]}).encode('utf-8'),
+                   'dashboard/fixture-conflict.json':json.dumps({'proxy':{'pass':twin},'future':'keep'}).encode('utf-8')}
+            for name,raw in files.items():
+                path=root/name; path.parent.mkdir(parents=True,exist_ok=True); path.write_bytes(raw)
+            def observe(call):
+                try:call(); return None
+                except RuntimeError as exc:return str(exc)
+            direct=observe(lambda:repo.refuse_unresolved_secret('fixture-conflict',stored,twin))
+            intents={intent:observe(lambda intent=intent:repo.refuse_conflicting_write('fixture-conflict',intent))
+                     for intent in ('preserve','replace','clear','remove','unknown')}
+            assert all((root/name).read_bytes()==raw for name,raw in files.items())
+            rows.append({'password':password,'stored':stored,'twin':twin,'direct':direct,'intents':intents,
+                         'files':{name:base64.b64encode(raw).decode('ascii') for name,raw in files.items()}})
+    for payload in (b'\xff',b'{broken'):
+        root=parent/str(len(rows)); store=ProfileStore(root); repo=ProfileRepo(store)
+        path=root/'profiles/fixture-conflict.json'; path.write_bytes(payload)
+        results={}
+        for intent in ('preserve','replace','clear','remove','unknown'):
+            try:repo.refuse_conflicting_write('fixture-conflict',intent); results[intent]=None
+            except UnicodeDecodeError:results[intent]='UnicodeDecodeError'
+        assert path.read_bytes()==payload
+        rows.append({'raw':list(payload),'intents':results})
+    log.info('Observed public credential conflict cases=%s',len(rows))
+    print(json.dumps(rows))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 524288,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        observed.exit, 0,
+        "Original credential conflict observer failed"
+    );
+    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(cases.len(), 101);
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        let mut files = Vec::new();
+        if let Some(raw) = case.get("raw") {
+            let path = root.join("profiles/fixture-conflict.json");
+            fs::create_dir_all(path.parent().ok_or("Profile parent missing")?)?;
+            let bytes: Vec<u8> = serde_json::from_value(raw.clone())?;
+            fs::write(&path, &bytes)?;
+            files.push((path, bytes));
+        } else {
+            for (name, raw) in case["files"].as_object().ok_or("Conflict inputs missing")? {
+                let path = root.join(name);
+                fs::create_dir_all(path.parent().ok_or("Input parent missing")?)?;
+                let bytes = STANDARD.decode(raw.as_str().ok_or("Input bytes missing")?)?;
+                fs::write(&path, &bytes)?;
+                files.push((path, bytes));
+            }
+        }
+        let repo = ProfileRepo::new(root, case["password"].as_str().map(str::to_owned));
+        if case.get("raw").is_none()
+            && [&case["stored"], &case["twin"]]
+                .iter()
+                .all(|value| value.is_null() || value.is_string())
+        {
+            let actual = repo.refuse_unresolved_secret(
+                "fixture-conflict",
+                case["stored"].as_str(),
+                case["twin"].as_str(),
+            );
+            assert_eq!(
+                actual.err().map(|error| error.to_string()),
+                case["direct"].as_str().map(str::to_owned),
+                "Direct credential conflict differs: {index}"
+            );
+        }
+        for (intent, expected) in case["intents"]
+            .as_object()
+            .ok_or("Conflict results missing")?
+        {
+            let result = repo.refuse_conflicting_write("fixture-conflict", intent);
+            let actual = match result {
+                Ok(()) => Value::Null,
+                Err(RepoError::Io(error)) if error.kind() == std::io::ErrorKind::InvalidData => {
+                    "UnicodeDecodeError".into()
+                }
+                Err(error) => error.to_string().into(),
+            };
+            assert_eq!(
+                actual, *expected,
+                "Credential intent conflict differs: {index}/{intent}"
+            );
+        }
+        for (path, bytes) in files {
+            assert_eq!(
+                fs::read(path)?,
+                bytes,
+                "Credential guard changed stored bytes"
+            );
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn saving_both_copies_keeps_dashboard_fields_and_explicit_secret_intent()
 -> Result<(), Box<dyn std::error::Error>> {
     let oracle: Value = serde_json::from_str(include_str!("fixtures/repo-write.json"))?;

@@ -430,7 +430,8 @@ Source observers add 50 full parse/render/batch cases, 47 normalization cases wi
 matching single-entry batch verdicts, and 100 stored-file operations. Three exact
 historical source assertions failed as required, fixed bytes were restored, and
 current cases passed on hosted Windows/Linux in batch `39336995688`. The 23 new
-nearest references raise the ledger to 262; every new row remains pending.
+nearest references raised the ledger to 262; four direct profile-storage references
+now bring it to 266, all still pending complete occurrence acceptance.
 Dynamic values, network, fault and concurrency domains remain incomplete.
 
 ## Configured data-lock deadlines
@@ -453,8 +454,9 @@ old pool caller must fail the named runtime assertion while current lock APIs st
 available. Hosted batch `39348825678` passed the 20 policy values, seven direct
 operations and required historical assertion/restoration on both platforms. Its first
 CLI scenario failed because frozen read-only settings do not take the root lock;
-that scenario now uses pool listing. Corrected CLI verification, fork, poison, fault
-and complete cross-domain concurrency acceptance remain open.
+that scenario now uses pool listing. Corrected four-case CLI acceptance passed both
+platforms in batch `39355362784`. Fork, poison, fault and complete cross-domain
+concurrency acceptance remain open.
 
 ## Direct profile storage operations
 
@@ -468,14 +470,34 @@ deletion shares the guarded detach operation.
 Prepared acceptance compares 14 original name-lookup cases and 19 original path/session
 cases, plus actual original-held lease refusal and post-release deletion. Existing
 historical lookup proofs retain pinned test companions so a later API's absence cannot
-masquerade as a runtime regression. These APIs are not yet hosted-verified.
+masquerade as a runtime regression. All three new tests passed on Windows and Linux in
+batch `39355362784`; full dynamic, fault and concurrency coverage remains open.
+
+## Profile credential boundaries
+
+Prepared public conflict guards share the existing credential decision used by repository
+and dashboard writes. Non-preserve intents return before stored-copy reads. Equal or
+empty credentials remain writable; readable conflicts refuse without choosing a copy,
+while opaque locked pairs remain preserved. Prepared acceptance compares 101 independent
+original public-guard observations, including non-text stored credentials, and exact unchanged input bytes.
+
+The withheld-credential check now validates UTF-8 before JSON-syntax fallback, and profile
+export reuses the existing atomic ASCII/platform-newline JSON serializer. Fourteen direct
+withheld checks and thirteen export-byte cases preserve existing destinations on
+missing/locked/wrong-key refusal and repeat successful exports. Stored integer timestamps
+retain their exact value rather than passing through the typed floating-point read view.
+Other dynamic model and numeric-spelling domains remain incomplete. Two pinned historical
+archive controls must fail their named semantic assertions before restored current success.
+These credential/export changes are not yet hosted-verified.
 
 ## Acceptance status
 
-Latest source `0cb635a` failed batch
-[39348825678](https://github.com/KiaroSama/Numera-Browser/actions/runs/39348825678):
-the native CLI fixture failed as described above; CodeQL/required verification also failed.
-Performance and publication did not run. The previous source `0de3fab` ran in hosted batch
+Latest completed source `01be6df` ran in batch
+[39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
+All 28 nondependent jobs passed, including the corrected four CLI contention cases and
+new direct storage acceptance on both platforms. All four foreground CLI time/memory
+comparisons reported no regression. CodeQL/required verification failed; publication
+stages were skipped. The previous source `0de3fab` ran in hosted batch
 [39336995688](https://github.com/KiaroSama/Numera-Browser/actions/runs/39336995688).
 All 28 nondependent jobs passed: source platforms, both native tiers, eight relocated
 cases and dashboard checks. Expanded shared-store replay, bounded process observation,
