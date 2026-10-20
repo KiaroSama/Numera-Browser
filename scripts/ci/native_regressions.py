@@ -74,6 +74,10 @@ REGRESSIONS = (
                 'commit': '0cb635a85fc639eec6926304291a3f91a4f6e637',
                 'sha256': '3267e368991ce775f580b66f2068211d2835dddcf98eb37c205a2e371386d406',
             },
+            'engine-rust/src/storage/archive.rs': {
+                'commit': '01be6dfe20c04d4cbabe3b4bdce63c8270c45535',
+                'sha256': '6382da3256a98870707a45d25a17a7f2933902ae8171b4044b3a305e2e354ec5',
+            },
         },
     },
     {
@@ -223,6 +227,10 @@ REGRESSIONS = (
             'engine-rust/tests/repo_lookup_parity.rs': {
                 'commit': '0cb635a85fc639eec6926304291a3f91a4f6e637',
                 'sha256': '3267e368991ce775f580b66f2068211d2835dddcf98eb37c205a2e371386d406',
+            },
+            'engine-rust/src/storage/archive.rs': {
+                'commit': '01be6dfe20c04d4cbabe3b4bdce63c8270c45535',
+                'sha256': '6382da3256a98870707a45d25a17a7f2933902ae8171b4044b3a305e2e354ec5',
             },
         },
     },

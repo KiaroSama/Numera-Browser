@@ -361,10 +361,12 @@ class HelperManager:
         leader_gone = helper.proc is None or helper.proc.poll() is not None
         resources_done = True
         if helper.streams is not None:
-            # Preserve a cancellation/join slice rather than spending it all
-            # waiting for EOF from an unaccounted writer.
+            # Unproved ownership already prevents success; keep the remaining
+            # budget for cancellation instead of waiting for unaccounted EOF.
             reserve = min(0.1, remaining() / 2.0)
-            helper.output = helper.streams.collect(max(0.0, remaining() - reserve))
+            drain = (max(0.0, remaining() - reserve)
+                     if report.complete and not left and leader_gone else 0.0)
+            helper.output = helper.streams.collect(drain)
             retained = helper.streams.close(remaining())
             resources_done = not retained
             if not helper.output[2] or retained:

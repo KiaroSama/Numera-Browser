@@ -259,6 +259,101 @@ Path(sys.argv[5]).write_text(json.dumps(result),encoding='utf-8')
     assert observed['readers'] == [], observed
 
 
+@pytest.mark.parametrize('failure', ['missing', 'malformed', 'utf8', 'tree', 'leader'])
+def test_failed_settlement_preserves_cancellation_budget(monkeypatch, failure):
+    from types import SimpleNamespace
+
+    def check(manager):
+        _assert_failed_settlement_budget(monkeypatch, failure, manager)
+
+    import hashlib
+
+    historical = (Path(__file__).parent / 'fixtures' /
+                  'helper-settlement-before-cancellation.py.txt').read_bytes()
+    assert hashlib.sha256(historical).hexdigest() == \
+        '86e8bb8ade0f8dc57b44c7241ff8f13db7e7bd2b2416d68125e67595dcd17232'
+    namespace = dict(vars(helpers))
+    namespace['time'] = SimpleNamespace(monotonic=lambda: helpers.time.monotonic())
+    exec(compile(historical, 'historical-helper-settlement', 'exec'), namespace)
+    old = helpers.HelperManager()
+    old._settle_locked = namespace['_settle_locked'].__get__(old)
+    with pytest.raises(AssertionError, match='Failed settlement spent cancellation budget'):
+        check(old)
+    check(helpers.HelperManager())
+
+
+def _assert_failed_settlement_budget(monkeypatch, failure, manager):
+    from types import SimpleNamespace
+
+    helper = manager.admit(('fixture',))
+    manager.child_env(helper)
+    report = helper.units_path
+    if failure == 'missing':
+        report.unlink()
+    elif failure == 'malformed':
+        report.write_text('17\n', encoding='utf-8')
+    elif failure == 'utf8':
+        report.write_bytes(b'\xff')
+    if failure in ('tree', 'leader'):
+        helper.tree = proctree.Tree(pid=123, token=456)
+        helper.proc = SimpleNamespace(poll=lambda: None if failure == 'leader' else 0)
+        monkeypatch.setattr(proctree, 'end_session', lambda *args, **kwargs: 0)
+        monkeypatch.setattr(proctree, 'end_tree', lambda *args, **kwargs: failure != 'tree')
+    writers = []
+    pipes = []
+    clock = [0.0]
+    close_budgets = []
+    join = threading.Thread.join
+
+    def scheduled_join(thread, timeout=None):
+        if (thread.name.startswith('helper-') and timeout and
+                not all(reader.cancel.is_set() for reader in helper.streams.readers)):
+            # Model the hosted timed-join overrun, not a successful read or exit.
+            clock[0] += timeout + .125
+            return join(thread, 0)
+        return join(thread, timeout)
+
+    try:
+        for _ in range(2):
+            read_fd, write_fd = os.pipe()
+            writers.append(write_fd)
+            pipes.append(os.fdopen(read_fd, 'rb'))
+        helper.streams = helper_streams.Streams(
+            SimpleNamespace(stdout=pipes[0], stderr=pipes[1]))
+        manager.attach(helper, helper.proc, helper.tree)
+        close = helper.streams.close
+
+        def observed_close(budget):
+            close_budgets.append(budget)
+            return close(budget)
+
+        helper.streams.close = observed_close
+        with monkeypatch.context() as patch:
+            patch.setattr(helpers, 'time', SimpleNamespace(monotonic=lambda: clock[0]))
+            patch.setattr(threading.Thread, 'join', scheduled_join)
+            assert manager.settle(helper, deadline=.4) is False
+        assert close_budgets == pytest.approx([.4]), (
+            'Failed settlement spent cancellation budget waiting for unprovable EOF')
+        assert helper in manager.live() and helper.state == helpers.STRANDED
+        assert helper.units_path == report and helper.straggler
+        assert helper.output == ('', '', False), 'cancellation is not EOF'
+        assert all(not reader.thread.is_alive() and reader.pipe.closed
+                   for reader in helper.streams.readers)
+        if failure not in ('tree', 'leader'):
+            assert helper.units_problem
+        else:
+            assert 'owned processes remain' in helper.straggler
+    finally:
+        for writer in writers:
+            os.close(writer)
+        if helper.streams is not None:
+            helper.streams.close(1)
+        for pipe in pipes:
+            if not pipe.closed:
+                pipe.close()
+        report.unlink(missing_ok=True)
+
+
 @pytest.mark.parametrize('bad', [
     {'pid': 123, 'pidToken': True, 'tree': {'kind': 'pgid', 'group': 123}},
     {'pid': 123, 'pidToken': [], 'tree': {'kind': 'pgid', 'group': 123}},

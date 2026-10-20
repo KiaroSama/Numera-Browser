@@ -8,16 +8,16 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed source checkpoint is `01be6df`. Its manual hosted batch
-[39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784)
-failed on October 20 at 02:14 UTC solely on CodeQL and dependent required verification.
-All 28 nondependent jobs passed: source platforms, eight relocated cases, dashboard and
-both native tiers. Direct name/session APIs, historical assertion/restoration controls,
-configured-lock policy, seven direct operations and all four corrected CLI contention
-cases passed on Windows/Linux. All four foreground CLI latency/memory comparisons
-reported no regression; earlier Linux vault-read/creation overlaps remain unexplained.
-The next credential-guard, strict-text and exact export-byte changes are prepared but
-not yet hosted-verified. Python selection and complete migration gates remain unchanged.
+The latest completed checkpoint `03c23a5` ran in manual hosted batch
+[39360978136](https://github.com/KiaroSama/Numera-Browser/actions/runs/39360978136),
+which failed on October 20 at 03:03 UTC. Both native historical-proof builds failed
+before credential acceptance: an old repository reader signature was incompatible
+with the current archive caller. Compatible archive companions are prepared;
+compiler failure is not regression proof. The macOS incomplete-report case exhausted
+its cancellation reserve waiting for EOF; a repair and historical/current regression
+are prepared, not executed. CodeQL and required verification also failed.
+Prior `01be6df` passed direct storage, configured-lock and CLI contention acceptance on both platforms.
+Earlier Linux performance overlaps remain unexplained; the repairs are unverified and Python stays selected.
 The [candidate status](migration-candidate.md) records 266 nearest references and pending full occurrence acceptance.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.

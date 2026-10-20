@@ -488,11 +488,34 @@ missing/locked/wrong-key refusal and repeat successful exports. Stored integer t
 retain their exact value rather than passing through the typed floating-point read view.
 Other dynamic model and numeric-spelling domains remain incomplete. Two pinned historical
 archive controls must fail their named semantic assertions before restored current success.
-These credential/export changes are not yet hosted-verified.
+These credential/export changes are not yet hosted-verified. Batch `39360978136`
+failed during the old lookup proof's compilation before these cases could run:
+the old repository reader returns `Option`, while the current archive caller expects
+`Result`. Both old lookup swaps now retain a pinned compatible archive companion;
+the named semantic-failure and fixed-byte restoration requirements are unchanged.
+
+## Failed-helper cancellation
+
+The same batch's macOS incomplete-report case recorded a 0.424-second collection
+against a 0.300-second budget, leaving no cancellation/join time. The worker exited
+without supervisor rescue, so this does not establish a permanent leaked thread.
+Prepared settlement code skips positive EOF waiting only when the report or owned
+process evidence already prevents success. It still collects available output,
+cancels and joins readers under the same total deadline, and retains uncertainty.
+Five deterministic real-pipe cases exercise missing/malformed/invalid-UTF8 reports,
+unproved trees and unreaped leaders. Each must reject the hash-pinned historical
+method at the cancellation-budget assertion before accepting current behavior.
+Existing real-worker, healthy-output, late-EOF and read-error cases and all deadlines
+remain unchanged. This repair is source-reviewed only until hosted verification.
 
 ## Acceptance status
 
-Latest completed source `01be6df` ran in batch
+Latest completed source `03c23a5` ran in batch
+[39360978136](https://github.com/KiaroSama/Numera-Browser/actions/runs/39360978136).
+It failed at both native historical-proof builds, one macOS cleanup case, CodeQL
+and required verification. Credential/export acceptance did not run; distribution,
+promotion and publication were skipped. The corrections above remain unverified.
+Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and
 new direct storage acceptance on both platforms. All four foreground CLI time/memory
