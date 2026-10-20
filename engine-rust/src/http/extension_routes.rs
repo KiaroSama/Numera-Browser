@@ -12,7 +12,7 @@ use axum::{
     routing::{get, post},
 };
 use serde_json::{Map, Value, json};
-use std::{collections::HashSet, io, path::PathBuf, sync::Arc, time::Duration};
+use std::{collections::HashSet, io, path::PathBuf, sync::Arc};
 
 pub fn router(root: PathBuf, environment: &str) -> Router {
     let auth = Arc::new(RequestAuth::new(TokenStore::new(root.clone()), environment));
@@ -43,7 +43,7 @@ fn install_sync(root: &std::path::Path, body: Map<String, Value>) -> Result<Valu
     .map_err(|error| super::profile_errors::detail(StatusCode::BAD_REQUEST, error.to_string()))?;
     let failure = |_| (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response();
     let lock = DataLock::transaction(root).map_err(failure)?;
-    let _guard = lock.acquire(Duration::from_secs(30)).map_err(failure)?;
+    let _guard = lock.acquire_configured().map_err(failure)?;
     let config = ConfigStore::new(root.into());
     let mut defaults = config.default_extensions().map_err(|_| {
         (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response()

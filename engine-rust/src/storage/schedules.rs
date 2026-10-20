@@ -1,7 +1,7 @@
 use super::{atomic::write_json, locks::DataLock, repo::RepoError};
 use crate::conversion::truth;
 use serde_json::{Map, Value};
-use std::{fs, io, path::PathBuf, time::Duration};
+use std::{fs, io, path::PathBuf};
 
 pub const CLAIM_TTL_SECONDS: f64 = 12.0 * 60.0 * 60.0;
 const OWNED: &[&str] = &[
@@ -54,7 +54,7 @@ impl ScheduleStore {
         let id = super::archive_paths::random_hex(6)?;
         let entry = serde_json::json!({"id":id,"profileId":profile_id,"everyHours":clean["everyHours"],"minutes":clean["minutes"],"preset":clean["preset"],"enabled":clean["enabled"],"lastRun":null,"createdAt":now});
         let lock = DataLock::for_file(&self.path)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let mut rows = self.list()?;
         if rows.iter().any(|row| row["id"] == id) {
             return Err(RepoError::Message(
@@ -78,7 +78,7 @@ impl ScheduleStore {
             ));
         }
         let lock = DataLock::for_file(&self.path)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let mut rows = self.list()?;
         for row in &mut rows {
             if row["id"] != id {
@@ -132,7 +132,7 @@ impl ScheduleStore {
     }
     fn apply(&self, id: &str, patch: Map<String, Value>) -> Result<Option<Value>, RepoError> {
         let lock = DataLock::for_file(&self.path)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let mut rows = self.list()?;
         let mut result = None;
         for row in &mut rows {
@@ -154,7 +154,7 @@ impl ScheduleStore {
     }
     pub fn delete(&self, id: &str) -> Result<bool, RepoError> {
         let lock = DataLock::for_file(&self.path)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let mut rows = self.list()?;
         let before = rows.len();
         rows.retain(|row| row["id"] != id);

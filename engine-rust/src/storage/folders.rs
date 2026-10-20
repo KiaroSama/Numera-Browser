@@ -4,7 +4,6 @@ use std::{
     collections::{HashMap, HashSet},
     fs, io,
     path::PathBuf,
-    time::Duration,
 };
 
 // Python strip also recognizes these four ASCII separators as whitespace.
@@ -181,9 +180,9 @@ impl Folders {
     ) -> io::Result<Vec<String>> {
         // Match source lock order; root covers profiles appearing during enumeration.
         let file = DataLock::for_file(&self.meta_path())?;
-        let _file = file.acquire(Duration::from_secs(30))?;
+        let _file = file.acquire_configured()?;
         let root = DataLock::transaction(&self.root)?;
-        let _root = root.acquire(Duration::from_secs(30))?;
+        let _root = root.acquire_configured()?;
         let mut batch = Batch::default();
         match update(&mut batch) {
             Ok(names) => Ok(names),

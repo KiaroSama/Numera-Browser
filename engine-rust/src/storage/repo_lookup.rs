@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{models::Profile, validation};
 use serde_json::Value;
-use std::{collections::BTreeSet, fs, time::Duration};
+use std::{collections::BTreeSet, fs};
 
 impl ProfileRepo {
     fn all_ids(&self) -> Result<BTreeSet<String>, RepoError> {
@@ -34,7 +34,7 @@ impl ProfileRepo {
             return Ok(Vec::new());
         }
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.require_settled()?;
         let engine = Self::raw(&self.path(id, "profiles")?)?.unwrap_or(Value::Null);
         let dashboard = Self::raw(&self.path(id, "dashboard")?)?.unwrap_or(Value::Null);
@@ -47,7 +47,7 @@ impl ProfileRepo {
             return Ok(None);
         }
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.require_settled()?;
         let bytes = match fs::read(self.path(id, "profiles")?) {
             Ok(bytes) => bytes,
@@ -71,7 +71,7 @@ impl ProfileRepo {
             return Ok(None);
         }
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.require_settled()?;
         let engine = Self::raw(&self.path(id, "profiles")?)?;
         let dash = Self::raw(&self.path(id, "dashboard")?)?;
@@ -106,7 +106,7 @@ impl ProfileRepo {
 
     pub fn resolve(&self, reference: &str, now: f64) -> Result<Option<Profile>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.require_settled()?;
         // Case-insensitive filesystems can open an ID through a differently
         // cased name. Keep the stored spelling without bypassing twin repair.
@@ -165,7 +165,7 @@ impl ProfileRepo {
 
     pub fn list(&self, now: f64) -> Result<Vec<Profile>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.require_settled()?;
         let mut profiles = Vec::new();
         for id in self.all_ids()? {

@@ -9,7 +9,6 @@ use serde_json::Value;
 use std::{
     fs, io,
     path::{Path, PathBuf},
-    time::Duration,
 };
 
 impl ProfileRepo {
@@ -33,7 +32,7 @@ impl ProfileRepo {
             return Ok(false);
         }
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.require_settled()?;
         let bytes = match fs::read(self.path(id, "profiles")?) {
             Ok(bytes) => bytes,
@@ -51,7 +50,7 @@ impl ProfileRepo {
     /// Refuse incomplete credentials before serializing or touching the destination.
     pub fn export(&self, id: &str, destination: &Path) -> Result<Option<PathBuf>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let Some(profile) = self.get(id)? else {
             return Ok(None);
         };

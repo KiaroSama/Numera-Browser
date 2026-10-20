@@ -10,7 +10,6 @@ use std::{
     fs,
     io::{self, Read},
     path::{Path, PathBuf},
-    time::Duration,
 };
 use zip::{ZipArchive, result::ZipError};
 
@@ -153,7 +152,7 @@ impl ProfileRepo {
             claims::refuse_if_busy(&self.root, &profile.id, host)
                 .map_err(|error| RepoError::Message(error.to_string()))?;
             let lock = DataLock::transaction(&self.root)?;
-            let _root = lock.acquire(Duration::from_secs(30))?;
+            let _root = lock.acquire_configured()?;
             self.require_settled()?;
             if new_id
                 && (self.path(&profile.id, "profiles")?.try_exists()?

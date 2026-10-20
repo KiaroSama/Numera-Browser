@@ -32,7 +32,7 @@ impl Session {
             ));
         }
         let lock = DataLock::transaction(root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let admission = super::update_admission::Reservation::begin(root, "native-session")?;
         let lease = SessionLease::acquire(&SessionLease::path_for(root, id)?)?;
         if claims::state(&claims::read(root, id), host) != claims::State::Free {
@@ -65,7 +65,7 @@ impl Session {
             return Err(io::Error::other("Session admission was already settled"));
         }
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         super::update_admission::assert_open_locked(&self.root)?;
         self.tree = Some(match OwnedTree::spawn(command) {
             Ok(tree) => tree,

@@ -418,7 +418,7 @@ speedup measurements or proof of a completely cold cache.
 
 ## Pooled proxy compatibility batch
 
-Prepared pool text handling preserves Python whitespace and line boundaries. Port
+Pool text handling preserves Python whitespace and line boundaries. Port
 normalization reuses the existing Unicode decimal/underscore parser, retains the
 4,300-digit limit, and compares canonical magnitude before the unchanged 1–65535
 range check. Stored pool text is decoded strictly before the existing JSON-syntax
@@ -428,15 +428,35 @@ before reading. Lock, atomic-write, secret and network-URL policies are unchange
 
 Source observers add 50 full parse/render/batch cases, 47 normalization cases with
 matching single-entry batch verdicts, and 100 stored-file operations. Three exact
-historical source assertions and fixed-byte restoration are prepared. The 23 new
-nearest references raise the ledger to 262; every new row remains pending. This
-batch is not yet runtime-verified; dynamic values, network, fault and concurrency
-domains remain incomplete.
+historical source assertions failed as required, fixed bytes were restored, and
+current cases passed on hosted Windows/Linux in batch `39336995688`. The 23 new
+nearest references raise the ledger to 262; every new row remains pending.
+Dynamic values, network, fault and concurrency domains remain incomplete.
+
+## Configured data-lock deadlines
+
+The next source batch centralizes `NUMERA_LOCK_TIMEOUT` beside `DataLock` and
+routes 73 ordinary acquisitions across 25 modules through it, including updater
+admission and direct settings. Each acquisition reads the policy separately;
+root/file order, reentrancy and the shared local/OS deadline are unchanged.
+Invalid, negative, nonfinite or platform-oversized values retain the original
+30-second fallback. Explicit lifecycle budgets and immediate session-lease refusal
+remain separate. Timeout messages cross settings/repository wrappers unchanged;
+other I/O diagnostics keep their context.
+
+Prepared acceptance compares 20 original timeout-policy values, seven public
+store/admission operations, and actual source/native CLI root/file contention.
+Only a completed refusal received while the acknowledged frozen owner still holds
+the lock counts; setup errors, capture timeouts and late results do not. Protected
+bytes must remain identical, and the released operations must succeed. The exact
+old pool caller must fail the named runtime assertion while current lock APIs stay
+available. These new tests are not yet hosted-verified. Fork, poison, fault and
+complete cross-domain concurrency acceptance remain open.
 
 ## Acceptance status
 
-Source `ef6ebe2` ran in hosted batch
-[39327015878](https://github.com/KiaroSama/Numera-Browser/actions/runs/39327015878).
+Source `0de3fab` ran in hosted batch
+[39336995688](https://github.com/KiaroSama/Numera-Browser/actions/runs/39336995688).
 All 28 nondependent jobs passed: source platforms, both native tiers, eight relocated
 cases and dashboard checks. Expanded shared-store replay, bounded process observation,
 current native suites, strict lint and exact historical-test restoration passed.

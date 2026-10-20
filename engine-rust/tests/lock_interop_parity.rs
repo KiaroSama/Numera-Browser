@@ -83,6 +83,271 @@ impl Drop for Holder {
 mod common;
 
 #[test]
+fn configured_lock_timeout_values_match_original_policy() -> Result<(), Box<dyn std::error::Error>>
+{
+    use numera_core::ownership::capture;
+    use serde_json::Value;
+
+    let temporary = common::TempDirectory::new("lock-timeout-policy")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,os,sys,threading
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.data_locks import _lock_timeout
+from run_logging import run_log
+values=[None,'','0','-0','0.05',' 0.125 ','1_0','١.٥','1e-3','-1','nan','inf','-inf',
+        'broken','1__0','1e999','0x10','\x1c1\x1f',str(threading.TIMEOUT_MAX),
+        str(threading.TIMEOUT_MAX+1)]
+rows=[]
+with run_log('lock-timeout-policy-oracle',parent/'logs') as log:
+    for value in values:
+        if value is None:os.environ.pop('NUMERA_LOCK_TIMEOUT',None)
+        else:os.environ['NUMERA_LOCK_TIMEOUT']=value
+        rows.append({'input':value,'seconds':_lock_timeout()})
+    log.info('Observed configured lock policy cases=%s',len(rows))
+    print(json.dumps(rows,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .arg(temporary.path());
+    let original = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 65536,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        original.exit, 0,
+        "Original configured lock policy observer failed"
+    );
+    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    assert_eq!(cases.len(), 20);
+    for case in cases {
+        let expected = Duration::try_from_secs_f64(
+            case["seconds"].as_f64().ok_or("Timeout seconds missing")?,
+        )?;
+        assert_eq!(
+            numera_core::storage::locks::configured_timeout(case["input"].as_str()),
+            expected,
+            "Configured lock timeout policy differs"
+        );
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+fn configured_contender(root: &Path, operation: &str) -> Command {
+    let mut command =
+        Command::new(std::env::current_exe().expect("Current test executable missing"));
+    command
+        .args([
+            "--exact",
+            "configured_store_acquisitions_honor_original_lock_owners",
+            "--test-threads=1",
+            "--nocapture",
+        ])
+        .env("NUMERA_LOCK_TEST_ROOT", root)
+        .env("NUMERA_LOCK_TEST_OPERATION", operation)
+        .env("NUMERA_LOCK_TIMEOUT", "0.02");
+    command
+}
+
+fn configured_limits() -> numera_core::ownership::capture::Limits {
+    numera_core::ownership::capture::Limits {
+        wall: Duration::from_secs(10),
+        idle: Duration::from_secs(5),
+        bytes: 65536,
+        cleanup: Duration::from_secs(5),
+    }
+}
+
+#[test]
+fn configured_store_acquisitions_honor_original_lock_owners()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{
+        http::tokens::TokenStore,
+        ownership::{capture, update_admission::Reservation},
+        storage::{config::ConfigStore, folders::Folders, pool::ProxyPool, repo::ProfileRepo},
+        vault,
+    };
+    use serde_json::json;
+
+    if let Some(root) = std::env::var_os("NUMERA_LOCK_TEST_ROOT") {
+        let root = PathBuf::from(root);
+        let operation = std::env::var("NUMERA_LOCK_TEST_OPERATION")?;
+        let result: Result<(), String> = match operation.as_str() {
+            "pool" => ProxyPool::new(root, None)
+                .list()
+                .map(|_| ())
+                .map_err(|e| e.to_string()),
+            "folder" => Folders::new(root)
+                .create("After release")
+                .map(|_| ())
+                .map_err(|e| e.to_string()),
+            "config" => ConfigStore::new(root)
+                .set("accepted", json!(true))
+                .map(|_| ())
+                .map_err(|e| e.to_string()),
+            "repo" => ProfileRepo::new(root, None)
+                .list(1000.0)
+                .map(|_| ())
+                .map_err(|e| e.to_string()),
+            "token" => TokenStore::new(root)
+                .revoke("missing", false)
+                .map(|_| ())
+                .map_err(|e| e.to_string()),
+            "vault" => vault::transaction::enable(&root, "synthetic-lock-password")
+                .map(|_| ())
+                .map_err(|e| e.to_string()),
+            "admission" => Reservation::begin(&root, "lock-fixture")
+                .and_then(|mut reservation| reservation.release())
+                .map_err(|e| e.to_string()),
+            _ => return Err("Unknown configured lock fixture operation".into()),
+        };
+        let outcome = match result {
+            Err(error) if error.contains("NUMERA_LOCK_TIMEOUT controls this wait") => "timeout",
+            Err(_) => "other-error",
+            Ok(()) => "acquired",
+        };
+        println!("configured-lock-outcome={outcome}");
+        return Ok(());
+    }
+    let temporary = common::TempDirectory::new("configured-lock-contention")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?;
+    let fixture = repository.join("scripts/migration/lock_fixture.py");
+    for (operation, file) in [
+        ("pool", None),
+        ("folder", Some("dashboard-config.json")),
+        ("config", Some("config.json")),
+        ("repo", None),
+        ("token", Some("tokens.json")),
+        ("vault", None),
+        ("admission", None),
+    ] {
+        let root = temporary.path().join(operation);
+        fs::create_dir(&root)?;
+        let protected = [
+            (
+                "dashboard-config.json",
+                b"{\"future\":[true,7],\"folders\":[]}".as_slice(),
+            ),
+            ("config.json", b"{\"future\":[true,7]}".as_slice()),
+            ("tokens.json", b"[]".as_slice()),
+            ("proxies.json", b"[]".as_slice()),
+        ];
+        for (name, bytes) in &protected {
+            fs::write(root.join(name), bytes)?;
+        }
+        let resource = file.map_or_else(|| root.clone(), |name| root.join(name));
+        let mut holder = Holder::start(
+            Path::new(&python),
+            &fixture,
+            if file.is_some() { "file" } else { "root" },
+            &resource,
+        )?;
+        let mut command = configured_contender(&root, operation);
+        let (send, receive) = mpsc::sync_channel(1);
+        let worker = thread::spawn(move || {
+            let _ = send.send(capture::run(&mut command, configured_limits()));
+        });
+        // A passing refusal must finish while the acknowledged source owner is
+        // still holding the lock. Late results cannot turn a deadline into success.
+        let early = receive.recv_timeout(Duration::from_secs(3));
+        let received_while_owned = early.is_ok();
+        let holder_live = holder.child.try_wait();
+        let released = holder.release();
+        drop(holder);
+        let result = match early {
+            Ok(result) => Ok(result),
+            Err(mpsc::RecvTimeoutError::Timeout) => receive.recv_timeout(Duration::from_secs(5)),
+            Err(error) => Err(error),
+        };
+        worker
+            .join()
+            .map_err(|_| "Configured lock observer panicked")?;
+        assert!(
+            holder_live?.is_none(),
+            "Original lock holder ended before observation"
+        );
+        released?;
+        let result = result??;
+        assert_eq!(
+            result.exit, 0,
+            "Configured lock contender failed unexpectedly"
+        );
+        let output = String::from_utf8(result.stdout)?;
+        assert_eq!(
+            output.matches("configured-lock-outcome=").count(),
+            1,
+            "Configured lock contender did not report one outcome"
+        );
+        assert!(
+            received_while_owned
+                && output
+                    .lines()
+                    .any(|line| line.ends_with("configured-lock-outcome=timeout")),
+            "Configured data-lock acquisition ignored the original timeout"
+        );
+        for (name, bytes) in &protected {
+            assert_eq!(
+                fs::read(root.join(name))?,
+                *bytes,
+                "Configured lock refusal changed stored bytes"
+            );
+        }
+        assert!(!root.join("vault-migration.json").exists());
+        assert!(!root.join(".updates/work").exists());
+        let result = capture::run(
+            &mut configured_contender(&root, operation),
+            configured_limits(),
+        )?;
+        assert_eq!(result.exit, 0, "Released configured operation failed");
+        assert!(
+            String::from_utf8(result.stdout)?
+                .lines()
+                .any(|line| line.ends_with("configured-lock-outcome=acquired")),
+            "Released configured operation did not acquire"
+        );
+        match operation {
+            "config" => assert_eq!(ConfigStore::new(root).read()["accepted"], true),
+            "folder" => assert_eq!(Folders::new(root).listing()?, vec!["After release"]),
+            "vault" => assert!(ConfigStore::new(root).read().contains_key("vault")),
+            _ => {
+                for (name, bytes) in &protected {
+                    assert_eq!(
+                        fs::read(root.join(name))?,
+                        *bytes,
+                        "Released read changed stored bytes"
+                    );
+                }
+            }
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn native_session_lease_excludes_original_until_drop_and_reacquires_after_release()
 -> Result<(), Box<dyn std::error::Error>> {
     use numera_core::ownership::capture;

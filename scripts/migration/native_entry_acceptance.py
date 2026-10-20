@@ -32,6 +32,113 @@ def execute(argv, env, stdin=None):
         process.wait(timeout=5)
 
 
+def configured_lock_acceptance(candidate, parent, environment, log):
+    import subprocess
+    import time
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError
+    from replay_rollback import protected_bytes
+
+    def snapshot(root):
+        values = protected_bytes(root)
+        for name in ('tokens.json', 'auth-policy.json'):
+            path = root / name
+            values[name] = path.read_bytes() if path.exists() else None
+        return values
+
+    fixture = ROOT / 'scripts/migration/lock_fixture.py'
+    cases = [
+        ('root', ['config']),
+        ('dashboard-config.json', ['folder', 'create', 'After release']),
+        ('config.json', ['config', '--headless-launch', 'on']),
+        ('tokens.json', ['token', 'revoke', 'missing']),
+    ]
+    for index, (resource, arguments) in enumerate(cases):
+        root = parent / f'configured CLI {index}'
+        root.mkdir()
+        for name, value in [('config.json', {'future': [True, 7]}),
+                            ('dashboard-config.json', {'future': [True, 7], 'folders': []}),
+                            ('tokens.json', []), ('proxies.json', [])]:
+            (root / name).write_text(json.dumps(value), encoding='utf-8')
+        before = snapshot(root)
+        observed = []
+        for runtime, executable in [('original', [sys.executable, '-m', 'numera']),
+                                    ('native', [str(candidate)])]:
+            ready = parent / f'configured-ready-{index}-{runtime}'
+            command_env = dict(environment, PYTHONPATH=str(ORIGINAL / 'engine'),
+                               NUMERA_LOCK_TIMEOUT='0' if index == 0 else '0.02')
+            holder, tree = spawn(
+                [sys.executable, '-B', str(fixture),
+                 'root' if resource == 'root' else 'file',
+                 str(root if resource == 'root' else root / resource),
+                 '--hold', '--ready', str(ready)],
+                env=command_env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            try:
+                deadline = time.monotonic() + 5
+                while not ready.exists():
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0 or holder.poll() is not None:
+                        raise AssertionError('Configured CLI lock owner did not become ready')
+                    time.sleep(min(.01, remaining))
+                assert ready.read_text(encoding='utf-8') == 'acquired'
+                with ThreadPoolExecutor(max_workers=1) as worker:
+                    future = worker.submit(execute,
+                        [*executable, '--data-dir', str(root), *arguments, '--json'], command_env)
+                    early = True
+                    try:
+                        result = future.result(timeout=3)
+                    except TimeoutError:
+                        early = False
+                        result = None
+                    finally:
+                        live = holder.poll() is None
+                        holder.stdin.write(b'release\n')
+                        holder.stdin.close()
+                    if result is None:
+                        result = future.result(timeout=5)
+                assert holder.wait(timeout=5) == 0, 'Configured CLI lock owner failed'
+                code, stdout, stderr = result
+                payload = json.loads(stdout)
+                assert stderr == '' and code == 1, 'Configured CLI refusal envelope differs'
+                assert early and live and payload.get('ok') is False, 'Configured CLI did not refuse while owned'
+                assert set(payload) == {'ok', 'error'}
+                message = payload['error']
+                assert 'NUMERA_LOCK_TIMEOUT controls this wait' in message
+                assert ('more than 0s.' if index == 0 else 'more than 0.02s.') in message
+                observed.append(payload)
+                assert snapshot(root) == before, 'Configured CLI refusal changed protected bytes'
+                assert not (root / 'vault-migration.json').exists()
+                assert not (root / '.updates/work').exists() or not any((root / '.updates/work').iterdir())
+            finally:
+                try:
+                    if not end_tree(tree, grace=1, kill_grace=3):
+                        raise RuntimeError('Configured CLI lock owner did not settle')
+                    holder.wait(timeout=5)
+                finally:
+                    for stream in (holder.stdin, holder.stdout, holder.stderr):
+                        if stream is not None:
+                            stream.close()
+            log.info('Configured CLI refusal matched runtime=%s case=%s', runtime, index)
+        assert observed[0] == observed[1], 'Configured CLI complete refusal differs'
+        # These success paths include admission release and nested/reentrant store locks.
+        for executable in ([sys.executable, '-m', 'numera'], [str(candidate)]):
+            code, stdout, stderr = execute(
+                [*executable, '--data-dir', str(root), *arguments, '--json'], command_env)
+            assert code == (1 if index == 3 else 0) and stderr == '', 'Released configured CLI operation failed'
+            payload = json.loads(stdout)
+            if index == 3:
+                assert payload == {'ok': False, 'error': 'no token with that id'}
+                assert snapshot(root) == before, 'Released missing-token refusal changed stored bytes'
+            elif index == 1:
+                assert payload == {'folders': ['After release'], 'created': 'After release'}
+            elif index == 2:
+                assert payload['headless_launch'] is True
+                stored = json.loads((root / 'config.json').read_text(encoding='utf-8'))
+                assert stored['headless_launch'] is True and stored['future'] == [True, 7]
+        log.info('Configured CLI contention, protected bytes and post-release success passed case=%s', index)
+
+
 def main(candidate, log):
     with tempfile.TemporaryDirectory(prefix='native-entry-', dir=ROOT / '.ci-work/migration-temp') as temporary:
         parent = Path(temporary)
@@ -89,6 +196,7 @@ def main(candidate, log):
             raise AssertionError(f'MCP entry mismatch: {results!r}')
         log.info('MCP ping and actual native child list matched; all owned trees settled')
         replay_rollback(candidate, ORIGINAL, parent, env, execute, log)
+        configured_lock_acceptance(candidate, parent, env, log)
     return 0
 
 

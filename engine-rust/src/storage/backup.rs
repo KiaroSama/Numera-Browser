@@ -9,7 +9,6 @@ use std::{
     fs,
     io::{self, Write},
     path::{Path, PathBuf},
-    time::Duration,
 };
 use zip::{CompressionMethod, ZipWriter, write::SimpleFileOptions};
 
@@ -103,7 +102,7 @@ impl ProfileRepo {
             .map_err(|error| RepoError::Message(error.to_string()))?;
         let profile_bytes = {
             let lock = DataLock::transaction(&self.root)?;
-            let _guard = lock.acquire(Duration::from_secs(30))?;
+            let _guard = lock.acquire_configured()?;
             let Some(profile) = self.get(id)? else {
                 return Ok(None);
             };

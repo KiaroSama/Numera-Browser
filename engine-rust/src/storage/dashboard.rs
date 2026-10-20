@@ -19,7 +19,6 @@ use serde_json::{Map, Value};
 use std::{
     fs, io,
     path::{Path, PathBuf},
-    time::Duration,
 };
 
 fn read_text(path: &Path) -> io::Result<String> {
@@ -62,7 +61,7 @@ impl DashboardStore {
     pub fn set_meta(&self, metadata: Value) -> Result<Value, RepoError> {
         let path = self.root.join("dashboard-config.json");
         let lock = DataLock::for_file(&path)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         super::atomic::write_json(&path, &metadata)?;
         Ok(metadata)
     }
@@ -85,7 +84,7 @@ impl DashboardStore {
             return Ok(None);
         }
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         let text = match read_text(&self.repo.path(id, "dashboard")?) {
             Ok(text) => text,
@@ -102,12 +101,12 @@ impl DashboardStore {
             return Ok(None);
         }
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         Ok(ProfileRepo::raw(&self.repo.path(id, "dashboard")?)?)
     }
     pub fn list(&self) -> Result<Vec<Value>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         let entries = match fs::read_dir(self.root.join("dashboard")) {
             Ok(entries) => entries,
@@ -249,7 +248,7 @@ impl DashboardStore {
         now: f64,
     ) -> Result<Value, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         let object = record.as_object_mut().ok_or_else(|| {
             RepoError::InvalidRecord("Dashboard profile must be an object".into())
@@ -263,7 +262,7 @@ impl DashboardStore {
             .to_owned();
         let path = self.repo.path(&id, "dashboard")?;
         let file = DataLock::for_file(&path)?;
-        let _file = file.acquire(Duration::from_secs(30))?;
+        let _file = file.acquire_configured()?;
         let held = self.repo.held_names()?;
         if let Some(name) = record["name"].as_str().filter(|name| !name.is_empty()) {
             let own = held
@@ -330,7 +329,7 @@ impl DashboardStore {
             .collect::<Result<Vec<_>, _>>()?;
         let _guards = locks
             .iter()
-            .map(|lock| lock.acquire(Duration::from_secs(30)))
+            .map(|lock| lock.acquire_configured())
             .collect::<Result<Vec<_>, _>>()?;
         let mut batch = Batch::default();
         let result = (|| -> Result<(), RepoError> {
@@ -368,7 +367,7 @@ impl DashboardStore {
         now: f64,
     ) -> Result<Vec<Value>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         let mut held = self.repo.held_names()?;
         let mut named = Vec::new();
@@ -437,11 +436,11 @@ impl DashboardStore {
         now: f64,
     ) -> Result<Option<Value>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         let path = self.repo.path(id, "dashboard")?;
         let file = DataLock::for_file(&path)?;
-        let _file = file.acquire(Duration::from_secs(30))?;
+        let _file = file.acquire_configured()?;
         let Some(stored) = ProfileRepo::raw(&path)?.filter(truth) else {
             return Ok(None);
         };
@@ -458,7 +457,7 @@ impl DashboardStore {
         now: f64,
     ) -> Result<Vec<Value>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         let mut pending = Vec::new();
         for id in ids {

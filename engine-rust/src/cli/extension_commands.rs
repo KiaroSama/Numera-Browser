@@ -6,7 +6,7 @@ use crate::storage::{
     config::ConfigStore, extension_install, extensions, locks::DataLock, repo::RepoError,
 };
 use serde_json::{Map, Value, json};
-use std::{io, path::Path, time::Duration};
+use std::{io, path::Path};
 
 impl Profiles<'_> {
     pub fn extensions(
@@ -84,7 +84,7 @@ pub fn defaults(
 ) -> Result<Outcome, RepoError> {
     let config = ConfigStore::new(root.into());
     let lock = DataLock::transaction(root)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     let mut current = config
         .default_extensions()
         .map_err(|e| RepoError::Message(e.to_string()))?;
@@ -200,7 +200,7 @@ fn install_observed(
     let mut added_default = false;
     if !no_default {
         let lock = DataLock::transaction(root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let config = ConfigStore::new(root.into());
         let mut current = config
             .default_extensions()

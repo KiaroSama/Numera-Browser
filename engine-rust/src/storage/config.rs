@@ -1,6 +1,6 @@
 use super::{atomic::write_json, locks::DataLock};
 use serde_json::{Map, Value};
-use std::{error::Error, fmt, fs, io, path::PathBuf, time::Duration};
+use std::{error::Error, fmt, fs, io, path::PathBuf};
 
 #[derive(Debug)]
 pub enum ConfigError {
@@ -22,6 +22,7 @@ impl ConfigError {
 impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Io(error) if error.kind() == io::ErrorKind::TimedOut => fmt::Display::fmt(error, f),
             Self::Io(error) => write!(f, "Settings operation failed: {error}"),
             Self::WrongContainer(_) => {
                 f.write_str("Stored settings are not an object; nothing was written")
@@ -42,14 +43,6 @@ pub struct ConfigStore {
     root: PathBuf,
 }
 
-fn lock_limit() -> Duration {
-    let limit = std::env::var("NUMERA_LOCK_TIMEOUT")
-        .ok()
-        .and_then(|value| value.parse::<f64>().ok())
-        .filter(|value| value.is_finite() && *value >= 0.0 && *value <= 9_223_372_036.0)
-        .unwrap_or(30.0);
-    Duration::from_secs_f64(limit)
-}
 impl ConfigStore {
     pub fn new(root: PathBuf) -> Self {
         Self { root }
@@ -120,7 +113,7 @@ impl ConfigStore {
 
     pub fn set_default_extensions(&self, wanted: Vec<String>) -> Result<Vec<String>, ConfigError> {
         let root_lock = DataLock::transaction(&self.root)?;
-        let _root = root_lock.acquire(lock_limit())?;
+        let _root = root_lock.acquire_configured()?;
         let record = self.read_for_change()?;
         let values = record.as_object().cloned().unwrap_or_default();
         let current = Self::extensions_from(&values).map_err(|error| match error {
@@ -155,7 +148,7 @@ impl ConfigStore {
         }
         let path = self.root.join("config.json");
         let file_lock = DataLock::for_file(&path)?;
-        let _file = file_lock.acquire(lock_limit())?;
+        let _file = file_lock.acquire_configured()?;
         write_json(&path, &Value::Object(values.clone()))?;
         Ok(values)
     }
@@ -172,12 +165,11 @@ impl ConfigStore {
         changes: Map<String, Value>,
         wrong_container: &'static str,
     ) -> Result<Map<String, Value>, ConfigError> {
-        let limit = lock_limit();
         let root_lock = DataLock::transaction(&self.root)?;
-        let _root = root_lock.acquire(limit)?;
+        let _root = root_lock.acquire_configured()?;
         let path = self.root.join("config.json");
         let file_lock = DataLock::for_file(&path)?;
-        let _file = file_lock.acquire(limit)?;
+        let _file = file_lock.acquire_configured()?;
         let current = self.read_for_change()?;
         let mut current = match current {
             Value::Object(value) => value,

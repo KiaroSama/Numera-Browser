@@ -13,7 +13,7 @@ use serde_json::{Value, json};
 use std::{
     fs, io,
     path::Path,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 fn read_config(root: &Path) -> Result<Value, RecoveryError> {
@@ -71,7 +71,7 @@ pub(crate) fn commit_and_verify(
     config["vault"] = descriptor.clone();
     let path = root.join("config.json");
     let lock = DataLock::for_file(&path)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     write_json(&path, &config)?;
     sync_config(root)?;
     let persisted = read_config(root)?;
@@ -91,7 +91,7 @@ pub(crate) fn commit_and_verify(
 /// restores exact bytes and syncs the restored generation before journal removal.
 pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
     let lock = DataLock::transaction(root)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     if super::journal::classify(root).0 != JournalState::Absent {
         return Err(refusal(
             "An unresolved vault migration must be recovered before enabling a vault",
@@ -150,7 +150,7 @@ pub fn rotate(root: &Path, old_password: &str, password: &str) -> Result<usize, 
         return Err(refusal("the new master password cannot be empty"));
     }
     let lock = DataLock::transaction(root)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     if super::journal::classify(root).0 != JournalState::Absent {
         return Err(refusal(
             "An unresolved vault migration must be recovered before rotating a vault",

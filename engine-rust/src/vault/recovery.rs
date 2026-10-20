@@ -8,7 +8,7 @@ use super::{
 };
 use crate::storage::locks::DataLock;
 use serde_json::Value;
-use std::{error::Error, fmt, fs, io, path::Path, time::Duration};
+use std::{error::Error, fmt, fs, io, path::Path};
 
 #[derive(Debug)]
 pub struct RecoveryError {
@@ -140,7 +140,7 @@ pub fn recover(
         return Ok(false);
     }
     let lock = DataLock::transaction(root)?;
-    let _root = lock.acquire(Duration::from_secs(30))?;
+    let _root = lock.acquire_configured()?;
     let (_, current_record) = classify(root);
     if current_record.as_ref() != Some(&record) {
         return Err(refusal(

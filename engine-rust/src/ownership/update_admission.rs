@@ -8,10 +8,7 @@ use std::{
     fs,
     io::{self, Read},
     path::{Path, PathBuf},
-    time::Duration,
 };
-
-const LIMIT: Duration = Duration::from_secs(30);
 const MAX_RECORD: u64 = 65_536;
 
 fn busy() -> io::Error {
@@ -66,7 +63,7 @@ impl Reservation {
     pub fn begin(root: &Path, what: &'static str) -> io::Result<Self> {
         let root = resolved(root)?;
         let lock = DataLock::transaction(&root)?;
-        let _guard = lock.acquire(LIMIT)?;
+        let _guard = lock.acquire_configured()?;
         assert_open_locked(&root)?;
         let updates = root.join(".updates");
         if !regular_directory(&updates)? {
@@ -126,7 +123,7 @@ impl Reservation {
             return Ok(());
         };
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(LIMIT)?;
+        let _guard = lock.acquire_configured()?;
         if !regular_directory(&self.root.join(".updates"))?
             || !regular_directory(&self.root.join(".updates/work"))?
         {

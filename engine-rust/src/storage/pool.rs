@@ -9,7 +9,7 @@ use crate::vault::{
     policy::{VaultState, write_secret},
 };
 use serde_json::{Map, Value};
-use std::{fs, io, path::PathBuf, time::Duration};
+use std::{fs, io, path::PathBuf};
 
 pub struct ProxyPool {
     root: PathBuf,
@@ -65,7 +65,7 @@ impl ProxyPool {
     }
     pub fn list(&self) -> Result<Vec<Value>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         Ok(self
             .stored()?
@@ -78,7 +78,7 @@ impl ProxyPool {
     }
     pub fn secret_withheld(&self, id: &str) -> Result<bool, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         let row = self.stored()?.into_iter().find(|row| row["id"] == id);
         Ok(row.is_some_and(|row| {
@@ -139,10 +139,10 @@ impl ProxyPool {
     }
     pub fn add_many(&self, proxies: Vec<Value>) -> Result<Vec<Value>, RepoError> {
         let root = DataLock::transaction(&self.root)?;
-        let _root = root.acquire(Duration::from_secs(30))?;
+        let _root = root.acquire_configured()?;
         self.repo.require_settled()?;
         let file = DataLock::for_file(&self.path())?;
-        let _file = file.acquire(Duration::from_secs(30))?;
+        let _file = file.acquire_configured()?;
         let stored = self.stored()?;
         let mut rows: Vec<_> = stored
             .iter()
@@ -216,10 +216,10 @@ impl ProxyPool {
             return Ok(Vec::new());
         }
         let root = DataLock::transaction(&self.root)?;
-        let _root = root.acquire(Duration::from_secs(30))?;
+        let _root = root.acquire_configured()?;
         self.repo.require_settled()?;
         let file = DataLock::for_file(&self.path())?;
-        let _file = file.acquire(Duration::from_secs(30))?;
+        let _file = file.acquire_configured()?;
         let stored = self.stored()?;
         let mut rows: Vec<_> = stored
             .iter()
@@ -249,10 +249,10 @@ impl ProxyPool {
     }
     pub fn delete(&self, id: &str) -> Result<bool, RepoError> {
         let root = DataLock::transaction(&self.root)?;
-        let _root = root.acquire(Duration::from_secs(30))?;
+        let _root = root.acquire_configured()?;
         self.repo.require_settled()?;
         let file = DataLock::for_file(&self.path())?;
-        let _file = file.acquire(Duration::from_secs(30))?;
+        let _file = file.acquire_configured()?;
         let stored = self.stored()?;
         let kept: Vec<_> = stored
             .iter()

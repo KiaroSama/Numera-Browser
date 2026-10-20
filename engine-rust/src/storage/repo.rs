@@ -9,7 +9,6 @@ use std::{
     error::Error,
     fmt, fs, io,
     path::{Path, PathBuf},
-    time::Duration,
 };
 
 #[derive(Debug)]
@@ -36,6 +35,9 @@ impl fmt::Display for RepoError {
             | Self::SessionBusy(message)
             | Self::UnconvertibleProfile(message)
             | Self::VaultLocked(message) => f.write_str(message),
+            Self::Io(error) if error.kind() == io::ErrorKind::TimedOut => {
+                fmt::Display::fmt(error, f)
+            }
             Self::Io(error) => write!(f, "Profile storage operation failed: {error}"),
             Self::Recovery(error) => fmt::Display::fmt(error, f),
         }
@@ -159,7 +161,7 @@ impl ProfileRepo {
 
     pub fn materialize(&self, id: &str, now: f64) -> Result<Option<Profile>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.require_settled()?;
         let Some(dash) = Self::raw(&self.path(id, "dashboard")?)? else {
             return Ok(None);
@@ -219,7 +221,7 @@ impl ProfileRepo {
                 }
                 if current.as_ref() != Some(&record) {
                     let file = DataLock::for_file(&path)?;
-                    let _file = file.acquire(Duration::from_secs(30))?;
+                    let _file = file.acquire_configured()?;
                     write_json(&path, &record)?;
                 }
                 // Source materialization returns its derived model, not a decrypted
@@ -232,7 +234,7 @@ impl ProfileRepo {
     }
     pub fn adopt(&self, id: &str, now: f64) -> Result<bool, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.require_settled()?;
         let Some(engine) = Self::raw(&self.path(id, "profiles")?)? else {
             return Ok(false);
@@ -258,7 +260,7 @@ impl ProfileRepo {
             .cloned()
             .unwrap_or(Value::from(now));
         let file = DataLock::for_file(&path)?;
-        let _file = file.acquire(Duration::from_secs(30))?;
+        let _file = file.acquire_configured()?;
         write_json(&path, &twin)?;
         Ok(true)
     }

@@ -14,7 +14,7 @@ use crate::{
     },
 };
 use serde_json::Value;
-use std::{collections::HashMap, fs, time::Duration};
+use std::{collections::HashMap, fs};
 
 impl ProfileRepo {
     /// Prepare both copies before the first write; no caller snapshot bypasses
@@ -36,7 +36,7 @@ impl ProfileRepo {
             Self::validate_write(profile)?;
         }
         let root = DataLock::transaction(&self.root)?;
-        let _root = root.acquire(Duration::from_secs(30))?;
+        let _root = root.acquire_configured()?;
         self.require_settled()?;
         if !matches!(policy, "reject" | "skip") {
             return Err(RepoError::Message(format!(
@@ -95,7 +95,7 @@ impl ProfileRepo {
             .collect::<Result<Vec<_>, _>>()?;
         let _guards = locks
             .iter()
-            .map(|lock| lock.acquire(Duration::from_secs(30)))
+            .map(|lock| lock.acquire_configured())
             .collect::<Result<Vec<_>, _>>()?;
         let mut batch = Batch::default();
         let result = (|| -> Result<(), RepoError> {
@@ -133,7 +133,7 @@ impl ProfileRepo {
         now: f64,
     ) -> Result<Option<Profile>, RepoError> {
         let root = DataLock::transaction(&self.root)?;
-        let _root = root.acquire(Duration::from_secs(30))?;
+        let _root = root.acquire_configured()?;
         self.require_settled()?;
         let Some(mut current) = self.resolve(reference, now)? else {
             return Ok(None);
@@ -151,7 +151,7 @@ impl ProfileRepo {
         now: f64,
     ) -> Result<Vec<Profile>, RepoError> {
         let root = DataLock::transaction(&self.root)?;
-        let _root = root.acquire(Duration::from_secs(30))?;
+        let _root = root.acquire_configured()?;
         self.require_settled()?;
         let mut pending = Vec::new();
         for reference in references {

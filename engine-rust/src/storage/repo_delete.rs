@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{ownership::claims, validation};
 use serde_json::Value;
-use std::{fs, io, path::PathBuf, time::Duration};
+use std::{fs, io, path::PathBuf};
 
 impl ProfileRepo {
     /// Candidate lookup happens before the lease; the target is re-read inside
@@ -31,7 +31,7 @@ impl ProfileRepo {
             claims::refuse_if_busy(&self.root, &id, host)
                 .map_err(|e| RepoError::SessionBusy(e.to_string()))?;
             let lock = DataLock::transaction(&self.root)?;
-            let _root = lock.acquire(Duration::from_secs(30))?;
+            let _root = lock.acquire_configured()?;
             let Some(current) = self.resolve(reference, now)? else {
                 return Ok(false);
             };

@@ -314,6 +314,16 @@ REGRESSIONS = (
                 'e42ab23148d1e1a757e2486e3c7ae164b068d87902ddd260329c66bd8cfbfa3b',
         },
     },
+    {
+        'target': 'lock_interop_parity',
+        'test': 'configured_store_acquisitions_honor_original_lock_owners',
+        'symptom': 'Configured data-lock acquisition ignored the original timeout',
+        'commit': '0de3fabd302595e48a156022625c31cd2018bdb3',
+        'files': {
+            'engine-rust/src/storage/pool.rs':
+                'bfb4199d7423b264e4f2c61901ec0a2d9431b39fe28aa6de7802c805027967ec',
+        },
+    },
 )
 
 

@@ -8,9 +8,9 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed source checkpoint is `ef6ebe2`. Its manual hosted batch
-[39327015878](https://github.com/KiaroSama/Numera-Browser/actions/runs/39327015878)
-failed overall on October 19 at 21:48 UTC. All 28 nondependent jobs passed:
+The latest completed source checkpoint is `0de3fab`. Its manual hosted batch
+[39336995688](https://github.com/KiaroSama/Numera-Browser/actions/runs/39336995688)
+failed overall on October 19 at 23:06 UTC. All 28 nondependent jobs passed:
 source platforms, both native tiers, eight relocated cases and dashboard checks. Native
 suites restored historical source/test companions and passed current contracts.
 The expanded shared-store settings/folder/encrypted-pool replay passed on both systems, retaining all prior profile/vault/archive assertions.

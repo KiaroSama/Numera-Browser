@@ -4,7 +4,6 @@ use std::{
     fs::{self, File, FileTimes, OpenOptions},
     io,
     path::{Path, PathBuf},
-    time::Duration,
 };
 
 const ITEMS: &[&str] = &[
@@ -142,7 +141,7 @@ pub fn import_from(source: &Path, destination: &Path) -> io::Result<Summary> {
                 }
             } else {
                 let lock = DataLock::for_file(&dst)?;
-                let _guard = lock.acquire(Duration::from_secs(30))?;
+                let _guard = lock.acquire_configured()?;
                 if dst.try_exists()? {
                     summary.skipped.push((*name).into());
                 } else {
@@ -177,7 +176,7 @@ pub fn run_if_needed(
     }
     fs::create_dir_all(destination)?;
     let lock = DataLock::transaction(destination)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     if marker.try_exists()? {
         return Ok(None);
     }

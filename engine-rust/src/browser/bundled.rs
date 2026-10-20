@@ -8,7 +8,6 @@ use std::{
     collections::BTreeMap,
     fs, io,
     path::{Path, PathBuf},
-    time::Duration,
 };
 
 pub struct Discovery<'a> {
@@ -181,7 +180,7 @@ pub fn select(
             }
         }
         let lock = DataLock::transaction(data)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         seed(&source, &destination, 0)?;
         if engine == "cloak" && !environment.contains_key("CLOAKBROWSER_CACHE_DIR") {
             resources.environment.insert(

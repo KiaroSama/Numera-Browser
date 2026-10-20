@@ -20,7 +20,7 @@ use std::{
     io,
     path::PathBuf,
     sync::Arc,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 pub(super) struct Profiles {
@@ -242,7 +242,7 @@ fn listing(state: &Profiles) -> Result<Vec<Value>, RepoError> {
         .map_err(io::Error::other)?
         .as_secs_f64();
     let lock = DataLock::transaction(&state.root)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     let mut profiles = state.dashboard.list()?;
     let known = profiles
         .iter()
