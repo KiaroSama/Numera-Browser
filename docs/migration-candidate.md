@@ -547,7 +547,7 @@ strict Base64 rejects alphabet junk and bad padding but accepts unused trailing 
 still separately proves the verifier and every stored secret. An existing-target immutable-original
 observer compares 145 descriptor/selection/classification results and exact retained journal bytes.
 Both platforms proved its pinned historical semantic failure and fixed-byte restoration in batch
-`39402856263`; current Linux acceptance passed, while Windows stopped at the build ceiling. Prior fixtures are unchanged.
+`39411399239`; current acceptance then passed on both platforms. Recovery ownership and prior fixtures are unchanged.
 
 ## Authenticated recovery results
 
@@ -563,8 +563,8 @@ existing codes, role and message. Unreadable active settings, including a direct
 observers add 36 completion cases, five config failures repeated twice, ten committed
 rotation cases repeated twice, and 15 typed error projections. Exact historical completion,
 config-cause and metadata assertions failed as required on both platforms in batch `39397136419`,
-with fixed-byte restoration. Batch `39402856263` passed all new current Linux cases; Windows
-current acceptance, callback-induced readback, crash, dynamic-value and concurrency domains remain incomplete.
+with fixed-byte restoration. Batch `39411399239` passed all new current cases on both platforms;
+callback-induced readback, crash, complete dynamic-value and concurrency domains remain incomplete.
 
 ## Settings instance cache and historical build reuse
 
@@ -573,24 +573,35 @@ time and file length. Returned maps are detached; stat failure clears the cache,
 read/parse/nonobject failure retains the prior successful entry. One original/native observer
 covers 11 sequential steps, including same-key replacement, 100-ns timestamp changes,
 size changes, deletion/recreation and independent instances, without sleeps or file mutation
-by reads. Strict UTF-8 error propagation and shared repository cache ownership remain open.
-The exact pre-cache source must fail its named assertion before current acceptance.
+by reads. Batch `39411399239` proved the exact pre-cache semantic failure, byte restoration
+and current success on both platforms. Strict UTF-8 error propagation remains open.
+
+Prepared repository changes retain one settings reader per repository and reuse it through
+its dashboard/pool storage consumers. An existing-target observer retains 48 sequential
+source/native observations and four warmed-cache late-journal refusals. Three main profile
+observations explicitly retain a stronger native guard: when an absent descriptor makes the
+original return ciphertext, native returns null. These are documented differences, not
+full parity or skipped cases. Independent instances, precise invalidation and unchanged
+input bytes remain required. Mutation snapshots still use fresh readers; no global cache
+or measured application speedup is introduced. This repository-level change is unverified.
 
 The pinned cache action disables incremental compilation for cross-job caching. Historical
 proofs repeatedly replace source in one build tree instead. Their runner now temporarily
 enables incremental compilation, restoring the incoming setting even on failure before the
 fixed-tree build. Every historical source hash, semantic assertion, byte restoration,
-sequential ownership and existing deadline remains required. No speedup is yet measured.
+sequential ownership and existing deadline remains required. Batch `39411399239` completed
+Windows build/proofs in 570.762 seconds versus the prior 900.052-second timeout, with one
+additional proof. This resolves that run's timeout, not a repeated comparable speedup claim.
 
 ## Acceptance status
 
-Latest completed source `813a4c6` ran in batch
-[39402856263](https://github.com/KiaroSama/Numera-Browser/actions/runs/39402856263).
-All 27 other jobs passed: source platforms, eight relocated SDK cases and dashboard checks.
-Linux passed all new current recovery cases and strict lint. Windows proved all 35 historical
-failures/restorations, then exhausted the 900-second build ceiling before finishing current
-compilation. Current Windows acceptance and prepared cache/build changes remain unverified;
-CodeQL and required verification also failed.
+Latest completed source `371fe47` ran in batch
+[39411399239](https://github.com/KiaroSama/Numera-Browser/actions/runs/39411399239).
+All 28 nondependent jobs passed: source platforms, both native tiers, eight relocated SDK
+cases and dashboard checks. Windows proved all 36 historical failures/restorations and
+completed the fixed build, strict lint, current recovery/cache tests and later acceptance.
+CodeQL and required verification failed; publication stages were skipped. Prepared
+repository cache ownership changes are not covered by that earlier successful native tier.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and

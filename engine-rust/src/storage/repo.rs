@@ -53,10 +53,15 @@ impl From<io::Error> for RepoError {
 pub struct ProfileRepo {
     pub(crate) root: PathBuf,
     pub(crate) password: Option<String>,
+    pub(crate) config: ConfigStore,
 }
 impl ProfileRepo {
     pub fn new(root: PathBuf, password: Option<String>) -> Self {
-        Self { root, password }
+        Self {
+            config: ConfigStore::new(root.clone()),
+            root,
+            password,
+        }
     }
     pub fn open(
         root: PathBuf,
@@ -72,7 +77,8 @@ impl ProfileRepo {
     }
     pub fn vault(&self) -> Result<Option<Value>, RepoError> {
         self.require_settled()?;
-        Ok(ConfigStore::new(self.root.clone())
+        Ok(self
+            .config
             .read()
             .remove("vault")
             .filter(|value| !value.is_null()))
@@ -166,7 +172,7 @@ impl ProfileRepo {
             return Some(value.into());
         }
         let password = self.password.as_deref()?;
-        let config = Value::Object(ConfigStore::new(self.root.clone()).read());
+        let config = Value::Object(self.config.read());
         let descriptor = &config["vault"];
         let salt = descriptor["salt"].as_str()?;
         let verifier = descriptor["verifier"].as_str()?;
@@ -311,7 +317,7 @@ impl ProfileRepo {
             .map_err(|_| RepoError::Message("Profile cannot be serialized".into()))?;
         let old = current.as_ref().and_then(|v| Self::secret(v, "password"));
         let input = Self::secret(&dash, "pass");
-        let config = Value::Object(ConfigStore::new(self.root.clone()).read());
+        let config = Value::Object(self.config.read());
         let descriptor = &config["vault"];
         match self.incoming_secret(input.as_deref(), descriptor) {
             Ok(fresh) => {

@@ -1,6 +1,5 @@
 use super::{
     atomic::write_json,
-    config::ConfigStore,
     locks::DataLock,
     repo::{ProfileRepo, RepoError},
 };
@@ -88,7 +87,7 @@ impl ProxyPool {
         }))
     }
     fn save(&self, rows: &[Value], stored: &[Value]) -> Result<(), RepoError> {
-        let config = Value::Object(ConfigStore::new(self.root.clone()).read());
+        let config = Value::Object(self.repo.config.read());
         let descriptor = &config["vault"];
         let password = self.repo.password.as_deref().unwrap_or("");
         let salt = descriptor["salt"].as_str().unwrap_or("");

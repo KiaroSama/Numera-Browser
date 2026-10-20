@@ -78,6 +78,10 @@ REGRESSIONS = (
                 'commit': '01be6dfe20c04d4cbabe3b4bdce63c8270c45535',
                 'sha256': '6382da3256a98870707a45d25a17a7f2933902ae8171b4044b3a305e2e354ec5',
             },
+            'engine-rust/src/storage/pool.rs': {
+                'commit': '371fe475ad72fb518e5c6650fc5ebb022d7d1c10',
+                'sha256': '2693fea8b2b4b7a6897072ee31a83342792c06853f3a70e0a7d401e77601df79',
+            },
         },
     },
     {
@@ -231,6 +235,10 @@ REGRESSIONS = (
             'engine-rust/src/storage/archive.rs': {
                 'commit': '01be6dfe20c04d4cbabe3b4bdce63c8270c45535',
                 'sha256': '6382da3256a98870707a45d25a17a7f2933902ae8171b4044b3a305e2e354ec5',
+            },
+            'engine-rust/src/storage/pool.rs': {
+                'commit': '371fe475ad72fb518e5c6650fc5ebb022d7d1c10',
+                'sha256': '2693fea8b2b4b7a6897072ee31a83342792c06853f3a70e0a7d401e77601df79',
             },
         },
     },
@@ -424,6 +432,30 @@ REGRESSIONS = (
         'files': {
             'engine-rust/src/storage/config.rs':
                 '808535a3970096c53c68151cca8965f5ef261175e3eb54f85daea21ee1f4b002',
+        },
+    },
+    {
+        'target': 'repo_parity',
+        'test': 'repository_settings_cache_matches_original_across_secret_reads',
+        'symptom': 'Repository settings cache differs',
+        'commit': '371fe475ad72fb518e5c6650fc5ebb022d7d1c10',
+        'files': {
+            'engine-rust/src/storage/repo.rs':
+                'e14695584f9a43425511c688cab958140ca791e1bc5c571e8a391437606c1532',
+        },
+        'companions': {
+            'engine-rust/src/storage/repo_write.rs': {
+                'commit': '371fe475ad72fb518e5c6650fc5ebb022d7d1c10',
+                'sha256': '4246e16cd7945415174cafd1f7e2b45f98a40258a5f9d9a7779b95d5be55a9d6',
+            },
+            'engine-rust/src/storage/dashboard.rs': {
+                'commit': '371fe475ad72fb518e5c6650fc5ebb022d7d1c10',
+                'sha256': 'dff94396936796a18cbd6e2b4282a2bf6afa658df259422d6d38da733e4b6e67',
+            },
+            'engine-rust/src/storage/pool.rs': {
+                'commit': '371fe475ad72fb518e5c6650fc5ebb022d7d1c10',
+                'sha256': '2693fea8b2b4b7a6897072ee31a83342792c06853f3a70e0a7d401e77601df79',
+            },
         },
     },
     {

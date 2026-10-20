@@ -8,17 +8,17 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 20, 2026
 
-The latest completed checkpoint `813a4c6` ran in manual hosted batch
-[39402856263](https://github.com/KiaroSama/Numera-Browser/actions/runs/39402856263),
-which failed on October 20 at 10:02 UTC at the Windows build deadline and CodeQL/required verification.
-All 27 other jobs passed, including every source platform, eight relocated SDK cases
-and dashboard checks. Linux passed the new journal/completion/recovery and typed-error
-cases. Windows proved all 35 historical failures and fixed-byte restorations, then
-exhausted the 900-second build ceiling before current-tree compilation completed.
-The prepared proof runner restores incremental compilation during its source swaps;
-all assertions and deadlines remain unchanged, with no measured speedup claimed.
-The prepared settings cache adds timestamp/size and detached-result observations; authentication and KDF algorithms are unchanged.
-Earlier Linux performance overlaps remain unexplained. The [candidate status](migration-candidate.md) records 320 nearest references and pending full occurrence acceptance.
+The latest completed checkpoint `371fe47` ran in manual hosted batch
+[39411399239](https://github.com/KiaroSama/Numera-Browser/actions/runs/39411399239),
+which failed on October 20 at 11:23 UTC only at CodeQL and required verification.
+All 28 nondependent jobs passed, including every source platform, eight relocated SDK
+cases and dashboard checks. Both native tiers passed journal/completion/recovery,
+typed errors and 11 sequential settings-cache observations after historical failure proofs.
+Windows completed the build in 570.762 seconds within the unchanged 900-second ceiling;
+this single result resolves that timeout, not a repeated performance-improvement claim.
+The prepared repository cache reuse adds 48 observations, retaining three explicit
+original/native absent-vault safety differences rather than exposing stored ciphertext.
+The [candidate status](migration-candidate.md) records 320 nearest references; full occurrence acceptance and earlier Linux performance-overlap causes remain open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

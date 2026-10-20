@@ -225,7 +225,7 @@ impl ProfileRepo {
         let current = Self::raw(&engine_path)?.unwrap_or(Value::Null);
         let old = current["proxy"]["password"].as_str();
         let twin = previous["proxy"]["pass"].as_str();
-        let config = Value::Object(ConfigStore::new(self.root.clone()).read());
+        let config = Value::Object(self.config.read());
         let descriptor = &config["vault"];
         let salt = descriptor["salt"].as_str().unwrap_or("");
         let password = self.password.as_deref().unwrap_or("");
