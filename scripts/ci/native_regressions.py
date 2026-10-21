@@ -495,6 +495,16 @@ REGRESSIONS = (
         },
     },
     {
+        'target': 'launch_http_parity',
+        'test': 'scheduler_rows::skipped_malformed_schedule_ids_do_not_abort_later_occurrences',
+        'symptom': 'Scheduler row isolation differs',
+        'commit': '7d8108a31551330c34a7d183bb04335422b0bcb0',
+        'files': {
+            'engine-rust/src/http/scheduler.rs':
+                '3e0e0e7fc208acc286c5006d15d172658df9e08078192a19c7c42e62c39d4a0c',
+        },
+    },
+    {
         'target': 'command_capture_lifecycle',
         'test': 'bounded_capture_drains_both_pipes_and_settles_descendants_on_every_exit',
         'symptom': 'Missing timeout observation',

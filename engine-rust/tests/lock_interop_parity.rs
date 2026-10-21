@@ -169,6 +169,84 @@ fn configured_contender(root: &Path, operation: &str) -> Command {
     command
 }
 
+const ENABLE_PHASES: &[&str] = &[
+    "Enable lock requested",
+    "Enable lock acquired",
+    "Enable config admitted",
+    "Enable descriptor derivation started",
+    "Enable descriptor derivation finished",
+    "Enable journal published",
+    "Enable commit verified",
+    "Enable completed",
+];
+
+fn enable_log_paths(root: &Path) -> std::io::Result<Vec<PathBuf>> {
+    let entries = match fs::read_dir(root.join("logs")) {
+        Ok(entries) => entries,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(error) => return Err(error),
+    };
+    entries
+        .filter_map(|entry| match entry {
+            Ok(entry)
+                if entry
+                    .file_name()
+                    .to_string_lossy()
+                    .starts_with("native-vault-enable_") =>
+            {
+                Some(Ok(entry.path()))
+            }
+            Ok(_) => None,
+            Err(error) => Some(Err(error)),
+        })
+        .collect()
+}
+
+fn enable_phases(path: &Path) -> std::io::Result<Vec<&'static str>> {
+    use std::io::Read;
+    let mut text = String::new();
+    fs::File::open(path)?.take(8193).read_to_string(&mut text)?;
+    if text.len() > 8192 {
+        return Err(std::io::Error::other("Enable phase log exceeds its bound"));
+    }
+    Ok(text
+        .lines()
+        .filter_map(|line| {
+            let phase = line.split_once("] [INFO] [vault] ")?.1;
+            ENABLE_PHASES
+                .iter()
+                .copied()
+                .find(|expected| *expected == phase)
+        })
+        .collect())
+}
+
+#[test]
+fn enable_phase_projection_accepts_only_fixed_labels_and_bounded_utf8()
+-> Result<(), Box<dyn std::error::Error>> {
+    let temporary = common::TempDirectory::new("enable-phase-projection")?;
+    let path = temporary.path().join("phase.log");
+    fs::write(
+        &path,
+        concat!(
+            "[2026-10-21 00:00:00 UTC] [INFO] [vault] Enable lock requested\n",
+            "[2026-10-21 00:00:00 UTC] [INFO] [vault] synthetic-private-value\n",
+            "[2026-10-21 00:00:00 UTC] [ERROR] [vault] Enable completed\n",
+            "[2026-10-21 00:00:00 UTC] [INFO] [vault] Enable descriptor derivation started\n"
+        ),
+    )?;
+    assert_eq!(
+        enable_phases(&path)?,
+        vec![ENABLE_PHASES[0], ENABLE_PHASES[3]]
+    );
+    fs::write(&path, [0xff])?;
+    assert!(enable_phases(&path).is_err());
+    fs::write(&path, vec![b'x'; 8193])?;
+    assert!(enable_phases(&path).is_err());
+    temporary.cleanup()?;
+    Ok(())
+}
+
 fn configured_limits() -> numera_core::ownership::capture::Limits {
     numera_core::ownership::capture::Limits {
         wall: Duration::from_secs(10),
@@ -319,18 +397,33 @@ fn configured_store_acquisitions_honor_original_lock_owners()
         }
         assert!(!root.join("vault-migration.json").exists());
         assert!(!root.join(".updates/work").exists());
+        let prior_logs = enable_log_paths(&root)?;
+        let released_log = || -> std::io::Result<PathBuf> {
+            let new = enable_log_paths(&root)?
+                .into_iter()
+                .filter(|path| !prior_logs.contains(path))
+                .collect::<Vec<_>>();
+            if new.len() != 1 {
+                return Err(std::io::Error::other("Released enable log is not unique"));
+            }
+            Ok(new[0].clone())
+        };
         let result = capture::run(
             &mut configured_contender(&root, operation),
             configured_limits(),
         )
         .map_err(|error| {
+            let phase = released_log()
+                .and_then(|path| enable_phases(&path))
+                .ok()
+                .and_then(|phases| phases.last().copied());
             let journal_present = root.join("vault-migration.json").try_exists().ok();
             let config_vault_present = fs::read(root.join("config.json"))
                 .ok()
                 .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
                 .and_then(|value| value.as_object().map(|object| object.contains_key("vault")));
             format!(
-                "Configured lock operation={operation} phase=released journal_present={journal_present:?} config_vault_present={config_vault_present:?}: {error:?}"
+                "Configured lock operation={operation} phase=released enable_phase={phase:?} journal_present={journal_present:?} config_vault_present={config_vault_present:?}: {error:?}"
             )
         })?;
         assert_eq!(
@@ -346,7 +439,10 @@ fn configured_store_acquisitions_honor_original_lock_owners()
         match operation {
             "config" => assert_eq!(ConfigStore::new(root).read()?["accepted"], true),
             "folder" => assert_eq!(Folders::new(root).listing()?, vec!["After release"]),
-            "vault" => assert!(ConfigStore::new(root).read()?.contains_key("vault")),
+            "vault" => {
+                assert!(ConfigStore::new(root.clone()).read()?.contains_key("vault"));
+                assert_eq!(enable_phases(&released_log()?)?, ENABLE_PHASES);
+            }
             _ => {
                 for (name, bytes) in &protected {
                     assert_eq!(

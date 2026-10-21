@@ -7,19 +7,19 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 21, 2026
 
-The latest completed checkpoint `93db8f8` ran in manual hosted batch
-[39519262811](https://github.com/KiaroSama/Numera-Browser/actions/runs/39519262811),
-which failed on October 21 at 00:30 UTC only at CodeQL and required verification; 28 checks passed
-and three publication stages were skipped. Both native jobs passed all 59 schedule text cases,
-the capture lifecycle controls and configured-lock acceptance after 43 Linux and 44 Windows
-named historical failures and fixed-byte restoration. Passing now does not diagnose the earlier
-released-vault timeout. Safe elapsed/idle, leader/pipe and file-milestone diagnostics remain.
-The public `mark_run` API now reuses existing outcome bookkeeping and CLI completion; its
-36 finite original-derived cases and three native nonfinite refusals await execution. Native refuses
-NaN/infinity instead of silently writing null; this explicit difference is not complete nonfinite parity.
-Both patched Cargo audits passed. All four CLI time/memory log verdicts reported no regression
-on both systems; earlier overlap causes remain unproved. [Candidate status](migration-candidate.md)
-retains 346 nearest references. Full acceptance remains open; no criteria or defaults changed.
+The latest completed checkpoint `7d8108a` ran in manual hosted batch
+[39525533176](https://github.com/KiaroSama/Numera-Browser/actions/runs/39525533176),
+which failed on October 21 at 01:36 UTC: Linux native, CodeQL and required verification remain
+failed; 27 checks passed and three publication stages were skipped. The 36 finite `mark_run`
+observations and three native nonfinite refusals passed on both systems; Windows native passed.
+Linux released-vault capture expired after 5,010 ms with a live leader and no pipe EOF. Neither
+journal nor active descriptor existed after cleanup; this does not establish the stalled stage.
+Prepared private fixed-label enable logs distinguish lock/config/derivation/journal/commit boundaries
+without resetting capture deadlines. Scheduler ID validation now stays inside its per-row failure
+boundary after absent/busy-profile checks; seven original-derived public observations await execution.
+Native NaN/infinity refusal remains an explicit difference, not complete nonfinite parity. Both
+patched Cargo audits passed; Windows four-scenario CLI time/memory logs reported no regression.
+[Candidate status](migration-candidate.md) retains 346 nearest references. Full acceptance remains open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

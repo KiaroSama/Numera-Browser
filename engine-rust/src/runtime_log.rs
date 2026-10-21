@@ -10,9 +10,16 @@ use std::{
 pub struct RuntimeLog {
     file: Mutex<Option<File>>,
     path: Option<PathBuf>,
+    console_fallback: bool,
 }
 impl RuntimeLog {
     pub fn new(directory: &Path, component: &'static str) -> Self {
+        Self::open(directory, component, true)
+    }
+    pub(crate) fn file_only(directory: &Path, component: &'static str) -> Self {
+        Self::open(directory, component, false)
+    }
+    fn open(directory: &Path, component: &'static str, console_fallback: bool) -> Self {
         let opened = (|| -> io::Result<(File, PathBuf)> {
             fs::create_dir_all(directory)?;
             let stamp = chrono::Utc::now()
@@ -37,14 +44,18 @@ impl RuntimeLog {
             Ok((file, path)) => Self {
                 file: Mutex::new(Some(file)),
                 path: Some(path),
+                console_fallback,
             },
             Err(_) => {
-                eprintln!(
-                    "Runtime file logging unavailable; safe lifecycle diagnostics remain on stderr"
-                );
+                if console_fallback {
+                    eprintln!(
+                        "Runtime file logging unavailable; safe lifecycle diagnostics remain on stderr"
+                    );
+                }
                 Self {
                     file: Mutex::new(None),
                     path: None,
+                    console_fallback,
                 }
             }
         }
@@ -70,13 +81,91 @@ impl RuntimeLog {
             return;
         }
         *file = None;
-        eprint!("{line}");
+        if self.console_fallback {
+            eprint!("{line}");
+        }
     }
 }
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::common;
+    #[test]
+    fn file_only_diagnostics_do_not_enable_console_fallback()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::ownership::capture;
+        use std::{process::Command, time::Duration};
+
+        if let Some(root) = std::env::var_os("NUMERA_LOG_FAILURE_FIXTURE") {
+            let root = PathBuf::from(root);
+            let unavailable = root.join("not-a-directory");
+            fs::write(&unavailable, b"retained")?;
+            let quiet = std::env::var("NUMERA_LOG_FAILURE_MODE")? == "file-only";
+            let log = if quiet {
+                RuntimeLog::file_only(&unavailable, "native-vault-enable")
+            } else {
+                RuntimeLog::new(&unavailable, "native-cli")
+            };
+            assert!(log.path().is_none());
+            log.event("INFO", "vault", "Enable lock requested");
+            assert_eq!(fs::read(&unavailable)?, b"retained");
+            if quiet {
+                let log = RuntimeLog::file_only(&root.join("logs"), "native-vault-enable");
+                let path = log.path().ok_or("File log missing")?.to_owned();
+                // A read-only handle deterministically exercises a failed write.
+                *log.file
+                    .lock()
+                    .map_err(|_| io::Error::other("Log mutex poisoned"))? =
+                    Some(File::open(&path)?);
+                log.event("INFO", "vault", "Enable descriptor derivation started");
+                assert!(fs::read(path)?.is_empty());
+            }
+            return Ok(());
+        }
+        let root = common::TempDirectory::new("file-only-log")?;
+        for mode in ["file-only", "default"] {
+            let mut command = Command::new(std::env::current_exe()?);
+            command
+                .args([
+                    "--exact",
+                    "runtime_log::tests::file_only_diagnostics_do_not_enable_console_fallback",
+                    "--nocapture",
+                    "--test-threads=1",
+                ])
+                .env("NUMERA_LOG_FAILURE_FIXTURE", root.path())
+                .env("NUMERA_LOG_FAILURE_MODE", mode);
+            let output = capture::run(
+                &mut command,
+                capture::Limits {
+                    wall: Duration::from_secs(5),
+                    idle: Duration::from_secs(5),
+                    bytes: 65536,
+                    cleanup: Duration::from_secs(5),
+                },
+            )?;
+            assert_eq!(output.exit, 0, "Log failure fixture failed");
+            let stderr = String::from_utf8(output.stderr)?;
+            let stdout = String::from_utf8(output.stdout)?;
+            assert!(stdout.lines().any(|line| line == "running 1 test"));
+            assert!(stdout.contains("test runtime_log::tests::file_only_diagnostics_do_not_enable_console_fallback ... ok"));
+            assert!(
+                !stdout.contains("Enable lock requested")
+                    && !stdout.contains("Enable descriptor derivation started"),
+                "Diagnostics wrote to captured stdout"
+            );
+            if mode == "file-only" {
+                assert!(
+                    stderr.is_empty(),
+                    "File-only diagnostics wrote to captured stderr"
+                );
+            } else {
+                assert!(stderr.contains("Runtime file logging unavailable"));
+                assert!(stderr.contains("Enable lock requested"));
+            }
+        }
+        root.cleanup()?;
+        Ok(())
+    }
     #[test]
     fn runtime_logs_are_exclusive_utf8_and_never_accept_dynamic_input() -> io::Result<()> {
         let root = common::TempDirectory::new("runtime-log")?;

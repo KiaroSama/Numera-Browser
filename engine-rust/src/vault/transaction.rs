@@ -94,8 +94,11 @@ pub(crate) fn commit_and_verify(
 /// Ordinary enable publishes a journal before any credential mutation. Failure
 /// restores exact bytes and syncs the restored generation before journal removal.
 pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
+    let log = crate::runtime_log::RuntimeLog::file_only(&root.join("logs"), "native-vault-enable");
+    log.event("INFO", "vault", "Enable lock requested");
     let lock = DataLock::transaction(root)?;
     let _guard = lock.acquire_configured()?;
+    log.event("INFO", "vault", "Enable lock acquired");
     if super::journal::classify(root).0 != JournalState::Absent {
         return Err(refusal(
             "An unresolved vault migration must be recovered before enabling a vault",
@@ -107,8 +110,12 @@ pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
             "A vault is already set up. Use `numera vault change` to rotate the master password.",
         ));
     }
+    log.event("INFO", "vault", "Enable config admitted");
+    log.event("INFO", "vault", "Enable descriptor derivation started");
     let descriptor = new_descriptor(password)?;
+    log.event("INFO", "vault", "Enable descriptor derivation finished");
     begin(root, &descriptor, None)?;
+    log.event("INFO", "vault", "Enable journal published");
     let mut step = Migration::new(root.to_owned());
     let result = (|| {
         let count = step
@@ -122,9 +129,20 @@ pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
             password,
             "`vault enable`",
         )?;
+        log.event("INFO", "vault", "Enable commit verified");
         Ok(count)
     })();
-    finish(root, &mut step, result)
+    let result = finish(root, &mut step, result);
+    log.event(
+        if result.is_ok() { "INFO" } else { "ERROR" },
+        "vault",
+        if result.is_ok() {
+            "Enable completed"
+        } else {
+            "Enable failed"
+        },
+    );
+    result
 }
 
 fn finish(

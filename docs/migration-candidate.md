@@ -633,22 +633,23 @@ selected defects and proved the named CLI admission failure before fixed-byte re
 
 ## Acceptance status
 
-Latest completed source `93db8f8` ran in batch
-[39519262811](https://github.com/KiaroSama/Numera-Browser/actions/runs/39519262811).
-Both native jobs passed 59 schedule text cases, capture lifecycle controls and configured locks,
-after 43 Linux and 44 Windows named historical failures and fixed-byte restoration. All 28
-nondependent checks passed; CodeQL/required verification failed and three publication stages
-were skipped. The earlier released-vault timeout's cause remains unproved; later success is not
-a diagnosis. Failure-only elapsed/idle, leader/pipe and safe file-milestone diagnostics remain.
-The public `mark_run` API now delegates finite timestamps through existing `record` bookkeeping,
-clearing only matching claims and retaining other fields. CLI completion reuses it; the server's
-combined startup/outcome commit is unchanged. One prepared observer compares 36 original
-finite results and exact disk bytes; three native controls reject NaN/infinity without mutation.
-The original permits nonfinite JSON tokens; native refusal is an explicit stronger difference,
-not full nonfinite parity. Exact historical test/CLI companions retain the prior text proof despite
-the newly callable API. These changes remain unexecuted. All 26 scheduler occurrence mappings
-retain pending status and concrete gaps, bringing nearest references to 346 without certifying
-any occurrence. Both patched Cargo audits passed; full migration acceptance remains open.
+Latest completed source `7d8108a` ran in batch
+[39525533176](https://github.com/KiaroSama/Numera-Browser/actions/runs/39525533176).
+The public `mark_run` observer passed all 36 finite original-derived cases and three native
+nonfinite refusals on both systems. Exact historical companions retained 43 Linux/44 Windows
+semantic-failure proofs and fixed-byte restoration. Windows native passed; Linux failed only
+configured-lock vault/released acceptance at the unchanged idle bound: 5,010 ms elapsed,
+live leader, no pipe EOF, no journal/config descriptor after settlement. The stalled stage is
+unproved. All 27 other checks passed; CodeQL/required verification failed and three publication
+stages were skipped. Prepared fixed-label `native-vault-enable` UTF-8 logs under the data root's
+`logs/` distinguish actual lock/config/derivation/journal/verified-commit boundaries, without
+logging credentials or becoming pipe heartbeats; no new retention policy is installed.
+Prepared scheduler validation stays inside the per-row boundary after absent/busy checks;
+seven public original-derived observations require later-row bookkeeping despite skipped
+malformed IDs. The previous source must fail the named assertion. This slice is unexecuted;
+nontext-ID present-profile outcomes and full scheduler acceptance remain pending. All 26
+scheduler mappings remain pending, retaining 346 nearest references without status promotion.
+Native nonfinite refusal remains an explicit stronger difference, not full original parity.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and

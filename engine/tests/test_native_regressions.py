@@ -122,6 +122,21 @@ def test_schedule_history_preserves_text_failure_without_later_api_callers():
     assert not case['files'].keys() & case['companions'].keys()
 
 
+def test_scheduler_row_history_requires_the_original_isolation_failure():
+    module = load()
+    cases = [case for case in module.REGRESSIONS
+             if case['test'] == 'scheduler_rows::skipped_malformed_schedule_ids_do_not_abort_later_occurrences']
+    assert len(cases) == 1
+    assert cases[0] == {
+        'target': 'launch_http_parity',
+        'test': 'scheduler_rows::skipped_malformed_schedule_ids_do_not_abort_later_occurrences',
+        'symptom': 'Scheduler row isolation differs',
+        'commit': '7d8108a31551330c34a7d183bb04335422b0bcb0',
+        'files': {'engine-rust/src/http/scheduler.rs':
+                  '3e0e0e7fc208acc286c5006d15d172658df9e08078192a19c7c42e62c39d4a0c'},
+    }
+
+
 @pytest.mark.parametrize('damage', [None, 'exit', 'empty', 'name', 'symptom', 'summary'])
 def test_failure_proof_requires_the_exact_production_assertion(damage):
     module = load()

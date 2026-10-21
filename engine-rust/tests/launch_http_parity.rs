@@ -11,6 +11,8 @@ use serde_json::{Value, json};
 use std::{collections::BTreeMap, path::Path, process::Command, sync::Arc, time::Duration};
 use tower::ServiceExt;
 mod common;
+#[path = "launch_http_parity/scheduler_rows.rs"]
+mod scheduler_rows;
 
 #[test]
 fn launch_optional_body_and_refusals_match_original_before_native_activation()

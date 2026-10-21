@@ -67,9 +67,7 @@ fn tick(state: &Profiles) -> Result<(), RepoError> {
     for row in rows {
         let mut claimed = false;
         let mut unsettled = false;
-        let id = row["id"]
-            .as_str()
-            .ok_or_else(|| RepoError::Message("Stored schedule ID is not text".into()))?;
+        let id = row["id"].as_str();
         let pid = row["profileId"].as_str().unwrap_or("");
         let result = (|| -> Result<(), RepoError> {
             if pid.is_empty() {
@@ -83,6 +81,8 @@ fn tick(state: &Profiles) -> Result<(), RepoError> {
             if state.sessions.running(pid)? {
                 return Ok(());
             }
+            let id =
+                id.ok_or_else(|| RepoError::Message("Stored schedule ID is not text".into()))?;
             if !schedules.claim_due(id, &format!("server:{}", std::process::id()), now()?)? {
                 return Ok(());
             }
@@ -118,7 +118,9 @@ fn tick(state: &Profiles) -> Result<(), RepoError> {
             }
             Ok(())
         })();
-        if let Err(error) = result {
+        if let Err(error) = result
+            && let Some(id) = id
+        {
             release_failed(&schedules, id, claimed, unsettled);
             let safe = error
                 .to_string()
