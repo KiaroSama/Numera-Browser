@@ -549,6 +549,26 @@ REGRESSIONS = (
 # These sources use current caller signatures and must follow compatibility overlays.
 CURRENT_CALLER_REGRESSIONS = (
     {
+        'target': 'profile_http_import_parity',
+        'test': 'lexical::importer_lexical_profiles_match_original_without_changing_inputs',
+        'symptom': 'Imported lexical dashboard differs',
+        'commit': '4297b1f8e06f2ca0ae7617f2602bd5ed43d450d1',
+        'files': {
+            'engine-rust/src/importers.rs':
+                'e04030f2743e3f77625e0428c28c5727aabf39091e90aa01351775d7a0d16572',
+        },
+    },
+    {
+        'target': 'profile_http_import_parity',
+        'test': 'lexical::native_envelope_versions_match_original_exact_numeric_guidance',
+        'symptom': 'Native export version guidance differs',
+        'commit': '4297b1f8e06f2ca0ae7617f2602bd5ed43d450d1',
+        'files': {
+            'engine-rust/src/import_format.rs':
+                'fb386692f47d6e7d0281b302112001f6af120418d0bbf5d765c231243de51233',
+        },
+    },
+    {
         'target': 'repo_batch_parity',
         'test': 'complete_batch_refusals_match_original_index_order_and_preserved_bytes',
         'symptom': 'Complete indexed batch refusal differs',

@@ -10,7 +10,10 @@ pub fn native(raw: &Value) -> Result<Option<Vec<Value>>, String> {
         return Ok(None);
     };
     if version != &json!(1) && version != &json!(1.0) && version != &json!(true) {
-        let next = if validation::kind(version) == "int" && version.as_i64().is_some_and(|v| v > 1)
+        let spelling = version.to_string();
+        let next = if validation::kind(version) == "int"
+            && !spelling.starts_with('-')
+            && (spelling.len() > 1 || spelling.as_str() > "1")
         {
             "It was written by a newer Numera - update this install, or re-export from that one."
         } else {

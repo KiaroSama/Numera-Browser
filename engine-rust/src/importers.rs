@@ -33,39 +33,38 @@ fn usable(value: Value, default: Value, field: &str, issues: &mut Vec<String>) -
     default
 }
 fn hardware(value: Value, default: i64) -> i64 {
-    value_text(&value)
-        .trim()
-        .parse::<f64>()
-        .ok()
+    crate::browser::cookie_expiry::numeric_text(crate::pool::trim(&value_text(&value)))
         .filter(|number| number.is_finite() && (0.0..=4096.0).contains(number))
         .map_or(default, |number| number.trunc() as i64)
 }
 fn chrome(ua: &str) -> String {
-    let Some(tail) = ua.split_once("Chrome/").map(|(_, tail)| tail) else {
-        return String::new();
-    };
-    let mut parts = Vec::new();
-    for part in tail.split('.').take(4) {
-        let digits = part
-            .chars()
-            .take_while(char::is_ascii_digit)
-            .collect::<String>();
-        if digits.is_empty() {
-            break;
+    for (index, token) in ua.match_indices("Chrome/") {
+        let tail = &ua[index + token.len()..];
+        let mut parts = Vec::new();
+        for part in tail.split('.').take(4) {
+            let digits = part
+                .chars()
+                .take_while(|character| {
+                    crate::pool::decimal_ascii(&character.to_string()).is_some()
+                })
+                .collect::<String>();
+            if digits.is_empty() {
+                break;
+            }
+            let ended = digits.len() != part.len();
+            parts.push(digits);
+            if ended {
+                break;
+            }
         }
-        let ended = digits.len() != part.len();
-        parts.push(digits);
-        if ended {
-            break;
+        if !parts.is_empty() {
+            while parts.len() < 4 {
+                parts.push("0".into());
+            }
+            return parts.join(".");
         }
     }
-    if parts.is_empty() {
-        return String::new();
-    }
-    while parts.len() < 4 {
-        parts.push("0".into());
-    }
-    parts.join(".")
+    String::new()
 }
 fn proxy(record: &Value) -> Result<(Option<Proxy>, Option<Value>), String> {
     let px = first(
@@ -251,9 +250,8 @@ fn parse(record: &Value, seed: i64, now: f64) -> Result<(Profile, Value, Vec<Str
     let dimensions = resolution
         .split('x')
         .take(2)
-        .map(str::parse::<i64>)
-        .collect::<Result<Vec<_>, _>>()
-        .ok()
+        .map(|part| crate::decimal::integer(part)?.parse::<i64>().ok())
+        .collect::<Option<Vec<_>>>()
         .filter(|parts| parts.len() == 2)
         .unwrap_or_else(|| vec![1920, 1080]);
     fp.screen_width = dimensions[0];

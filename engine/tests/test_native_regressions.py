@@ -180,9 +180,17 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/storage/repo_write.rs':
                   'ce4d904503fd52f828896f9abd840e76aee1e0131f292064fd99a875a864c53f'},
     },)
-    assert module.CURRENT_CALLER_REGRESSIONS == expected
-    assert module.REGRESSIONS == module._SETTINGS_REGRESSIONS + expected
-    assert not any(case.get('companions') for case in expected)
+    added = module.CURRENT_CALLER_REGRESSIONS[:-1]
+    assert [(case['target'], case['test'], case['symptom']) for case in added] == [
+        ('profile_http_import_parity', 'lexical::importer_lexical_profiles_match_original_without_changing_inputs', 'Imported lexical dashboard differs'),
+        ('profile_http_import_parity', 'lexical::native_envelope_versions_match_original_exact_numeric_guidance', 'Native export version guidance differs'),
+    ]
+    assert all(case['commit'] == '4297b1f8e06f2ca0ae7617f2602bd5ed43d450d1' for case in added)
+    assert added[0]['files'] == {'engine-rust/src/importers.rs': 'e04030f2743e3f77625e0428c28c5727aabf39091e90aa01351775d7a0d16572'}
+    assert added[1]['files'] == {'engine-rust/src/import_format.rs': 'fb386692f47d6e7d0281b302112001f6af120418d0bbf5d765c231243de51233'}
+    assert module.CURRENT_CALLER_REGRESSIONS[-1:] == expected
+    assert module.REGRESSIONS == module._SETTINGS_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
+    assert not any(case.get('companions') for case in module.CURRENT_CALLER_REGRESSIONS)
 
 
 @pytest.mark.parametrize('damage', [None, 'exit', 'empty', 'name', 'symptom', 'summary'])

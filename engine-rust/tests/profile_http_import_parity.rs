@@ -11,6 +11,8 @@ use std::{
 };
 use tower::ServiceExt;
 mod common;
+#[path = "profile_http_import_parity/lexical.rs"]
+mod lexical;
 
 #[test]
 fn vendor_conversion_matches_independent_original_seeded_records()

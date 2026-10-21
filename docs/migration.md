@@ -7,10 +7,10 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 21, 2026
 
-The latest completed checkpoint `a36fecb` ran in manual hosted batch
-[39553311643](https://github.com/KiaroSama/Numera-Browser/actions/runs/39553311643),
-which failed on October 21 at 06:32 UTC: 28 checks passed, CodeQL and its two dependent
-verification checks failed, and three publication stages were skipped.
+The latest completed checkpoint `4297b1f` ran in manual hosted batch
+[39561550290](https://github.com/KiaroSama/Numera-Browser/actions/runs/39561550290),
+which failed on October 21 at 07:44 UTC: 27 checks passed, Linux performance and CodeQL
+with dependent verification failed, and three publication stages were skipped.
 Both native jobs passed all 47 Linux/48 Windows historical semantic proofs with fixed-byte
 restoration, followed by current acceptance. Shared identity helpers passed 123 frozen-original
 version/platform/page/CDP comparisons on both systems. All eight real browser SDK paths passed,
@@ -19,11 +19,11 @@ runner's negative control passed on Windows (16 tests, 0.21 seconds); the failed
 exception, protected bytes and sanitized diagnostics are retained without retries or permission
 changes. The previous cleanup PermissionError's filesystem cause remains unproved.
 Ten original-derived batch-refusal cases retain indexed context, complete ordered problems and
-validation-before-write byte preservation. The next prepared shared write-contract boundary adds
-270 raw/model/shape/context/refusal comparisons; these have not run and are not covered by `a36fecb`.
-Earlier 268 ASCII validation, 24 core/HTTP legacy-view and 16 stored-name observations remain
-covered. Four foreground CLI time/memory comparisons reported no regression on both systems;
-earlier overlapping ranges and the earlier live-leader vault timeout still have no proved cause.
+validation-before-write byte preservation. The shared write-contract boundary passed all 270
+raw/model/shape/context/refusal comparisons on both systems. Another 106 importer lexical and
+envelope comparisons are prepared, not executed. Earlier validation/read observations remain
+covered. Windows passed all four CLI time/memory comparisons; Linux list and vault-read timing
+ranges overlap and remain inconclusive. Earlier overlaps and the vault timeout have no proved cause.
 Native NaN/infinity refusal remains an explicit nonfinite difference. Full acceptance remains open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
@@ -531,8 +531,8 @@ source tests, and CI checks their regeneration for drift.
 ## Coverage and unfinished work
 
 [The source capability ledger](migration-coverage.json) retains all 907 frozen
-source occurrences and hashes. There are now 368 inspected target/test references,
-including 22 newly mapped write-contract occurrences, with explicit remaining gaps:
+source occurrences and hashes. There are now 381 inspected target/test references,
+including 13 newly mapped importer occurrences, with explicit remaining gaps:
 906 pending, one implemented, zero verified.
 It intentionally refuses default switch; references are not acceptance evidence.
 Alternative definitions retain separate deterministic IDs. The verified leaf cases
