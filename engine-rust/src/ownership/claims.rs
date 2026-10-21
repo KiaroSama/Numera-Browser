@@ -70,18 +70,22 @@ pub fn describe(claim: &Claim, host: &str) -> String {
         Claim::Record(record) if record.as_object().is_some_and(|v| v.is_empty()) => return "no session".into(),
         Claim::Record(record) => record,
     };
-    let what = record["what"]
-        .as_str()
-        .filter(|v| !v.is_empty())
-        .unwrap_or("a session");
-    let pid = record.get("pid").map_or("None".into(), |v| v.to_string());
+    let display = |value: &Value| {
+        value
+            .as_str()
+            .map_or_else(|| crate::validation::repr(value), str::to_owned)
+    };
+    let what = if crate::conversion::truth(&record["what"]) {
+        display(&record["what"])
+    } else {
+        "a session".into()
+    };
+    let pid = display(&record["pid"]);
     if state(claim, host) != State::Unknown {
         return format!("{what} started by pid {pid}, whose browser is still running");
     }
     if crate::conversion::truth(&record["host"]) && record["host"] != host {
-        let other = record["host"]
-            .as_str()
-            .map_or_else(|| record["host"].to_string(), str::to_owned);
+        let other = display(&record["host"]);
         return format!("{what} claimed by pid {pid} on {other}, which this process cannot verify");
     }
     format!(

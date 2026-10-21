@@ -170,7 +170,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 381 individually inspected implementation/test
+The capability ledger now records 397 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -633,20 +633,20 @@ selected defects and proved the named CLI admission failure before fixed-byte re
 
 ## Acceptance status
 
-Latest source `0ef8c74` failed batch [39567977803](https://github.com/KiaroSama/Numera-Browser/actions/runs/39567977803):
-26 checks passed; both native jobs stopped at E0425 in the old pool-source swap before its assertion.
-The prepared exact prior-importer companion preserves the selected pool defect; compiler failure is not proof.
-Previous source `4297b1f` passed all 47 Linux/48 Windows historical semantic proofs with restoration,
-then current contracts, including 270 shared write-contract and 123 identity comparisons,
+Latest source `d25e088` failed batch [39576202048](https://github.com/KiaroSama/Numera-Browser/actions/runs/39576202048):
+28 checks passed; only CodeQL and its two dependent verification checks failed, with three publication skips.
+Both native jobs passed 49 Linux/50 Windows historical semantic proofs with fixed-byte restoration.
+The exact prior-importer companion clears the old pool swap's compiler failure while preserving its defect.
+Current contracts passed, including 106 importer, 270 shared write-contract and 123 identity comparisons,
 ten complete indexed batch-refusal comparisons and exact protected-byte preservation.
 Earlier 268 ASCII validation cases, 24 core/HTTP legacy views and 16 stored-name refusals remain
 covered. File-only logging/configured-lock acceptance passed; the earlier 5,010 ms vault timeout
 did not recur and has no proved cause.
-Windows passed all four CLI time/memory comparisons. Linux list native12.670–411.152ms versus
-original155.006–161.573ms and vault-read native67.177–327.772ms versus original289.129–296.725ms
-remain inconclusive; all four memory comparisons passed. Earlier overlaps are not erased or diagnosed.
-No sample is trimmed or criterion relaxed. That previous batch had 27 passing checks; Linux performance,
-CodeQL and dependent verification failed, with three publication skips. All eight real SDK paths passed,
+Both systems' four CLI time/memory log verdicts report no regression. Earlier `4297b1f` Linux list
+native12.670–411.152ms versus original155.006–161.573ms and vault-read native67.177–327.772ms versus
+original289.129–296.725ms remain recorded as inconclusive; no cause is established by a later passing run.
+No sample is trimmed or criterion relaxed. The whole latest batch remains failed; passing native tiers
+do not clear CodeQL or complete migration acceptance. All eight real SDK paths passed,
 including Windows Playwright. Fifteen deterministic cleanup-failure controls and the exact prior
 runner's negative control passed on Windows (16 tests, 0.21 seconds). Operation/error-code/file-kind
 diagnostics retain the original exception and failed exit, without retry or permission changes;
@@ -655,8 +655,9 @@ The shared write-contract boundary distinguishes raw JSON from a typed Profile, 
 key presence and retains explicit shapes, custom context and every ordered refusal; 270 observations
 passed on both systems. Importer repairs reuse existing numeric grammar and retain the first valid
 Unicode-decimal Chrome token and arbitrary-integer envelope guidance. Their 89 profile plus 17 envelope
-comparisons and two exact historical controls are prepared, not executed. Thirteen nearest importer
-references bring the total to 381; dynamic/Unicode/numeric/surrogate/Python-identity gaps remain pending.
+comparisons and two exact historical controls passed on both systems. A separate diagnostic-only
+claim correction has 1,011 unknown/foreign observations prepared, not executed. Sixteen nearest session
+references bring the total to 397; missing direct APIs, stricter safety and dynamic/numeric/fault gaps remain pending.
 Nontext-ID present-profile outcomes and full scheduler acceptance remain incomplete. All 26
 scheduler mappings remain pending; no capability status is promoted by these narrow fixes.
 Native nonfinite refusal remains an explicit stronger difference, not full original parity.

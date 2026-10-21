@@ -553,6 +553,16 @@ REGRESSIONS = (
 # These sources use current caller signatures and must follow compatibility overlays.
 CURRENT_CALLER_REGRESSIONS = (
     {
+        'target': 'claim_parity',
+        'test': 'diagnostics::claim_diagnostics_match_original_truth_and_display_without_changing_records',
+        'symptom': 'Claim diagnostic display differs',
+        'commit': 'd25e088d8adb4c70e2dd401ffbe100331cfb35f4',
+        'files': {
+            'engine-rust/src/ownership/claims.rs':
+                '6af8a9ffd4a29f9ce29da25da9ecf8e4b4fc2031b9228424be8c578650eccbb8',
+        },
+    },
+    {
         'target': 'profile_http_import_parity',
         'test': 'lexical::importer_lexical_profiles_match_original_without_changing_inputs',
         'symptom': 'Imported lexical dashboard differs',

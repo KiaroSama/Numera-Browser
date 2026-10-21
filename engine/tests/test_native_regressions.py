@@ -197,7 +197,16 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/storage/repo_write.rs':
                   'ce4d904503fd52f828896f9abd840e76aee1e0131f292064fd99a875a864c53f'},
     },)
-    added = module.CURRENT_CALLER_REGRESSIONS[:-1]
+    claim = module.CURRENT_CALLER_REGRESSIONS[0]
+    assert claim == {
+        'target': 'claim_parity',
+        'test': 'diagnostics::claim_diagnostics_match_original_truth_and_display_without_changing_records',
+        'symptom': 'Claim diagnostic display differs',
+        'commit': 'd25e088d8adb4c70e2dd401ffbe100331cfb35f4',
+        'files': {'engine-rust/src/ownership/claims.rs':
+                  '6af8a9ffd4a29f9ce29da25da9ecf8e4b4fc2031b9228424be8c578650eccbb8'},
+    }
+    added = module.CURRENT_CALLER_REGRESSIONS[1:-1]
     assert [(case['target'], case['test'], case['symptom']) for case in added] == [
         ('profile_http_import_parity', 'lexical::importer_lexical_profiles_match_original_without_changing_inputs', 'Imported lexical dashboard differs'),
         ('profile_http_import_parity', 'lexical::native_envelope_versions_match_original_exact_numeric_guidance', 'Native export version guidance differs'),
