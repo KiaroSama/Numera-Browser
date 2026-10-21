@@ -170,7 +170,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 417 individually inspected implementation/test
+The capability ledger now records 427 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -633,9 +633,10 @@ selected defects and proved the named CLI admission failure before fixed-byte re
 
 ## Acceptance status
 
-Latest source `d722785` failed batch [39610253608](https://github.com/KiaroSama/Numera-Browser/actions/runs/39610253608):
-26 checks passed; both native tiers, CodeQL and its two dependent checks failed, with three publication skips.
-Both native build owners reached the unchanged 900-second wall after 31 Linux/16 Windows historical proofs.
+Latest source `461eebc` failed batch [39623861497](https://github.com/KiaroSama/Numera-Browser/actions/runs/39623861497):
+27 jobs passed; Windows native compilation, the independent CodeQL verdict and required verification
+failed, with three publication skips. Linux completed 54 historical proofs and current native acceptance.
+Windows completed 55 proofs, then fixed compilation exhausted the remaining shared build budget before tests.
 The exact prior-importer companion clears the old pool swap's compiler failure while preserving its defect.
 Current contracts passed, including 106 importer, 270 shared write-contract and 123 identity comparisons,
 ten complete indexed batch-refusal comparisons and exact protected-byte preservation.
@@ -644,8 +645,10 @@ covered. Windows released-vault lock acceptance stopped at 5,032 ms against its 
 idle limit, with a live leader after descriptor creation started; settlement was clean and no journal
 or config descriptor was published. Current vault parity took 106.74 seconds on Windows and
 84.17 seconds on Linux in `965ba02`. The next development optimization made repeated historical
-application rebuilds too expensive before current tests ran. A historical-command-only opt-level0
-override is prepared; current crypto/assertions/overflow checks, release settings and deadlines remain unchanged.
+application rebuilds too expensive before current tests ran. Historical commands now use application
+opt-level0, retaining current opt-level1 crypto/assertions/overflow checks and release settings. Separate
+required history/fixed-build commands each receive 900 wall/300 idle seconds under the same 45-minute
+job ceiling. Aggregate command allowance increases; no measured speedup is claimed.
 Linux's four CLI time/memory log verdicts report no regression; Windows performance did not run. Earlier `4297b1f` Linux list
 native12.670–411.152ms versus original155.006–161.573ms and vault-read native67.177–327.772ms versus
 original289.129–296.725ms remain recorded as inconclusive; no cause is established by a later passing run.
@@ -661,9 +664,11 @@ passed on both systems. Importer repairs reuse existing numeric grammar and reta
 Unicode-decimal Chrome token and arbitrary-integer envelope guidance. Their 89 profile plus 17 envelope
 comparisons and two exact historical controls passed on both systems. All 1,011 claim descriptions and
 historical failure/restoration controls passed on both systems. All 54 strict job-text observations and
-the exact historical failure/restoration passed on both systems. Another 38 importer tag/display and
-four complete-refusal observations remain unexecuted, alongside 83 new bulk-selection observations.
-Four nearest bulk references bring the total to 417; missing APIs and fault gaps remain pending.
+the exact historical failure/restoration passed on both systems. Linux now passes another 38 importer
+tag/display, four complete-refusal and 83 bulk-selection observations plus the released-vault lock test;
+these current tests have not run on Windows. A DNS whitespace correction has 126 original-derived
+cases across four builders, retaining 40 complete-option fixtures; execution remains pending. Ten nearest
+launch-policy references bring the total to 427; missing APIs and fault gaps remain pending.
 Nontext-ID present-profile outcomes and full scheduler acceptance remain incomplete. All 26
 scheduler mappings remain pending; no capability status is promoted by these narrow fixes.
 Native nonfinite refusal remains an explicit stronger difference, not full original parity.

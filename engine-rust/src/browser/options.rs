@@ -14,7 +14,7 @@ const RESOLVERS: [(&str, &str); 8] = [
 ];
 
 fn dns_args(profile: &Profile) -> io::Result<Vec<String>> {
-    let dns = profile.dns.trim();
+    let dns = crate::pool::trim(&profile.dns);
     if dns.is_empty() {
         return Ok(Vec::new());
     }

@@ -288,7 +288,7 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
                            'report --tier python', '--shard ${{ matrix.shard }} --shards 4'),
         'engine-macos': ('--ignore-glob=tests/test_*_live.py', '--junitxml='),
         'browser': ('tests/test_*_live.py', '--deselect=', 'xvfb-run', 'update_ui_smoke.py', 'rendered-update-ui'),
-        'rust-core': ('suites.py native --phase build', 'suites.py native --phase test',
+        'rust-core': ('suites.py native --phase history', 'suites.py native --phase build', 'suites.py native --phase test',
                       'verify_oracles.py', 'verify_default.py', './.github/actions/native-entry-performance'),
         'engine-live': ('test_session_tree_live.py', './.github/actions/native-candidate-acceptance',
                         'report --engine ${{ matrix.engine }}'),
@@ -504,7 +504,7 @@ def main() -> int:
     requirements = sub.add_parser('audit-requirements')
     requirements.add_argument('--destination', type=Path, required=True)
     native = sub.add_parser('native')
-    native.add_argument('--phase', choices=('build', 'test'), required=True)
+    native.add_argument('--phase', choices=('history', 'build', 'test'), required=True)
     seam = sub.add_parser('seam')
     seam.add_argument('--phase', choices=('build', 'test'), required=True)
     seam.add_argument('--scope', choices=tuple(SEAMS), required=True)
@@ -536,13 +536,14 @@ def main() -> int:
             command = (seam_command(args.phase, args.scope) if args.command == 'seam'
                        else native_command(args.phase))
             log.info('Native phase=%s tier=%s workers=2', args.phase, args.command)
-            if args.command == 'native' and args.phase == 'build':
+            if args.command == 'native' and args.phase == 'history':
                 from baseline_source import reference
                 from native_regressions import prove
                 subprocess.run(['cargo', 'fetch', '--manifest-path', str(ROOT / 'engine-rust/Cargo.toml'),
                                 '--locked'], stdin=subprocess.DEVNULL, check=True)
                 with reference() as original:
                     prove(ROOT, original, log)
+                return 0
             if args.phase == 'test':
                 import os
                 from baseline_source import ENVIRONMENT, reference

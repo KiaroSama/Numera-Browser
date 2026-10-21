@@ -436,8 +436,8 @@ jobs:
         run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/verify_oracles.py
       - name: Native formatting
         run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- cargo fmt --manifest-path engine-rust/Cargo.toml --all --check
-      - name: Compile all discovered non-live native suites separately
-        run: python scripts/migration/run_owned.py --wall 900 --idle 300 -- python scripts/ci/suites.py native --phase build
+      - name: Prove historical regressions then compile every fixed non-live suite
+        run: python scripts/migration/run_owned.py --wall 900 --idle 300 -- python scripts/ci/suites.py native --phase history && python scripts/migration/run_owned.py --wall 900 --idle 300 -- python scripts/ci/suites.py native --phase build
       - name: Native strict lint
         run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --all-targets -- -D warnings
       - name: Build acceptance-only native entry once before public handoff tests

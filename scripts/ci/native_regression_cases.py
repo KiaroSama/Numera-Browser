@@ -320,6 +320,10 @@ REGRESSIONS = (
                 'commit': '4297b1f8e06f2ca0ae7617f2602bd5ed43d450d1',
                 'sha256': 'e04030f2743e3f77625e0428c28c5727aabf39091e90aa01351775d7a0d16572',
             },
+            'engine-rust/src/browser/options.rs': {
+                'commit': '461eebcb6b580d8b399dde00e189b510c650f6f4',
+                'sha256': '48f97356e1d6232fa5a84ab619d8bb7f7d9fc25f6b7f7623447339f5de488263',
+            },
         },
     },
     {
@@ -552,6 +556,16 @@ REGRESSIONS = (
 
 # These sources use current caller signatures and must follow compatibility overlays.
 CURRENT_CALLER_REGRESSIONS = (
+    {
+        'target': 'browser_options_parity',
+        'test': 'dns_options_match_original_whitespace_and_refusals',
+        'symptom': 'DNS launch options differ',
+        'commit': '461eebcb6b580d8b399dde00e189b510c650f6f4',
+        'files': {
+            'engine-rust/src/browser/options.rs':
+                '48f97356e1d6232fa5a84ab619d8bb7f7d9fc25f6b7f7623447339f5de488263',
+        },
+    },
     {
         'target': 'bulk_parity',
         'test': 'selection::selection_matches_original_complete_profile_membership',

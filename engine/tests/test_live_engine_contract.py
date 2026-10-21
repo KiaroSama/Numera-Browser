@@ -311,7 +311,7 @@ def test_native_history_precedes_fixed_build_and_never_runs_in_fixed_test(monkey
     monkeypatch.setitem(sys.modules, 'baseline_source', SimpleNamespace(
         ENVIRONMENT='NUMERA_ORACLE_SOURCE_ROOT', reference=reference))
     monkeypatch.setitem(sys.modules, 'native_regressions', SimpleNamespace(prove=prove))
-    phase = 'build'
+    phase = 'history' if damage else 'build'
     monkeypatch.setattr(argparse.ArgumentParser, 'parse_args',
                         lambda _: SimpleNamespace(command='native', phase=phase))
     if damage:
@@ -322,6 +322,7 @@ def test_native_history_precedes_fixed_build_and_never_runs_in_fixed_test(monkey
         return
 
     expected = ['fetch', 'original', 'proof', 'original-closed', 'fixed-build']
+    phase = 'build'
     historical = (ROOT / 'engine/tests/fixtures/native-phase-before-separation.py.txt').read_bytes()
     assert hashlib.sha256(historical).hexdigest() == \
         '4732b4ca79120a3ae0bde753798e3490918d63b9f97c258c700ac218c56dc08c'
@@ -331,12 +332,28 @@ def test_native_history_precedes_fixed_build_and_never_runs_in_fixed_test(monkey
     with pytest.raises(AssertionError, match='Historical proofs must precede'):
         assert events == expected, 'Historical proofs must precede the fixed native build'
     events.clear()
+    phase = 'history'
     assert coverage.main() == 0
-    assert events == expected, 'Historical proofs must precede the fixed native build'
+    assert events == expected[:-1], 'Historical proofs must have their own bounded phase'
+    events.clear()
+    phase = 'build'
+    assert coverage.main() == 0
+    assert events == ['fixed-build'], 'Fixed compilation must not repeat historical proofs'
     events.clear()
     phase = 'test'
     assert coverage.main() == 0
     assert events == ['original', 'fixed-test', 'original-closed']
+    import yaml
+
+    workflow = yaml.safe_load((ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8'))
+    job = workflow['jobs']['rust-core']
+    steps = [step for step in job['steps'] if 'suites.py native --phase' in step.get('run', '')]
+    phases = [command.strip() for step in steps for command in step['run'].split('&&')]
+    assert [command.split('--phase ')[1] for command in phases] == ['history', 'build', 'test']
+    assert all('run_owned.py --wall 900 --idle 300 --' in command for command in phases[:2])
+    assert len(steps) == 2 and steps[0]['run'].count(' && ') == 1
+    assert not any(step.get('if') or step.get('continue-on-error') for step in steps)
+    assert job['timeout-minutes'] == 45
 
 
 @pytest.mark.parametrize('exit_code', [0, 101])

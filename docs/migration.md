@@ -7,12 +7,13 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 21, 2026
 
-The latest completed checkpoint `d722785` ran in manual hosted batch
-[39610253608](https://github.com/KiaroSama/Numera-Browser/actions/runs/39610253608),
-which failed on October 21 at 14:04 UTC: 26 checks passed; both native tiers, CodeQL
-and its two dependent checks failed, with three publication skips. Both native build owners
-reached their unchanged 900-second wall limit after 31 Linux/16 Windows historical proofs.
-The new importer comparisons and optimized current-vault acceptance did not run.
+The latest completed checkpoint `461eebc` ran in manual hosted batch
+[39623861497](https://github.com/KiaroSama/Numera-Browser/actions/runs/39623861497),
+which failed on October 21 at 15:32 UTC: 27 jobs passed, Windows native compilation
+and the independent CodeQL verdict failed, required verification failed, and three
+publication stages were skipped. Linux completed 54 historical proofs and all current
+native contracts. Windows completed 55 historical proofs, then fixed-tree compilation
+exhausted the shared 900-second command budget; its current native tests did not run.
 The exact prior-importer companion resolves the old pool swap's E0425 without changing the
 selected defect, production behavior or proof criteria. Shared identity helpers passed 123 frozen-original
 version/platform/page/CDP comparisons on both systems. All eight real browser SDK paths passed,
@@ -26,17 +27,22 @@ raw/model/shape/context/refusal comparisons on both systems. All 89 importer pro
 envelope comparisons passed on both systems, after exact historical assertion failures and restoration.
 All 1,011 unknown/foreign claim-description comparisons passed on both systems after historical
 failure and restoration; ownership/state/read/release safety is unchanged. All 54 strict job-text
-comparisons passed on both systems after historical failure/restoration. The Windows lock test stopped
-at 5,032 ms, idle limit 5,000 ms, during released-vault descriptor creation with a live leader;
-settlement was clean and neither journal nor config descriptor had been published. Entropy versus
-key-derivation versus scheduling is not yet resolved. Development/test-only basic optimization of
-numera-core and SHA256 made repeated historical recompilation exceed the build wall. A command-local
-historical-only application optimization override is prepared; current crypto, release settings,
-checks and deadlines stay unchanged. The 38 tag/display, four complete-refusal importer comparisons
-and 83 bulk-selection comparisons remain unexecuted. Linux's four CLI time/memory log verdicts report no
-regression; Windows entry/performance acceptance did not run after the failed contract step.
+comparisons passed on both systems after historical failure/restoration. The earlier Windows lock
+failure stopped during descriptor creation at its five-second idle limit; its particular entropy,
+key-derivation or scheduling cause remains unproved. Development/test-only basic optimization
+retains real cryptographic parameters and default safety checks. Historical commands use a local
+application opt-level0 override, while current acceptance retains opt-level1. Linux now passes the
+38 tag/display, four complete-refusal and 83 bulk-selection comparisons, plus the real released-vault
+lock test; Windows acceptance remains pending. Historical proofs and fixed compilation are now
+separate required commands, each bounded by 900 seconds wall/300 seconds idle under the same
+45-minute job. This expands aggregate phase allowance, not a measured speedup. Linux's four CLI
+time/memory log verdicts report no regression; Windows entry/performance acceptance did not run.
 Earlier timing overlaps and vault timeout causes remain unproved.
-Native NaN/infinity refusal remains an explicit nonfinite difference. Full acceptance remains open.
+Native NaN/infinity refusal remains an explicit nonfinite difference. A prepared DNS correction
+reuses Python-compatible boundary whitespace handling without changing resolver or backend policy.
+Its 126 original-derived cases cover all four option builders, retaining 40 existing full-option
+fixtures; hosted execution is pending. Ten nearest launch-policy references bring the mapped total
+to 427, all still pending. Full acceptance remains open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The
