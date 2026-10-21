@@ -7,11 +7,12 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 21, 2026
 
-The latest completed checkpoint `51a627b` ran in manual hosted batch
-[39588428892](https://github.com/KiaroSama/Numera-Browser/actions/runs/39588428892),
-which failed on October 21 at 11:20 UTC: 28 checks passed; CodeQL and its two dependent
-verification checks failed, with three publication skips. Both native tiers passed all 50 Linux/
-51 Windows historical semantic proofs with fixed-byte restoration and current contracts.
+The latest completed checkpoint `965ba02` ran in manual hosted batch
+[39594474327](https://github.com/KiaroSama/Numera-Browser/actions/runs/39594474327),
+which failed on October 21 at 12:10 UTC: 27 checks passed; Windows native contracts, CodeQL
+and its two dependent verification checks failed, with three publication skips. Both native tiers
+passed all 51 Linux/52 Windows historical semantic proofs with fixed-byte restoration.
+Linux current contracts passed; Windows finished with one failed configured-lock test.
 The exact prior-importer companion resolves the old pool swap's E0425 without changing the
 selected defect, production behavior or proof criteria. Shared identity helpers passed 123 frozen-original
 version/platform/page/CDP comparisons on both systems. All eight real browser SDK paths passed,
@@ -24,9 +25,16 @@ validation-before-write byte preservation. The shared write-contract boundary pa
 raw/model/shape/context/refusal comparisons on both systems. All 89 importer profile and 17
 envelope comparisons passed on both systems, after exact historical assertion failures and restoration.
 All 1,011 unknown/foreign claim-description comparisons passed on both systems after historical
-failure and restoration; ownership/state/read/release safety is unchanged. A separate strict job-text
-correction has 54 comparisons prepared, not executed. Both systems' four CLI time/memory log verdicts
-report no regression. Earlier timing overlaps and the vault timeout have no proved cause.
+failure and restoration; ownership/state/read/release safety is unchanged. All 54 strict job-text
+comparisons passed on both systems after historical failure/restoration. The Windows lock test stopped
+at 5,032 ms, idle limit 5,000 ms, during released-vault descriptor creation with a live leader;
+settlement was clean and neither journal nor config descriptor had been published. Entropy versus
+key-derivation versus scheduling is not yet resolved. Development/test-only basic optimization of
+numera-core and SHA256, plus fixed private phase labels, is prepared; cryptographic parameters,
+checks, timeouts and release settings stay unchanged. Another 38 tag/display and four complete-refusal
+importer comparisons are prepared, not executed. Linux's four CLI time/memory log verdicts report no
+regression; Windows entry/performance acceptance did not run after the failed contract step.
+Earlier timing overlaps and vault timeout causes remain unproved.
 Native NaN/infinity refusal remains an explicit nonfinite difference. Full acceptance remains open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.

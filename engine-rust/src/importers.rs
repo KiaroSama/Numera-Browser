@@ -164,7 +164,7 @@ pub fn model(record: &Value, seed: i64, now: f64) -> Result<(Profile, Vec<String
     let problems = validation::profile_problems(&original, "engine record")
         .map_err(|error| error.to_string())?;
     if !problems.is_empty() {
-        return Err(problems.into_iter().take(8).collect::<Vec<_>>().join("; "));
+        return Err(problems.join("; "));
     }
     model.notes = dashboard["notes"]
         .as_str()
@@ -379,7 +379,7 @@ fn parse(record: &Value, seed: i64, now: f64) -> Result<(Profile, Value, Vec<Str
     if let Some(text) = tags.as_str() {
         tags = json!(
             text.split(',')
-                .map(str::trim)
+                .map(crate::pool::trim)
                 .filter(|tag| !tag.is_empty())
                 .collect::<Vec<_>>()
         );
@@ -389,7 +389,12 @@ fn parse(record: &Value, seed: i64, now: f64) -> Result<(Profile, Value, Vec<Str
     if truth(&group) && !tags.as_array().is_some_and(|tags| tags.contains(&group)) {
         tags.as_array_mut()
             .ok_or("Imported tags are not a list")?
-            .push(value_text(&group).into());
+            .push(
+                group
+                    .as_str()
+                    .map_or_else(|| validation::repr(&group), str::to_owned)
+                    .into(),
+            );
     }
     let notes = first(record, &["notes", "description"], "".into());
     let (proxy, proxy_view) = proxy(record)?;

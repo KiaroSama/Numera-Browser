@@ -197,7 +197,15 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/storage/repo_write.rs':
                   'ce4d904503fd52f828896f9abd840e76aee1e0131f292064fd99a875a864c53f'},
     },)
-    jobs = module.CURRENT_CALLER_REGRESSIONS[0]
+    importer = module.CURRENT_CALLER_REGRESSIONS[:2]
+    assert [(case['target'], case['test'], case['symptom']) for case in importer] == [
+        ('profile_http_import_parity', 'tags::importer_tags_match_original_whitespace_and_group_display', 'Imported tag display differs'),
+        ('profile_http_import_parity', 'tags::importer_refusals_retain_all_original_ordered_problems', 'Complete importer refusal differs'),
+    ]
+    assert all(case['commit'] == '965ba02e5eceacb7c0be4e2d9a4e873b52279610' and case['files'] == {
+        'engine-rust/src/importers.rs': 'e4526b6a17983cc5a15fe89cd1d3de28dc60b0fcccb57a078a8a5195e3355751',
+    } for case in importer)
+    jobs = module.CURRENT_CALLER_REGRESSIONS[2]
     assert jobs == {
         'target': 'job_parity',
         'test': 'text::job_text_admission_matches_original_without_replacing_identity_or_outcome',
@@ -206,7 +214,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/jobs.rs':
                   '643bcc66a0d2750dd530abdd91e9a59c24d97c9e3afb39897f07160b18b3977a'},
     }
-    claim = module.CURRENT_CALLER_REGRESSIONS[1]
+    claim = module.CURRENT_CALLER_REGRESSIONS[3]
     assert claim == {
         'target': 'claim_parity',
         'test': 'diagnostics::claim_diagnostics_match_original_truth_and_display_without_changing_records',
@@ -215,7 +223,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/ownership/claims.rs':
                   '6af8a9ffd4a29f9ce29da25da9ecf8e4b4fc2031b9228424be8c578650eccbb8'},
     }
-    added = module.CURRENT_CALLER_REGRESSIONS[2:-1]
+    added = module.CURRENT_CALLER_REGRESSIONS[4:-1]
     assert [(case['target'], case['test'], case['symptom']) for case in added] == [
         ('profile_http_import_parity', 'lexical::importer_lexical_profiles_match_original_without_changing_inputs', 'Imported lexical dashboard differs'),
         ('profile_http_import_parity', 'lexical::native_envelope_versions_match_original_exact_numeric_guidance', 'Native export version guidance differs'),

@@ -46,6 +46,14 @@ windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Syste
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.190"
 
+# PBKDF2's generic loop is instantiated here; SHA compression is in sha2.
+# Test inherits dev, including its debug assertions and overflow checks.
+[profile.dev.package.numera-core]
+opt-level = 1
+
+[profile.dev.package."sha2:0.11.1"]
+opt-level = 1
+
 [lints.clippy]
 unwrap_used = "deny"
 

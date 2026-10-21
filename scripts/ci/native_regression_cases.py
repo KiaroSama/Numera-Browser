@@ -553,6 +553,26 @@ REGRESSIONS = (
 # These sources use current caller signatures and must follow compatibility overlays.
 CURRENT_CALLER_REGRESSIONS = (
     {
+        'target': 'profile_http_import_parity',
+        'test': 'tags::importer_tags_match_original_whitespace_and_group_display',
+        'symptom': 'Imported tag display differs',
+        'commit': '965ba02e5eceacb7c0be4e2d9a4e873b52279610',
+        'files': {
+            'engine-rust/src/importers.rs':
+                'e4526b6a17983cc5a15fe89cd1d3de28dc60b0fcccb57a078a8a5195e3355751',
+        },
+    },
+    {
+        'target': 'profile_http_import_parity',
+        'test': 'tags::importer_refusals_retain_all_original_ordered_problems',
+        'symptom': 'Complete importer refusal differs',
+        'commit': '965ba02e5eceacb7c0be4e2d9a4e873b52279610',
+        'files': {
+            'engine-rust/src/importers.rs':
+                'e4526b6a17983cc5a15fe89cd1d3de28dc60b0fcccb57a078a8a5195e3355751',
+        },
+    },
+    {
         'target': 'job_parity',
         'test': 'text::job_text_admission_matches_original_without_replacing_identity_or_outcome',
         'symptom': 'Job text admission differs',

@@ -35,11 +35,23 @@ fn read_config(root: &Path) -> Result<Value, RecoveryError> {
     })
 }
 
-fn new_descriptor(password: &str) -> Result<Value, RecoveryError> {
+fn new_descriptor(
+    password: &str,
+    log: Option<&crate::runtime_log::RuntimeLog>,
+) -> Result<Value, RecoveryError> {
     let mut bytes = [0u8; 16];
+    if let Some(log) = log {
+        log.event("INFO", "vault", "Enable salt randomness requested");
+    }
     getrandom::fill(&mut bytes)
         .map_err(|error| refusal(format!("Vault salt randomness unavailable: {error}")))?;
+    if let Some(log) = log {
+        log.event("INFO", "vault", "Enable salt randomness acquired");
+    }
     let salt = STANDARD.encode(bytes);
+    if let Some(log) = log {
+        log.event("INFO", "vault", "Enable verifier encryption started");
+    }
     let verifier =
         encrypt(password, &salt, "numera-vault-ok").map_err(|error| refusal(error.to_string()))?;
     Ok(json!({"salt": salt, "verifier": verifier}))
@@ -112,7 +124,7 @@ pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
     }
     log.event("INFO", "vault", "Enable config admitted");
     log.event("INFO", "vault", "Enable descriptor derivation started");
-    let descriptor = new_descriptor(password)?;
+    let descriptor = new_descriptor(password, Some(&log))?;
     log.event("INFO", "vault", "Enable descriptor derivation finished");
     begin(root, &descriptor, None)?;
     log.event("INFO", "vault", "Enable journal published");
@@ -192,7 +204,7 @@ pub fn rotate(root: &Path, old_password: &str, password: &str) -> Result<usize, 
     ) {
         return Err(refusal("that is not the current master password"));
     }
-    let descriptor = new_descriptor(password)?;
+    let descriptor = new_descriptor(password, None)?;
     begin(root, &descriptor, Some(&old))?;
     let mut step = Migration::new(root.to_owned());
     let result = (|| {

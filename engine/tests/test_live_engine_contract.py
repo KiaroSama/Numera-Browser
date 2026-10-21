@@ -216,6 +216,15 @@ def _coverage():
     return module
 
 
+def test_native_development_optimizes_real_crypto_without_weakening_checks():
+    manifest = (ROOT / 'engine-rust/Cargo.toml').read_text(encoding='utf-8')
+    profiles = dict(re.findall(r'(?ms)^\[(profile\.[^\]]+)\]\s*\n(.*?)(?=^\[|\Z)', manifest))
+    assert set(profiles) == {'profile.dev.package.numera-core', 'profile.dev.package."sha2:0.11.1"'}
+    for settings in profiles.values():
+        settings = re.sub(r'(?m)^\s*#.*$', '', settings).strip()
+        assert settings == 'opt-level = 1', 'Development optimization must retain default safety checks'
+
+
 def test_discovered_native_targets_are_all_selected_and_build_is_separate():
     coverage = _coverage()
     suites = coverage.discover()
