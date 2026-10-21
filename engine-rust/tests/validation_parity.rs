@@ -1,6 +1,8 @@
 use numera_core::validation::profile_problems;
 use serde_json::Value;
 mod common;
+#[path = "validation_parity/contract.rs"]
+mod contract;
 
 #[test]
 fn packed_screen_integer_grammar_matches_original() -> Result<(), Box<dyn std::error::Error>> {

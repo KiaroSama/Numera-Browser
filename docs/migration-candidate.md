@@ -170,7 +170,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 239 individually inspected implementation/test
+The capability ledger now records 368 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -633,23 +633,29 @@ selected defects and proved the named CLI admission failure before fixed-byte re
 
 ## Acceptance status
 
-Latest completed source `10b4ffe` ran in batch
-[39545840339](https://github.com/KiaroSama/Numera-Browser/actions/runs/39545840339).
+Latest completed source `a36fecb` ran in batch
+[39553311643](https://github.com/KiaroSama/Numera-Browser/actions/runs/39553311643).
 Both native jobs passed all 47 Linux/48 Windows historical semantic proofs with restoration,
-then current acceptance, including ten complete indexed batch-refusal comparisons and exact
-protected-byte preservation. Earlier 268 ASCII validation cases, 24 core/HTTP legacy views and
-16 stored-name refusals remain covered. File-only logging/configured-lock acceptance passed;
-the earlier 5,010 ms vault timeout did not recur and has no proved cause.
+then current acceptance, including 123 shared identity version/platform/page/CDP comparisons,
+ten complete indexed batch-refusal comparisons and exact protected-byte preservation.
+Earlier 268 ASCII validation cases, 24 core/HTTP legacy views and 16 stored-name refusals remain
+covered. File-only logging/configured-lock acceptance passed; the earlier 5,010 ms vault timeout
+did not recur and has no proved cause.
 All four foreground CLI time/memory logs reported no regression on both systems. Earlier Linux
 create 8.475–176.660 ms versus original 173.189–176.620 ms and list 13.760–179.969 ms versus
 165.721–173.239 ms remain inconclusive observations, not erased or diagnosed by later passes.
-No sample is trimmed or criterion relaxed. The batch had 27 passing checks, failed CodeQL,
-dependent verification and the Windows Playwright source step, with three publication skips.
-Both source browser assertions passed before temporary cleanup raised `PermissionError`, after
-clean tree/reader settlement. No filesystem cause is established. Prepared failure-only operation,
-error-code and file-kind diagnostics retain the failed exit, with no retry or permission changes.
-Shared native identity helpers and 123 immutable-original version/platform/page/CDP observations
-are also prepared; their runtime acceptance remains pending.
+No sample is trimmed or criterion relaxed. The batch had 28 passing checks, failed CodeQL and
+two dependent verification checks, with three publication skips. All eight real SDK paths passed,
+including Windows Playwright. Fifteen deterministic cleanup-failure controls and the exact prior
+runner's negative control passed on Windows (16 tests, 0.21 seconds). Operation/error-code/file-kind
+diagnostics retain the original exception and failed exit, without retry or permission changes;
+this does not establish the previous filesystem failure's cause.
+The prepared public write-contract boundary distinguishes borrowed raw JSON from a typed Profile,
+infers complete records from fingerprint key presence, supports explicit shapes and custom context,
+and preserves every ordered refusal through shared validators. Repository admission reuses it.
+Its 270 immutable-original observations have not run. Twenty-two additional nearest write-contract
+references bring the total to 368; all newly mapped occurrences remain pending, including unsupported
+reflective, full Unicode/numeric/nonfinite/surrogate and Python-identity domains.
 Nontext-ID present-profile outcomes and full scheduler acceptance remain incomplete. All 26
 scheduler mappings remain pending; no capability status is promoted by these narrow fixes.
 Native nonfinite refusal remains an explicit stronger difference, not full original parity.

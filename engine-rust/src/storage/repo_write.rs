@@ -171,25 +171,12 @@ impl ProfileRepo {
     }
 
     fn validate_write(profile: &Profile, context: &str) -> Result<(), RepoError> {
-        let problems = validation::profile_problems(
-            &serde_json::to_value(profile)
-                .map_err(|_| RepoError::Message("Profile cannot be serialized".into()))?,
-            "engine record",
+        crate::write_contract::require(
+            crate::write_contract::Input::Profile(profile),
+            context,
+            None,
         )
-        .map_err(|_| RepoError::Message("Field policy is unreadable".into()))?;
-        if !problems.is_empty() {
-            return Err(RepoError::Message(
-                problems
-                    .into_iter()
-                    .map(|problem| match problem.strip_prefix("profile:") {
-                        Some(message) => format!("{context}:{message}"),
-                        None => problem,
-                    })
-                    .collect::<Vec<_>>()
-                    .join("; "),
-            ));
-        }
-        Ok(())
+        .map_err(|error| RepoError::Message(error.to_string()))
     }
 
     pub(crate) fn held_names(&self) -> Result<HashMap<String, Vec<String>>, RepoError> {

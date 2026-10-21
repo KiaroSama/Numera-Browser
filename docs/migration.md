@@ -7,18 +7,20 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 21, 2026
 
-The latest completed checkpoint `10b4ffe` ran in manual hosted batch
-[39545840339](https://github.com/KiaroSama/Numera-Browser/actions/runs/39545840339),
-which failed on October 21 at 05:11 UTC: 27 checks passed, CodeQL/dependent verification and
-the Windows Playwright source step failed, and three publication stages were skipped.
+The latest completed checkpoint `a36fecb` ran in manual hosted batch
+[39553311643](https://github.com/KiaroSama/Numera-Browser/actions/runs/39553311643),
+which failed on October 21 at 06:32 UTC: 28 checks passed, CodeQL and its two dependent
+verification checks failed, and three publication stages were skipped.
 Both native jobs passed all 47 Linux/48 Windows historical semantic proofs with fixed-byte
-restoration, followed by current acceptance. Ten original-derived batch-refusal cases now verify
-indexed context, complete ordered problems and validation-before-write byte preservation.
-The Windows Playwright step passed both browser assertions, then failed temporary-directory
-cleanup with `PermissionError` after a clean process-tree result; its filesystem cause is unproved.
-Prepared failure-only diagnostics retain the failed exit and expose fixed operation/error codes
-without retries, permission changes or ignored cleanup failures. Shared native identity helpers
-and 123 frozen-original version/platform/page/CDP observations are also prepared, not yet executed.
+restoration, followed by current acceptance. Shared identity helpers passed 123 frozen-original
+version/platform/page/CDP comparisons on both systems. All eight real browser SDK paths passed,
+including Windows Playwright. Fifteen deterministic cleanup-failure controls and the exact prior
+runner's negative control passed on Windows (16 tests, 0.21 seconds); the failed exit, original
+exception, protected bytes and sanitized diagnostics are retained without retries or permission
+changes. The previous cleanup PermissionError's filesystem cause remains unproved.
+Ten original-derived batch-refusal cases retain indexed context, complete ordered problems and
+validation-before-write byte preservation. The next prepared shared write-contract boundary adds
+270 raw/model/shape/context/refusal comparisons; these have not run and are not covered by `a36fecb`.
 Earlier 268 ASCII validation, 24 core/HTTP legacy-view and 16 stored-name observations remain
 covered. Four foreground CLI time/memory comparisons reported no regression on both systems;
 earlier overlapping ranges and the earlier live-leader vault timeout still have no proved cause.
@@ -529,8 +531,9 @@ source tests, and CI checks their regeneration for drift.
 ## Coverage and unfinished work
 
 [The source capability ledger](migration-coverage.json) retains all 907 frozen
-source occurrences and hashes. Seventy-three rows now have inspected target/test
-references and explicit remaining gaps: 906 pending, one implemented, zero verified.
+source occurrences and hashes. There are now 368 inspected target/test references,
+including 22 newly mapped write-contract occurrences, with explicit remaining gaps:
+906 pending, one implemented, zero verified.
 It intentionally refuses default switch; references are not acceptance evidence.
 Alternative definitions retain separate deterministic IDs. The verified leaf cases
 and pending screen repair are detailed in the [candidate notes](migration-candidate.md#occurrence-level-reconciliation).

@@ -44,3 +44,4 @@ pub mod runtime_log;
 pub mod storage;
 pub mod validation;
 pub mod vault;
+pub mod write_contract;
