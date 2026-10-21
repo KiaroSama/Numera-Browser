@@ -553,6 +553,16 @@ REGRESSIONS = (
 # These sources use current caller signatures and must follow compatibility overlays.
 CURRENT_CALLER_REGRESSIONS = (
     {
+        'target': 'job_parity',
+        'test': 'text::job_text_admission_matches_original_without_replacing_identity_or_outcome',
+        'symptom': 'Job text admission differs',
+        'commit': '51a627bd81ad3b7d6b130e85fa45c7354e5d3637',
+        'files': {
+            'engine-rust/src/jobs.rs':
+                '643bcc66a0d2750dd530abdd91e9a59c24d97c9e3afb39897f07160b18b3977a',
+        },
+    },
+    {
         'target': 'claim_parity',
         'test': 'diagnostics::claim_diagnostics_match_original_truth_and_display_without_changing_records',
         'symptom': 'Claim diagnostic display differs',

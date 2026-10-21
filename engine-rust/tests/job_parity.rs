@@ -5,6 +5,8 @@ use numera_core::{
 use serde_json::{Value, json};
 use std::{path::Path, process::Command, time::Duration};
 mod common;
+#[path = "job_parity/text.rs"]
+mod text;
 
 #[test]
 fn durable_job_argument_and_outcome_policy_matches_source() -> Result<(), Box<dyn std::error::Error>>

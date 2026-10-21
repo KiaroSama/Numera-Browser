@@ -7,11 +7,11 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 21, 2026
 
-The latest completed checkpoint `d25e088` ran in manual hosted batch
-[39576202048](https://github.com/KiaroSama/Numera-Browser/actions/runs/39576202048),
-which failed on October 21 at 09:48 UTC: 28 checks passed; CodeQL and its two dependent
-verification checks failed, with three publication skips. Both native tiers passed all 49 Linux/
-50 Windows historical semantic proofs with fixed-byte restoration and current contracts.
+The latest completed checkpoint `51a627b` ran in manual hosted batch
+[39588428892](https://github.com/KiaroSama/Numera-Browser/actions/runs/39588428892),
+which failed on October 21 at 11:20 UTC: 28 checks passed; CodeQL and its two dependent
+verification checks failed, with three publication skips. Both native tiers passed all 50 Linux/
+51 Windows historical semantic proofs with fixed-byte restoration and current contracts.
 The exact prior-importer companion resolves the old pool swap's E0425 without changing the
 selected defect, production behavior or proof criteria. Shared identity helpers passed 123 frozen-original
 version/platform/page/CDP comparisons on both systems. All eight real browser SDK paths passed,
@@ -23,9 +23,10 @@ Ten original-derived batch-refusal cases retain indexed context, complete ordere
 validation-before-write byte preservation. The shared write-contract boundary passed all 270
 raw/model/shape/context/refusal comparisons on both systems. All 89 importer profile and 17
 envelope comparisons passed on both systems, after exact historical assertion failures and restoration.
-A separate claim-display correction and 1,011 unknown/foreign-record comparisons are prepared,
-not executed; ownership/state/read/release safety is unchanged. Both systems' four CLI time/memory
-log verdicts report no regression. Earlier timing overlaps and the vault timeout have no proved cause.
+All 1,011 unknown/foreign claim-description comparisons passed on both systems after historical
+failure and restoration; ownership/state/read/release safety is unchanged. A separate strict job-text
+correction has 54 comparisons prepared, not executed. Both systems' four CLI time/memory log verdicts
+report no regression. Earlier timing overlaps and the vault timeout have no proved cause.
 Native NaN/infinity refusal remains an explicit nonfinite difference. Full acceptance remains open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
@@ -533,8 +534,8 @@ source tests, and CI checks their regeneration for drift.
 ## Coverage and unfinished work
 
 [The source capability ledger](migration-coverage.json) retains all 907 frozen
-source occurrences and hashes. There are now 397 inspected target/test references,
-including 16 newly mapped session occurrences, with explicit remaining gaps:
+source occurrences and hashes. There are now 413 inspected target/test references,
+including 16 newly mapped job occurrences, with explicit remaining gaps:
 906 pending, one implemented, zero verified.
 It intentionally refuses default switch; references are not acceptance evidence.
 Alternative definitions retain separate deterministic IDs. The verified leaf cases

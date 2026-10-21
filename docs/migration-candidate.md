@@ -170,7 +170,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 397 individually inspected implementation/test
+The capability ledger now records 413 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -633,9 +633,9 @@ selected defects and proved the named CLI admission failure before fixed-byte re
 
 ## Acceptance status
 
-Latest source `d25e088` failed batch [39576202048](https://github.com/KiaroSama/Numera-Browser/actions/runs/39576202048):
+Latest source `51a627b` failed batch [39588428892](https://github.com/KiaroSama/Numera-Browser/actions/runs/39588428892):
 28 checks passed; only CodeQL and its two dependent verification checks failed, with three publication skips.
-Both native jobs passed 49 Linux/50 Windows historical semantic proofs with fixed-byte restoration.
+Both native jobs passed 50 Linux/51 Windows historical semantic proofs with fixed-byte restoration.
 The exact prior-importer companion clears the old pool swap's compiler failure while preserving its defect.
 Current contracts passed, including 106 importer, 270 shared write-contract and 123 identity comparisons,
 ten complete indexed batch-refusal comparisons and exact protected-byte preservation.
@@ -655,9 +655,9 @@ The shared write-contract boundary distinguishes raw JSON from a typed Profile, 
 key presence and retains explicit shapes, custom context and every ordered refusal; 270 observations
 passed on both systems. Importer repairs reuse existing numeric grammar and retain the first valid
 Unicode-decimal Chrome token and arbitrary-integer envelope guidance. Their 89 profile plus 17 envelope
-comparisons and two exact historical controls passed on both systems. A separate diagnostic-only
-claim correction has 1,011 unknown/foreign observations prepared, not executed. Sixteen nearest session
-references bring the total to 397; missing direct APIs, stricter safety and dynamic/numeric/fault gaps remain pending.
+comparisons and two exact historical controls passed on both systems. All 1,011 claim descriptions and
+historical failure/restoration controls passed on both systems. A strict job-text correction has 54 observations
+prepared, not executed. Sixteen nearest job references bring the total to 413; missing APIs and fault gaps remain pending.
 Nontext-ID present-profile outcomes and full scheduler acceptance remain incomplete. All 26
 scheduler mappings remain pending; no capability status is promoted by these narrow fixes.
 Native nonfinite refusal remains an explicit stronger difference, not full original parity.

@@ -91,7 +91,13 @@ fn read(path: &Path) -> io::Result<Map<String, Value>> {
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Map::new()),
         Err(error) => return Err(error),
     };
-    Ok(serde_json::from_slice::<Value>(&bytes)
+    let text = std::str::from_utf8(&bytes).map_err(|_| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Stored job record is not UTF-8; nothing was written",
+        )
+    })?;
+    Ok(serde_json::from_str::<Value>(text)
         .ok()
         .and_then(|v| v.as_object().cloned())
         .unwrap_or_default())
