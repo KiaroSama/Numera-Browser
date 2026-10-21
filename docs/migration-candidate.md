@@ -633,9 +633,10 @@ selected defects and proved the named CLI admission failure before fixed-byte re
 
 ## Acceptance status
 
-Latest completed source `4297b1f` ran in batch
-[39561550290](https://github.com/KiaroSama/Numera-Browser/actions/runs/39561550290).
-Both systems passed all 47 Linux/48 Windows historical semantic proofs with restoration,
+Latest source `0ef8c74` failed batch [39567977803](https://github.com/KiaroSama/Numera-Browser/actions/runs/39567977803):
+26 checks passed; both native jobs stopped at E0425 in the old pool-source swap before its assertion.
+The prepared exact prior-importer companion preserves the selected pool defect; compiler failure is not proof.
+Previous source `4297b1f` passed all 47 Linux/48 Windows historical semantic proofs with restoration,
 then current contracts, including 270 shared write-contract and 123 identity comparisons,
 ten complete indexed batch-refusal comparisons and exact protected-byte preservation.
 Earlier 268 ASCII validation cases, 24 core/HTTP legacy views and 16 stored-name refusals remain
@@ -644,7 +645,7 @@ did not recur and has no proved cause.
 Windows passed all four CLI time/memory comparisons. Linux list native12.670–411.152ms versus
 original155.006–161.573ms and vault-read native67.177–327.772ms versus original289.129–296.725ms
 remain inconclusive; all four memory comparisons passed. Earlier overlaps are not erased or diagnosed.
-No sample is trimmed or criterion relaxed. The batch had 27 passing checks; Linux performance,
+No sample is trimmed or criterion relaxed. That previous batch had 27 passing checks; Linux performance,
 CodeQL and dependent verification failed, with three publication skips. All eight real SDK paths passed,
 including Windows Playwright. Fifteen deterministic cleanup-failure controls and the exact prior
 runner's negative control passed on Windows (16 tests, 0.21 seconds). Operation/error-code/file-kind

@@ -7,12 +7,14 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 21, 2026
 
-The latest completed checkpoint `4297b1f` ran in manual hosted batch
-[39561550290](https://github.com/KiaroSama/Numera-Browser/actions/runs/39561550290),
-which failed on October 21 at 07:44 UTC: 27 checks passed, Linux performance and CodeQL
-with dependent verification failed, and three publication stages were skipped.
-Both native jobs passed all 47 Linux/48 Windows historical semantic proofs with fixed-byte
-restoration, followed by current acceptance. Shared identity helpers passed 123 frozen-original
+The latest completed checkpoint `0ef8c74` ran in manual hosted batch
+[39567977803](https://github.com/KiaroSama/Numera-Browser/actions/runs/39567977803),
+which failed on October 21 at 08:30 UTC: 26 checks passed; both native historical-proof jobs,
+CodeQL and dependent verification failed, with three publication skips. An old pool-source swap
+lacks the new importer's trim helper, causing E0425 before its semantic assertion. An exact prior
+importer companion is prepared; production behavior and proof criteria remain unchanged.
+The previous `4297b1f` passed all 47 Linux/48 Windows historical semantic proofs with fixed-byte
+restoration and current contracts. Shared identity helpers passed 123 frozen-original
 version/platform/page/CDP comparisons on both systems. All eight real browser SDK paths passed,
 including Windows Playwright. Fifteen deterministic cleanup-failure controls and the exact prior
 runner's negative control passed on Windows (16 tests, 0.21 seconds); the failed exit, original

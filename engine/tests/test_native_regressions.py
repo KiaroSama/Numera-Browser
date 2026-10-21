@@ -127,6 +127,23 @@ def test_schedule_history_preserves_text_failure_without_later_api_callers():
     assert not case['files'].keys() & case['companions'].keys()
 
 
+def test_pool_history_keeps_a_compatible_importer_without_replacing_the_selected_defect():
+    module = load()
+    cases = [case for case in module.REGRESSIONS if case['target'] == 'pool_parse_parity']
+    assert len(cases) == 1
+    case = cases[0]
+    assert case['test'] == 'pooled_proxy_text_boundaries_match_original_full_results'
+    assert case['symptom'] == 'Pooled proxy text boundaries differ'
+    assert case['commit'] == 'ef6ebe26ba183fbbd9892d077d70fdcd8f7f7c64'
+    assert case['files']['engine-rust/src/pool.rs'] == '5381266449dafc5eca9009fe1d900c3aed760da00a3855b8d122dc58772bb5ab'
+    assert case['files']['engine-rust/src/pool_normalize.rs'] == 'f97331c9da3246f9ad993df1cacfe80f9d59d5494fd6db4c9c8cd26b05cd17e7'
+    assert case['companions']['engine-rust/src/importers.rs'] == {
+        'commit': '4297b1f8e06f2ca0ae7617f2602bd5ed43d450d1',
+        'sha256': 'e04030f2743e3f77625e0428c28c5727aabf39091e90aa01351775d7a0d16572',
+    }
+    assert not case['files'].keys() & case['companions'].keys()
+
+
 def test_scheduler_row_history_requires_the_original_isolation_failure():
     module = load()
     cases = [case for case in module.REGRESSIONS

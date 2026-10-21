@@ -316,6 +316,10 @@ REGRESSIONS = (
                 'commit': '0147a3cafbab1c0912484db576bc5b5169b2dc75',
                 'sha256': '406542fa8f85431a0ef72a922b1815fbc149bac136f4ff291afaaf76c5a5fade',
             },
+            'engine-rust/src/importers.rs': {
+                'commit': '4297b1f8e06f2ca0ae7617f2602bd5ed43d450d1',
+                'sha256': 'e04030f2743e3f77625e0428c28c5727aabf39091e90aa01351775d7a0d16572',
+            },
         },
     },
     {
