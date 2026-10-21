@@ -6,7 +6,7 @@ use crate::storage::{
     repo::RepoError,
     schedules::{ScheduleStore, due_schedules},
 };
-use serde_json::{Map, Value, json};
+use serde_json::{Value, json};
 
 impl Warmup<'_> {
     pub fn run_due(
@@ -95,7 +95,7 @@ impl Warmup<'_> {
                 schedules.release(id)?;
                 return Err(error);
             }
-            schedules.record(id, Map::from_iter([("lastRun".into(), clock()?.into())]))?;
+            schedules.mark_run(id, clock()?)?;
             ran.push(id.to_owned());
         }
         event(

@@ -7,18 +7,19 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 21, 2026
 
-The latest completed checkpoint `b9d7399` ran in manual hosted batch
-[39508036328](https://github.com/KiaroSama/Numera-Browser/actions/runs/39508036328),
-which failed on October 20 at 22:53 UTC: Linux native contracts, CodeQL and required verification
-remain failed; 27 checks passed and three publication stages were skipped. Both systems proved
-the stored-extension historical admission failure, restored fixed bytes and passed all 60 current
-observations. The Windows native job passed; Linux failed configured-lock acceptance at the
-released-vault operation. Its timeout does not establish a KDF, lock or inherited-pipe cause.
-Prepared timeout diagnostics retain elapsed/idle, leader/pipe and safe file milestones without
-captured contents or larger budgets. Schedule reads now reject invalid UTF-8 before syntax fallback;
-59 original-derived cases and exact historical controls await execution. Both patched Cargo audits passed.
-Earlier lock/performance causes and full acceptance remain open; [candidate status](migration-candidate.md)
-retains 320 nearest references. Later passes do not diagnose earlier failures or relax criteria.
+The latest completed checkpoint `93db8f8` ran in manual hosted batch
+[39519262811](https://github.com/KiaroSama/Numera-Browser/actions/runs/39519262811),
+which failed on October 21 at 00:30 UTC only at CodeQL and required verification; 28 checks passed
+and three publication stages were skipped. Both native jobs passed all 59 schedule text cases,
+the capture lifecycle controls and configured-lock acceptance after 43 Linux and 44 Windows
+named historical failures and fixed-byte restoration. Passing now does not diagnose the earlier
+released-vault timeout. Safe elapsed/idle, leader/pipe and file-milestone diagnostics remain.
+The public `mark_run` API now reuses existing outcome bookkeeping and CLI completion; its
+36 finite original-derived cases and three native nonfinite refusals await execution. Native refuses
+NaN/infinity instead of silently writing null; this explicit difference is not complete nonfinite parity.
+Both patched Cargo audits passed. All four CLI time/memory log verdicts reported no regression
+on both systems; earlier overlap causes remain unproved. [Candidate status](migration-candidate.md)
+retains 346 nearest references. Full acceptance remains open; no criteria or defaults changed.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

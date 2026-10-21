@@ -633,21 +633,22 @@ selected defects and proved the named CLI admission failure before fixed-byte re
 
 ## Acceptance status
 
-Latest completed source `b9d7399` ran in batch
-[39508036328](https://github.com/KiaroSama/Numera-Browser/actions/runs/39508036328).
-Both systems proved the stored-extension historical admission failure, restored fixed bytes and
-passed all 60 current cases. Windows native acceptance passed; Linux failed the released-vault
-configured-lock operation with a capture timeout. CodeQL/required verification also failed;
-27 checks passed and three publication stages were skipped. The timeout's cause remains unproved.
-Prepared failure-only diagnostics retain actual elapsed/idle, deadline, leader/pipe observations
-and safe journal/config milestones without captured contents, retries or larger budgets. Existing
-live-child and escaped-writer controls check the diagnostic distinction and actual cleanup.
-The shared schedule reader now rejects invalid UTF-8 before ordinary JSON syntax fallback;
-59 public original-derived observations compare results, error categories and exact disk bytes,
-including validation-before-read and unknown-field preservation. An exact historical source
-control requires the named semantic failure. This prepared batch remains unexecuted.
-Both patched Cargo locks passed advisory checks. Earlier lock/performance causes and full
-migration acceptance remain open.
+Latest completed source `93db8f8` ran in batch
+[39519262811](https://github.com/KiaroSama/Numera-Browser/actions/runs/39519262811).
+Both native jobs passed 59 schedule text cases, capture lifecycle controls and configured locks,
+after 43 Linux and 44 Windows named historical failures and fixed-byte restoration. All 28
+nondependent checks passed; CodeQL/required verification failed and three publication stages
+were skipped. The earlier released-vault timeout's cause remains unproved; later success is not
+a diagnosis. Failure-only elapsed/idle, leader/pipe and safe file-milestone diagnostics remain.
+The public `mark_run` API now delegates finite timestamps through existing `record` bookkeeping,
+clearing only matching claims and retaining other fields. CLI completion reuses it; the server's
+combined startup/outcome commit is unchanged. One prepared observer compares 36 original
+finite results and exact disk bytes; three native controls reject NaN/infinity without mutation.
+The original permits nonfinite JSON tokens; native refusal is an explicit stronger difference,
+not full nonfinite parity. Exact historical test/CLI companions retain the prior text proof despite
+the newly callable API. These changes remain unexecuted. All 26 scheduler occurrence mappings
+retain pending status and concrete gaps, bringing nearest references to 346 without certifying
+any occurrence. Both patched Cargo audits passed; full migration acceptance remains open.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and

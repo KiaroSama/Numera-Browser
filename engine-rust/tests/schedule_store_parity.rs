@@ -162,6 +162,137 @@ with run_log('schedule-text-admission-oracle',parent/'logs') as log:
 }
 
 #[test]
+fn mark_run_matches_original_result_claim_clearing_and_exact_bytes()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{ownership::capture, storage::repo::RepoError};
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("schedule-mark-run")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.scheduler import ScheduleStore
+from run_logging import run_log
+base={'id':'fixture','profileId':'profile','everyHours':1,'minutes':5,
+      'preset':'general','enabled':True,'lastRun':None,'createdAt':0,
+      'claimedBy':'fixture-worker','claimedAt':123,
+      'lastOutcome':'retained','future':{'kept':['日本語',True]}}
+rows=[[],[base],[{**base,'claimedBy':None,'claimedAt':None}],
+      [base,{**base,'id':'other','lastRun':42}],
+      [base,{**base,'future':{'second':True}}]]
+raws=[json.dumps(value).encode('utf-8') for value in rows]
+raws += [b'{broken',None,bytes([255]),bytes([0xe2,0x82])]
+observed=[]
+with run_log('schedule-mark-run-oracle',parent/'logs') as log:
+    for raw in raws:
+        for sid in ['fixture','missing']:
+            for when in [0.0,1000.5]:
+                root=parent/str(len(observed));root.mkdir(parents=True)
+                store=ScheduleStore(root)
+                if raw is not None:store.path.write_bytes(raw)
+                try:result,error=store.mark_run(sid,when),None
+                except UnicodeDecodeError as exc:result,error=None,type(exc).__name__
+                after=store.path.read_bytes() if store.path.exists() else None
+                observed.append({'raw':list(raw) if raw is not None else None,
+                                 'id':sid,'when':when,'result':result,'error':error,
+                                 'after':list(after) if after is not None else None})
+    log.info('Observed public mark-run cases=%s',len(observed))
+    print(json.dumps(observed,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .arg(temporary.path().join("source"));
+    let original = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 262144,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(original.exit, 0, "Original mark-run observer failed");
+    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    assert_eq!(cases.len(), 36, "Public mark-run observations missing");
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        fs::create_dir(&root)?;
+        let path = root.join("schedules.json");
+        let raw: Option<Vec<u8>> = serde_json::from_value(case["raw"].clone())?;
+        if let Some(raw) = &raw {
+            fs::write(&path, raw)?;
+        }
+        let result = ScheduleStore::new(root).mark_run(
+            case["id"].as_str().ok_or("Schedule ID missing")?,
+            case["when"].as_f64().ok_or("Run timestamp missing")?,
+        );
+        match result {
+            Ok(value) => {
+                assert!(
+                    case["error"].is_null(),
+                    "Mark-run admission differs: case={index}"
+                );
+                assert_eq!(
+                    value.unwrap_or(Value::Null),
+                    case["result"],
+                    "Mark-run result differs: case={index}"
+                );
+            }
+            Err(RepoError::Io(error)) if error.kind() == std::io::ErrorKind::InvalidData => {
+                assert_eq!(case["error"], "UnicodeDecodeError");
+            }
+            Err(error) => return Err(error.into()),
+        }
+        let after: Option<Vec<u8>> = serde_json::from_value(case["after"].clone())?;
+        assert_eq!(
+            fs::read(&path).ok(),
+            after,
+            "Mark-run bytes differ: case={index}"
+        );
+        if !case["error"].is_null() {
+            assert_eq!(fs::read(&path).ok(), raw, "Refused mark-run changed bytes");
+        }
+    }
+    let root = temporary.path().join("nonfinite");
+    fs::create_dir(&root)?;
+    let path = root.join("schedules.json");
+    let raw = br#"[{"id":"fixture","lastRun":42,"claimedBy":"worker","claimedAt":123}]"#;
+    fs::write(&path, raw)?;
+    let store = ScheduleStore::new(root);
+    for when in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        let error = store
+            .mark_run("fixture", when)
+            .expect_err("Nonfinite run time became null");
+        assert_eq!(
+            error.to_string(),
+            "Schedule run time must be finite; nothing was written"
+        );
+        assert_eq!(
+            fs::read(&path)?,
+            raw,
+            "Nonfinite run time changed the claim"
+        );
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn schedule_claim_is_single_occurrence_and_record_clears_only_its_claim()
 -> Result<(), Box<dyn std::error::Error>> {
     let fixture: Value = serde_json::from_str(include_str!("fixtures/schedule-store.json"))?;

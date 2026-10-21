@@ -97,6 +97,31 @@ def test_settings_signature_companions_preserve_all_existing_proofs():
     assert not extension['files'].keys() & extension.get('companions', {}).keys()
 
 
+def test_schedule_history_preserves_text_failure_without_later_api_callers():
+    module = load()
+    cases = [case for case in module.REGRESSIONS if case['target'] == 'schedule_store_parity']
+    assert len(cases) == 1
+    case = cases[0]
+    assert case['test'] == 'schedule_text_admission_matches_original_without_replacing_bytes'
+    assert case['symptom'] == 'Schedule text admission differs'
+    assert case['commit'] == 'b9d7399732c140d6141f37633486fffd90a2e30a'
+    assert case['files'] == {
+        'engine-rust/src/storage/schedules.rs':
+            '749856bedd3df0be79cbd3853014fc75d24bb8b9320dcc9a09c32747ccf47527',
+    }
+    assert case['companions'] == {
+        'engine-rust/tests/schedule_store_parity.rs': {
+            'commit': '93db8f8b93d8b8e961bc548a3174da560c16c0b3',
+            'sha256': '0419aa623eb9ec63e9d442af7e683756e7d4e04436c56ef0537691c6386504a4',
+        },
+        'engine-rust/src/cli/schedule_commands.rs': {
+            'commit': '93db8f8b93d8b8e961bc548a3174da560c16c0b3',
+            'sha256': '8ecf3e0a949f9eedef112c9c49b7661468d167072dc7230fdeb6ff9ae7f72b52',
+        },
+    }
+    assert not case['files'].keys() & case['companions'].keys()
+
+
 @pytest.mark.parametrize('damage', [None, 'exit', 'empty', 'name', 'symptom', 'summary'])
 def test_failure_proof_requires_the_exact_production_assertion(damage):
     module = load()

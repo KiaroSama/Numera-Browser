@@ -136,6 +136,15 @@ impl ScheduleStore {
         }
         self.apply(id, outcome)
     }
+    pub fn mark_run(&self, id: &str, when: f64) -> Result<Option<Value>, RepoError> {
+        let when = serde_json::Number::from_f64(when).ok_or_else(|| {
+            RepoError::Message("Schedule run time must be finite; nothing was written".into())
+        })?;
+        self.record(
+            id,
+            Map::from_iter([("lastRun".into(), Value::Number(when))]),
+        )
+    }
     fn apply(&self, id: &str, patch: Map<String, Value>) -> Result<Option<Value>, RepoError> {
         let lock = DataLock::for_file(&self.path)?;
         let _guard = lock.acquire_configured()?;
