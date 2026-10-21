@@ -7,18 +7,21 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 21, 2026
 
-The latest completed checkpoint `d0d81cc` ran in manual hosted batch
-[39540339012](https://github.com/KiaroSama/Numera-Browser/actions/runs/39540339012),
-which failed on October 21 at 04:12 UTC only at CodeQL and dependent verification:
-28 checks passed and three publication stages were skipped. Both native jobs passed all
-46 Linux/47 Windows historical semantic proofs with fixed-byte restoration, followed by current
-acceptance. This includes 268 ASCII-control validation observations, 24 core/HTTP legacy views
-and 16 stored-name refusals. Legacy float names share six-significant-digit formatting in HTTP
-and duplicate-name admission without rewriting stored bytes. Four foreground CLI time/memory
-comparisons reported no regression on both systems; earlier overlapping ranges still have no
-proved cause. The earlier live-leader vault timeout did not recur; its cause remains unproved.
-Prepared batch-refusal acceptance adds ten original-derived cases for indexed error context,
-complete ordered problems and validation-before-write preservation; runtime evidence is pending.
+The latest completed checkpoint `10b4ffe` ran in manual hosted batch
+[39545840339](https://github.com/KiaroSama/Numera-Browser/actions/runs/39545840339),
+which failed on October 21 at 05:11 UTC: 27 checks passed, CodeQL/dependent verification and
+the Windows Playwright source step failed, and three publication stages were skipped.
+Both native jobs passed all 47 Linux/48 Windows historical semantic proofs with fixed-byte
+restoration, followed by current acceptance. Ten original-derived batch-refusal cases now verify
+indexed context, complete ordered problems and validation-before-write byte preservation.
+The Windows Playwright step passed both browser assertions, then failed temporary-directory
+cleanup with `PermissionError` after a clean process-tree result; its filesystem cause is unproved.
+Prepared failure-only diagnostics retain the failed exit and expose fixed operation/error codes
+without retries, permission changes or ignored cleanup failures. Shared native identity helpers
+and 123 frozen-original version/platform/page/CDP observations are also prepared, not yet executed.
+Earlier 268 ASCII validation, 24 core/HTTP legacy-view and 16 stored-name observations remain
+covered. Four foreground CLI time/memory comparisons reported no regression on both systems;
+earlier overlapping ranges and the earlier live-leader vault timeout still have no proved cause.
 Native NaN/infinity refusal remains an explicit nonfinite difference. Full acceptance remains open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
@@ -696,7 +699,11 @@ WARNING/ERROR report failures, and handler-level redaction protects credential-s
 values. Logging initialization failure falls back explicitly to stderr; handlers
 close on every path. Logs are local diagnostics, not bundled or committed; remove
 old run logs deliberately after diagnosis, and sanitize any approved support export.
-The original engine's logging policy remains unchanged.
+The original engine's logging policy remains unchanged. Failed owned temporary cleanup
+additionally records a fixed operation name, numeric OS error codes and lstat-derived
+file-kind/read-only/reparse flags, without arbitrary path names or exception text.
+The original cleanup exception still fails verification and retains the remaining root;
+no retry, permission change or ignored removal error is introduced.
 
 Algorithm redistribution notices are in
 [migration-random-notices.txt](migration-random-notices.txt). The maintainer-selected

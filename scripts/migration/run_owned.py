@@ -7,6 +7,7 @@ import os
 import queue
 import shutil
 import secrets
+import stat
 import subprocess
 import sys
 import threading
@@ -163,7 +164,30 @@ def run(command: list[str], wall: float, idle: float, logger, *, report_units: b
         if not clean:
             raise RuntimeError('Command process tree could not be proved empty')
         logger.info('Verification phase=remove-temp pid=%s path=%s', proc.pid, temporary)
-        shutil.rmtree(temporary)
+
+        def cleanup_error(function, path, exc_info):
+            error = exc_info[1]
+            operation = getattr(function, '__name__', '')
+            if operation not in ('unlink', 'rmdir', 'scandir', 'islink', 'lstat', 'open', 'close'):
+                operation = 'unknown'
+            number = lambda value: value if type(value) is int else None
+            kind, readonly, reparse = 'unknown', None, None
+            try:
+                details = os.lstat(path)
+                kind = ('link' if stat.S_ISLNK(details.st_mode) else
+                        'file' if stat.S_ISREG(details.st_mode) else
+                        'directory' if stat.S_ISDIR(details.st_mode) else 'other')
+                attributes = getattr(details, 'st_file_attributes', 0)
+                readonly = bool(attributes & stat.FILE_ATTRIBUTE_READONLY)
+                reparse = bool(attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+            except OSError:
+                pass
+            logger.error('Owned temp cleanup failed operation=%s errno=%s winerror=%s kind=%s readonly=%s reparse=%s',
+                         operation, number(getattr(error, 'errno', None)),
+                         number(getattr(error, 'winerror', None)), kind, readonly, reparse)
+            raise error.with_traceback(exc_info[2])
+
+        shutil.rmtree(temporary, onerror=cleanup_error)
         logger.info('Owned verification temp removed path=%s', temporary)
 
 

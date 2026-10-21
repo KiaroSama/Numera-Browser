@@ -633,20 +633,23 @@ selected defects and proved the named CLI admission failure before fixed-byte re
 
 ## Acceptance status
 
-Latest completed source `d0d81cc` ran in batch
-[39540339012](https://github.com/KiaroSama/Numera-Browser/actions/runs/39540339012).
-Both native jobs passed all 46 Linux/47 Windows historical semantic proofs with restoration,
-then current acceptance: 268 ASCII-control validation cases, 24 core/HTTP legacy read views
-and 16 stored-name refusals. Legacy float names share six-significant-digit formatting in HTTP
-and duplicate-name protection without rewriting stored bytes. File-only logging/configured-lock
-acceptance passed again; the earlier 5,010 ms vault timeout did not recur and has no proved cause.
+Latest completed source `10b4ffe` ran in batch
+[39545840339](https://github.com/KiaroSama/Numera-Browser/actions/runs/39545840339).
+Both native jobs passed all 47 Linux/48 Windows historical semantic proofs with restoration,
+then current acceptance, including ten complete indexed batch-refusal comparisons and exact
+protected-byte preservation. Earlier 268 ASCII validation cases, 24 core/HTTP legacy views and
+16 stored-name refusals remain covered. File-only logging/configured-lock acceptance passed;
+the earlier 5,010 ms vault timeout did not recur and has no proved cause.
 All four foreground CLI time/memory logs reported no regression on both systems. Earlier Linux
 create 8.475–176.660 ms versus original 173.189–176.620 ms and list 13.760–179.969 ms versus
 165.721–173.239 ms remain inconclusive observations, not erased or diagnosed by later passes.
-No sample is trimmed or criterion relaxed. The batch had 28 passing checks, failed CodeQL and
-dependent verification, and three skipped publication stages. Prepared batch-refusal acceptance
-adds ten immutable-original cases for singleton/indexed context, all ordered problems, competing
-invalid profiles and policy precedence with exact-byte preservation; runtime proof is pending.
+No sample is trimmed or criterion relaxed. The batch had 27 passing checks, failed CodeQL,
+dependent verification and the Windows Playwright source step, with three publication skips.
+Both source browser assertions passed before temporary cleanup raised `PermissionError`, after
+clean tree/reader settlement. No filesystem cause is established. Prepared failure-only operation,
+error-code and file-kind diagnostics retain the failed exit, with no retry or permission changes.
+Shared native identity helpers and 123 immutable-original version/platform/page/CDP observations
+are also prepared; their runtime acceptance remains pending.
 Nontext-ID present-profile outcomes and full scheduler acceptance remain incomplete. All 26
 scheduler mappings remain pending; no capability status is promoted by these narrow fixes.
 Native nonfinite refusal remains an explicit stronger difference, not full original parity.

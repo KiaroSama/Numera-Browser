@@ -5,14 +5,6 @@ use std::io::{self, Write};
 
 pub fn config(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
     let metadata = identity::metadata(fp)?;
-    let full = if fp.chrome_version.matches('.').count() == 3 {
-        fp.chrome_version.clone()
-    } else {
-        format!(
-            "{}.0.0.0",
-            fp.chrome_version.split('.').next().unwrap_or("")
-        )
-    };
     let fields = [
         ("platform", serde_json::to_value(&fp.platform)?),
         ("uaPlatform", fp.ch_platform.trim_matches('"').into()),
@@ -21,10 +13,10 @@ pub fn config(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
             "platformVersion",
             identity::platform_version(&fp.os, &fp.os_version)?.into(),
         ),
-        ("fullVersion", full.into()),
+        ("fullVersion", identity::full_version(fp).into()),
         ("isMobile", fp.is_mobile.into()),
         ("architecture", metadata["architecture"].clone()),
-        ("hasUaData", (fp.os != "ios").into()),
+        ("hasUaData", identity::sends_client_hints(fp).into()),
         ("deviceModel", serde_json::to_value(&fp.device_model)?),
         ("hardwareConcurrency", fp.hardware_concurrency.into()),
         ("deviceMemory", fp.device_memory.clone()),
