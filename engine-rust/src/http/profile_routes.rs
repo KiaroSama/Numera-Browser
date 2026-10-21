@@ -167,35 +167,17 @@ const TEXT_FIELDS: &[&str] = &[
     "dns",
 ];
 const LIST_FIELDS: &[&str] = &["tags", "ipBased", "clearOnStart", "switchedOff"];
-pub(super) fn readable(mut profile: Value) -> Result<Value, RepoError> {
-    let object = profile.as_object_mut().ok_or_else(|| {
-        RepoError::InvalidRecord("Stored dashboard profile is not an object".into())
-    })?;
-    for (field, value) in object.iter_mut() {
-        if TEXT_FIELDS.contains(&field.as_str()) {
-            *value = match value {
-                Value::String(_) => continue,
-                Value::Bool(value) => value.to_string().into(),
-                Value::Number(value) => value.to_string().into(),
-                _ => "".into(),
-            };
-        } else if LIST_FIELDS.contains(&field.as_str()) {
-            *value = Value::Array(
-                value
-                    .as_array()
-                    .map(|values| {
-                        values
-                            .iter()
-                            .filter(|value| value.is_string())
-                            .cloned()
-                            .collect()
-                    })
-                    .unwrap_or_default(),
-            );
-        }
+pub(super) fn readable(profile: Value) -> Result<Value, RepoError> {
+    if !profile.is_object() {
+        return Err(RepoError::InvalidRecord(
+            "Stored dashboard profile is not an object".into(),
+        ));
     }
-    object.entry("name").or_insert("".into());
-    Ok(profile)
+    Ok(crate::read_view::readable_with(
+        &profile,
+        TEXT_FIELDS,
+        LIST_FIELDS,
+    ))
 }
 fn relative_time(value: &Value, now: f64) -> Result<String, RepoError> {
     if !truth(value) {

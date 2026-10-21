@@ -200,12 +200,10 @@ impl ProfileRepo {
                         .as_str()
                         .filter(|id| !id.is_empty())
                         .or_else(|| path.file_stem().and_then(|stem| stem.to_str()));
-                    let name = match &value["name"] {
-                        Value::String(name) => name.clone(),
-                        Value::Bool(value) => value.to_string(),
-                        Value::Number(value) => value.to_string(),
-                        _ => String::new(),
-                    };
+                    let name = crate::read_view::readable_value("name", &value["name"])
+                        .as_str()
+                        .unwrap_or("")
+                        .to_owned();
                     if let Some(id) = id {
                         held.entry(id.into()).or_default().push(name);
                     }

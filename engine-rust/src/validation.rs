@@ -39,12 +39,22 @@ pub(crate) fn repr(value: &Value) -> String {
             } else {
                 '\''
             };
-            let body = v
-                .replace('\\', "\\\\")
-                .replace(quote, &format!("\\{quote}"))
-                .replace('\n', "\\n")
-                .replace('\r', "\\r")
-                .replace('\t', "\\t");
+            let mut body = String::new();
+            for character in v.chars() {
+                match character {
+                    '\n' => body.push_str("\\n"),
+                    '\r' => body.push_str("\\r"),
+                    '\t' => body.push_str("\\t"),
+                    c if c == '\\' || c == quote => {
+                        body.push('\\');
+                        body.push(c);
+                    }
+                    c if c.is_ascii_control() => {
+                        body.push_str(&format!("\\x{:02x}", u32::from(c)));
+                    }
+                    c => body.push(c),
+                }
+            }
             format!("{quote}{body}{quote}")
         }
         Value::Array(v) => format!("[{}]", v.iter().map(repr).collect::<Vec<_>>().join(", ")),

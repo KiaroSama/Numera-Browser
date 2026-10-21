@@ -76,6 +76,79 @@ with run_log('screen-grammar-oracle',root/'logs') as log:
 }
 
 #[test]
+fn ascii_refusal_representation_matches_original_without_exposing_secret_values()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("ascii-refusal-representation")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.write_contract import profile_problems,DASHBOARD_PATCH
+from run_logging import run_log
+values=[chr(code) for code in range(128)]
+values += ["'",'"',"'\"",'\\',"a'\"\\\n\t\r\x00z",'x'*35+'\x1b'+'y'*20]
+observed=[]
+with run_log('ascii-refusal-representation-oracle',parent/'logs') as log:
+    for value in values:
+        for name in [[value],{'nested':[value,True,None]}]:
+            record={'name':name,'proxy':{'password':['private-control-'+value],
+                                       'pass':{'private-control':value}}}
+            before=json.dumps(record,ensure_ascii=True)
+            expected=profile_problems(record,kind=DASHBOARD_PATCH)
+            assert json.dumps(record,ensure_ascii=True)==before
+            assert len(expected)==3 and all('private-control' not in error for error in expected)
+            observed.append({'input':record,'expected':expected})
+    log.info('Observed ASCII refusal cases=%s',len(observed))
+    print(json.dumps(observed,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .arg(temporary.path())
+        .env("PYTHONUTF8", "1");
+    let original = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 524288,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(original.exit, 0, "Original refusal observer failed");
+    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    assert_eq!(cases.len(), 268, "ASCII refusal observations missing");
+    for (index, case) in cases.iter().enumerate() {
+        let input = case["input"].clone();
+        let actual = profile_problems(&input, "dashboard patch")?;
+        assert_eq!(
+            serde_json::to_value(actual)?,
+            case["expected"],
+            "ASCII refusal representation differs: case={index}"
+        );
+        assert_eq!(input, case["input"], "Validation changed its input");
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn uncoerced_write_validation_matches_source() -> Result<(), Box<dyn std::error::Error>> {
     let oracle: Value = serde_json::from_str(include_str!("fixtures/validation.json"))?;
     let cases = oracle["cases"]

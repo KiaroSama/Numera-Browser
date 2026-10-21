@@ -22,7 +22,12 @@ def load():
     helper_spec.loader.exec_module(helper)
     from unittest.mock import patch
 
-    with patch.dict(sys.modules, {'native_settings_history': helper}):
+    cases_spec = importlib.util.spec_from_file_location(
+        'native_regression_cases', ROOT / 'scripts/ci/native_regression_cases.py')
+    cases = importlib.util.module_from_spec(cases_spec)
+    cases_spec.loader.exec_module(cases)
+    with patch.dict(sys.modules, {'native_settings_history': helper,
+                                 'native_regression_cases': cases}):
         spec.loader.exec_module(module)
     return module
 
@@ -31,7 +36,7 @@ def test_option_reader_companions_preserve_selected_defects_and_prior_snapshots(
     module = load()
     current = {(case['target'], case['test'], case['commit']): case for case in module._STORAGE_REGRESSIONS}
     original_tree = ast.parse(
-        (ROOT / 'scripts/ci/native_regressions.py').read_text(encoding='utf-8'))
+        (ROOT / 'scripts/ci/native_regression_cases.py').read_text(encoding='utf-8'))
     first_registry = next(node.value for node in original_tree.body
                           if isinstance(node, ast.Assign)
                           and any(isinstance(target, ast.Name)
@@ -135,6 +140,34 @@ def test_scheduler_row_history_requires_the_original_isolation_failure():
         'files': {'engine-rust/src/http/scheduler.rs':
                   '3e0e0e7fc208acc286c5006d15d172658df9e08078192a19c7c42e62c39d4a0c'},
     }
+
+
+def test_ascii_refusal_history_requires_the_shared_representation_failure():
+    module = load()
+    cases = [case for case in module.REGRESSIONS
+             if case['test'] == 'ascii_refusal_representation_matches_original_without_exposing_secret_values']
+    assert cases == [{
+        'target': 'validation_parity',
+        'test': 'ascii_refusal_representation_matches_original_without_exposing_secret_values',
+        'symptom': 'ASCII refusal representation differs',
+        'commit': '65f5dfd15f2a4b6cc7fd375e858a76b153c83862',
+        'files': {'engine-rust/src/validation.rs':
+                  'd505c76357437baee6a8ef76d7626f099adbf59b8f2829cd8b4dfc73c1e8d4e6'},
+    }]
+
+
+def test_legacy_read_history_requires_the_existing_http_assertion():
+    module = load()
+    cases = [case for case in module.REGRESSIONS
+             if case['test'] == 'read_view::legacy_read_views_match_original_core_http_and_name_admission']
+    assert cases == [{
+        'target': 'profile_read_parity',
+        'test': 'read_view::legacy_read_views_match_original_core_http_and_name_admission',
+        'symptom': 'Legacy HTTP read view differs',
+        'commit': '65f5dfd15f2a4b6cc7fd375e858a76b153c83862',
+        'files': {'engine-rust/src/http/profile_routes.rs':
+                  '9c3fcf9caf0bc6fa97ba48b62341b527fb1bc6f017e3859720a257b8d88bd202'},
+    }]
 
 
 @pytest.mark.parametrize('damage', [None, 'exit', 'empty', 'name', 'symptom', 'summary'])

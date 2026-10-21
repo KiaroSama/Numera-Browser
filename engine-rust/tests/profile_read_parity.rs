@@ -10,6 +10,8 @@ use std::{
 };
 use tower::ServiceExt;
 mod common;
+#[path = "profile_read_parity/read_view.rs"]
+mod read_view;
 
 #[test]
 fn relative_activity_http_matches_original_without_rewriting_storage()
