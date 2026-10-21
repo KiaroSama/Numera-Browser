@@ -10,7 +10,7 @@ import re
 import subprocess
 import sys
 
-from native_regression_cases import REGRESSIONS
+from native_regression_cases import CURRENT_CALLER_REGRESSIONS, REGRESSIONS
 
 
 # Option-returning historical secret readers require their coherent caller group.
@@ -51,7 +51,8 @@ REGRESSIONS = tuple(
 # Settings signature swaps must keep all affected historical callers coherent.
 import native_settings_history
 _STORAGE_REGRESSIONS = REGRESSIONS
-REGRESSIONS = native_settings_history.compatible(REGRESSIONS, _STORAGE_READERS)
+_SETTINGS_REGRESSIONS = native_settings_history.compatible(REGRESSIONS, _STORAGE_READERS)
+REGRESSIONS = _SETTINGS_REGRESSIONS + CURRENT_CALLER_REGRESSIONS
 
 
 def git(root: Path, *arguments: str) -> bytes:

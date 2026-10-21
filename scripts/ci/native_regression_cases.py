@@ -545,3 +545,17 @@ REGRESSIONS = (
         },
     },
 )
+
+# These sources use current caller signatures and must follow compatibility overlays.
+CURRENT_CALLER_REGRESSIONS = (
+    {
+        'target': 'repo_batch_parity',
+        'test': 'complete_batch_refusals_match_original_index_order_and_preserved_bytes',
+        'symptom': 'Complete indexed batch refusal differs',
+        'commit': 'd0d81cc6c173c302520f107061f53b57ff0ce885',
+        'files': {
+            'engine-rust/src/storage/repo_write.rs':
+                'ce4d904503fd52f828896f9abd840e76aee1e0131f292064fd99a875a864c53f',
+        },
+    },
+)

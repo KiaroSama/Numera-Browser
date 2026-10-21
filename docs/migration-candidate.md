@@ -633,24 +633,22 @@ selected defects and proved the named CLI admission failure before fixed-byte re
 
 ## Acceptance status
 
-Latest completed source `65f5dfd` ran in batch
-[39532457778](https://github.com/KiaroSama/Numera-Browser/actions/runs/39532457778).
-All seven scheduler row-isolation observations passed on both systems after the exact historical
-assertion failed and fixed bytes were restored. All 44 Linux/45 Windows historical proofs completed.
-File-only logging controls and configured-lock acceptance also passed on both systems. The earlier
-5,010 ms live-leader vault timeout did not recur; its stalled stage remains unproved. Fixed-label
-`native-vault-enable` logs distinguish lock/config/derivation/journal/verified-commit boundaries,
-without credentials or pipe heartbeats; no retention policy is installed. Windows native passed.
-Linux failed performance: create ranged 8.475–176.660 ms versus original 173.189–176.620 ms;
-list ranged 13.760–179.969 ms versus 165.721–173.239 ms. Both overlap, so remain inconclusive;
-no sample is trimmed or criterion relaxed. Memory and the other two Linux scenarios passed, as did
-all four Windows scenarios. The batch had 27 passing checks, failed CodeQL/required verification
-and three skipped publication stages. Prepared shared ASCII-control representation and legacy
-read views add 268 validation cases, 24 core/HTTP views and 16 stored-name refusals with pinned
-historical semantic proofs. Legacy float names reuse six-significant-digit general formatting in
-both HTTP views and duplicate-name protection, without rewriting stored bytes. Runtime acceptance
-is pending. Nontext-ID present-profile outcomes and full scheduler acceptance remain incomplete.
-All 26 scheduler mappings remain pending; no capability status is promoted by these narrow fixes.
+Latest completed source `d0d81cc` ran in batch
+[39540339012](https://github.com/KiaroSama/Numera-Browser/actions/runs/39540339012).
+Both native jobs passed all 46 Linux/47 Windows historical semantic proofs with restoration,
+then current acceptance: 268 ASCII-control validation cases, 24 core/HTTP legacy read views
+and 16 stored-name refusals. Legacy float names share six-significant-digit formatting in HTTP
+and duplicate-name protection without rewriting stored bytes. File-only logging/configured-lock
+acceptance passed again; the earlier 5,010 ms vault timeout did not recur and has no proved cause.
+All four foreground CLI time/memory logs reported no regression on both systems. Earlier Linux
+create 8.475–176.660 ms versus original 173.189–176.620 ms and list 13.760–179.969 ms versus
+165.721–173.239 ms remain inconclusive observations, not erased or diagnosed by later passes.
+No sample is trimmed or criterion relaxed. The batch had 28 passing checks, failed CodeQL and
+dependent verification, and three skipped publication stages. Prepared batch-refusal acceptance
+adds ten immutable-original cases for singleton/indexed context, all ordered problems, competing
+invalid profiles and policy precedence with exact-byte preservation; runtime proof is pending.
+Nontext-ID present-profile outcomes and full scheduler acceptance remain incomplete. All 26
+scheduler mappings remain pending; no capability status is promoted by these narrow fixes.
 Native nonfinite refusal remains an explicit stronger difference, not full original parity.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).

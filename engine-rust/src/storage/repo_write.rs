@@ -32,8 +32,13 @@ impl ProfileRepo {
         policy: &str,
         now: f64,
     ) -> Result<Vec<Profile>, RepoError> {
-        for profile in &profiles {
-            Self::validate_write(profile)?;
+        for (index, profile) in profiles.iter().enumerate() {
+            let context = if profiles.len() > 1 {
+                format!("profiles[{index}]")
+            } else {
+                "profile".into()
+            };
+            Self::validate_write(profile, &context)?;
         }
         let root = DataLock::transaction(&self.root)?;
         let _root = root.acquire_configured()?;
@@ -165,7 +170,7 @@ impl ProfileRepo {
         self.save_many(pending, changes, policy, now)
     }
 
-    fn validate_write(profile: &Profile) -> Result<(), RepoError> {
+    fn validate_write(profile: &Profile, context: &str) -> Result<(), RepoError> {
         let problems = validation::profile_problems(
             &serde_json::to_value(profile)
                 .map_err(|_| RepoError::Message("Profile cannot be serialized".into()))?,
@@ -174,7 +179,14 @@ impl ProfileRepo {
         .map_err(|_| RepoError::Message("Field policy is unreadable".into()))?;
         if !problems.is_empty() {
             return Err(RepoError::Message(
-                problems.into_iter().take(8).collect::<Vec<_>>().join("; "),
+                problems
+                    .into_iter()
+                    .map(|problem| match problem.strip_prefix("profile:") {
+                        Some(message) => format!("{context}:{message}"),
+                        None => problem,
+                    })
+                    .collect::<Vec<_>>()
+                    .join("; "),
             ));
         }
         Ok(())

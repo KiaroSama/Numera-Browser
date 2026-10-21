@@ -7,21 +7,19 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 21, 2026
 
-The latest completed checkpoint `65f5dfd` ran in manual hosted batch
-[39532457778](https://github.com/KiaroSama/Numera-Browser/actions/runs/39532457778),
-which failed: Linux native performance, CodeQL and required verification remain failed;
-27 checks passed and three publication stages were skipped. Seven scheduler row-isolation cases,
-the exact historical failure/restoration, file-only logger failure controls and configured-lock
-acceptance passed on both systems. All 44 Linux and 45 Windows historical proofs completed.
-The earlier 5,010 ms live-leader vault timeout did not recur; its cause remains unproved.
-Private fixed-label enable logs distinguish lock/config/derivation/journal/commit boundaries without
-resetting capture deadlines. Linux create/list time ranges overlap the original, so both remain
-inconclusive under the unchanged criterion; memory and the other two scenarios passed. Windows
-reported no regression in all four scenarios. Native NaN/infinity refusal remains an explicit
-nonfinite difference. Prepared shared ASCII-control refusals and legacy read views add 268
-validation observations, 24 core/HTTP views and 16 stored-name refusals, with pinned historical
-semantic proofs. Legacy float names reuse the original six-significant-digit display for both
-HTTP and duplicate-name admission; runtime acceptance is pending. Full acceptance remains open.
+The latest completed checkpoint `d0d81cc` ran in manual hosted batch
+[39540339012](https://github.com/KiaroSama/Numera-Browser/actions/runs/39540339012),
+which failed on October 21 at 04:12 UTC only at CodeQL and dependent verification:
+28 checks passed and three publication stages were skipped. Both native jobs passed all
+46 Linux/47 Windows historical semantic proofs with fixed-byte restoration, followed by current
+acceptance. This includes 268 ASCII-control validation observations, 24 core/HTTP legacy views
+and 16 stored-name refusals. Legacy float names share six-significant-digit formatting in HTTP
+and duplicate-name admission without rewriting stored bytes. Four foreground CLI time/memory
+comparisons reported no regression on both systems; earlier overlapping ranges still have no
+proved cause. The earlier live-leader vault timeout did not recur; its cause remains unproved.
+Prepared batch-refusal acceptance adds ten original-derived cases for indexed error context,
+complete ordered problems and validation-before-write preservation; runtime evidence is pending.
+Native NaN/infinity refusal remains an explicit nonfinite difference. Full acceptance remains open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

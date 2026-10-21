@@ -69,8 +69,8 @@ def test_settings_signature_companions_preserve_all_existing_proofs():
     module = load()
     history = module.native_settings_history
     previous = module._STORAGE_REGRESSIONS
-    assert len(module.REGRESSIONS) == len(previous) + 2
-    for before, after in zip(previous, module.REGRESSIONS):
+    assert len(module._SETTINGS_REGRESSIONS) == len(previous) + 2
+    for before, after in zip(previous, module._SETTINGS_REGRESSIONS):
         assert {key: after[key] for key in before if key != 'companions'} == {
             key: value for key, value in before.items() if key != 'companions'}
         for name, source in before.get('companions', {}).items():
@@ -84,13 +84,13 @@ def test_settings_signature_companions_preserve_all_existing_proofs():
                     assert after['companions'][name] == {'commit': history.COMMIT, 'sha256': expected}
         else:
             assert after == before
-    added = module.REGRESSIONS[-2]
+    added = module._SETTINGS_REGRESSIONS[-2]
     assert added['target'] == 'cli_settings_parity'
     assert added['test'] == 'strict_settings::settings_commands_preserve_original_decoding_refusals_and_early_errors'
     assert added['symptom'] == 'Strict settings CLI admission differs'
     assert added['commit'] == history.COMMIT
     assert added['files'] == history.SOURCES
-    extension = module.REGRESSIONS[-1]
+    extension = module._SETTINGS_REGRESSIONS[-1]
     assert extension == {
         'target': 'config_parity',
         'test': 'extension_admission::extension_setter_preserves_original_stored_set_admission_and_cache',
@@ -168,6 +168,21 @@ def test_legacy_read_history_requires_the_existing_http_assertion():
         'files': {'engine-rust/src/http/profile_routes.rs':
                   '9c3fcf9caf0bc6fa97ba48b62341b527fb1bc6f017e3859720a257b8d88bd202'},
     }]
+
+
+def test_current_caller_history_is_appended_after_compatibility_overlays():
+    module = load()
+    expected = ({
+        'target': 'repo_batch_parity',
+        'test': 'complete_batch_refusals_match_original_index_order_and_preserved_bytes',
+        'symptom': 'Complete indexed batch refusal differs',
+        'commit': 'd0d81cc6c173c302520f107061f53b57ff0ce885',
+        'files': {'engine-rust/src/storage/repo_write.rs':
+                  'ce4d904503fd52f828896f9abd840e76aee1e0131f292064fd99a875a864c53f'},
+    },)
+    assert module.CURRENT_CALLER_REGRESSIONS == expected
+    assert module.REGRESSIONS == module._SETTINGS_REGRESSIONS + expected
+    assert not any(case.get('companions') for case in expected)
 
 
 @pytest.mark.parametrize('damage', [None, 'exit', 'empty', 'name', 'symptom', 'summary'])
