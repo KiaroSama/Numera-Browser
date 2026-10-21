@@ -141,6 +141,8 @@ def prove(root: Path, original: Path, logger) -> None:
     os.environ.update({ENVIRONMENT: str(original), 'PYTHONDONTWRITEBYTECODE': '1',
                        'CARGO_INCREMENTAL': '1'})
     try:
+        # Historical swaps prove semantics without reoptimizing the application each time.
+        # The current build retains the manifest's optimized crypto configuration.
         applicable = (case for case in REGRESSIONS
                       if case.get('platform', sys.platform) == sys.platform)
         for index, case in enumerate(applicable):
@@ -151,10 +153,14 @@ def prove(root: Path, original: Path, logger) -> None:
                     if index == 0:
                         # Cold dependency compilation belongs to the outer build budget.
                         subprocess.run(['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
-                                        '--locked', '--offline', '--test', case['target'], '--no-run'],
+                                        '--locked', '--offline', '--config',
+                                        'profile.dev.package.numera-core.opt-level=0',
+                                        '--test', case['target'], '--no-run'],
                                        stdin=subprocess.DEVNULL, check=True)
                     command = ['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
-                               '--locked', '--offline', '--test', case['target'], '--', case['test'],
+                               '--locked', '--offline', '--config',
+                               'profile.dev.package.numera-core.opt-level=0',
+                               '--test', case['target'], '--', case['test'],
                                '--exact', '--test-threads=1', '--color=never']
                     code = run(command, 180, 90, logger)
                 evidence.verify(code)

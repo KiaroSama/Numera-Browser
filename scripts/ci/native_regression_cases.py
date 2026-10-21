@@ -553,6 +553,16 @@ REGRESSIONS = (
 # These sources use current caller signatures and must follow compatibility overlays.
 CURRENT_CALLER_REGRESSIONS = (
     {
+        'target': 'bulk_parity',
+        'test': 'selection::selection_matches_original_complete_profile_membership',
+        'symptom': 'Bulk profile selection differs',
+        'commit': 'd7227856f1fc7bec01b66d3737d3cbb729115623',
+        'files': {
+            'engine-rust/src/bulk.rs':
+                'e425d6fd6a60615996504fb5c58758a895bc574126609650f9fafeee62938d09',
+        },
+    },
+    {
         'target': 'profile_http_import_parity',
         'test': 'tags::importer_tags_match_original_whitespace_and_group_display',
         'symptom': 'Imported tag display differs',

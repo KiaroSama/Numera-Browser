@@ -17,16 +17,21 @@ pub fn select(
     if everything {
         return profiles.to_vec();
     }
+    let tagged = |profile: &Profile| {
+        tag.is_some_and(|tag| !tag.is_empty() && profile.tags.iter().any(|value| value == tag))
+    };
     let mut chosen = profiles
         .iter()
-        .filter(|p| tag.is_some_and(|tag| !tag.is_empty() && p.tags.iter().any(|v| v == tag)))
+        .filter(|profile| tagged(profile))
         .cloned()
         .collect::<Vec<_>>();
+    // Source membership is against the initial tag matches, not earlier references.
+    // A typed profile equals a tag match only if it also matches that tag.
     for profile in profiles {
         if references
             .iter()
             .any(|v| v == &profile.id || profile.name == v.as_str())
-            && !chosen.iter().any(|p| p.id == profile.id)
+            && !tagged(profile)
         {
             chosen.push(profile.clone());
         }

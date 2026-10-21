@@ -7,12 +7,12 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 21, 2026
 
-The latest completed checkpoint `965ba02` ran in manual hosted batch
-[39594474327](https://github.com/KiaroSama/Numera-Browser/actions/runs/39594474327),
-which failed on October 21 at 12:10 UTC: 27 checks passed; Windows native contracts, CodeQL
-and its two dependent verification checks failed, with three publication skips. Both native tiers
-passed all 51 Linux/52 Windows historical semantic proofs with fixed-byte restoration.
-Linux current contracts passed; Windows finished with one failed configured-lock test.
+The latest completed checkpoint `d722785` ran in manual hosted batch
+[39610253608](https://github.com/KiaroSama/Numera-Browser/actions/runs/39610253608),
+which failed on October 21 at 14:04 UTC: 26 checks passed; both native tiers, CodeQL
+and its two dependent checks failed, with three publication skips. Both native build owners
+reached their unchanged 900-second wall limit after 31 Linux/16 Windows historical proofs.
+The new importer comparisons and optimized current-vault acceptance did not run.
 The exact prior-importer companion resolves the old pool swap's E0425 without changing the
 selected defect, production behavior or proof criteria. Shared identity helpers passed 123 frozen-original
 version/platform/page/CDP comparisons on both systems. All eight real browser SDK paths passed,
@@ -30,9 +30,10 @@ comparisons passed on both systems after historical failure/restoration. The Win
 at 5,032 ms, idle limit 5,000 ms, during released-vault descriptor creation with a live leader;
 settlement was clean and neither journal nor config descriptor had been published. Entropy versus
 key-derivation versus scheduling is not yet resolved. Development/test-only basic optimization of
-numera-core and SHA256, plus fixed private phase labels, is prepared; cryptographic parameters,
-checks, timeouts and release settings stay unchanged. Another 38 tag/display and four complete-refusal
-importer comparisons are prepared, not executed. Linux's four CLI time/memory log verdicts report no
+numera-core and SHA256 made repeated historical recompilation exceed the build wall. A command-local
+historical-only application optimization override is prepared; current crypto, release settings,
+checks and deadlines stay unchanged. The 38 tag/display, four complete-refusal importer comparisons
+and 83 bulk-selection comparisons remain unexecuted. Linux's four CLI time/memory log verdicts report no
 regression; Windows entry/performance acceptance did not run after the failed contract step.
 Earlier timing overlaps and vault timeout causes remain unproved.
 Native NaN/infinity refusal remains an explicit nonfinite difference. Full acceptance remains open.
@@ -542,7 +543,7 @@ source tests, and CI checks their regeneration for drift.
 ## Coverage and unfinished work
 
 [The source capability ledger](migration-coverage.json) retains all 907 frozen
-source occurrences and hashes. There are now 413 inspected target/test references,
+source occurrences and hashes. There are now 417 inspected target/test references,
 including 16 newly mapped job occurrences, with explicit remaining gaps:
 906 pending, one implemented, zero verified.
 It intentionally refuses default switch; references are not acceptance evidence.

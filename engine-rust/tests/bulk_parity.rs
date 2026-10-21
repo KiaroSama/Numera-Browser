@@ -2,6 +2,8 @@ use numera_core::{browser::adapter::Adapter, bulk, models::Profile};
 use serde_json::{Value, json};
 use std::{path::Path, process::Command, time::Duration};
 mod common;
+#[path = "bulk_parity/selection.rs"]
+mod selection;
 fn strings(value: &Value) -> Vec<String> {
     value
         .as_array()
