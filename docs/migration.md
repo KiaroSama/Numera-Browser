@@ -1,24 +1,24 @@
 # Rust and TypeScript migration
 
-The accepted boundary is [ADR0001](adr/0001-parity-gated-rust-migration.md).
-The existing Python application remains the default and rollback implementation.
+The accepted boundary is [ADR0001](adr/0001-parity-gated-rust-migration.md); Python remains the default and rollback implementation.
 `engine-rust` includes native domain/persistence services and an explicitly enabled
 [candidate executable](migration-candidate.md), **not an installed replacement**.
 Passing library or narrow entrypoint tests does not certify a finished migration.
 
-## Current integration status — October 20, 2026
+## Current integration status — October 21, 2026
 
-The latest completed checkpoint `b8e589f` ran in manual hosted batch
-[39496109626](https://github.com/KiaroSama/Numera-Browser/actions/runs/39496109626),
-which failed on October 20 at 21:24 UTC at CodeQL and required verification; 28 other jobs passed.
-Both authoritative Cargo audits passed after compatible TLS patches, without advisory waivers.
-Both systems passed all 33 core, 56 CLI and 42 HTTP strict-settings observations, with
-40 Linux and 41 Windows historical failures and fixed-byte restoration; complete native jobs passed.
-All four foreground CLI time/memory comparisons reported no regression on both systems.
-Earlier Linux overlaps and the Windows lock timeout still have no proved cause; later passes
-neither diagnose them nor relax the criteria. The next correction preserves malformed extension
-settings when the original setter refuses an unhashable stored list; 60 cases are prepared,
-not executed. [Candidate status](migration-candidate.md) retains 320 nearest references and open full occurrence acceptance.
+The latest completed checkpoint `b9d7399` ran in manual hosted batch
+[39508036328](https://github.com/KiaroSama/Numera-Browser/actions/runs/39508036328),
+which failed on October 20 at 22:53 UTC: Linux native contracts, CodeQL and required verification
+remain failed; 27 checks passed and three publication stages were skipped. Both systems proved
+the stored-extension historical admission failure, restored fixed bytes and passed all 60 current
+observations. The Windows native job passed; Linux failed configured-lock acceptance at the
+released-vault operation. Its timeout does not establish a KDF, lock or inherited-pipe cause.
+Prepared timeout diagnostics retain elapsed/idle, leader/pipe and safe file milestones without
+captured contents or larger budgets. Schedule reads now reject invalid UTF-8 before syntax fallback;
+59 original-derived cases and exact historical controls await execution. Both patched Cargo audits passed.
+Earlier lock/performance causes and full acceptance remain open; [candidate status](migration-candidate.md)
+retains 320 nearest references. Later passes do not diagnose earlier failures or relax criteria.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The
@@ -49,8 +49,8 @@ variants. Its Linux Python 3.14 result was 2,776 passes, six explicit limits and
 all 147 source suites. The earlier `7020a0a` checkpoint verified Windows partition
 1 with 790 passes, 42 explicit platform limits and 37 suites, including 59
 release-distribution tests. These historical results do not certify the changed tree.
-The latest independent CodeQL check fails; its full analyses contain 33 Python and 34 Rust
-results, not a current changed-line annotation count. A bounded independent source review
+The latest independent CodeQL check fails; its exact-source analyses contain 33 Python and 37 Rust
+results, not a changed-line annotation count. An earlier bounded independent source review
 rejected 20 of 23 selected rows and left three empty-salt storage paths needing validation.
 No cross-principal exploit was confirmed; this does not clear the host gate or the whole product.
 Distribution, promotion and publication were skipped. There is no signed release

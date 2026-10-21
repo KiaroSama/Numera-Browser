@@ -64,7 +64,7 @@ if any(thread.is_alive() for thread in threads):
     assert_eq!(output.stdout.len(), 32768);
     assert_eq!(output.stderr.len(), 32768);
     assert_eq!(output.exit, 0);
-    for script in [
+    for (index, script) in [
         "import sys; sys.stdout.buffer.write(b'x'*65536); sys.stdout.flush()",
         r#"
 import json,os,pathlib,subprocess,sys,threading
@@ -73,7 +73,7 @@ pathlib.Path(os.environ['FIXTURE_ROOT'],'child.json').write_text(json.dumps({'pi
 print('ready',flush=True)
 threading.Event().wait(10)
 "#,
-    ] {
+    ].into_iter().enumerate() {
         let mut child = command(&python, script, root);
         let mut error = capture::run(&mut child, limits(1024))
             .err()
@@ -84,7 +84,9 @@ threading.Event().wait(10)
         );
         error.settle(Duration::from_secs(5))?;
         let path = root.join("child.json");
-        if path.exists() {
+        if index == 1 {
+            assert_eq!(error.kind(), std::io::ErrorKind::TimedOut);
+            assert!(path.is_file(), "Timed-out child did not publish its identity");
             let child: Value = serde_json::from_slice(&std::fs::read(&path)?)?;
             let pid = u32::try_from(child["pid"].as_u64().ok_or("Child identity missing")?)?;
             // Linux may retain an adopted zombie briefly; tree emptiness rejects
@@ -101,6 +103,29 @@ threading.Event().wait(10)
                     &serde_json::json!({"pid":pid,"tree":{"kind":"pgid","group":leader}})
                 )?);
             }
+            let diagnostic = error.to_string();
+            assert!(
+                diagnostic.contains("deadline=idle ") || diagnostic.contains("deadline=wall "),
+                "Missing timeout observation: deadline"
+            );
+            for field in [
+                "leader_exited=false",
+                "stdout_eof=false",
+                "stderr_eof=false",
+                "elapsed_ms=",
+                "idle_ms=",
+                "stdout_bytes=",
+                "stderr_bytes=",
+            ] {
+                assert!(
+                    diagnostic.contains(field),
+                    "Missing timeout observation: {field}"
+                );
+            }
+            assert!(
+                !diagnostic.contains("ready"),
+                "Timeout exposed captured content"
+            );
             std::fs::remove_file(path)?;
         }
     }
@@ -190,6 +215,26 @@ print('ready',flush=True)
         .err()
         .ok_or("Open escaped pipe reported completed output")?;
     assert_eq!(error.kind(), std::io::ErrorKind::TimedOut);
+    let diagnostic = error.to_string();
+    assert!(diagnostic.contains("deadline=idle ") || diagnostic.contains("deadline=wall "));
+    for field in [
+        "leader_exited=true",
+        "stdout_eof=false",
+        "stderr_eof=false",
+        "elapsed_ms=",
+        "idle_ms=",
+        "stdout_bytes=",
+        "stderr_bytes=",
+    ] {
+        assert!(
+            diagnostic.contains(field),
+            "Missing escaped-writer observation: {field}"
+        );
+    }
+    assert!(
+        !diagnostic.contains("ready"),
+        "Timeout exposed captured content"
+    );
     assert!(
         elapsed < Duration::from_secs(5),
         "Escaped pipe defeated capture deadline"

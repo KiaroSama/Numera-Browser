@@ -28,7 +28,13 @@ impl ScheduleStore {
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
             Err(error) => return Err(error.into()),
         };
-        let value = match serde_json::from_slice::<Value>(&bytes) {
+        let text = std::str::from_utf8(&bytes).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Stored schedules are not UTF-8; nothing was written",
+            )
+        })?;
+        let value = match serde_json::from_str::<Value>(text) {
             Ok(value) => value,
             Err(_) => return Ok(Vec::new()),
         };

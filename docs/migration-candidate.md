@@ -633,14 +633,21 @@ selected defects and proved the named CLI admission failure before fixed-byte re
 
 ## Acceptance status
 
-Latest completed source `b8e589f` ran in batch
-[39496109626](https://github.com/KiaroSama/Numera-Browser/actions/runs/39496109626).
-All 131 strict settings observations and complete native jobs passed on both systems, after
-40 Linux and 41 Windows named historical failures and fixed-byte restoration. Both patched
-Cargo locks passed advisory checks; all eight SDK legs, source platforms and 28 workflow jobs passed.
-CodeQL/required verification still failed and publication was skipped. A prepared setter correction
-preserves malformed stored extension lists and cached admission; its 60 original-derived cases
-remain unexecuted. Earlier lock/performance causes and full migration acceptance remain open.
+Latest completed source `b9d7399` ran in batch
+[39508036328](https://github.com/KiaroSama/Numera-Browser/actions/runs/39508036328).
+Both systems proved the stored-extension historical admission failure, restored fixed bytes and
+passed all 60 current cases. Windows native acceptance passed; Linux failed the released-vault
+configured-lock operation with a capture timeout. CodeQL/required verification also failed;
+27 checks passed and three publication stages were skipped. The timeout's cause remains unproved.
+Prepared failure-only diagnostics retain actual elapsed/idle, deadline, leader/pipe observations
+and safe journal/config milestones without captured contents, retries or larger budgets. Existing
+live-child and escaped-writer controls check the diagnostic distinction and actual cleanup.
+The shared schedule reader now rejects invalid UTF-8 before ordinary JSON syntax fallback;
+59 public original-derived observations compare results, error categories and exact disk bytes,
+including validation-before-read and unknown-field preservation. An exact historical source
+control requires the named semantic failure. This prepared batch remains unexecuted.
+Both patched Cargo locks passed advisory checks. Earlier lock/performance causes and full
+migration acceptance remain open.
 Prior source `01be6df` ran in batch
 [39355362784](https://github.com/KiaroSama/Numera-Browser/actions/runs/39355362784).
 All 28 nondependent jobs passed, including the corrected four CLI contention cases and

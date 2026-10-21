@@ -324,7 +324,14 @@ fn configured_store_acquisitions_honor_original_lock_owners()
             configured_limits(),
         )
         .map_err(|error| {
-            format!("Configured lock operation={operation} phase=released: {error:?}")
+            let journal_present = root.join("vault-migration.json").try_exists().ok();
+            let config_vault_present = fs::read(root.join("config.json"))
+                .ok()
+                .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
+                .and_then(|value| value.as_object().map(|object| object.contains_key("vault")));
+            format!(
+                "Configured lock operation={operation} phase=released journal_present={journal_present:?} config_vault_present={config_vault_present:?}: {error:?}"
+            )
         })?;
         assert_eq!(
             result.exit, 0,

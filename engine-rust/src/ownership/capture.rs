@@ -130,7 +130,8 @@ pub fn run_controlled(
         )
         .into());
     }
-    let end = Instant::now()
+    let started = Instant::now();
+    let end = started
         .checked_add(limits.wall)
         .ok_or_else(|| io::Error::other("Capture deadline overflow"))?;
     command
@@ -186,9 +187,23 @@ pub fn run_controlled(
             let remaining = end.saturating_duration_since(Instant::now());
             let idle = limits.idle.saturating_sub(progress.elapsed());
             if remaining.is_zero() || idle.is_zero() {
+                let leader_exited = match tree.child_mut().try_wait() {
+                    Ok(Some(_)) => "true",
+                    Ok(None) => "false",
+                    Err(_) => "unknown",
+                };
                 return Err(io::Error::new(
                     io::ErrorKind::TimedOut,
-                    "Native command exceeded its wall or idle deadline; an inherited pipe may remain open outside its captured tree",
+                    format!(
+                        "Native command exceeded its deadline: deadline={} elapsed_ms={} idle_ms={} leader_exited={leader_exited} stdout_eof={} stderr_eof={} stdout_bytes={} stderr_bytes={}",
+                        if remaining.is_zero() { "wall" } else { "idle" },
+                        started.elapsed().as_millis(),
+                        progress.elapsed().as_millis(),
+                        pipes[0].is_none(),
+                        pipes[1].is_none(),
+                        output.stdout.len(),
+                        output.stderr.len(),
+                    ),
                 ));
             }
             let mut changed = false;

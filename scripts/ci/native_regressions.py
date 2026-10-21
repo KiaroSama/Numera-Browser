@@ -494,6 +494,26 @@ REGRESSIONS = (
                 '113218c52d07a1af318ee0f05d073443334159612f561a335e66523f12738837',
         },
     },
+    {
+        'target': 'command_capture_lifecycle',
+        'test': 'bounded_capture_drains_both_pipes_and_settles_descendants_on_every_exit',
+        'symptom': 'Missing timeout observation',
+        'commit': 'b9d7399732c140d6141f37633486fffd90a2e30a',
+        'files': {
+            'engine-rust/src/ownership/capture.rs':
+                'aa93ca78468acf0874bf58cf6e1fbd3ca70c7990146ce36e92ff4c3285c51e54',
+        },
+    },
+    {
+        'target': 'schedule_store_parity',
+        'test': 'schedule_text_admission_matches_original_without_replacing_bytes',
+        'symptom': 'Schedule text admission differs',
+        'commit': 'b9d7399732c140d6141f37633486fffd90a2e30a',
+        'files': {
+            'engine-rust/src/storage/schedules.rs':
+                '749856bedd3df0be79cbd3853014fc75d24bb8b9320dcc9a09c32747ccf47527',
+        },
+    },
 )
 
 
