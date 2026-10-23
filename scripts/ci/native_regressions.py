@@ -150,17 +150,18 @@ def prove(root: Path, original: Path, logger) -> None:
             logger.addHandler(evidence)
             try:
                 with historical_sources(root, case):
+                    target = ['--lib'] if case['target'] == 'lib' else ['--test', case['target']]
                     if index == 0:
                         # Cold dependency compilation belongs to the outer build budget.
                         subprocess.run(['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
                                         '--locked', '--offline', '--config',
                                         'profile.dev.package.numera-core.opt-level=0',
-                                        '--test', case['target'], '--no-run'],
+                                        *target, '--no-run'],
                                        stdin=subprocess.DEVNULL, check=True)
                     command = ['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
                                '--locked', '--offline', '--config',
                                'profile.dev.package.numera-core.opt-level=0',
-                               '--test', case['target'], '--', case['test'],
+                               *target, '--', case['test'],
                                '--exact', '--test-threads=1', '--color=never']
                     code = run(command, 180, 90, logger)
                 evidence.verify(code)

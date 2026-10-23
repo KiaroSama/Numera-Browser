@@ -7,16 +7,15 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 21, 2026
 
-The latest completed checkpoint `461eebc` ran in manual hosted batch
-[39623861497](https://github.com/KiaroSama/Numera-Browser/actions/runs/39623861497),
-which failed on October 21 at 15:32 UTC: 27 jobs passed, Windows native compilation
-and the independent CodeQL verdict failed, required verification failed, and three
-publication stages were skipped. Linux completed 54 historical proofs and all current
-native contracts. Windows completed 55 historical proofs, then fixed-tree compilation
-exhausted the shared 900-second command budget; its current native tests did not run.
-The exact prior-importer companion resolves the old pool swap's E0425 without changing the
-selected defect, production behavior or proof criteria. Shared identity helpers passed 123 frozen-original
-version/platform/page/CDP comparisons on both systems. All eight real browser SDK paths passed,
+The latest completed checkpoint `4e570f1` ran in manual hosted batch
+[39637385281](https://github.com/KiaroSama/Numera-Browser/actions/runs/39637385281),
+which failed on October 21 at 17:04 UTC: 26 jobs passed, three failed, macOS was cancelled,
+and three publication stages were skipped. Linux completed 55 historical proofs and all
+current native contracts. Windows completed 56 historical proofs in 739.967 seconds,
+then its separate fixed-tree compilation reached the unchanged 300-second idle limit;
+current Windows tests did not run. GitHub reports macOS hosted-runner capacity failure before acquisition.
+The prior-importer companion resolves the old pool swap's E0425 without changing its selected defect.
+Shared identity helpers passed 123 frozen-original version/platform/page/CDP comparisons on both systems. All eight real browser SDK paths passed,
 including Windows Playwright. Fifteen deterministic cleanup-failure controls and the exact prior
 runner's negative control passed on Windows (16 tests, 0.21 seconds); the failed exit, original
 exception, protected bytes and sanitized diagnostics are retained without retries or permission
@@ -38,11 +37,12 @@ separate required commands, each bounded by 900 seconds wall/300 seconds idle un
 45-minute job. This expands aggregate phase allowance, not a measured speedup. Linux's four CLI
 time/memory log verdicts report no regression; Windows entry/performance acceptance did not run.
 Earlier timing overlaps and vault timeout causes remain unproved.
-Native NaN/infinity refusal remains an explicit nonfinite difference. A prepared DNS correction
-reuses Python-compatible boundary whitespace handling without changing resolver or backend policy.
-Its 126 original-derived cases cover all four option builders, retaining 40 existing full-option
-fixtures; hosted execution is pending. Ten nearest launch-policy references bring the mapped total
-to 427, all still pending. Full acceptance remains open.
+Native NaN/infinity refusal remains an explicit nonfinite difference. DNS whitespace preserves
+resolver/backend policy: Linux passed 126 original-derived cases and 40 full-option fixtures;
+both systems proved the historical DNS assertion failure and restored fixed bytes. A prepared
+proxy-echo correction compares 99 original-derived responses through actual loopback transport,
+with an exact historical library proof; execution is pending. Fixed builds now reuse sanitized
+Cargo progress, not heartbeat or longer deadlines. All 427 mapped capability references remain pending.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

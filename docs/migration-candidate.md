@@ -633,10 +633,10 @@ selected defects and proved the named CLI admission failure before fixed-byte re
 
 ## Acceptance status
 
-Latest source `461eebc` failed batch [39623861497](https://github.com/KiaroSama/Numera-Browser/actions/runs/39623861497):
-27 jobs passed; Windows native compilation, the independent CodeQL verdict and required verification
-failed, with three publication skips. Linux completed 54 historical proofs and current native acceptance.
-Windows completed 55 proofs, then fixed compilation exhausted the remaining shared build budget before tests.
+Latest source `4e570f1` failed batch [39637385281](https://github.com/KiaroSama/Numera-Browser/actions/runs/39637385281):
+26 jobs passed; three failed, macOS was cancelled and three publication stages were skipped.
+Linux completed 55 historical proofs/current acceptance; Windows completed 56 proofs in 739.967 seconds,
+then separate fixed compilation reached the unchanged 300-second idle limit before current tests.
 The exact prior-importer companion clears the old pool swap's compiler failure while preserving its defect.
 Current contracts passed, including 106 importer, 270 shared write-contract and 123 identity comparisons,
 ten complete indexed batch-refusal comparisons and exact protected-byte preservation.
@@ -666,9 +666,9 @@ comparisons and two exact historical controls passed on both systems. All 1,011 
 historical failure/restoration controls passed on both systems. All 54 strict job-text observations and
 the exact historical failure/restoration passed on both systems. Linux now passes another 38 importer
 tag/display, four complete-refusal and 83 bulk-selection observations plus the released-vault lock test;
-these current tests have not run on Windows. A DNS whitespace correction has 126 original-derived
-cases across four builders, retaining 40 complete-option fixtures; execution remains pending. Ten nearest
-launch-policy references bring the total to 427; missing APIs and fault gaps remain pending.
+these current tests have not run on Windows. Linux passed 126 DNS cases and 40 complete-option fixtures;
+both systems proved historical DNS failure/restoration. Prepared proxy-echo acceptance has 99 original-derived
+loopback transport cases and a library proof; fixed builds reuse real sanitized Cargo progress. All 427 references remain pending.
 Nontext-ID present-profile outcomes and full scheduler acceptance remain incomplete. All 26
 scheduler mappings remain pending; no capability status is promoted by these narrow fixes.
 Native nonfinite refusal remains an explicit stronger difference, not full original parity.

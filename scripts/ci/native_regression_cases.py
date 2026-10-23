@@ -324,6 +324,10 @@ REGRESSIONS = (
                 'commit': '461eebcb6b580d8b399dde00e189b510c650f6f4',
                 'sha256': '48f97356e1d6232fa5a84ab619d8bb7f7d9fc25f6b7f7623447339f5de488263',
             },
+            'engine-rust/src/network/proxy_check.rs': {
+                'commit': '4e570f130ba807448453c12777457bcf55911a67',
+                'sha256': '39d4c4f728c91ef9ad342ba4663ae73c3499651b985f07d558faf34ba04424d5',
+            },
         },
     },
     {
@@ -556,6 +560,16 @@ REGRESSIONS = (
 
 # These sources use current caller signatures and must follow compatibility overlays.
 CURRENT_CALLER_REGRESSIONS = (
+    {
+        'target': 'lib',
+        'test': 'network::tests::proxy_echo_boundaries_match_original_through_transport',
+        'symptom': 'Proxy echo response differs',
+        'commit': '4e570f130ba807448453c12777457bcf55911a67',
+        'files': {
+            'engine-rust/src/network/proxy_check.rs':
+                '39d4c4f728c91ef9ad342ba4663ae73c3499651b985f07d558faf34ba04424d5',
+        },
+    },
     {
         'target': 'browser_options_parity',
         'test': 'dns_options_match_original_whitespace_and_refusals',

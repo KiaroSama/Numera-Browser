@@ -238,7 +238,8 @@ def test_discovered_native_targets_are_all_selected_and_build_is_separate():
     format_option = '--message-format=json,json-render-diagnostics'
 
     def require_progress(command):
-        assert format_option in command and command.index(format_option) < command.index('--'), \
+        boundary = command.index('--') if '--' in command else len(command)
+        assert format_option in command and command.index(format_option) < boundary, \
             'Native compilation progress is missing before the test boundary'
 
     import hashlib
@@ -248,10 +249,12 @@ def test_discovered_native_targets_are_all_selected_and_build_is_separate():
         'a3d38dc210a8348e6e7de703a24cf23a13f6bef8190339219fdf27b0f0f741bc'
     namespace = {'Path': Path, 'ROOT': ROOT, 'discover': coverage.discover}
     exec(compile(historical, 'native-command-before-progress.py.txt', 'exec'), namespace)
-    with pytest.raises(AssertionError, match='Native compilation progress is missing'):
-        require_progress(namespace['native_command']('test'))
+    for phase in ('build', 'test'):
+        with pytest.raises(AssertionError, match='Native compilation progress is missing'):
+            require_progress(namespace['native_command'](phase))
     require_progress(test)
-    assert format_option not in build
+    require_progress(build)
+    assert '--' not in build, 'No-run compilation must not execute libtest'
     assert format_option not in coverage.seam_command('test', 'identity-script')
     assert coverage.check_workflows()['native'] == len(targets)
 
@@ -299,6 +302,10 @@ def test_native_history_precedes_fixed_build_and_never_runs_in_fixed_test(monkey
         return SimpleNamespace(returncode=0)
 
     def fixed_test(command, environment):
+        if '--no-run' in command:
+            assert command == coverage.native_command('build')
+            events.append('fixed-build')
+            return 0
         assert command == coverage.native_command('test')
         assert environment['NUMERA_ORACLE_SOURCE_ROOT'] == str(ROOT / 'original-fixture')
         assert environment['PYTHONDONTWRITEBYTECODE'] == '1'
@@ -357,7 +364,8 @@ def test_native_history_precedes_fixed_build_and_never_runs_in_fixed_test(monkey
 
 
 @pytest.mark.parametrize('exit_code', [0, 101])
-def test_native_progress_projects_artifacts_without_exposing_cargo_payloads(monkeypatch, capsys, exit_code):
+@pytest.mark.parametrize('phase', ['build', 'test'])
+def test_native_progress_projects_artifacts_without_exposing_cargo_payloads(monkeypatch, capsys, exit_code, phase):
     import io
     import json
     import subprocess
@@ -392,7 +400,7 @@ def test_native_progress_projects_artifacts_without_exposing_cargo_payloads(monk
             stream.close()
 
     monkeypatch.setattr(coverage.subprocess, 'Popen', child)
-    command = coverage.native_command('test')
+    command = coverage.native_command(phase)
     environment = {'SYNTHETIC_SOURCE': 'source with spaces'}
     assert coverage.run_native(command, environment) == exit_code
     assert calls == [(command, {'env': environment, 'stdin': subprocess.DEVNULL,

@@ -60,7 +60,7 @@ fn proxy_client(proxy: &Value, budget: Duration) -> io::Result<Client> {
 
 fn decode(bytes: &[u8]) -> Option<Value> {
     let text = String::from_utf8_lossy(bytes);
-    let text = text.trim();
+    let text = pool::trim(&text);
     let data: Value = serde_json::from_str(text).unwrap_or_else(|_| json!({"ip":text}));
     let object = data.as_object()?;
     let choose = |keys: &[&str]| {

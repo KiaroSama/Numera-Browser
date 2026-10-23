@@ -385,11 +385,11 @@ def native_command(phase: str, root: Path = ROOT) -> list[str]:
                '--locked', '--lib']
     for path in discover(root)['native']:
         command.extend(('--test', path.stem))
-    command.append('--no-fail-fast')
+    command.extend(('--no-fail-fast', '--message-format=json,json-render-diagnostics'))
     if phase == 'build':
         command.append('--no-run')
     else:
-        command.extend(('--message-format=json,json-render-diagnostics', '--', '--test-threads=2'))
+        command.extend(('--', '--test-threads=2'))
     return command
 
 
@@ -552,6 +552,9 @@ def main() -> int:
                     if args.command == 'native':
                         return run_native(command, environment)
                     return subprocess.run(command, env=environment, stdin=subprocess.DEVNULL, check=False).returncode
+            if args.command == 'native':
+                import os
+                return run_native(command, dict(os.environ))
             return subprocess.run(command, stdin=subprocess.DEVNULL, check=False).returncode
     return 0
 
