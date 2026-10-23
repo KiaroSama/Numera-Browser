@@ -149,6 +149,10 @@ def test_pool_history_keeps_a_compatible_importer_without_replacing_the_selected
         'commit': '4e570f130ba807448453c12777457bcf55911a67',
         'sha256': '39d4c4f728c91ef9ad342ba4663ae73c3499651b985f07d558faf34ba04424d5',
     }
+    assert case['companions']['engine-rust/src/mcp.rs'] == {
+        'commit': '8f6ad94e95693d2c3ff18d2ca39ec8effa635cd6',
+        'sha256': '802ba1d69ce81d705cb501970df1230b9fd2b733409381b0b7632afaacdebca6',
+    }
     assert not case['files'].keys() & case['companions'].keys()
 
 
@@ -206,6 +210,14 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
                   'ce4d904503fd52f828896f9abd840e76aee1e0131f292064fd99a875a864c53f'},
     },)
     assert module.CURRENT_CALLER_REGRESSIONS[0] == {
+        'target': 'mcp_parity',
+        'test': 'stdio_text_boundaries_match_original_responses',
+        'symptom': 'MCP stdio text response differs',
+        'commit': '8f6ad94e95693d2c3ff18d2ca39ec8effa635cd6',
+        'files': {'engine-rust/src/mcp.rs':
+                  '802ba1d69ce81d705cb501970df1230b9fd2b733409381b0b7632afaacdebca6'},
+    }
+    assert module.CURRENT_CALLER_REGRESSIONS[1] == {
         'target': 'lib',
         'test': 'network::tests::proxy_echo_boundaries_match_original_through_transport',
         'symptom': 'Proxy echo response differs',
@@ -213,7 +225,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/network/proxy_check.rs':
                   '39d4c4f728c91ef9ad342ba4663ae73c3499651b985f07d558faf34ba04424d5'},
     }
-    assert module.CURRENT_CALLER_REGRESSIONS[1] == {
+    assert module.CURRENT_CALLER_REGRESSIONS[2] == {
         'target': 'browser_options_parity',
         'test': 'dns_options_match_original_whitespace_and_refusals',
         'symptom': 'DNS launch options differ',
@@ -221,7 +233,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/browser/options.rs':
                   '48f97356e1d6232fa5a84ab619d8bb7f7d9fc25f6b7f7623447339f5de488263'},
     }
-    assert module.CURRENT_CALLER_REGRESSIONS[2] == {
+    assert module.CURRENT_CALLER_REGRESSIONS[3] == {
         'target': 'bulk_parity',
         'test': 'selection::selection_matches_original_complete_profile_membership',
         'symptom': 'Bulk profile selection differs',
@@ -229,7 +241,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/bulk.rs':
                   'e425d6fd6a60615996504fb5c58758a895bc574126609650f9fafeee62938d09'},
     }
-    importer = module.CURRENT_CALLER_REGRESSIONS[3:5]
+    importer = module.CURRENT_CALLER_REGRESSIONS[4:6]
     assert [(case['target'], case['test'], case['symptom']) for case in importer] == [
         ('profile_http_import_parity', 'tags::importer_tags_match_original_whitespace_and_group_display', 'Imported tag display differs'),
         ('profile_http_import_parity', 'tags::importer_refusals_retain_all_original_ordered_problems', 'Complete importer refusal differs'),
@@ -237,7 +249,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
     assert all(case['commit'] == '965ba02e5eceacb7c0be4e2d9a4e873b52279610' and case['files'] == {
         'engine-rust/src/importers.rs': 'e4526b6a17983cc5a15fe89cd1d3de28dc60b0fcccb57a078a8a5195e3355751',
     } for case in importer)
-    jobs = module.CURRENT_CALLER_REGRESSIONS[5]
+    jobs = module.CURRENT_CALLER_REGRESSIONS[6]
     assert jobs == {
         'target': 'job_parity',
         'test': 'text::job_text_admission_matches_original_without_replacing_identity_or_outcome',
@@ -246,7 +258,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/jobs.rs':
                   '643bcc66a0d2750dd530abdd91e9a59c24d97c9e3afb39897f07160b18b3977a'},
     }
-    claim = module.CURRENT_CALLER_REGRESSIONS[6]
+    claim = module.CURRENT_CALLER_REGRESSIONS[7]
     assert claim == {
         'target': 'claim_parity',
         'test': 'diagnostics::claim_diagnostics_match_original_truth_and_display_without_changing_records',
@@ -255,7 +267,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/ownership/claims.rs':
                   '6af8a9ffd4a29f9ce29da25da9ecf8e4b4fc2031b9228424be8c578650eccbb8'},
     }
-    added = module.CURRENT_CALLER_REGRESSIONS[7:-1]
+    added = module.CURRENT_CALLER_REGRESSIONS[8:-1]
     assert [(case['target'], case['test'], case['symptom']) for case in added] == [
         ('profile_http_import_parity', 'lexical::importer_lexical_profiles_match_original_without_changing_inputs', 'Imported lexical dashboard differs'),
         ('profile_http_import_parity', 'lexical::native_envelope_versions_match_original_exact_numeric_guidance', 'Native export version guidance differs'),

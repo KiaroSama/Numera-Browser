@@ -134,7 +134,7 @@ pub fn decode(bytes: &[u8]) -> io::Result<Option<Value>> {
     }
     let text = std::str::from_utf8(bytes)
         .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "MCP frame is not UTF8"))?;
-    let text = text.trim();
+    let text = crate::pool::trim(text);
     if text.is_empty() {
         return Ok(None);
     }

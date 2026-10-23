@@ -328,6 +328,10 @@ REGRESSIONS = (
                 'commit': '4e570f130ba807448453c12777457bcf55911a67',
                 'sha256': '39d4c4f728c91ef9ad342ba4663ae73c3499651b985f07d558faf34ba04424d5',
             },
+            'engine-rust/src/mcp.rs': {
+                'commit': '8f6ad94e95693d2c3ff18d2ca39ec8effa635cd6',
+                'sha256': '802ba1d69ce81d705cb501970df1230b9fd2b733409381b0b7632afaacdebca6',
+            },
         },
     },
     {
@@ -560,6 +564,16 @@ REGRESSIONS = (
 
 # These sources use current caller signatures and must follow compatibility overlays.
 CURRENT_CALLER_REGRESSIONS = (
+    {
+        'target': 'mcp_parity',
+        'test': 'stdio_text_boundaries_match_original_responses',
+        'symptom': 'MCP stdio text response differs',
+        'commit': '8f6ad94e95693d2c3ff18d2ca39ec8effa635cd6',
+        'files': {
+            'engine-rust/src/mcp.rs':
+                '802ba1d69ce81d705cb501970df1230b9fd2b733409381b0b7632afaacdebca6',
+        },
+    },
     {
         'target': 'lib',
         'test': 'network::tests::proxy_echo_boundaries_match_original_through_transport',
