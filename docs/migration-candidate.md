@@ -170,7 +170,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 427 individually inspected implementation/test
+The capability ledger now records 436 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -668,7 +668,7 @@ the exact historical failure/restoration passed on both systems. Linux now passe
 tag/display, four complete-refusal and 83 bulk-selection observations plus the released-vault lock test;
 these current tests have not run on Windows. Linux passed 126 DNS cases and 40 complete-option fixtures;
 both systems proved historical DNS failure/restoration. Prepared proxy-echo acceptance has 99 original-derived
-loopback transport cases and a library proof; fixed builds reuse real sanitized Cargo progress. All 427 references remain pending.
+loopback transport cases and a library proof; fixed builds reuse real sanitized Cargo progress. All 436 references remain pending.
 Nontext-ID present-profile outcomes and full scheduler acceptance remain incomplete. All 26
 scheduler mappings remain pending; no capability status is promoted by these narrow fixes.
 Native nonfinite refusal remains an explicit stronger difference, not full original parity.
