@@ -83,6 +83,193 @@ with run_log('mcp-text-oracle',root/'logs') as log:
 }
 
 #[test]
+fn captured_command_errors_match_original_stream_selection()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{mcp_command, ownership::capture};
+    use std::fs;
+
+    const CHILD_ROOT: &str = "NUMERA_MCP_OUTPUT_FIXTURE_ROOT";
+    if let Some(root) = std::env::var_os(CHILD_ROOT) {
+        let root = std::path::PathBuf::from(root);
+        let rows: Vec<Value> = serde_json::from_slice(&fs::read(root.join("cases.json"))?)?;
+        // Only this exact-test child changes CWD; sibling tests keep their own directory.
+        std::env::set_current_dir(&root)?;
+        let python =
+            std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
+        for (index, row) in rows.iter().enumerate() {
+            let arguments = json!({"tag":index.to_string()});
+            let actual = mcp_command::call(
+                Path::new(&python),
+                None,
+                None,
+                "list",
+                arguments.as_object().ok_or("Fixture arguments missing")?,
+            )?;
+            let exit = if actual["isError"] == true {
+                let payload: Value = serde_json::from_str(
+                    actual["content"][0]["text"]
+                        .as_str()
+                        .ok_or("MCP error text missing")?,
+                )?;
+                payload["exit"].clone()
+            } else {
+                actual["_meta"]["exitCode"].clone()
+            };
+            assert_eq!(
+                exit, row["exit"],
+                "MCP fixture command did not reach output interpretation"
+            );
+            println!(
+                "\nMCP output result {}",
+                json!({"index":index,"actual":actual})
+            );
+        }
+        return Ok(());
+    }
+
+    let temporary = common::TempDirectory::new("mcp-output")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?;
+    let mut command = Command::new(&python);
+    command.args(["-I", "-B", "-c", r#"
+import json,sys
+from pathlib import Path
+from subprocess import CompletedProcess
+from unittest.mock import patch
+repository,root=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import mcp
+from run_logging import run_log
+whitespace=[9,10,11,12,13,28,29,30,31,32,133,160,5760,8192,8193,8194,8195,8196,8197,8198,8199,8200,8201,8202,8232,8233,8239,8287,12288]
+cases=[('unparsed',chr(code)+'fixture'+chr(code),7) for code in whitespace]
+cases += [('unparsed',' ',2),('unparsed','\u001c',3),('','',4),('\u001c','',5),
+          ('unparsed','',6),('\u001cfixture\u001f','',7),('stdout','stderr',8)]
+cases += [(body,stderr,code) for body,stderr,code in
+          [(' {"ok":false} ','ignored',1),('[]','ignored',2),('"text"','ignored',3),
+           ('0','ignored',4),('false','ignored',5),('null','ignored',6),
+           (' {"text":"فارسی😀"} ','ignored',7),('{"error":"verdict"}','\u001c',9)]]
+rows=[]
+with run_log('mcp-output-oracle',root/'logs') as log:
+    for index,(stdout,stderr,code) in enumerate(cases):
+        with patch('subprocess.run',return_value=CompletedProcess([],code,stdout=stdout,stderr=stderr)) as run:
+            expected=mcp.call('list',{'tag':str(index)})
+        assert run.call_count==1 and run.call_args.kwargs['timeout']==mcp.CALL_TIMEOUT
+        rows.append({'stdout':stdout,'stderr':stderr,'exit':code,'expected':expected})
+    log.info('Observed MCP command-output cases=%s',len(rows))
+    print(json.dumps(rows,ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path()).env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 262144,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original MCP output observer failed");
+    let rows: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(rows.len(), 44, "MCP output observations missing");
+    fs::write(temporary.path().join("cases.json"), &observed.stdout)?;
+    fs::write(
+        temporary.path().join("list"),
+        br#"import json,sys
+from pathlib import Path
+rows=json.loads(Path(__file__).with_name('cases.json').read_text(encoding='utf-8'))
+assert sys.argv[1]=='--tag' and sys.argv[3:]==['--json']
+row=rows[int(sys.argv[2])]
+sys.stdout.buffer.write(row['stdout'].encode('utf-8'))
+sys.stderr.buffer.write(row['stderr'].encode('utf-8'))
+sys.stdout.flush();sys.stderr.flush()
+raise SystemExit(row['exit'])
+"#,
+    )?;
+    let mut child = Command::new(std::env::current_exe()?);
+    child
+        .args([
+            "--exact",
+            "captured_command_errors_match_original_stream_selection",
+            "--test-threads=1",
+            "--nocapture",
+        ])
+        .env(CHILD_ROOT, temporary.path())
+        .env("PYTHONUTF8", "1")
+        .env("PYTHONDONTWRITEBYTECODE", "1");
+    let mut units =
+        numera_core::ownership::capture_units::Units::new(temporary.path(), &mut child)?;
+    let captured = match capture::run(
+        &mut child,
+        capture::Limits {
+            wall: Duration::from_secs(60),
+            idle: Duration::from_secs(30),
+            bytes: 262144,
+            cleanup: Duration::from_secs(5),
+        },
+    ) {
+        Ok(output) => Ok(output),
+        Err(mut error) => {
+            if error.settle(Duration::from_secs(5)).is_err() {
+                eprintln!(
+                    "MCP output leader unresolved; fixture retained at {}",
+                    temporary.path().display()
+                );
+                std::mem::forget(units);
+                std::mem::forget(temporary);
+                return Err(error.into());
+            }
+            Err(error)
+        }
+    };
+    // Inner captures create separate POSIX groups; retain their receipts on uncertainty.
+    if let Err(error) = units.settle(Duration::from_secs(5)) {
+        let path = temporary.path().display().to_string();
+        std::mem::forget(temporary);
+        return Err(format!(
+            "MCP output ownership unresolved; fixture retained at {path}: {error}"
+        )
+        .into());
+    }
+    let result = captured?;
+    let transcript = String::from_utf8(result.stdout)?;
+    let diagnostics = String::from_utf8(result.stderr)?;
+    assert_eq!(
+        result.exit, 0,
+        "MCP output child failed\n{transcript}\n{diagnostics}"
+    );
+    assert!(
+        transcript.contains("1 passed; 0 failed"),
+        "MCP output child did not run"
+    );
+    let results: Vec<Value> = transcript
+        .lines()
+        .filter_map(|line| line.strip_prefix("MCP output result "))
+        .map(serde_json::from_str)
+        .collect::<Result<_, _>>()?;
+    assert_eq!(
+        results.len(),
+        rows.len(),
+        "MCP output child observations missing"
+    );
+    for (index, (actual, row)) in results.iter().zip(&rows).enumerate() {
+        assert_eq!(
+            actual["index"],
+            json!(index),
+            "MCP output child order differs"
+        );
+        assert_eq!(
+            actual["actual"], row["expected"],
+            "MCP captured result differs: {index}"
+        );
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn native_mcp_preserves_original_messages_verdicts_and_bounded_framing()
 -> Result<(), Box<dyn std::error::Error>> {
     let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;

@@ -143,11 +143,7 @@ pub fn call_controlled(
         })
         .map_err(Failure::from),
         Err(_) => {
-            let message = if stderr.trim().is_empty() {
-                stdout.trim()
-            } else {
-                stderr.trim()
-            };
+            let message = crate::pool::trim(if stderr.is_empty() { &stdout } else { &stderr });
             mcp::error_payload(json!({"error":if message.is_empty(){"command failed"}else{message},"exit":output.exit})).map_err(Failure::from)
         }
     }

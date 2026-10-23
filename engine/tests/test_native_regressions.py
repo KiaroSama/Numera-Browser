@@ -153,6 +153,10 @@ def test_pool_history_keeps_a_compatible_importer_without_replacing_the_selected
         'commit': '8f6ad94e95693d2c3ff18d2ca39ec8effa635cd6',
         'sha256': '802ba1d69ce81d705cb501970df1230b9fd2b733409381b0b7632afaacdebca6',
     }
+    assert case['companions']['engine-rust/src/mcp_command.rs'] == {
+        'commit': 'db29928b16d08810ce88243f0dd1a6e233e2dbf6',
+        'sha256': '212a821995a0582c0f07913ec1ac9c83172b0fcb1024ccfc1eb3fe9eb95e7dd1',
+    }
     assert not case['files'].keys() & case['companions'].keys()
 
 
@@ -267,7 +271,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/ownership/claims.rs':
                   '6af8a9ffd4a29f9ce29da25da9ecf8e4b4fc2031b9228424be8c578650eccbb8'},
     }
-    added = module.CURRENT_CALLER_REGRESSIONS[8:-1]
+    added = module.CURRENT_CALLER_REGRESSIONS[8:-2]
     assert [(case['target'], case['test'], case['symptom']) for case in added] == [
         ('profile_http_import_parity', 'lexical::importer_lexical_profiles_match_original_without_changing_inputs', 'Imported lexical dashboard differs'),
         ('profile_http_import_parity', 'lexical::native_envelope_versions_match_original_exact_numeric_guidance', 'Native export version guidance differs'),
@@ -275,6 +279,14 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
     assert all(case['commit'] == '4297b1f8e06f2ca0ae7617f2602bd5ed43d450d1' for case in added)
     assert added[0]['files'] == {'engine-rust/src/importers.rs': 'e04030f2743e3f77625e0428c28c5727aabf39091e90aa01351775d7a0d16572'}
     assert added[1]['files'] == {'engine-rust/src/import_format.rs': 'fb386692f47d6e7d0281b302112001f6af120418d0bbf5d765c231243de51233'}
+    assert module.CURRENT_CALLER_REGRESSIONS[-2] == {
+        'target': 'mcp_parity',
+        'test': 'captured_command_errors_match_original_stream_selection',
+        'symptom': 'MCP captured result differs',
+        'commit': 'db29928b16d08810ce88243f0dd1a6e233e2dbf6',
+        'files': {'engine-rust/src/mcp_command.rs':
+                  '212a821995a0582c0f07913ec1ac9c83172b0fcb1024ccfc1eb3fe9eb95e7dd1'},
+    }
     assert module.CURRENT_CALLER_REGRESSIONS[-1:] == expected
     assert module.REGRESSIONS == module._SETTINGS_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
     assert not any(case.get('companions') for case in module.CURRENT_CALLER_REGRESSIONS)

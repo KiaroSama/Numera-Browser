@@ -332,6 +332,10 @@ REGRESSIONS = (
                 'commit': '8f6ad94e95693d2c3ff18d2ca39ec8effa635cd6',
                 'sha256': '802ba1d69ce81d705cb501970df1230b9fd2b733409381b0b7632afaacdebca6',
             },
+            'engine-rust/src/mcp_command.rs': {
+                'commit': 'db29928b16d08810ce88243f0dd1a6e233e2dbf6',
+                'sha256': '212a821995a0582c0f07913ec1ac9c83172b0fcb1024ccfc1eb3fe9eb95e7dd1',
+            },
         },
     },
     {
@@ -662,6 +666,16 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {
             'engine-rust/src/import_format.rs':
                 'fb386692f47d6e7d0281b302112001f6af120418d0bbf5d765c231243de51233',
+        },
+    },
+    {
+        'target': 'mcp_parity',
+        'test': 'captured_command_errors_match_original_stream_selection',
+        'symptom': 'MCP captured result differs',
+        'commit': 'db29928b16d08810ce88243f0dd1a6e233e2dbf6',
+        'files': {
+            'engine-rust/src/mcp_command.rs':
+                '212a821995a0582c0f07913ec1ac9c83172b0fcb1024ccfc1eb3fe9eb95e7dd1',
         },
     },
     {

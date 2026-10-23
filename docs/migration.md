@@ -41,7 +41,7 @@ Native NaN/infinity refusal remains an explicit nonfinite difference. DNS whites
 resolver/backend policy: Linux passed 126 original-derived cases and 40 full-option fixtures;
 both systems proved the historical DNS assertion failure and restored fixed bytes. A prepared
 proxy-echo correction compares 99 original-derived responses through actual loopback transport,
-with an exact historical library proof; execution is pending. A prepared MCP correction adds 99 original-derived stdio boundary/fragmentation cases and an exact historical assertion proof, retaining frame/UTF8/ownership limits; execution is pending.
+with an exact historical library proof; execution is pending. Prepared MCP corrections add 99 original-derived stdio boundary/fragmentation cases and 44 captured-command output cases with exact historical assertions, retaining frame/UTF8/ownership limits and nonzero JSON verdicts; execution is pending.
 Fixed builds reuse sanitized Cargo progress, not heartbeat or longer deadlines. All 436 mapped references remain pending.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
