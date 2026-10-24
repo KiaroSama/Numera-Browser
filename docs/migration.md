@@ -5,18 +5,21 @@ The accepted boundary is [ADR0001](adr/0001-parity-gated-rust-migration.md); Pyt
 [candidate executable](migration-candidate.md), **not an installed replacement**.
 Passing library or narrow entrypoint tests does not certify a finished migration.
 
-## Current integration status — October 21, 2026
+## Current integration status — October 24, 2026
 
-The latest completed checkpoint `4e570f1` ran in manual hosted batch
-[39637385281](https://github.com/KiaroSama/Numera-Browser/actions/runs/39637385281),
-which failed on October 21 at 17:04 UTC: 26 jobs passed, three failed, macOS was cancelled,
-and three publication stages were skipped. Linux completed 55 historical proofs and all
-current native contracts. Windows completed 56 historical proofs in 739.967 seconds,
-then its separate fixed-tree compilation reached the unchanged 300-second idle limit;
-current Windows tests did not run. GitHub reports macOS hosted-runner capacity failure before acquisition.
+The latest completed checkpoint `e85d27b` ran in manual hosted batch
+[40039208432](https://github.com/KiaroSama/Numera-Browser/actions/runs/40039208432),
+which failed on October 23 at 23:43 UTC: nine workflow jobs passed, four failed and eight
+were skipped; the separate external CodeQL check also failed. Both native jobs passed,
+including 58 historical proofs on Linux and 59 on Windows, fixed-byte restoration,
+current compilation and contracts. Dashboard and Cargo advisory failures blocked the
+source-platform, SDK, rendered-interface and distribution tiers; they did not run.
+The prior `4e570f1` Windows fixed-build idle failure did not recur; its precise cause
+and a repeatable compiler speedup remain unproved. That earlier macOS cancellation
+was a hosted arm64 capacity failure before acquisition, not a source-test failure.
 The prior-importer companion resolves the old pool swap's E0425 without changing its selected defect.
-Shared identity helpers passed 123 frozen-original version/platform/page/CDP comparisons on both systems. All eight real browser SDK paths passed,
-including Windows Playwright. Fifteen deterministic cleanup-failure controls and the exact prior
+Shared identity helpers passed 123 frozen-original version/platform/page/CDP comparisons on both systems. The earlier `4e570f1` passed all eight real SDK paths,
+including Windows Playwright; those tiers were skipped on `e85d27b`. Fifteen deterministic cleanup-failure controls and the exact prior
 runner's negative control passed on Windows (16 tests, 0.21 seconds); the failed exit, original
 exception, protected bytes and sanitized diagnostics are retained without retries or permission
 changes. The previous cleanup PermissionError's filesystem cause remains unproved.
@@ -30,19 +33,20 @@ comparisons passed on both systems after historical failure/restoration. The ear
 failure stopped during descriptor creation at its five-second idle limit; its particular entropy,
 key-derivation or scheduling cause remains unproved. Development/test-only basic optimization
 retains real cryptographic parameters and default safety checks. Historical commands use a local
-application opt-level0 override, while current acceptance retains opt-level1. Linux now passes the
+application opt-level0 override, while current acceptance retains opt-level1. Both systems now pass
 38 tag/display, four complete-refusal and 83 bulk-selection comparisons, plus the real released-vault
-lock test; Windows acceptance remains pending. Historical proofs and fixed compilation are now
-separate required commands, each bounded by 900 seconds wall/300 seconds idle under the same
-45-minute job. This expands aggregate phase allowance, not a measured speedup. Linux's four CLI
-time/memory log verdicts report no regression; Windows entry/performance acceptance did not run.
-Earlier timing overlaps and vault timeout causes remain unproved.
-Native NaN/infinity refusal remains an explicit nonfinite difference. DNS whitespace preserves
-resolver/backend policy: Linux passed 126 original-derived cases and 40 full-option fixtures;
-both systems proved the historical DNS assertion failure and restored fixed bytes. A prepared
-proxy-echo correction compares 99 original-derived responses through actual loopback transport,
-with an exact historical library proof; execution is pending. Prepared MCP corrections add 99 original-derived stdio boundary/fragmentation cases and 44 captured-command output cases with exact historical assertions, retaining frame/UTF8/ownership limits and nonzero JSON verdicts; execution is pending.
-Fixed builds reuse sanitized Cargo progress, not heartbeat or longer deadlines. All 436 mapped references remain pending.
+lock test. Historical proofs and fixed compilation remain separate required commands, each bounded
+by 900 seconds wall/300 seconds idle under the same 45-minute job. Both systems' four foreground CLI
+time/memory log verdicts report no regression; earlier overlap and vault timeout causes remain unproved.
+Native NaN/infinity refusal remains an explicit nonfinite difference. Both systems pass 126 DNS
+cases and 40 full-option fixtures, 99 actual-loopback proxy responses, 99 MCP stdio boundary cases
+and 44 captured-output cases after named historical assertion failures and fixed-byte restoration.
+MCP retains UTF8/frame/ownership limits and nonzero JSON verdicts; its real child ping/list passed
+with owned-tree settlement. Ordinary output cases do not certify every forced-timeout cleanup branch.
+Fixed builds reuse sanitized Cargo progress, not heartbeat or longer deadlines. All 436 mapped
+references remain pending; the source mapping guard was skipped in this batch. Prepared Zod 4.6.7
+and ctutils 0.4.5 lockfile updates address GHSA-mrhx-c7xc-m3w5 and RUSTSEC-2026-0385 without changing
+other resolved records or manifests; replacement hosted dependency/application acceptance is pending.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The
