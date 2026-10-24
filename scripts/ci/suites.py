@@ -357,15 +357,24 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
     candidate_action = yaml.load((root / '.github/actions/native-candidate-acceptance/action.yml')
                                  .read_text(encoding='utf-8'), Loader=UniqueLoader)
     candidate_steps = candidate_action.get('runs', {}).get('steps', [])
-    if (candidate_action.get('runs', {}).get('using') != 'composite' or len(candidate_steps) != 5
-            or any(step.get('continue-on-error') or step.get('if') for step in candidate_steps)):
+    if (candidate_action.get('runs', {}).get('using') != 'composite' or len(candidate_steps) != 7
+            or any(step.get('continue-on-error') for step in candidate_steps)
+            or any(step.get('if') for step in candidate_steps[:6])
+            or candidate_steps[6].get('if') != 'always()'):
         raise ValueError('Native application acceptance must remain required and complete')
-    candidate_text = json.dumps(candidate_steps)
-    for fragment in ('--test browser_adapter_live', '--ignored', '--test-threads=1',
-                     'candidate_stage.py --report', 'candidate_acceptance.py --report',
-                     'ci-source.json', 'dashboard-dist', '--wall 600 --idle 150 --report-units'):
-        if fragment not in candidate_text:
+    for step, fragments in zip(candidate_steps, (
+            ('--test browser_adapter_live', '--ignored', '--test-threads=1'),
+            ('dashboard-dist', 'build/native-candidate/dashboard'),
+            ('ci-source.json', 'GITHUB_SHA'),
+            ('candidate_stage.py --release --report', '--wall 960 --idle 330'),
+            ('candidate_acceptance.py --report', '--wall 600 --idle 150 --report-units'),
+            ('benchmark_browser.py --report', '--wall 600 --idle 150 --report-units',
+             '--engine', '--destination build/native-candidate/browser-performance.json'),
+            ('browser-performance-${{ runner.os }}-${{ inputs.engine }}', 'browser-performance.json'))):
+        if any(fragment not in json.dumps(step) for fragment in fragments):
             raise ValueError('Missing required native application acceptance stage')
+    if candidate_steps[6].get('with', {}).get('if-no-files-found') != 'error':
+        raise ValueError('Missing browser measurements must fail artifact acceptance')
     performance = yaml.load((root / '.github/actions/native-entry-performance/action.yml')
                             .read_text(encoding='utf-8'), Loader=UniqueLoader)
     steps = performance.get('runs', {}).get('steps', [])

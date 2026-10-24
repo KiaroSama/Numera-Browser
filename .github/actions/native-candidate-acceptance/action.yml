@@ -26,7 +26,7 @@ runs:
       shell: bash
       run: >-
         python scripts/migration/run_owned.py --wall 960 --idle 330 --
-        python scripts/migration/candidate_stage.py --report build/native-candidate/cargo.jsonl
+        python scripts/migration/candidate_stage.py --release --report build/native-candidate/cargo.jsonl
     - name: Real relocated application CLI MCP HTTP and browser lifecycle
       shell: bash
       env:
@@ -35,3 +35,19 @@ runs:
         python scripts/migration/run_owned.py --wall 600 --idle 150 --report-units --
         python scripts/migration/candidate_acceptance.py --report build/native-candidate/cargo.jsonl
         --dashboard build/native-candidate/dashboard --engine "$CANDIDATE_ENGINE"
+    - name: Real browser performance against the immutable original
+      shell: bash
+      env:
+        CANDIDATE_ENGINE: ${{ inputs.engine }}
+      run: >-
+        python scripts/migration/run_owned.py --wall 600 --idle 150 --report-units --
+        python scripts/migration/benchmark_browser.py --report build/native-candidate/cargo.jsonl
+        --engine "$CANDIDATE_ENGINE" --destination build/native-candidate/browser-performance.json
+    - name: Preserve exact-source browser measurement evidence
+      if: always()
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: browser-performance-${{ runner.os }}-${{ inputs.engine }}
+        path: build/native-candidate/browser-performance.json
+        if-no-files-found: error
+        retention-days: 7

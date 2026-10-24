@@ -160,6 +160,24 @@ peak ranges also stayed disjoint/lower within each host's metric. This does not 
 prior overlap or certify browser performance. Windows source coverage separately failed:
 a ten-module block met a nine-module checkpoint guard; its growth repair is unverified.
 
+A real-browser measurement extension is source-prepared, not executed. Each existing
+Windows/Linux four-engine leg will reuse one optimized candidate build after its
+functional acceptance, then compare actual original/native `cookies export` commands
+against equal copies of a persistent profile seeded by the immutable original.
+One excluded warm-up precedes seven alternating pairs. Every export must match the
+complete baseline cookie document, including order and types; profile/config bytes
+and a synthetic session sentinel remain protected. Browser-owned databases and caches
+are not expected to be byte-identical after a normal open/close.
+
+The browser-only command ceiling is 90 seconds under the existing 600-second wall /
+150-second idle owner; foreground CLI samples retain their 15-second default. Both
+the direct command and every newly reported SDK tree must settle naturally before a
+measurement can be accepted. Emergency cleanup cannot convert a surviving browser
+into a valid sample. Windows uses the birth-job committed peak; Linux still reports
+the largest waited-child lifetime RSS, not simultaneous tree RSS. The unchanged
+strict range criterion may refuse overlapping browser measurements. No browser result,
+full migration acceptance or default switch is claimed until hosted evidence exists.
+
 Creation explicitly sets the default engine, so its settings write is checked
 against the complete expected JSON document separately from unrelated byte
 preservation. The original Windows text writer uses CRLF while the native writer

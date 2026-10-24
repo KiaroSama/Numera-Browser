@@ -71,6 +71,11 @@ exemptions require nonblank explanations. Actual HTTP request performance passed
 systems, including ordered response/byte parity and 163 complete, clean ownership units.
 The Windows source runner's fixed nine-module checkpoint refused a discovered ten-module
 block; a growth-aware final slot and aggregate failure controls are prepared, not executed.
+Real-browser cookie-export measurements are also source-prepared for the existing
+four-engine Windows/Linux matrix, reusing one optimized build per leg and the unchanged
+strict seven-pair criterion. Complete source-seeded cookie output, protected metadata,
+session sentinel and natural SDK-tree settlement remain required. No browser performance
+result is claimed; publication and the next exact-source hosted batch are still blocked.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

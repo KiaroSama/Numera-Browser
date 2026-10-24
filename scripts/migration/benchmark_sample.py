@@ -51,7 +51,31 @@ def windows_peak(query):
     return {'metric': 'peak-job-committed-bytes', 'bytes': peak}
 
 
-def observe(argv, environment, logger):
+def registered_receipt(report, deadline):
+    # Parent registration follows spawn; never interpret its pending self-transfer as a target unit.
+    while True:
+        receipt = unit_report.read(report)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise ValueError('Browser benchmark parent ownership receipt did not register its observer')
+        if receipt.complete and any(tree.pid == os.getpid() for tree in receipt.trees):
+            # Registration proves the parent completed job assignment; this query never adopts a job.
+            observer = proctree._inherited_tree()
+            if observer is None or not observer.verified or observer not in receipt.trees:
+                raise ValueError('Browser benchmark observer ownership identity differs from its receipt')
+            return receipt
+        time.sleep(min(.01, remaining))
+
+
+def observe(argv, environment, logger, *, wall=15, nested=False):
+    if not 0 < wall <= 90:
+        raise ValueError('Benchmark deadline must be positive and at most 90 seconds')
+    deadline = time.monotonic() + wall if nested else None
+    report_value = os.environ.get(unit_report.UNITS_ENV)
+    if nested and not report_value:
+        raise ValueError('Browser benchmark requires a parent ownership receipt')
+    report = Path(report_value) if nested else None
+    before = registered_receipt(report, min(deadline, time.monotonic() + 2)) if nested else None
     if sys.platform not in ('linux', 'win32'):
         raise ValueError('Benchmark observation requires Windows or Linux')
     if sys.platform == 'linux':
@@ -75,11 +99,12 @@ def observe(argv, environment, logger):
         readers = [pipe_reader(process.stdout), pipe_reader(process.stderr)]
         buffers = [bytearray(), bytearray()]
         ended = set()
-        deadline = time.monotonic() + 15
+        if deadline is None:
+            deadline = time.monotonic() + wall
         phase = 'capture'
         while len(ended) != 2 or process.poll() is None:
             if time.monotonic() >= deadline:
-                raise TimeoutError('Benchmark child exceeded its 15-second deadline')
+                raise TimeoutError(f'Benchmark child exceeded its {wall}-second deadline')
             progress = False
             for index, read in enumerate(readers):
                 if index in ended:
@@ -105,6 +130,16 @@ def observe(argv, environment, logger):
         if (remaining <= 0 or not proctree.prove_empty(tree, deadline=remaining)
                 or time.monotonic() >= deadline):
             raise ValueError('Foreground benchmark tree did not settle within its deadline')
+        if nested:
+            receipt = unit_report.read(report)
+            if not receipt.complete:
+                raise ValueError('Browser benchmark ownership receipt is incomplete')
+            for child in receipt.trees:
+                if child not in before.trees and child != tree:
+                    remaining = deadline - time.monotonic()
+                    if (remaining <= 0 or not proctree.prove_empty(child, deadline=remaining)
+                            or time.monotonic() >= deadline):
+                        raise ValueError('Browser benchmark nested tree did not settle within its deadline')
         elapsed = time.perf_counter_ns() - started
         phase = 'memory'
         memory = windows_peak(query) if query is not None else linux_peak()
@@ -118,9 +153,19 @@ def observe(argv, environment, logger):
     finally:
         if process is not None:
             try:
-                if not proctree.end_tree(tree, grace=1, kill_grace=3):
-                    raise RuntimeError('Benchmark child cleanup could not be proved')
-                process.wait(timeout=5)
+                clean = proctree.end_tree(tree, grace=1, kill_grace=3)
+                try:
+                    process.wait(timeout=5)
+                finally:
+                    if nested:
+                        receipt = unit_report.read(report)
+                        end = time.monotonic() + 5
+                        for child in receipt.trees:
+                            if child not in before.trees and child != tree:
+                                clean = proctree.end_tree(child, ends_at=end) and clean
+                        clean = receipt.complete and clean
+                    if not clean:
+                        raise RuntimeError('Benchmark child cleanup could not be proved')
             finally:
                 for pipe in (process.stdout, process.stderr):
                     pipe.close()
@@ -135,6 +180,8 @@ def main():
     parser.add_argument('--candidate', type=Path, required=True)
     parser.add_argument('--original', type=Path, required=True)
     parser.add_argument('--runtime', choices=('original', 'native'), required=True)
+    parser.add_argument('--wall', type=int, default=15, help='Command and natural-settlement ceiling, at most 90s')
+    parser.add_argument('--nested', action='store_true', help='Require all reported SDK trees to settle naturally')
     parser.add_argument('arguments', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     arguments = args.arguments[1:] if args.arguments[:1] == ['--'] else args.arguments
@@ -143,7 +190,7 @@ def main():
     environment = dict(os.environ, PYTHONPATH=str(args.original / 'engine'))
     with run_log('benchmark-sample', Path(os.environ['NUMERA_LOG_DIR'])) as logger:
         logger.info('Observing runtime=%s', args.runtime)
-        result = observe([*executable, *arguments], environment, logger)
+        result = observe([*executable, *arguments], environment, logger, wall=args.wall, nested=args.nested)
         print(json.dumps(result, allow_nan=False), flush=True)
     return 0
 
