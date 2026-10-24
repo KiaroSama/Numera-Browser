@@ -7,15 +7,15 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 24, 2026
 
-The latest completed checkpoint `8e94027` ran in manual hosted batch
-[40048618488](https://github.com/KiaroSama/Numera-Browser/actions/runs/40048618488),
-which failed on October 24 at 01:38 UTC: 27 workflow jobs passed, three failed and
-three distribution/publication stages were skipped; external CodeQL also failed.
-Both native jobs, all source-platform partitions, seven real SDK paths, dashboard,
-rendered updater and dependency audits passed. Linux/Camoufox reached the unchanged
-300-second prerequisite-installation limit before its source/native SDK tests ran;
-process-tree and output-reader settlement remained unproved. No retry or deadline
-extension was added. Historical timezone failure/restoration and current tests passed.
+The latest completed checkpoint `1397538` ran in manual hosted batch
+[40055753654](https://github.com/KiaroSama/Numera-Browser/actions/runs/40055753654),
+which failed on October 24 at 03:16 UTC solely at independent CodeQL and required
+verification: 28 workflow jobs passed, two failed and three distribution/publication
+stages were skipped; external CodeQL also failed. Both native jobs, all source-platform
+partitions, all eight real SDK paths, dashboard, rendered updater and dependency audits
+passed. Linux/Camoufox prerequisites completed within the unchanged limit this time;
+this does not establish the previous slow-download or unsettled-cleanup cause.
+No retry, deadline extension or privilege change was added.
 The prior Windows fixed-build idle failure did not recur; its precise cause and a
 repeatable compiler speedup remain unproved. The earlier macOS cancellation was a
 hosted arm64 capacity failure; this checkpoint's retained-runtime macOS tests passed.
@@ -50,9 +50,9 @@ references are navigation evidence, not complete parity; every newly mapped occu
 Zod 4.6.7 and ctutils 0.4.5 resolved GHSA-mrhx-c7xc-m3w5 and RUSTSEC-2026-0385 through passing
 hosted audits and application/native checks, without changing other resolved records or manifests.
 The shared timezone correction passed 103 original-derived proxy/trust grade pairs on both systems
-after the exact prior source failed its named assertion and fixed bytes were restored. A prepared
-alignment correction preserves Unicode decimal Chrome-version spelling with UTF8-safe offsets;
-its 92 full-fingerprint/change-label comparisons and historical assertion have not run.
+after the exact prior source failed its named assertion and fixed bytes were restored. Alignment
+also passed 92 full-fingerprint/change-label comparisons after its exact prior source failed at
+case 1 and fixed bytes were restored. Shared-store HTTP/CLI write replay is prepared, not yet run.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The
