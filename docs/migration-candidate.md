@@ -96,19 +96,19 @@ passed this expanded sequence on Windows and Linux. It does not establish comple
 crash/selector/browser-database rollback or acceptance of every source occurrence.
 
 Actual HTTP replay passed on both systems in
-[40066551850](https://github.com/KiaroSama/Numera-Browser/actions/runs/40066551850):
+[40071135323](https://github.com/KiaroSama/Numera-Browser/actions/runs/40071135323):
 original/native HTTP writes, both CLI reopen paths, stale/invalid/unauthorized
 refusals, stable fields/session bytes and original-server restart. Each system
-reported 18 complete, clean ownership units. Functional steps now precede performance;
-Linux then failed detached acceptance with a shared-helper missing-report KeyError.
-Its later signal/entry/performance steps were skipped; no gate was relaxed.
+reported 18 complete, clean ownership units. Both native jobs passed; Linux detached
+jobs and three MCP signal/ancestor cases passed after the shared-executor correction.
 
 Both systems proved the old confirmation source fails case 4, restored fixed bytes and
-passed 39 output/input cases. Windows passed four actual deletion/refusal pairs; Linux did not.
-The executor correction preserves child-selected environments and durable detached
-owners, records only its direct tree and lets entry main forward its outer receipt.
-Failed fixtures remain retained; only success removes them. The correction's new
-receipt/environment/failure controls await hosted execution.
+passed 39 output/input cases plus four actual deletion/refusal pairs. The executor
+preserves child-selected environments/durable detached owners, records its direct tree
+and lets entry main forward its outer receipt. Twenty helper controls passed through
+source-suite discovery; actual entry replay reported 172 complete, clean units per host.
+Failed fixtures remain retained; only success removes them. Prepared model-policy drift
+checks are not yet executed and do not certify Python reflection or full migration.
 
 ## Representative release performance
 
@@ -148,8 +148,8 @@ API/browser or complete migration performance acceptance.
 Checkpoint `5501361` passed all four Windows comparisons but refused Linux vault-read
 timing: native 89.825–502.846 ms overlapped original 343.394–347.005 ms. Other Linux
 verdicts passed; the outlying sample was not removed or accepted, and its cause is unknown.
-Checkpoint `8109fe4` again passed four Windows time/memory comparisons with 131 complete,
-clean ownership units. Linux performance was skipped after the detached helper failure.
+Checkpoint `966e450` passed all four comparisons on both systems with 131 complete,
+clean ownership units each. This does not diagnose or erase the earlier timing overlap.
 
 Creation explicitly sets the default engine, so its settings write is checked
 against the complete expected JSON document separately from unrelated byte

@@ -170,4 +170,102 @@ with run_log('optional-proxy-oracle',root/'logs') as log:
     Ok(())
 }
 
+fn policy_gaps(record: &Value, table: &Value) -> Result<Value, Box<dyn std::error::Error>> {
+    use std::collections::BTreeSet;
+
+    let record = record
+        .as_object()
+        .ok_or("Serialized model must be an object")?;
+    let table = table.as_object().ok_or("Field policy must be an object")?;
+    let fields: BTreeSet<_> = record.keys().collect();
+    let rules: BTreeSet<_> = table.keys().collect();
+    let unexplained: BTreeSet<_> = table
+        .iter()
+        .filter(|(_, rule)| {
+            matches!(rule["kind"].as_str(), Some("owned" | "normalized"))
+                && rule["why"].as_str().is_none_or(|why| {
+                    why.chars()
+                        .all(|c| c.is_whitespace() || matches!(c, '\u{1c}'..='\u{1f}'))
+                })
+        })
+        .map(|(name, _)| name)
+        .collect();
+    Ok(json!({
+        "unpoliced": fields.difference(&rules).collect::<Vec<_>>(),
+        "phantom": rules.difference(&fields).collect::<Vec<_>>(),
+        "unexplained": unexplained,
+    }))
+}
+
+#[test]
+fn serialized_model_fields_have_exact_explained_source_policies()
+-> Result<(), Box<dyn std::error::Error>> {
+    let oracle: Value = serde_json::from_str(include_str!("fixtures/models.json"))?;
+    let case = oracle["cases"]
+        .as_array()
+        .ok_or("Model cases missing")?
+        .iter()
+        .find(|case| case["operation"] == "profile")
+        .ok_or("Original profile fixture missing")?;
+    let profile = Profile::from_record(&case["input"])?;
+    let proxy = profile
+        .proxy
+        .as_ref()
+        .ok_or("Original proxy fixture missing")?;
+    let record = serde_json::to_value(&profile)?;
+    assert_eq!(
+        serde_json::to_value(proxy)?,
+        proxy.to_record(),
+        "Proxy intent metadata leaked into storage"
+    );
+    let policy: Value = serde_json::from_str(include_str!("../src/field_policy.json"))?;
+    let empty = json!({"unpoliced": [], "phantom": [], "unexplained": []});
+    for (name, record) in [
+        ("Profile", &record),
+        ("Fingerprint", &record["fingerprint"]),
+        ("Proxy", &record["proxy"]),
+    ] {
+        assert_eq!(
+            policy_gaps(record, &policy["policy"]["tables"][name])?,
+            empty,
+            "Serialized {name} field policy differs"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn policy_coverage_guard_detects_new_removed_and_unexplained_fields()
+-> Result<(), Box<dyn std::error::Error>> {
+    let record = json!({"new_field": null, "owned": null, "normalized": null});
+    for reason in [
+        "",
+        " \t\r\n",
+        "\u{1c}\u{1d}\u{1e}\u{1f}",
+        "\u{85}\u{a0}\u{2003}\u{3000}",
+    ] {
+        let policy = json!({
+            "gone": {"kind": "text"},
+            "owned": {"kind": "owned", "why": reason},
+            "normalized": {"kind": "normalized", "why": reason},
+        });
+        assert_eq!(
+            policy_gaps(&record, &policy)?,
+            json!({
+                "unpoliced": ["new_field"],
+                "phantom": ["gone"],
+                "unexplained": ["normalized", "owned"],
+            })
+        );
+    }
+    assert_eq!(
+        policy_gaps(
+            &json!({"owned": null}),
+            &json!({"owned": {"kind": "owned", "why": "Stamped by writer"}})
+        )?,
+        json!({"unpoliced": [], "phantom": [], "unexplained": []})
+    );
+    Ok(())
+}
+
 mod common;
