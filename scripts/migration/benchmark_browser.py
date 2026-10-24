@@ -7,12 +7,13 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import sys
 import time
 
 from benchmark import REPETITIONS, execute, fixture_directory, verdict
-from candidate_acceptance import bind_sdk_cache
+from candidate_acceptance import bind_sdk_cache, failure_diagnostics
 from candidate_stage import artifact
 from replay_rollback import exact_json
 from run_logging import run_log
@@ -46,7 +47,17 @@ def baseline(parent, env, engine):
             [sys.executable, '-m', 'numera', '--data-dir', str(root), *arguments, '--json'],
             env, timeout=100 if browser else 15)
         if code or stderr:
-            raise ValueError('Original browser benchmark baseline command failed')
+            kinds = {'ValueError', 'RuntimeError', 'OSError', 'FileNotFoundError', 'PermissionError',
+                     'TimeoutError', 'Error', 'TargetClosedError', 'ImportError', 'ModuleNotFoundError'}
+            kind = 'unknown'
+            for line in stderr[:65536].splitlines():
+                match = re.fullmatch(r'([A-Za-z_][A-Za-z_0-9]*):.*', line)
+                if match and match[1] in kinds:
+                    kind = match[1]
+            operation = 'cookies-' + arguments[1] if arguments[0] == 'cookies' else 'create'
+            raise ValueError('Original browser benchmark baseline command failed '
+                             f'operation={operation} exit={code} type={kind} '
+                             f'stdout_bytes={len(stdout.encode("utf-8"))} stderr_bytes={len(stderr.encode("utf-8"))}')
         return json.loads(stdout)
 
     created = command('create', 'Browser benchmark fixture', '--seed', '42', '--engine', engine)
@@ -95,7 +106,8 @@ def metadata_bytes(root):
 def observation(candidate, original, parent, template, env, runtime, identifier):
     with fixture_directory('browser-pair-', parent, retain=True) as workspace:
         root = workspace / 'data with spaces'
-        shutil.copytree(template, root)
+        # Firefox lock links name host/PID ownership, not a file to dereference.
+        shutil.copytree(template, root, symlinks=True)
         before = metadata_bytes(root)
         marker = root / 'user-data' / identifier / 'sentinel.bin'
         if marker.read_bytes() != SENTINEL:
@@ -178,6 +190,7 @@ def run(report, destination, engine, logger):
             stream.write(json.dumps(evidence, indent=2, allow_nan=False) + '\n')
         logger.info('Browser performance verdict engine=%s time=%s memory=%s', engine, result['time'], result['memory'])
         if any(result[key] != 'no-regression' for key in ('time', 'memory')):
+            failure_diagnostics(parent / 'logs', logger)
             raise ValueError('Browser performance blocked: regression or inconclusive measurements; inputs retained')
     return 0
 

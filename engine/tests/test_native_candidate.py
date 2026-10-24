@@ -275,6 +275,11 @@ def test_candidate_failure_diagnostics_keep_only_bounded_safe_events(tmp_path, m
         prefix + 'Camoufox SDK import complete\n'
         + prefix + 'Operation failed operation=open type=FileNotFoundError\n'
         + prefix + 'Operation failed operation=open type=private_fixture_value\n'
+        + prefix + 'SDK timing operation=open elapsed_ns=1234\n'
+        + prefix + 'SDK timing operation=cleanup elapsed_ns=56\n'
+        + prefix + 'SDK timing operation=private_fixture_value elapsed_ns=1\n'
+        + prefix + 'SDK timing operation=open elapsed_ns=-1\n'
+        + prefix + 'SDK timing operation=open elapsed_ns=123456789012345678901\n'
         + prefix + 'secret=private_fixture_value\n'
         + 'unstructured private_fixture_value\n', encoding='utf-8')
     (logs / 'native-cli_fixture.log').write_text(
@@ -290,6 +295,9 @@ def test_candidate_failure_diagnostics_keep_only_bounded_safe_events(tmp_path, m
     assert 'Camoufox SDK import complete' in text
     assert 'operation=open type=FileNotFoundError' in text
     assert 'type=unknown' in text
+    assert 'SDK timing operation=open elapsed_ns=1234' in text
+    assert 'SDK timing operation=cleanup elapsed_ns=56' in text
+    assert 'elapsed_ns=-1' not in text and '123456789012345678901' not in text
     assert 'Startup' in text
     assert 'private_fixture_value' not in text
     assert 'persistent context entered' not in text

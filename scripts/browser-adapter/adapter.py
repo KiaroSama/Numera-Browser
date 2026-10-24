@@ -161,6 +161,7 @@ def main():
             if request.get('protocol') != PROTOCOL or type(request_id) is not int or request_id < 1:
                 raise ValueError('Invalid protocol envelope')
             operation = request.get('operation')
+            started = time.perf_counter_ns()
             try:
                 if operation == 'hello' and not initialized:
                     send(request_id, {'backends': available(), 'runtime': sys.version.split()[0]})
@@ -295,10 +296,14 @@ def main():
                 send(request_id, error={'kind':'sdk','type':type(error).__name__})
                 exit_code = 1
                 break
+            finally:
+                label = operation if operation in ('hello','open','close','inspect','navigate','mouse','route','evaluate','cookies-read','cookies-clear','cookies-add') else 'invalid'
+                log.info('SDK timing operation=%s elapsed_ns=%s', label, time.perf_counter_ns() - started)
     except Exception as error:
         log.error('Protocol failed type=%s', type(error).__name__)
         exit_code = 1
     finally:
+        started = time.perf_counter_ns()
         for action in (lambda: manager.__exit__(None,None,None) if manager else context.close() if context else None,
                        lambda: owner.stop() if owner else None):
             try:
@@ -306,6 +311,7 @@ def main():
             except Exception as error:
                 log.error('SDK cleanup failed type=%s', type(error).__name__)
                 exit_code = 1
+        log.info('SDK timing operation=cleanup elapsed_ns=%s', time.perf_counter_ns() - started)
         if closing_request is not None:
             try:
                 send(closing_request, {'closing': True} if exit_code == 0 else None,

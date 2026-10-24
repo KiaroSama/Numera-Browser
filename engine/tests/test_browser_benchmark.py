@@ -31,7 +31,7 @@ def fixture(tmp_path):
     return root
 
 
-@pytest.mark.parametrize('mode', ['normal', 'seed-refusal', 'lost-cookie', 'metadata'])
+@pytest.mark.parametrize('mode', ['normal', 'seed-refusal', 'stderr-refusal', 'lost-cookie', 'metadata'])
 def test_browser_baseline_uses_original_and_checks_actual_persistence(tmp_path, monkeypatch, mode):
     helper = load(monkeypatch)
     identifier = '0123456789ab'
@@ -51,8 +51,9 @@ def test_browser_baseline_uses_original_and_checks_actual_persistence(tmp_path, 
         elif argv[6] == 'import':
             assert timeout == 100 and argv[-2:] == ['--clear', '--json']
             seeded.extend(json.loads(Path(argv[8]).read_text(encoding='utf-8'))['cookies'])
-            if mode == 'seed-refusal':
-                return 1, '{}', ''
+            if mode in ('seed-refusal', 'stderr-refusal'):
+                stderr = 'Traceback: private-path\nRuntimeError: do-not-expose-credential\n'
+                return (1 if mode == 'seed-refusal' else 0), '{"error":"private-value"}', stderr
             payload = {'ok': True, 'imported': 2, 'cleared': True}
         else:
             assert timeout == 100 and argv[6] == 'export'
@@ -70,8 +71,14 @@ def test_browser_baseline_uses_original_and_checks_actual_persistence(tmp_path, 
         assert (root / 'user-data' / identifier / 'sentinel.bin').read_bytes() == helper.SENTINEL
         assert len(calls) == 3
     else:
-        with pytest.raises(ValueError, match='baseline|persistence|metadata'):
+        with pytest.raises(ValueError, match='baseline|persistence|metadata') as refused:
             helper.baseline(tmp_path, {'PYTHONPATH': 'immutable-original'}, 'camoufox')
+        if mode in ('seed-refusal', 'stderr-refusal'):
+            message = str(refused.value)
+            assert 'operation=cookies-import' in message and 'type=RuntimeError' in message
+            assert f'exit={1 if mode == "seed-refusal" else 0}' in message
+            assert 'stdout_bytes=25' in message and 'stderr_bytes=' in message
+            assert not any(value in message for value in ('private-path', 'private-value', 'do-not-expose'))
 
 
 def test_browser_environment_binds_sdk_without_inheriting_real_application_state(tmp_path, monkeypatch):
@@ -97,8 +104,20 @@ def test_browser_environment_binds_sdk_without_inheriting_real_application_state
 def test_browser_pair_checks_full_export_and_preserves_failed_inputs(tmp_path, monkeypatch, mode):
     helper = load(monkeypatch)
     root = fixture(tmp_path)
+    import os
+    lock = root / 'user-data/fixture/lock'
+    if os.name != 'nt':
+        lock.symlink_to('127.0.0.1:+12345')
+        original_lock = lock.lstat()
     cookies = [{'name': 'one', 'expires': 1900000000}, {'name': 'two', 'httpOnly': True}]
     calls = []
+    copytree = helper.shutil.copytree
+
+    def copy(source, destination, **options):
+        assert options == {'symlinks': True}, 'Browser profile links must not be dereferenced or ignored'
+        return copytree(source, destination, **options)
+
+    monkeypatch.setattr(helper, 'shutil', SimpleNamespace(copytree=copy))
 
     def execute(argv, env, *, timeout):
         calls.append(argv)
@@ -109,6 +128,10 @@ def test_browser_pair_checks_full_export_and_preserves_failed_inputs(tmp_path, m
         export = Path(argv[-4])
         assert copied != root and copied.name == 'data with spaces'
         assert (copied / 'profiles/fixture.json').read_bytes() == (root / 'profiles/fixture.json').read_bytes()
+        if os.name != 'nt':
+            copied_lock = copied / 'user-data/fixture/lock'
+            assert copied_lock.is_symlink() and not copied_lock.exists()
+            assert os.readlink(copied_lock) == '127.0.0.1:+12345'
         rows = json.loads(json.dumps(cookies))
         if mode == 'cookie':
             rows[0]['name'] = 'changed'
@@ -139,6 +162,9 @@ def test_browser_pair_checks_full_export_and_preserves_failed_inputs(tmp_path, m
         assert (payload == helper.exact_json({'cookies': cookies})) == (mode == 'normal')
     assert len(calls) == 1 and len(list(tmp_path.glob('browser-pair-*'))) == 1
     assert (root / 'profiles/fixture.json').read_text(encoding='utf-8') == '{"future":[true,7]}'
+    if os.name != 'nt':
+        assert lock.is_symlink() and os.readlink(lock) == '127.0.0.1:+12345'
+        assert (lock.lstat().st_ino, lock.lstat().st_mtime_ns) == (original_lock.st_ino, original_lock.st_mtime_ns)
 
 
 @pytest.mark.parametrize('mode', ['normal', 'parity', 'inconclusive', 'metric', 'write'])
@@ -177,6 +203,8 @@ def test_browser_run_requires_all_pairs_and_retains_unaccepted_evidence(tmp_path
                 runtime if mode == 'parity' else helper.exact_json(baseline_payload))
 
     monkeypatch.setattr(helper, 'observation', observation)
+    diagnostics = []
+    monkeypatch.setattr(helper, 'failure_diagnostics', lambda path, logger: diagnostics.append(path))
     logger = SimpleNamespace(info=lambda *args: None)
     if mode == 'normal':
         assert helper.run(tmp_path / 'report', destination, 'playwright', logger) == 0
@@ -187,6 +215,9 @@ def test_browser_run_requires_all_pairs_and_retains_unaccepted_evidence(tmp_path
         retained = list(temporary.glob('browser-benchmark-*'))
         assert len(retained) == 1
         assert len(list(retained[0].glob('browser-pair-*/input.json'))) == len(observed)
+    assert len(diagnostics) == int(mode == 'inconclusive')
+    if diagnostics:
+        assert diagnostics[0] == retained[0] / 'logs'
     if mode != 'parity':
         assert observed == [runtime for index in range(-1, 7) for runtime in
                             (('original', 'native') if index % 2 == 0 else ('native', 'original'))]

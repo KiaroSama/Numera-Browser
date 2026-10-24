@@ -48,12 +48,24 @@ fn target(target: &str, connect: bool) -> io::Result<(String, u16, String)> {
         .filter(|host| !host.is_empty())
         .ok_or_else(|| io::Error::other("browser request has no host"))?;
     let port = url.port_or_known_default().unwrap_or(80);
-    let mut path = if url.path().is_empty() {
+    // Validate the destination above, but forward the original path without URL normalization.
+    let raw = target.split_once("://").map(|(_, authority)| {
+        let start = authority.find(['/', '?', '#']).unwrap_or(authority.len());
+        let suffix = &authority[start..];
+        suffix.split_once('#').map_or(suffix, |(path, _)| path)
+    });
+    let (path, query) = if let Some(raw) = raw {
+        raw.split_once('?')
+            .map_or((raw, None), |(path, query)| (path, Some(query)))
+    } else {
+        (url.path(), url.query())
+    };
+    let mut path = if path.is_empty() {
         "/".into()
     } else {
-        url.path().to_owned()
+        path.to_owned()
     };
-    if let Some(query) = url.query() {
+    if let Some(query) = query.filter(|query| !query.is_empty()) {
         path.push('?');
         path.push_str(query);
     }
@@ -140,7 +152,10 @@ pub(super) async fn serve(
         let connect = method.eq_ignore_ascii_case("CONNECT");
         let (host, port, path) = target(target_text, connect)?;
         let line = if upstream.socks() && !connect {
-            format!("{method} {path} {version}").into_bytes()
+            format!("{method} {path} {version}")
+                .chars()
+                .map(|character| character as u8)
+                .collect()
         } else {
             line.to_vec()
         };

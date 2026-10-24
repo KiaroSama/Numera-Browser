@@ -79,3 +79,51 @@ def test_existing_native_selection_disables_updates_before_import_and_preserves_
     assert executable.read_bytes() == b'fixture executable; never executed'
     assert options == {'user_data_dir': str(tmp_path / 'profile'), 'headless': True,
                        'browser_version': '146.0.7680.177.5'}
+
+
+@pytest.mark.parametrize('failure', [False, True])
+def test_sdk_operation_timing_never_logs_payloads(tmp_path, monkeypatch, failure):
+    import io
+    import sys
+    module = adapter()
+    monkeypatch.delenv('NUMERA_ADAPTER_FIRST_PAGE', raising=False)
+    output = io.BytesIO()
+    events = []
+    clock = iter([100, 110, 130, 140, 170, 180, 200, 210])
+    monkeypatch.setattr(module.os, 'dup', lambda fd: 99)
+    monkeypatch.setattr(module.os, 'set_inheritable', lambda *args: None)
+    monkeypatch.setattr(module.os, 'fdopen', lambda *args: output)
+    monkeypatch.setattr(module.os, 'dup2', lambda *args, **kwargs: None)
+    monkeypatch.setattr(module.sys, 'stdout', SimpleNamespace(fileno=lambda: 1))
+    monkeypatch.setattr(module.sys, 'stdin', SimpleNamespace(buffer=object()))
+    monkeypatch.setattr(module.time, 'perf_counter_ns', lambda: next(clock))
+    log = SimpleNamespace(info=lambda message, *args: events.append(message % args),
+                          error=lambda message, *args: events.append(message % args), handlers=[])
+    monkeypatch.setattr(module, 'logger', lambda: log)
+    monkeypatch.setattr(module, 'available', lambda: {'fixture': True})
+    frames = iter([
+        (True, {'id': 1, 'protocol': 1, 'operation': 'hello'}),
+        (True, {'id': 2, 'protocol': 1, 'operation': 'open', 'backend': 'cloak',
+                'options': {'user_data_dir': 'private-profile', 'password': 'private-value'}}),
+        (True, {'id': 3, 'protocol': 1, 'operation': 'close'}),
+    ])
+    monkeypatch.setitem(sys.modules, 'frame_input', SimpleNamespace(
+        FrameInput=lambda *args: SimpleNamespace(poll=lambda: next(frames))))
+    context = SimpleNamespace(on=lambda *args: None, pages=[object()], close=lambda: None)
+
+    def opened(*args):
+        if failure:
+            raise RuntimeError('private-value private-profile')
+        return None, context, None
+
+    monkeypatch.setattr(module, 'open_context', opened)
+    assert module.main() == int(failure)
+    timings = [event for event in events if event.startswith('SDK timing ')]
+    assert timings == [
+        'SDK timing operation=hello elapsed_ns=10',
+        'SDK timing operation=open elapsed_ns=10',
+        *([] if failure else ['SDK timing operation=close elapsed_ns=10']),
+        'SDK timing operation=cleanup elapsed_ns=10',
+    ]
+    assert not any('private-' in event for event in events)
+    assert output.closed

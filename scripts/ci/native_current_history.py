@@ -161,4 +161,14 @@ CURRENT_CALLER_REGRESSIONS = (
                 '85987e107f9aa70c6a3f17fea325eaac4d67309d9a2fe446b288a6ca6be1aa1a',
         },
     },
+    {
+        'target': 'relay_request_parity',
+        'test': 'socks_origin_requests_preserve_original_target_bytes',
+        'symptom': 'SOCKS origin request bytes differ',
+        'commit': '60ffc489916e7a2560229fcc5a7be5b813196e72',
+        'files': {
+            'engine-rust/src/network/relay_http.rs':
+                '830ac7683ae157810cb5f2589f0e253cc6c09661b3204f6785b9417f2ca738dd',
+        },
+    },
 )

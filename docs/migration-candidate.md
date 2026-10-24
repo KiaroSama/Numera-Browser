@@ -162,11 +162,17 @@ checkpoint growth repair: all 39 selected modules and 916 tests passed. Both nat
 platforms also reproduced the prior restore-name ownership defect, restored the fixed
 source and passed its twelve original-derived public restore cases.
 
-The first real-browser measurement attempt stopped before sampling: its shallow checkout
-lacked the immutable original. Full-history checkout and a blocking workflow guard are
-prepared. Two fake-clock controls also required separating registration and pipe-EOF
-waits; production deadlines and measurement criteria are unchanged. These corrections
-still need hosted verification.
+The first real-browser attempt lacked immutable history. Full-history checkout and its
+blocking guard, plus registration/pipe-EOF fake-clock corrections, passed source-platform
+verification in [40103258897](https://github.com/KiaroSama/Numera-Browser/actions/runs/40103258897)
+on `60ffc48`. The batch still failed: six browser comparisons produced regression or
+inconclusive verdicts; Linux Camoufox stopped at a dangling profile-lock link and Linux
+Cloak's original cookie-import baseline refused without a causal diagnostic.
+Synthetic profile copies now preserve links rather than dereference them. Baseline
+refusals expose only operation/exit/byte counts/allowlisted exception type; SDK file logs
+record monotonic operation/cleanup durations. These repairs await hosted verification;
+no performance cause or improvement is claimed. Linux HTTP timing also overlapped;
+strict criteria, every sample and all ownership checks remain unchanged.
 
 The real-browser measurement extension has no accepted measurements yet. Each existing
 Windows/Linux four-engine leg will reuse one optimized candidate build after its
@@ -751,6 +757,11 @@ idempotence and stop, with 24 complete, clean ownership units. Its earlier
 pre-isolation cache root. Both native tiers previously proved the historical
 metadata bytecode failure, restored fixed bytes and passed the current tests.
 CodeQL and required verification still failed; the integrated batch is not green.
+
+The SOCKS relay now preserves validated raw origin-form path/query bytes rather than
+rebuilding a normalized URL path. Nineteen immutable-original-derived full-wire cases,
+remote-DNS identity, binary responses and exact historical failure/restoration are
+prepared but not executed; HTTP upstream forwarding, CONNECT and ownership are unchanged.
 
 See [migration status](migration.md). CodeQL, the 907-row capability ledger, complete
 application coverage, representative replay, repeated comparative time/peak-memory
