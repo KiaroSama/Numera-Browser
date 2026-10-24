@@ -229,7 +229,14 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'commit': 'd0d81cc6c173c302520f107061f53b57ff0ce885',
         'files': {'engine-rust/src/storage/repo_write.rs':
                   'ce4d904503fd52f828896f9abd840e76aee1e0131f292064fd99a875a864c53f'},
-    },)
+    }, {
+        'target': 'profile_restore_parity',
+        'test': 'restore_copy_candidates_match_original_existing_name_ownership',
+        'symptom': 'Restore candidate ownership differs',
+        'commit': '5f356644fa7a132862b002bebf8222931bccc806',
+        'files': {'engine-rust/src/storage/restore.rs':
+                  '85987e107f9aa70c6a3f17fea325eaac4d67309d9a2fe446b288a6ca6be1aa1a'},
+    })
     assert module.CURRENT_CALLER_REGRESSIONS[0] == {
         'target': 'mcp_parity',
         'test': 'stdio_text_boundaries_match_original_responses',
@@ -328,7 +335,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/cli/output.rs':
                   'aab0acee9ecf439ddf252a983878e908b362eebeb54901e6e892d205b2b55ac6'},
     }
-    assert module.CURRENT_CALLER_REGRESSIONS[-1:] == expected
+    assert module.CURRENT_CALLER_REGRESSIONS[-2:] == expected
     assert module.REGRESSIONS == module._SETTINGS_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
     assert not any(case.get('companions') for case in module.CURRENT_CALLER_REGRESSIONS)
 

@@ -164,15 +164,16 @@ impl ProfileRepo {
             }
             let held = self.held_names()?;
             if let Some(name) = profile.name.as_str().filter(|name| !name.is_empty()) {
-                let own = held
-                    .get(&profile.id)
-                    .is_some_and(|names| names.iter().any(|held| held == name));
-                let taken = |candidate: &str| {
-                    held.iter().any(|(id, names)| {
-                        id != &profile.id && names.iter().any(|name| name == candidate)
-                    })
+                // An existing name is not a new claim, including copy candidates
+                // shared by legacy records. Match the ordinary write policy.
+                let available = |candidate: &str| {
+                    held.get(&profile.id)
+                        .is_some_and(|names| names.iter().any(|name| name == candidate))
+                        || !held.iter().any(|(id, names)| {
+                            id != &profile.id && names.iter().any(|name| name == candidate)
+                        })
                 };
-                if !own && taken(name) {
+                if !available(name) {
                     let original = name.to_owned();
                     let selected = (1..=held.values().map(Vec::len).sum::<usize>() + 1)
                         .map(|count| {
@@ -182,7 +183,7 @@ impl ProfileRepo {
                                 format!("{original} (copy {count})")
                             }
                         })
-                        .find(|candidate| !taken(candidate))
+                        .find(|candidate| available(candidate))
                         .ok_or_else(|| {
                             RepoError::Message("No unclaimed restore name found".into())
                         })?;

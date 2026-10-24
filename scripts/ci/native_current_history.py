@@ -151,4 +151,14 @@ CURRENT_CALLER_REGRESSIONS = (
                 'ce4d904503fd52f828896f9abd840e76aee1e0131f292064fd99a875a864c53f',
         },
     },
+    {
+        'target': 'profile_restore_parity',
+        'test': 'restore_copy_candidates_match_original_existing_name_ownership',
+        'symptom': 'Restore candidate ownership differs',
+        'commit': '5f356644fa7a132862b002bebf8222931bccc806',
+        'files': {
+            'engine-rust/src/storage/restore.rs':
+                '85987e107f9aa70c6a3f17fea325eaac4d67309d9a2fe446b288a6ca6be1aa1a',
+        },
+    },
 )

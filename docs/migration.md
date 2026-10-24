@@ -76,6 +76,10 @@ four-engine Windows/Linux matrix, reusing one optimized build per leg and the un
 strict seven-pair criterion. Complete source-seeded cookie output, protected metadata,
 session sentinel and natural SDK-tree settlement remain required. No browser performance
 result is claimed; publication and the next exact-source hosted batch are still blocked.
+Restore naming now has a source-prepared correction for legacy duplicate records:
+each generated copy candidate honors names already held by the restoring profile,
+as the original does. Twelve public-restore comparisons and an exact historical
+semantic-failure check are prepared; no runtime acceptance is claimed.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The
