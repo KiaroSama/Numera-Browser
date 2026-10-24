@@ -12,7 +12,7 @@ async fn exact<const N: usize>(stream: &mut TcpStream) -> io::Result<[u8; N]> {
     stream
         .read_exact(&mut bytes)
         .await
-        .map_err(|_| failure("SOCKS upstream closed the connection mid-handshake"))?;
+        .map_err(|_| failure("SOCKS5 upstream closed the connection mid-handshake"))?;
     Ok(bytes)
 }
 pub(super) async fn socks4(
@@ -165,6 +165,12 @@ pub(super) async fn socks5(
         }
     };
     let mut remaining = vec![0; length + 2];
-    stream.read_exact(&mut remaining).await?;
+    stream.read_exact(&mut remaining).await.map_err(|error| {
+        if error.kind() == io::ErrorKind::UnexpectedEof {
+            failure("SOCKS5 upstream closed the connection mid-handshake")
+        } else {
+            error
+        }
+    })?;
     Ok(())
 }

@@ -3,7 +3,27 @@ use std::{
     io::{self, Write},
     path::{Path, PathBuf},
     sync::Mutex,
+    time::Duration,
 };
+
+pub(crate) enum NativePhase {
+    Startup,
+    Prepare,
+    Metadata,
+    Execute,
+    Shutdown,
+}
+impl NativePhase {
+    fn label(&self) -> &'static str {
+        match self {
+            Self::Startup => "startup",
+            Self::Prepare => "prepare",
+            Self::Metadata => "metadata",
+            Self::Execute => "execute",
+            Self::Shutdown => "shutdown",
+        }
+    }
+}
 
 /// Only fixed event labels are accepted here. User records,
 /// arguments, URLs, passwords and transport bodies never become log entries.
@@ -68,6 +88,21 @@ impl RuntimeLog {
             .format("%Y-%m-%d %H:%M:%S UTC")
             .to_string();
         let line = format!("[{stamp}] [{level}] [{component}] {event}\n");
+        self.write(&line, self.console_fallback);
+    }
+    pub(crate) fn timing(&self, phase: NativePhase, elapsed: Duration) {
+        let stamp = chrono::Utc::now()
+            .format("%Y-%m-%d %H:%M:%S UTC")
+            .to_string();
+        let elapsed = u64::try_from(elapsed.as_nanos()).unwrap_or(u64::MAX);
+        let line = format!(
+            "[{stamp}] [INFO] [entry] Native timing phase={} elapsed_ns={elapsed}\n",
+            phase.label()
+        );
+        // Diagnostic timing must never change command stderr on logging failure.
+        self.write(&line, false);
+    }
+    fn write(&self, line: &str, console_fallback: bool) {
         let mut file = self
             .file
             .lock()
@@ -81,7 +116,7 @@ impl RuntimeLog {
             return;
         }
         *file = None;
-        if self.console_fallback {
+        if console_fallback {
             eprint!("{line}");
         }
     }
@@ -107,6 +142,7 @@ mod tests {
                 RuntimeLog::new(&unavailable, "native-cli")
             };
             assert!(log.path().is_none());
+            log.timing(NativePhase::Prepare, Duration::from_nanos(123));
             log.event("INFO", "vault", "Enable lock requested");
             assert_eq!(fs::read(&unavailable)?, b"retained");
             if quiet {
@@ -117,6 +153,7 @@ mod tests {
                     .lock()
                     .map_err(|_| io::Error::other("Log mutex poisoned"))? =
                     Some(File::open(&path)?);
+                log.timing(NativePhase::Prepare, Duration::from_nanos(123));
                 log.event("INFO", "vault", "Enable descriptor derivation started");
                 assert!(fs::read(path)?.is_empty());
             }
@@ -148,6 +185,7 @@ mod tests {
             let stdout = String::from_utf8(output.stdout)?;
             assert!(stdout.lines().any(|line| line == "running 1 test"));
             assert!(stdout.contains("test runtime_log::tests::file_only_diagnostics_do_not_enable_console_fallback ... ok"));
+            assert!(!stdout.contains("Native timing") && !stderr.contains("Native timing"));
             assert!(
                 !stdout.contains("Enable lock requested")
                     && !stdout.contains("Enable descriptor derivation started"),
@@ -176,6 +214,20 @@ mod tests {
         first.event("INFO", "server", "Startup complete");
         first.event("WARNING", "server", "Cleanup pending");
         first.event("ERROR", "server", "Controlled failure");
+        for phase in [
+            NativePhase::Startup,
+            NativePhase::Prepare,
+            NativePhase::Metadata,
+            NativePhase::Execute,
+            NativePhase::Shutdown,
+        ] {
+            first.timing(phase, std::time::Duration::from_nanos(123));
+        }
+        first.timing(NativePhase::Execute, std::time::Duration::ZERO);
+        first.timing(
+            NativePhase::Shutdown,
+            std::time::Duration::from_secs(u64::MAX),
+        );
         let path = first
             .path()
             .ok_or_else(|| io::Error::other("Log file not created"))?
@@ -190,6 +242,22 @@ mod tests {
         assert!(text.contains(" UTC] [INFO] [server] Startup complete\n"));
         assert!(text.contains("[WARNING] [server] Cleanup pending"));
         assert!(text.contains("[ERROR] [server] Controlled failure"));
+        for phase in ["startup", "prepare", "metadata", "execute", "shutdown"] {
+            assert!(text.contains(&format!(
+                "[INFO] [entry] Native timing phase={phase} elapsed_ns=123\n"
+            )));
+        }
+        assert!(text.contains("Native timing phase=execute elapsed_ns=0\n"));
+        assert!(text.contains(&format!(
+            "Native timing phase=shutdown elapsed_ns={}\n",
+            u64::MAX
+        )));
+        assert_eq!(
+            text.lines()
+                .filter(|line| line.contains("Native timing"))
+                .count(),
+            7
+        );
         root.cleanup()?;
         Ok(())
     }

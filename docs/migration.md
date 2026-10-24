@@ -7,11 +7,11 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 24, 2026
 
-The latest completed checkpoint `66d74ce` ran in manual hosted batch
-[40079432038](https://github.com/KiaroSama/Numera-Browser/actions/runs/40079432038),
-which failed on October 24 at 09:16 UTC at Windows source partition 1, CodeQL and
-required verification; three distribution/publication stages were skipped.
-Both native tiers, other source platforms, eight real SDK paths, dashboard and audits passed.
+The latest completed checkpoint `a45e4ad` ran in manual hosted batch
+[40123204100](https://github.com/KiaroSama/Numera-Browser/actions/runs/40123204100),
+which failed on October 24 at 19:28 UTC: every browser performance comparison remained
+unaccepted, and CodeQL/required verification failed; publication stages were skipped.
+Both native tiers, all source platforms, every SDK/relocated scenario, dashboard and audits passed.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.
@@ -51,8 +51,8 @@ cases and 40 full-option fixtures, 99 actual-loopback proxy responses, 99 MCP st
 and 44 captured-output cases after named historical assertion failures and fixed-byte restoration.
 MCP retains UTF8/frame/ownership limits and nonzero JSON verdicts; its real child ping/list passed
 with owned-tree settlement. Ordinary output cases do not certify every forced-timeout cleanup branch.
-Fixed builds reuse sanitized Cargo progress, not heartbeat or longer deadlines. The 460 mapped
-references are navigation evidence, not complete parity; every newly mapped occurrence stays pending.
+Fixed builds reuse sanitized Cargo progress, not heartbeat or longer deadlines. The 483 mapped
+references include 23 pending relay entries; none establishes complete parity or permits selection.
 Zod 4.6.7 and ctutils 0.4.5 resolved GHSA-mrhx-c7xc-m3w5 and RUSTSEC-2026-0385 through passing
 hosted audits and application/native checks, without changing other resolved records or manifests.
 The shared timezone correction passed 103 original-derived proxy/trust grade pairs on both systems
@@ -69,17 +69,17 @@ failed entry fixtures remain retained. Both native model-policy drift tests pass
 both systems: persisted fields match all 56 frozen policy entries and owned/normalized
 exemptions require nonblank explanations. Actual HTTP request performance passed on both
 systems, including ordered response/byte parity and 163 complete, clean ownership units.
-The Windows source runner's fixed nine-module checkpoint refused a discovered ten-module
-block; a growth-aware final slot and aggregate failure controls are prepared, not executed.
-Real-browser cookie-export measurements are also source-prepared for the existing
-four-engine Windows/Linux matrix, reusing one optimized build per leg and the unchanged
-strict seven-pair criterion. Complete source-seeded cookie output, protected metadata,
-session sentinel and natural SDK-tree settlement remain required. No browser performance
-result is claimed; publication and the next exact-source hosted batch are still blocked.
-Restore naming now has a source-prepared correction for legacy duplicate records:
-each generated copy candidate honors names already held by the restoring profile,
-as the original does. Twelve public-restore comparisons and an exact historical
-semantic-failure check are prepared; no runtime acceptance is claimed.
+The growth-aware Windows checkpoint passed all 39 modules/916 tests on `85a1142`;
+both systems also proved historical restore-name failure, restoration and all twelve current cases.
+Real-browser exports now complete seven alternating pairs in every engine/OS leg, with
+full cookie output, protected metadata/session sentinel and natural SDK settlement checked.
+On `a45e4ad`, Linux Playwright/Patchright latency regresses; every memory range overlaps.
+All eight browser comparisons remain unaccepted under the unchanged strict criterion.
+Linux detached stop/crash acceptance now matches exact command/SDK claims and complete
+receipts instead of requiring a removed metadata process. All captured trees settled.
+A prepared SOCKS correction preserves original EOF diagnostics, with 63 transcript/wire cases
+and an exact historical-source check. Fixed native phase timings are also prepared, not runtime-verified.
+Python remains selected; full migration, security, signing and release gates remain open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

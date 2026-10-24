@@ -282,8 +282,17 @@ def test_candidate_failure_diagnostics_keep_only_bounded_safe_events(tmp_path, m
         + prefix + 'SDK timing operation=open elapsed_ns=123456789012345678901\n'
         + prefix + 'secret=private_fixture_value\n'
         + 'unstructured private_fixture_value\n', encoding='utf-8')
+    native = '[2026-10-17 16:54:37 UTC] [INFO] [entry] '
     (logs / 'native-cli_fixture.log').write_text(
-        '[2026-10-17 16:54:37 UTC] [INFO] [entry] Startup\n', encoding='utf-8')
+        native + 'Startup\n'
+        + ''.join(native + f'Native timing phase={phase} elapsed_ns=123\n'
+                  for phase in ('startup', 'prepare', 'metadata', 'execute', 'shutdown'))
+        + native + 'Native timing phase=execute elapsed_ns=0\n'
+        + native + 'Native timing phase=shutdown elapsed_ns=18446744073709551615\n'
+        + native + 'Native timing phase=private_fixture_value elapsed_ns=1\n'
+        + native + 'Native timing phase=execute elapsed_ns=-1\n'
+        + native + 'Native timing phase=execute elapsed_ns=123456789012345678901\n'
+        + native + 'Native timing phase=execute elapsed_ns=1 secret=private_fixture_value\n', encoding='utf-8')
     (logs / 'unapproved.log').write_text(prefix + 'Camoufox persistent context entered\n', encoding='utf-8')
     (logs / 'browser-adapter_large.log').write_bytes(b'x' * 65537)
     linked = logs / 'browser-adapter_link.log'
@@ -299,6 +308,10 @@ def test_candidate_failure_diagnostics_keep_only_bounded_safe_events(tmp_path, m
     assert 'SDK timing operation=cleanup elapsed_ns=56' in text
     assert 'elapsed_ns=-1' not in text and '123456789012345678901' not in text
     assert 'Startup' in text
+    for phase in ('startup', 'prepare', 'metadata', 'execute', 'shutdown'):
+        assert f'Native timing phase={phase} elapsed_ns=123' in text
+    assert 'Native timing phase=execute elapsed_ns=0' in text
+    assert 'Native timing phase=shutdown elapsed_ns=18446744073709551615' in text
     assert 'private_fixture_value' not in text
     assert 'persistent context entered' not in text
     assert 'omitted=3' in text

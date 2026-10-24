@@ -182,12 +182,12 @@ metadata; actual SDK admission and packaged/config metadata checks remain. Cloak
 parent cache lets Linux complete its baseline and seven pairs without ignoring stderr;
 the old stderr content remains unproved. All eight browser comparisons remain unaccepted:
 Linux Playwright/Patchright latency regresses, other latency and all memory ranges overlap.
-Windows native acceptance passed; Linux later stopped at an obsolete three-process assertion.
-The prepared repair validates complete receipts and exact command/live SDK claim identities
-instead of requiring the removed metadata child. A separate prepared adapter repair waits
-for input readiness within the same 25ms idle interval, pumping SDK events without an added
-fixed timer. Neither repair has hosted runtime/performance proof yet. Strict criteria,
-every sample, ownership checks and the failing CodeQL gate remain unchanged.
+Batch [40123204100](https://github.com/KiaroSama/Numera-Browser/actions/runs/40123204100) on `a45e4ad`
+passed both native jobs, all eight source-platform jobs and every actual SDK/relocated scenario.
+Linux detached stop/crash validated complete receipts against exact command/live SDK claims;
+all captured trees settled. Readiness controls passed; new fixed native phase diagnostics await hosted proof.
+Linux Playwright/Patchright latency regresses; Windows Playwright/Linux Cloak latency is lower/disjoint.
+Other latency and every memory range overlap: all eight comparisons remain unaccepted, CodeQL still fails.
 
 The real-browser measurement extension has no accepted measurements yet. Each existing
 Windows/Linux four-engine leg will reuse one optimized candidate build after its
@@ -246,11 +246,11 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 460 individually inspected implementation/test
-references with explicit remaining gaps: 906 rows are pending, one is implemented
-but not verified, and none is verified. All 907 frozen occurrence IDs, source
-hashes and the source commit are retained. A file reference or a passing broad job
-cannot establish complete parity or authorize default selection.
+The capability ledger records 483 inspected implementation/test references, including
+23 pending relay mappings with explicit API/error/validation/transport/lifecycle gaps.
+Of 907 unchanged frozen occurrences, 906 are pending, one implemented and none verified.
+A prepared 63-case original-transcript/public-relay comparison covers handshake bytes,
+EOF diagnostics, responses and closure; exact historical/current hosted proof is still required.
 
 This review found two missing pure helpers. The native collision module now
 provides the original four-field summary, counting profile occurrences rather

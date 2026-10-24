@@ -202,8 +202,9 @@ def failure_diagnostics(directory, logger):
                         kind = failure[2] if failure[2] in types else 'unknown'
                         event = f'{failure[1]} type={kind}'
                     elif event not in safe and re.fullmatch(
-                            r'SDK timing operation=(?:hello|open|close|inspect|navigate|mouse|route|evaluate|'
-                            r'cookies-read|cookies-clear|cookies-add|cleanup|invalid) elapsed_ns=[0-9]{1,20}', event) is None:
+                            r'(?:SDK timing operation=(?:hello|open|close|inspect|navigate|mouse|route|evaluate|'
+                            r'cookies-read|cookies-clear|cookies-add|cleanup|invalid)|'
+                            r'Native timing phase=(?:startup|prepare|metadata|execute|shutdown)) elapsed_ns=[0-9]{1,20}', event) is None:
                         continue
                 if emitted >= 63:
                     omitted += 1

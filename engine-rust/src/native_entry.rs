@@ -7,7 +7,7 @@ use crate::{
     },
     native_environment::Environment,
     ownership::registry::Registry,
-    runtime_log::RuntimeLog,
+    runtime_log::{NativePhase, RuntimeLog},
     storage::data_root,
 };
 use serde_json::{Map, Value};
@@ -105,6 +105,7 @@ fn execute(
     argv: &[String],
     output: &mut Output<impl Write, impl Write>,
 ) -> io::Result<i32> {
+    let started = std::time::Instant::now();
     let environment = Environment::discover()?;
     let log = RuntimeLog::new(&environment.browser.logs, "native-cli");
     log.event("INFO", "entry", "Startup");
@@ -163,6 +164,7 @@ fn execute(
             }
         }
     }
+    log.timing(NativePhase::Startup, started.elapsed());
     dispatch(args, argv, output, environment, &root, cancelled, &log)
 }
 
@@ -176,6 +178,7 @@ pub fn dispatch(
     cancelled: Arc<AtomicBool>,
     log: &RuntimeLog,
 ) -> io::Result<i32> {
+    let prepared_at = std::time::Instant::now();
     let password = std::env::var("NUMERA_PASSWORD").ok();
     let root = root.to_owned();
     let operation = args.get("command").and_then(Value::as_str).unwrap_or("");
@@ -208,6 +211,7 @@ pub fn dispatch(
         };
         Ok((args, repo))
     })();
+    log.timing(NativePhase::Prepare, prepared_at.elapsed());
     let (prepared_args, repo) = match prepared {
         Ok(prepared) => prepared,
         Err(_) if cancelled.load(Ordering::Acquire) => {
@@ -272,6 +276,7 @@ pub fn dispatch(
             }
         }
     } else {
+        let metadata_at = std::time::Instant::now();
         let addons_needed = matches!(
             operation,
             "serve"
@@ -296,11 +301,13 @@ pub fn dispatch(
                 Some(deployment) => crate::browser::bundled::discover(&deployment.app)?.is_some(),
                 None => false,
             });
-        let installed = match if metadata_needed {
+        let installed = if metadata_needed {
             environment.metadata(addons_needed)
         } else {
             Ok(Default::default())
-        } {
+        };
+        log.timing(NativePhase::Metadata, metadata_at.elapsed());
+        let installed = match installed {
             Ok(value) => value,
             Err(mut failure) => {
                 if failure.settle(Duration::from_secs(10)).is_err() {
@@ -331,6 +338,7 @@ pub fn dispatch(
                 output,
             )
         } else {
+            let execute_at = std::time::Instant::now();
             let sessions = Registry::new(
                 root.clone(),
                 environment.host.clone(),
@@ -417,12 +425,15 @@ pub fn dispatch(
                 },
                 output,
             );
+            log.timing(NativePhase::Execute, execute_at.elapsed());
+            let shutdown_at = std::time::Instant::now();
             let mut pending = sessions.shutdown(Duration::from_secs(10));
             pending.extend(
                 crate::ownership::registry::retry_retained_background(Duration::from_secs(10))
                     .into_iter()
                     .map(|error| (String::new(), error)),
             );
+            log.timing(NativePhase::Shutdown, shutdown_at.elapsed());
             if !pending.is_empty() {
                 if let Some(admission) = &mut admission {
                     admission.retain();

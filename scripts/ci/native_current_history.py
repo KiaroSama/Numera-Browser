@@ -181,4 +181,14 @@ CURRENT_CALLER_REGRESSIONS = (
                 'abf6a5e9b6690231795845589d28c2ddb7faded39d65fa635afd3919547837e1',
         },
     },
+    {
+        'target': 'relay_request_parity',
+        'test': 'handshake::socks_handshake_failures_preserve_original_diagnostics_and_wire',
+        'symptom': 'SOCKS handshake diagnostic differs',
+        'commit': 'a45e4ad46b804b19423dde4967017b0087a15598',
+        'files': {
+            'engine-rust/src/network/relay_protocol.rs':
+                'dfc78f467205732f15b0b200aa074729706766002fb3923588856bca4784c489',
+        },
+    },
 )

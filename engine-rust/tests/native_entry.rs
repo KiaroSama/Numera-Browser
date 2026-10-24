@@ -133,6 +133,11 @@ if __name__=='__main__':
             claims::Claim::Absent
         ));
     }
+    let timings = fs::read_to_string(log.path().ok_or("Entry log missing")?)?;
+    assert_eq!(timings.matches("Native timing phase=prepare ").count(), 4);
+    assert_eq!(timings.matches("Native timing phase=metadata ").count(), 4);
+    assert_eq!(timings.matches("Native timing phase=execute ").count(), 2);
+    assert_eq!(timings.matches("Native timing phase=shutdown ").count(), 2);
     drop(log);
     temporary.cleanup()?;
     Ok(())
@@ -234,6 +239,15 @@ fn entry_dispatch_reads_real_store_and_preserves_structured_refusals()
     assert!(stdout.is_empty());
     assert!(stderr.is_empty());
     assert!(!root.join("proxies.json").exists());
+    let timings = fs::read_to_string(log.path().ok_or("Entry log missing")?)?;
+    for phase in ["prepare", "metadata", "execute", "shutdown"] {
+        assert_eq!(
+            timings
+                .matches(&format!("Native timing phase={phase} "))
+                .count(),
+            3
+        );
+    }
     drop(log);
     assert!(
         !fs::read_dir(root.join("logs"))?

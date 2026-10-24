@@ -289,6 +289,13 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'commit': '2c6d23eed78cdf1f3ddf2c41c6e103d987cfe527',
         'files': {'engine-rust/src/native_entry.rs':
                   'abf6a5e9b6690231795845589d28c2ddb7faded39d65fa635afd3919547837e1'},
+    }, {
+        'target': 'relay_request_parity',
+        'test': 'handshake::socks_handshake_failures_preserve_original_diagnostics_and_wire',
+        'symptom': 'SOCKS handshake diagnostic differs',
+        'commit': 'a45e4ad46b804b19423dde4967017b0087a15598',
+        'files': {'engine-rust/src/network/relay_protocol.rs':
+                  'dfc78f467205732f15b0b200aa074729706766002fb3923588856bca4784c489'},
     })
     assert module.CURRENT_CALLER_REGRESSIONS[0] == {
         'target': 'mcp_parity',
@@ -388,7 +395,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/cli/output.rs':
                   'aab0acee9ecf439ddf252a983878e908b362eebeb54901e6e892d205b2b55ac6'},
     }
-    assert module.CURRENT_CALLER_REGRESSIONS[-4:] == expected
+    assert module.CURRENT_CALLER_REGRESSIONS[-5:] == expected
     assert module.REGRESSIONS == module._SETTINGS_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
     assert not any(case.get('companions') for case in module.CURRENT_CALLER_REGRESSIONS)
 

@@ -10,6 +10,8 @@ use std::{
     time::{Duration, Instant},
 };
 mod common;
+#[path = "relay_request_parity/handshake.rs"]
+mod handshake;
 
 const RESPONSE: &[u8] =
     b"HTTP/1.1 200 OK\r\nContent-Length: 6\r\nConnection: close\r\n\r\n\x00\xffwire";
