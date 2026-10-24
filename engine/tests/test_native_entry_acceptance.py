@@ -1,7 +1,6 @@
-"""Entry acceptance delegates ownership and retains every failed fixture."""
+"""Entry acceptance preserves caller ownership and retains failed fixtures."""
 from __future__ import annotations
 
-from contextlib import contextmanager
 import importlib.util
 import logging
 from pathlib import Path
@@ -25,17 +24,34 @@ def load(monkeypatch):
     return module
 
 
-@pytest.mark.parametrize('mode', ['normal', 'input', 'communicate', 'decode', 'settlement'])
-def test_execute_delegates_to_receipt_owner_and_never_accepts_failed_settlement(monkeypatch, mode):
+@pytest.mark.parametrize('reported', [False, True], ids=['no-parent', 'parent-report'])
+@pytest.mark.parametrize('mode', ['normal', 'input', 'communicate', 'decode', 'settlement', 'record', 'wait', 'cleanup'])
+def test_execute_preserves_child_environment_and_settles_only_its_direct_tree(tmp_path, monkeypatch, mode, reported):
     helper = load(monkeypatch)
-    import candidate_acceptance
+    from numera.proctree import Tree
 
     calls = []
-    argv, environment = ['inert-candidate', 'list'], {'fixture': 'value'}
+    child_report = tmp_path / 'deliberate-ancestor.units'
+    header = b'{"version":2,"event":"header"}\n'
+    child_report.write_bytes(header)
+    argv = ['inert-candidate', 'list']
+    environment = {'fixture': 'value', 'NUMERA_HELPER_UNITS': str(child_report)}
+    parent_report = tmp_path / 'outer.units'
+    if reported:
+        parent_report.write_bytes(header)
+        monkeypatch.setenv(helper.unit_report.UNITS_ENV, str(parent_report))
+    else:
+        monkeypatch.delenv(helper.unit_report.UNITS_ENV, raising=False)
     data = b'y\n' if mode == 'input' else None
+    tree = Tree(pid=42, token=43, group=42, kind='pgid')
+
+    class Pipe:
+        def close(self):
+            calls.append('close')
 
     class Process:
         returncode = 7
+        stdin, stdout, stderr = Pipe(), Pipe(), Pipe()
 
         def communicate(self, supplied, timeout):
             assert supplied == data and timeout == 15
@@ -44,36 +60,72 @@ def test_execute_delegates_to_receipt_owner_and_never_accepts_failed_settlement(
                 raise subprocess.TimeoutExpired(argv, timeout)
             return (b'\xff' if mode == 'decode' else 'Fixture α'.encode('utf-8')), b''
 
-    @contextmanager
-    def owned(arguments, env, cwd, stdin):
-        assert arguments is argv and env is environment and cwd == helper.ROOT
-        assert stdin == (subprocess.PIPE if data is not None else subprocess.DEVNULL)
-        calls.append('owned')
-        try:
-            yield Process()
-        finally:
-            calls.append('settled')
-            if mode == 'settlement':
-                raise RuntimeError('Synthetic incomplete ownership')
+        def wait(self, timeout):
+            assert timeout == 5
+            calls.append('wait')
+            if mode == 'wait':
+                raise subprocess.TimeoutExpired(argv, timeout)
+            return self.returncode
 
-    monkeypatch.setattr(candidate_acceptance, 'owned', owned)
-    if mode in ('communicate', 'decode', 'settlement'):
-        error = {'communicate': subprocess.TimeoutExpired, 'decode': UnicodeDecodeError,
-                 'settlement': RuntimeError}[mode]
-        with pytest.raises(error):
+    def spawn(arguments, **options):
+        assert arguments is argv and options['env'] is environment
+        assert options['stdin'] == (subprocess.PIPE if data is not None else subprocess.DEVNULL)
+        assert options['stdout'] == options['stderr'] == subprocess.PIPE
+        calls.append('spawn')
+        return Process(), tree
+
+    def end_tree(owned, **options):
+        assert owned is tree and options == {'grace': 1, 'kill_grace': 3}
+        calls.append('end-tree')
+        if mode == 'cleanup':
+            raise OSError('Synthetic cleanup query failed')
+        return mode != 'settlement'
+
+    record = helper.unit_report.record
+
+    def record_tree(owned, *, attempt):
+        assert owned is tree and bool(attempt) == reported
+        calls.append('record')
+        if mode == 'record':
+            raise RuntimeError('Synthetic receipt failure')
+        record(owned, attempt=attempt)
+
+    monkeypatch.setattr(helper, 'spawn', spawn)
+    monkeypatch.setattr(helper, 'end_tree', end_tree)
+    monkeypatch.setattr(helper.unit_report, 'record', record_tree)
+    errors = {'communicate': subprocess.TimeoutExpired, 'decode': UnicodeDecodeError,
+              'settlement': RuntimeError, 'record': RuntimeError,
+              'wait': subprocess.TimeoutExpired, 'cleanup': OSError}
+    if mode in errors:
+        with pytest.raises(errors[mode]):
             helper.execute(argv, environment, data)
     else:
         assert helper.execute(argv, environment, data) == (7, 'Fixture α', '')
-    assert calls == ['owned', 'communicate', 'settled']
+    expected = ['spawn', 'record'] + ([] if mode == 'record' else ['communicate'])
+    expected += ['end-tree'] + ([] if mode == 'cleanup' else ['wait']) + ['close'] * 3
+    assert calls == expected
+    assert environment == {'fixture': 'value', 'NUMERA_HELPER_UNITS': str(child_report)}
+    assert child_report.read_bytes() == header, 'Executor replaced or reclaimed its child-selected ancestor'
+    if reported:
+        receipt = helper.unit_report.read(parent_report)
+        assert receipt.complete == (mode != 'record')
+        assert receipt.trees == ([] if mode == 'record' else [tree])
 
 
+@pytest.mark.parametrize('reported', [False, True], ids=['no-parent', 'parent-report'])
 @pytest.mark.parametrize('failure', [False, True])
-def test_main_removes_only_successful_entry_fixtures(tmp_path, monkeypatch, failure):
+def test_main_removes_only_successful_entry_fixtures(tmp_path, monkeypatch, failure, reported):
     helper = load(monkeypatch)
     temporary = tmp_path / 'owned-entry'
     temporary.mkdir()
     marker = temporary / 'owner.json'
     marker.write_bytes(b'owned evidence')
+    report = tmp_path / 'outer.units'
+    if reported:
+        report.write_bytes(b'{"version":2,"event":"header"}\n')
+        monkeypatch.setenv(helper.unit_report.UNITS_ENV, str(report))
+    else:
+        monkeypatch.delenv(helper.unit_report.UNITS_ENV, raising=False)
     monkeypatch.setattr(helper.tempfile, 'mkdtemp', lambda **kwargs: str(temporary))
 
     class Store:
@@ -89,7 +141,8 @@ def test_main_removes_only_successful_entry_fixtures(tmp_path, monkeypatch, fail
     monkeypatch.setattr(helper, 'Profile', lambda **kwargs: SimpleNamespace(**kwargs))
     monkeypatch.setattr(helper, 'generate', lambda **kwargs: {})
 
-    def execute(*args, **kwargs):
+    def execute(argv, environment, *args):
+        assert environment.get(helper.unit_report.UNITS_ENV) == (str(report) if reported else None)
         if failure:
             raise RuntimeError('Synthetic unsettled entry')
         return 0, '{}', ''

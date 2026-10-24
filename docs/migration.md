@@ -7,22 +7,23 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 24, 2026
 
-The latest completed checkpoint `5501361` ran in manual hosted batch
-[40061599553](https://github.com/KiaroSama/Numera-Browser/actions/runs/40061599553),
-which failed on October 24 at 04:42 UTC: 27 workflow jobs passed, three failed and
+The latest completed checkpoint `8109fe4` ran in manual hosted batch
+[40066551850](https://github.com/KiaroSama/Numera-Browser/actions/runs/40066551850),
+which failed on October 24 at 05:58 UTC: 27 workflow jobs passed, three failed and
 three distribution/publication stages were skipped; external CodeQL also failed.
-Windows native acceptance, all source-platform partitions, all eight real SDK paths,
-dashboard, rendered updater and dependency audits passed. Linux native contracts and
-entry replay passed, but vault-read timing overlapped: native 89.825–502.846 ms versus
-original 343.394–347.005 ms. Its benchmark correctly refused inconclusive evidence,
-and later Linux HTTP/ownership steps were skipped. No timing cause is established.
-The existing functional acceptance steps now precede the unchanged required benchmark
-so a measurement failure cannot hide their independent results. This ordering change
-and the CLI confirmation correction await hosted verification. Linux/Camoufox prerequisites completed within the unchanged limit this time;
-this does not establish the previous slow-download or unsettled-cleanup cause.
-No retry, deadline extension or privilege change was added.
-The prior Windows fixed-build idle failure did not recur; its precise cause and a
-repeatable compiler speedup remain unproved. The earlier macOS cancellation was a
+Windows native/source-platform/eight real SDK/dashboard/updater/advisory tiers passed.
+Both systems passed shared-store HTTP/CLI replay and original-server restart with
+18 complete, clean units each. Linux then failed detached acceptance: the shared
+executor required an outer report and replaced caller-selected ownership state.
+The prepared correction records its direct tree without replacing the child environment;
+entry main explicitly forwards its outer receipt. Runtime verification is pending.
+Independent functional acceptance now precedes the unchanged required benchmark.
+Windows passed all four CLI time/memory comparisons; Linux signal/entry/performance
+steps were skipped after the helper failure. Earlier `5501361` Linux vault-read overlap
+(native 89.825–502.846 ms versus original 343.394–347.005 ms) remains inconclusive.
+Linux/Camoufox prerequisites passed; this does not establish the previous download/cleanup cause.
+No retry, deadline extension or privilege change was added. The prior Windows fixed-build
+idle failure did not recur; its cause and a repeatable compiler speedup remain unproved. The earlier macOS cancellation was a
 hosted arm64 capacity failure; this checkpoint's retained-runtime macOS tests passed.
 The prior-importer companion resolves the old pool swap's E0425 without changing its selected defect.
 Shared identity helpers passed 123 frozen-original version/platform/page/CDP comparisons on both systems. All eight real SDK paths passed again on `f409196`.
@@ -58,14 +59,14 @@ The shared timezone correction passed 103 original-derived proxy/trust grade pai
 after the exact prior source failed its named assertion and fixed bytes were restored. Alignment
 also passed 92 full-fingerprint/change-label comparisons after its exact prior source failed at
 case 1 and fixed bytes were restored. Shared-store HTTP/CLI write replay and original
-server restart passed on Windows, with 18 complete, clean ownership units. Linux did
-not execute that step after its earlier benchmark refusal; both-platform acceptance
-remains incomplete. CLI confirmation now reuses source-compatible boundary whitespace
-in its public output helper and actual entrypoint; 39 original-derived output cases
-and four actual confirmation scenarios per runtime are prepared, not yet executed.
-Entry verification now uses the existing receipt-aware owner and retains failed
-fixtures instead of deleting uncertain process evidence; its failure controls also
-await hosted verification.
+server restart passed on both systems, each with 18 complete, clean ownership units.
+CLI confirmation reuses source-compatible boundary whitespace in its public output
+helper and actual entrypoint. Both systems proved the exact old source fails case 4,
+restored fixed bytes and passed all 39 output cases; Windows also passed four actual
+confirmation pairs, including deletion and refused-input byte preservation. Linux's
+actual entry step was skipped. The shared executor correction preserves deliberate
+detached/ancestor ownership; deterministic environment, receipt and failure controls
+are prepared, not yet executed. Failed entry fixtures remain retained.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

@@ -95,21 +95,20 @@ The existing per-command and outer budgets are unchanged. Batch
 passed this expanded sequence on Windows and Linux. It does not establish complete
 crash/selector/browser-database rollback or acceptance of every source occurrence.
 
-The actual HTTP replay additionally passed on Windows in
-[40061599553](https://github.com/KiaroSama/Numera-Browser/actions/runs/40061599553):
-original and native HTTP writes, both CLI reopen paths, stale/invalid/unauthorized
-refusals, exact stable fields and session bytes, then original-server restart.
-All 18 reported ownership units were complete and clean. Linux skipped this step
-after an earlier inconclusive benchmark, so this is not both-platform acceptance.
-The required functional steps now precede performance; no benchmark threshold or
-failure gate was relaxed. The new ordering awaits hosted verification.
+Actual HTTP replay passed on both systems in
+[40066551850](https://github.com/KiaroSama/Numera-Browser/actions/runs/40066551850):
+original/native HTTP writes, both CLI reopen paths, stale/invalid/unauthorized
+refusals, stable fields/session bytes and original-server restart. Each system
+reported 18 complete, clean ownership units. Functional steps now precede performance;
+Linux then failed detached acceptance with a shared-helper missing-report KeyError.
+Its later signal/entry/performance steps were skipped; no gate was relaxed.
 
-CLI confirmation now preserves the original boundary-whitespace rule at both
-native entry and output-helper seams. The prepared coverage retains exact-y,
-JSON-no-prompt, EOF, complete output and input consumption, plus real deletion and
-refusal over copied synthetic stores. Entry children use the existing outer
-receipt-aware owner, and any failed run retains its fixture; only success removes
-it. These changes have not yet run in hosted acceptance.
+Both systems proved the old confirmation source fails case 4, restored fixed bytes and
+passed 39 output/input cases. Windows passed four actual deletion/refusal pairs; Linux did not.
+The executor correction preserves child-selected environments and durable detached
+owners, records only its direct tree and lets entry main forward its outer receipt.
+Failed fixtures remain retained; only success removes them. The correction's new
+receipt/environment/failure controls await hosted execution.
 
 ## Representative release performance
 
@@ -146,10 +145,11 @@ both time and memory ranges showed no regression within each host. The retained
 artifacts bind the samples to source `348bac2`, hosted generation `39106678127`
 and each optimized binary's hash. This is foreground CLI coverage only, not
 API/browser or complete migration performance acceptance.
-The newer `5501361` checkpoint passed all four Windows comparisons but refused
-Linux vault-read timing: native 89.825–502.846 ms overlapped original
-343.394–347.005 ms. The other Linux time and memory verdicts passed. The outlying
-sample's cause is unknown; it was not removed, retried or accepted.
+Checkpoint `5501361` passed all four Windows comparisons but refused Linux vault-read
+timing: native 89.825–502.846 ms overlapped original 343.394–347.005 ms. Other Linux
+verdicts passed; the outlying sample was not removed or accepted, and its cause is unknown.
+Checkpoint `8109fe4` again passed four Windows time/memory comparisons with 131 complete,
+clean ownership units. Linux performance was skipped after the detached helper failure.
 
 Creation explicitly sets the default engine, so its settings write is checked
 against the complete expected JSON document separately from unrelated byte

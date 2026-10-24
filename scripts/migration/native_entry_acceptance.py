@@ -22,11 +22,26 @@ from replay_rollback import run as replay_rollback
 
 def execute(argv, env, stdin=None):
     import subprocess
-    from candidate_acceptance import owned
 
-    with owned(argv, env, ROOT, subprocess.PIPE if stdin is not None else subprocess.DEVNULL) as process:
+    attempt = unit_report.begin_spawn()
+    process, tree = spawn(argv, env=env, stdin=subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        # Record the direct child without replacing its deliberate ancestor report
+        # or reclaiming detached jobs that have their own durable owner.
+        unit_report.record(tree, attempt=attempt)
         stdout, stderr = process.communicate(stdin, timeout=15)
         return process.returncode, stdout.decode('utf-8', errors='strict'), stderr.decode('utf-8', errors='strict')
+    finally:
+        try:
+            clean = end_tree(tree, grace=1, kill_grace=3)
+            process.wait(timeout=5)
+            if not clean:
+                raise RuntimeError('Entry acceptance process tree did not settle')
+        finally:
+            for pipe in (process.stdin, process.stdout, process.stderr):
+                if pipe is not None:
+                    pipe.close()
 
 
 def configured_lock_acceptance(candidate, parent, environment, log):
@@ -185,6 +200,9 @@ def main(candidate, log):
         for key in ['NUMERA_PASSWORD', 'NUMERA_API_TOKEN', 'NUMERA_DATA_DIR', 'NUMERA_NATIVE_SUPERVISE',
                     'NUMERA_PARENT_PID', 'NUMERA_NATIVE_JOB_GATE', 'NUMERA_HELPER_UNITS', 'NUMERA_HELPER_SCOPE']:
             env.pop(key, None)
+        report = os.environ.get(unit_report.UNITS_ENV)
+        if report:
+            env[unit_report.UNITS_ENV] = report
         home = parent / 'home'
         home.mkdir()
         env.update(PYTHONUTF8='1', PYTHONDONTWRITEBYTECODE='1', PYTHONPATH=str(ORIGINAL / 'engine'), HOME=str(home), USERPROFILE=str(home), NUMERA_APP_DIR=str(parent),
