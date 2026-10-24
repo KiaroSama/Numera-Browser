@@ -170,7 +170,7 @@ and Linux (0.47 seconds). Other model/coercion domains remain incomplete.
 
 ## Occurrence-level reconciliation
 
-The capability ledger now records 436 individually inspected implementation/test
+The capability ledger now records 460 individually inspected implementation/test
 references with explicit remaining gaps: 906 rows are pending, one is implemented
 but not verified, and none is verified. All 907 frozen occurrence IDs, source
 hashes and the source commit are retained. A file reference or a passing broad job
@@ -652,9 +652,9 @@ job ceiling. Aggregate command allowance increases; no measured speedup is claim
 Linux's four CLI time/memory log verdicts report no regression; Windows performance did not run. Earlier `4297b1f` Linux list
 native12.670–411.152ms versus original155.006–161.573ms and vault-read native67.177–327.772ms versus
 original289.129–296.725ms remain recorded as inconclusive; no cause is established by a later passing run.
-No sample is trimmed or criterion relaxed. The whole latest batch remains failed; passing native tiers
-do not clear CodeQL or complete migration acceptance. All eight real SDK paths passed,
-including Windows Playwright. Fifteen deterministic cleanup-failure controls and the exact prior
+No sample is trimmed or criterion relaxed. The latest `8e94027` batch failed CodeQL and Linux/Camoufox prerequisites;
+native tiers passed, but this does not complete migration acceptance. Its seven SDK paths passed;
+all eight had passed on `f409196`, including Windows Playwright. Fifteen deterministic cleanup-failure controls and the exact prior
 runner's negative control passed on Windows (16 tests, 0.21 seconds). Operation/error-code/file-kind
 diagnostics retain the original exception and failed exit, without retry or permission changes;
 this does not establish the previous filesystem failure's cause.
@@ -664,11 +664,11 @@ passed on both systems. Importer repairs reuse existing numeric grammar and reta
 Unicode-decimal Chrome token and arbitrary-integer envelope guidance. Their 89 profile plus 17 envelope
 comparisons and two exact historical controls passed on both systems. All 1,011 claim descriptions and
 historical failure/restoration controls passed on both systems. All 54 strict job-text observations and
-the exact historical failure/restoration passed on both systems. Linux now passes another 38 importer
-tag/display, four complete-refusal and 83 bulk-selection observations plus the released-vault lock test;
-these current tests have not run on Windows. Linux passed 126 DNS cases and 40 complete-option fixtures;
-both systems proved historical DNS failure/restoration. Prepared proxy-echo acceptance has 99 original-derived
-loopback transport cases and a library proof; fixed builds reuse real sanitized Cargo progress. All 436 references remain pending.
+the exact historical failure/restoration passed on both systems. Both systems passed 38 importer
+tag/display, four complete-refusal and 83 bulk-selection observations plus the released-vault lock test.
+They passed 126 DNS cases, 40 complete-option fixtures, 99 proxy-echo transport cases and 103 timezone
+proxy/trust grade pairs after historical failure/restoration. The 92 alignment-version comparisons
+remain unexecuted; 24 new probe/automation references remain pending. Fixed builds reuse real Cargo progress.
 Nontext-ID present-profile outcomes and full scheduler acceptance remain incomplete. All 26
 scheduler mappings remain pending; no capability status is promoted by these narrow fixes.
 Native nonfinite refusal remains an explicit stronger difference, not full original parity.
