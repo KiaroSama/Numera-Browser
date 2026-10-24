@@ -213,7 +213,11 @@ def test_browser_sample_requires_natural_nested_settlement_before_peak(monkeypat
     observer = sample.proctree.Tree(42, 4200, 42, 'pgid')
     direct = sample.proctree.Tree(43, 4300, 43, 'pgid')
     sdk = sample.proctree.Tree(44, 4400, 44, 'pgid')
-    clock, calls, reads = [0.0], [], [0]
+    clock, calls, reads, sleeps = [0.0], [], [0], []
+
+    def sleep(seconds):
+        sleeps.append(('capture' if 'spawn' in calls else 'registration', seconds))
+        clock[0] += seconds
 
     def wait(**kwargs):
         if mode == 'wait' and kwargs['timeout'] == 5:
@@ -266,7 +270,7 @@ def test_browser_sample_requires_natural_nested_settlement_before_peak(monkeypat
     monkeypatch.setattr(sample.os, 'getpid', lambda: 42)
     monkeypatch.setattr(sample.proctree, '_inherited_tree', lambda: observer)
     monkeypatch.setattr(sample.time, 'monotonic', lambda: clock[0])
-    monkeypatch.setattr(sample.time, 'sleep', lambda seconds: clock.__setitem__(0, clock[0] + seconds))
+    monkeypatch.setattr(sample.time, 'sleep', sleep)
     monkeypatch.setattr(sample.time, 'perf_counter_ns', lambda: 7)
     monkeypatch.setattr(sample, 'linux_peak', lambda: calls.append('peak') or
                         {'metric': 'fixture', 'bytes': 1234})
@@ -274,7 +278,7 @@ def test_browser_sample_requires_natural_nested_settlement_before_peak(monkeypat
     if mode in ('normal', 'pending-self'):
         assert sample.observe(['inert'], {}, logger, wall=90, nested=True)['payload'] == {'ok': True}
         assert calls.index('sdk-proof') < calls.index('peak') < calls.index('sdk-cleanup')
-        assert clock[0] == (.01 if mode == 'pending-self' else 0)
+        assert sleeps == ([('registration', .01)] if mode == 'pending-self' else []) + [('capture', .001)]
     else:
         with pytest.raises((ValueError, RuntimeError, TimeoutError), match='receipt|identity|nested|cleanup|reap'):
             sample.observe(['inert'], {}, logger, wall=90, nested=True)
@@ -285,6 +289,39 @@ def test_browser_sample_requires_natural_nested_settlement_before_peak(monkeypat
     else:
         assert process.stdout.closed and process.stderr.closed
         assert calls.count('direct-cleanup') == calls.count('sdk-cleanup') == 1
+
+
+@pytest.mark.parametrize('damage', [None, 'missing', 'shallow', 'conditional', 'duplicate', 'late'])
+def test_browser_workflow_requires_original_history_before_acceptance(monkeypatch, damage):
+    import yaml
+
+    spec = importlib.util.spec_from_file_location('browser_history_fixture', ROOT / 'scripts/ci/suites.py')
+    coverage = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(coverage)
+    path = ROOT / '.github/workflows/ci.yml'
+    document = yaml.safe_load(path.read_text(encoding='utf-8'))
+    steps = document['jobs']['engine-live']['steps']
+    checkout = next(step for step in steps if step.get('uses', '').startswith('actions/checkout@'))
+    if damage == 'missing':
+        steps.remove(checkout)
+    elif damage == 'shallow':
+        checkout['with']['fetch-depth'] = 1
+    elif damage == 'conditional':
+        checkout['if'] = 'false'
+    elif damage == 'duplicate':
+        steps.append(dict(checkout))
+    elif damage == 'late':
+        steps.remove(checkout)
+        steps.append(checkout)
+    changed = yaml.safe_dump(document)
+    read_text = Path.read_text
+    monkeypatch.setattr(Path, 'read_text', lambda selected, *args, **kwargs:
+                        changed if selected == path else read_text(selected, *args, **kwargs))
+    if damage:
+        with pytest.raises(ValueError, match='original history'):
+            coverage.check_workflows()
+    else:
+        assert coverage.check_workflows()['python'] > 0
 
 
 @pytest.mark.parametrize('damage', ['unoptimized', 'missing', 'softened', 'skipped', 'artifact', 'order'])

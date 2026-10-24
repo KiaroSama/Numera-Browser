@@ -157,10 +157,18 @@ verdicts passed; the outlying sample was not removed or accepted, and its cause 
 Checkpoint `66d74ce` HTTP latency: Linux native 3.446–4.274 ms versus original
 12.713–13.285 ms; Windows native 25.872–39.062 ms versus 49.091–53.192 ms. Lifetime
 peak ranges also stayed disjoint/lower within each host's metric. This does not erase
-prior overlap or certify browser performance. Windows source coverage separately failed:
-a ten-module block met a nine-module checkpoint guard; its growth repair is unverified.
+prior overlap or certify browser performance. Batch `40099046439` verified the Windows
+checkpoint growth repair: all 39 selected modules and 916 tests passed. Both native
+platforms also reproduced the prior restore-name ownership defect, restored the fixed
+source and passed its twelve original-derived public restore cases.
 
-A real-browser measurement extension is source-prepared, not executed. Each existing
+The first real-browser measurement attempt stopped before sampling: its shallow checkout
+lacked the immutable original. Full-history checkout and a blocking workflow guard are
+prepared. Two fake-clock controls also required separating registration and pipe-EOF
+waits; production deadlines and measurement criteria are unchanged. These corrections
+still need hosted verification.
+
+The real-browser measurement extension has no accepted measurements yet. Each existing
 Windows/Linux four-engine leg will reuse one optimized candidate build after its
 functional acceptance, then compare actual original/native `cookies export` commands
 against equal copies of a persistent profile seeded by the immutable original.

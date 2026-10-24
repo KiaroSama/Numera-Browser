@@ -354,6 +354,15 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
             raise ValueError('Missing complete bounded Windows checkpoint diagnostics')
     action = root / '.github/actions/source-module-checkpoints/action.yml'
     check_source_module_action(yaml.load(action.read_text(encoding='utf-8'), Loader=UniqueLoader))
+    live_steps = jobs['engine-live']['steps']
+    checkouts = [index for index, step in enumerate(live_steps)
+                 if step.get('uses', '').startswith('actions/checkout@')]
+    acceptance = [index for index, step in enumerate(live_steps)
+                  if step.get('uses') == './.github/actions/native-candidate-acceptance']
+    if (len(checkouts) != 1 or len(acceptance) != 1 or checkouts[0] >= acceptance[0]
+            or live_steps[checkouts[0]].get('if')
+            or live_steps[checkouts[0]].get('with', {}).get('fetch-depth') != 0):
+        raise ValueError('Browser acceptance requires original history before comparison')
     candidate_action = yaml.load((root / '.github/actions/native-candidate-acceptance/action.yml')
                                  .read_text(encoding='utf-8'), Loader=UniqueLoader)
     candidate_steps = candidate_action.get('runs', {}).get('steps', [])
