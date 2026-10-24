@@ -10,7 +10,8 @@ import re
 import subprocess
 import sys
 
-from native_regression_cases import CURRENT_CALLER_REGRESSIONS, REGRESSIONS
+from native_current_history import CURRENT_CALLER_REGRESSIONS
+from native_regression_cases import REGRESSIONS
 
 
 # Option-returning historical secret readers require their coherent caller group.

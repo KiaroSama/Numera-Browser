@@ -67,7 +67,10 @@ pub fn leaks(observation: &Value, exit_ip: Option<&str>) -> io::Result<Value> {
     )
 }
 pub(super) fn zone_matches(left: &str, right: &str) -> io::Result<bool> {
-    let (left, right) = (left.trim().to_lowercase(), right.trim().to_lowercase());
+    let (left, right) = (
+        crate::pool::trim(left).to_lowercase(),
+        crate::pool::trim(right).to_lowercase(),
+    );
     if left.is_empty() || right.is_empty() {
         return Ok(false);
     }

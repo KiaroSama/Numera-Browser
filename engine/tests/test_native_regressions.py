@@ -26,7 +26,12 @@ def load():
         'native_regression_cases', ROOT / 'scripts/ci/native_regression_cases.py')
     cases = importlib.util.module_from_spec(cases_spec)
     cases_spec.loader.exec_module(cases)
+    current_spec = importlib.util.spec_from_file_location(
+        'native_current_history', ROOT / 'scripts/ci/native_current_history.py')
+    current = importlib.util.module_from_spec(current_spec)
+    current_spec.loader.exec_module(current)
     with patch.dict(sys.modules, {'native_settings_history': helper,
+                                 'native_current_history': current,
                                  'native_regression_cases': cases}):
         spec.loader.exec_module(module)
     return module
@@ -157,6 +162,10 @@ def test_pool_history_keeps_a_compatible_importer_without_replacing_the_selected
         'commit': 'db29928b16d08810ce88243f0dd1a6e233e2dbf6',
         'sha256': '212a821995a0582c0f07913ec1ac9c83172b0fcb1024ccfc1eb3fe9eb95e7dd1',
     }
+    assert case['companions']['engine-rust/src/browser/network_grades.rs'] == {
+        'commit': 'f409196e68c86a2bb3e3a2b136217e1d2f276c62',
+        'sha256': '5583d5df14afb382ec177587e2ac54b9553beb4c3b49e6d6b89654adcb52fe71',
+    }
     assert not case['files'].keys() & case['companions'].keys()
 
 
@@ -271,7 +280,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/ownership/claims.rs':
                   '6af8a9ffd4a29f9ce29da25da9ecf8e4b4fc2031b9228424be8c578650eccbb8'},
     }
-    added = module.CURRENT_CALLER_REGRESSIONS[8:-2]
+    added = module.CURRENT_CALLER_REGRESSIONS[8:10]
     assert [(case['target'], case['test'], case['symptom']) for case in added] == [
         ('profile_http_import_parity', 'lexical::importer_lexical_profiles_match_original_without_changing_inputs', 'Imported lexical dashboard differs'),
         ('profile_http_import_parity', 'lexical::native_envelope_versions_match_original_exact_numeric_guidance', 'Native export version guidance differs'),
@@ -279,13 +288,21 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
     assert all(case['commit'] == '4297b1f8e06f2ca0ae7617f2602bd5ed43d450d1' for case in added)
     assert added[0]['files'] == {'engine-rust/src/importers.rs': 'e04030f2743e3f77625e0428c28c5727aabf39091e90aa01351775d7a0d16572'}
     assert added[1]['files'] == {'engine-rust/src/import_format.rs': 'fb386692f47d6e7d0281b302112001f6af120418d0bbf5d765c231243de51233'}
-    assert module.CURRENT_CALLER_REGRESSIONS[-2] == {
+    assert module.CURRENT_CALLER_REGRESSIONS[10] == {
         'target': 'mcp_parity',
         'test': 'captured_command_errors_match_original_stream_selection',
         'symptom': 'MCP captured result differs',
         'commit': 'db29928b16d08810ce88243f0dd1a6e233e2dbf6',
         'files': {'engine-rust/src/mcp_command.rs':
                   '212a821995a0582c0f07913ec1ac9c83172b0fcb1024ccfc1eb3fe9eb95e7dd1'},
+    }
+    assert module.CURRENT_CALLER_REGRESSIONS[11] == {
+        'target': 'browser_ip_parity',
+        'test': 'timezone_grades_match_original_proxy_and_trust_boundaries',
+        'symptom': 'Timezone proxy grade differs',
+        'commit': 'f409196e68c86a2bb3e3a2b136217e1d2f276c62',
+        'files': {'engine-rust/src/browser/network_grades.rs':
+                  '5583d5df14afb382ec177587e2ac54b9553beb4c3b49e6d6b89654adcb52fe71'},
     }
     assert module.CURRENT_CALLER_REGRESSIONS[-1:] == expected
     assert module.REGRESSIONS == module._SETTINGS_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS

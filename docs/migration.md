@@ -7,19 +7,20 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 24, 2026
 
-The latest completed checkpoint `e85d27b` ran in manual hosted batch
-[40039208432](https://github.com/KiaroSama/Numera-Browser/actions/runs/40039208432),
-which failed on October 23 at 23:43 UTC: nine workflow jobs passed, four failed and eight
-were skipped; the separate external CodeQL check also failed. Both native jobs passed,
-including 58 historical proofs on Linux and 59 on Windows, fixed-byte restoration,
-current compilation and contracts. Dashboard and Cargo advisory failures blocked the
-source-platform, SDK, rendered-interface and distribution tiers; they did not run.
-The prior `4e570f1` Windows fixed-build idle failure did not recur; its precise cause
-and a repeatable compiler speedup remain unproved. That earlier macOS cancellation
-was a hosted arm64 capacity failure before acquisition, not a source-test failure.
+The latest completed checkpoint `f409196` ran in manual hosted batch
+[40044786751](https://github.com/KiaroSama/Numera-Browser/actions/runs/40044786751),
+which failed on October 24 at 00:52 UTC solely at independent CodeQL and required
+verification: 28 workflow jobs passed, two failed and three distribution/publication
+stages were skipped; the separate external CodeQL check also failed. Both native jobs,
+all source-platform partitions, all eight real SDK paths, dashboard tests/build,
+rendered updater and dependency audits passed. Linux and Windows completed 58 and 59
+historical proofs/restorations respectively, then current compilation and contracts.
+The prior Windows fixed-build idle failure did not recur; its precise cause and a
+repeatable compiler speedup remain unproved. The earlier macOS cancellation was a
+hosted arm64 capacity failure; this checkpoint's retained-runtime macOS tests passed.
 The prior-importer companion resolves the old pool swap's E0425 without changing its selected defect.
-Shared identity helpers passed 123 frozen-original version/platform/page/CDP comparisons on both systems. The earlier `4e570f1` passed all eight real SDK paths,
-including Windows Playwright; those tiers were skipped on `e85d27b`. Fifteen deterministic cleanup-failure controls and the exact prior
+Shared identity helpers passed 123 frozen-original version/platform/page/CDP comparisons on both systems. All eight real SDK paths passed again on `f409196`.
+Fifteen deterministic cleanup-failure controls and the exact prior
 runner's negative control passed on Windows (16 tests, 0.21 seconds); the failed exit, original
 exception, protected bytes and sanitized diagnostics are retained without retries or permission
 changes. The previous cleanup PermissionError's filesystem cause remains unproved.
@@ -44,9 +45,11 @@ and 44 captured-output cases after named historical assertion failures and fixed
 MCP retains UTF8/frame/ownership limits and nonzero JSON verdicts; its real child ping/list passed
 with owned-tree settlement. Ordinary output cases do not certify every forced-timeout cleanup branch.
 Fixed builds reuse sanitized Cargo progress, not heartbeat or longer deadlines. All 436 mapped
-references remain pending; the source mapping guard was skipped in this batch. Prepared Zod 4.6.7
-and ctutils 0.4.5 lockfile updates address GHSA-mrhx-c7xc-m3w5 and RUSTSEC-2026-0385 without changing
-other resolved records or manifests; replacement hosted dependency/application acceptance is pending.
+references remain pending despite passing source guards; nearest references are not complete parity.
+Zod 4.6.7 and ctutils 0.4.5 resolved GHSA-mrhx-c7xc-m3w5 and RUSTSEC-2026-0385 through passing
+hosted audits and application/native checks, without changing other resolved records or manifests.
+A prepared shared timezone-boundary correction adds 103 original-derived proxy/trust grade pairs;
+its current and historical assertion tests have not run.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The
