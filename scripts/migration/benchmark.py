@@ -1,7 +1,8 @@
-"""Alternating foreground CLI measurements; incomplete evidence never selects Rust."""
+"""Alternating CLI and HTTP measurements; incomplete evidence never selects Rust."""
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -28,7 +29,7 @@ def execute(argv, env, *, timeout=15):
 
 
 REPETITIONS = 7
-SCENARIOS = ('create', 'list', 'vault-read', 'backup')
+SCENARIOS = ('create', 'list', 'vault-read', 'backup', 'http-list')
 
 
 def verdict(native, original):
@@ -87,9 +88,21 @@ def observation_failure(stderr):
     return 'phase=unknown type=unknown winerror=None'
 
 
+@contextmanager
+def fixture_directory(prefix, parent, *, retain=False):
+    root = Path(tempfile.mkdtemp(prefix=prefix, dir=parent))
+    complete = False
+    try:
+        yield root
+        complete = True
+    finally:
+        if complete and not retain:
+            shutil.rmtree(root)
+
+
 def observation(candidate, original, parent, template, env, runtime, scenario, password):
-    with tempfile.TemporaryDirectory(prefix='pair-', dir=parent) as temporary:
-        workspace = Path(temporary)
+    # The benchmark owner removes pairs only after cross-runtime parity and verdicts.
+    with fixture_directory('pair-', parent, retain=True) as workspace:
         root = workspace / 'data with spaces'
         shutil.copytree(template, root)
         before = protected_bytes(root)
@@ -100,10 +113,13 @@ def observation(candidate, original, parent, template, env, runtime, scenario, p
         environment = dict(env)
         if scenario == 'vault-read':
             environment['NUMERA_PASSWORD'] = password
+        observer = 'benchmark_http_sample.py' if scenario == 'http-list' else 'benchmark_sample.py'
+        arguments = (['--data-dir', str(root)] if scenario == 'http-list' else
+                     ['--', '--data-dir', str(root), *commands[scenario], '--json'])
         code, stdout, stderr = execute(
-            [sys.executable, '-I', str(ROOT / 'scripts/migration/benchmark_sample.py'),
+            [sys.executable, '-I', str(ROOT / 'scripts/migration' / observer),
              '--candidate', str(candidate), '--original', str(original), '--runtime', runtime,
-             '--', '--data-dir', str(root), *commands[scenario], '--json'], environment, timeout=25)
+             *arguments], environment, timeout=25)
         if code or len(stdout.encode('utf-8')) > 131072:
             raise ValueError(f'Benchmark observation refused runtime={runtime} scenario={scenario} exit={code} '
                              + observation_failure(stderr))
@@ -149,6 +165,12 @@ def observation(candidate, original, parent, template, env, runtime, scenario, p
         else:
             if protected_bytes(root) != before:
                 raise ValueError('Read-only benchmark changed protected input bytes')
+        if scenario == 'http-list':
+            expected_ids = {f'{index:012x}' for index in range(32)}
+            if (not isinstance(payload, list) or len(payload) != 32
+                    or any(not isinstance(row, dict) or not isinstance(row.get('id'), str) for row in payload)
+                    or {row['id'] for row in payload} != expected_ids):
+                raise ValueError('HTTP benchmark omitted or duplicated baseline profiles')
         if scenario == 'backup':
             if payload != {'ok': True, 'id': '000000000000', 'name': 'Benchmark 00', 'file': str(destination)}:
                 raise ValueError('Measured backup returned an invalid verdict')
@@ -176,8 +198,7 @@ def run(report, destination, logger):
             or identity.get('application_runtime') != 'native-candidate'):
         raise ValueError('Optimized benchmark candidate identity differs from this verification batch')
     results = []
-    with tempfile.TemporaryDirectory(prefix='benchmark-', dir=ROOT / '.ci-work/migration-temp') as temporary:
-        parent = Path(temporary)
+    with fixture_directory('benchmark-', ROOT / '.ci-work/migration-temp') as parent:
         home = parent / 'home'
         home.mkdir()
         env = {key: value for key, value in os.environ.items()
@@ -214,19 +235,23 @@ def run(report, destination, logger):
             memory_verdict = verdict([row['native']['memory']['bytes'] for row in samples],
                                      [row['original']['memory']['bytes'] for row in samples])
             results.append({'scenario': scenario, 'time': time_verdict, 'memory': memory_verdict,
+                            'latency_scope': ('HTTP request after readiness' if scenario == 'http-list'
+                                              else 'foreground command lifetime'),
+                            'memory_scope': 'server lifetime including startup and request' if scenario == 'http-list'
+                                            else 'foreground command lifetime',
                             'samples': samples})
-    evidence = {'schema': 1, 'source_sha': identity['source_sha'], 'generation': identity['generation'],
-                'profile': 'release-opt3', 'binary_sha256': hashlib.sha256(candidate.read_bytes()).hexdigest(),
-                'platform': sys.platform, 'machine': platform.machine(), 'python': platform.python_version(),
-                'repetitions': REPETITIONS, 'warmup_pairs': 1, 'results': results,
-                'scope': 'foreground-cli-only; not API/browser or full migration acceptance'}
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    with destination.open('x', encoding='utf-8') as stream:
-        stream.write(json.dumps(evidence, indent=2, allow_nan=False) + '\n')
-    for result in results:
-        logger.info('Performance verdict scenario=%s time=%s memory=%s', result['scenario'], result['time'], result['memory'])
-    if any(row[key] != 'no-regression' for row in results for key in ('time', 'memory')):
-        raise ValueError('Performance acceptance blocked: regression or inconclusive measurements; evidence retained')
+        evidence = {'schema': 1, 'source_sha': identity['source_sha'], 'generation': identity['generation'],
+                    'profile': 'release-opt3', 'binary_sha256': hashlib.sha256(candidate.read_bytes()).hexdigest(),
+                    'platform': sys.platform, 'machine': platform.machine(), 'python': platform.python_version(),
+                    'repetitions': REPETITIONS, 'warmup_pairs': 1, 'results': results,
+                    'scope': 'four foreground CLI flows and HTTP profile listing; not browser/full migration acceptance'}
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with destination.open('x', encoding='utf-8') as stream:
+            stream.write(json.dumps(evidence, indent=2, allow_nan=False) + '\n')
+        for result in results:
+            logger.info('Performance verdict scenario=%s time=%s memory=%s', result['scenario'], result['time'], result['memory'])
+        if any(row[key] != 'no-regression' for row in results for key in ('time', 'memory')):
+            raise ValueError('Performance acceptance blocked: regression or inconclusive measurements; evidence retained')
     return 0
 
 

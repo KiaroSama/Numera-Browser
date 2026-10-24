@@ -107,23 +107,29 @@ passed 39 output/input cases plus four actual deletion/refusal pairs. The execut
 preserves child-selected environments/durable detached owners, records its direct tree
 and lets entry main forward its outer receipt. Twenty helper controls passed through
 source-suite discovery; actual entry replay reported 172 complete, clean units per host.
-Failed fixtures remain retained; only success removes them. Prepared model-policy drift
-checks are not yet executed and do not certify Python reflection or full migration.
+Failed fixtures remain retained; only success removes them. Both model-policy drift
+checks passed on Windows/Linux in batch `40073667250`; this is serialized-field coverage,
+not Python reflection or full migration. That batch still failed CodeQL/required checks.
 
 ## Representative release performance
 
-The existing native job now prepares an optimized, current Cargo artifact for
-four foreground CLI scenarios: seeded creation, a 32-profile list, an unlocked
-vault read and backup. One warm-up pair precedes seven alternating measured
-pairs. Identical synthetic input stores are copied outside the measured interval;
-returned profiles, both stored copies and backup contents must agree too.
+The existing native job prepares an optimized, current Cargo artifact for four
+foreground CLI scenarios: seeded creation, a 32-profile list, an unlocked vault
+read and backup. A fifth scenario now prepares authenticated loopback HTTP profile
+listing; its execution and measurements remain unverified. One excluded warm-up
+pair precedes seven alternating measured pairs over identical copied stores.
+Full ordered responses, persisted copies and backup contents must agree; HTTP
+requires all 32 distinct profile identities and unchanged protected input bytes.
 
-Each fresh observer records elapsed monotonic nanoseconds and an OS lifetime
-memory peak. Linux reports its sole child's maximum resident set; Windows uses
-a job assigned at process creation and reports peak committed bytes. These are
-different metrics and are compared only between runtimes on the same host, never
-aggregated across operating systems. All individual numeric samples, source/build
-identity and the binary hash are retained in the hosted performance artifact.
+CLI elapsed time covers the command lifetime. HTTP latency covers the actual
+request after readiness; its memory peak covers server startup and request, not
+incremental request allocation. Linux reports the largest waited-child lifetime
+RSS, not simultaneous aggregate tree RSS. Windows assigns a job at process birth
+and reports peak committed bytes. Compare only within one host/metric. Deliberate
+HTTP teardown must settle/reap the tree and drain both pipes before peak acceptance;
+it is not proof of natural shutdown. Failed parity, verdict or evidence writes retain
+synthetic fixtures; only full acceptance removes them. Individual samples, source/build
+identity and binary hash remain in the hosted artifact; raw response bodies do not.
 
 Disjoint lower native ranges establish no regression for a measured scenario;
 disjoint higher ranges report regression. Overlapping ranges are inconclusive,

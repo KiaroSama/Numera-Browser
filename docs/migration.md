@@ -7,9 +7,9 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 24, 2026
 
-The latest completed checkpoint `966e450` ran in manual hosted batch
-[40071135323](https://github.com/KiaroSama/Numera-Browser/actions/runs/40071135323),
-which failed on October 24 at 06:58 UTC only at CodeQL and required verification:
+The latest completed checkpoint `680c8a2` ran in manual hosted batch
+[40073667250](https://github.com/KiaroSama/Numera-Browser/actions/runs/40073667250),
+which failed on October 24 at 07:48 UTC only at CodeQL and required verification:
 28 workflow jobs passed; three distribution/publication stages were skipped.
 Both native tiers, source platforms, eight real SDK paths, dashboard, updater and audits passed.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
@@ -65,9 +65,10 @@ helper and actual entrypoint. Both systems proved the exact old source fails cas
 restored fixed bytes and passed all 39 output cases. Both systems passed four actual
 confirmation pairs, including deletion and refused-input byte preservation. The executor's
 optional parent receipts and deliberate child ancestors are covered by 20 helper controls;
-failed entry fixtures remain retained. Two additional native model-policy drift tests are
-prepared, not executed: actual persisted fields must match all 56 frozen policy entries,
-and owned/normalized exemptions must carry a nonblank explanation.
+failed entry fixtures remain retained. Both native model-policy drift tests passed on
+both systems: persisted fields match all 56 frozen policy entries and owned/normalized
+exemptions require nonblank explanations. Actual HTTP request performance is prepared,
+not executed; full ordered responses, protected bytes and failed fixtures remain checked.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The
