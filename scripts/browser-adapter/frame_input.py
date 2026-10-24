@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 
 
 class FrameInput:
@@ -26,21 +27,29 @@ class FrameInput:
         else:
             os.set_blocking(self.fd, False)
 
-    def poll(self):
+    def poll(self, timeout=0):
+        if not 0 <= timeout <= .025:
+            raise ValueError('Input wait must be between zero and 25 milliseconds')
         if b'\n' in self.pending:
             return self._frame()
         if os.name == 'nt':
-            if not self.peek(self.handle, None, 0, None, self.ctypes.byref(self.available), None):
-                error = self.ctypes.get_last_error()
-                if error in (109, 232):
-                    return self._eof()
-                raise self.ctypes.WinError(error)
-            count = self.available.value
-            if count == 0:
-                return False, None
+            deadline = time.monotonic() + timeout
+            while True:
+                if not self.peek(self.handle, None, 0, None, self.ctypes.byref(self.available), None):
+                    error = self.ctypes.get_last_error()
+                    if error in (109, 232):
+                        return self._eof()
+                    raise self.ctypes.WinError(error)
+                count = self.available.value
+                if count:
+                    break
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return False, None
+                time.sleep(min(.001, remaining))
         else:
             import select
-            if not select.select([self.fd], [], [], 0)[0]:
+            if not select.select([self.fd], [], [], timeout)[0]:
                 return False, None
             count = 4096
         try:

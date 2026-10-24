@@ -174,13 +174,20 @@ record monotonic operation/cleanup durations. Batch
 [40112415592](https://github.com/KiaroSama/Numera-Browser/actions/runs/40112415592) on `2c6d23e`
 completed Camoufox comparisons after the link repair, but every browser verdict remains
 unaccepted. Both native jobs stopped before tests because the new relay target lacked
-its explicit oracle-verification registration; that registration and mutation controls
-are now prepared. Browser-only unbundled commands avoid an unused metadata subprocess
-while retaining actual SDK handshake admission; packaged discovery and engine/config
-queries keep their metadata checks. Cloak comparisons retain the parent's SDK cache
-before isolating application HOME. These changes await hosted proof; no speedup or
-Cloak root-cause resolution is claimed. Linux HTTP timing also overlapped;
-strict criteria, every sample and all ownership checks remain unchanged.
+its explicit oracle-verification registration. In
+[40116019222](https://github.com/KiaroSama/Numera-Browser/actions/runs/40116019222) on `ab166d2`,
+both platforms passed the registered relay target and metadata-dispatch cases after exact
+historical failures and fixed-byte restoration. Unbundled browser commands omit unused
+metadata; actual SDK admission and packaged/config metadata checks remain. Cloak's bound
+parent cache lets Linux complete its baseline and seven pairs without ignoring stderr;
+the old stderr content remains unproved. All eight browser comparisons remain unaccepted:
+Linux Playwright/Patchright latency regresses, other latency and all memory ranges overlap.
+Windows native acceptance passed; Linux later stopped at an obsolete three-process assertion.
+The prepared repair validates complete receipts and exact command/live SDK claim identities
+instead of requiring the removed metadata child. A separate prepared adapter repair waits
+for input readiness within the same 25ms idle interval, pumping SDK events without an added
+fixed timer. Neither repair has hosted runtime/performance proof yet. Strict criteria,
+every sample, ownership checks and the failing CodeQL gate remain unchanged.
 
 The real-browser measurement extension has no accepted measurements yet. Each existing
 Windows/Linux four-engine leg will reuse one optimized candidate build after its
@@ -766,10 +773,10 @@ pre-isolation cache root. Both native tiers previously proved the historical
 metadata bytecode failure, restored fixed bytes and passed the current tests.
 CodeQL and required verification still failed; the integrated batch is not green.
 
-The SOCKS relay now preserves validated raw origin-form path/query bytes rather than
+The SOCKS relay preserves validated raw origin-form path/query bytes rather than
 rebuilding a normalized URL path. Nineteen immutable-original-derived full-wire cases,
-remote-DNS identity, binary responses and exact historical failure/restoration are
-prepared but not executed; HTTP upstream forwarding, CONNECT and ownership are unchanged.
+remote-DNS identity, binary responses and exact historical failure/restoration passed
+on both platforms in `40116019222`; HTTP forwarding, CONNECT and ownership are unchanged.
 
 See [migration status](migration.md). CodeQL, the 907-row capability ledger, complete
 application coverage, representative replay, repeated comparative time/peak-memory

@@ -158,3 +158,72 @@ def test_main_removes_only_successful_entry_fixtures(tmp_path, monkeypatch, fail
     else:
         assert helper.main(tmp_path / 'inert-candidate', logger) == 0
         assert not temporary.exists()
+
+
+@pytest.mark.parametrize('damage', [
+    None, 'metadata', 'missing-command', 'missing-sdk', 'foreign-sdk', 'same-command',
+    'command-token', 'sdk-token', 'sdk-group', 'dead-sdk', 'pending', 'malformed',
+])
+def test_detached_sdk_receipts_match_actual_command_and_session_claim(tmp_path, monkeypatch, damage):
+    import json
+    from numera.proctree import Tree
+
+    load(monkeypatch)
+    spec = importlib.util.spec_from_file_location(
+        'job_acceptance_fixture', ROOT / 'scripts/migration/native_job_acceptance.py')
+    helper = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(helper)
+    root = tmp_path / 'store'
+    (root / 'jobs').mkdir(parents=True)
+    (root / 'sessions').mkdir()
+    command = Tree(pid=41, token=410, group=41, kind='pgid')
+    sdk = Tree(pid=42, token=420, group=42, kind='pgid')
+    foreign = Tree(pid=43, token=430, group=43, kind='pgid')
+    job = {'id': 'fixture-job', 'pid': command.pid, 'pidToken': command.token,
+           'tree': command.as_record()}
+    claim = {'pid': sdk.pid, 'token': sdk.token, 'tree': sdk.as_record()}
+    trees = [command, sdk]
+    if damage == 'metadata':
+        trees.insert(1, foreign)
+    elif damage == 'missing-command':
+        trees.remove(command)
+    elif damage == 'missing-sdk':
+        trees.remove(sdk)
+    elif damage == 'foreign-sdk':
+        trees = [command, foreign]
+    elif damage == 'same-command':
+        claim = {'pid': command.pid, 'token': command.token, 'tree': command.as_record()}
+    elif damage == 'command-token':
+        job['pidToken'] += 1
+    elif damage == 'sdk-token':
+        claim['token'] += 1
+    elif damage == 'sdk-group':
+        claim['tree'] = {'kind': 'job', 'group': 'different-owned-tree'}
+    records = [{'version': 2, 'event': 'header'}]
+    for index, tree in enumerate(trees):
+        records += [{'event': 'pending', 'attempt': str(index)},
+                    {'event': 'unit', 'attempt': str(index), 'pid': tree.pid,
+                     'pidToken': tree.token, 'tree': tree.as_record()}]
+    if damage == 'pending':
+        records.append({'event': 'pending', 'attempt': 'interrupted'})
+    if damage == 'malformed':
+        records[-1]['pidToken'] = None
+    receipt = root / 'jobs/fixture-job.units'
+    receipt.write_text(''.join(json.dumps(row) + '\n' for row in records), encoding='utf-8')
+    claim_path = root / 'sessions/fixture-profile.json'
+    claim_path.write_text(json.dumps(claim), encoding='utf-8')
+    before = receipt.read_bytes(), claim_path.read_bytes()
+    observed = []
+
+    def alive(tree):
+        observed.append(tree)
+        return tree == sdk and damage != 'dead-sdk'
+
+    monkeypatch.setattr(helper.proctree, 'alive_tree', alive)
+    if damage in (None, 'metadata'):
+        assert helper.sdk_units(root, job, 'fixture-profile') == trees
+        assert observed == [sdk]
+    else:
+        with pytest.raises(AssertionError, match='ownership|SDK'):
+            helper.sdk_units(root, job, 'fixture-profile')
+    assert (receipt.read_bytes(), claim_path.read_bytes()) == before

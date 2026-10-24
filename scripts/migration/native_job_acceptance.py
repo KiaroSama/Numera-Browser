@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'engine'))
-from numera import proctree
+from numera import proctree, unit_report
 from native_entry_acceptance import execute
 from run_logging import run_log
 
@@ -25,6 +25,18 @@ def wait_for(observe, seconds, description):
         if time.monotonic() >= end:
             raise TimeoutError(description)
         time.sleep(min(0.02, max(0, end - time.monotonic())))
+
+
+def sdk_units(root, job, reference):
+    report = unit_report.read(root / 'jobs' / f'{job["id"]}.units')
+    assert report.complete, 'Detached ownership receipt is incomplete or malformed'
+    command = proctree.Tree.from_record(job)
+    assert command in report.trees, 'Detached command ownership identity was not recorded'
+    claim = json.loads((root / 'sessions' / f'{reference}.json').read_text(encoding='utf-8'))
+    sdk = proctree.Tree.from_record({**claim, 'pidToken': claim['token']})
+    assert sdk.pid != command.pid and sdk in report.trees, 'Session SDK ownership identity was not recorded separately'
+    assert proctree.alive_tree(sdk), 'Recorded session SDK tree was not actually live'
+    return report.trees
 
 
 def main(candidate, log):
@@ -217,10 +229,7 @@ def main(candidate, log):
             adopt(job)
             jid = job['id']
             wait_for(marker.is_file, 10, 'Detached SDK stand-in did not open')
-            receipts = [json.loads(line) for line in (root / 'jobs' / f'{jid}.units').read_text(encoding='utf-8').splitlines()]
-            units = [proctree.Tree.from_record(value) for value in receipts if value.get('event') == 'unit']
-            assert len(units) >= 3, 'Command, metadata and separately-owned SDK were not recorded'
-            assert any(tree.pid != job['pid'] and proctree.alive_tree(tree) for tree in units), 'No nested SDK tree was actually live'
+            units = sdk_units(root, job, reference)
             if crash:
                 import signal
                 assert proctree.alive(job['pid'], job['pidToken']), 'Command identity changed before crash fixture'

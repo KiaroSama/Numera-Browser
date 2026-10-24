@@ -140,12 +140,12 @@ def main():
         while True:
             if closed.is_set():
                 break
-            ready, request = frames.poll()
+            ready, request = frames.poll(.025 if context is not None else 0)
             if not ready:
                 if context is not None:
-                    # Pump SDK events with no concurrent stdin read at shutdown.
+                    # Input readiness owns the wait; this call only dispatches SDK events.
                     try:
-                        context.pages[0].wait_for_timeout(25) if context.pages else context.new_page().wait_for_timeout(25)
+                        context.pages[0].wait_for_timeout(0) if context.pages else context.new_page().wait_for_timeout(0)
                     except Exception:
                         if not closed.is_set():
                             raise
