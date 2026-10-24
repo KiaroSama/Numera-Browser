@@ -10,6 +10,135 @@ use std::{
 mod common;
 
 #[test]
+fn browser_dispatch_uses_actual_handshake_without_redundant_metadata()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{
+        browser::runtime::Deployment, ownership::claims, storage::repo::ProfileRepo,
+    };
+    use serde_json::json;
+    let temporary = common::TempDirectory::new("entry-sdk-handshake")?;
+    let root = temporary.path();
+    let fixture: Value = serde_json::from_str(include_str!("fixtures/init-script.json"))?;
+    let profile = numera_core::models::Profile::from_record(&json!({
+        "id":"fixture","name":"Fixture","engine":"playwright","fingerprint":fixture["cases"][0]["input"]
+    }))?;
+    ProfileRepo::new(root.into(), None).save(profile, 1000.0)?;
+    let adapter = root.join("sdk.py");
+    let log = RuntimeLog::new(&root.join("logs"), "native-entry-test");
+    for (installed, packaged, command) in [
+        (true, false, "cookies"),
+        (false, false, "cookies"),
+        (true, true, "cookies"),
+        (true, false, "engines"),
+    ] {
+        let app = root.join(if packaged { "packaged" } else { "unbundled" });
+        fs::create_dir_all(&app)?;
+        if packaged {
+            fs::create_dir_all(app.join("browsers"))?;
+            fs::write(app.join("browsers/marker"), b"packaged resource discovery")?;
+        }
+        fs::write(
+            &adapter,
+            format!(
+                r#"
+import json,sys
+def available():
+ raise RuntimeError('Redundant metadata preflight')
+if __name__=='__main__':
+ for line in sys.stdin:
+  request=json.loads(line);op=request['operation']
+  if op=='hello':result={{'backends':{{'playwright':{{'installed':{installed}}}}}}}
+  elif op=='open':result={{'opened':True,'backend':'playwright'}}
+  elif op=='cookies-read':result={{'cookies':[]}}
+  elif op=='close':result={{'closing':True}}
+  else:raise RuntimeError('Unexpected SDK operation')
+  print(json.dumps({{'protocol':1,'id':request['id'],'ok':True,'result':result}}),flush=True)
+  if op=='close':break
+"#,
+                installed = if installed { "True" } else { "False" }
+            ),
+        )?;
+        let environment = Environment {
+            app: app.clone(),
+            home: root.into(),
+            cwd: root.into(),
+            host: "fixture-host".into(),
+            browser: Runtime {
+                python: std::env::var_os("NUMERA_ORACLE_PYTHON")
+                    .ok_or("Fixture interpreter required")?
+                    .into(),
+                adapter: adapter.clone(),
+                cwd: root.into(),
+                home: root.into(),
+                logs: root.join("logs"),
+                country: None,
+                relay: None,
+                binary_options: Default::default(),
+                deployment: Some(Deployment {
+                    app,
+                    environment: Default::default(),
+                    default_addons: Vec::new(),
+                }),
+            },
+        };
+        let argv = if command == "cookies" {
+            vec!["cookies", "list", "fixture", "--json"]
+        } else {
+            vec!["engines", "--json"]
+        };
+        let mut registry = cli::registry();
+        registry.build();
+        let matches = registry
+            .clone()
+            .try_get_matches_from(std::iter::once("numera").chain(argv.iter().copied()))?;
+        let values = cli::reflection::values(&registry, &matches);
+        let mut output = cli::output::Output::new(Vec::new(), Vec::new(), true, false);
+        let result = native_entry::dispatch(
+            values.as_object().ok_or("Args missing")?,
+            &argv.into_iter().map(String::from).collect::<Vec<_>>(),
+            &mut output,
+            environment,
+            root,
+            Arc::new(AtomicBool::new(false)),
+            &log,
+        );
+        if packaged || command == "engines" {
+            assert!(
+                result
+                    .expect_err("Required metadata was skipped")
+                    .to_string()
+                    .contains("metadata discovery failed")
+            );
+        } else if !installed {
+            assert!(
+                result
+                    .expect_err("Missing SDK accepted")
+                    .to_string()
+                    .contains("SDK is not installed")
+            );
+        } else {
+            assert_eq!(
+                result.expect("Browser dispatch repeated SDK metadata preflight"),
+                0
+            );
+            let (stdout, stderr) = output.into_parts();
+            assert!(stderr.is_empty());
+            assert_eq!(
+                serde_json::from_slice::<Value>(&stdout)?,
+                json!({"total":0,"domains":{}})
+            );
+        }
+        assert!(matches!(
+            claims::read(root, "fixture"),
+            claims::Claim::Absent
+        ));
+    }
+    drop(log);
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn entry_dispatch_reads_real_store_and_preserves_structured_refusals()
 -> Result<(), Box<dyn std::error::Error>> {
     let temporary = common::TempDirectory::new("native entry α")?;

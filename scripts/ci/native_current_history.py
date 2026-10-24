@@ -171,4 +171,14 @@ CURRENT_CALLER_REGRESSIONS = (
                 '830ac7683ae157810cb5f2589f0e253cc6c09661b3204f6785b9417f2ca738dd',
         },
     },
+    {
+        'target': 'native_entry',
+        'test': 'browser_dispatch_uses_actual_handshake_without_redundant_metadata',
+        'symptom': 'Browser dispatch repeated SDK metadata preflight',
+        'commit': '2c6d23eed78cdf1f3ddf2c41c6e103d987cfe527',
+        'files': {
+            'engine-rust/src/native_entry.rs':
+                'abf6a5e9b6690231795845589d28c2ddb7faded39d65fa635afd3919547837e1',
+        },
+    },
 )

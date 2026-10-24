@@ -170,8 +170,16 @@ inconclusive verdicts; Linux Camoufox stopped at a dangling profile-lock link an
 Cloak's original cookie-import baseline refused without a causal diagnostic.
 Synthetic profile copies now preserve links rather than dereference them. Baseline
 refusals expose only operation/exit/byte counts/allowlisted exception type; SDK file logs
-record monotonic operation/cleanup durations. These repairs await hosted verification;
-no performance cause or improvement is claimed. Linux HTTP timing also overlapped;
+record monotonic operation/cleanup durations. Batch
+[40112415592](https://github.com/KiaroSama/Numera-Browser/actions/runs/40112415592) on `2c6d23e`
+completed Camoufox comparisons after the link repair, but every browser verdict remains
+unaccepted. Both native jobs stopped before tests because the new relay target lacked
+its explicit oracle-verification registration; that registration and mutation controls
+are now prepared. Browser-only unbundled commands avoid an unused metadata subprocess
+while retaining actual SDK handshake admission; packaged discovery and engine/config
+queries keep their metadata checks. Cloak comparisons retain the parent's SDK cache
+before isolating application HOME. These changes await hosted proof; no speedup or
+Cloak root-cause resolution is claimed. Linux HTTP timing also overlapped;
 strict criteria, every sample and all ownership checks remain unchanged.
 
 The real-browser measurement extension has no accepted measurements yet. Each existing

@@ -28,6 +28,7 @@ def environment(original, parent, engine):
     env = {key: value for key, value in os.environ.items()
            if not key.startswith('NUMERA_') and key not in ('PYTHONHOME', 'PYTHONPATH')}
     env['XDG_CACHE_HOME'] = os.environ.get('XDG_CACHE_HOME') or str(Path.home() / '.cache')
+    env['CLOAKBROWSER_CACHE_DIR'] = os.environ.get('CLOAKBROWSER_CACHE_DIR') or str(Path.home() / '.cloakbrowser')
     bind_sdk_cache(env, engine)
     env.update(PYTHONPATH=str(original / 'engine'), PYTHONUTF8='1', PYTHONIOENCODING='utf-8',
                PYTHONDONTWRITEBYTECODE='1', HOME=str(home), USERPROFILE=str(home),

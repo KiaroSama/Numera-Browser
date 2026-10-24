@@ -272,24 +272,6 @@ pub fn dispatch(
             }
         }
     } else {
-        let metadata_needed = matches!(
-            operation,
-            "create"
-                | "engines"
-                | "default-engine"
-                | "config"
-                | "serve"
-                | "launch"
-                | "attach"
-                | "cookies"
-                | "tls"
-                | "dns"
-                | "proxy"
-                | "trust"
-                | "align"
-                | "warmup"
-        ) || (operation == "schedule"
-            && args.get("schedule_command").and_then(Value::as_str) == Some("run-due"));
         let addons_needed = matches!(
             operation,
             "serve"
@@ -304,6 +286,16 @@ pub fn dispatch(
                 | "warmup"
         ) || (operation == "schedule"
             && args.get("schedule_command").and_then(Value::as_str) == Some("run-due"));
+        // The actual adapter handshake checks SDK admission. Only packaged
+        // resources need addon discovery before opening a browser.
+        let metadata_needed = matches!(
+            operation,
+            "create" | "engines" | "default-engine" | "config" | "serve"
+        ) || (addons_needed
+            && match &environment.browser.deployment {
+                Some(deployment) => crate::browser::bundled::discover(&deployment.app)?.is_some(),
+                None => false,
+            });
         let installed = match if metadata_needed {
             environment.metadata(addons_needed)
         } else {

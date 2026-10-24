@@ -81,13 +81,20 @@ def test_browser_baseline_uses_original_and_checks_actual_persistence(tmp_path, 
             assert not any(value in message for value in ('private-path', 'private-value', 'do-not-expose'))
 
 
-def test_browser_environment_binds_sdk_without_inheriting_real_application_state(tmp_path, monkeypatch):
+@pytest.mark.parametrize('cache', [None, 'explicit-cloak-cache'])
+def test_browser_environment_binds_sdk_without_inheriting_real_application_state(tmp_path, monkeypatch, cache):
     helper = load(monkeypatch)
     monkeypatch.setenv('NUMERA_PASSWORD', 'must-not-forward')
     monkeypatch.setenv('NUMERA_API_TOKEN', 'must-not-forward')
     monkeypatch.setenv('NUMERA_DATA_DIR', 'must-not-forward')
     monkeypatch.setenv('NUMERA_HELPER_UNITS', 'retained-parent')
     monkeypatch.setenv('XDG_CACHE_HOME', 'existing-sdk-cache')
+    if cache is None:
+        monkeypatch.delenv('CLOAKBROWSER_CACHE_DIR', raising=False)
+    else:
+        monkeypatch.setenv('CLOAKBROWSER_CACHE_DIR', cache)
+    parent_home = tmp_path / 'actual parent home'
+    monkeypatch.setattr(Path, 'home', classmethod(lambda cls: parent_home))
     bound = []
     monkeypatch.setattr(helper, 'bind_sdk_cache', lambda env, engine: bound.append(engine))
     env = helper.environment(tmp_path / 'immutable', tmp_path, 'camoufox')
@@ -97,6 +104,8 @@ def test_browser_environment_binds_sdk_without_inheriting_real_application_state
     assert env['NUMERA_BROWSER_ADAPTER'] == str(ROOT / 'scripts/browser-adapter/adapter.py')
     assert env['NUMERA_SDK_PYTHON'] == helper.sys.executable
     assert env['NUMERA_HELPER_UNITS'] == 'retained-parent' and env['XDG_CACHE_HOME'] == 'existing-sdk-cache'
+    assert env['CLOAKBROWSER_CACHE_DIR'] == (cache or str(parent_home / '.cloakbrowser'))
+    assert not parent_home.exists(), 'Binding an existing cache must not create or mutate it'
     assert all(key not in env for key in ('NUMERA_PASSWORD', 'NUMERA_API_TOKEN', 'NUMERA_DATA_DIR'))
 
 

@@ -2,6 +2,7 @@
 import ast
 import hashlib
 import importlib.util
+import json
 import logging
 from pathlib import Path
 from types import SimpleNamespace
@@ -10,6 +11,44 @@ import sys
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+@pytest.mark.parametrize('damage', [None, 'missing-relay', 'unmapped-target'])
+def test_oracle_verification_requires_complete_native_target_registration(monkeypatch, damage):
+    monkeypatch.syspath_prepend(str(ROOT / 'scripts/migration'))
+    inventory = json.loads((ROOT / 'docs/migration-coverage.json').read_text(encoding='utf-8'))
+    reached = []
+
+    class OracleReached(Exception):
+        pass
+
+    def document(seam):
+        reached.append(seam)
+        raise OracleReached
+
+    from unittest.mock import patch
+    with patch.dict(sys.modules, {
+        'inventory': SimpleNamespace(discover=lambda: inventory),
+        'oracle': SimpleNamespace(document=document),
+    }):
+        spec = importlib.util.spec_from_file_location(
+            'registered_oracles_fixture', ROOT / 'scripts/migration/verify_oracles.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    directory = ROOT / 'engine-rust/tests'
+    targets = list(directory.glob('*.rs'))
+    assert directory / 'relay_request_parity.rs' in targets
+    if damage == 'missing-relay':
+        targets.remove(directory / 'relay_request_parity.rs')
+    elif damage == 'unmapped-target':
+        targets.append(directory / 'unmapped_fixture.rs')
+    glob = Path.glob
+    monkeypatch.setattr(Path, 'glob', lambda path, pattern: iter(targets)
+                        if path == directory and pattern == '*.rs' else glob(path, pattern))
+    with pytest.raises(ValueError if damage else OracleReached,
+                       match='integration suite discovery' if damage else None):
+        module.verify()
+    assert reached == ([] if damage else ['models'])
 
 
 def load():
@@ -243,6 +282,13 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'commit': '60ffc489916e7a2560229fcc5a7be5b813196e72',
         'files': {'engine-rust/src/network/relay_http.rs':
                   '830ac7683ae157810cb5f2589f0e253cc6c09661b3204f6785b9417f2ca738dd'},
+    }, {
+        'target': 'native_entry',
+        'test': 'browser_dispatch_uses_actual_handshake_without_redundant_metadata',
+        'symptom': 'Browser dispatch repeated SDK metadata preflight',
+        'commit': '2c6d23eed78cdf1f3ddf2c41c6e103d987cfe527',
+        'files': {'engine-rust/src/native_entry.rs':
+                  'abf6a5e9b6690231795845589d28c2ddb7faded39d65fa635afd3919547837e1'},
     })
     assert module.CURRENT_CALLER_REGRESSIONS[0] == {
         'target': 'mcp_parity',
@@ -342,7 +388,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/cli/output.rs':
                   'aab0acee9ecf439ddf252a983878e908b362eebeb54901e6e892d205b2b55ac6'},
     }
-    assert module.CURRENT_CALLER_REGRESSIONS[-3:] == expected
+    assert module.CURRENT_CALLER_REGRESSIONS[-4:] == expected
     assert module.REGRESSIONS == module._SETTINGS_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
     assert not any(case.get('companions') for case in module.CURRENT_CALLER_REGRESSIONS)
 
