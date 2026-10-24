@@ -166,6 +166,14 @@ def test_pool_history_keeps_a_compatible_importer_without_replacing_the_selected
         'commit': 'f409196e68c86a2bb3e3a2b136217e1d2f276c62',
         'sha256': '5583d5df14afb382ec177587e2ac54b9553beb4c3b49e6d6b89654adcb52fe71',
     }
+    assert case['companions']['engine-rust/src/cli/output.rs'] == {
+        'commit': '5501361f815916c1a2bd47e7e342de5117b4e4ff',
+        'sha256': 'aab0acee9ecf439ddf252a983878e908b362eebeb54901e6e892d205b2b55ac6',
+    }
+    assert case['companions']['engine-rust/src/native_entry.rs'] == {
+        'commit': '5501361f815916c1a2bd47e7e342de5117b4e4ff',
+        'sha256': '563c0a9ec513d92db641075382f97b52fa0c014ec15cfb3a3da602982290a98d',
+    }
     assert not case['files'].keys() & case['companions'].keys()
 
 
@@ -311,6 +319,14 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'commit': '8e94027cf9671b343528fb29a79375187f42b7ba',
         'files': {'engine-rust/src/browser/alignment.rs':
                   '327731362383aea951c7ed3fc75c2fb1d02017c7f8ed2b1ac25e5315dfaddbaf'},
+    }
+    assert module.CURRENT_CALLER_REGRESSIONS[13] == {
+        'target': 'cli_registry_parity',
+        'test': 'command_registry_matches_original_schemas_arguments_and_parse_views',
+        'symptom': 'CLI confirmation decision differs',
+        'commit': '5501361f815916c1a2bd47e7e342de5117b4e4ff',
+        'files': {'engine-rust/src/cli/output.rs':
+                  'aab0acee9ecf439ddf252a983878e908b362eebeb54901e6e892d205b2b55ac6'},
     }
     assert module.CURRENT_CALLER_REGRESSIONS[-1:] == expected
     assert module.REGRESSIONS == module._SETTINGS_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS

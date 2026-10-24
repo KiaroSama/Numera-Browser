@@ -116,7 +116,7 @@ impl<W: Write, E: Write> Output<W, E> {
                 "Confirmation input is too long",
             ));
         }
-        Ok(text.trim().to_lowercase() == "y")
+        Ok(crate::pool::trim(&text).to_lowercase() == "y")
     }
     pub fn into_parts(self) -> (W, E) {
         (self.stdout, self.stderr)

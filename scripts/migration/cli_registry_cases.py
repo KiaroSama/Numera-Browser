@@ -84,15 +84,23 @@ def output_cases():
     class Stream(io.StringIO):
         def __init__(self,tty): super().__init__();self.tty=tty
         def isatty(self): return self.tty
-    for json_mode,tty,text in [(False,False,'y\n'),(False,True,'N\n'),(False,False,''),(True,False,'must-not-read')]:
+    variants = [(False,False,'y\n'),(False,True,'N\n'),(False,False,''),(True,False,'must-not-read')]
+    edges = ['\x1c', '\x1d', '\x1e', '\x1f', '\u0085', ' ', ' ', '　']
+    texts = [edge + 'Y' + edge + '\n' for edge in edges]
+    texts += [' y \r\n', 'Y', '\n', 'yes\n', 'y\x1cy\n',
+              chr(0x200b) + 'y' + chr(0x200b) + '\n', 'ｙ\n', 'y\nn\n']
+    variants += [(False, tty, text) for tty in (False, True) for text in texts]
+    variants += [(True, False, text) for text in ('\x1cy\x1c\n', '', 'y\n')]
+    for json_mode,tty,text in variants:
         stdout=Stream(tty);stderr=Stream(tty);error=None;confirmed=None
-        with patch('sys.stdout',stdout),patch('sys.stderr',stderr),patch('sys.stdin',io.StringIO(text)):
+        stdin = io.StringIO(text)
+        with patch('sys.stdout',stdout),patch('sys.stderr',stderr),patch('sys.stdin',stdin):
             out.set_json_mode(json_mode)
             out.say(out._c('مرحبا Fixture',out.C.CYN))
             try: confirmed=out._confirm('Continue? [y/N] ')
             except RuntimeError as exception: error=str(exception)
             code=out.emit({'text':'مرحبا 😀','values':[True,None,123],'nested':{'key':'value'}},7)
         result.append({'json':json_mode,'tty':tty,'input':text,'stdout':stdout.getvalue(),'stderr':stderr.getvalue(),
-                       'confirmed':confirmed,'error':error,'exit':code})
+                       'confirmed':confirmed,'error':error,'exit':code,'consumed':len(text[:stdin.tell()].encode('utf-8'))})
     out.set_json_mode(False)
     return result

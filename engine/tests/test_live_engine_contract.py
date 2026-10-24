@@ -216,6 +216,28 @@ def _coverage():
     return module
 
 
+@pytest.mark.parametrize('damage', [None, 'old-order', 'missing', 'duplicate'])
+def test_independent_native_acceptance_precedes_the_required_benchmark(damage):
+    coverage = _coverage()
+    commands = ('native_http_acceptance.py', 'native_parent_acceptance.py',
+                'native_console_acceptance.py', 'native_tty_acceptance.py',
+                'native_job_acceptance.py', 'native_signal_acceptance.py', 'verify_default.py')
+    steps = [{'run': 'python scripts/migration/' + name} for name in commands]
+    performance = {'uses': './.github/actions/native-entry-performance'}
+    steps.append(performance)
+    if damage == 'old-order':
+        steps.insert(0, steps.pop())
+    elif damage == 'missing':
+        steps.pop(0)
+    elif damage == 'duplicate':
+        steps.append(performance)
+    if damage:
+        with pytest.raises(ValueError, match='must'):
+            coverage.check_native_acceptance_order(steps)
+    else:
+        coverage.check_native_acceptance_order(steps)
+
+
 def test_native_development_optimizes_real_crypto_without_weakening_checks():
     manifest = (ROOT / 'engine-rust/Cargo.toml').read_text(encoding='utf-8')
     profiles = dict(re.findall(r'(?ms)^\[(profile\.[^\]]+)\]\s*\n(.*?)(?=^\[|\Z)', manifest))

@@ -248,6 +248,20 @@ def check_source_module_action(action: dict) -> None:
             raise ValueError('Unsafe or incomplete source module checkpoint step')
 
 
+def check_native_acceptance_order(steps: list[dict]) -> None:
+    uses = './.github/actions/native-entry-performance'
+    performance = [index for index, step in enumerate(steps) if step.get('uses') == uses]
+    commands = ('native_http_acceptance.py', 'native_parent_acceptance.py',
+                'native_console_acceptance.py', 'native_tty_acceptance.py',
+                'native_job_acceptance.py', 'native_signal_acceptance.py', 'verify_default.py')
+    if len(performance) != 1:
+        raise ValueError('Native performance acceptance must occur exactly once')
+    for command in commands:
+        matches = [index for index, step in enumerate(steps) if command in step.get('run', '')]
+        if len(matches) != 1 or matches[0] >= performance[0]:
+            raise ValueError('Independent native functional acceptance must precede performance')
+
+
 def check_workflows(root: Path = ROOT) -> dict[str, int]:
     import yaml
 
@@ -299,6 +313,7 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
         text = json.dumps(jobs[job])
         if any(fragment not in text for fragment in fragments):
             raise ValueError(f'Missing suite command in CI tier: {job}')
+    check_native_acceptance_order(jobs['rust-core']['steps'])
     for workflow_name in ('ci', 'dashboard', 'build-desktop', 'codeql', 'dependency-review', 'migration-profile'):
         for name, job in workflows[workflow_name]['jobs'].items():
             if job.get('continue-on-error') or 'self-hosted' in str(job.get('runs-on', '')):
@@ -359,7 +374,7 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
             or steps[3].get('if') != 'always()'):
         raise ValueError('Native replay and performance checks must remain required')
     for step, fragments in zip(steps, (
-            ('native_entry_acceptance.py', '--wall 180 --idle 90'),
+            ('native_entry_acceptance.py', '--wall 180 --idle 90 --report-units'),
             ('candidate_stage.py --release', '--wall 960 --idle 330'),
             ('benchmark.py --report', '--wall 180 --idle 90 --report-units'),
             ('measurements.json', 'native-performance-${{ runner.os }}'))):

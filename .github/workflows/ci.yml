@@ -457,8 +457,6 @@ jobs:
         run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- python scripts/ci/suites.py native --phase test
       - name: Native documentation tests
         run: python scripts/migration/run_owned.py --wall 120 --idle 60 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --doc
-      - name: Actual native entry replay and optimized performance
-        uses: ./.github/actions/native-entry-performance
       - name: Actual native HTTP parity
         shell: bash
         run: |
@@ -485,6 +483,8 @@ jobs:
         run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_signal_acceptance.py --candidate engine-rust/target/debug/examples/native_candidate
       - name: Original runtime remains selected
         run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/migration/verify_default.py
+      - name: Actual native entry replay and optimized performance
+        uses: ./.github/actions/native-entry-performance
 
   docker:
     name: Container image and bundled-browser integration

@@ -7,13 +7,18 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 24, 2026
 
-The latest completed checkpoint `1397538` ran in manual hosted batch
-[40055753654](https://github.com/KiaroSama/Numera-Browser/actions/runs/40055753654),
-which failed on October 24 at 03:16 UTC solely at independent CodeQL and required
-verification: 28 workflow jobs passed, two failed and three distribution/publication
-stages were skipped; external CodeQL also failed. Both native jobs, all source-platform
-partitions, all eight real SDK paths, dashboard, rendered updater and dependency audits
-passed. Linux/Camoufox prerequisites completed within the unchanged limit this time;
+The latest completed checkpoint `5501361` ran in manual hosted batch
+[40061599553](https://github.com/KiaroSama/Numera-Browser/actions/runs/40061599553),
+which failed on October 24 at 04:42 UTC: 27 workflow jobs passed, three failed and
+three distribution/publication stages were skipped; external CodeQL also failed.
+Windows native acceptance, all source-platform partitions, all eight real SDK paths,
+dashboard, rendered updater and dependency audits passed. Linux native contracts and
+entry replay passed, but vault-read timing overlapped: native 89.825–502.846 ms versus
+original 343.394–347.005 ms. Its benchmark correctly refused inconclusive evidence,
+and later Linux HTTP/ownership steps were skipped. No timing cause is established.
+The existing functional acceptance steps now precede the unchanged required benchmark
+so a measurement failure cannot hide their independent results. This ordering change
+and the CLI confirmation correction await hosted verification. Linux/Camoufox prerequisites completed within the unchanged limit this time;
 this does not establish the previous slow-download or unsettled-cleanup cause.
 No retry, deadline extension or privilege change was added.
 The prior Windows fixed-build idle failure did not recur; its precise cause and a
@@ -52,7 +57,15 @@ hosted audits and application/native checks, without changing other resolved rec
 The shared timezone correction passed 103 original-derived proxy/trust grade pairs on both systems
 after the exact prior source failed its named assertion and fixed bytes were restored. Alignment
 also passed 92 full-fingerprint/change-label comparisons after its exact prior source failed at
-case 1 and fixed bytes were restored. Shared-store HTTP/CLI write replay is prepared, not yet run.
+case 1 and fixed bytes were restored. Shared-store HTTP/CLI write replay and original
+server restart passed on Windows, with 18 complete, clean ownership units. Linux did
+not execute that step after its earlier benchmark refusal; both-platform acceptance
+remains incomplete. CLI confirmation now reuses source-compatible boundary whitespace
+in its public output helper and actual entrypoint; 39 original-derived output cases
+and four actual confirmation scenarios per runtime are prepared, not yet executed.
+Entry verification now uses the existing receipt-aware owner and retains failed
+fixtures instead of deleting uncertain process evidence; its failure controls also
+await hosted verification.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

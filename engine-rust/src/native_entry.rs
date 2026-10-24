@@ -410,7 +410,7 @@ pub fn dispatch(
                     if bytes > 65536 {
                         return Err(io::Error::other("Confirmation input exceeds limit").into());
                     }
-                    Ok(answer.trim().eq_ignore_ascii_case("y"))
+                    Ok(crate::pool::trim(&answer).eq_ignore_ascii_case("y"))
                 },
                 || cancelled.load(Ordering::Acquire),
                 || {

@@ -340,6 +340,14 @@ REGRESSIONS = (
                 'commit': 'f409196e68c86a2bb3e3a2b136217e1d2f276c62',
                 'sha256': '5583d5df14afb382ec177587e2ac54b9553beb4c3b49e6d6b89654adcb52fe71',
             },
+            'engine-rust/src/cli/output.rs': {
+                'commit': '5501361f815916c1a2bd47e7e342de5117b4e4ff',
+                'sha256': 'aab0acee9ecf439ddf252a983878e908b362eebeb54901e6e892d205b2b55ac6',
+            },
+            'engine-rust/src/native_entry.rs': {
+                'commit': '5501361f815916c1a2bd47e7e342de5117b4e4ff',
+                'sha256': '563c0a9ec513d92db641075382f97b52fa0c014ec15cfb3a3da602982290a98d',
+            },
         },
     },
     {

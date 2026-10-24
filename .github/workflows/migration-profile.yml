@@ -86,7 +86,7 @@ jobs:
         run: |
           candidate=engine-rust/target/debug/examples/native_candidate
           if [[ "$RUNNER_OS" == Windows ]]; then candidate="$candidate.exe"; fi
-          python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/native_entry_acceptance.py --candidate "$candidate"
+          python scripts/migration/run_owned.py --wall 180 --idle 90 --report-units -- python scripts/migration/native_entry_acceptance.py --candidate "$candidate"
       - name: Actual native HTTP parity
         if: inputs.scope == 'profiles'
         shell: bash

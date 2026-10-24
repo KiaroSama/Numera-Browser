@@ -12,6 +12,7 @@ from baseline_source import source_root
 ORIGINAL = source_root()
 sys.path.insert(0, str(ROOT / 'engine'))
 from numera.proctree import spawn, end_tree
+from numera import unit_report
 from numera.store import ProfileStore
 from numera.models import Profile
 from numera.fingerprint import generate
@@ -21,15 +22,11 @@ from replay_rollback import run as replay_rollback
 
 def execute(argv, env, stdin=None):
     import subprocess
-    process, tree = spawn(argv, env=env, stdin=subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
-                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    try:
+    from candidate_acceptance import owned
+
+    with owned(argv, env, ROOT, subprocess.PIPE if stdin is not None else subprocess.DEVNULL) as process:
         stdout, stderr = process.communicate(stdin, timeout=15)
-        return process.returncode, stdout.decode('utf-8'), stderr.decode('utf-8')
-    finally:
-        if not end_tree(tree, grace=1, kill_grace=3):
-            raise RuntimeError('Entry acceptance process tree did not settle')
-        process.wait(timeout=5)
+        return process.returncode, stdout.decode('utf-8', errors='strict'), stderr.decode('utf-8', errors='strict')
 
 
 def configured_lock_acceptance(candidate, parent, environment, log):
@@ -66,6 +63,7 @@ def configured_lock_acceptance(candidate, parent, environment, log):
             ready = parent / f'configured-ready-{index}-{runtime}'
             command_env = dict(environment, PYTHONPATH=str(ORIGINAL / 'engine'),
                                NUMERA_LOCK_TIMEOUT='0' if index == 0 else '0.02')
+            attempt = unit_report.begin_spawn()
             holder, tree = spawn(
                 [sys.executable, '-B', str(fixture),
                  'root' if resource == 'root' else 'file',
@@ -75,6 +73,7 @@ def configured_lock_acceptance(candidate, parent, environment, log):
                 stderr=subprocess.PIPE,
             )
             try:
+                unit_report.record(tree, attempt=attempt)
                 deadline = time.monotonic() + 5
                 while not ready.exists():
                     remaining = deadline - time.monotonic()
@@ -112,9 +111,10 @@ def configured_lock_acceptance(candidate, parent, environment, log):
                 assert not (root / '.updates/work').exists() or not any((root / '.updates/work').iterdir())
             finally:
                 try:
-                    if not end_tree(tree, grace=1, kill_grace=3):
-                        raise RuntimeError('Configured CLI lock owner did not settle')
+                    clean = end_tree(tree, grace=1, kill_grace=3)
                     holder.wait(timeout=5)
+                    if not clean:
+                        raise RuntimeError('Configured CLI lock owner did not settle')
                 finally:
                     for stream in (holder.stdin, holder.stdout, holder.stderr):
                         if stream is not None:
@@ -139,9 +139,47 @@ def configured_lock_acceptance(candidate, parent, environment, log):
         log.info('Configured CLI contention, protected bytes and post-release success passed case=%s', index)
 
 
+def confirmation_acceptance(candidate, parent, environment, template, log):
+    from replay_rollback import protected_bytes
+
+    files = protected_bytes(template)
+    files['user-data/fixture/Default/confirmation.bin'] = b'\x00\xffconfirmation fixture\r\n'
+    cases = [('\x1cY\x1f\r\n', False, True), ('y\x1cy\n', False, False),
+             ('yes\n', False, False), ('\x1cy\x1c\n', True, False)]
+    for index, (answer, json_mode, deleted) in enumerate(cases):
+        responses = []
+        for runtime, executable in [('original', [sys.executable, '-m', 'numera']),
+                                    ('native', [str(candidate)])]:
+            root = parent / f'confirmation {index} {runtime}'
+            root.mkdir()
+            for name, data in files.items():
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(data)
+            before = protected_bytes(root)
+            argv = [*executable, '--data-dir', str(root), 'delete', 'fixture']
+            if json_mode:
+                argv.append('--json')
+            result = execute(argv, environment, answer.encode('utf-8'))
+            code, stdout, stderr = result
+            assert code == (1 if json_mode else 0) and stderr == '', 'Confirmation entry failed'
+            after = protected_bytes(root)
+            if deleted:
+                removed = {'profiles/fixture.json', 'dashboard/fixture.json',
+                           'user-data/fixture/Default/confirmation.bin'}
+                assert removed <= before.keys(), 'Confirmation fixture lacks both profile copies or session'
+                assert after == {key: value for key, value in before.items() if key not in removed}, (
+                    'Confirmed deletion did not preserve unrelated stored bytes')
+            else:
+                assert after == before, 'Refused confirmation changed protected bytes'
+            responses.append(result)
+            log.info('Confirmation entry matched runtime=%s case=%s deleted=%s', runtime, index, deleted)
+        assert responses[0] == responses[1], f'Confirmation complete output differs: {index}'
+
+
 def main(candidate, log):
-    with tempfile.TemporaryDirectory(prefix='native-entry-', dir=ROOT / '.ci-work/migration-temp') as temporary:
-        parent = Path(temporary)
+    parent = Path(tempfile.mkdtemp(prefix='native-entry-', dir=ROOT / '.ci-work/migration-temp'))
+    try:
         roots = [parent / 'source', parent / 'native']
         env = os.environ.copy()
         for key in ['NUMERA_PASSWORD', 'NUMERA_API_TOKEN', 'NUMERA_DATA_DIR', 'NUMERA_NATIVE_SUPERVISE',
@@ -195,8 +233,15 @@ def main(candidate, log):
         if results[0] != results[1]:
             raise AssertionError(f'MCP entry mismatch: {results!r}')
         log.info('MCP ping and actual native child list matched; all owned trees settled')
+        confirmation_acceptance(candidate, parent, env, roots[0], log)
         replay_rollback(candidate, ORIGINAL, parent, env, execute, log)
         configured_lock_acceptance(candidate, parent, env, log)
+    except BaseException:
+        log.error('Entry acceptance failed; fixture retained path=%s', parent)
+        raise
+    else:
+        import shutil
+        shutil.rmtree(parent)
     return 0
 
 

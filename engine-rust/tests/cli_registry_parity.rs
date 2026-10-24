@@ -111,8 +111,8 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),fl
     let output_cases = document["output"]
         .as_array()
         .ok_or("Source output cases missing")?;
-    assert_eq!(output_cases.len(), 4);
-    for case in output_cases {
+    assert_eq!(output_cases.len(), 39);
+    for (index, case) in output_cases.iter().enumerate() {
         let mut output = cli::output::Output::new(
             Vec::new(),
             Vec::new(),
@@ -127,7 +127,11 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),fl
                 .as_bytes(),
         );
         match output.confirm("Continue? [y/N] ", &mut input) {
-            Ok(confirmed) => assert_eq!(serde_json::json!(confirmed), case["confirmed"]),
+            Ok(confirmed) => assert_eq!(
+                serde_json::json!(confirmed),
+                case["confirmed"],
+                "CLI confirmation decision differs: {index}"
+            ),
             Err(error) => assert_eq!(
                 error.to_string(),
                 case["error"]
@@ -135,9 +139,13 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),fl
                     .ok_or("Source confirm error missing")?
             ),
         }
-        if case["json"] == true {
-            assert_eq!(input.position(), 0, "JSON confirmation consumed stdin");
-        }
+        assert_eq!(
+            input.position(),
+            case["consumed"]
+                .as_u64()
+                .ok_or("Source consumed count missing")?,
+            "CLI confirmation input consumption differs: {index}"
+        );
         let payload = serde_json::json!({"text":"مرحبا 😀","values":[true,null,123],"nested":{"key":"value"}});
         assert_eq!(output.emit(&payload, 7)?, 7);
         if case["json"] == true {

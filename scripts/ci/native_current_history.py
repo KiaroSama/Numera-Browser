@@ -132,6 +132,16 @@ CURRENT_CALLER_REGRESSIONS = (
         },
     },
     {
+        'target': 'cli_registry_parity',
+        'test': 'command_registry_matches_original_schemas_arguments_and_parse_views',
+        'symptom': 'CLI confirmation decision differs',
+        'commit': '5501361f815916c1a2bd47e7e342de5117b4e4ff',
+        'files': {
+            'engine-rust/src/cli/output.rs':
+                'aab0acee9ecf439ddf252a983878e908b362eebeb54901e6e892d205b2b55ac6',
+        },
+    },
+    {
         'target': 'repo_batch_parity',
         'test': 'complete_batch_refusals_match_original_index_order_and_preserved_bytes',
         'symptom': 'Complete indexed batch refusal differs',
