@@ -6,6 +6,8 @@ use numera_core::{
 };
 use serde_json::{Value, json};
 use std::{path::Path, process::Command, time::Duration};
+#[path = "support/alignment_versions.rs"]
+mod alignment_versions;
 mod common;
 #[path = "support/probe_output.rs"]
 mod probe_output;

@@ -55,8 +55,9 @@ fn chrome(ua: &str) -> Option<String> {
         for component in 0..4 {
             let count = tail[length..]
                 .chars()
-                .take_while(|c| c.is_ascii_digit())
-                .count();
+                .take_while(|c| crate::pool::decimal_ascii(&c.to_string()).is_some())
+                .map(char::len_utf8)
+                .sum::<usize>();
             if count == 0 {
                 break;
             }

@@ -7,14 +7,15 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 24, 2026
 
-The latest completed checkpoint `f409196` ran in manual hosted batch
-[40044786751](https://github.com/KiaroSama/Numera-Browser/actions/runs/40044786751),
-which failed on October 24 at 00:52 UTC solely at independent CodeQL and required
-verification: 28 workflow jobs passed, two failed and three distribution/publication
-stages were skipped; the separate external CodeQL check also failed. Both native jobs,
-all source-platform partitions, all eight real SDK paths, dashboard tests/build,
-rendered updater and dependency audits passed. Linux and Windows completed 58 and 59
-historical proofs/restorations respectively, then current compilation and contracts.
+The latest completed checkpoint `8e94027` ran in manual hosted batch
+[40048618488](https://github.com/KiaroSama/Numera-Browser/actions/runs/40048618488),
+which failed on October 24 at 01:38 UTC: 27 workflow jobs passed, three failed and
+three distribution/publication stages were skipped; external CodeQL also failed.
+Both native jobs, all source-platform partitions, seven real SDK paths, dashboard,
+rendered updater and dependency audits passed. Linux/Camoufox reached the unchanged
+300-second prerequisite-installation limit before its source/native SDK tests ran;
+process-tree and output-reader settlement remained unproved. No retry or deadline
+extension was added. Historical timezone failure/restoration and current tests passed.
 The prior Windows fixed-build idle failure did not recur; its precise cause and a
 repeatable compiler speedup remain unproved. The earlier macOS cancellation was a
 hosted arm64 capacity failure; this checkpoint's retained-runtime macOS tests passed.
@@ -44,12 +45,14 @@ cases and 40 full-option fixtures, 99 actual-loopback proxy responses, 99 MCP st
 and 44 captured-output cases after named historical assertion failures and fixed-byte restoration.
 MCP retains UTF8/frame/ownership limits and nonzero JSON verdicts; its real child ping/list passed
 with owned-tree settlement. Ordinary output cases do not certify every forced-timeout cleanup branch.
-Fixed builds reuse sanitized Cargo progress, not heartbeat or longer deadlines. All 436 mapped
-references remain pending despite passing source guards; nearest references are not complete parity.
+Fixed builds reuse sanitized Cargo progress, not heartbeat or longer deadlines. The 460 mapped
+references are navigation evidence, not complete parity; every newly mapped occurrence stays pending.
 Zod 4.6.7 and ctutils 0.4.5 resolved GHSA-mrhx-c7xc-m3w5 and RUSTSEC-2026-0385 through passing
 hosted audits and application/native checks, without changing other resolved records or manifests.
-A prepared shared timezone-boundary correction adds 103 original-derived proxy/trust grade pairs;
-its current and historical assertion tests have not run.
+The shared timezone correction passed 103 original-derived proxy/trust grade pairs on both systems
+after the exact prior source failed its named assertion and fixed bytes were restored. A prepared
+alignment correction preserves Unicode decimal Chrome-version spelling with UTF8-safe offsets;
+its 92 full-fingerprint/change-label comparisons and historical assertion have not run.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The

@@ -122,6 +122,16 @@ CURRENT_CALLER_REGRESSIONS = (
         },
     },
     {
+        'target': 'cli_cookie_parity',
+        'test': 'alignment_versions::alignment_versions_match_original_decimal_captures',
+        'symptom': 'Alignment version fingerprint differs',
+        'commit': '8e94027cf9671b343528fb29a79375187f42b7ba',
+        'files': {
+            'engine-rust/src/browser/alignment.rs':
+                '327731362383aea951c7ed3fc75c2fb1d02017c7f8ed2b1ac25e5315dfaddbaf',
+        },
+    },
+    {
         'target': 'repo_batch_parity',
         'test': 'complete_batch_refusals_match_original_index_order_and_preserved_bytes',
         'symptom': 'Complete indexed batch refusal differs',
