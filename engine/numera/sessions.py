@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Optional
 
 from . import proctree
-from .paths import SessionBusy, id_path, transaction_lock, write_json
+from .paths import SessionBusy, id_path, safe_id, transaction_lock, write_json
 
 
 def _dir(root) -> Path:
@@ -72,13 +72,19 @@ def read(root, profile_id: str):
     every caller treats it as owned until a person repairs it.
     """
     try:
-        path = _path(root, profile_id)
+        safe_id(profile_id)
     except ValueError:
         return None
     try:
-        if not path.exists():
-            return None
+        path = _path(root, profile_id)
+    except (OSError, ValueError):
+        return UNREADABLE
+    try:
+        # exists() hides access errors; stat distinguishes missing from unreadable.
+        path.stat()
         data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
     except (OSError, ValueError):
         return UNREADABLE
     return data if isinstance(data, dict) else UNREADABLE
@@ -240,6 +246,8 @@ def take(root, profile_id: str, tree: proctree.Tree, what: str = "a session") ->
     find the previous claim stale cannot both recover it.
     """
     with transaction_lock(root):
+        from .update_admission import Admission
+        Admission(root).assert_open()
         current = read(root, profile_id)
         if current is not None:
             if state(current) != "free":

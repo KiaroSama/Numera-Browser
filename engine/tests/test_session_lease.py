@@ -68,6 +68,39 @@ def test_a_second_process_cannot_take_a_held_lease(tmp_path):
         pass
 
 
+@pytest.mark.parametrize("operation", ["mkdir", "open"])
+def test_an_unavailable_lease_observation_is_not_reported_free(
+        tmp_path, monkeypatch, operation):
+    from pathlib import Path
+    from numera import data_locks
+
+    lease = session_lease(tmp_path, "unobserved")
+    observed = []
+    original_mkdir, original_open = Path.mkdir, data_locks.os.open
+
+    def mkdir(path, *args, **kwargs):
+        if path == tmp_path / ".locks" and operation == "mkdir":
+            observed.append(operation)
+            raise PermissionError("fixture lease directory is inaccessible")
+        return original_mkdir(path, *args, **kwargs)
+
+    def open_file(path, *args, **kwargs):
+        if Path(path).parent == tmp_path / ".locks":
+            assert operation == "open", "directory refusal reached file opening"
+            observed.append(operation)
+            raise PermissionError("fixture lease file is inaccessible")
+        return original_open(path, *args, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "mkdir", mkdir)
+        patch.setattr(data_locks.os, "open", open_file)
+        assert lease.held_by_other_process(), "unknown lease was reported free"
+    assert observed == [operation]
+    assert not lease.held_by_other_process(), "released lease stayed occupied"
+    with lease:
+        assert not lease.held_by_other_process(), "own lease was reported foreign"
+
+
 def test_two_processes_racing_one_profile_produce_one_winner(tmp_path):
     prof = seeded(tmp_path)
     body = """

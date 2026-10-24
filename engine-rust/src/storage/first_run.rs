@@ -3,8 +3,7 @@ use serde::Serialize;
 use std::{
     fs::{self, File, FileTimes, OpenOptions},
     io,
-    path::Path,
-    time::Duration,
+    path::{Path, PathBuf},
 };
 
 const ITEMS: &[&str] = &[
@@ -22,6 +21,8 @@ const ITEMS: &[&str] = &[
 
 #[derive(Default, Serialize)]
 pub struct Summary {
+    pub source: PathBuf,
+    pub destination: PathBuf,
     pub copied: Vec<String>,
     pub skipped: Vec<String>,
     pub failed: Vec<String>,
@@ -113,7 +114,11 @@ fn merge_dir(source: &Path, destination: &Path, depth: usize) -> io::Result<(usi
 
 pub fn import_from(source: &Path, destination: &Path) -> io::Result<Summary> {
     fs::create_dir_all(destination)?;
-    let mut summary = Summary::default();
+    let mut summary = Summary {
+        source: source.to_owned(),
+        destination: destination.to_owned(),
+        ..Summary::default()
+    };
     for name in ITEMS {
         let src = source.join(name);
         let dst = destination.join(name);
@@ -136,7 +141,7 @@ pub fn import_from(source: &Path, destination: &Path) -> io::Result<Summary> {
                 }
             } else {
                 let lock = DataLock::for_file(&dst)?;
-                let _guard = lock.acquire(Duration::from_secs(30))?;
+                let _guard = lock.acquire_configured()?;
                 if dst.try_exists()? {
                     summary.skipped.push((*name).into());
                 } else {
@@ -153,7 +158,7 @@ pub fn import_from(source: &Path, destination: &Path) -> io::Result<Summary> {
     let profiles = destination.join("profiles");
     if profiles.is_dir() {
         for entry in fs::read_dir(profiles)? {
-            if entry?.path().extension().is_some_and(|v| v == "json") {
+            if super::paths::json_filename(&entry?.path()) {
                 summary.profiles += 1;
             }
         }
@@ -171,7 +176,7 @@ pub fn run_if_needed(
     }
     fs::create_dir_all(destination)?;
     let lock = DataLock::transaction(destination)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     if marker.try_exists()? {
         return Ok(None);
     }

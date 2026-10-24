@@ -48,6 +48,11 @@ fn expiry(value: Option<&Value>) -> io::Result<String> {
     }
 }
 
+// Python str.strip/split also treats these four ASCII separators as whitespace.
+pub(super) fn whitespace(character: char) -> bool {
+    character.is_whitespace() || matches!(character, '\u{1c}'..='\u{1f}')
+}
+
 /// Parse the original text-cookie dialect; JSON normalization is separate.
 pub fn parse_netscape(text: &str) -> io::Result<Vec<Value>> {
     let mut cookies = Vec::new();
@@ -55,7 +60,7 @@ pub fn parse_netscape(text: &str) -> io::Result<Vec<Value>> {
         '\n', '\r', '\u{b}', '\u{c}', '\u{1c}', '\u{1d}', '\u{1e}', '\u{85}', '\u{2028}',
         '\u{2029}',
     ]) {
-        let line = line.trim();
+        let line = line.trim_matches(whitespace);
         let http_only = line.starts_with("#HttpOnly_");
         let line = if http_only {
             &line[10..]
@@ -66,7 +71,10 @@ pub fn parse_netscape(text: &str) -> io::Result<Vec<Value>> {
         };
         let mut fields: Vec<_> = line.split('\t').collect();
         if fields.len() < 7 {
-            fields = line.split_whitespace().collect();
+            fields = line
+                .split(whitespace)
+                .filter(|field| !field.is_empty())
+                .collect();
         }
         if fields.len() < 7 {
             continue;

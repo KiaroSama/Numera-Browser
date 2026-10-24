@@ -114,9 +114,34 @@ pub(crate) fn resolved(path: &Path) -> io::Result<PathBuf> {
     Ok(canonical)
 }
 
+/// Source-compatible environment policy; explicit acquisition budgets stay separate.
+pub fn configured_timeout(value: Option<&str>) -> Duration {
+    let maximum = if cfg!(windows) {
+        4_294_967.0
+    } else {
+        9_223_372_036.0
+    };
+    let seconds = value
+        .and_then(crate::browser::cookie_expiry::numeric_text)
+        .filter(|seconds| seconds.is_finite() && *seconds >= 0.0 && *seconds <= maximum)
+        .unwrap_or(30.0);
+    Duration::from_secs_f64(seconds)
+}
+
 impl DataLock {
+    pub fn acquire_configured(&self) -> io::Result<LockGuard<'_>> {
+        self.acquire(configured_timeout(
+            std::env::var("NUMERA_LOCK_TIMEOUT").ok().as_deref(),
+        ))
+    }
+
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    pub fn owned_by_current_thread(&self) -> io::Result<bool> {
+        let state = self.shared.state.lock().map_err(|_| poisoned())?;
+        Ok(state.depth > 0 && state.owner == Some(thread::current().id()))
     }
 
     pub fn transaction(root: &Path) -> io::Result<Self> {

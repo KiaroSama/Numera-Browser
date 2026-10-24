@@ -39,12 +39,22 @@ pub(crate) fn repr(value: &Value) -> String {
             } else {
                 '\''
             };
-            let body = v
-                .replace('\\', "\\\\")
-                .replace(quote, &format!("\\{quote}"))
-                .replace('\n', "\\n")
-                .replace('\r', "\\r")
-                .replace('\t', "\\t");
+            let mut body = String::new();
+            for character in v.chars() {
+                match character {
+                    '\n' => body.push_str("\\n"),
+                    '\r' => body.push_str("\\r"),
+                    '\t' => body.push_str("\\t"),
+                    c if c == '\\' || c == quote => {
+                        body.push('\\');
+                        body.push(c);
+                    }
+                    c if c.is_ascii_control() => {
+                        body.push_str(&format!("\\x{:02x}", u32::from(c)));
+                    }
+                    c => body.push(c),
+                }
+            }
             format!("{quote}{body}{quote}")
         }
         Value::Array(v) => format!("[{}]", v.iter().map(repr).collect::<Vec<_>>().join(", ")),
@@ -340,12 +350,13 @@ pub fn profile_problems(record: &Value, shape: &str) -> Result<Vec<String>, serd
             if let Some(problem) = text_problem("screen", value, true, false) {
                 found.push(problem);
             } else if let Some(screen) = value.as_str() {
-                let sides: Result<Vec<i64>, _> = screen
+                let sides: Option<Vec<i64>> = screen
                     .to_lowercase()
                     .split('x')
-                    .map(|s| s.trim().parse::<i64>())
+                    .map(|part| crate::decimal::integer(part)?.parse::<i64>().ok())
                     .collect();
-                if !sides.is_ok_and(|v| v.len() == 2 && v.iter().all(|v| (1..=65536).contains(v))) {
+                if !sides.is_some_and(|v| v.len() == 2 && v.iter().all(|v| (1..=65536).contains(v)))
+                {
                     found.push(format!("profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got {}. Nothing was written.",repr(&Value::String(screen.chars().take(40).collect()))));
                 }
             }

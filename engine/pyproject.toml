@@ -8,7 +8,7 @@ version = "0.36.0"
 description = "Coherent browser fingerprint & profile engine for Numera Browser."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "LicenseRef-Proprietary" }
+license = "LicenseRef-Noncommercial-Network-ShareAlike-1.0"
 authors = [{ name = "KiaroSama" }]
 keywords = [
     "browser", "fingerprint", "profile-manager", "anti-detect",
@@ -39,6 +39,9 @@ dev = ["pytest>=9.1.1", "pytest-timeout>=2.4.0", "cryptography>=50.0.2", "httpx>
 [project.scripts]
 numera = "numera.cli:main"
 
+[tool.setuptools]
+py-modules = ["numera_installation"]
+
 [tool.setuptools.packages.find]
 include = ["numera*"]
 
@@ -47,7 +50,7 @@ include = ["numera*"]
 # server wheel installs with no interface at all - which looks like a working
 # install right up until someone opens the port.
 [tool.setuptools.package-data]
-numera = ["web/**/*"]
+numera = ["web/**/*", "legal/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

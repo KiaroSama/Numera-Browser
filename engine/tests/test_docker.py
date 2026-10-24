@@ -33,6 +33,20 @@ def test_every_copy_source_exists():
     assert not missing, f"Dockerfile copies paths that do not exist: {missing}"
 
 
+def test_container_keeps_full_license_and_independent_notices():
+    text = dockerfile()
+    assert 'COPY LICENSE ./engine/LICENSE' in text
+    for notice in ('docs/licensing.md', 'docs/browser-notices.txt',
+                   'docs/migration-random-notices.txt',
+                   'engine-rust/src/http/documentation-assets/NOTICE.md'):
+        assert notice in text
+    assert './engine/numera/legal/' in text
+    ignored = (ROOT / '.dockerignore').read_text(encoding='utf-8')
+    assert '!docs/licensing.md' in ignored
+    assert '!docs/browser-notices.txt' in ignored
+    assert '!docs/migration-random-notices.txt' in ignored
+
+
 def test_the_browser_image_matches_the_playwright_client():
     """A browser build newer than its client fails at launch with a protocol
     error, which reads as a broken profile rather than a version mismatch.

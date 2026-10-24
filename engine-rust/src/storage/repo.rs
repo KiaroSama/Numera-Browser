@@ -1,4 +1,9 @@
-use super::{atomic::write_json, config::ConfigStore, locks::DataLock, paths::id_path};
+use super::{
+    atomic::write_json,
+    config::{ConfigError, ConfigStore},
+    locks::DataLock,
+    paths::id_path,
+};
 use crate::{
     conversion::{to_dashboard, to_engine},
     models::Profile,
@@ -9,7 +14,6 @@ use std::{
     error::Error,
     fmt, fs, io,
     path::{Path, PathBuf},
-    time::Duration,
 };
 
 #[derive(Debug)]
@@ -36,12 +40,23 @@ impl fmt::Display for RepoError {
             | Self::SessionBusy(message)
             | Self::UnconvertibleProfile(message)
             | Self::VaultLocked(message) => f.write_str(message),
+            Self::Io(error) if error.kind() == io::ErrorKind::TimedOut => {
+                fmt::Display::fmt(error, f)
+            }
             Self::Io(error) => write!(f, "Profile storage operation failed: {error}"),
             Self::Recovery(error) => fmt::Display::fmt(error, f),
         }
     }
 }
 impl Error for RepoError {}
+impl From<ConfigError> for RepoError {
+    fn from(error: ConfigError) -> Self {
+        match error {
+            ConfigError::Io(error) => Self::Io(error),
+            error => Self::Message(error.to_string()),
+        }
+    }
+}
 impl From<io::Error> for RepoError {
     fn from(e: io::Error) -> Self {
         Self::Io(e)
@@ -51,10 +66,15 @@ impl From<io::Error> for RepoError {
 pub struct ProfileRepo {
     pub(crate) root: PathBuf,
     pub(crate) password: Option<String>,
+    pub(crate) config: ConfigStore,
 }
 impl ProfileRepo {
     pub fn new(root: PathBuf, password: Option<String>) -> Self {
-        Self { root, password }
+        Self {
+            config: ConfigStore::new(root.clone()),
+            root,
+            password,
+        }
     }
     pub fn open(
         root: PathBuf,
@@ -68,39 +88,185 @@ impl ProfileRepo {
             .map_err(RepoError::Recovery)?;
         Ok(Self::new(root, password))
     }
+    pub fn vault(&self) -> Result<Option<Value>, RepoError> {
+        self.require_settled()?;
+        Ok(self
+            .config
+            .set_many(serde_json::Map::new())?
+            .remove("vault")
+            .filter(|value| !value.is_null()))
+    }
+
+    pub fn vault_enabled(&self) -> Result<bool, RepoError> {
+        Ok(self.vault()?.is_some())
+    }
+
+    pub fn unlocked(&self) -> Result<bool, RepoError> {
+        let Some(descriptor) = self.vault()?.filter(crate::conversion::truth) else {
+            return Ok(true);
+        };
+        Ok(self
+            .password
+            .as_deref()
+            .filter(|value| !value.is_empty())
+            .is_some_and(|password| {
+                match (descriptor["salt"].as_str(), descriptor["verifier"].as_str()) {
+                    (Some(salt), Some(verifier)) => vault::check_password(password, salt, verifier),
+                    _ => false,
+                }
+            }))
+    }
+
+    pub fn enable_vault(&mut self, password: &str) -> Result<usize, RepoError> {
+        let lock = DataLock::transaction(&self.root)?;
+        let _guard = lock.acquire_configured()?;
+        if self.vault_enabled()? {
+            return Err(RepoError::Message("A vault is already set up. Use `numera vault change` to rotate the master password.".into()));
+        }
+        let count =
+            vault::transaction::enable(&self.root, password).map_err(RepoError::Recovery)?;
+        self.password = Some(password.to_owned());
+        Ok(count)
+    }
+
+    pub fn change_vault_password(
+        &mut self,
+        old_password: &str,
+        new_password: &str,
+    ) -> Result<usize, RepoError> {
+        if new_password.is_empty() {
+            return Err(RepoError::Message(
+                "the new master password cannot be empty".into(),
+            ));
+        }
+        let lock = DataLock::transaction(&self.root)?;
+        let _guard = lock.acquire_configured()?;
+        self.require_settled()?;
+        let count = vault::transaction::rotate(&self.root, old_password, new_password)
+            .map_err(RepoError::Recovery)?;
+        self.password = Some(new_password.to_owned());
+        Ok(count)
+    }
+
+    pub fn resume_vault(
+        root: PathBuf,
+        old_password: &str,
+        new_password: &str,
+    ) -> Result<Self, RepoError> {
+        Self::open(root, Some(new_password.to_owned()), Some(old_password))
+    }
+
     pub(crate) fn path(&self, id: &str, kind: &str) -> Result<PathBuf, RepoError> {
         id_path(&self.root.join(kind), id, ".json").map_err(|e| RepoError::Message(e.to_string()))
     }
-    pub(crate) fn raw(path: &Path) -> Option<Value> {
-        fs::read(path)
-            .ok()
-            .and_then(|b| serde_json::from_slice(&b).ok())
+    pub(crate) fn raw(path: &Path) -> io::Result<Option<Value>> {
+        let bytes = match fs::read(path) {
+            Ok(bytes) => bytes,
+            Err(_) => return Ok(None),
+        };
+        // Undecodable text is damaged state, not an absent twin safe to replace.
+        let text = std::str::from_utf8(&bytes).map_err(|error| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "Stored profile {} is not valid UTF-8: {error}",
+                    path.display()
+                ),
+            )
+        })?;
+        Ok(serde_json::from_str(text).ok())
     }
     fn secret(value: &Value, key: &str) -> Option<String> {
         value["proxy"][key].as_str().map(str::to_owned)
     }
-    pub(crate) fn readable_secret(&self, value: Option<&str>) -> Option<String> {
-        let value = value?;
+    pub(crate) fn readable_secret(&self, value: Option<&str>) -> Result<Option<String>, RepoError> {
+        let Some(value) = value else {
+            return Ok(None);
+        };
         if !vault::is_envelope(value) {
-            return Some(value.into());
+            return Ok(Some(value.into()));
         }
-        let password = self.password.as_deref()?;
-        let config = Value::Object(ConfigStore::new(self.root.clone()).read());
-        let descriptor = &config["vault"];
-        let salt = descriptor["salt"].as_str()?;
-        let verifier = descriptor["verifier"].as_str()?;
+        // Envelope readers inspect vault state before a missing password short-circuits.
+        let descriptor = self.vault()?.unwrap_or(Value::Null);
+        let Some(password) = self.password.as_deref().filter(|value| !value.is_empty()) else {
+            return Ok(None);
+        };
+        let (Some(salt), Some(verifier)) =
+            (descriptor["salt"].as_str(), descriptor["verifier"].as_str())
+        else {
+            return Ok(None);
+        };
         if !vault::check_password(password, salt, verifier) {
-            return None;
+            return Ok(None);
         }
-        vault::decrypt(password, salt, value).ok()
+        Ok(vault::decrypt(password, salt, value).ok())
     }
-    pub(crate) fn same_secret(&self, left: Option<&str>, right: Option<&str>) -> bool {
-        left == right
-            || left.filter(|v| !v.is_empty()).is_some_and(|v| {
-                self.readable_secret(Some(v))
-                    .is_some_and(|plain| Some(plain) == self.readable_secret(right))
-            })
+    pub(crate) fn same_secret(
+        &self,
+        left: Option<&str>,
+        right: Option<&str>,
+    ) -> Result<bool, RepoError> {
+        if left == right {
+            return Ok(true);
+        }
+        if left.is_none_or(str::is_empty) || right.is_none_or(str::is_empty) {
+            return Ok(false);
+        }
+        let left = self.readable_secret(left)?;
+        let right = self.readable_secret(right)?;
+        Ok(left.is_some() && left == right)
     }
+    pub fn refuse_unresolved_secret(
+        &self,
+        id: &str,
+        stored: Option<&str>,
+        twin: Option<&str>,
+    ) -> Result<(), RepoError> {
+        let missing = stored.is_none_or(str::is_empty) || twin.is_none_or(str::is_empty);
+        if !self.same_secret(stored, twin)?
+            && !(stored.is_none_or(str::is_empty) && twin.is_none_or(str::is_empty))
+            && (missing
+                || (self.readable_secret(stored)?.is_some()
+                    && self.readable_secret(twin)?.is_some()))
+        {
+            return Err(Self::diverged(id, "password"));
+        }
+        Ok(())
+    }
+
+    pub fn refuse_conflicting_write(&self, id: &str, intent: &str) -> Result<(), RepoError> {
+        if intent != "preserve" || super::paths::safe_id(id).is_err() {
+            return Ok(());
+        }
+        let engine = Self::raw(&self.path(id, "profiles")?)?.unwrap_or(Value::Null);
+        let dashboard = Self::raw(&self.path(id, "dashboard")?)?.unwrap_or(Value::Null);
+        let stored = &engine["proxy"]["password"];
+        let twin = &dashboard["proxy"]["pass"];
+        if [stored, twin]
+            .iter()
+            .all(|value| value.is_null() || value.is_string())
+        {
+            return self.refuse_unresolved_secret(id, stored.as_str(), twin.as_str());
+        }
+        // Stored JSON may predate typed writes; a non-text secret is not absence.
+        if super::repo_reconcile::equal(stored, twin)
+            || (!crate::conversion::truth(stored) && !crate::conversion::truth(twin))
+        {
+            return Ok(());
+        }
+        let readable = |value: &Value| -> Result<bool, RepoError> {
+            Ok(!value.as_str().is_some_and(vault::is_envelope)
+                || self.readable_secret(value.as_str())?.is_some())
+        };
+        if !crate::conversion::truth(stored)
+            || !crate::conversion::truth(twin)
+            || (readable(stored)? && readable(twin)?)
+        {
+            return Err(Self::diverged(id, "password"));
+        }
+        Ok(())
+    }
+
     pub(crate) fn diverged(id: &str, field: &str) -> RepoError {
         RepoError::Diverged(if field == "proxy" {
             format!(
@@ -120,15 +286,40 @@ impl ProfileRepo {
         }
         Ok(())
     }
+    fn incoming_secret(
+        &self,
+        input: Option<&str>,
+        descriptor: &Value,
+    ) -> Result<Option<String>, RepoError> {
+        let Some(input) = input else {
+            return Ok(None);
+        };
+        if descriptor.is_null() || input.is_empty() || vault::is_envelope(input) {
+            return Ok(Some(input.to_owned()));
+        }
+        let salt = descriptor["salt"]
+            .as_str()
+            .ok_or_else(|| RepoError::Message("Vault descriptor has no salt".into()))?;
+        let verifier = descriptor["verifier"]
+            .as_str()
+            .ok_or_else(|| RepoError::Message("Vault descriptor has no verifier".into()))?;
+        let password = self.password.as_deref()
+            .filter(|password| vault::check_password(password, salt, verifier))
+            .ok_or_else(|| RepoError::Message("the vault is locked, so this proxy password cannot be stored safely - set NUMERA_PASSWORD or pass --password first".into()))?;
+        vault::encrypt(password, salt, input)
+            .map(Some)
+            .map_err(|error| RepoError::Message(error.to_string()))
+    }
+
     pub fn materialize(&self, id: &str, now: f64) -> Result<Option<Profile>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.require_settled()?;
-        let Some(dash) = Self::raw(&self.path(id, "dashboard")?) else {
+        let Some(dash) = Self::raw(&self.path(id, "dashboard")?)? else {
             return Ok(None);
         };
         let path = self.path(id, "profiles")?;
-        let current = Self::raw(&path);
+        let current = Self::raw(&path)?;
         let mut profile =
             to_engine(&dash, now).map_err(|e| RepoError::InvalidRecord(e.to_string()))?;
         profile.id = id.into();
@@ -154,72 +345,64 @@ impl ProfileRepo {
         let mut record = serde_json::to_value(&profile)
             .map_err(|_| RepoError::Message("Profile cannot be serialized".into()))?;
         let old = current.as_ref().and_then(|v| Self::secret(v, "password"));
-        let input = Self::secret(&dash, "pass");
-        let config = Value::Object(ConfigStore::new(self.root.clone()).read());
-        let descriptor = &config["vault"];
-        let fresh = if !descriptor.is_null()
-            && input
-                .as_deref()
-                .is_some_and(|value| !value.is_empty() && !vault::is_envelope(value))
-        {
-            let salt = descriptor["salt"]
-                .as_str()
-                .ok_or_else(|| RepoError::Message("Vault descriptor has no salt".into()))?;
-            let verifier = descriptor["verifier"]
-                .as_str()
-                .ok_or_else(|| RepoError::Message("Vault descriptor has no verifier".into()))?;
-            let password=self.password.as_deref().filter(|password|vault::check_password(password,salt,verifier)).ok_or_else(||RepoError::Message("the vault is locked, so this proxy password cannot be stored safely - set NUMERA_PASSWORD or pass --password first".into()))?;
-            Some(
-                vault::encrypt(
-                    password,
-                    salt,
-                    input.as_deref().expect("nonempty input checked"),
-                )
-                .map_err(|e| RepoError::Message(e.to_string()))?,
-            )
+        let input = Self::secret(&record, "password");
+        let descriptor = if input.is_some() {
+            self.vault()?.unwrap_or(Value::Null)
         } else {
-            input
+            Value::Null
         };
-        if profile.proxy.is_some() {
-            let selected = if old.as_deref().is_none_or(str::is_empty)
-                || self.same_secret(old.as_deref(), fresh.as_deref())
-            {
-                fresh
-            } else if fresh.as_deref().is_none_or(str::is_empty) {
-                return Err(Self::diverged(id, "password"));
-            } else if self.readable_secret(old.as_deref()).is_none()
-                || self.readable_secret(fresh.as_deref()).is_none()
-            {
-                old
-            } else {
-                return Err(Self::diverged(id, "password"));
-            };
-            record["proxy"]["password"] = selected.map_or(Value::Null, Value::String);
-        } else if current
-            .as_ref()
-            .is_some_and(|v| v["proxy"].as_object().is_some_and(|p| !p.is_empty()))
-        {
-            return Err(Self::diverged(id, "proxy"));
+        let fresh = match input.as_deref() {
+            Some(input) => self.incoming_secret(Some(input), &descriptor),
+            None => Ok(old
+                .clone()
+                .filter(|value| !value.is_empty())
+                .or_else(|| Self::secret(&dash, "pass").filter(|value| !value.is_empty()))),
+        };
+        match fresh {
+            Ok(fresh) => {
+                if profile.proxy.is_some() {
+                    let selected = if old.as_deref().is_none_or(str::is_empty)
+                        || self.same_secret(old.as_deref(), fresh.as_deref())?
+                    {
+                        fresh
+                    } else if fresh.as_deref().is_none_or(str::is_empty) {
+                        return Err(Self::diverged(id, "password"));
+                    } else if self.readable_secret(old.as_deref())?.is_none()
+                        || self.readable_secret(fresh.as_deref())?.is_none()
+                    {
+                        old
+                    } else {
+                        return Err(Self::diverged(id, "password"));
+                    };
+                    record["proxy"]["password"] = selected.map_or(Value::Null, Value::String);
+                } else if current
+                    .as_ref()
+                    .is_some_and(|v| v["proxy"].as_object().is_some_and(|p| !p.is_empty()))
+                {
+                    return Err(Self::diverged(id, "proxy"));
+                }
+                if current.as_ref() != Some(&record) {
+                    let file = DataLock::for_file(&path)?;
+                    let _file = file.acquire_configured()?;
+                    write_json(&path, &record)?;
+                }
+                // Source materialization returns its derived model, not a decrypted
+                // launch view. The launch gate must reread through the credential-aware
+                // store after this transaction, just as source coherent() does.
+                Ok(Some(profile))
+            }
+            Err(error) => Err(error),
         }
-        if current.as_ref() != Some(&record) {
-            let file = DataLock::for_file(&path)?;
-            let _file = file.acquire(Duration::from_secs(30))?;
-            write_json(&path, &record)?;
-        }
-        // Source materialization returns its derived model, not a decrypted
-        // launch view. The launch gate must reread through the credential-aware
-        // store after this transaction, just as source coherent() does.
-        Ok(Some(profile))
     }
     pub fn adopt(&self, id: &str, now: f64) -> Result<bool, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.require_settled()?;
-        let Some(engine) = Self::raw(&self.path(id, "profiles")?) else {
+        let Some(engine) = Self::raw(&self.path(id, "profiles")?)? else {
             return Ok(false);
         };
         let path = self.path(id, "dashboard")?;
-        if Self::raw(&path).is_some() {
+        if Self::raw(&path)?.is_some() {
             return Ok(false);
         }
         let profile = Profile::from_record(&engine).map_err(|_| {
@@ -239,7 +422,7 @@ impl ProfileRepo {
             .cloned()
             .unwrap_or(Value::from(now));
         let file = DataLock::for_file(&path)?;
-        let _file = file.acquire(Duration::from_secs(30))?;
+        let _file = file.acquire_configured()?;
         write_json(&path, &twin)?;
         Ok(true)
     }

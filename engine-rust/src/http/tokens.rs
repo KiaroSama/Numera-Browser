@@ -8,7 +8,7 @@ use crate::{
 };
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::{fs, io, path::PathBuf, time::Duration};
+use std::{fs, io, path::PathBuf};
 use subtle::ConstantTimeEq;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -33,6 +33,9 @@ pub struct TokenStore {
 impl TokenStore {
     pub fn new(root: PathBuf) -> Self {
         Self { root }
+    }
+    pub(crate) fn root(&self) -> &std::path::Path {
+        &self.root
     }
     fn path(&self) -> PathBuf {
         self.root.join("tokens.json")
@@ -79,7 +82,7 @@ impl TokenStore {
     }
     pub fn adopt(&self, now: f64) -> io::Result<bool> {
         let lock = DataLock::for_file(&self.path())?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         if auth_policy::read(&self.root) != AuthPolicy::Absent
             || !matches!(self.state(), TokenState::Tokens | TokenState::Unreadable)
         {
@@ -109,7 +112,7 @@ impl TokenStore {
         let entry =
             json!({"id":id,"name":wanted,"hash":Self::hash(&token),"created":now,"lastUsed":null});
         let lock = DataLock::for_file(&self.path())?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let mut rows = self.list();
         if rows.iter().any(|row| !row.is_object()) {
             return Err(io::Error::other(
@@ -143,7 +146,7 @@ impl TokenStore {
     }
     pub fn revoke(&self, id: &str, refuse_lockout: bool) -> Result<bool, TokenError> {
         let lock = DataLock::for_file(&self.path())?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let rows = self.list();
         if rows.iter().any(|row| !row.is_object()) {
             return Err(io::Error::other(
@@ -162,6 +165,14 @@ impl TokenStore {
         Ok(true)
     }
     pub fn verify(&self, token: &str, now: f64) -> io::Result<Option<Value>> {
+        self.verify_usage(token, now, true)
+    }
+    pub(crate) fn verify_usage(
+        &self,
+        token: &str,
+        now: f64,
+        stamp: bool,
+    ) -> io::Result<Option<Value>> {
         if token.is_empty() {
             return Ok(None);
         }
@@ -172,7 +183,7 @@ impl TokenStore {
         }
         let digest = Self::hash(token);
         let lock = DataLock::for_file(&self.path())?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let mut rows = self.list();
         for index in 0..rows.len() {
             let row = rows[index]
@@ -204,7 +215,7 @@ impl TokenStore {
                     ));
                 }
             };
-            if now - last >= 60.0 {
+            if stamp && now - last >= 60.0 {
                 rows[index]["lastUsed"] = now.into();
                 write_json(&self.path(), &Value::Array(rows.clone()))?;
             }

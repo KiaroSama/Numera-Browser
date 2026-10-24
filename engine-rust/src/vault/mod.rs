@@ -8,8 +8,8 @@ pub mod recovery;
 mod rotation_recovery;
 pub mod transaction;
 use base64::{
-    Engine,
-    engine::general_purpose::{STANDARD, URL_SAFE},
+    Engine, alphabet,
+    engine::general_purpose::{GeneralPurpose, GeneralPurposeConfig, URL_SAFE},
 };
 use fernet::Fernet;
 use pbkdf2::{pbkdf2_hmac_array, sha2::Sha256};
@@ -45,7 +45,52 @@ pub fn is_envelope(value: &str) -> bool {
     let Some((version, _)) = rest.split_once(':') else {
         return false;
     };
-    !version.is_empty() && version.chars().all(|c| c.is_ascii_digit())
+    // Python's envelope regex uses Unicode Nd, not ASCII-only digits.
+    !version.is_empty() && crate::pool::decimal_ascii(version).is_some()
+}
+
+fn decode_original_base64(value: &str, url_safe: bool) -> Result<Vec<u8>, VaultError> {
+    if !value.is_ascii() {
+        return Err(VaultError(
+            "string argument should contain only ASCII characters".into(),
+        ));
+    }
+    let mut text = Vec::with_capacity(value.len());
+    let mut padding = 0usize;
+    for byte in value.bytes() {
+        let byte = match byte {
+            b'-' if url_safe => b'+',
+            b'_' if url_safe => b'/',
+            byte => byte,
+        };
+        if byte == b'=' {
+            padding += 1;
+        } else if byte.is_ascii_alphanumeric() || matches!(byte, b'+' | b'/') {
+            text.push(byte);
+            padding = 0;
+        }
+    }
+    let remainder = text.len() % 4;
+    if remainder == 1 {
+        return Err(VaultError(format!(
+            "Invalid base64-encoded string: number of data characters ({}) cannot be 1 more than a multiple of 4",
+            text.len()
+        )));
+    }
+    if remainder != 0 {
+        let required = 4 - remainder;
+        if padding < required {
+            return Err(VaultError("Incorrect padding".into()));
+        }
+        text.extend(std::iter::repeat_n(b'=', required));
+    }
+    // Python 3.13.15 ignores intermediate/excess padding and unused trailing bits.
+    GeneralPurpose::new(
+        &alphabet::STANDARD,
+        GeneralPurposeConfig::new().with_decode_allow_trailing_bits(true),
+    )
+    .decode(text)
+    .map_err(|_| VaultError("Incorrect padding".into()))
 }
 
 fn cipher(password: &str, salt: &str, rounds: u32) -> Result<Fernet, VaultError> {
@@ -64,9 +109,7 @@ fn cipher(password: &str, salt: &str, rounds: u32) -> Result<Fernet, VaultError>
         keys.push_back(key);
         return Ok(cipher);
     }
-    let bytes = STANDARD
-        .decode(salt)
-        .map_err(|_| VaultError("invalid vault salt encoding".into()))?;
+    let bytes = decode_original_base64(salt, false)?;
     let mut key = pbkdf2_hmac_array::<Sha256, 32>(password.as_bytes(), &bytes, rounds);
     let encoded = URL_SAFE.encode(key);
     key.fill(0);
@@ -85,7 +128,11 @@ fn cipher(password: &str, salt: &str, rounds: u32) -> Result<Fernet, VaultError>
 }
 
 pub fn decrypt(password: &str, salt: &str, value: &str) -> Result<String, VaultError> {
-    let version = value.split(':').nth(1).unwrap_or("v2");
+    let version = if value.matches(':').count() >= 2 {
+        value.split(':').nth(1).unwrap_or("v2")
+    } else {
+        "v2"
+    };
     let rounds = match version {
         "v1" => 200_000,
         "v2" => 600_000,
@@ -100,11 +147,51 @@ pub fn decrypt(password: &str, salt: &str, value: &str) -> Result<String, VaultE
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(|_| VaultError("system clock precedes Unix epoch".into()))?;
-    let token = value
-        .strip_prefix(&format!("enc:{version}:"))
-        .unwrap_or(value);
-    let bytes = cipher(password, salt, rounds)?
-        .decrypt(token)
+    let token: String = value.chars().skip(5 + version.chars().count()).collect();
+    // Source converts token text before deriving the key, then decodes its Base64.
+    if !token.is_ascii() {
+        let (start, first) = token
+            .char_indices()
+            .find(|(_, ch)| !ch.is_ascii())
+            .ok_or_else(|| VaultError("vault token ASCII conversion failed".into()))?;
+        let position = token[..start].chars().count();
+        let count = token[start..]
+            .chars()
+            .take_while(|ch| !ch.is_ascii())
+            .count();
+        let span = if count == 1 {
+            format!(
+                "character '\\{}{:0width$x}' in position {position}",
+                if u32::from(first) <= 0xff {
+                    "x"
+                } else if u32::from(first) <= 0xffff {
+                    "u"
+                } else {
+                    "U"
+                },
+                u32::from(first),
+                width = if u32::from(first) <= 0xff {
+                    2
+                } else if u32::from(first) <= 0xffff {
+                    4
+                } else {
+                    8
+                }
+            )
+        } else {
+            format!("characters in position {position}-{}", position + count - 1)
+        };
+        return Err(VaultError(format!(
+            "'ascii' codec can't encode {span}: ordinal not in range(128)"
+        )));
+    }
+    let cipher = cipher(password, salt, rounds)?;
+    // Authentication still belongs to Fernet; normalize only Python's text codec.
+    let token = decode_original_base64(&token, true)
+        .map(|bytes| URL_SAFE.encode(bytes))
+        .map_err(|_| VaultError("wrong master password".into()))?;
+    let bytes = cipher
+        .decrypt(&token)
         .map_err(|_| VaultError("wrong master password".into()))?;
     String::from_utf8(bytes).map_err(|_| VaultError("vault secret is not valid UTF-8".into()))
 }

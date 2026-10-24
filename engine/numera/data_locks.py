@@ -71,7 +71,10 @@ def _lock_path(key: str, name: str) -> Path:
     # The readable part is for a human staring at the directory; the digest is
     # what makes it unique.
     safe = re.sub(r"[^A-Za-z0-9._-]", "_", name)[:40] or "lock"
-    return Path(f"{safe}.{digest}.lock")
+    filename = f"{safe}.{digest}.lock"
+    if not re.fullmatch(r"[A-Za-z0-9._-]{1,40}\.[0-9a-f]{16}\.lock", filename):
+        raise ValueError('Invalid lock filename')
+    return Path(filename)
 
 
 if os.name == "nt":
@@ -271,9 +274,10 @@ class _SessionLease:
         self._guard.release()
 
     def held_by_other_process(self) -> bool:
-        """True when some *other* process holds this lease.
+        """True when another process may hold this lease.
 
-        Probes by taking the OS lock and dropping it again. A lease this
+        Probes by taking the OS lock and dropping it again. An inaccessible
+        lock is unknown, never evidence that the profile is free. A lease this
         process holds is invisible here - the OS lock is per handle and this
         one is ours - so callers pair it with their own session registry.
         """
@@ -282,8 +286,8 @@ class _SessionLease:
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
             fd = os.open(self._path, os.O_RDWR | os.O_CREAT, 0o600)
-        except OSError:                                          # pragma: no cover
-            return False
+        except OSError:
+            return True
         try:
             if _take(fd):
                 _drop(fd)
@@ -305,13 +309,15 @@ def session_lease(root, profile_id: str) -> "_SessionLease":
     desktop and a CLI could open one Chromium profile directory at the same
     time, and delete/backup/restore could run against a live one.
     """
+    from .paths import safe_join
+
     resolved = Path(root).resolve()
     key = f"{resolved}\x00{profile_id}"
     with _LOCKS_GUARD:
         lease = _SESSION_LEASES.get(key)
         if lease is None:
             lease = _SESSION_LEASES[key] = _SessionLease(
-                resolved / ".locks" / _lock_path(key, f"session-{profile_id}"))
+                safe_join(resolved / ".locks", str(_lock_path(key, f"session-{profile_id}"))))
         return lease
 
 

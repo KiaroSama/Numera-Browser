@@ -39,6 +39,13 @@ if (-not $OutDir) { $OutDir = Join-Path $repo 'build\server' }
 $python = Join-Path $repo '.venv\Scripts\python.exe'
 if (-not (Test-Path $python)) { $python = 'python' }
 
+# Setuptools discovers the full staged LICENSE without making an editable source
+# install depend on a generated file. The same helper stages independent notices.
+$stagedLicense = Join-Path $repo 'engine\LICENSE'
+$stagedLegal = Join-Path $repo 'engine\numera\legal'
+if ((Test-Path $stagedLicense) -or (Test-Path $stagedLegal)) {
+    throw 'Distribution staging already exists; inspect it before building again'
+}
 Write-Output "==> Building the dashboard (the engine serves it)"
 Push-Location (Join-Path $repo 'dashboard')
 try {
@@ -57,7 +64,9 @@ Write-Output "==> Building the wheel and sdist"
 if (Test-Path $OutDir) { Remove-Item $OutDir -Recurse -Force }
 Push-Location (Join-Path $repo 'engine')
 try {
-    & $python -m pip install --quiet --upgrade build
+    & $python (Join-Path $repo 'scripts\build\distribution.py') stage-wheel
+    if ($LASTEXITCODE -ne 0) { throw 'could not stage complete distribution notices' }
+    & $python -m pip install --quiet -r (Join-Path $repo 'scripts\build\requirements.txt')
     if ($LASTEXITCODE -ne 0) { throw "could not install the build backend" }
     & $python -m build --outdir $OutDir
     if ($LASTEXITCODE -ne 0) { throw "build failed ($LASTEXITCODE)" }
@@ -66,6 +75,8 @@ try {
     # Staged copy, not source: leaving it behind would make the next `git status`
     # noisy and the next wheel stale.
     if (Test-Path $web) { Remove-Item $web -Recurse -Force }
+    & $python (Join-Path $repo 'scripts\build\distribution.py') clear-wheel-staging
+    if ($LASTEXITCODE -ne 0) { throw 'could not safely clear distribution staging' }
 }
 
 Write-Output ''

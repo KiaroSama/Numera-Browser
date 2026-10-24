@@ -5,14 +5,6 @@ use std::io::{self, Write};
 
 pub fn config(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
     let metadata = identity::metadata(fp)?;
-    let full = if fp.chrome_version.matches('.').count() == 3 {
-        fp.chrome_version.clone()
-    } else {
-        format!(
-            "{}.0.0.0",
-            fp.chrome_version.split('.').next().unwrap_or("")
-        )
-    };
     let fields = [
         ("platform", serde_json::to_value(&fp.platform)?),
         ("uaPlatform", fp.ch_platform.trim_matches('"').into()),
@@ -21,23 +13,23 @@ pub fn config(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
             "platformVersion",
             identity::platform_version(&fp.os, &fp.os_version)?.into(),
         ),
-        ("fullVersion", full.into()),
+        ("fullVersion", identity::full_version(fp).into()),
         ("isMobile", fp.is_mobile.into()),
         ("architecture", metadata["architecture"].clone()),
-        ("hasUaData", (fp.os != "ios").into()),
+        ("hasUaData", identity::sends_client_hints(fp).into()),
         ("deviceModel", serde_json::to_value(&fp.device_model)?),
         ("hardwareConcurrency", fp.hardware_concurrency.into()),
         ("deviceMemory", fp.device_memory.clone()),
         ("maxTouchPoints", fp.max_touch_points.into()),
         (
             "devicePixelRatio",
-            serde_json::to_value(fp.device_pixel_ratio)?,
+            Value::Number(fp.device_pixel_ratio.clone()),
         ),
         ("languages", serde_json::to_value(&fp.languages)?),
         ("webglVendor", serde_json::to_value(&fp.webgl_vendor)?),
         ("webglRenderer", serde_json::to_value(&fp.webgl_renderer)?),
         ("webglImage", serde_json::to_value(&fp.webgl_image)?),
-        ("seed", fp.seed.into()),
+        ("seed", fp.seed.clone().into()),
         ("fonts", serde_json::to_value(&fp.fonts)?),
         ("cameras", fp.cameras.into()),
         ("microphones", fp.microphones.into()),
@@ -72,7 +64,7 @@ pub(crate) fn write_ascii_fragment<W: ?Sized + Write>(
     Ok(())
 }
 
-struct SourceJson;
+pub(crate) struct SourceJson;
 impl Formatter for SourceJson {
     fn begin_array_value<W: ?Sized + Write>(
         &mut self,

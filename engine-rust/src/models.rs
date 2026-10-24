@@ -6,8 +6,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 fn one() -> i64 {
     1
 }
-fn one_float() -> f64 {
-    1.0
+fn zero_seed() -> serde_json::Number {
+    0.into()
+}
+fn one_float() -> serde_json::Number {
+    serde_json::Number::from_f64(1.0).expect("Finite default pixel ratio")
 }
 fn altered() -> String {
     "altered".into()
@@ -52,8 +55,8 @@ pub struct Fingerprint {
     pub languages: Vec<String>,
     #[serde(default)]
     pub is_mobile: bool,
-    #[serde(default)]
-    pub seed: i64,
+    #[serde(default = "zero_seed")]
+    pub seed: serde_json::Number,
     #[serde(default)]
     pub fonts: Vec<String>,
     #[serde(default = "one")]
@@ -87,7 +90,7 @@ pub struct Fingerprint {
     #[serde(default)]
     pub max_touch_points: i64,
     #[serde(default = "one_float")]
-    pub device_pixel_ratio: f64,
+    pub device_pixel_ratio: serde_json::Number,
 }
 
 impl Fingerprint {
@@ -134,11 +137,11 @@ pub struct Profile {
 impl Profile {
     pub fn from_record(record: &Value) -> Result<Self, serde_json::Error> {
         let mut stored = record.clone();
-        // Source storage treats an empty proxy mapping as no proxy; normalize
-        // that read view before typed parsing, not after it has already failed.
+        // Source storage treats every false JSON value as no proxy. Normalize
+        // only this optional read view; truthy malformed proxies still fail.
         if stored
             .get("proxy")
-            .is_some_and(|v| v.as_object().is_some_and(|m| m.is_empty()))
+            .is_some_and(|v| !crate::conversion::truth(v))
         {
             stored["proxy"] = Value::Null;
         }

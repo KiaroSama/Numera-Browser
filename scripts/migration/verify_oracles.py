@@ -14,9 +14,8 @@ FIXTURES = ROOT / 'engine-rust' / 'tests' / 'fixtures'
 def verify() -> None:
     inventory = json.loads((ROOT / 'docs' / 'migration-coverage.json').read_text(encoding='utf-8'))
     current = discover()
-    # Frozen source TESTS are provenance, not immutable implementation. Their
-    # maintenance may change CI assertions while the original app stays the
-    # oracle. Validate app hashes here; ledger discovery still sees live tests.
+    # The original application and test inventory are frozen provenance. Current
+    # tests are discovered independently by the hosted suite coverage guard.
     source_files = lambda rows: [row for row in rows if row['path'].startswith('engine/numera/')]
     if source_files(inventory['files']) != source_files(current['files']) or inventory['source_commit'] != current['source_commit']:
         raise ValueError('Source application contract inventory drift')
@@ -26,7 +25,7 @@ def verify() -> None:
     # These real-file/OS regressions are native integration targets as well,
     # even though their names do not end in _parity. Cargo runs every target.
     expected_tests |= {'first_run_failure', 'live_migration_owner', 'repo_batch_rollback',
-                       'pool_add', 'dashboard_write_rollback', 'dashboard_error_kinds', 'test_temp_cleanup', 'session_ready_lifecycle', 'session_registry_lifecycle', 'profile_delete_owned_session', 'browser_adapter_protocol', 'browser_adapter_live', 'browser_launch_admission', 'browser_cookies_parity', 'browser_extensions_parity', 'session_stop_http', 'cookie_export_parity'}
+                       'pool_add', 'dashboard_write_rollback', 'dashboard_error_kinds', 'test_temp_cleanup', 'session_ready_lifecycle', 'session_registry_lifecycle', 'profile_delete_owned_session', 'browser_adapter_protocol', 'browser_adapter_live', 'browser_launch_admission', 'browser_cookies_parity', 'browser_extensions_parity', 'session_stop_http', 'cookie_export_parity', 'cookie_http_parity', 'finite_browser_lifecycle', 'cli_registry_parity', 'cli_profile_parity', 'cli_settings_parity', 'cli_cookie_parity', 'mcp_parity', 'job_parity', 'bulk_parity', 'cli_pool_parity', 'cli_import_parity', 'cli_launch_parity', 'launch_http_parity', 'command_capture_lifecycle', 'proxy_assignment_parity', 'native_entry', 'native_environment', 'native_input', 'integer_seed_parity', 'relay_request_parity'}
     if discovered_tests != expected_tests:
         raise ValueError('Rust integration suite discovery changed; map its source oracle and CI tier')
     seams = {'models':'models.json','generation':'generation.json','identity':'identity.json',

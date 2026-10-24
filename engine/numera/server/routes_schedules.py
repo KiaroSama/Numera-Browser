@@ -91,6 +91,14 @@ def register(app, ctx):
         return {"ok": True}
 
     def _scheduler_tick() -> None:
+        from ..update_admission import Admission, UpdateBusy
+        try:
+            with Admission(engine_store.root).work('scheduler tick'):
+                _tick_admitted()
+        except UpdateBusy:
+            return  # Deferred, not a failed occurrence and never force-stopped.
+
+    def _tick_admitted() -> None:
         """Fire any warm-up that's due and whose profile is free right now."""
         try:
             rows = due_schedules(sched.list(), time.time())

@@ -9,7 +9,6 @@ use serde_json::Value;
 use std::{
     fs, io,
     path::{Path, PathBuf},
-    time::Duration,
 };
 
 #[derive(Serialize)]
@@ -70,7 +69,7 @@ pub fn install(
     let destination = directory.join(&id);
     {
         let lock = DataLock::transaction(root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         if regular_directory(&destination)? && destination.join("manifest.json").is_file() && !force
         {
             return outcome(id, destination, true);
@@ -87,7 +86,7 @@ pub fn install(
         }
         let replaced = {
             let lock = DataLock::transaction(root)?;
-            let _guard = lock.acquire(Duration::from_secs(30))?;
+            let _guard = lock.acquire_configured()?;
             let existing = regular_directory(&destination)?;
             if existing && destination.join("manifest.json").is_file() && !force {
                 return outcome(id, destination, true);
@@ -145,7 +144,7 @@ pub fn uninstall(root: &Path, reference: &str) -> io::Result<bool> {
     let destination = directory.join(&id);
     let tomb = {
         let lock = DataLock::transaction(root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         if !regular_directory(&destination)? {
             return Ok(false);
         }

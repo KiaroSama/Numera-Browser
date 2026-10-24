@@ -61,11 +61,22 @@ def run(manager, path, timeout=BUDGET_OK):
     return helpers.run_helper([sys.executable, str(path)], timeout, manager=manager)
 
 
-def running(pid):
+def running(pid, token):
     stat = Path(f'/proc/{pid}/stat')
     if os.name != 'nt' and stat.exists():
-        return stat.read_text().rsplit(')', 1)[1].split()[0] != 'Z'
-    return proctree.alive(pid)
+        return stat.read_text(encoding='utf-8').rsplit(')', 1)[1].split()[0] != 'Z'
+    return proctree.alive(pid, token)
+
+
+def assert_processes_ended(trees, ends_at):
+    pending = list(trees)
+    while pending:
+        pending = [tree for tree in pending if running(tree.pid, tree.token)]
+        if not pending:
+            return
+        remaining = ends_at - time.monotonic()
+        assert remaining > 0, 'Identified helper processes survived the existing deadline'
+        time.sleep(min(.01, remaining))
 
 
 def test_a_driver_holding_both_writers_does_not_truncate_the_answer(scripts, manager):
@@ -79,12 +90,53 @@ def test_the_driver_is_gone_according_to_the_operating_system(scripts, manager, 
     original = helpers.read_units
     def read(path):
         report = original(path)
-        seen.extend(tree.pid for tree in report.trees)
+        seen.extend(report.trees)
         return report
     monkeypatch.setattr(helpers, 'read_units', read)
+    ends_at = time.monotonic() + BUDGET_OK + helpers.CLEANUP_BUDGET
     run(manager, scripts['outlives'])
     assert seen, 'the relevant driver was never started/reported'
-    assert not any(running(pid) for pid in seen)
+    assert manager.live() == [], 'helper ownership was not settled before observation'
+    assert_processes_ended(seen, ends_at)
+    assert time.monotonic() <= ends_at, 'process observation exceeded the existing deadline'
+
+
+@pytest.mark.parametrize('disappears,budget', [(True, .05), (False, .05), (False, .005), (False, 0)])
+def test_process_observation_retains_identity_and_rejects_survivors(monkeypatch, disappears, budget):
+    from types import SimpleNamespace
+
+    module = sys.modules[__name__]
+    clock = [0.0]
+    calls, waits = [], []
+    tree = proctree.Tree(pid=123, token=456)
+
+    def alive(pid, token):
+        calls.append((pid, token))
+        return not disappears or clock[0] < .02
+
+    def sleep(seconds):
+        assert 0 < seconds <= budget - clock[0]
+        waits.append(seconds)
+        clock[0] += seconds
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError('Observation must not terminate or settle a process')
+
+    monkeypatch.setattr(module, 'os', SimpleNamespace(name='nt'))
+    monkeypatch.setattr(module, 'time', SimpleNamespace(monotonic=lambda: clock[0], sleep=sleep))
+    monkeypatch.setattr(proctree, 'alive', alive)
+    monkeypatch.setattr(proctree, 'end_tree', forbidden)
+    monkeypatch.setattr(helpers.HelperManager, 'settle', forbidden)
+    monkeypatch.setattr(subprocess.Popen, 'kill', forbidden)
+    if disappears:
+        assert_processes_ended([tree], budget)
+        assert clock[0] == pytest.approx(.02)
+    else:
+        with pytest.raises(AssertionError, match='Identified helper processes survived'):
+            assert_processes_ended([tree], budget)
+    assert calls and set(calls) == {(123, 456)}
+    assert bool(waits) == (budget > 0)
+    assert clock[0] <= budget
 
 
 def test_a_grandchild_in_the_same_group_is_the_control(scripts, manager):

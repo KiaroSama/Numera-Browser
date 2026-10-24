@@ -514,8 +514,14 @@ bundle Playwright, Patchright and Camoufox browsers separately. The server's
 `api` and `launch` extras remain opt-in and do not download every browser.
 For a local/internal Windows build including Cloak's official binary too, use
 `pwsh -File scripts/build-desktop.ps1 -IncludeCloakBinary` from the repository
-root. Standard release builds let the Cloak wrapper download directly from the
-vendor. See the [desktop build and license notes](../README.md#build-it).
+root. Standard public bundles exclude that binary. First vendor acquisition is
+separately approved in **Engines**, or by reviewing `numera engines --cloak-offer
+--json` and supplying its exact identifier to `numera engines --acquire-cloak
+<offer-id> --approve --json`. Launch suppresses background mutation and refuses a
+missing browser instead of downloading without approval. Explicit browser paths
+stay user-managed. Unsupported latest-only vendor license tiers cannot promise
+an exact tested browser pin. See [setup](../docs/setup.md) and
+[update signing, consent and recovery](../docs/updates.md).
 
 ```bash
 numera engines                              # list engines + install status
@@ -561,8 +567,10 @@ python -m camoufox fetch
 python -c "from cloakbrowser.download import ensure_binary; ensure_binary()"
 ```
 
-That last line matters: CloakBrowser downloads its binary on first launch, and
-the network guard refuses that from inside a test. Fetch it once, up front.
+The last line is an explicit maintainer acquisition step for this isolated test
+setup, not the application's launch behavior. The network guard refuses missing
+browser downloads inside tests. Production launch requires an existing approved
+binary; use the consent-controlled route described above.
 
 CI additionally requires an explicit Windows/Linux matrix for `playwright`,
 `patchright`, `camoufox`, and `cloak`. `NUMERA_TEST_ENGINE` selects one engine;
@@ -570,9 +578,11 @@ an absent selected package or binary is an error. `scripts/live_engine.py`
 checks prerequisites and requires JUnit evidence for both real launch ownership
 and hard-killed-owner cleanup, with zero skipped cases. Ordinary unit jobs omit
 live files; the existing Chromium live job retains broader browser behavior tests.
-The `Required verification` job fails if any required job fails or skips. Tagged
-release publication depends on that verification; this does not configure remote
-branch protection or prove a hosted workflow has executed.
+The `Required verification` job fails if any applicable required job fails or
+skips. One manual exact-SHA hosted batch gates signed publication and verifies
+main promotion before publishing its existing artifacts; tags do not initiate
+another build. This does not configure remote branch protection or prove a
+hosted workflow has executed.
 
 For this lifecycle matrix Cloak is deliberately pinned to the official key-free
 `146.0.7680.177.5` build with wrapper `0.5.12`, `CLOAKBROWSER_VERSION` set explicitly

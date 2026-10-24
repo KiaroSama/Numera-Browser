@@ -20,10 +20,18 @@ pub struct Installed {
     pub description: Description,
 }
 
-fn json(path: &Path) -> Option<Value> {
-    fs::read(path)
-        .ok()
-        .and_then(|bytes| serde_json::from_slice(&bytes).ok())
+fn json(path: &Path) -> io::Result<Option<Value>> {
+    let bytes = match fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(_) => return Ok(None),
+    };
+    let text = std::str::from_utf8(&bytes).map_err(|_| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Extension resource is not UTF-8",
+        )
+    })?;
+    Ok(serde_json::from_str(text).ok())
 }
 
 fn contained_file(folder: &Path, relative: &str) -> Option<PathBuf> {
@@ -36,7 +44,7 @@ fn contained_file(folder: &Path, relative: &str) -> Option<PathBuf> {
     Some(path)
 }
 
-fn display_name(folder: &Path, manifest: Option<&Value>) -> Value {
+fn display_name(folder: &Path, manifest: Option<&Value>) -> io::Result<Value> {
     let fallback = || {
         Value::String(
             folder
@@ -47,7 +55,7 @@ fn display_name(folder: &Path, manifest: Option<&Value>) -> Value {
         )
     };
     let Some(manifest) = manifest else {
-        return fallback();
+        return Ok(fallback());
     };
     let name = manifest
         .get("name")
@@ -66,20 +74,33 @@ fn display_name(folder: &Path, manifest: Option<&Value>) -> Value {
             }
             let relative = format!("_locales/{locale}/messages.json");
             if let Some(path) = contained_file(folder, &relative)
-                && let Some(messages) = json(&path)
+                && let Some(messages) = json(&path)?
                 && let Some(value) = messages
                     .get(key)
                     .and_then(|entry| entry.get("message"))
                     .filter(|value| truth(value))
             {
-                return value.clone();
+                return Ok(value.clone());
             }
         }
-        fallback()
+        Ok(fallback())
     } else if name.is_empty() {
-        fallback()
+        Ok(fallback())
     } else {
-        Value::String(name)
+        Ok(Value::String(name))
+    }
+}
+
+fn icon_size(key: &str) -> (bool, String) {
+    let integer = crate::decimal::integer(key)
+        .filter(|value| value.trim_start_matches('-').len() <= 4300)
+        .unwrap_or_else(|| "0".into());
+    let negative = integer.starts_with('-');
+    let magnitude = integer.trim_start_matches('-').trim_start_matches('0');
+    if magnitude.is_empty() {
+        (false, "0".into())
+    } else {
+        (negative, magnitude.into())
     }
 }
 
@@ -101,13 +122,22 @@ fn icon(folder: &Path, manifest: Option<&Value>) -> Option<PathBuf> {
             _ => {}
         }
     }
-    let mut choices: Vec<_> = icons.into_iter().collect();
+    let mut choices: Vec<_> = icons
+        .into_iter()
+        .map(|(key, value)| (icon_size(&key), value))
+        .collect();
     // Stable order preserves manifest insertion order for equally sized keys.
     choices.sort_by(|(left, _), (right, _)| {
-        right
-            .parse::<i128>()
-            .unwrap_or(0)
-            .cmp(&left.parse::<i128>().unwrap_or(0))
+        let magnitude = right
+            .1
+            .len()
+            .cmp(&left.1.len())
+            .then_with(|| right.1.cmp(&left.1));
+        left.0.cmp(&right.0).then(if left.0 {
+            magnitude.reverse()
+        } else {
+            magnitude
+        })
     });
     choices
         .into_iter()
@@ -122,10 +152,10 @@ fn icon(folder: &Path, manifest: Option<&Value>) -> Option<PathBuf> {
 
 pub fn describe(folder: &Path) -> io::Result<Description> {
     let manifest_path = contained_file(folder, "manifest.json");
-    let manifest = manifest_path.as_deref().and_then(json);
+    let manifest = manifest_path.as_deref().map(json).transpose()?.flatten();
     Ok(Description {
         path: folder.to_owned(),
-        name: display_name(folder, manifest.as_ref()),
+        name: display_name(folder, manifest.as_ref())?,
         icon: icon(folder, manifest.as_ref()),
     })
 }
@@ -220,7 +250,9 @@ pub fn unloadable(entries: &[String]) -> Vec<String> {
     let mut problems = Vec::new();
     for entry in entries
         .iter()
-        .map(|entry| entry.trim())
+        .map(|entry| {
+            entry.trim_matches(|c: char| c.is_whitespace() || matches!(c, '\u{1c}'..='\u{1f}'))
+        })
         .filter(|entry| !entry.is_empty())
     {
         let quoted = crate::validation::repr(&Value::String(entry.into()));
