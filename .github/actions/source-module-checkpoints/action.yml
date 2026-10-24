@@ -1,5 +1,5 @@
 name: Preserve Windows source module checkpoints
-description: Run the nine problem-block modules once and retain each settled result before starting the next.
+description: Run nine diagnostic slots, including all remaining modules in the final slot, with retained settled results.
 outputs:
   settled:
     description: Every module owner settled and the final checkpoint upload succeeded.
@@ -17,7 +17,7 @@ runs:
         python scripts/migration/run_owned.py --wall 30 --idle 15 -- python scripts/ci/python_source.py --settled-index 0
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content -LiteralPath build/source-windows-1/checkpoint.json -Raw -Encoding utf8 | ConvertFrom-Json
-        $testExit = $state.module_results[0].exit
+        $testExit = $state.slot_results[0]
         if ($testExit -notin @(0, 1)) { throw 'Source module verdict is invalid' }
         'settled=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         exit [int]$testExit
@@ -40,7 +40,7 @@ runs:
         python scripts/migration/run_owned.py --wall 30 --idle 15 -- python scripts/ci/python_source.py --settled-index 1
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content -LiteralPath build/source-windows-1/checkpoint.json -Raw -Encoding utf8 | ConvertFrom-Json
-        $testExit = $state.module_results[1].exit
+        $testExit = $state.slot_results[1]
         if ($testExit -notin @(0, 1)) { throw 'Source module verdict is invalid' }
         'settled=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         exit [int]$testExit
@@ -63,7 +63,7 @@ runs:
         python scripts/migration/run_owned.py --wall 30 --idle 15 -- python scripts/ci/python_source.py --settled-index 2
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content -LiteralPath build/source-windows-1/checkpoint.json -Raw -Encoding utf8 | ConvertFrom-Json
-        $testExit = $state.module_results[2].exit
+        $testExit = $state.slot_results[2]
         if ($testExit -notin @(0, 1)) { throw 'Source module verdict is invalid' }
         'settled=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         exit [int]$testExit
@@ -86,7 +86,7 @@ runs:
         python scripts/migration/run_owned.py --wall 30 --idle 15 -- python scripts/ci/python_source.py --settled-index 3
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content -LiteralPath build/source-windows-1/checkpoint.json -Raw -Encoding utf8 | ConvertFrom-Json
-        $testExit = $state.module_results[3].exit
+        $testExit = $state.slot_results[3]
         if ($testExit -notin @(0, 1)) { throw 'Source module verdict is invalid' }
         'settled=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         exit [int]$testExit
@@ -109,7 +109,7 @@ runs:
         python scripts/migration/run_owned.py --wall 30 --idle 15 -- python scripts/ci/python_source.py --settled-index 4
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content -LiteralPath build/source-windows-1/checkpoint.json -Raw -Encoding utf8 | ConvertFrom-Json
-        $testExit = $state.module_results[4].exit
+        $testExit = $state.slot_results[4]
         if ($testExit -notin @(0, 1)) { throw 'Source module verdict is invalid' }
         'settled=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         exit [int]$testExit
@@ -132,7 +132,7 @@ runs:
         python scripts/migration/run_owned.py --wall 30 --idle 15 -- python scripts/ci/python_source.py --settled-index 5
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content -LiteralPath build/source-windows-1/checkpoint.json -Raw -Encoding utf8 | ConvertFrom-Json
-        $testExit = $state.module_results[5].exit
+        $testExit = $state.slot_results[5]
         if ($testExit -notin @(0, 1)) { throw 'Source module verdict is invalid' }
         'settled=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         exit [int]$testExit
@@ -155,7 +155,7 @@ runs:
         python scripts/migration/run_owned.py --wall 30 --idle 15 -- python scripts/ci/python_source.py --settled-index 6
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content -LiteralPath build/source-windows-1/checkpoint.json -Raw -Encoding utf8 | ConvertFrom-Json
-        $testExit = $state.module_results[6].exit
+        $testExit = $state.slot_results[6]
         if ($testExit -notin @(0, 1)) { throw 'Source module verdict is invalid' }
         'settled=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         exit [int]$testExit
@@ -178,7 +178,7 @@ runs:
         python scripts/migration/run_owned.py --wall 30 --idle 15 -- python scripts/ci/python_source.py --settled-index 7
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content -LiteralPath build/source-windows-1/checkpoint.json -Raw -Encoding utf8 | ConvertFrom-Json
-        $testExit = $state.module_results[7].exit
+        $testExit = $state.slot_results[7]
         if ($testExit -notin @(0, 1)) { throw 'Source module verdict is invalid' }
         'settled=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         exit [int]$testExit
@@ -201,7 +201,7 @@ runs:
         python scripts/migration/run_owned.py --wall 30 --idle 15 -- python scripts/ci/python_source.py --settled-index 8
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content -LiteralPath build/source-windows-1/checkpoint.json -Raw -Encoding utf8 | ConvertFrom-Json
-        $testExit = $state.module_results[8].exit
+        $testExit = $state.slot_results[8]
         if ($testExit -notin @(0, 1)) { throw 'Source module verdict is invalid' }
         'settled=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         exit [int]$testExit

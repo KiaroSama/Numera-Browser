@@ -46,23 +46,33 @@ def save_checkpoint(path: Path, state: dict) -> None:
 
 def module_cursor(state: dict, sources: list[Path], index: int, *, settled: bool = False) -> list:
     first, last = len(sources) * 2 // 4, len(sources) * 3 // 4
-    cursor = index + int(settled)
+    count = last - first
+    cursor = (count if index == 8 else index + 1) if settled else index
     results = state.get('module_results', [])
-    if (last - first != 9 or not 0 <= index < 9 or state.get('blocks') != 4
+    slots = state.get('slot_results', [])
+    if (count < 9 or not 0 <= index < 9 or state.get('blocks') != 4
             or state.get('modules') != [source.name for source in sources]
-            or state.get('next') != (3 if cursor == 9 else 2)
+            or state.get('next') != (3 if cursor == count else 2)
             or 'active' in state or state.get('module_next', 0) != cursor
             or not isinstance(results, list) or len(results) != cursor
             or any(not isinstance(row, dict) or row.get('module') != sources[first + offset].name
                    or type(row.get('exit')) is not int or row['exit'] not in (0, 1)
-                   for offset, row in enumerate(results))):
+                   for offset, row in enumerate(results))
+            or not isinstance(slots, list) or len(slots) != index + int(settled)
+            or any(type(code) is not int or code not in (0, 1) for code in slots)):
         raise ValueError('Source module checkpoint is incomplete, repeated or belongs to another partition')
+    expected = [row['exit'] for row in results[:8]]
+    if len(results) > 8:
+        expected.append(int(any(row['exit'] for row in results[8:])))
+    if slots != expected:
+        raise ValueError('Source module checkpoint verdict does not match its settled modules')
     return results
 
 
 def settled_exit(index: int) -> int:
     state = json.loads((ROOT / 'build/source-windows-1/checkpoint.json').read_text(encoding='utf-8'))
-    return module_cursor(state, python_sources(1, 4), index, settled=True)[-1]['exit']
+    module_cursor(state, python_sources(1, 4), index, settled=True)
+    return state['slot_results'][index]
 
 
 def verify(shard: int, shards: int, logger, *, block: int = 0, blocks: int = 1,
@@ -92,7 +102,8 @@ def verify(shard: int, shards: int, logger, *, block: int = 0, blocks: int = 1,
     if module_index is not None:
         module_cursor(state, sources, module_index)
         first += module_index
-        last = first + 1
+        if module_index < 8:
+            last = first + 1
     elif state.get('next') == 2 and any(key in state for key in ('active', 'module_next', 'module_results')):
         raise ValueError('Source module checkpoint cannot be bypassed by a whole block')
     # The failing step loses its final logs. Use its ten timeline slots for
@@ -131,6 +142,11 @@ def verify(shard: int, shards: int, logger, *, block: int = 0, blocks: int = 1,
                 record(output, source, 'unproved', error=type(error).__name__)
                 logger.error('Source module failed name=%s type=%s', source.name, type(error).__name__)
                 raise  # Unproved process cleanup cannot authorize another module.
+        if module_index is not None:
+            state.pop('active')
+            state.setdefault('module_results', []).append(dict(module=source.name, exit=code))
+            state['module_next'] = len(state['module_results'])
+            save_checkpoint(checkpoint, state)
         settled.append(f'{source.name}:{code}')
         record(output, source, 'finish', exit=code)
         logger.info('Source module finished name=%s exit=%s', source.name, code)
@@ -140,9 +156,7 @@ def verify(shard: int, shards: int, logger, *, block: int = 0, blocks: int = 1,
         logger.info('##[notice]Source block settled modules=%s', ','.join(settled))
     state['next'] = block + 1
     if module_index is not None:
-        state.pop('active')
-        state.setdefault('module_results', []).append(dict(module=source.name, exit=code))
-        state['module_next'] = module_index + 1
+        state.setdefault('slot_results', []).append(int(bool(failed)))
         state['next'] = block + int(module_index == 8)
     save_checkpoint(checkpoint, state)
     logger.info('Source block finished block=%s modules=%s failed=%s', block, last - first, failed)

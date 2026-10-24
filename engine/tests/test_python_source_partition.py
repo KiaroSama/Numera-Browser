@@ -297,8 +297,9 @@ def test_problem_block_notices_identify_each_admitted_module_before_execution(tm
     assert rows[-1]['phase'] == ('unproved' if failure == 'unproved' else 'finish')
 
 
-@pytest.mark.parametrize('failure', [None, 'ordinary', 'cleanup', 'interrupted'])
-def test_single_module_checkpoints_keep_one_deadline_and_stop_on_uncertain_cleanup(tmp_path, monkeypatch, failure):
+@pytest.mark.parametrize('size', [37, 39, 40, 60])
+@pytest.mark.parametrize('failure', [None, 'ordinary', 'cleanup', 'interrupted', 'tail-failure', 'tail-cleanup'])
+def test_single_module_checkpoints_keep_one_deadline_and_stop_on_uncertain_cleanup(tmp_path, monkeypatch, failure, size):
     from contextlib import contextmanager
     import json
     from types import SimpleNamespace
@@ -306,7 +307,8 @@ def test_single_module_checkpoints_keep_one_deadline_and_stop_on_uncertain_clean
     module = runner(monkeypatch)
     (tmp_path / 'engine').mkdir()
     monkeypatch.setattr(module, 'ROOT', tmp_path)
-    files = [Path(f'test_{index:02}.py') for index in range(37)]
+    files = [Path(f'test_{index:02}.py') for index in range(size)]
+    first, last = size * 2 // 4, size * 3 // 4
     monkeypatch.setattr(module, 'python_sources', lambda *args: files)
     clock, calls = [20.0], []
     monkeypatch.setattr(module, 'time', SimpleNamespace(monotonic=lambda: clock[0]))
@@ -333,15 +335,19 @@ def test_single_module_checkpoints_keep_one_deadline_and_stop_on_uncertain_clean
             raise RuntimeError('fixture cleanup unproved')
         if failure == 'interrupted' and len(calls) == 3:
             return 2
-        return int(failure == 'ordinary' and len(calls) == 1)
+        if failure == 'tail-cleanup' and len(calls) == 9:
+            raise RuntimeError('fixture final-slot cleanup unproved')
+        return int((failure == 'ordinary' and len(calls) == 1)
+                   or (failure == 'tail-failure' and len(calls) == 9))
 
     monkeypatch.setattr(module, 'run', run)
     monkeypatch.chdir(tmp_path)
     for index in range(9):
-        if failure in ('cleanup', 'interrupted') and index == 2:
+        if (failure in ('cleanup', 'interrupted') and index == 2
+                or failure == 'tail-cleanup' and index == 8):
             with pytest.raises(RuntimeError):
                 module.verify(1, 4, logger, block=2, blocks=4, module_index=index)
-            assert json.loads(checkpoint.read_text(encoding='utf-8'))['active'] == files[20].name
+            assert json.loads(checkpoint.read_text(encoding='utf-8'))['active'] == files[first + index].name
             with pytest.raises(ValueError, match='checkpoint'):
                 module.settled_exit(index)
             for rejected in (index, index + 1):
@@ -349,14 +355,16 @@ def test_single_module_checkpoints_keep_one_deadline_and_stop_on_uncertain_clean
                     module.verify(1, 4, logger, block=2, blocks=4, module_index=rejected)
             with pytest.raises(ValueError, match='checkpoint'):
                 module.verify(1, 4, logger, block=2, blocks=4)
-            assert len(calls) == 3
+            assert len(calls) == index + 1
             break
         # Protocol success follows cleanup, not the test verdict. The action
         # publishes settled only after its outer owner also exits successfully.
         assert module.verify(1, 4, logger, block=2, blocks=4, module_index=index) == 0
-        assert module.settled_exit(index) == int(failure == 'ordinary' and index == 0)
+        assert module.settled_exit(index) == int((failure == 'ordinary' and index == 0)
+                                               or (failure == 'tail-failure' and index == 8))
         saved = json.loads(checkpoint.read_text(encoding='utf-8'))
-        assert saved['end'] == 600 and saved['module_next'] == index + 1 and 'active' not in saved
+        cursor = last - first if index == 8 else index + 1
+        assert saved['end'] == 600 and saved['module_next'] == cursor and 'active' not in saved
         assert saved['next'] == (3 if index == 8 else 2)
         if index < 8:
             with pytest.raises(ValueError, match='checkpoint'):
@@ -366,20 +374,53 @@ def test_single_module_checkpoints_keep_one_deadline_and_stop_on_uncertain_clean
             with pytest.raises(ValueError, match='checkpoint'):
                 module.verify(1, 4, logger, block=2, blocks=4)
         clock[0] += 5  # Completed immutable uploads consume the partition budget.
-    assert [call[0] for call in calls] == [path.name for path in files[18:18 + len(calls)]]
-    assert [call[1] for call in calls] == [580 - 15 * index for index in range(len(calls))]
+    assert [call[0] for call in calls] == [path.name for path in files[first:first + len(calls)]]
+    assert [call[1] for call in calls] == [580 - 10 * index - 5 * min(index, 8) for index in range(len(calls))]
     assert all(call[2] == 120 for call in calls)
-    if failure in (None, 'ordinary'):
-        assert saved['module_results'] == [dict(module=path.name, exit=int(failure == 'ordinary' and index == 0))
-                                          for index, path in enumerate(files[18:27])]
+    if failure in (None, 'ordinary', 'tail-failure'):
+        assert len(calls) == last - first
+        assert saved['module_results'] == [
+            dict(module=path.name, exit=int((failure == 'ordinary' and index == 0)
+                                           or (failure == 'tail-failure' and index == 8)))
+            for index, path in enumerate(files[first:last])]
+        assert saved['slot_results'] == [int((failure == 'ordinary' and index == 0)
+                                           or (failure == 'tail-failure' and index == 8)) for index in range(9)]
         clock[0] = 601
         checkpoint.write_text(json.dumps(state), encoding='utf-8')
         with pytest.raises(TimeoutError):
             module.verify(1, 4, logger, block=2, blocks=4, module_index=0)
-        assert len(calls) == 9
+        assert len(calls) == last - first
 
 
-@pytest.mark.parametrize('damage', ['wrong-size', 'partial-json', 'wrong-inventory', 'bad-verdict'])
+@pytest.mark.parametrize('pending', [False, True])
+def test_partial_final_slot_never_authorizes_retry_or_next_block(tmp_path, monkeypatch, pending):
+    import json
+    from types import SimpleNamespace
+
+    module = runner(monkeypatch)
+    sources = [Path(f'test_{index:02}.py') for index in range(39)]
+    first = len(sources) * 2 // 4
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    monkeypatch.setattr(module, 'python_sources', lambda *args: sources)
+    monkeypatch.setattr(module, 'run', lambda *args: pytest.fail('Incomplete final slot started another child'))
+    output = tmp_path / 'build/source-windows-1'
+    output.mkdir(parents=True)
+    (tmp_path / 'engine').mkdir()
+    state = dict(end=600, next=2, blocks=4, modules=[path.name for path in sources],
+                 module_next=9, module_results=[dict(module=path.name, exit=0) for path in sources[first:first + 9]],
+                 slot_results=[0] * 8)
+    if pending:
+        state['active'] = sources[first + 9].name
+    (output / 'checkpoint.json').write_text(json.dumps(state), encoding='utf-8')
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(ValueError, match='checkpoint'):
+        module.settled_exit(8)
+    for block, slot in ((2, 8), (2, None), (3, None)):
+        with pytest.raises(ValueError, match='checkpoint'):
+            module.verify(1, 4, SimpleNamespace(info=lambda *args: None), block=block, blocks=4, module_index=slot)
+
+
+@pytest.mark.parametrize('damage', ['wrong-size', 'partial-json', 'wrong-inventory', 'bad-verdict', 'slot-verdict', 'missing-slot'])
 def test_module_checkpoint_refuses_ambiguous_saved_state_before_spawn(tmp_path, monkeypatch, damage):
     import json
     from types import SimpleNamespace
@@ -387,12 +428,15 @@ def test_module_checkpoint_refuses_ambiguous_saved_state_before_spawn(tmp_path, 
     module = runner(monkeypatch)
     (tmp_path / 'engine').mkdir()
     monkeypatch.setattr(module, 'ROOT', tmp_path)
-    sources = [Path(f'test_{index:02}.py') for index in range(40 if damage == 'wrong-size' else 37)]
+    sources = [Path(f'test_{index:02}.py') for index in range(32 if damage == 'wrong-size' else 37)]
     monkeypatch.setattr(module, 'python_sources', lambda *args: sources)
     state = dict(end=600, next=2, blocks=4, modules=[path.name for path in sources])
     if damage == 'wrong-inventory': state['modules'][0] = 'test_foreign.py'
-    if damage == 'bad-verdict':
-        state.update(module_next=1, module_results=[dict(module=sources[18].name, exit=124)])
+    if damage in ('bad-verdict', 'slot-verdict', 'missing-slot'):
+        state.update(module_next=1, module_results=[dict(module=sources[18].name, exit=int(damage == 'slot-verdict'))],
+                     slot_results=[0])
+        if damage == 'bad-verdict': state['module_results'][0]['exit'] = 124
+        if damage == 'missing-slot': state.pop('slot_results')
     output = tmp_path / 'build/source-windows-1'
     output.mkdir(parents=True)
     (output / 'checkpoint.json').write_text('{' if damage == 'partial-json' else json.dumps(state), encoding='utf-8')
@@ -401,7 +445,7 @@ def test_module_checkpoint_refuses_ambiguous_saved_state_before_spawn(tmp_path, 
     monkeypatch.chdir(tmp_path)
     with pytest.raises(ValueError):
         module.verify(1, 4, SimpleNamespace(info=lambda *args: None), block=2, blocks=4,
-                      module_index=int(damage == 'bad-verdict'))
+                      module_index=int(damage in ('bad-verdict', 'slot-verdict', 'missing-slot')))
 
 
 def test_module_checkpoint_action_keeps_failures_and_requires_previous_cleanup_and_upload():
@@ -425,12 +469,12 @@ def test_module_checkpoint_action_keeps_failures_and_requires_previous_cleanup_a
         proof = command.index('if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }', owner)
         settled_read = command.index(f'--settled-index {index}', proof)
         read_proof = command.index('if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }', settled_read)
-        verdict = command.index(f'$testExit = $state.module_results[{index}].exit', read_proof)
+        verdict = command.index(f'$testExit = $state.slot_results[{index}]', read_proof)
         publish = command.index('settled=true', verdict)
         assert owner < proof < settled_read < read_proof < verdict < publish < command.index('exit [int]$testExit')
         assert upload['id'] == f'checkpoint_{index}'
         assert upload['with']['name'] == f'source-windows-checkpoint-2-module-{index}'
-    for damage in ('repeat', 'skip-proof', 'ignored-exit', 'read-owner', 'softened', 'artifact-collision', 'false-settled'):
+    for damage in ('repeat', 'skip-proof', 'ignored-exit', 'read-owner', 'softened', 'artifact-collision', 'false-settled', 'scalar-exit'):
         broken = copy.deepcopy(action)
         run, upload = broken['runs']['steps'][2:4]
         if damage == 'repeat': run['run'] = run['run'].replace('--module-index 1', '--module-index 0')
@@ -439,6 +483,7 @@ def test_module_checkpoint_action_keeps_failures_and_requires_previous_cleanup_a
         elif damage == 'read-owner': run['run'] = run['run'].replace('run_owned.py --wall 30 --idle 15', 'run_owned.py')
         elif damage == 'softened': run['continue-on-error'] = True
         elif damage == 'false-settled': broken['outputs']['settled']['value'] = '${{ true }}'
+        elif damage == 'scalar-exit': run['run'] = run['run'].replace('$state.slot_results[1]', '$state.slot_results[1].exit')
         else: upload['with']['name'] = 'source-windows-checkpoint-2-module-0'
         with pytest.raises(ValueError, match='module checkpoint'):
             module.check_source_module_action(broken)

@@ -115,9 +115,9 @@ not Python reflection or full migration. That batch still failed CodeQL/required
 
 The existing native job prepares an optimized, current Cargo artifact for four
 foreground CLI scenarios: seeded creation, a 32-profile list, an unlocked vault
-read and backup. A fifth scenario now prepares authenticated loopback HTTP profile
-listing; its execution and measurements remain unverified. One excluded warm-up
-pair precedes seven alternating measured pairs over identical copied stores.
+read and backup. The fifth scenario measures authenticated loopback HTTP profile
+listing; batch `40079432038` passed all five comparisons on both systems, with
+163 complete, clean units each. One excluded warm-up precedes seven measured pairs.
 Full ordered responses, persisted copies and backup contents must agree; HTTP
 requires all 32 distinct profile identities and unchanged protected input bytes.
 
@@ -154,8 +154,11 @@ API/browser or complete migration performance acceptance.
 Checkpoint `5501361` passed all four Windows comparisons but refused Linux vault-read
 timing: native 89.825–502.846 ms overlapped original 343.394–347.005 ms. Other Linux
 verdicts passed; the outlying sample was not removed or accepted, and its cause is unknown.
-Checkpoint `966e450` passed all four comparisons on both systems with 131 complete,
-clean ownership units each. This does not diagnose or erase the earlier timing overlap.
+Checkpoint `66d74ce` HTTP latency: Linux native 3.446–4.274 ms versus original
+12.713–13.285 ms; Windows native 25.872–39.062 ms versus 49.091–53.192 ms. Lifetime
+peak ranges also stayed disjoint/lower within each host's metric. This does not erase
+prior overlap or certify browser performance. Windows source coverage separately failed:
+a ten-module block met a nine-module checkpoint guard; its growth repair is unverified.
 
 Creation explicitly sets the default engine, so its settings write is checked
 against the complete expected JSON document separately from unrelated byte

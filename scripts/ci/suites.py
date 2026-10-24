@@ -231,7 +231,7 @@ def check_source_module_action(action: dict) -> None:
                      'if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }',
                      f'--settled-index {index}',
                      '$state = Get-Content -LiteralPath build/source-windows-1/checkpoint.json -Raw -Encoding utf8 | ConvertFrom-Json',
-                     f'$testExit = $state.module_results[{index}].exit', 'if ($testExit -notin @(0, 1))',
+                     f'$testExit = $state.slot_results[{index}]\n', 'if ($testExit -notin @(0, 1))',
                      "'settled=true'", 'exit [int]$testExit']
         positions = [command.find(fragment) for fragment in fragments]
         if (run.get('id') != f'module_{index}' or run.get('shell') != 'pwsh'

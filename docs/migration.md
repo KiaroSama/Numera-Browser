@@ -7,11 +7,11 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 24, 2026
 
-The latest completed checkpoint `680c8a2` ran in manual hosted batch
-[40073667250](https://github.com/KiaroSama/Numera-Browser/actions/runs/40073667250),
-which failed on October 24 at 07:48 UTC only at CodeQL and required verification:
-28 workflow jobs passed; three distribution/publication stages were skipped.
-Both native tiers, source platforms, eight real SDK paths, dashboard, updater and audits passed.
+The latest completed checkpoint `66d74ce` ran in manual hosted batch
+[40079432038](https://github.com/KiaroSama/Numera-Browser/actions/runs/40079432038),
+which failed on October 24 at 09:16 UTC at Windows source partition 1, CodeQL and
+required verification; three distribution/publication stages were skipped.
+Both native tiers, other source platforms, eight real SDK paths, dashboard and audits passed.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.
@@ -67,8 +67,10 @@ confirmation pairs, including deletion and refused-input byte preservation. The 
 optional parent receipts and deliberate child ancestors are covered by 20 helper controls;
 failed entry fixtures remain retained. Both native model-policy drift tests passed on
 both systems: persisted fields match all 56 frozen policy entries and owned/normalized
-exemptions require nonblank explanations. Actual HTTP request performance is prepared,
-not executed; full ordered responses, protected bytes and failed fixtures remain checked.
+exemptions require nonblank explanations. Actual HTTP request performance passed on both
+systems, including ordered response/byte parity and 163 complete, clean ownership units.
+The Windows source runner's fixed nine-module checkpoint refused a discovered ten-module
+block; a growth-aware final slot and aggregate failure controls are prepared, not executed.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.
 These are CLI results, not API/browser or full migration acceptance. The
