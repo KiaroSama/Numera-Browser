@@ -2,6 +2,8 @@ use numera_core::storage::repo::ProfileRepo;
 use serde_json::{Map, Value};
 use std::{fs, path::PathBuf};
 mod common;
+#[path = "repo_lookup_parity/read_warnings.rs"]
+mod read_warnings;
 
 #[test]
 fn direct_name_lookup_matches_original_without_id_precedence()

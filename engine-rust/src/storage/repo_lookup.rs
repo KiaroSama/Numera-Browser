@@ -101,7 +101,11 @@ impl ProfileRepo {
             return self.get(id);
         }
         match self.coherent(id, now) {
-            Err(RepoError::Diverged(_)) | Err(RepoError::InvalidRecord(_)) => self.get(id),
+            Err(RepoError::Diverged(message)) => {
+                eprintln!("RuntimeWarning: {message}");
+                self.get(id)
+            }
+            Err(RepoError::InvalidRecord(_)) => self.get(id),
             result => result,
         }
     }

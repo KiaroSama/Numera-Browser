@@ -90,16 +90,20 @@ def require_hosted_source(root: Path) -> str:
 
 
 @contextmanager
-def historical_sources(root: Path, case: dict):
+def historical_sources(root: Path, case: dict, inputs: dict):
     originals, replacements = {}, {}
     sources = {name: (case['commit'], expected) for name, expected in case['files'].items()}
     sources.update({name: (item['commit'], item['sha256'])
                     for name, item in case.get('companions', {}).items()})
     for name, (commit, expected) in sources.items():
-        raw = git(root, 'show', f'{commit}:{name}')
+        key = (commit, name, expected)
+        raw = inputs.get(key)
+        if raw is None:
+            raw = git(root, 'show', f'{commit}:{name}')
         if len(raw) > 32768 or hashlib.sha256(raw).hexdigest() != expected:
             raise ValueError('Historical regression source integrity differs')
         raw.decode('utf-8', errors='strict')
+        inputs[key] = raw
         path = root / name
         if path.is_symlink() or not path.is_file():
             raise ValueError('Historical regression source is not a regular maintained file')
@@ -150,6 +154,8 @@ def prove(root: Path, original: Path, logger) -> None:
     sha = require_hosted_source(root)
     keys = (ENVIRONMENT, 'PYTHONDONTWRITEBYTECODE', 'CARGO_INCREMENTAL')
     previous = {key: os.environ.get(key) for key in keys}
+    # Immutable source bytes are shared only within this invocation, never proof verdicts.
+    inputs = {}
     # rust-cache disables this for cross-job caches; these source swaps share one build tree.
     os.environ.update({ENVIRONMENT: str(original), 'PYTHONDONTWRITEBYTECODE': '1',
                        'CARGO_INCREMENTAL': '1'})
@@ -162,7 +168,7 @@ def prove(root: Path, original: Path, logger) -> None:
             evidence = FailureEvidence(case)
             logger.addHandler(evidence)
             try:
-                with historical_sources(root, case):
+                with historical_sources(root, case, inputs):
                     target = ['--lib'] if case['target'] == 'lib' else ['--test', case['target']]
                     if index == 0:
                         # Cold dependency compilation belongs to the outer build budget.

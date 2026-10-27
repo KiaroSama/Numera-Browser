@@ -242,4 +242,14 @@ CURRENT_CALLER_REGRESSIONS = (
                 '3c7f327011f3cba1b54b0934bdcc70c1ca5f1731f5ae5113e9cb645900af256d',
         },
     },
+    {
+        'target': 'repo_lookup_parity',
+        'test': 'read_warnings::read_repair_warnings_match_original_without_changing_read_results',
+        'symptom': 'Read repair warning differs',
+        'commit': '017f0dcac603bdbbcf56ea80b1156fca23579f9a',
+        'files': {
+            'engine-rust/src/storage/repo_lookup.rs':
+                '8cb44510b66c7c21074cfb168aea8ea3f22d8aa6cc255ea8be70e7a44cde5e32',
+        },
+    },
 )

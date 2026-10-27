@@ -7,19 +7,19 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 27, 2026
 
-The latest completed checkpoint `a640a83` ran in manual hosted batch
-[40498222511](https://github.com/KiaroSama/Numera-Browser/actions/runs/40498222511),
-which failed on October 27 at 12:15 UTC. All source-platform and three-OS desktop contracts
-passed. Linux native passed; Windows completed functional acceptance but HTTP-list latency
-remained inconclusive. All eight browser legs reached strict benchmark reporting: four time
-verdicts show no regression, four are inconclusive; all eight memory ranges overlap. The prior
-Linux/Patchright prerequisite failure did not recur; its transport/cleanup cause remains
-unproved. No browser performance leg is accepted. Native signing orchestration fixtures passed
-in the source tier, but actual native signing remains blocked behind distribution prerequisites.
-CodeQL/required verification failed and publication was skipped. The earlier roughly 201 ms
-Linux Chromium open-envelope gap is absent after removing the extra fragment wait; separate
-hosted runs do not prove total-command speedup. Both systems caught the historical token failure,
-restored fixed bytes and passed all 33 original-derived receipt observations—not complete migration.
+The latest completed checkpoint `017f0dc` ran in manual hosted batch
+[40509589761](https://github.com/KiaroSama/Numera-Browser/actions/runs/40509589761),
+which failed on October 27 at 13:39 UTC. All source-platform and three-OS desktop contracts
+passed. Linux native proved the old directory-permission diagnostic failure, restored fixed
+source and passed both current store-opening tests. Windows completed 65 historical proofs
+before its unchanged 900-second aggregate wall limit; permission and current acceptance did
+not run there. All eight browser legs reached strict reporting: three time verdicts show no
+regression, five are inconclusive; all eight memory ranges overlap. No browser performance
+leg is accepted. Native signing orchestration fixtures passed in the source tier, but actual
+native signing remains blocked behind distribution prerequisites. CodeQL/required verification
+failed and publication was skipped. Historical Git input bytes are now reused within one proof
+invocation, with integrity and restoration checked for every case; all semantic proofs still run.
+This optimization and the read-warning fixture await hosted verification, not acceptance.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.
@@ -289,9 +289,9 @@ rollback still gate Rust selection and retirement.
   Ordinary rotation retains the old generation on refusal; interrupted rotation
   authenticates both generations before resuming. Complete runtime-open integration,
   crash/concurrency acceptance and remaining error contracts are unfinished.
-- Dual-store adoption/materialization and save primitives, including exact-byte
-  rollback when a later batch write fails; batch/transaction-time patch, tolerant
-  lookup and lease/claim-aware deletion primitives. Full repository contracts remain pending.
+- Dual-store adoption/materialization, save and byte-preserving batch rollback primitives.
+  Read repair now reports divergent-copy warnings without changing results or stored bytes;
+  warning fixtures and full repository/deletion recovery contracts remain pending.
 - Credential-aware JSON profile export and dual-store import primitives; locked
   exports refuse before touching the destination. Streaming ZIP backup and staged
   restore replace sessions under a lease and roll back failed metadata commits.

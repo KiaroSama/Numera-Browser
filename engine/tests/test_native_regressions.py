@@ -462,6 +462,13 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'commit': 'a640a8317180d23e7064e074550bb1a03c432dca',
         'files': {'engine-rust/src/storage/repo.rs':
                   '3c7f327011f3cba1b54b0934bdcc70c1ca5f1731f5ae5113e9cb645900af256d'},
+    }, {
+        'target': 'repo_lookup_parity',
+        'test': 'read_warnings::read_repair_warnings_match_original_without_changing_read_results',
+        'symptom': 'Read repair warning differs',
+        'commit': '017f0dcac603bdbbcf56ea80b1156fca23579f9a',
+        'files': {'engine-rust/src/storage/repo_lookup.rs':
+                  '8cb44510b66c7c21074cfb168aea8ea3f22d8aa6cc255ea8be70e7a44cde5e32'},
     })
     assert module.REGRESSIONS == module._EXTENSION_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
     assert not any(case.get('companions') for case in module.CURRENT_CALLER_REGRESSIONS)
@@ -557,13 +564,14 @@ def test_historical_runner_restores_source_and_environment(
         monkeypatch.delenv('CARGO_INCREMENTAL', raising=False)
     else:
         monkeypatch.setenv('CARGO_INCREMENTAL', incremental)
-    calls, warmups = [], []
+    calls, warmups, blob_reads = [], [], []
 
     def git(root, *arguments):
         if arguments == ('rev-parse', 'HEAD'):
             return sha.encode('ascii')
         if arguments[0] == 'diff':
             return b''
+        blob_reads.append(arguments)
         if arguments == ('show', 'companion-commit:engine-rust/tests/config_parity.rs'):
             return old_test + (b'changed' if damage == 'companion' else b'')
         assert arguments == ('show', f"{case['commit']}:engine-rust/src/models.rs")
@@ -631,3 +639,4 @@ def test_historical_runner_restores_source_and_environment(
     assert logger.handlers == []
     assert len(calls) == (2 if damage is None else 0 if damage in ('integrity', 'companion', 'warm') else 1)
     assert len(warmups) == (0 if damage in ('integrity', 'companion') else 1)
+    assert len(blob_reads) == (1 if damage == 'integrity' else 2)
