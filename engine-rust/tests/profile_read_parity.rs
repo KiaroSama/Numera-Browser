@@ -10,6 +10,8 @@ use std::{
 };
 use tower::ServiceExt;
 mod common;
+#[path = "profile_read_parity/divergence.rs"]
+mod divergence;
 #[path = "profile_read_parity/read_view.rs"]
 mod read_view;
 

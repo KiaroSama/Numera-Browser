@@ -113,6 +113,81 @@ fn signed_manifest_rejects_tamper_wrong_key_replay_and_unsupported_platform() {
     assert!(manifest::signed_manifest(&bytes, &signature, &public, platform, 1, 2001).is_err());
 }
 #[test]
+fn signed_build_must_match_the_exact_approved_offer_identity_and_inventory() {
+    let public = key().verifying_key().to_bytes();
+    let original = json!({
+        "schema": 1, "owner": "KiaroSama", "product": manifest::PRODUCT,
+        "version": "0.36.0", "source_sha": "a".repeat(40), "generation": 2,
+        "platform": "linux-x64", "minimum_protocol": 1,
+        "components": {"sdk": {}, "browsers": {}},
+        "files": [{"path": "numera", "size": 3, "sha256": manifest::digest(b"old"),
+                   "executable": true}]
+    });
+    let check = |candidate: &serde_json::Value, approved_digest: Option<&str>| {
+        let bytes = serde_json::to_vec(candidate).expect("Build inventory");
+        let digest = manifest::digest(&bytes);
+        let build = manifest::signed_build(
+            &bytes,
+            &key().sign(&bytes).to_bytes(),
+            &public,
+            candidate["platform"].as_str().expect("Build platform"),
+        )
+        .expect("Candidate has a valid trusted build signature and inventory");
+        let offer = json!({
+            "schema": 1, "repository": manifest::REPOSITORY, "product": manifest::PRODUCT,
+            "version": "0.36.0", "source_sha": "a".repeat(40), "generation": 2,
+            "created_at": 1000, "expires_at": 2000, "minimum_protocol": 1,
+            "components": {"linux-x64": {"sdk": {}, "browsers": {}}},
+            "assets": [{"platform": "linux-x64", "name": "numera-fixture.tar.gz",
+                        "size": 10, "sha256": "b".repeat(64), "expanded_size": 20,
+                        "max_members": 4, "archive_root": manifest::PRODUCT,
+                        "build_manifest_sha256": approved_digest.unwrap_or(&digest)}]
+        });
+        let metadata = serde_json::to_vec(&offer).expect("Approved offer");
+        let offer = manifest::signed_manifest(
+            &metadata,
+            &key().sign(&metadata).to_bytes(),
+            &public,
+            "linux-x64",
+            1,
+            1200,
+        )
+        .expect("Offer has a valid trusted signature and compatible generation");
+        offer.validate_build(&build, &digest)
+    };
+    assert!(check(&original, None).is_ok());
+    for (field, replacement) in [
+        ("version", json!("0.36.1")),
+        ("source_sha", json!("d".repeat(40))),
+        ("generation", json!(3)),
+        (
+            "components",
+            json!({"sdk": {"playwright": "changed"}, "browsers": {}}),
+        ),
+        (
+            "components",
+            json!({"sdk": {}, "browsers": {"playwright": {"revision": "changed"}}}),
+        ),
+    ] {
+        let mut changed = original.clone();
+        changed[field] = replacement;
+        // The offer authenticates this changed inventory too: only its identity differs.
+        assert!(
+            check(&changed, None).is_err(),
+            "accepted mismatched {field}"
+        );
+    }
+    let mut wrong_platform = original.clone();
+    wrong_platform["platform"] = json!("windows-x64");
+    wrong_platform["files"][0]["path"] = json!("numera.exe");
+    assert!(check(&wrong_platform, None).is_err());
+    let approved = manifest::digest(&serde_json::to_vec(&original).expect("Original inventory"));
+    let mut changed_inventory = original.clone();
+    changed_inventory["files"][0]["sha256"] = json!(manifest::digest(b"new"));
+    assert!(check(&changed_inventory, Some(&approved)).is_err());
+    assert!(check(&changed_inventory, None).is_ok());
+}
+#[test]
 fn journaled_activation_and_rollback_preserve_real_format_mutable_data(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let fixture = Scratch::new();

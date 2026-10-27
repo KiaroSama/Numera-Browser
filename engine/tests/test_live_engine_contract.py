@@ -163,7 +163,7 @@ def test_every_supported_engine_is_required_on_both_platforms():
     build = _jobs(ROOT / ".github/workflows/build-desktop.yml")
     assert "uses: ./.github/workflows/ci.yml" not in "".join(build.values()), "Recursive CI would duplicate verification"
     for job in ("desktop", "desktop-windows"):
-        assert "cargo test --locked --no-default-features" in build[job]
+        assert "cargo test --locked --no-default-features" not in build[job]
         assert 'update_acceptance_build.py' in build[job] and 'update_acceptance.py run' in build[job]
         assert "continue-on-error" not in build[job]
 

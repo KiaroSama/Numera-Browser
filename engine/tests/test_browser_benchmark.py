@@ -119,7 +119,12 @@ def test_browser_pair_checks_full_export_and_preserves_failed_inputs(tmp_path, m
         lock.symlink_to('127.0.0.1:+12345')
         original_lock = lock.lstat()
     cookies = [{'name': 'one', 'expires': 1900000000}, {'name': 'two', 'httpOnly': True}]
-    calls = []
+    calls, events = [], []
+    logger = SimpleNamespace(warning=lambda message, *args: events.append(message % args))
+    shared_logs = tmp_path / 'logs'
+    shared_logs.mkdir()
+    (shared_logs / 'native-cli_foreign.log').write_text(
+        '[2026-10-27 00:00:00 UTC] [INFO] [entry] Native timing phase=execute elapsed_ns=999\n', encoding='utf-8')
     copytree = helper.shutil.copytree
 
     def copy(source, destination, **options):
@@ -130,7 +135,14 @@ def test_browser_pair_checks_full_export_and_preserves_failed_inputs(tmp_path, m
 
     def execute(argv, env, *, timeout):
         calls.append(argv)
-        assert timeout == 100 and env == {'fixture': 'environment'}
+        assert timeout == 100 and env['fixture'] == 'environment'
+        logs = Path(env['NUMERA_LOG_DIR'])
+        assert logs.parent == Path(argv[argv.index('--data-dir') + 1]).parent
+        assert logs != shared_logs and not events, 'Projection ran before measured command finished'
+        logs.mkdir()
+        (logs / 'native-browser_fixture.log').write_text(
+            '[2026-10-27 00:00:00 UTC] [INFO] [entry] Native timing phase=browser_hello elapsed_ns=456\n'
+            '[2026-10-27 00:00:00 UTC] [INFO] [entry] private=value\n', encoding='utf-8')
         assert '--wall' in argv and argv[argv.index('--wall') + 1] == '90'
         assert '--nested' in argv and argv[-7:-4] == ['cookies', 'export', 'fixture']
         copied = Path(argv[argv.index('--data-dir') + 1])
@@ -163,13 +175,17 @@ def test_browser_pair_checks_full_export_and_preserves_failed_inputs(tmp_path, m
     if mode in ('profile', 'sentinel', 'metadata', 'exit'):
         with pytest.raises(ValueError, match='protected|sentinel|metadata|observation'):
             helper.observation(tmp_path / 'candidate', tmp_path, tmp_path, root,
-                               {'fixture': 'environment'}, 'native', 'fixture')
+                               {'fixture': 'environment'}, 'native', 'fixture', logger=logger, repetition=2)
     else:
         sample, payload = helper.observation(tmp_path / 'candidate', tmp_path, tmp_path, root,
-                                             {'fixture': 'environment'}, 'native', 'fixture')
+                                             {'fixture': 'environment'}, 'native', 'fixture', logger=logger, repetition=2)
         assert sample == {'elapsed_ns': 7, 'memory': {'metric': 'fixture', 'bytes': 1234}}
         assert (payload == helper.exact_json({'cookies': cookies})) == (mode == 'normal')
     assert len(calls) == 1 and len(list(tmp_path.glob('browser-pair-*'))) == 1
+    assert any('runtime=native repetition=2 Candidate event Native timing phase=browser_hello elapsed_ns=456' in event
+               for event in events), 'Sample-correlated lifecycle evidence missing'
+    assert not any('999' in event or 'private=value' in event for event in events)
+    assert len(events) <= 65
     assert (root / 'profiles/fixture.json').read_text(encoding='utf-8') == '{"future":[true,7]}'
     if os.name != 'nt':
         assert lock.is_symlink() and os.readlink(lock) == '127.0.0.1:+12345'
@@ -202,7 +218,8 @@ def test_browser_run_requires_all_pairs_and_retains_unaccepted_evidence(tmp_path
     monkeypatch.setattr(helper, 'baseline', lambda *args: (tmp_path, 'fixture', baseline_payload))
     observed = []
 
-    def observation(candidate, original, parent, template, env, runtime, identifier):
+    def observation(candidate, original, parent, template, env, runtime, identifier, *, logger, repetition):
+        assert repetition == (len(observed) // 2) - 1
         with helper.fixture_directory('browser-pair-', parent, retain=True) as pair:
             (pair / 'input.json').write_text('{"synthetic":true}', encoding='utf-8')
             observed.append(runtime)

@@ -112,6 +112,8 @@ def test_both_freezers_embed_identity_and_windows_uses_approved_icon():
     assert 'from numera_build import IDENTITY' in (ROOT / 'scripts/engine_entry.py').read_text(encoding='utf-8')
     assert workflow.count('update_acceptance_build.py --stage') == 2
     assert workflow.count('update_acceptance.py run --old-stage') == 3
-    assert 'cargo test --locked --no-default-features' in workflow
-    assert '--all-features' not in workflow
+    contracts = (ROOT / '.github/workflows/desktop-contracts.yml').read_text(encoding='utf-8')
+    assert 'cargo test --locked --no-default-features' in contracts
+    assert 'cargo test' not in workflow
+    assert '--all-features' not in workflow + contracts
     assert 'verify_identity(stage)' in (ROOT / 'scripts/build/distribution.py').read_text(encoding='utf-8')

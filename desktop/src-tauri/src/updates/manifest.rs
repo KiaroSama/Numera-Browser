@@ -188,6 +188,26 @@ pub fn signed_manifest(
     }
     Ok(value)
 }
+impl Manifest {
+    pub fn validate_build(&self, build: &Build, inventory_digest: &str) -> io::Result<()> {
+        let asset = self
+            .assets
+            .iter()
+            .find(|asset| asset.platform == build.platform)
+            .ok_or_else(|| error("Downloaded generation has no approved platform asset"))?;
+        if build.version != self.version
+            || build.source_sha != self.source_sha
+            || build.generation != self.generation
+            || self.components.get(&build.platform) != Some(&build.components)
+            || asset.build_manifest_sha256 != inventory_digest
+        {
+            return Err(error(
+                "Downloaded generation differs from the approved signed offer",
+            ));
+        }
+        Ok(())
+    }
+}
 pub fn signed_build(
     bytes: &[u8],
     signature: &[u8],

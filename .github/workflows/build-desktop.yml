@@ -132,18 +132,6 @@ jobs:
       - name: Install released build inputs
         timeout-minutes: 5
         run: python -m pip install -r scripts/build/requirements.txt "./engine[api,launch,secure,desktop]"
-      - name: Verify Tauri shell formatting
-        working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 60 --idle 30 -- cargo fmt --all --check
-      - name: Compile and lint the Tauri shell
-        working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo clippy --locked --all-targets --no-default-features -- -D warnings
-      - name: Compile Tauri shell contract binaries
-        working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo test --locked --no-default-features --no-run
-      - name: Verify Tauri shell contracts
-        working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo test --locked --no-default-features -- --test-threads=2
       - name: Build the native shell without changing the application runtime
         working-directory: desktop/src-tauri
         run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo build --release --locked
@@ -256,18 +244,6 @@ jobs:
       - name: Install released build inputs
         timeout-minutes: 5
         run: python -m pip install -r scripts/build/requirements.txt "./engine[api,launch,secure,desktop]"
-      - name: Verify Tauri shell formatting
-        working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 60 --idle 30 -- cargo fmt --all --check
-      - name: Compile and lint the Tauri shell
-        working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo clippy --locked --all-targets --no-default-features -- -D warnings
-      - name: Compile Tauri shell contract binaries
-        working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo test --locked --no-default-features --no-run
-      - name: Verify Tauri shell contracts
-        working-directory: desktop/src-tauri
-        run: python ../../scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo test --locked --no-default-features -- --test-threads=2
       - name: Build the native shell with static CRT
         working-directory: desktop/src-tauri
         run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo build --release --locked

@@ -150,7 +150,13 @@ pub fn run(path: &Path) -> io::Result<()> {
     let key = manifest::decode_hex::<32>(manifest::PUBLIC_KEY)?;
     let platform = manifest::platform()?;
     let old = transaction::installed(&journal.root, &key, platform)?;
-    let next = transaction::installed(&journal.staged(), &key, platform)?;
+    let next_bytes = files::read(&journal.staged().join("BUILD.json"), manifest::BUILD_LIMIT)?;
+    let next = manifest::signed_build(
+        &next_bytes,
+        &files::read(&journal.staged().join("BUILD.sig"), 64)?,
+        &key,
+        platform,
+    )?;
     transaction::validate_files(&journal.root, &old)?;
     transaction::validate_files(&journal.staged(), &next)?;
     let bytes = files::read(
@@ -166,10 +172,8 @@ pub fn run(path: &Path) -> io::Result<()> {
         transaction::generation_floor(&journal.root, old.generation)?,
         transaction::now()?,
     )?;
-    if manifest::digest(&bytes) != journal.manifest_digest
-        || manifest.generation != next.generation
-        || manifest.source_sha != next.source_sha
-    {
+    manifest.validate_build(&next, &manifest::digest(&next_bytes))?;
+    if manifest::digest(&bytes) != journal.manifest_digest {
         return Err(manifest::error(
             "Ready update no longer matches its approved manifest",
         ));

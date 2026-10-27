@@ -13,6 +13,144 @@ use std::{
 mod common;
 
 #[test]
+fn adapter_lifecycle_timings_cover_the_same_pipe_and_settlement_without_public_output()
+-> Result<(), Box<dyn std::error::Error>> {
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
+    let temporary = common::TempDirectory::new("browser-timing")?;
+    for mode in ["logged", "unavailable", "disabled", "invalid-frame"] {
+        let root = temporary.path().join(mode);
+        std::fs::create_dir(&root)?;
+        let logs = root.join("logs with spaces");
+        if mode == "unavailable" {
+            std::fs::write(&logs, b"retained")?;
+        }
+        let mut command = Command::new(&python);
+        command
+            .args([
+                "-I",
+                "-S",
+                "-u",
+                "-c",
+                r#"
+import json,sys
+for line in sys.stdin:
+    request=json.loads(line)
+    op=request['operation']
+    if sys.argv[1]=='invalid-frame' and op=='open':
+        print('not-json',flush=True)
+        break
+    result=({'backends':{'playwright':{'installed':True}}} if op=='hello' else
+            {'opened':True,'backend':'playwright'} if op=='open' else
+            {'cookies':[]} if op=='cookies-read' else {'closing':True})
+    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
+    if op=='close': break
+"#,
+            ])
+            .arg(mode);
+        if mode == "disabled" {
+            command.env_remove("NUMERA_ADAPTER_LOG_DIR");
+        } else {
+            command.env("NUMERA_ADAPTER_LOG_DIR", &logs);
+        }
+        let mut adapter = Adapter::spawn(
+            &root,
+            "a",
+            "fixture-host",
+            &mut command,
+            Duration::from_secs(5),
+        )?;
+        let opened = adapter.open(
+            "playwright",
+            serde_json::Map::new(),
+            vec![],
+            Duration::from_secs(5),
+        );
+        if mode == "invalid-frame" {
+            assert_eq!(
+                opened.expect_err("Malformed frame accepted").kind(),
+                io::ErrorKind::InvalidData
+            );
+            adapter.finish(Duration::from_secs(5))?;
+            assert!(matches!(claims::read(&root, "a"), claims::Claim::Absent));
+            let path = std::fs::read_dir(&logs)?
+                .next()
+                .ok_or("Failed lifecycle log missing")??
+                .path();
+            let text = std::fs::read_to_string(path)?;
+            for phase in [
+                "browser_spawn",
+                "browser_hello",
+                "browser_open",
+                "browser_settle",
+            ] {
+                assert!(text.contains(&format!("phase={phase} ")));
+            }
+            assert!(!text.contains("phase=browser_close "));
+            continue;
+        }
+        opened?;
+        assert!(cookies::read(&mut adapter)?.is_empty());
+        assert_eq!(
+            adapter.call("close", serde_json::Map::new(), Duration::from_secs(5))?,
+            json!({"closing":true})
+        );
+        assert!(!matches!(claims::read(&root, "a"), claims::Claim::Absent));
+        if mode == "logged" {
+            let path = std::fs::read_dir(&logs)?
+                .next()
+                .ok_or("Lifecycle log missing")??
+                .path();
+            let text = std::fs::read_to_string(path)?;
+            assert!(text.contains("phase=browser_close "));
+            assert!(
+                !text.contains("phase=browser_settle "),
+                "Cleanup timing ended before settlement"
+            );
+        }
+        adapter.finish(Duration::from_secs(5))?;
+        assert_eq!(adapter.settled_exit()?, None);
+        assert!(matches!(claims::read(&root, "a"), claims::Claim::Absent));
+        drop(adapter);
+        if mode == "logged" {
+            let paths = std::fs::read_dir(&logs)?.collect::<Result<Vec<_>, _>>()?;
+            assert_eq!(paths.len(), 1, "Lifecycle logger duplicated or missing");
+            let text = std::fs::read_to_string(paths[0].path())?;
+            let phases = text
+                .lines()
+                .map(|line| {
+                    let event = line
+                        .split_once("[INFO] [entry] Native timing phase=")
+                        .ok_or("Unsafe lifecycle event")?
+                        .1;
+                    let (phase, elapsed) =
+                        event.split_once(" elapsed_ns=").ok_or("Invalid timing")?;
+                    elapsed.parse::<u64>()?;
+                    Ok(phase.to_owned())
+                })
+                .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
+            assert_eq!(
+                phases,
+                [
+                    "browser_spawn",
+                    "browser_hello",
+                    "browser_open",
+                    "browser_cookies_read",
+                    "browser_close",
+                    "browser_settle"
+                ]
+            );
+            assert!(!text.contains("fixture-host") && !text.contains("playwright"));
+        } else if mode == "unavailable" {
+            assert_eq!(std::fs::read(&logs)?, b"retained");
+        } else {
+            assert!(!logs.exists());
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn shutdown_joins_finite_operations_and_refuses_later_activation()
 -> Result<(), Box<dyn std::error::Error>> {
     let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;

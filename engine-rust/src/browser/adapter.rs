@@ -1,4 +1,7 @@
-use crate::ownership::session::Session;
+use crate::{
+    ownership::session::Session,
+    runtime_log::{NativePhase, RuntimeLog},
+};
 use serde_json::{Map, Value, json};
 use std::{
     io::{self, BufRead, BufReader, Write},
@@ -26,6 +29,7 @@ pub struct Adapter {
     sequence: u64,
     metadata: Value,
     relay: Option<crate::network::relay::Relay>,
+    log: Option<RuntimeLog>,
 }
 fn frame(reader: &mut impl BufRead) -> io::Result<Option<Value>> {
     let mut bytes = Vec::new();
@@ -126,7 +130,18 @@ impl Adapter {
             .env_remove("NUMERA_PASSWORD")
             .env_remove("NUMERA_TREE")
             .env_remove("NUMERA_READY_FILE");
-        session.spawn(command, "browser SDK adapter")?;
+        let log = command
+            .get_envs()
+            .find(|(key, _)| *key == "NUMERA_ADAPTER_LOG_DIR")
+            .and_then(|(_, value)| value)
+            .filter(|directory| !directory.is_empty())
+            .map(|directory| RuntimeLog::file_only(Path::new(directory), "native-browser"));
+        let started = std::time::Instant::now();
+        let spawned = session.spawn(command, "browser SDK adapter");
+        if let Some(log) = &log {
+            log.timing(NativePhase::BrowserSpawn, started.elapsed());
+        }
+        spawned?;
         let stdout = session
             .child_mut()?
             .stdout
@@ -181,6 +196,7 @@ impl Adapter {
             sequence: 0,
             metadata: Value::Null,
             relay: None,
+            log,
         };
         let hello = adapter.call("hello", Map::new(), budget);
         match hello {
@@ -225,6 +241,21 @@ impl Adapter {
         self.finish_observed(budget, Session::settled_exit)
     }
     fn finish_observed(
+        &mut self,
+        budget: Duration,
+        mut observe: impl FnMut(&mut Session) -> io::Result<Option<i32>>,
+    ) -> io::Result<Option<i32>> {
+        if self.session.tree_record().is_none() {
+            return self.finish_inner(budget, observe);
+        }
+        let started = std::time::Instant::now();
+        let result = self.finish_inner(budget, &mut observe);
+        if let Some(log) = &self.log {
+            log.timing(NativePhase::BrowserSettle, started.elapsed());
+        }
+        result
+    }
+    fn finish_inner(
         &mut self,
         budget: Duration,
         mut observe: impl FnMut(&mut Session) -> io::Result<Option<i32>>,
@@ -342,6 +373,26 @@ impl Adapter {
         Ok(())
     }
     pub fn call(
+        &mut self,
+        operation: &str,
+        fields: Map<String, Value>,
+        budget: Duration,
+    ) -> io::Result<Value> {
+        let phase = match operation {
+            "hello" => Some(NativePhase::BrowserHello),
+            "open" => Some(NativePhase::BrowserOpen),
+            "cookies-read" => Some(NativePhase::BrowserCookiesRead),
+            "close" => Some(NativePhase::BrowserClose),
+            _ => None,
+        };
+        let started = std::time::Instant::now();
+        let result = self.call_inner(operation, fields, budget);
+        if let (Some(log), Some(phase)) = (&self.log, phase) {
+            log.timing(phase, started.elapsed());
+        }
+        result
+    }
+    fn call_inner(
         &mut self,
         operation: &str,
         fields: Map<String, Value>,

@@ -395,7 +395,22 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/cli/output.rs':
                   'aab0acee9ecf439ddf252a983878e908b362eebeb54901e6e892d205b2b55ac6'},
     }
-    assert module.CURRENT_CALLER_REGRESSIONS[-5:] == expected
+    assert module.CURRENT_CALLER_REGRESSIONS[14:19] == expected
+    assert module.CURRENT_CALLER_REGRESSIONS[19:] == ({
+        'target': 'extension_routes_parity',
+        'test': 'icons::extension_icon_http_matches_original_known_folder_and_file_contracts',
+        'symptom': 'Extension icon HTTP status differs',
+        'commit': 'edca9d09805ccdc2d29735c8977a4354c71223b7',
+        'files': {'engine-rust/src/http/extension_routes.rs':
+                  'd6624367937929bd0e719243925d12a94787382525c01c0717e58e916dea2ac2'},
+    }, {
+        'target': 'profile_read_parity',
+        'test': 'divergence::divergent_profile_http_matches_original_refusal_kind_without_mutation',
+        'symptom': 'Divergent HTTP response kind differs',
+        'commit': 'edca9d09805ccdc2d29735c8977a4354c71223b7',
+        'files': {'engine-rust/src/http/profile_errors.rs':
+                  '11c6e0df12446f6f5b5669b32c00ac6b832a574c18b89c2f3efa24b2509740a9'},
+    })
     assert module.REGRESSIONS == module._SETTINGS_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
     assert not any(case.get('companions') for case in module.CURRENT_CALLER_REGRESSIONS)
 

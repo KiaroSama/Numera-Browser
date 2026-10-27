@@ -6,7 +6,7 @@ use crate::{
 };
 use axum::{
     Json, Router,
-    extract::State,
+    extract::{Request, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -25,6 +25,10 @@ pub(crate) fn routes(root: PathBuf) -> Router {
             get(list).head(super::application::method_not_allowed),
         )
         .route("/api/extensions/install", post(install))
+        .route(
+            "/api/extensions/icon",
+            get(icon).head(super::application::method_not_allowed),
+        )
         .with_state(Arc::new(root))
 }
 fn install_sync(root: &std::path::Path, body: Map<String, Value>) -> Result<Value, Box<Response>> {
@@ -123,6 +127,71 @@ fn listing(root: PathBuf) -> io::Result<Value> {
         }
     }
     Ok(json!({"extensions":rows}))
+}
+fn icon_path(root: &std::path::Path, text: &str) -> Result<PathBuf, Box<Response>> {
+    use crate::storage::{data_root::expand_home, locks::resolved};
+    let failure = || (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response();
+    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
+        .map(PathBuf::from)
+        .ok_or_else(failure)?;
+    let wanted =
+        resolved(&expand_home(std::path::Path::new(text), &home)).map_err(|_| failure())?;
+    let mut known = extensions::installed(root)
+        .map_err(|_| failure())?
+        .into_iter()
+        .map(|entry| resolved(&entry.description.path))
+        .collect::<io::Result<HashSet<_>>>()
+        .map_err(|_| failure())?;
+    for entry in ConfigStore::new(root.into())
+        .default_extensions()
+        .map_err(|_| failure())?
+    {
+        let text = value_text(&entry);
+        if !text.contains("://") {
+            known.insert(
+                resolved(&expand_home(std::path::Path::new(&text), &home))
+                    .map_err(|_| failure())?,
+            );
+        }
+    }
+    if !known.contains(&wanted) {
+        return Err(super::profile_errors::detail(
+            StatusCode::NOT_FOUND,
+            "not an extension this engine knows about",
+        )
+        .into());
+    }
+    extensions::icon(&wanted)
+        .map_err(|_| failure())?
+        .ok_or_else(|| {
+            super::profile_errors::detail(
+                StatusCode::NOT_FOUND,
+                "that extension declares no usable icon",
+            )
+            .into()
+        })
+}
+async fn icon(State(root): State<Arc<PathBuf>>, request: Request) -> Response {
+    let query = match reqwest::Url::parse(&format!(
+        "http://localhost/?{}",
+        request.uri().query().unwrap_or("")
+    )) {
+        Ok(query) => query,
+        Err(_) => return (StatusCode::BAD_REQUEST, "Invalid query").into_response(),
+    };
+    let Some(path) = query
+        .query_pairs()
+        .filter(|(key, _)| key == "path")
+        .last()
+        .map(|(_, value)| value.into_owned())
+    else {
+        return (StatusCode::UNPROCESSABLE_ENTITY, Json(json!({"detail":[{"type":"missing","loc":["query","path"],"msg":"Field required","input":null}]}))).into_response();
+    };
+    match super::admission::blocking(move || icon_path(&root, &path)).await {
+        Ok(Ok(path)) => super::dashboard::file(path, request).await,
+        Ok(Err(response)) => *response,
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),
+    }
 }
 async fn list(State(root): State<Arc<PathBuf>>) -> Response {
     match super::admission::blocking(move || listing(root.as_ref().clone())).await {

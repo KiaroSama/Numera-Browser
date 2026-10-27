@@ -262,6 +262,60 @@ def check_native_acceptance_order(steps: list[dict]) -> None:
             raise ValueError('Independent native functional acceptance must precede performance')
 
 
+def check_desktop_contracts(workflows: dict) -> None:
+    jobs = workflows['ci']['jobs']
+    caller = {'needs': 'coverage', 'uses': './.github/workflows/desktop-contracts.yml'}
+    if jobs.get('desktop-contracts') != caller:
+        raise ValueError('Desktop contract verification must precede signing without security dependencies or secrets')
+    child = workflows['desktop-contracts']
+    if (child.get('permissions') != {'contents': 'read'} or 'secrets.' in json.dumps(child)
+            or any(child.get('env', {}).get(key) != value for key, value in {
+                'PYTHONUTF8': '1', 'PYTHONIOENCODING': 'utf-8',
+                'HOOKMAKER_MAX_TEST_WORKERS': '2', 'CARGO_BUILD_JOBS': '2'}.items())):
+        raise ValueError('Desktop contract verification must retain private inputs and bounded workers')
+    contract = child['jobs'].get('contracts', {})
+    if (set(child['jobs']) != {'contracts'} or contract.get('runs-on') != '${{ matrix.os }}'
+            or contract.get('if') or contract.get('timeout-minutes') != 45
+            or contract.get('strategy') != {'fail-fast': False, 'max-parallel': 2,
+                'matrix': {'os': ['ubuntu-latest', 'windows-latest', 'macos-latest']}}):
+        raise ValueError('Desktop contract verification requires all three bounded hosted platforms')
+    commands = (
+        'run_owned.py --wall 60 --idle 30 -- cargo fmt --all --check',
+        'run_owned.py --wall 900 --idle 300 -- cargo clippy --locked --all-targets --no-default-features -- -D warnings',
+        'run_owned.py --wall 900 --idle 300 -- cargo test --locked --no-default-features --no-run',
+        'run_owned.py --wall 600 --idle 120 -- cargo test --locked --no-default-features -- --test-threads=2',
+    )
+    steps = contract.get('steps', [])
+    for command in commands:
+        matches = [step for step in steps if step.get('run') == 'python ../../scripts/migration/' + command]
+        if (len(matches) != 1 or matches[0].get('working-directory') != 'desktop/src-tauri'
+                or matches[0].get('if') or matches[0].get('continue-on-error')):
+            raise ValueError('Desktop contract commands must remain required with unchanged bounds')
+    distribution = jobs['distribution']
+    if ('desktop-contracts' not in distribution.get('needs', [])
+            or "needs.desktop-contracts.result == 'success'" not in distribution.get('if', '')
+            or 'desktop-contracts' not in jobs['required'].get('needs', [])):
+        raise ValueError('Desktop contract verification must gate distribution and the aggregate')
+    for job in workflows['build-desktop']['jobs'].values():
+        if any('cargo test' in step.get('run', '') or 'cargo clippy' in step.get('run', '')
+               or 'cargo fmt' in step.get('run', '') for step in job.get('steps', [])):
+            raise ValueError('Desktop contract commands must not repeat in distribution')
+    if jobs.get('docker') != {'needs': 'coverage', 'uses': './.github/workflows/container.yml'}:
+        raise ValueError('Container verification must remain required through the same-commit workflow')
+    container = workflows['container']
+    if (container.get('env') != workflows['ci']['env']
+            or container.get('permissions') != {'contents': 'read'}
+            or set(container.get('jobs', {})) != {'docker'}):
+        raise ValueError('Container verification lost its environment or permission boundary')
+    docker = container['jobs']['docker']
+    if (docker.get('if') or docker.get('runs-on') != 'ubuntu-latest'
+            or docker.get('timeout-minutes') != 30
+            or any(fragment not in json.dumps(docker) for fragment in (
+                '--wall 1200 --idle 150 -- docker build', '/api/health', '/api/profiles',
+                'smoke_container_browser.py', '--network none', 'docker rm -f'))):
+        raise ValueError('Container verification lost a bounded functional or cleanup stage')
+
+
 def check_workflows(root: Path = ROOT) -> dict[str, int]:
     import yaml
 
@@ -289,7 +343,7 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
             raise ValueError('CI workflows must start only from an explicit manual root')
     jobs = workflows['ci']['jobs']
     expected = {'coverage', 'secrets', 'engine', 'engine-windows', 'engine-macos', 'engine-live',
-                'browser', 'rust-core', 'docker', 'dashboard', 'codeql', 'dependencies', 'distribution'}
+                'browser', 'rust-core', 'docker', 'dashboard', 'codeql', 'dependencies', 'desktop-contracts', 'distribution'}
     if set(jobs) != expected | {'required', 'promote', 'publish'} or set(jobs['required']['needs']) != expected:
         raise ValueError('Required verification does not gate every maintained CI tier')
     if jobs['promote'].get('needs') != 'required' or set(jobs['publish'].get('needs', [])) != {'required', 'promote'}:
@@ -314,7 +368,8 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
         if any(fragment not in text for fragment in fragments):
             raise ValueError(f'Missing suite command in CI tier: {job}')
     check_native_acceptance_order(jobs['rust-core']['steps'])
-    for workflow_name in ('ci', 'dashboard', 'build-desktop', 'codeql', 'dependency-review', 'migration-profile'):
+    for workflow_name in ('ci', 'dashboard', 'build-desktop', 'desktop-contracts', 'container',
+                          'codeql', 'dependency-review', 'migration-profile'):
         for name, job in workflows[workflow_name]['jobs'].items():
             if job.get('continue-on-error') or 'self-hosted' in str(job.get('runs-on', '')):
                 raise ValueError(f'Unbounded or softened hosted tier: {workflow_name}/{name}')
@@ -328,11 +383,11 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
         raise ValueError('Signing must require an independent exact-source CodeQL verdict')
     if jobs['distribution'].get('uses') != './.github/workflows/build-desktop.yml':
         raise ValueError('Distribution verification is not reused by the full CI gate')
+    check_desktop_contracts(workflows)
     for job in ('desktop', 'desktop-windows'):
         text = json.dumps(workflows['build-desktop']['jobs'][job])
-        if ('cargo test --locked --no-default-features' not in text or '--test-threads=2' not in text
-                or 'update_acceptance_build.py' not in text or 'update_acceptance.py run' not in text):
-            raise ValueError('Three-platform shell contracts are not required by distribution verification')
+        if 'update_acceptance_build.py' not in text or 'update_acceptance.py run' not in text:
+            raise ValueError('Three-platform updater activation is not required by distribution verification')
     if 'macos-latest' not in json.dumps(workflows['build-desktop']['jobs']['desktop']):
         raise ValueError('Requested macOS distribution is not mapped')
     dashboard_text = json.dumps(workflows['dashboard']['jobs'])

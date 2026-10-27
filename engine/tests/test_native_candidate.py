@@ -293,6 +293,13 @@ def test_candidate_failure_diagnostics_keep_only_bounded_safe_events(tmp_path, m
         + native + 'Native timing phase=execute elapsed_ns=-1\n'
         + native + 'Native timing phase=execute elapsed_ns=123456789012345678901\n'
         + native + 'Native timing phase=execute elapsed_ns=1 secret=private_fixture_value\n', encoding='utf-8')
+    browser_phases = ('browser_spawn', 'browser_hello', 'browser_open', 'browser_cookies_read',
+                      'browser_close', 'browser_settle')
+    (logs / 'native-browser_fixture.log').write_text(
+        ''.join(native + f'Native timing phase={phase} elapsed_ns=456\n' for phase in browser_phases)
+        + native + 'Native timing phase=browser_private_fixture_value elapsed_ns=1\n'
+        + native + 'Native timing phase=browser_open elapsed_ns=-1\n'
+        + native + 'Native timing phase=browser_close elapsed_ns=1 secret=private_fixture_value\n', encoding='utf-8')
     (logs / 'unapproved.log').write_text(prefix + 'Camoufox persistent context entered\n', encoding='utf-8')
     (logs / 'browser-adapter_large.log').write_bytes(b'x' * 65537)
     linked = logs / 'browser-adapter_link.log'
@@ -312,6 +319,8 @@ def test_candidate_failure_diagnostics_keep_only_bounded_safe_events(tmp_path, m
         assert f'Native timing phase={phase} elapsed_ns=123' in text
     assert 'Native timing phase=execute elapsed_ns=0' in text
     assert 'Native timing phase=shutdown elapsed_ns=18446744073709551615' in text
+    for phase in browser_phases:
+        assert f'Native timing phase={phase} elapsed_ns=456' in text
     assert 'private_fixture_value' not in text
     assert 'persistent context entered' not in text
     assert 'omitted=3' in text

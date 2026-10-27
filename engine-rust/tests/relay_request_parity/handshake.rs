@@ -1,6 +1,7 @@
 use numera_core::{network::relay::Relay, ownership::capture, proxy::Proxy};
 use serde_json::{Value, json};
 use std::{
+    collections::{BTreeMap, btree_map::Entry},
     io::{self, Read, Write},
     net::{Shutdown, TcpListener, TcpStream},
     path::Path,
@@ -17,20 +18,17 @@ const RESPONSE: &[u8] =
     b"HTTP/1.1 200 OK\r\nContent-Length: 4\r\nConnection: close\r\n\r\n\x00\xffok";
 
 struct Peer {
-    address: std::net::SocketAddr,
     stop: mpsc::Sender<()>,
     worker: Option<JoinHandle<io::Result<Vec<u8>>>>,
 }
 impl Peer {
-    fn start(case: &Value) -> Result<Self, Box<dyn std::error::Error>> {
+    fn start(listener: &TcpListener, case: &Value) -> Result<Self, Box<dyn std::error::Error>> {
         let events = case["events"]
             .as_array()
             .ok_or("Handshake events missing")?
             .clone();
         let refused = !case["error"].is_null();
-        let listener = TcpListener::bind("127.0.0.1:0")?;
-        listener.set_nonblocking(true)?;
-        let address = listener.local_addr()?;
+        let listener = listener.try_clone()?;
         let (stop, stopped) = mpsc::channel();
         let worker = thread::spawn(move || {
             let deadline = Instant::now() + Duration::from_secs(10);
@@ -97,13 +95,11 @@ impl Peer {
             Ok(wire)
         });
         Ok(Self {
-            address,
             stop,
             worker: Some(worker),
         })
     }
     fn finish(&mut self) -> io::Result<Vec<u8>> {
-        let _ = self.stop.send(());
         self.worker
             .take()
             .ok_or_else(|| io::Error::other("Handshake fixture already joined"))?
@@ -113,6 +109,7 @@ impl Peer {
 }
 impl Drop for Peer {
     fn drop(&mut self) {
+        let _ = self.stop.send(());
         if self.worker.is_some()
             && let Err(error) = self.finish()
         {
@@ -197,21 +194,40 @@ with run_log('relay-handshake-oracle',parent/'logs'):
     assert_eq!(observed.exit, 0, "Original SOCKS handshake observer failed");
     let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
     assert_eq!(cases.len(), 63, "Handshake observation coverage changed");
+    let listener = TcpListener::bind("127.0.0.1:0")?;
+    listener.set_nonblocking(true)?;
+    let upstream = listener.local_addr()?;
+    let mut relays: BTreeMap<_, (Relay, Option<String>)> = BTreeMap::new();
     let deadline = Instant::now() + Duration::from_secs(30);
     for case in cases {
         assert!(
             Instant::now() < deadline,
             "Handshake corpus deadline exceeded"
         );
-        let mut peer = Peer::start(&case)?;
-        let proxy = Proxy::from_record(
-            &json!({
-                "server":format!("{}://{}",case["kind"].as_str().ok_or("Kind missing")?,peer.address),
-                "username":case["user"],"password":case["password"],
-            }),
-            false,
-        )?;
-        let mut relay = Relay::start(&proxy)?;
+        let kind = case["kind"].as_str().ok_or("Kind missing")?;
+        let key = (
+            kind.to_owned(),
+            case["user"].as_str().map(str::to_owned),
+            case["password"].as_str().map(str::to_owned),
+        );
+        let (relay, last_error) = match relays.entry(key) {
+            Entry::Occupied(entry) => entry.into_mut(),
+            Entry::Vacant(entry) => {
+                let proxy = Proxy::from_record(
+                    &json!({
+                        "server":format!("{kind}://{upstream}"),
+                        "username":case["user"],"password":case["password"],
+                    }),
+                    false,
+                )?;
+                entry.insert((Relay::start(&proxy)?, None::<String>))
+            }
+        };
+        // The original relay retains its last failure across later successful requests.
+        if let Some(error) = case["error"].as_str() {
+            *last_error = Some(error.to_owned());
+        }
+        let mut peer = Peer::start(&listener, &case)?;
         let url = reqwest::Url::parse(&relay.url())?;
         let address = ("127.0.0.1", url.port().ok_or("Relay port missing")?);
         let result = (|| -> Result<(), Box<dyn std::error::Error>> {
@@ -232,16 +248,17 @@ with run_log('relay-handshake-oracle',parent/'logs'):
             }
             assert_eq!(
                 relay.last_error().as_deref(),
-                case["error"].as_str(),
+                last_error.as_deref(),
                 "SOCKS handshake diagnostic differs: {}",
                 case["name"]
             );
             Ok(())
         })();
-        let closed = relay.close(Duration::from_secs(2));
+        if result.is_err() {
+            relay.close(Duration::from_secs(2))?;
+        }
         let wire = peer.finish();
         result?;
-        closed?;
         let expected: Vec<u8> = case["events"]
             .as_array()
             .ok_or("Events missing")?
@@ -253,6 +270,11 @@ with run_log('relay-handshake-oracle',parent/'logs'):
             .flatten()
             .collect();
         assert_eq!(wire?, expected, "SOCKS complete handshake wire differs");
+    }
+    for (relay, _) in relays.values_mut() {
+        let url = reqwest::Url::parse(&relay.url())?;
+        let address = ("127.0.0.1", url.port().ok_or("Relay port missing")?);
+        relay.close(Duration::from_secs(2))?;
         assert!(
             TcpStream::connect(address).is_err(),
             "Closed relay listener survived"

@@ -104,7 +104,7 @@ fn icon_size(key: &str) -> (bool, String) {
     }
 }
 
-fn icon(folder: &Path, manifest: Option<&Value>) -> Option<PathBuf> {
+fn select_icon(folder: &Path, manifest: Option<&Value>) -> Option<PathBuf> {
     let manifest = manifest?;
     let mut icons = manifest["icons"].as_object().cloned().unwrap_or_default();
     for action in ["action", "browser_action", "page_action"] {
@@ -150,13 +150,22 @@ fn icon(folder: &Path, manifest: Option<&Value>) -> Option<PathBuf> {
         .next()
 }
 
+pub(crate) fn icon(folder: &Path) -> io::Result<Option<PathBuf>> {
+    let manifest = contained_file(folder, "manifest.json")
+        .as_deref()
+        .map(json)
+        .transpose()?
+        .flatten();
+    Ok(select_icon(folder, manifest.as_ref()))
+}
+
 pub fn describe(folder: &Path) -> io::Result<Description> {
     let manifest_path = contained_file(folder, "manifest.json");
     let manifest = manifest_path.as_deref().map(json).transpose()?.flatten();
     Ok(Description {
         path: folder.to_owned(),
         name: display_name(folder, manifest.as_ref())?,
-        icon: icon(folder, manifest.as_ref()),
+        icon: select_icon(folder, manifest.as_ref()),
     })
 }
 

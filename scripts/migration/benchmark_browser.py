@@ -11,6 +11,7 @@ import re
 import shutil
 import sys
 import time
+from types import SimpleNamespace
 
 from benchmark import REPETITIONS, execute, fixture_directory, verdict
 from candidate_acceptance import bind_sdk_cache, failure_diagnostics
@@ -104,7 +105,7 @@ def metadata_bytes(root):
     return result
 
 
-def observation(candidate, original, parent, template, env, runtime, identifier):
+def observation(candidate, original, parent, template, env, runtime, identifier, *, logger=None, repetition=-1):
     with fixture_directory('browser-pair-', parent, retain=True) as workspace:
         root = workspace / 'data with spaces'
         # Firefox lock links name host/PID ownership, not a file to dereference.
@@ -114,12 +115,20 @@ def observation(candidate, original, parent, template, env, runtime, identifier)
         if marker.read_bytes() != SENTINEL:
             raise ValueError('Browser benchmark input session sentinel differs')
         destination = workspace / 'cookies.json'
-        code, stdout, stderr = execute(
-            [sys.executable, '-I', str(ROOT / 'scripts/migration/benchmark_sample.py'),
-             '--candidate', str(candidate), '--original', str(original), '--runtime', runtime,
-             '--wall', '90', '--nested', '--', '--data-dir', str(root),
-             'cookies', 'export', identifier, str(destination), '--format', 'json', '--json'],
-            env, timeout=100)
+        logs = workspace / 'logs'
+        try:
+            code, stdout, stderr = execute(
+                [sys.executable, '-I', str(ROOT / 'scripts/migration/benchmark_sample.py'),
+                 '--candidate', str(candidate), '--original', str(original), '--runtime', runtime,
+                 '--wall', '90', '--nested', '--', '--data-dir', str(root),
+                 'cookies', 'export', identifier, str(destination), '--format', 'json', '--json'],
+                dict(env, NUMERA_LOG_DIR=str(logs)), timeout=100)
+        finally:
+            if logger is not None:
+                # Projection is bounded and runs only after the measured observer finishes.
+                tagged = SimpleNamespace(warning=lambda message, *args: logger.warning(
+                    'Browser sample runtime=%s repetition=%s %s', runtime, repetition, message % args))
+                failure_diagnostics(logs, tagged)
         if code or len(stdout.encode('utf-8')) > 131072:
             raise ValueError(f'Browser benchmark observation refused runtime={runtime} exit={code}')
         sample = json.loads(stdout)
@@ -163,7 +172,8 @@ def run(report, destination, engine, logger):
             order = ('original', 'native') if index % 2 == 0 else ('native', 'original')
             observed = {}
             for runtime in order:
-                sample, payload = observation(candidate, original, parent, template, env, runtime, identifier)
+                sample, payload = observation(candidate, original, parent, template, env, runtime, identifier,
+                                              logger=logger, repetition=index)
                 if payload != baseline_payload:
                     raise ValueError('Browser benchmark cookie export parity differs')
                 observed[runtime] = sample

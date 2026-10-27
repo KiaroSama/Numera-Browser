@@ -300,14 +300,13 @@ impl Service {
                 &service.key,
                 &service.cancelled,
             )?;
-            if build.source_sha != offer.manifest.source_sha
-                || build.generation != offer.manifest.generation
-                || build.components != offer.manifest.components[&service.platform]
-            {
-                return Err(manifest::error(
-                    "Downloaded generation is not the approved SDK/browser pair",
-                ));
-            }
+            offer.manifest.validate_build(
+                &build,
+                &manifest::digest(&files::read(
+                    &journal.staged().join("BUILD.json"),
+                    manifest::BUILD_LIMIT,
+                )?),
+            )?;
             service.finish_download()
         })
     }

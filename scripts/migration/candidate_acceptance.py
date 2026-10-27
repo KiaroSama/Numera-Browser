@@ -172,7 +172,7 @@ def failure_diagnostics(directory, logger):
             if index == 16:
                 omitted += 1
                 break
-            if (not path.name.startswith(('browser-adapter_', 'native-cli_')) or path.suffix != '.log'
+            if (not path.name.startswith(('browser-adapter_', 'native-cli_', 'native-browser_')) or path.suffix != '.log'
                     or path.is_symlink() or getattr(path.lstat(), 'st_file_attributes', 0) & 0x400
                     or not path.is_file() or path.stat().st_size > 65536):
                 omitted += 1
@@ -204,7 +204,9 @@ def failure_diagnostics(directory, logger):
                     elif event not in safe and re.fullmatch(
                             r'(?:SDK timing operation=(?:hello|open|close|inspect|navigate|mouse|route|evaluate|'
                             r'cookies-read|cookies-clear|cookies-add|cleanup|invalid)|'
-                            r'Native timing phase=(?:startup|prepare|metadata|execute|shutdown)) elapsed_ns=[0-9]{1,20}', event) is None:
+                            r'Native timing phase=(?:startup|prepare|metadata|execute|shutdown|'
+                            r'browser_spawn|browser_hello|browser_open|browser_cookies_read|browser_close|browser_settle)) '
+                            r'elapsed_ns=[0-9]{1,20}', event) is None:
                         continue
                 if emitted >= 63:
                     omitted += 1

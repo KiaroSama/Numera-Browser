@@ -7,6 +7,8 @@ use serde_json::{Value, json};
 use std::{fs, path::Path, time::Duration};
 use tower::ServiceExt;
 mod common;
+#[path = "extension_routes_parity/icons.rs"]
+mod icons;
 
 #[test]
 fn installed_extension_http_lists_store_and_manual_resources_without_download()

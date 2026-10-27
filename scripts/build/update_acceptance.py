@@ -291,7 +291,7 @@ class Harness:
         assert self.old['source_sha'] == self.new['source_sha'], 'Fixture builds must use the same actual source SHA'
         assert self.new['generation'] > self.old['generation'], 'Two actual compiled generations are required'
 
-    def spawn(self, argv, env):
+    def spawn(self, argv, env, *, handoff=False):
         number = len(self.owned)
         sink_path = self.workspace / f'process-{number}.log'
         # All separately-owned engine/SDK groups inherit this real receipt.
@@ -304,8 +304,11 @@ class Harness:
         child_env = {**env, unit_report.UNITS_ENV: str(report)}
         with sink_path.open('wb') as sink:
             process, tree = proctree.spawn([str(arg) for arg in argv], env=child_env,
-                                          stdin=subprocess.DEVNULL, stdout=sink, stderr=sink)
+                                          stdin=subprocess.PIPE if handoff else subprocess.DEVNULL,
+                                          stdout=sink, stderr=sink)
         self.owned.append((process, tree, report))
+        if handoff:
+            process.stdin.close()  # Real pipe EOF, including Windows PeekNamedPipe.
         self.log.info('Actual updater process owned pid=%s', process.pid)
         return process
 
@@ -429,10 +432,10 @@ class Harness:
         for name, contents in expected.items():
             assert (root / 'data' / name).read_bytes() == contents, f'Updater changed user fixture: {name}'
 
-    def case(self, name, fault=None, tamper=False, active=False):
+    def case(self, name, fault=None, tamper=False, active=False, staged_substitution=False):
         if time.monotonic() >= self.deadline:
             raise TimeoutError('Updater acceptance exceeded whole-run deadline')
-        directory, root, archive, _, _ = self.fixture(name)
+        directory, root, archive, old_build, _ = self.fixture(name)
         token = secrets.token_hex(32)
         controller = Controller(self.shared_assets, token)
         controller.tamper = tamper
@@ -474,6 +477,18 @@ class Harness:
                 passed = True
                 return
             assert terminal['state'] == 'ready', terminal['state']
+            if staged_substitution:
+                assert fault == 'quiesced', 'Substitution requires the real pre-worker checkpoint'
+                journal = next(root.glob('.numera-update-*/journal.json'))
+                inventory = journal.parent / 'next/BUILD.json'
+                candidate = json.loads(inventory.read_text(encoding='utf-8'))
+                candidate['version'] = '0.0.0-substituted-fixture'
+                content = (json.dumps(candidate, separators=(',', ':')) + '\n').encode('utf-8')
+                proof = key().sign(content)
+                key().public_key().verify(proof, content)
+                inventory.write_bytes(content)
+                inventory.with_name('BUILD.sig').write_bytes(proof)
+                original_metadata = {name: (root / name).read_bytes() for name in ('BUILD.json', 'BUILD.sig')}
             if active:
                 with socket.socket() as reservation:
                     reservation.bind(('127.0.0.1', 0))
@@ -526,6 +541,31 @@ class Harness:
                 journal = next(root.glob('.numera-update-*/journal.json'))
                 worker = journal.parent / ('update-worker.exe' if os.name == 'nt' else 'update-worker')
                 env.pop('NUMERA_ACCEPTANCE_CHECKPOINT', None)
+                if staged_substitution:
+                    log_path = self.workspace / f'process-{len(self.owned)}.log'
+                    recovery = self.spawn([shell, '--numera-update-worker', journal], env, handoff=True)
+                    recovery.wait(timeout=60)
+                    assert recovery.returncode == 1, 'Actual worker accepted a substituted signed inventory'
+                    diagnostics = log_path.read_text(encoding='utf-8')
+                    assert 'Downloaded generation differs from the approved signed offer' in diagnostics, 'Worker refused before the intended identity policy'
+                    retained = json.loads(journal.read_text(encoding='utf-8'))
+                    assert retained['phase'] == 'ready' and not retained['moved'] and not retained['installed'] and retained['pending'] is None
+                    assert not (journal.parent / 'previous').exists(), 'Refused worker started immutable replacement'
+                    assert not (root / '.updates/activation.json').exists(), 'Refused worker published activation ownership'
+                    gate = json.loads((root / 'data/.updates/admission.json').read_text(encoding='utf-8'))
+                    assert gate['schema'] == 1 and gate['state'] == 'quiesced' and gate['ticket_sha256'] == hashlib.sha256(retained['ticket'].encode('ascii')).hexdigest(), 'Refused worker lost matching recoverable admission evidence'
+                    for metadata_name, original in original_metadata.items():
+                        assert (root / metadata_name).read_bytes() == original, 'Refused worker changed installed metadata'
+                    for entry in old_build['files']:
+                        path = root / entry['path']
+                        if 'link' in entry:
+                            assert path.is_symlink() and os.readlink(path) == entry['link']
+                        else:
+                            assert not path.is_symlink() and path.stat().st_size == entry['size'] and digest(path) == entry['sha256']
+                    self.verify_data(root, expected)
+                    self.log.info('Actual updater worker refused substituted signed inventory before mutation')
+                    passed = True
+                    return
                 recovery = self.spawn([worker if worker.is_file() else shell, '--numera-update-recover', journal], env)
                 recovery.wait(timeout=60)
                 assert recovery.returncode == 0, 'Actual update recovery failed'
@@ -559,9 +599,10 @@ class Harness:
                 self.sweep()
             finally:
                 controller.close()
-            if passed:
-                # Exact newly owned successful fixture only; failure journals
-                # and diagnostics remain for the hosted artifact investigation.
+            if passed and not staged_substitution:
+                # The refused substitution retains its matching admission/journal
+                # for inspection; it is not a completed activation or recovery.
+                # Other exact successful fixtures are disposable after the sweep.
                 assert directory.parent == self.workspace and directory.name == name
                 shutil.rmtree(directory)
 
@@ -572,6 +613,7 @@ def run(args, log):
     for name, options in [('success', {}), ('tampered', {'tamper': True}),
                           ('foreign-runtime', {'active': True}),
                           ('quiesced-crash', {'fault': 'quiesced'}),
+                          ('staged-substitution', {'fault': 'quiesced', 'staged_substitution': True}),
                           ('file-move-crash', {'fault': 'first-file-moved'})]:
         harness.case(name, **options)
     log.info('All actual fixture-generation updater cases passed; not a production-key release claim')

@@ -12,6 +12,12 @@ pub(crate) enum NativePhase {
     Metadata,
     Execute,
     Shutdown,
+    BrowserSpawn,
+    BrowserHello,
+    BrowserOpen,
+    BrowserCookiesRead,
+    BrowserClose,
+    BrowserSettle,
 }
 impl NativePhase {
     fn label(&self) -> &'static str {
@@ -21,6 +27,12 @@ impl NativePhase {
             Self::Metadata => "metadata",
             Self::Execute => "execute",
             Self::Shutdown => "shutdown",
+            Self::BrowserSpawn => "browser_spawn",
+            Self::BrowserHello => "browser_hello",
+            Self::BrowserOpen => "browser_open",
+            Self::BrowserCookiesRead => "browser_cookies_read",
+            Self::BrowserClose => "browser_close",
+            Self::BrowserSettle => "browser_settle",
         }
     }
 }
@@ -143,6 +155,8 @@ mod tests {
             };
             assert!(log.path().is_none());
             log.timing(NativePhase::Prepare, Duration::from_nanos(123));
+            log.timing(NativePhase::BrowserSpawn, Duration::from_nanos(123));
+            log.timing(NativePhase::BrowserSettle, Duration::from_nanos(123));
             log.event("INFO", "vault", "Enable lock requested");
             assert_eq!(fs::read(&unavailable)?, b"retained");
             if quiet {
@@ -220,6 +234,12 @@ mod tests {
             NativePhase::Metadata,
             NativePhase::Execute,
             NativePhase::Shutdown,
+            NativePhase::BrowserSpawn,
+            NativePhase::BrowserHello,
+            NativePhase::BrowserOpen,
+            NativePhase::BrowserCookiesRead,
+            NativePhase::BrowserClose,
+            NativePhase::BrowserSettle,
         ] {
             first.timing(phase, std::time::Duration::from_nanos(123));
         }
@@ -242,7 +262,19 @@ mod tests {
         assert!(text.contains(" UTC] [INFO] [server] Startup complete\n"));
         assert!(text.contains("[WARNING] [server] Cleanup pending"));
         assert!(text.contains("[ERROR] [server] Controlled failure"));
-        for phase in ["startup", "prepare", "metadata", "execute", "shutdown"] {
+        for phase in [
+            "startup",
+            "prepare",
+            "metadata",
+            "execute",
+            "shutdown",
+            "browser_spawn",
+            "browser_hello",
+            "browser_open",
+            "browser_cookies_read",
+            "browser_close",
+            "browser_settle",
+        ] {
             assert!(text.contains(&format!(
                 "[INFO] [entry] Native timing phase={phase} elapsed_ns=123\n"
             )));
@@ -256,7 +288,7 @@ mod tests {
             text.lines()
                 .filter(|line| line.contains("Native timing"))
                 .count(),
-            7
+            13
         );
         root.cleanup()?;
         Ok(())

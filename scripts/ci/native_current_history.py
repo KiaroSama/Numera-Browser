@@ -191,4 +191,24 @@ CURRENT_CALLER_REGRESSIONS = (
                 'dfc78f467205732f15b0b200aa074729706766002fb3923588856bca4784c489',
         },
     },
+    {
+        'target': 'extension_routes_parity',
+        'test': 'icons::extension_icon_http_matches_original_known_folder_and_file_contracts',
+        'symptom': 'Extension icon HTTP status differs',
+        'commit': 'edca9d09805ccdc2d29735c8977a4354c71223b7',
+        'files': {
+            'engine-rust/src/http/extension_routes.rs':
+                'd6624367937929bd0e719243925d12a94787382525c01c0717e58e916dea2ac2',
+        },
+    },
+    {
+        'target': 'profile_read_parity',
+        'test': 'divergence::divergent_profile_http_matches_original_refusal_kind_without_mutation',
+        'symptom': 'Divergent HTTP response kind differs',
+        'commit': 'edca9d09805ccdc2d29735c8977a4354c71223b7',
+        'files': {
+            'engine-rust/src/http/profile_errors.rs':
+                '11c6e0df12446f6f5b5669b32c00ac6b832a574c18b89c2f3efa24b2509740a9',
+        },
+    },
 )

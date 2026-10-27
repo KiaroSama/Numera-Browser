@@ -5,13 +5,14 @@ The accepted boundary is [ADR0001](adr/0001-parity-gated-rust-migration.md); Pyt
 [candidate executable](migration-candidate.md), **not an installed replacement**.
 Passing library or narrow entrypoint tests does not certify a finished migration.
 
-## Current integration status — October 24, 2026
+## Current integration status — October 27, 2026
 
-The latest completed checkpoint `a45e4ad` ran in manual hosted batch
-[40123204100](https://github.com/KiaroSama/Numera-Browser/actions/runs/40123204100),
-which failed on October 24 at 19:28 UTC: every browser performance comparison remained
-unaccepted, and CodeQL/required verification failed; publication stages were skipped.
-Both native tiers, all source platforms, every SDK/relocated scenario, dashboard and audits passed.
+The latest completed checkpoint `edca9d0` ran in manual hosted batch
+[40133873533](https://github.com/KiaroSama/Numera-Browser/actions/runs/40133873533),
+which failed on October 24 at 21:49 UTC: both native handshake fixtures failed,
+every browser performance comparison remained unaccepted, and CodeQL/required
+verification failed; publication stages were skipped. All source platforms,
+every SDK/relocated functional scenario, dashboard and dependency audits passed.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.
@@ -73,12 +74,17 @@ The growth-aware Windows checkpoint passed all 39 modules/916 tests on `85a1142`
 both systems also proved historical restore-name failure, restoration and all twelve current cases.
 Real-browser exports now complete seven alternating pairs in every engine/OS leg, with
 full cookie output, protected metadata/session sentinel and natural SDK settlement checked.
-On `a45e4ad`, Linux Playwright/Patchright latency regresses; every memory range overlaps.
+On `edca9d0`, Linux Playwright/Patchright latency regresses; every memory range overlaps.
 All eight browser comparisons remain unaccepted under the unchanged strict criterion.
-Linux detached stop/crash acceptance now matches exact command/SDK claims and complete
+Earlier Linux detached stop/crash acceptance matches exact command/SDK claims and complete
 receipts instead of requiring a removed metadata process. All captured trees settled.
-A prepared SOCKS correction preserves original EOF diagnostics, with 63 transcript/wire cases
-and an exact historical-source check. Fixed native phase timings are also prepared, not runtime-verified.
+Both systems caught the old SOCKS EOF diagnostic mismatch and restored fixed bytes, but the
+current 63-case fixture failed: premature cancellation on Linux and its 30-second ceiling on
+Windows. The fixture repair shares setup and cancels only on exceptional cleanup; all cases,
+wire/error assertions and deadlines remain. Native phase timing/privacy tests passed on both OS;
+the new sample-correlated six-phase adapter probe is source-reviewed but not yet executed.
+The restored known-folder extension-icon route and shared `ProfileDiverged` response kind are
+source-reviewed with 16 icon and two divergent-store cases; hosted proof remains pending.
 Python remains selected; full migration, security, signing and release gates remain open.
 The previous `348bac2` measurements completed seven alternating pairs for all four
 foreground CLI scenarios on both systems, with lower native time/memory ranges.

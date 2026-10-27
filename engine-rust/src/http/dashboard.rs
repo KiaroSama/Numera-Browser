@@ -105,6 +105,9 @@ async fn serve(State(root): State<Arc<PathBuf>>, request: Request) -> Response {
                 .into_response();
         }
     };
+    file(path, request).await
+}
+pub(super) async fn file(path: PathBuf, request: Request) -> Response {
     let media_type = registered_media_type(&path);
     match ServeFile::new(path).oneshot(request).await {
         Ok(mut response) => {
