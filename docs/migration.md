@@ -290,8 +290,8 @@ rollback still gate Rust selection and retirement.
   authenticates both generations before resuming. Complete runtime-open integration,
   crash/concurrency acceptance and remaining error contracts are unfinished.
 - Dual-store adoption/materialization, save and byte-preserving batch rollback primitives.
-  Read repair now reports divergent-copy warnings without changing results or stored bytes;
-  warning fixtures and full repository/deletion recovery contracts remain pending.
+  Read repair reports divergent-copy warnings; failed deletion retains its initial cause,
+  every failed recovery path and stranded-session destination. Hosted fixtures remain pending.
 - Credential-aware JSON profile export and dual-store import primitives; locked
   exports refuse before touching the destination. Streaming ZIP backup and staged
   restore replace sessions under a lease and roll back failed metadata commits.

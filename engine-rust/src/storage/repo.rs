@@ -55,6 +55,7 @@ impl Error for RepoError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::Directory { cause, .. } => Some(cause),
+            Self::Io(error) => error.source(),
             _ => None,
         }
     }

@@ -57,10 +57,11 @@ fn failed_delete_rollback_preserves_causes_and_actual_recovery_paths() -> Result
         std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
     );
     command.args(["-I", "-B", "-c", r#"
-import json,sys
+import json,os,sys
 from pathlib import Path
 from unittest.mock import patch
 repository,parent=map(Path,sys.argv[1:])
+os.environ.pop('NUMERA_PASSWORD',None)
 sys.path.insert(0,str(repository/'scripts/migration'))
 from baseline_source import activate
 activate()

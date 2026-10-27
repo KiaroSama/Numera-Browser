@@ -176,6 +176,7 @@ impl ProfileRepo {
             })();
             if let Err(error) = result {
                 let mut failures = batch.rollback();
+                let mut stranded = None;
                 if let Some(tomb) = &tomb
                     && let Err(restore) = {
                         #[cfg(test)]
@@ -185,13 +186,16 @@ impl ProfileRepo {
                         attempt.and_then(|()| fs::rename(tomb, &session))
                     }
                 {
+                    stranded = Some((tomb.clone(), session.clone()));
                     failures.push((tomb.clone(), restore));
                 }
                 if !failures.is_empty() {
-                    return Err(RepoError::Message(format!(
-                        "Profile delete failed: {error}; {} path(s) could not be restored",
-                        failures.len()
-                    )));
+                    return Err(io::Error::other(DeleteRollback {
+                        cause: error,
+                        failures,
+                        session: stranded,
+                    })
+                    .into());
                 }
                 return Err(error.into());
             }

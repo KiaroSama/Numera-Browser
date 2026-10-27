@@ -477,6 +477,13 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'platform': 'linux',
         'files': {'engine-rust/src/ownership/tree.rs':
                   '2688b722ab3411a1a5528335a69b029a97e840cb79f7cb065d55735cefe6078b'},
+    }, {
+        'target': 'lib',
+        'test': 'storage::repo_delete::tests::failed_delete_rollback_preserves_causes_and_actual_recovery_paths',
+        'symptom': 'Delete rollback recovery paths differ',
+        'commit': 'c5b466add5c22ca23b53ce2c7ff4ac55093c3ba0',
+        'files': {'engine-rust/src/storage/repo_delete.rs':
+                  '9be0a936e39e8ee56c3ac183af13d760fa067c7ae02c6412b28e2e18a199d7dd'},
     })
     assert module.REGRESSIONS == module._EXTENSION_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
     assert not any(case.get('companions') for case in module.CURRENT_CALLER_REGRESSIONS)
