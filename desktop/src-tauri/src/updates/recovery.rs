@@ -34,12 +34,11 @@ pub fn pending(root: &Path) -> io::Result<Option<std::path::PathBuf>> {
                 | "awaiting-ready"
                 | "rollback-pending"
                 | "committed-needs-resume"
-        ) {
-            if pending.replace(path).is_some() {
-                return Err(manifest::error(
-                    "Multiple unfinished updates require explicit recovery",
-                ));
-            }
+        ) && pending.replace(path).is_some()
+        {
+            return Err(manifest::error(
+                "Multiple unfinished updates require explicit recovery",
+            ));
         }
     }
     Ok(pending)

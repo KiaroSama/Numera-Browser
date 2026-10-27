@@ -8,6 +8,7 @@ import sys
 import tarfile
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts' / 'build'))
@@ -488,7 +489,8 @@ def test_manual_ci_secrets_are_named_and_publish_requires_verified_promotion():
     assert 'NUMERA_CODE_SIGNING_PFX:' in build and 'NUMERA_CODE_SIGNING_PASSWORD:' in build
     assert build.index('Sign owned Windows executables') < build.index("--platform windows-x64 --output")
     distribution = ci.split('\n  distribution:', 1)[1].split('\n  required:', 1)[0]
-    assert 'codeql, dependencies]' in distribution
+    prerequisites = yaml.safe_load(ci)['jobs']['distribution']['needs']
+    assert {'codeql', 'dependencies', 'desktop-contracts'} <= set(prerequisites)
     assert "needs.codeql.result == 'success'" in distribution
     assert 'github.event.repository.private' in distribution
     codeql = (ROOT / '.github/workflows/codeql.yml').read_text(encoding='utf-8')

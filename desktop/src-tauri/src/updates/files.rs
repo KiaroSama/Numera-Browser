@@ -317,9 +317,8 @@ pub fn available(path: &Path) -> io::Result<u64> {
         return Err(io::Error::last_os_error());
     }
     let stat = unsafe { stat.assume_init() };
-    (stat.f_bavail as u64)
-        .checked_mul(stat.f_frsize as u64)
-        .ok_or_else(|| manifest::error("Filesystem free-space count overflow"))
+    u64::try_from(u128::from(stat.f_bavail) * u128::from(stat.f_frsize))
+        .map_err(|_| manifest::error("Filesystem free-space count overflow"))
 }
 #[cfg(windows)]
 pub fn available(path: &Path) -> io::Result<u64> {

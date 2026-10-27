@@ -53,7 +53,19 @@ REGRESSIONS = tuple(
 import native_settings_history
 _STORAGE_REGRESSIONS = REGRESSIONS
 _SETTINGS_REGRESSIONS = native_settings_history.compatible(REGRESSIONS, _STORAGE_READERS)
-REGRESSIONS = _SETTINGS_REGRESSIONS + CURRENT_CALLER_REGRESSIONS
+# Add the later HTTP caller only after settings signature coherence is settled.
+_EXTENSION_REGRESSIONS = tuple(
+    dict(case, companions={
+        'engine-rust/src/http/extension_routes.rs': {
+            'commit': 'edca9d09805ccdc2d29735c8977a4354c71223b7',
+            'sha256': 'd6624367937929bd0e719243925d12a94787382525c01c0717e58e916dea2ac2',
+        },
+        **case.get('companions', {}),
+    }) if ('engine-rust/src/storage/extensions.rs' in case['files']
+           and 'engine-rust/src/http/extension_routes.rs' not in case['files']) else case
+    for case in _SETTINGS_REGRESSIONS
+)
+REGRESSIONS = _EXTENSION_REGRESSIONS + CURRENT_CALLER_REGRESSIONS
 
 
 def git(root: Path, *arguments: str) -> bytes:

@@ -241,6 +241,67 @@ fn accepted_cancellation_cannot_become_an_installable_ready_state(
     Ok(())
 }
 #[test]
+fn free_space_query_preserves_path_errors_without_writing_to_the_installation(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let fixture = Scratch::new();
+    let root = fixture.0.join("portable with spaces é");
+    fs::create_dir(&root)?;
+    assert!(files::available(&root)? > 0);
+    let error = files::available(&root.join("missing")).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    assert!(error.raw_os_error().is_some());
+    assert_eq!(fs::read_dir(&root)?.count(), 0);
+    Ok(())
+}
+#[test]
+fn recovery_discovery_retains_each_unfinished_phase_and_refuses_multiple_journals(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let fixture = Scratch::new();
+    let root = fixture.0.canonicalize()?;
+    let mut first = transaction::create(&root, &"a".repeat(64))?;
+    let mut second = transaction::create(&root, &"a".repeat(64))?;
+    let first_path = first.directory.join("journal.json");
+    let second_path = second.directory.join("journal.json");
+    first.ticket = "b".repeat(64);
+    first.data_root = first.root.join("data");
+    for phase in ["staging", "rolled-back", "cancelled", "complete"] {
+        first.phase = phase.into();
+        first.save()?;
+        assert_eq!(recovery::pending(&root)?, None, "phase={phase}");
+    }
+    for phase in [
+        "quiescing",
+        "ready",
+        "activating",
+        "awaiting-ready",
+        "rollback-pending",
+        "committed-needs-resume",
+    ] {
+        first.phase = phase.into();
+        first.save()?;
+        let before = fs::read(&first_path)?;
+        assert_eq!(
+            recovery::pending(&root)?,
+            Some(first_path.clone()),
+            "phase={phase}"
+        );
+        assert_eq!(fs::read(&first_path)?, before);
+    }
+    second.phase = "ready".into();
+    second.ticket = "c".repeat(64);
+    second.data_root = second.root.join("data");
+    second.save()?;
+    let before = [fs::read(&first_path)?, fs::read(&second_path)?];
+    let error = recovery::pending(&root).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+    assert_eq!(
+        error.to_string(),
+        "Multiple unfinished updates require explicit recovery"
+    );
+    assert_eq!([fs::read(&first_path)?, fs::read(&second_path)?], before);
+    Ok(())
+}
+#[test]
 fn accepted_generation_state_is_not_an_interrupted_transaction(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let fixture = Scratch::new();

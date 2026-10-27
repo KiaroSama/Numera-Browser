@@ -146,6 +146,34 @@ def test_settings_signature_companions_preserve_all_existing_proofs():
     assert not extension['files'].keys() & extension.get('companions', {}).keys()
 
 
+def test_extension_history_follows_settings_coherence_without_contaminating_other_proofs():
+    module = load()
+    expected = {'commit': 'edca9d09805ccdc2d29735c8977a4354c71223b7',
+                'sha256': 'd6624367937929bd0e719243925d12a94787382525c01c0717e58e916dea2ac2'}
+    route = 'engine-rust/src/http/extension_routes.rs'
+    storage = 'engine-rust/src/storage/extensions.rs'
+    selected = {
+        'extension_path_whitespace_matches_original_validation':
+            'e9ddc94cd7db3cb867f9c118a94a858592786ad02eea92a517b9dbadc3b78f6f',
+        'malformed_extension_text_matches_original_refusal_without_changing_bytes':
+            '46636571378a748deee180593862b2005ce6a6f7d7439f35a33ae0e97768ef69',
+        'extension_icon_integer_ranking_matches_original_selection':
+            '640b01c025fe2df3f58c927f05a66042dbf4eb8af5e492cc0ffd616b6afce570',
+    }
+    corrected = []
+    for before, after in zip(module._SETTINGS_REGRESSIONS, module._EXTENSION_REGRESSIONS):
+        if before['test'] not in selected:
+            assert after == before
+            continue
+        corrected.append(before['test'])
+        assert before['files'] == {storage: selected[before['test']]}
+        assert not before.get('companions')
+        assert {key: after[key] for key in before} == before
+        assert after['companions'] == {route: expected}
+    assert set(corrected) == selected.keys() and len(corrected) == 3
+    assert module.REGRESSIONS == module._EXTENSION_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
+
+
 def test_schedule_history_preserves_text_failure_without_later_api_callers():
     module = load()
     cases = [case for case in module.REGRESSIONS if case['target'] == 'schedule_store_parity']
@@ -411,7 +439,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/http/profile_errors.rs':
                   '11c6e0df12446f6f5b5669b32c00ac6b832a574c18b89c2f3efa24b2509740a9'},
     })
-    assert module.REGRESSIONS == module._SETTINGS_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
+    assert module.REGRESSIONS == module._EXTENSION_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
     assert not any(case.get('companions') for case in module.CURRENT_CALLER_REGRESSIONS)
 
 

@@ -7,12 +7,16 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 27, 2026
 
-The latest completed checkpoint `edca9d0` ran in manual hosted batch
-[40133873533](https://github.com/KiaroSama/Numera-Browser/actions/runs/40133873533),
-which failed on October 24 at 21:49 UTC: both native handshake fixtures failed,
-every browser performance comparison remained unaccepted, and CodeQL/required
-verification failed; publication stages were skipped. All source platforms,
-every SDK/relocated functional scenario, dashboard and dependency audits passed.
+The latest completed checkpoint `7079d7d` ran in manual hosted batch
+[40434887956](https://github.com/KiaroSama/Numera-Browser/actions/runs/40434887956),
+which failed on October 27 at 02:04 UTC: historical extension swaps failed compilation,
+source release checks retained an obsolete dependency-list suffix, and seven live SDK legs
+rejected the added native timing log. Three desktop contract jobs failed strict Clippy;
+Ubuntu Playwright prerequisite downloads exceeded their wall limit with teardown unverified.
+CodeQL/required verification failed and publication was skipped; dashboard, container and
+dependency audits passed. Corrective source is not hosted acceptance. Earlier `edca9d0`
+passed all SDK/relocated functional scenarios but failed both native handshake fixtures;
+every browser performance comparison remains unaccepted.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.

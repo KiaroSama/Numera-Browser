@@ -105,7 +105,9 @@ pub fn decode_hex<const N: usize>(text: &str) -> io::Result<[u8; N]> {
         return Err(error("Invalid update identity encoding"));
     }
     text.as_bytes()
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| {
             let digit = |byte: u8| {
                 if byte <= b'9' {
