@@ -469,6 +469,14 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'commit': '017f0dcac603bdbbcf56ea80b1156fca23579f9a',
         'files': {'engine-rust/src/storage/repo_lookup.rs':
                   '8cb44510b66c7c21074cfb168aea8ea3f22d8aa6cc255ea8be70e7a44cde5e32'},
+    }, {
+        'target': 'lib',
+        'test': 'ownership::tree::tests::malformed_group_observations_match_original_without_releasing_claims',
+        'symptom': 'Process group uncertainty differs',
+        'commit': 'c73bc1abab22788936227e5e2c800dac43acd69e',
+        'platform': 'linux',
+        'files': {'engine-rust/src/ownership/tree.rs':
+                  '2688b722ab3411a1a5528335a69b029a97e840cb79f7cb065d55735cefe6078b'},
     })
     assert module.REGRESSIONS == module._EXTENSION_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
     assert not any(case.get('companions') for case in module.CURRENT_CALLER_REGRESSIONS)

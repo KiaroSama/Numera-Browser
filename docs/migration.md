@@ -606,12 +606,12 @@ It intentionally refuses default switch; references are not acceptance evidence.
 Alternative definitions retain separate deterministic IDs. The verified leaf cases
 and pending screen repair are detailed in the [candidate notes](migration-candidate.md#occurrence-level-reconciliation).
 
-Remaining application work includes complete dual-store operations and vault
-recovery; complete native browser/session/helper/job ownership; all browser adapters
-and operations; full CLI/HTTP/MCP surfaces; portable/runtime packaging; real
-Windows/Linux four-engine acceptance; representative replay, benchmarks with no
-measurable regression, and exercised rollback. Do not hide these obligations by
-removing source tests or declaring a Python-forwarding facade a Rust engine.
+Remaining work includes complete dual-store/vault recovery and native browser/session/
+helper/job ownership. Malformed Linux process-group observations now remain unknown;
+14 original-derived cases and their historical failure proof await hosted verification.
+Full browser operations, CLI/HTTP/MCP, packaging, four-engine acceptance, representative
+replay, strict time/memory benchmarks and rollback remain required. Do not remove source
+tests or declare a Python-forwarding facade a Rust engine to hide these obligations.
 
 All original dashboard source and test modules are now TypeScript/TSX, with
 strict compilation and typed, checked API boundaries. Independent wire-contract

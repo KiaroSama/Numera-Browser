@@ -236,8 +236,10 @@ fn group_empty(group: i32) -> io::Result<bool> {
             unknown = true;
             continue;
         }
-        if fields[2].parse::<i32>().ok() == Some(group) && fields[0] != "Z" {
-            return Ok(false);
+        match fields[2].parse::<i32>() {
+            Ok(member_group) if member_group == group && fields[0] != "Z" => return Ok(false),
+            Ok(_) => {}
+            Err(_) => unknown = true,
         }
     }
     if unknown {
