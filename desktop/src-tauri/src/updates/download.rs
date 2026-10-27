@@ -173,7 +173,26 @@ pub fn discover(
     cancelled: &AtomicBool,
 ) -> io::Result<Option<Offer>> {
     let client = client()?;
+    discover_with(
+        current,
+        platform,
+        key,
+        now,
+        cancelled,
+        |url, limit, budget| bounded_bytes(&client, url, limit, budget),
+    )
+}
+fn discover_with(
+    current: u64,
+    platform: &str,
+    key: &[u8; 32],
+    now: u64,
+    cancelled: &AtomicBool,
+    mut fetch: impl FnMut(&str, u64, Duration) -> io::Result<Vec<u8>>,
+) -> io::Result<Option<Offer>> {
     let mut best: Option<Offer> = None;
+    let mut failed = false;
+    let mut complete = false;
     let end = Instant::now() + Duration::from_secs(60);
     for page in 1..=3 {
         if cancelled.load(Ordering::Acquire) {
@@ -188,8 +207,7 @@ pub fn discover(
                 "Update discovery incomplete within its budget",
             ));
         }
-        let data = bounded_bytes(
-            &client,
+        let data = fetch(
             &discovery_url(page)?,
             manifest::METADATA_LIMIT,
             end.saturating_duration_since(Instant::now()),
@@ -221,14 +239,16 @@ pub fn discover(
                 continue;
             }
             let (metadata_url, signature_url) = manifest_urls(source);
-            let metadata = match bounded_bytes(
-                &client,
+            let metadata = match fetch(
                 &metadata_url,
                 manifest::METADATA_LIMIT,
                 end.saturating_duration_since(Instant::now()),
             ) {
                 Ok(value) => value,
-                Err(_) => continue,
+                Err(_) => {
+                    failed = true;
+                    continue;
+                }
             };
             if cancelled.load(Ordering::Acquire) {
                 return Err(io::Error::new(
@@ -236,22 +256,33 @@ pub fn discover(
                     "Update discovery cancelled",
                 ));
             }
-            let signature = match bounded_bytes(
-                &client,
+            let signature = match fetch(
                 &signature_url,
                 64,
                 end.saturating_duration_since(Instant::now()),
             ) {
                 Ok(value) => value,
-                Err(_) => continue,
+                Err(_) => {
+                    failed = true;
+                    continue;
+                }
             };
-            let manifest =
-                match manifest::signed_manifest(&metadata, &signature, key, platform, current, now)
-                {
-                    Ok(value) => value,
-                    Err(_) => continue,
-                };
-            if manifest.source_sha != source
+            let manifest = match manifest::authenticated_manifest(&metadata, &signature, key) {
+                Ok(value) => value,
+                Err(_) => {
+                    failed = true;
+                    continue;
+                }
+            };
+            if manifest.source_sha != source {
+                failed = true;
+                continue;
+            }
+            if !manifest.suitable(current, now)
+                || !manifest
+                    .assets
+                    .iter()
+                    .any(|asset| asset.platform == platform)
                 || best
                     .as_ref()
                     .is_some_and(|offer| offer.manifest.generation >= manifest.generation)
@@ -273,11 +304,27 @@ pub fn discover(
             });
         }
         if count < 20 {
+            complete = true;
             break;
         }
     }
+    if cancelled.load(Ordering::Acquire) {
+        return Err(io::Error::new(
+            io::ErrorKind::ConnectionAborted,
+            "Update discovery cancelled",
+        ));
+    }
+    if failed || !complete {
+        return Err(io::Error::other(
+            "Update discovery incomplete; release metadata could not be authenticated or retrieved",
+        ));
+    }
     Ok(best)
 }
+#[cfg(test)]
+#[path = "discovery_tests.rs"]
+mod discovery_tests;
+
 pub fn check_space(root: &Path, asset: &Asset, previous: u64) -> io::Result<()> {
     let needed = asset
         .size

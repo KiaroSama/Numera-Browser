@@ -131,11 +131,13 @@ class Controller:
     def __init__(self, asset_directory: Path, token: str):
         self.assets = asset_directory
         self.tamper = False
+        self.discovery = 'available'
         self.token = token
         self.events = deque()
         self.condition = threading.Condition()
         self.release = False
         self.requests = []
+        self.checks = 0
         self.reported_pids = {}
         controller = self
 
@@ -180,7 +182,11 @@ class Controller:
                 route = urlsplit(self.path).path
                 if route == '/releases':
                     page = urlsplit(self.path).query
-                    rows = [{'draft': False, 'tag_name': 'build-' + controller.source}] if page == 'page=1' else []
+                    with controller.condition:
+                        controller.checks += 1
+                        discovery = controller.discovery
+                    rows = ([{'draft': False, 'tag_name': 'build-' + controller.source}]
+                            if page == 'page=1' and discovery != 'empty' else [])
                     self.reply(200, json.dumps(rows).encode('utf-8'))
                     return
                 prefix = '/build-' + controller.source + '/'
@@ -197,6 +203,16 @@ class Controller:
                     return
                 with controller.condition:
                     controller.requests.append(name)
+                    discovery = controller.discovery
+                if name == 'update-manifest.json' and discovery == 'metadata-offline':
+                    self.reply(429, b'private fixture transport detail')
+                    return
+                if name == 'update-manifest.sig' and discovery == 'signature-offline':
+                    self.reply(503, b'private fixture transport detail')
+                    return
+                if name == 'update-manifest.sig' and discovery == 'untrusted':
+                    self.reply(200, bytes(64))
+                    return
                 self.send_response(200)
                 self.send_header('Content-Length', str(path.stat().st_size))
                 self.send_header('Connection', 'close')
@@ -439,6 +455,8 @@ class Harness:
         token = secrets.token_hex(32)
         controller = Controller(self.shared_assets, token)
         controller.tamper = tamper
+        if name == 'success':
+            controller.discovery = 'metadata-offline'
         shell = root / ('numera.exe' if os.name == 'nt' else 'numera')
         holder = None
         passed = False
@@ -459,7 +477,37 @@ class Harness:
                 code, value = http(bridge['endpoint'] + '/status', token=bridge['token'], origin=bridge['engineOrigin'])
                 assert code == 200
                 return value
-            poll(lambda: value if (value := status())['state'] == 'available' else None, 'No signed fixture offer')
+            if name == 'success':
+                for index, (mode, expected_state) in enumerate([
+                    ('metadata-offline', 'error'), ('signature-offline', 'error'),
+                    ('untrusted', 'error'), ('empty', 'current'), ('available', 'available'),
+                    ('metadata-offline', 'error'), ('available', 'available'),
+                ]):
+                    if index:
+                        with controller.condition:
+                            controller.discovery = mode
+                            checks = controller.checks
+                        code, _ = http(bridge['endpoint'] + '/check', token=bridge['token'],
+                                       origin=bridge['engineOrigin'], payload={}, method='POST')
+                        assert code == 200, 'Manual discovery was refused before starting'
+                    else:
+                        checks = 0
+                    def checked():
+                        with controller.condition:
+                            started = controller.checks > checks
+                        if not started:
+                            return None
+                        value = status()
+                        return value if value['state'] not in {'idle', 'checking'} else None
+                    terminal = poll(checked, 'Discovery did not settle its exact check')
+                    assert terminal['state'] == expected_state, f'Discovery status differs: {mode}'
+                    if expected_state != 'available':
+                        assert terminal['offer'] is None, 'Failed check retained an installable offer'
+                    assert 'private fixture' not in terminal['message'], 'Discovery leaked a raw response'
+                    assert archive.name not in controller.requests, 'Discovery downloaded without consent'
+                    self.verify_data(root, expected)
+            else:
+                poll(lambda: value if (value := status())['state'] == 'available' else None, 'No signed fixture offer')
             offer = status()['offer']['id']
             assert archive.name not in controller.requests, 'Automatic check downloaded an archive without consent'
             code, _ = http(bridge['endpoint'] + '/download', token=bridge['token'], origin=bridge['engineOrigin'],

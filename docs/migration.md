@@ -7,19 +7,19 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 27, 2026
 
-The latest completed checkpoint `b1ad79f` ran in manual hosted batch
-[40458590873](https://github.com/KiaroSama/Numera-Browser/actions/runs/40458590873),
-which failed on October 27 at 06:33 UTC. Both native jobs, all source-platform jobs and
-three-platform desktop contracts passed. Windows proved the old dot-path icon assertion
-fails, restored fixed bytes and passed current icon/protocol contracts. Seven SDK and
-relocated functional legs passed before their strict performance refusals; Windows/Camoufox
-stopped at the existing compile idle limit with clean owned-tree settlement, before SDK tests.
-CodeQL/required verification failed and publication was skipped. All seven measured memory
-verdicts overlap. Four time verdicts report no regression; three remain inconclusive.
-Linux Chromium's earlier roughly 201 ms open-envelope gap is no longer observed after
-removing the extra fragment wait; different hosted runs do not prove total-command speedup.
-A shared receipt-validator correction and 33 original-derived read/write observations are
-prepared, not hosted-verified. Invalid nonnull job tokens must not resolve pending transfers.
+The latest completed checkpoint `a65b0b7` ran in manual hosted batch
+[40466348941](https://github.com/KiaroSama/Numera-Browser/actions/runs/40466348941),
+which failed on October 27 at 07:50 UTC. Both native jobs, all source-platform jobs and
+Windows/macOS desktop contracts passed; Ubuntu desktop stopped during its bounded system
+package download, before compilation. All eight SDK and relocated functional legs passed,
+then failed strict performance acceptance: four time verdicts show no regression, four are
+inconclusive; all eight memory ranges overlap. No browser performance leg is accepted. Windows/Camoufox
+completed functional checks and measurements; the prior idle timeout did not recur, without
+changing its deadline or establishing its root cause.
+CodeQL/required verification failed and publication was skipped. The earlier roughly 201 ms
+Linux Chromium open-envelope gap is absent after removing the extra fragment wait; separate
+hosted runs do not prove total-command speedup. Both systems caught the historical token failure,
+restored fixed bytes and passed all 33 original-derived receipt observations—not complete migration.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.

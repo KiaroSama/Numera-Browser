@@ -204,6 +204,8 @@ impl Service {
         }
         self.start(|service|{
         service.set("checking","Checking authenticated release generations…");
+        {let mut state=service.state.lock().map_err(|_|io::Error::other("Update state poisoned"))?;
+        state.status.offer=None;state.offer=None;}
         let current=service.status().current;
         let generation=transaction::generation_floor(&service.root,current.generation)?;
         let offer=download::discover(generation,&service.platform,&service.key,transaction::now()?,&service.cancelled)?;

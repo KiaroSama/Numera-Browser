@@ -138,6 +138,20 @@ pub fn signed_manifest(
     generation: u64,
     now: u64,
 ) -> io::Result<Manifest> {
+    let value = authenticated_manifest(bytes, signature, key)?;
+    if !value.suitable(generation, now) {
+        return Err(error("Update generation is stale or incompatible"));
+    }
+    if !value.assets.iter().any(|asset| asset.platform == platform) {
+        return Err(error("No compatible update asset"));
+    }
+    Ok(value)
+}
+pub(super) fn authenticated_manifest(
+    bytes: &[u8],
+    signature: &[u8],
+    key: &[u8; 32],
+) -> io::Result<Manifest> {
     if bytes.len() as u64 > METADATA_LIMIT {
         return Err(error("Update metadata exceeds its limit"));
     }
@@ -148,11 +162,7 @@ pub fn signed_manifest(
     if value.schema != 1
         || value.repository != REPOSITORY
         || value.product != PRODUCT
-        || value.minimum_protocol > PROTOCOL
         || value.generation == 0
-        || value.generation <= generation
-        || value.created_at > now.saturating_add(300)
-        || value.expires_at <= now
         || value.expires_at <= value.created_at
         || value.version.is_empty()
         || value.version.len() > 64
@@ -185,12 +195,15 @@ pub fn signed_manifest(
         decode_hex::<32>(&asset.sha256)?;
         decode_hex::<32>(&asset.build_manifest_sha256)?;
     }
-    if !platforms.contains(&platform.to_owned()) {
-        return Err(error("No compatible update asset"));
-    }
     Ok(value)
 }
 impl Manifest {
+    pub(super) fn suitable(&self, generation: u64, now: u64) -> bool {
+        self.minimum_protocol <= PROTOCOL
+            && self.generation > generation
+            && self.created_at <= now.saturating_add(300)
+            && self.expires_at > now
+    }
     pub fn validate_build(&self, build: &Build, inventory_digest: &str) -> io::Result<()> {
         let asset = self
             .assets
