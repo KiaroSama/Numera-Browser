@@ -193,10 +193,24 @@ pub fn record_empty(record: &serde_json::Value) -> io::Result<bool> {
     }
 }
 
+#[cfg(all(test, target_os = "linux"))]
+std::thread_local! {
+    static PROCFS_ROOT: std::cell::RefCell<std::path::PathBuf> =
+        std::cell::RefCell::new(std::path::PathBuf::from("/proc"));
+}
+
+#[cfg(all(test, target_os = "linux"))]
+#[path = "procfs_tests.rs"]
+mod tests;
+
 #[cfg(target_os = "linux")]
 fn group_empty(group: i32) -> io::Result<bool> {
+    #[cfg(test)]
+    let root = PROCFS_ROOT.with(|root| root.borrow().clone());
+    #[cfg(not(test))]
+    let root = std::path::Path::new("/proc");
     let mut unknown = false;
-    for entry in std::fs::read_dir("/proc")? {
+    for entry in std::fs::read_dir(root)? {
         let entry = entry?;
         if entry
             .file_name()
