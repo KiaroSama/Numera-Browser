@@ -27,6 +27,7 @@ pub enum RepoError {
     UnconvertibleProfile(String),
     VaultLocked(String),
     Io(io::Error),
+    Directory { message: String, cause: io::Error },
     Recovery(vault::recovery::RecoveryError),
 }
 impl fmt::Display for RepoError {
@@ -44,11 +45,19 @@ impl fmt::Display for RepoError {
                 fmt::Display::fmt(error, f)
             }
             Self::Io(error) => write!(f, "Profile storage operation failed: {error}"),
+            Self::Directory { message, .. } => f.write_str(message),
             Self::Recovery(error) => fmt::Display::fmt(error, f),
         }
     }
 }
-impl Error for RepoError {}
+impl Error for RepoError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Directory { cause, .. } => Some(cause),
+            _ => None,
+        }
+    }
+}
 impl From<ConfigError> for RepoError {
     fn from(error: ConfigError) -> Self {
         match error {
@@ -82,7 +91,32 @@ impl ProfileRepo {
         old_password: Option<&str>,
     ) -> Result<Self, RepoError> {
         for directory in ["profiles", "user-data"] {
-            fs::create_dir_all(root.join(directory))?;
+            let path = root.join(directory);
+            fs::create_dir_all(&path).map_err(|cause| {
+                if cause.kind() != io::ErrorKind::PermissionDenied {
+                    return RepoError::Io(cause);
+                }
+                #[cfg(unix)]
+                let owner = {
+                    use std::os::unix::fs::MetadataExt;
+                    fs::metadata(&root).map_or_else(|_| String::new(), |metadata| {
+                        // SAFETY: getuid/getgid take no arguments and only read process identity.
+                        #[allow(unsafe_code)]
+                        let (uid, gid) = unsafe { (libc::getuid(), libc::getgid()) };
+                        format!(" (it is owned by uid {}:{}, this process runs as uid {uid}:{gid})",
+                                metadata.uid(), metadata.gid())
+                    })
+                };
+                #[cfg(not(unix))]
+                let owner = "";
+                RepoError::Directory {
+                    message: format!(
+                        "cannot create {} - the data directory {} is not writable by this process{owner}. Point --data-dir or NUMERA_DATA_DIR at a directory you can write, or fix the ownership of that one. In Docker, prefer the named volume the bundled docker-compose.yml uses; a bind-mounted host directory keeps its own ownership and must already be writable by the container's user.",
+                        path.display(), root.display()
+                    ),
+                    cause,
+                }
+            })?;
         }
         vault::recovery::recover(&root, password.as_deref(), old_password)
             .map_err(RepoError::Recovery)?;

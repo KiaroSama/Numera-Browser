@@ -7,15 +7,15 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 27, 2026
 
-The latest completed checkpoint `44f2306` ran in manual hosted batch
-[40482786436](https://github.com/KiaroSama/Numera-Browser/actions/runs/40482786436),
-which failed on October 27 at 10:12 UTC. All source-platform and three-OS desktop contracts
-passed, including 22 discovery variants. Linux native passed; Windows completed functional
-acceptance but HTTP-list latency remained inconclusive. Seven SDK/relocated functional legs
-passed before strict benchmark refusal: three time verdicts show no regression, four are
-inconclusive; all seven memory ranges overlap. Linux/Patchright stopped during prerequisite
-downloads with unproved cleanup, before SDK tests or measurements. No browser performance leg
-is accepted; neither longer deadlines nor retries were used.
+The latest completed checkpoint `a640a83` ran in manual hosted batch
+[40498222511](https://github.com/KiaroSama/Numera-Browser/actions/runs/40498222511),
+which failed on October 27 at 12:15 UTC. All source-platform and three-OS desktop contracts
+passed. Linux native passed; Windows completed functional acceptance but HTTP-list latency
+remained inconclusive. All eight browser legs reached strict benchmark reporting: four time
+verdicts show no regression, four are inconclusive; all eight memory ranges overlap. The prior
+Linux/Patchright prerequisite failure did not recur; its transport/cleanup cause remains
+unproved. No browser performance leg is accepted. Native signing orchestration fixtures passed
+in the source tier, but actual native signing remains blocked behind distribution prerequisites.
 CodeQL/required verification failed and publication was skipped. The earlier roughly 201 ms
 Linux Chromium open-envelope gap is absent after removing the extra fragment wait; separate
 hosted runs do not prove total-command speedup. Both systems caught the historical token failure,
@@ -279,9 +279,9 @@ rollback still gate Rust selection and retirement.
 - Bidirectional profile shape conversion and absent/null/empty secret intent.
   The HTTP fingerprint-validation route uses tolerant conversion and the native
   identity validator; complete malformed/legacy/browser parity remains pending.
-- Data-root precedence and isolated portable write probes; first-run copy/merge
-  primitives that preserve destination files and retry failed imports without
-  marking them complete. Executable/environment wiring remains pending.
+- Data-root precedence, isolated portable write probes and actionable directory-permission
+  errors retaining their OS cause; first-run copy/merge primitives preserve destination files.
+  Permission-denial fixtures and complete executable/environment acceptance remain pending.
 - Native reentrant data locks, immediate session lease refusal, atomic file
   replacement and byte-preserving batch rollback primitives.
 - Fernet v1/v2 envelopes, secret-write policy, authenticated completion checks,

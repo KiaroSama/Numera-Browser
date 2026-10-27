@@ -232,4 +232,14 @@ CURRENT_CALLER_REGRESSIONS = (
                 '0db789c9ab6f184f811bfadd0f1d3cea7ab0b0bd058663eecbffd816a7bbadcb',
         },
     },
+    {
+        'target': 'store_open_parity',
+        'test': 'denied_store_directories_match_original_actionable_errors_and_preserve_state',
+        'symptom': 'Store directory permission diagnostic differs',
+        'commit': 'a640a8317180d23e7064e074550bb1a03c432dca',
+        'files': {
+            'engine-rust/src/storage/repo.rs':
+                '3c7f327011f3cba1b54b0934bdcc70c1ca5f1731f5ae5113e9cb645900af256d',
+        },
+    },
 )
