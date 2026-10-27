@@ -144,6 +144,8 @@ fn validate_unit(value: &Value) -> io::Result<()> {
                 && value["tree"]["group"]
                     .as_str()
                     .is_some_and(|group| !group.trim().is_empty() && !group.contains('\0'))
+                && (value["pidToken"].is_null()
+                    || value["pidToken"].as_u64().is_some_and(|token| token > 0))
         }
         _ => false,
     };

@@ -7,18 +7,19 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 27, 2026
 
-The latest completed checkpoint `8354eeb` ran in manual hosted batch
-[40444772781](https://github.com/KiaroSama/Numera-Browser/actions/runs/40444772781),
-which failed on October 27 at 04:24 UTC. Both native jobs rejected an obsolete one-log
-protocol assertion; Windows additionally returned 500 instead of the original 200 for an
-icon path containing dot components. Windows/macOS desktop contracts failed strict Clippy;
-Ubuntu's system-dependency download exceeded its existing bound before compilation.
-CodeQL/required verification failed and publication was skipped. Prepared corrections
-preserve strict dual-log validation, Windows physical path identity and lifecycle behavior.
-The SDK adapter now delegates every bounded wait to input readiness, without an extra
-per-fragment timer. These changes are not hosted acceptance or a measured speedup.
-Every browser performance comparison remains unaccepted: all memory verdicts overlap,
-and Linux Playwright/Patchright command latency is a regression.
+The latest completed checkpoint `b1ad79f` ran in manual hosted batch
+[40458590873](https://github.com/KiaroSama/Numera-Browser/actions/runs/40458590873),
+which failed on October 27 at 06:33 UTC. Both native jobs, all source-platform jobs and
+three-platform desktop contracts passed. Windows proved the old dot-path icon assertion
+fails, restored fixed bytes and passed current icon/protocol contracts. Seven SDK and
+relocated functional legs passed before their strict performance refusals; Windows/Camoufox
+stopped at the existing compile idle limit with clean owned-tree settlement, before SDK tests.
+CodeQL/required verification failed and publication was skipped. All seven measured memory
+verdicts overlap. Four time verdicts report no regression; three remain inconclusive.
+Linux Chromium's earlier roughly 201 ms open-envelope gap is no longer observed after
+removing the extra fragment wait; different hosted runs do not prove total-command speedup.
+A shared receipt-validator correction and 33 original-derived read/write observations are
+prepared, not hosted-verified. Invalid nonnull job tokens must not resolve pending transfers.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.

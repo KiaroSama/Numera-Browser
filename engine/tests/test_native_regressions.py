@@ -13,7 +13,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.mark.parametrize('damage', [None, 'missing-relay', 'unmapped-target'])
+@pytest.mark.parametrize('damage', [None, 'missing-relay', 'missing-receipt', 'unmapped-target'])
 def test_oracle_verification_requires_complete_native_target_registration(monkeypatch, damage):
     monkeypatch.syspath_prepend(str(ROOT / 'scripts/migration'))
     inventory = json.loads((ROOT / 'docs/migration-coverage.json').read_text(encoding='utf-8'))
@@ -40,6 +40,8 @@ def test_oracle_verification_requires_complete_native_target_registration(monkey
     assert directory / 'relay_request_parity.rs' in targets
     if damage == 'missing-relay':
         targets.remove(directory / 'relay_request_parity.rs')
+    elif damage == 'missing-receipt':
+        targets.remove(directory / 'ownership_receipt_parity.rs')
     elif damage == 'unmapped-target':
         targets.append(directory / 'unmapped_fixture.rs')
     glob = Path.glob
@@ -446,6 +448,13 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'commit': 'edca9d09805ccdc2d29735c8977a4354c71223b7',
         'files': {'engine-rust/src/http/profile_errors.rs':
                   '11c6e0df12446f6f5b5669b32c00ac6b832a574c18b89c2f3efa24b2509740a9'},
+    }, {
+        'target': 'ownership_receipt_parity',
+        'test': 'receipt_tokens_match_original_without_resolving_invalid_transfers',
+        'symptom': 'Receipt completeness differs',
+        'commit': 'b1ad79f18f75d9a328b731bb092130cc3b61541a',
+        'files': {'engine-rust/src/ownership/unit_report.rs':
+                  '0db789c9ab6f184f811bfadd0f1d3cea7ab0b0bd058663eecbffd816a7bbadcb'},
     })
     assert module.REGRESSIONS == module._EXTENSION_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
     assert not any(case.get('companions') for case in module.CURRENT_CALLER_REGRESSIONS)
