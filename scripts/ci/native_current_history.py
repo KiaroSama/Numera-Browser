@@ -202,6 +202,17 @@ CURRENT_CALLER_REGRESSIONS = (
         },
     },
     {
+        'target': 'extension_routes_parity',
+        'test': 'icons::extension_icon_http_matches_original_known_folder_and_file_contracts',
+        'symptom': 'Extension icon HTTP status differs',
+        'commit': '8354eeb286d93f9418ee372ed057c129521404ad',
+        'platform': 'win32',
+        'files': {
+            'engine-rust/src/storage/locks.rs':
+                '8cc9b17a4c77c5db9b178d8ea2b16318132f5d11439359c3e47abca269d6a373',
+        },
+    },
+    {
         'target': 'profile_read_parity',
         'test': 'divergence::divergent_profile_http_matches_original_refusal_kind_without_mutation',
         'symptom': 'Divergent HTTP response kind differs',

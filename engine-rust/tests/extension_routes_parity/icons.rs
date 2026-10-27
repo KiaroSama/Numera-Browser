@@ -64,6 +64,7 @@ with run_log('extension-icon-http-oracle',root/'logs') as log:
         add('manual-unicode-plus',query(manual))
         add('percent-space','?path='+quote(str(manual),safe=''))
         add('dot-components',query(installed/'..'/installed.name))
+        add('literal-dot-components',query(str(installed)+os.sep+'..'+os.sep+installed.name))
         add('empty-icon',query(empty))
         add('unsafe-icon',query(unsafe))
         add('unknown-existing',query(unknown))
@@ -90,7 +91,7 @@ with run_log('extension-icon-http-oracle',root/'logs') as log:
                 rows.append({'label':label,'uri':uri,'method':method,'authorized':authorized,'headers':extra,
                              'status':response.status_code,'body':body,'response_headers':selected})
         assert rows[0]['status']==200 and rows[1]['status']==200,'Original icon success seam missing'
-        assert rows[9]['status']==422 and rows[-1]['status']==405,'Original icon refusal seam differs'
+        assert next(row for row in rows if row['label']=='missing-path')['status']==422 and rows[-1]['status']==405,'Original icon refusal seam differs'
         log.info('Observed extension icon HTTP cases=%s',len(rows))
         print(json.dumps({'cases':rows,'files':{str(path.relative_to(root)):base64.b64encode(raw).decode('ascii')
                                               for path,raw in files.items()}},ensure_ascii=True))
@@ -110,7 +111,7 @@ with run_log('extension-icon-http-oracle',root/'logs') as log:
     );
     let document: Value = serde_json::from_slice(&observed.stdout)?;
     let cases = document["cases"].as_array().ok_or("Icon cases missing")?;
-    assert_eq!(cases.len(), 16, "Extension icon HTTP observations missing");
+    assert_eq!(cases.len(), 17, "Extension icon HTTP observations missing");
     let files = document["files"].as_object().ok_or("Icon inputs missing")?;
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()

@@ -391,4 +391,4 @@ pub(crate) fn tail(log: &Log) -> String {
 
 #[cfg(test)]
 #[path = "lifecycle_tests.rs"]
-mod tests;
+mod lifecycle_tests;

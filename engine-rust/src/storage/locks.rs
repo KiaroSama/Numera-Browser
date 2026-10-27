@@ -84,6 +84,9 @@ pub(crate) fn resolved(path: &Path) -> io::Result<PathBuf> {
     } else {
         std::env::current_dir()?.join(path)
     };
+    // Python normalizes verbatim Windows dot components before filesystem resolution.
+    #[cfg(windows)]
+    let absolute: PathBuf = absolute.components().collect();
     let canonical = match absolute.canonicalize() {
         Ok(path) => path,
         Err(error) if error.kind() == io::ErrorKind::NotFound => {

@@ -15,10 +15,18 @@ def adapter(legacy=None):
     module = importlib.util.module_from_spec(spec)
     if legacy:
         text = source.read_text(encoding='utf-8')
-        before, after = ('frames.poll(.025 if context is not None else 0)', 'frames.poll()') if legacy == 'poll' else (
-            'wait_for_timeout(0)', 'wait_for_timeout(25)')
+        before, after = {
+            'poll': ('frames.poll(.025)', 'frames.poll()'),
+            'pump': ('wait_for_timeout(0)', 'wait_for_timeout(25)'),
+            'fragment-wait': ('frames.poll(.025)', 'frames.poll(.025 if context is not None else 0)'),
+        }[legacy]
         assert before in text
-        exec(compile(text.replace(before, after), str(source), 'exec'), module.__dict__)
+        text = text.replace(before, after)
+        if legacy == 'fragment-wait':
+            before = "raise TimeoutError('Input deadline exceeded')"
+            assert before in text
+            text = text.replace(before, before + '\n                    closed.wait(min(0.025, remaining))')
+        exec(compile(text, str(source), 'exec'), module.__dict__)
     else:
         spec.loader.exec_module(module)
     return module
@@ -88,11 +96,13 @@ def test_existing_native_selection_disables_updates_before_import_and_preserves_
                        'browser_version': '146.0.7680.177.5'}
 
 
-@pytest.mark.parametrize('failure,idle,legacy', [
-    (False, False, None), (False, True, None), (True, False, None),
-    (False, False, 'poll'), (False, True, 'pump'),
+@pytest.mark.parametrize('failure,idle,fragments,legacy', [
+    (False, False, 0, None), (False, True, 0, None), (True, False, 0, None),
+    (False, False, 0, 'poll'), (False, True, 0, 'pump'),
+    (False, False, 7, None), (True, False, 7, None),
+    (False, False, 7, 'fragment-wait'),
 ])
-def test_sdk_operation_timing_never_logs_payloads(tmp_path, monkeypatch, failure, idle, legacy):
+def test_sdk_operation_timing_never_logs_payloads(tmp_path, monkeypatch, failure, idle, fragments, legacy):
     import io
     import sys
     module = adapter(legacy)
@@ -106,19 +116,23 @@ def test_sdk_operation_timing_never_logs_payloads(tmp_path, monkeypatch, failure
     monkeypatch.setattr(module.os, 'dup2', lambda *args, **kwargs: None)
     monkeypatch.setattr(module.sys, 'stdout', SimpleNamespace(fileno=lambda: 1))
     monkeypatch.setattr(module.sys, 'stdin', SimpleNamespace(buffer=object()))
-    monkeypatch.setattr(module.time, 'perf_counter_ns', lambda: next(clock))
+    monkeypatch.setattr(module, 'time', SimpleNamespace(
+        perf_counter_ns=lambda: next(clock), monotonic=lambda: 0))
     log = SimpleNamespace(info=lambda message, *args: events.append(message % args),
                           error=lambda message, *args: events.append(message % args), handlers=[])
     monkeypatch.setattr(module, 'logger', lambda: log)
     monkeypatch.setattr(module, 'available', lambda: {'fixture': True})
     frames = iter([
         (True, {'id': 1, 'protocol': 1, 'operation': 'hello'}),
+        *[(False, None)] * fragments,
         (True, {'id': 2, 'protocol': 1, 'operation': 'open', 'backend': 'cloak',
                 'options': {'user_data_dir': 'private-profile', 'password': 'private-value'}}),
         *([(False, None)] if idle else []),
         (True, {'id': 3, 'protocol': 1, 'operation': 'close'}),
     ])
-    waits, pumps = [], []
+    waits, pumps, fragment_waits = [], [], []
+    monkeypatch.setattr(module, 'threading', SimpleNamespace(Event=lambda: SimpleNamespace(
+        is_set=lambda: False, set=lambda: None, wait=lambda delay: fragment_waits.append(delay))))
 
     def poll(timeout=0):
         waits.append(timeout)
@@ -138,11 +152,14 @@ def test_sdk_operation_timing_never_logs_payloads(tmp_path, monkeypatch, failure
     assert module.main() == int(failure)
 
     def scheduling():
-        assert waits == [0, 0] + ([] if failure else [.025] * (2 if idle else 1)), 'SDK commands must wait on input readiness'
+        assert not fragment_waits, 'Partial input must not add fixed fragment waits'
+        assert waits == [.025] * (2 + fragments + (0 if failure else 2 if idle else 1)), 'SDK commands must wait on input readiness'
         assert pumps == ([0] if idle and not failure else []), 'Idle SDK dispatch must not add a fixed command delay'
 
     if legacy:
-        with pytest.raises(AssertionError, match='input readiness' if legacy == 'poll' else 'fixed command delay'):
+        symptom = {'poll': 'input readiness', 'pump': 'fixed command delay',
+                   'fragment-wait': 'fixed fragment waits'}[legacy]
+        with pytest.raises(AssertionError, match=symptom):
             scheduling()
     else:
         scheduling()

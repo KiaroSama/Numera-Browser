@@ -90,7 +90,9 @@ fn main() {
                 ))));
             }
             match lifecycle::start_engine(log.clone(), &token) {
-                Ok((mut child, port, reader)) => {
+                Ok((child, port, reader)) => {
+                    #[cfg(windows)]
+                    let mut child = child;
                     #[cfg(windows)]
                     {
                         let owner = lifecycle::job::Job::new()

@@ -9,6 +9,8 @@ use std::{
     process::Command,
     time::{Duration, Instant},
 };
+#[path = "common/browser_logs.rs"]
+mod browser_logs;
 mod common;
 
 fn adapter_logs(root: &Path) -> std::io::Result<String> {
@@ -74,11 +76,24 @@ fn actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure()
         sdk.finish(Duration::from_secs(5))?;
         drop(sdk);
         assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
-        let logs = std::fs::read_dir(root.join("logs"))?.collect::<Result<Vec<_>, _>>()?;
-        assert_eq!(logs.len(), 1);
-        let log = std::fs::read_to_string(logs[0].path())?;
+        let phases: &[&str] = if invalid {
+            &["browser_spawn", "browser_hello", "browser_settle"]
+        } else {
+            &[
+                "browser_spawn",
+                "browser_hello",
+                "browser_close",
+                "browser_settle",
+            ]
+        };
+        let log = browser_logs::inspect(root, phases)?;
         assert!(log.contains("[INFO] [numera.browser-adapter] Starting"));
-        assert!(log.contains("Finished exit="));
+        assert!(log.contains(if invalid {
+            "Finished exit=1"
+        } else {
+            "Finished exit=0"
+        }));
+        assert!(!log.contains("[WARNING]"));
         temporary.cleanup()?;
     }
     Ok(())

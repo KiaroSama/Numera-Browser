@@ -128,7 +128,12 @@ def test_mapped_occurrences_retain_frozen_inventory_and_block_selection(tmp_path
     assert len(identifiers) == len(set(identifiers)) == 907
     assert document['source_commit'] == '13b6d9c6973281fe123353eaec05b29d65781a2d'
     mapped = [row for row in rows if row['target'] is not None]
-    assert len(mapped) >= 483, 'Reviewed occurrence mappings were lost'
+    assert len(mapped) == len(rows) == 907, 'Reviewed occurrence mappings were lost'
+    import hashlib
+    assert hashlib.sha256('\n'.join(identifiers).encode('utf-8')).hexdigest() == \
+        '1ae989531dfa1f766d9077c75dd1e4883896c9f2201624417136b36d76aa6616'
+    assert hashlib.sha256(json.dumps(document['files'], sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest() == \
+        '875cf95faca683b65f84d23ba0f5ef3cf1b2445322006ff73284dbddf44e2888'
     for prefix, count in [('config_store.py::', 13), ('folders.py::', 13), ('paths.py::', 24), ('data_locks.py::', 24),
                           ('webstore.py::', 15), ('store.py::unloadable_extensions', 1), ('archive.py::', 6), ('firstrun.py::', 6), ('cookies.py::', 9), ('cli/browser.py::cmd_cookies_', 3), ('repo.py::', 39), ('server/stores.py::DashboardStore', 23), ('convert.py::', 15), ('server/convert.py::', 1), ('server/stores.py::ProxyPool', 15), ('store.py::ProfileStore.user_data_path', 1), ('store.py::ProfileStore.find_by_name', 1), ('store.py::ProfileStore.delete_session', 1), ('store.py::ProfileStore.secret_withheld', 1), ('vault.py::', 13), ('vault_recovery.py::', 23), ('vault_problems.py::', 8), ('vault_active_descriptor.py::', 4), ('scheduler.py::', 16), ('server/routes_schedules.py::', 10), ('write_contract.py::', 23), ('importers.py::', 13), ('sessions.py::', 16), ('jobs.py::', 16), ('bulk.py::', 4), ('launch_options.py::', 10), ('mcp.py::', 9), ('probe/align.py::', 6), ('probe/dns.py::', 3), ('probe/network.py::', 7), ('probe/shared.py::', 2), ('probe/trust.py::', 3), ('automation.py::', 3), ('relay.py::', 23)]:
         selected = [row for row in rows if row['id'].startswith(f'engine/numera/{prefix}')]

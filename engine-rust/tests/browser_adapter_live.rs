@@ -16,6 +16,8 @@ use numera_core::{
 use serde_json::{Map, Value, json};
 use std::{collections::BTreeMap, path::Path, process::Command, sync::Arc, time::Duration};
 use tower::ServiceExt;
+#[path = "common/browser_logs.rs"]
+mod browser_logs;
 mod common;
 #[path = "common/hint_site.rs"]
 mod hint_site;
@@ -368,64 +370,25 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         cleanup?;
         result?;
         assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
-        let logs = std::fs::read_dir(root.join("logs"))?.collect::<Result<Vec<_>, _>>()?;
-        assert_eq!(logs.len(), 2, "Unexpected browser diagnostic file count");
-        let named = |prefix: &str| {
-            logs.iter()
-                .filter(|entry| {
-                    entry
-                        .file_name()
-                        .to_str()
-                        .is_some_and(|name| name.starts_with(prefix))
-                })
-                .collect::<Vec<_>>()
-        };
-        let sdk = named("browser-adapter_");
-        let native = named("native-browser_");
-        assert_eq!(sdk.len(), 1, "SDK log missing or duplicated");
-        assert_eq!(native.len(), 1, "Native timing log missing or duplicated");
-        let content = std::fs::read_to_string(sdk[0].path())?;
+        let content = browser_logs::inspect(
+            root,
+            &[
+                "browser_spawn",
+                "browser_hello",
+                "browser_open",
+                "browser_cookies_read",
+                "browser_cookies_read",
+                "browser_cookies_read",
+                "browser_cookies_read",
+                "browser_close",
+                "browser_settle",
+            ],
+        )?;
         assert!(content.contains("Persistent context opened"));
         assert!(content.contains("Finished exit=0"));
         assert!(
             !content.contains("[WARNING]"),
             "SDK configuration emitted a warning"
-        );
-        let content = std::fs::read_to_string(native[0].path())?;
-        let phases = content
-            .lines()
-            .map(|line| {
-                let (stamp, event) = line
-                    .split_once("] [INFO] [entry] Native timing phase=")
-                    .ok_or("Unexpected native browser log entry")?;
-                chrono::NaiveDateTime::parse_from_str(
-                    stamp.strip_prefix('[').ok_or("Missing timing timestamp")?,
-                    "%Y-%m-%d %H:%M:%S UTC",
-                )?;
-                let (phase, elapsed) = event
-                    .split_once(" elapsed_ns=")
-                    .ok_or("Missing native browser duration")?;
-                assert!(
-                    !elapsed.is_empty() && elapsed.bytes().all(|byte| byte.is_ascii_digit()),
-                    "Unsafe native browser timing value"
-                );
-                elapsed.parse::<u64>()?;
-                Ok(phase.to_owned())
-            })
-            .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
-        assert_eq!(phases.len(), 9, "Incomplete native browser lifecycle");
-        assert_eq!(
-            &phases[..3],
-            ["browser_spawn", "browser_hello", "browser_open"]
-        );
-        assert_eq!(
-            &phases[phases.len() - 2..],
-            ["browser_close", "browser_settle"]
-        );
-        assert!(
-            phases[3..phases.len() - 2]
-                .iter()
-                .all(|phase| phase == "browser_cookies_read")
         );
         temporary.cleanup()?;
     }

@@ -7,16 +7,18 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 27, 2026
 
-The latest completed checkpoint `7079d7d` ran in manual hosted batch
-[40434887956](https://github.com/KiaroSama/Numera-Browser/actions/runs/40434887956),
-which failed on October 27 at 02:04 UTC: historical extension swaps failed compilation,
-source release checks retained an obsolete dependency-list suffix, and seven live SDK legs
-rejected the added native timing log. Three desktop contract jobs failed strict Clippy;
-Ubuntu Playwright prerequisite downloads exceeded their wall limit with teardown unverified.
-CodeQL/required verification failed and publication was skipped; dashboard, container and
-dependency audits passed. Corrective source is not hosted acceptance. Earlier `edca9d0`
-passed all SDK/relocated functional scenarios but failed both native handshake fixtures;
-every browser performance comparison remains unaccepted.
+The latest completed checkpoint `8354eeb` ran in manual hosted batch
+[40444772781](https://github.com/KiaroSama/Numera-Browser/actions/runs/40444772781),
+which failed on October 27 at 04:24 UTC. Both native jobs rejected an obsolete one-log
+protocol assertion; Windows additionally returned 500 instead of the original 200 for an
+icon path containing dot components. Windows/macOS desktop contracts failed strict Clippy;
+Ubuntu's system-dependency download exceeded its existing bound before compilation.
+CodeQL/required verification failed and publication was skipped. Prepared corrections
+preserve strict dual-log validation, Windows physical path identity and lifecycle behavior.
+The SDK adapter now delegates every bounded wait to input readiness, without an extra
+per-fragment timer. These changes are not hosted acceptance or a measured speedup.
+Every browser performance comparison remains unaccepted: all memory verdicts overlap,
+and Linux Playwright/Patchright command latency is a regression.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.
@@ -56,8 +58,8 @@ cases and 40 full-option fixtures, 99 actual-loopback proxy responses, 99 MCP st
 and 44 captured-output cases after named historical assertion failures and fixed-byte restoration.
 MCP retains UTF8/frame/ownership limits and nonzero JSON verdicts; its real child ping/list passed
 with owned-tree settlement. Ordinary output cases do not certify every forced-timeout cleanup branch.
-Fixed builds reuse sanitized Cargo progress, not heartbeat or longer deadlines. The 483 mapped
-references include 23 pending relay entries; none establishes complete parity or permits selection.
+Fixed builds reuse sanitized Cargo progress, not heartbeat or longer deadlines. All 907 source
+occurrences now have nearest target/test references; none establishes complete parity or permits selection.
 Zod 4.6.7 and ctutils 0.4.5 resolved GHSA-mrhx-c7xc-m3w5 and RUSTSEC-2026-0385 through passing
 hosted audits and application/native checks, without changing other resolved records or manifests.
 The shared timezone correction passed 103 original-derived proxy/trust grade pairs on both systems
@@ -595,9 +597,10 @@ source tests, and CI checks their regeneration for drift.
 ## Coverage and unfinished work
 
 [The source capability ledger](migration-coverage.json) retains all 907 frozen
-source occurrences and hashes. There are now 417 inspected target/test references,
-including 16 newly mapped job occurrences, with explicit remaining gaps:
-906 pending, one implemented, zero verified.
+source occurrences and hashes. All 907 occurrences now carry nearest responsibility/test
+references, including the final 424 HTTP, runtime, storage and CLI mappings. References include
+private/inlined replacements and explicitly missing behavior, not equivalent public APIs or
+complete test coverage. Statuses remain 906 pending, one implemented, zero verified.
 It intentionally refuses default switch; references are not acceptance evidence.
 Alternative definitions retain separate deterministic IDs. The verified leaf cases
 and pending screen repair are detailed in the [candidate notes](migration-candidate.md#occurrence-level-reconciliation).

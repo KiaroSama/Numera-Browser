@@ -140,7 +140,7 @@ def main():
         while True:
             if closed.is_set():
                 break
-            ready, request = frames.poll(.025 if context is not None else 0)
+            ready, request = frames.poll(.025)
             if not ready:
                 if context is not None:
                     # Input readiness owns the wait; this call only dispatches SDK events.
@@ -153,7 +153,6 @@ def main():
                     remaining = input_deadline - time.monotonic()
                     if remaining <= 0:
                         raise TimeoutError('Input deadline exceeded')
-                    closed.wait(min(0.025, remaining))
                 continue
             if request is None:
                 break
