@@ -6,7 +6,45 @@ use super::{
 };
 use crate::{ownership::claims, validation};
 use serde_json::Value;
-use std::{fs, io, path::PathBuf};
+use std::{error::Error, fmt, fs, io, path::PathBuf};
+
+#[derive(Debug)]
+pub struct DeleteRollback {
+    pub cause: io::Error,
+    pub failures: Vec<(PathBuf, io::Error)>,
+    pub session: Option<(PathBuf, PathBuf)>,
+}
+impl fmt::Display for DeleteRollback {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Profile delete failed: {}; rollback could not restore {} path(s)",
+            self.cause,
+            self.failures.len()
+        )?;
+        for (path, error) in &self.failures {
+            write!(f, "; {}: {error}", path.display())?;
+        }
+        if let Some((tomb, destination)) = &self.session {
+            write!(
+                f,
+                "; the session is still on disk as {}; move that directory to {} to finish recovering",
+                tomb.display(),
+                destination.display()
+            )?;
+        }
+        f.write_str(". Restore these paths before retrying.")
+    }
+}
+impl Error for DeleteRollback {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        Some(&self.cause)
+    }
+}
+
+#[cfg(test)]
+#[path = "repo_delete_tests.rs"]
+mod tests;
 
 impl ProfileRepo {
     fn session_path(&self, id: &str) -> Result<PathBuf, RepoError> {
@@ -129,6 +167,8 @@ impl ProfileRepo {
                 for path in paths {
                     if path.exists() {
                         batch.remember(&path)?;
+                        #[cfg(test)]
+                        tests::filesystem_fault(&path, false)?;
                         fs::remove_file(path)?;
                     }
                 }
@@ -137,7 +177,13 @@ impl ProfileRepo {
             if let Err(error) = result {
                 let mut failures = batch.rollback();
                 if let Some(tomb) = &tomb
-                    && let Err(restore) = fs::rename(tomb, &session)
+                    && let Err(restore) = {
+                        #[cfg(test)]
+                        let attempt = tests::filesystem_fault(tomb, true);
+                        #[cfg(not(test))]
+                        let attempt: io::Result<()> = Ok(());
+                        attempt.and_then(|()| fs::rename(tomb, &session))
+                    }
                 {
                     failures.push((tomb.clone(), restore));
                 }

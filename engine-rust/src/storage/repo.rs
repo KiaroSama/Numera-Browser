@@ -1,3 +1,4 @@
+pub use super::repo_delete::DeleteRollback;
 use super::{
     atomic::write_json,
     config::{ConfigError, ConfigStore},
