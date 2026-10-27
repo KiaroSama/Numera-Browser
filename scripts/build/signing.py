@@ -26,8 +26,11 @@ MAX_MANIFEST = 1024 * 1024
 MAX_BUILD_MANIFEST = 8 * 1024 * 1024
 
 
-def execute(command: list[str], *, env=None, data: bytes | None = None, seconds: int = 60) -> bytes:
+def execute(command: list[str], *, env=None, data: bytes | None = None, seconds: int = 60,
+            expected_exit: int = 0, expected_diagnostic: bytes | None = None) -> bytes:
     child_env = dict(os.environ if env is None else env)
+    if command[0] == 'codesign':
+        child_env.update(LC_ALL='C', LANG='C')
     for name in ('NUMERA_RELEASE_SIGNING_KEY', 'NUMERA_CODE_SIGNING_PFX', 'NUMERA_CODE_SIGNING_PASSWORD'):
         if not (name == 'NUMERA_CODE_SIGNING_PASSWORD' and env is not None
                 and Path(command[0]).name in {'pwsh', 'pwsh.exe'}):
@@ -37,7 +40,8 @@ def execute(command: list[str], *, env=None, data: bytes | None = None, seconds:
                                 env=child_env, timeout=seconds, check=False)
     except subprocess.TimeoutExpired as error:
         raise ValueError(f'Signing tool exceeded its deadline: {Path(command[0]).name}') from None
-    if result.returncode:
+    if (result.returncode != expected_exit
+            or (expected_diagnostic is not None and expected_diagnostic not in result.stderr)):
         # Native diagnostics can include imported key/certificate details. Only
         # the tool identity and exit code cross the signing boundary.
         raise ValueError(f'Signing tool failed: {Path(command[0]).name} exit={result.returncode}')
@@ -177,6 +181,40 @@ def fixture_certificate(path: Path, key_path: Path, password: bytes) -> bytes:
     return payload
 
 
+def macho_tamper_offset(path: Path) -> int:
+    import struct
+
+    failure = 'Native executable has no bounded signed content for a tamper check'
+    with path.open('rb') as stream:
+        length = path.stat().st_size
+        header = stream.read(32)
+        if len(header) != 32:
+            raise ValueError(failure)
+        magic, cpu, _, _, count, size, _, _ = struct.unpack('<8I', header)
+        if (magic != 0xFEEDFACF or cpu != 0x0100000C or size > MAX_MANIFEST
+                or count > size // 8 or 32 + size > length):
+            raise ValueError(failure)
+        commands = stream.read(size)
+        cursor = 0
+        offset = None
+        for _ in range(count):
+            if cursor + 8 > size:
+                raise ValueError(failure)
+            kind, command_size = struct.unpack_from('<2I', commands, cursor)
+            if command_size < 8 or cursor + command_size > size:
+                raise ValueError(failure)
+            if kind == 0x1D:  # LC_CODE_SIGNATURE is outside the signed content.
+                if offset is not None or command_size != 16:
+                    raise ValueError(failure)
+                offset, signature_size = struct.unpack_from('<2I', commands, cursor + 8)
+                if offset <= 32 + size or signature_size == 0 or offset + signature_size > length:
+                    raise ValueError(failure)
+            cursor += command_size
+        if cursor != size or offset is None:
+            raise ValueError(failure)
+        return offset - 1
+
+
 def native_sign(stage: Path, platform: str, public_certificate: Path, fixture: bool = False) -> None:
     from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.serialization import pkcs12
@@ -228,26 +266,31 @@ def native_sign(stage: Path, platform: str, public_certificate: Path, fixture: b
                 execute(['security', 'unlock-keychain', '-p', '', str(keychain)])
                 execute(['security', 'import', str(transport), '-k', str(keychain), '-P', '', '-T', '/usr/bin/codesign'])
                 execute(['security', 'set-key-partition-list', '-S', 'apple-tool:,apple:,codesign:', '-s', '-k', '', str(keychain)])
+                approved = f'=certificate leaf = H"{sha1}"'
+                wrong_sha1 = ('0' if sha1[0] != '0' else '1') + sha1[1:]
+                wrong = f'=certificate leaf = H"{wrong_sha1}"'
                 for path in paths:
                     execute(['codesign', '--force', '--sign', sha1, '--keychain', str(keychain), '--timestamp=none', str(path)])
-                    execute(['codesign', '--verify', '--strict', '--requirement', f'certificate leaf = H"{sha1}"', str(path)])
+                    execute(['codesign', '--verify', '--strict', '--test-requirement', approved, str(path)])
+                    # Exit3 proves an intact signature failed the supplied identity
+                    # requirement; missing tools, invalid arguments and I/O do not.
+                    execute(['codesign', '--verify', '--strict', '--test-requirement', wrong, str(path)], expected_exit=3)
+                    execute(['codesign', '--verify', '--strict', '--test-requirement', approved, str(path)])
                 for index, path in enumerate(paths):
                     tampered = private / f'tampered-{index}'
                     shutil.copyfile(path, tampered)
+                    offset = macho_tamper_offset(tampered)
                     with tampered.open('r+b') as stream:
-                        stream.seek(64)
+                        stream.seek(offset)
                         original = stream.read(1)
                         if not original:
                             raise ValueError('Native executable is too small for a tamper check')
-                        stream.seek(64)
+                        stream.seek(offset)
                         stream.write(bytes([original[0] ^ 1]))
-                    rejected = False
-                    try:
-                        execute(['codesign', '--verify', '--strict', '--requirement', f'certificate leaf = H"{sha1}"', str(tampered)])
-                    except ValueError:
-                        rejected = True
-                    if not rejected:
-                        raise ValueError('Tampered native executable was accepted')
+                    execute(['codesign', '--verify', '--strict', '--test-requirement', approved, str(tampered)],
+                            expected_exit=1,
+                            expected_diagnostic=b'code or signature modified')
+                    execute(['codesign', '--verify', '--strict', '--test-requirement', approved, str(path)])
             finally:
                 execute(['security', 'delete-keychain', str(keychain)])
         else:

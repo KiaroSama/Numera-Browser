@@ -7,15 +7,15 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 27, 2026
 
-The latest completed checkpoint `a65b0b7` ran in manual hosted batch
-[40466348941](https://github.com/KiaroSama/Numera-Browser/actions/runs/40466348941),
-which failed on October 27 at 07:50 UTC. Both native jobs, all source-platform jobs and
-Windows/macOS desktop contracts passed; Ubuntu desktop stopped during its bounded system
-package download, before compilation. All eight SDK and relocated functional legs passed,
-then failed strict performance acceptance: four time verdicts show no regression, four are
-inconclusive; all eight memory ranges overlap. No browser performance leg is accepted. Windows/Camoufox
-completed functional checks and measurements; the prior idle timeout did not recur, without
-changing its deadline or establishing its root cause.
+The latest completed checkpoint `44f2306` ran in manual hosted batch
+[40482786436](https://github.com/KiaroSama/Numera-Browser/actions/runs/40482786436),
+which failed on October 27 at 10:12 UTC. All source-platform and three-OS desktop contracts
+passed, including 22 discovery variants. Linux native passed; Windows completed functional
+acceptance but HTTP-list latency remained inconclusive. Seven SDK/relocated functional legs
+passed before strict benchmark refusal: three time verdicts show no regression, four are
+inconclusive; all seven memory ranges overlap. Linux/Patchright stopped during prerequisite
+downloads with unproved cleanup, before SDK tests or measurements. No browser performance leg
+is accepted; neither longer deadlines nor retries were used.
 CodeQL/required verification failed and publication was skipped. The earlier roughly 201 ms
 Linux Chromium open-envelope gap is absent after removing the extra fragment wait; separate
 hosted runs do not prove total-command speedup. Both systems caught the historical token failure,
@@ -770,10 +770,10 @@ WARNING/ERROR report failures, and handler-level redaction protects credential-s
 values. Logging initialization failure falls back explicitly to stderr; handlers
 close on every path. Logs are local diagnostics, not bundled or committed; remove
 old run logs deliberately after diagnosis, and sanitize any approved support export.
-The original engine's logging policy remains unchanged. Failed owned temporary cleanup
-additionally records a fixed operation name, numeric OS error codes and lstat-derived
-file-kind/read-only/reparse flags, without arbitrary path names or exception text.
-The original cleanup exception still fails verification and retains the remaining root;
+The original engine's logging policy remains unchanged. Verification timeouts record expired
+wall/idle flags and numeric durations before cleanup can fail. Failed temporary cleanup records
+fixed operations, numeric OS errors and file-kind/read-only/reparse flags, not arbitrary paths
+or exception text. The original cleanup exception still fails verification and retains the root;
 no retry, permission change or ignored removal error is introduced.
 
 Algorithm redistribution notices are in

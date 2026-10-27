@@ -31,7 +31,7 @@ public static class NumeraAuthenticodeHash {
             int result;
             try { result=WinVerifyTrust(new IntPtr(-1),ref action,ref data); }
             finally { data.Action=2; WinVerifyTrust(new IntPtr(-1),ref action,ref data); }
-            if(result!=0) throw new InvalidOperationException("Authenticode file hash verification failed");
+            if(result!=0) throw new COMException("Authenticode file hash verification failed", result);
         } finally {
             Marshal.DestroyStructure<FileInfo>(memory); Marshal.FreeHGlobal(memory);
         }
@@ -88,6 +88,15 @@ try {
         $signed = Set-AuthenticodeSignature -LiteralPath $path -Certificate $certificate -HashAlgorithm SHA256 -IncludeChain Signer
         if (-not $signed.SignerCertificate) { throw 'Authenticode signing operation produced no signer' }
         Verify-OwnedSignature $path $env:NUMERA_SIGN_FINGERPRINT
+        $prefix = if ($env:NUMERA_SIGN_FINGERPRINT[0] -eq '0') { '1' } else { '0' }
+        $wrong = $prefix + $env:NUMERA_SIGN_FINGERPRINT.Substring(1)
+        $rejected = $false
+        try { Verify-OwnedSignature $path $wrong } catch {
+            if ($_.Exception.Message -cne 'Native executable signer differs from approved certificate') { throw }
+            $rejected = $true
+        }
+        if (-not $rejected) { throw 'Wrong Authenticode signer was accepted' }
+        Verify-OwnedSignature $path $env:NUMERA_SIGN_FINGERPRINT
         # The safe copy must actually fail verification after a covered byte is
         # changed. The original product is never modified by this rejection case.
         $copy = Join-Path (Split-Path $env:NUMERA_SIGN_PFX) 'tampered.exe'
@@ -97,8 +106,13 @@ try {
             $bytes[64] = $bytes[64] -bxor 1
             [IO.File]::WriteAllBytes($copy, $bytes)
             $rejected = $false
-            try { Verify-OwnedSignature $copy $env:NUMERA_SIGN_FINGERPRINT } catch { $rejected = $true }
+            try { Verify-OwnedSignature $copy $env:NUMERA_SIGN_FINGERPRINT } catch {
+                # TRUST_E_BAD_DIGEST is evidence of tampering; other failures are not.
+                if ($_.Exception.GetBaseException().HResult -ne -2146869232) { throw }
+                $rejected = $true
+            }
             if (-not $rejected) { throw 'Tampered Authenticode copy was accepted' }
+            Verify-OwnedSignature $path $env:NUMERA_SIGN_FINGERPRINT
         } finally { Remove-Item -LiteralPath $copy -Force -ErrorAction SilentlyContinue }
     }
     Write-Output 'Owned Authenticode signatures verified; private trust, no OS trust installation.'

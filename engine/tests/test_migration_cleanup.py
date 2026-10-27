@@ -99,6 +99,64 @@ def test_public_run_reports_failed_cleanup_without_swallowing_or_repeating(
     assert_failed_cleanup(helper, tmp_path, monkeypatch, caplog, operation, winerror)
 
 
+@pytest.mark.parametrize('wall,idle,wall_expired,idle_expired', [
+    (5, 10, True, False), (10, 5, False, True), (5, 5, True, True),
+], ids=['wall', 'idle', 'both'])
+@pytest.mark.parametrize('reader_alive', [False, True], ids=['settled', 'reader-unsettled'])
+def test_timeout_trigger_is_retained_before_fatal_cleanup(
+        tmp_path, monkeypatch, caplog, wall, idle, wall_expired, idle_expired, reader_alive):
+    helper = load(SCRIPTS / 'run_owned.py', monkeypatch)
+    temporary = tmp_path / 'retained-input'
+    temporary.mkdir()
+    retained = temporary / 'payload'
+    retained.write_bytes(b'unchanged diagnostic fixture')
+    calls = []
+    process = SimpleNamespace(pid=123, returncode=-1,
+                              stdout=SimpleNamespace(close=lambda: calls.append('close-output')),
+                              wait=lambda timeout: calls.append(('wait', timeout)))
+
+    class Reader:
+        def __init__(self, **kwargs):
+            pass
+
+        def start(self):
+            pass
+
+        def join(self, timeout):
+            calls.append(('join', timeout))
+
+        def is_alive(self):
+            return reader_alive
+
+    clock = iter((0.0, 6.0))
+    monkeypatch.setattr(helper, 'create_temporary', lambda *args: temporary)
+    monkeypatch.setattr(helper, 'spawn', lambda *args, **kwargs: (process, 'owned-tree'))
+    monkeypatch.setattr(helper, 'time', SimpleNamespace(monotonic=lambda: next(clock)))
+    monkeypatch.setattr(helper, 'threading', SimpleNamespace(Thread=Reader))
+    monkeypatch.setattr(helper, 'end_tree', lambda tree, **kwargs: calls.append('settle') or True)
+    logger = logging.getLogger('timeout-trigger-fixture')
+    expected = RuntimeError if reader_alive else TimeoutError
+    with caplog.at_level(logging.INFO, logger=logger.name), pytest.raises(expected) as caught:
+        helper.run(['synthetic-command'], wall, idle, logger)
+    assert str(caught.value) == ('Command output reader did not settle' if reader_alive else
+                                 'Migration command exceeded wall/idle budget')
+    if reader_alive:
+        assert isinstance(caught.value.__context__, TimeoutError)
+        assert calls == ['settle', ('wait', 5), ('join', 2)]
+        assert retained.read_bytes() == b'unchanged diagnostic fixture'
+    else:
+        assert calls == ['settle', ('wait', 5), ('join', 2), 'close-output']
+        assert not temporary.exists()
+    messages = [record.getMessage() for record in caplog.records]
+    triggers = [message for message in messages if message.startswith('Verification timeout ')]
+    assert triggers == [f'Verification timeout wall_expired={wall_expired} idle_expired={idle_expired} '
+                        f'elapsed=6.000s silence=6.000s wall={wall:.3f}s idle={idle:.3f}s'], \
+        'Original timeout trigger was lost before cleanup'
+    assert messages.index(triggers[0]) < next(index for index, message in enumerate(messages)
+                                            if 'phase=settle-tree' in message)
+    assert 'synthetic-command' not in triggers[0] and str(temporary) not in triggers[0]
+
+
 def test_cleanup_diagnostic_is_load_bearing_against_exact_previous_runner(tmp_path, monkeypatch, caplog):
     fixture = ROOT / 'engine/tests/fixtures/migration-owned-before-cleanup-diagnostic.py.txt'
     source = fixture.read_bytes()

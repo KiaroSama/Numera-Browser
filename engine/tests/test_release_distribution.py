@@ -251,6 +251,117 @@ def test_ed25519_exact_manifest_rejects_tampering_wrong_key_and_size(tmp_path, m
     assert not list(tmp_path.glob('numera-sign-*')), 'Private temporary signing inputs survived'
 
 
+def test_macos_native_signing_checks_identity_and_discriminates_rejection(tmp_path, monkeypatch):
+    import base64
+    import struct
+    import subprocess
+
+    module = signing()
+    stage = tmp_path / 'portable path with spaces'
+    (stage / 'engine').mkdir(parents=True)
+    paths = [stage / 'numera', stage / 'engine/numera-engine']
+    # Thin ARM64 layout with one signature command; data is never executed.
+    content = bytearray(192)
+    struct.pack_into('<8I', content, 0, 0xFEEDFACF, 0x0100000C, 0, 2, 1, 16, 0, 0)
+    struct.pack_into('<4I', content, 32, 0x1D, 16, 128, 64)
+    for path in paths:
+        path.write_bytes(content)
+    public = tmp_path / 'fixture.pem'
+    material = tmp_path / 'fixture.p12'
+    password = b'public synthetic fixture password'
+    module.fixture_certificate(public, material, password)
+    _, fingerprint, sha1 = module.certificate(public)
+    approved = f'=certificate leaf = H"{sha1}"'
+    wrong_sha1 = ('0' if sha1[0] != '0' else '1') + sha1[1:]
+    wrong = f'=certificate leaf = H"{wrong_sha1}"'
+    monkeypatch.setenv('GITHUB_ACTIONS', 'false')
+    monkeypatch.setenv('RUNNER_TEMP', str(tmp_path / 'private staging'))
+    monkeypatch.setenv('NUMERA_CODE_SIGNING_PFX', base64.b64encode(material.read_bytes()).decode('ascii'))
+    monkeypatch.setenv('NUMERA_CODE_SIGNING_PASSWORD', password.decode('ascii'))
+    monkeypatch.setenv('NUMERA_RELEASE_SIGNING_KEY', 'public fixture, not a key')
+    result_path = stage / 'SIGNING.json'
+    original_run = module.subprocess.run
+    modes = {'specific-mismatch': 3, 'accepted-wrong-signer': 0,
+             'invalid-arguments': 2, 'other-verification-failure': 1,
+             'wrong-signer-timeout': 3, 'wrong-signer-missing-tool': 3,
+             'accepted-tamper': 3, 'tamper-timeout': 3, 'tamper-tool-error': 3,
+             'tamper-invalid-arguments': 3, 'tamper-missing-tool': 3}
+    for mode, mismatch_exit in modes.items():
+        result_path.unlink(missing_ok=True)
+        calls = []
+
+        def native_tool(command, **kwargs):
+            if command[0] in {'whoami', 'icacls'}:
+                return original_run(command, **kwargs)
+            calls.append(command)
+            assert not any(name in kwargs['env'] for name in (
+                'NUMERA_RELEASE_SIGNING_KEY', 'NUMERA_CODE_SIGNING_PFX', 'NUMERA_CODE_SIGNING_PASSWORD'))
+            assert kwargs['timeout'] == 60
+            code = 0
+            diagnostic = b'private fixture tool detail'
+            if command[0] == 'codesign' and '--verify' in command:
+                assert '--strict' in command and '--test-requirement' in command
+                requirement = command[command.index('--test-requirement') + 1]
+                assert requirement in {approved, wrong}
+                path = Path(command[-1])
+                if requirement == wrong:
+                    assert path in paths, 'Wrong-signer control must use the intact owned binary'
+                    if mode == 'wrong-signer-timeout':
+                        raise subprocess.TimeoutExpired(command, 60, stderr=diagnostic)
+                    if mode == 'wrong-signer-missing-tool':
+                        raise FileNotFoundError('native fixture tool missing')
+                    code = mismatch_exit
+                elif path.name.startswith('tampered-'):
+                    damaged = bytearray(content)
+                    damaged[127] ^= 1
+                    assert path.read_bytes() == damaged, 'Tamper control changed the object layout'
+                    assert kwargs['env']['LC_ALL'] == 'C'
+                    if mode == 'tamper-timeout':
+                        raise subprocess.TimeoutExpired(command, 60, stderr=diagnostic)
+                    if mode == 'tamper-missing-tool':
+                        raise FileNotFoundError('native fixture tool missing')
+                    code = 0 if mode == 'accepted-tamper' else 2 if mode == 'tamper-invalid-arguments' else 1
+                    if mode != 'tamper-tool-error':
+                        diagnostic += b'\nfixture: code or signature modified\n'
+                else:
+                    assert path in paths
+            else:
+                assert command[0] == 'security' or (command[0] == 'codesign' and '--sign' in command)
+            return subprocess.CompletedProcess(command, code, b'private fixture stdout', diagnostic)
+
+        monkeypatch.setattr(module.subprocess, 'run', native_tool)
+        if mode == 'specific-mismatch':
+            module.native_sign(stage, 'macos-arm64', public)
+            result = json.loads(result_path.read_text(encoding='utf-8'))
+            assert result['certificate_sha256'] == fingerprint
+            assert result['trust'] == 'owner-self-signed-private-trust'
+            assert not result['notarized'] and not result['publicly_trusted']
+            for path in paths:
+                verification = [command for command in calls
+                                if command[0] == 'codesign' and '--verify' in command
+                                and command[-1] == str(path)]
+                assert [command[command.index('--test-requirement') + 1]
+                        for command in verification] == [approved, wrong, approved, approved]
+            assert sum(command[0] == 'codesign' and Path(command[-1]).name.startswith('tampered-')
+                       for command in calls) == 2
+        else:
+            expected_type = FileNotFoundError if mode.endswith('missing-tool') else ValueError
+            with pytest.raises(expected_type) as caught:
+                module.native_sign(stage, 'macos-arm64', public)
+            assert 'private fixture' not in str(caught.value)
+            assert not result_path.exists(), 'Failed native verification published signing metadata'
+            if mode.endswith('timeout'):
+                assert 'exceeded its deadline' in str(caught.value)
+            elif not mode.endswith('missing-tool'):
+                expected_exit = (0 if mode == 'accepted-tamper' else
+                                 2 if mode == 'tamper-invalid-arguments' else
+                                 1 if mode == 'tamper-tool-error' else mismatch_exit)
+                assert f'exit={expected_exit}' in str(caught.value)
+        assert any(command[:2] == ['security', 'delete-keychain'] for command in calls)
+        assert not list((tmp_path / 'private staging').glob('numera-sign-*'))
+        assert all(path.read_bytes() == content for path in paths)
+
+
 @pytest.mark.parametrize('mode,executable', [(0o755, True), (0o644, False)], ids=['executable', 'data'])
 def test_immutable_build_inventory_excludes_only_its_own_signature_cycle(tmp_path, monkeypatch, mode, executable):
     module = signing()

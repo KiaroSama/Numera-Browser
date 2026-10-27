@@ -129,6 +129,10 @@ def run(command: list[str], wall: float, idle: float, logger, *, report_units: b
         while True:
             now = time.monotonic()
             if now - started >= wall or now - progress >= idle:
+                logger.error('Verification timeout wall_expired=%s idle_expired=%s '
+                             'elapsed=%.3fs silence=%.3fs wall=%.3fs idle=%.3fs',
+                             now - started >= wall, now - progress >= idle,
+                             now - started, now - progress, wall, idle)
                 raise TimeoutError('Migration command exceeded wall/idle budget')
             try:
                 kind, value = events.get(timeout=min(0.1, wall - (now - started), idle - (now - progress)))

@@ -67,7 +67,7 @@ Windows can also inspect the final executable's publisher signature:
 Get-AuthenticodeSignature -LiteralPath '.\Numera Browser\numera.exe'
 ```
 
-A self-signed chain can be untrusted even when the designated signer and cryptographic file signature are correct. Do not describe that as public OS trust. The release workflow independently checks the designated certificate and rejects changed/wrong-signer copies; end-user policy may still require a publicly trusted build.
+A self-signed chain can be untrusted even when the designated signer and cryptographic file signature are correct. Do not describe that as public OS trust. The native signing path checks the designated certificate, requires an intact binary to reject a different expected signer, and separately requires a modified copy to report signature damage. A timeout, missing tool or unrelated verification error is not evidence of rejection. These checks remain subject to the hosted acceptance described above; end-user policy may still require a publicly trusted build.
 
 ## Data safety and recovery
 
