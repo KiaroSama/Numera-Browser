@@ -7,19 +7,19 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 27, 2026
 
-The latest completed checkpoint `017f0dc` ran in manual hosted batch
-[40509589761](https://github.com/KiaroSama/Numera-Browser/actions/runs/40509589761),
-which failed on October 27 at 13:39 UTC. All source-platform and three-OS desktop contracts
-passed. Linux native proved the old directory-permission diagnostic failure, restored fixed
-source and passed both current store-opening tests. Windows completed 65 historical proofs
-before its unchanged 900-second aggregate wall limit; permission and current acceptance did
-not run there. All eight browser legs reached strict reporting: three time verdicts show no
-regression, five are inconclusive; all eight memory ranges overlap. No browser performance
-leg is accepted. Native signing orchestration fixtures passed in the source tier, but actual
-native signing remains blocked behind distribution prerequisites. CodeQL/required verification
-failed and publication was skipped. Historical Git input bytes are now reused within one proof
-invocation, with integrity and restoration checked for every case; all semantic proofs still run.
-This optimization and the read-warning fixture await hosted verification, not acceptance.
+The latest completed checkpoint `2775fa3` ran in manual hosted batch
+[40548425844](https://github.com/KiaroSama/Numera-Browser/actions/runs/40548425844),
+which failed on October 27 at 17:56 UTC. All source-platform, three-OS desktop and both native
+contract jobs passed. Windows completed 73 historical proofs in 801 seconds; Linux completed
+72 in 464 seconds, within unchanged limits. Old read-warning and delete-recovery defects failed
+before fixed-byte restoration and current acceptance on both systems; malformed process-group
+observations passed that sequence on Linux. Windows directory-permission acceptance also passed.
+Seven browser legs passed functional checks but failed strict performance acceptance: four time
+verdicts show no regression, three are inconclusive, and all seven memory ranges overlap. Linux
+Camoufox stopped during generic font acquisition at its 300-second limit; cleanup was unproved.
+Its replacement prerequisite gate checks all required runtime packages and installs only missing
+ones; Linux preparation checks bundled fonts/configuration. These changes await hosted proof.
+CodeQL/required verification failed; distribution, actual native signing and publication were skipped.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.

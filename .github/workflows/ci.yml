@@ -314,7 +314,7 @@ jobs:
         run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python -m playwright install-deps chromium
       - name: Install Firefox system dependencies
         if: runner.os == 'Linux' && matrix.engine == 'camoufox'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python -m playwright install-deps firefox
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python scripts/ci/camoufox_runtime.py
       - name: Install selected Chromium
         if: matrix.engine == 'playwright' || matrix.engine == 'patchright'
         run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- python -m ${{ matrix.engine }} install chromium
