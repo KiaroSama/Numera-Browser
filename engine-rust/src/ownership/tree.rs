@@ -249,7 +249,10 @@ fn group_empty(group: i32) -> io::Result<bool> {
     }
     Ok(true)
 }
-#[cfg(all(unix, not(target_os = "linux")))]
+#[cfg(target_os = "macos")]
+use super::macos::group_empty;
+
+#[cfg(all(unix, not(any(target_os = "linux", target_os = "macos"))))]
 fn group_empty(_group: i32) -> io::Result<bool> {
     Err(io::Error::new(
         io::ErrorKind::Unsupported,

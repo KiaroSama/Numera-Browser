@@ -4,6 +4,8 @@ mod capture_pipe;
 pub mod capture_units;
 pub mod claims;
 pub mod identity;
+#[cfg(target_os = "macos")]
+mod macos;
 pub mod ready;
 pub mod recorded_tree;
 pub mod registry;

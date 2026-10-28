@@ -5,21 +5,21 @@ The accepted boundary is [ADR0001](adr/0001-parity-gated-rust-migration.md); Pyt
 [candidate executable](migration-candidate.md), **not an installed replacement**.
 Passing library or narrow entrypoint tests does not certify a finished migration.
 
-## Current integration status — October 27, 2026
+## Current integration status — October 28, 2026
 
-The latest completed checkpoint `2775fa3` ran in manual hosted batch
-[40548425844](https://github.com/KiaroSama/Numera-Browser/actions/runs/40548425844),
-which failed on October 27 at 17:56 UTC. All source-platform, three-OS desktop and both native
-contract jobs passed. Windows completed 73 historical proofs in 801 seconds; Linux completed
-72 in 464 seconds, within unchanged limits. Old read-warning and delete-recovery defects failed
-before fixed-byte restoration and current acceptance on both systems; malformed process-group
-observations passed that sequence on Linux. Windows directory-permission acceptance also passed.
-Seven browser legs passed functional checks but failed strict performance acceptance: four time
-verdicts show no regression, three are inconclusive, and all seven memory ranges overlap. Linux
-Camoufox stopped during generic font acquisition at its 300-second limit; cleanup was unproved.
-Its replacement prerequisite gate checks all required runtime packages and installs only missing
-ones; Linux preparation checks bundled fonts/configuration. These changes await hosted proof.
-CodeQL/required verification failed; distribution, actual native signing and publication were skipped.
+The latest completed checkpoint `897caad` ran in manual hosted batch
+[40723122995](https://github.com/KiaroSama/Numera-Browser/actions/runs/40723122995), which failed on October 28. All source-platform and three-OS desktop contract jobs passed;
+Linux native contracts passed. Windows native functional checks reached measurement, where HTTP
+latency ranges overlapped despite passing memory and all four CLI comparisons. Seven browser
+legs passed source, native SDK and relocated functional acceptance before strict benchmark refusal:
+three time verdicts show no regression, four are inconclusive, and all seven memory ranges overlap.
+Linux Camoufox passed runtime-package/bundled-font prerequisites and reached real browser acceptance. Windows Camoufox acquisition exceeded the unchanged 120-second
+idle bound; its owner recorded clean settlement, but the underlying stall remains unexplained.
+The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
+and current acceptance, including read warnings, delete recovery and Linux process-group uncertainty.
+Native macOS process identity and conservative group observation are now prepared with OS-fault
+controls, source-compatible birth tokens and hosted real descendant/claim acceptance; these new
+paths await execution. CodeQL and required verification still fail; signing and publication stay gated.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.

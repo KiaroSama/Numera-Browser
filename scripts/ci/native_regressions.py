@@ -147,11 +147,16 @@ class FailureEvidence(logging.Handler):
                              + self.case['target'])
 
 
-def prove(root: Path, original: Path, logger) -> None:
+def prove(root: Path, original: Path, logger, *, cases: tuple | None = None) -> None:
     from run_owned import run
     from baseline_source import ENVIRONMENT
 
     sha = require_hosted_source(root)
+    if cases is not None:
+        if not cases or any(case.get('platform') != sys.platform for case in cases):
+            raise ValueError('Explicit historical proof cases must match the owning platform')
+        files = [name for case in cases for name in (*case['files'], *case.get('companions', {}))]
+        git(root, 'diff', '--exit-code', 'HEAD', '--', *files)
     keys = (ENVIRONMENT, 'PYTHONDONTWRITEBYTECODE', 'CARGO_INCREMENTAL')
     previous = {key: os.environ.get(key) for key in keys}
     # Immutable source bytes are shared only within this invocation, never proof verdicts.
@@ -162,7 +167,7 @@ def prove(root: Path, original: Path, logger) -> None:
     try:
         # Historical swaps prove semantics without reoptimizing the application each time.
         # The current build retains the manifest's optimized crypto configuration.
-        applicable = (case for case in REGRESSIONS
+        applicable = (case for case in (REGRESSIONS if cases is None else cases)
                       if case.get('platform', sys.platform) == sys.platform)
         for index, case in enumerate(applicable):
             evidence = FailureEvidence(case)
