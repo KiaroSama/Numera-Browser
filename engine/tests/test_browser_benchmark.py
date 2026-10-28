@@ -192,7 +192,9 @@ def test_browser_pair_checks_full_export_and_preserves_failed_inputs(tmp_path, m
         assert (lock.lstat().st_ino, lock.lstat().st_mtime_ns) == (original_lock.st_ino, original_lock.st_mtime_ns)
 
 
-@pytest.mark.parametrize('mode', ['normal', 'parity', 'inconclusive', 'metric', 'write'])
+@pytest.mark.parametrize('mode', [
+    'normal', 'parity', 'inconclusive', 'diagnostic-refusal', 'diagnostic-cleanup', 'metric', 'write',
+])
 def test_browser_run_requires_all_pairs_and_retains_unaccepted_evidence(tmp_path, monkeypatch, mode):
     helper = load(monkeypatch)
     temporary = tmp_path / '.ci-work/migration-temp'
@@ -216,14 +218,29 @@ def test_browser_run_requires_all_pairs_and_retains_unaccepted_evidence(tmp_path
     monkeypatch.setattr(helper, 'environment', lambda *args: {})
     baseline_payload = {'cookies': [{'name': 'one'}, {'name': 'two'}], 'origins': []}
     monkeypatch.setattr(helper, 'baseline', lambda *args: (tmp_path, 'fixture', baseline_payload))
-    observed = []
+    observed, diagnostic_runs = [], []
 
-    def observation(candidate, original, parent, template, env, runtime, identifier, *, logger, repetition):
-        assert repetition == (len(observed) // 2) - 1
+    def observation(candidate, original, parent, template, env, runtime, identifier, *, logger,
+                    repetition, diagnostics=False):
+        if diagnostics:
+            assert mode in ('inconclusive', 'diagnostic-refusal', 'diagnostic-cleanup')
+            assert destination.is_file(), 'Diagnostics ran before immutable measurement evidence was saved'
+            saved = json.loads(destination.read_text(encoding='utf-8'))
+            assert len(saved['results'][0]['samples']) == 7
+            assert saved['results'][0]['memory'] == 'inconclusive'
+            diagnostic_runs.append(runtime)
+            if mode == 'diagnostic-refusal':
+                raise ValueError('Synthetic diagnostic refusal')
+            if mode == 'diagnostic-cleanup':
+                raise RuntimeError('Synthetic diagnostic cleanup unproved')
+        else:
+            assert repetition == (len(observed) // 2) - 1
         with helper.fixture_directory('browser-pair-', parent, retain=True) as pair:
             (pair / 'input.json').write_text('{"synthetic":true}', encoding='utf-8')
-            observed.append(runtime)
-            value = 1 if runtime == 'native' and mode != 'inconclusive' else 100
+            if not diagnostics:
+                observed.append(runtime)
+            value = 1 if runtime == 'native' and mode not in (
+                'inconclusive', 'diagnostic-refusal', 'diagnostic-cleanup') else 100
             metric = runtime if mode == 'metric' else 'fixture'
             return {'elapsed_ns': value, 'memory': {'metric': metric, 'bytes': value}}, (
                 runtime if mode == 'parity' else helper.exact_json(baseline_payload))
@@ -231,17 +248,22 @@ def test_browser_run_requires_all_pairs_and_retains_unaccepted_evidence(tmp_path
     monkeypatch.setattr(helper, 'observation', observation)
     diagnostics = []
     monkeypatch.setattr(helper, 'failure_diagnostics', lambda path, logger: diagnostics.append(path))
-    logger = SimpleNamespace(info=lambda *args: None)
+    logger = SimpleNamespace(info=lambda *args: None, warning=lambda *args: None)
     if mode == 'normal':
         assert helper.run(tmp_path / 'report', destination, 'playwright', logger) == 0
         assert not list(temporary.iterdir())
     else:
-        with pytest.raises((ValueError, FileExistsError), match='parity|inconclusive|metric|exists'):
+        with pytest.raises((ValueError, FileExistsError, RuntimeError),
+                           match='parity|inconclusive|metric|exists|diagnostic'):
             helper.run(tmp_path / 'report', destination, 'playwright', logger)
         retained = list(temporary.glob('browser-benchmark-*'))
         assert len(retained) == 1
-        assert len(list(retained[0].glob('browser-pair-*/input.json'))) == len(observed)
-    assert len(diagnostics) == int(mode == 'inconclusive')
+        extra = len(diagnostic_runs) if mode == 'inconclusive' else 0
+        assert len(list(retained[0].glob('browser-pair-*/input.json'))) == len(observed) + extra
+    expected = (['original', 'native'] if mode == 'inconclusive' else
+                ['original'] if mode in ('diagnostic-refusal', 'diagnostic-cleanup') else [])
+    assert diagnostic_runs == expected, 'A refused diagnostic must not start another browser'
+    assert len(diagnostics) == int(mode in ('inconclusive', 'diagnostic-refusal', 'diagnostic-cleanup'))
     if diagnostics:
         assert diagnostics[0] == retained[0] / 'logs'
     if mode != 'parity':
@@ -249,7 +271,7 @@ def test_browser_run_requires_all_pairs_and_retains_unaccepted_evidence(tmp_path
                             (('original', 'native') if index % 2 == 0 else ('native', 'original'))]
     if mode == 'write':
         assert destination.read_text(encoding='utf-8') == 'prior evidence'
-    elif mode in ('normal', 'inconclusive'):
+    elif mode in ('normal', 'inconclusive', 'diagnostic-refusal', 'diagnostic-cleanup'):
         evidence = json.loads(destination.read_text(encoding='utf-8'))
         assert evidence['engine'] == 'playwright' and evidence['repetitions'] == 7
         assert evidence['warmup_pairs'] == 1 and len(evidence['results'][0]['samples']) == 7
@@ -257,7 +279,7 @@ def test_browser_run_requires_all_pairs_and_retains_unaccepted_evidence(tmp_path
 
 @pytest.mark.parametrize('mode', [
     'normal', 'pending-self', 'absent', 'missing-self', 'wrong-self',
-    'incomplete-before', 'incomplete', 'live', 'cleanup', 'wait',
+    'incomplete-before', 'incomplete', 'live', 'cleanup', 'wait', 'diagnostics',
 ])
 def test_browser_sample_requires_natural_nested_settlement_before_peak(monkeypatch, mode):
     import io
@@ -331,9 +353,27 @@ def test_browser_sample_requires_natural_nested_settlement_before_peak(monkeypat
     monkeypatch.setattr(sample.time, 'perf_counter_ns', lambda: 7)
     monkeypatch.setattr(sample, 'linux_peak', lambda: calls.append('peak') or
                         {'metric': 'fixture', 'bytes': 1234})
+    diagnostic = {'coverage': 'sampled-not-lifetime-attribution'}
+
+    class Recorder:
+        def __init__(self, tree, report, prior_trees, job):
+            assert tree is direct and prior_trees == [prior, observer] and job is None
+
+        def sample(self):
+            calls.append('snapshot')
+
+        def result(self):
+            assert calls.index('sdk-proof') < calls.index('peak')
+            return diagnostic
+
+    monkeypatch.setitem(sys.modules, 'benchmark_memory', SimpleNamespace(Recorder=Recorder))
     logger = SimpleNamespace(error=lambda *args: None)
-    if mode in ('normal', 'pending-self'):
-        assert sample.observe(['inert'], {}, logger, wall=90, nested=True)['payload'] == {'ok': True}
+    if mode in ('normal', 'pending-self', 'diagnostics'):
+        result = sample.observe(['inert'], {}, logger, wall=90, nested=True,
+                                diagnostics=mode == 'diagnostics')
+        assert result['payload'] == {'ok': True}
+        assert result.get('diagnostics') == (diagnostic if mode == 'diagnostics' else None)
+        assert ('snapshot' in calls) == (mode == 'diagnostics')
         assert calls.index('sdk-proof') < calls.index('peak') < calls.index('sdk-cleanup')
         assert sleeps == ([('registration', .01)] if mode == 'pending-self' else []) + [('capture', .001)]
     else:

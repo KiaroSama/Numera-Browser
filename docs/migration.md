@@ -7,19 +7,19 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 28, 2026
 
-The latest completed checkpoint `897caad` ran in manual hosted batch
-[40723122995](https://github.com/KiaroSama/Numera-Browser/actions/runs/40723122995), which failed on October 28. All source-platform and three-OS desktop contract jobs passed;
-Linux native contracts passed. Windows native functional checks reached measurement, where HTTP
-latency ranges overlapped despite passing memory and all four CLI comparisons. Seven browser
-legs passed source, native SDK and relocated functional acceptance before strict benchmark refusal:
-three time verdicts show no regression, four are inconclusive, and all seven memory ranges overlap.
-Linux Camoufox passed runtime-package/bundled-font prerequisites and reached real browser acceptance. Windows Camoufox acquisition exceeded the unchanged 120-second
-idle bound; its owner recorded clean settlement, but the underlying stall remains unexplained.
+Checkpoint `2022197` ran in manual hosted batch
+[40748157466](https://github.com/KiaroSama/Numera-Browser/actions/runs/40748157466). All eight browser legs passed source, native SDK and relocated functional acceptance;
+five time verdicts show no regression; three Windows time and all eight memory comparisons remain inconclusive.
+Windows native functional checks reached measurement, where HTTP latency ranges overlapped despite passing memory and all four CLI comparisons.
+A new source fixture omitted Git's revision/path separator in its expectation; only the expectation is corrected.
+Separate unmeasured memory diagnostics follow refusals and never enter the seven-pair verdict.
+Linux Camoufox passed runtime-package/bundled-font prerequisites. Windows Camoufox reached full
+functional acceptance this time; the previous acquisition stall's underlying cause remains unknown.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
 and current acceptance, including read warnings, delete recovery and Linux process-group uncertainty.
-Native macOS process identity and conservative group observation are now prepared with OS-fault
-controls, source-compatible birth tokens and hosted real descendant/claim acceptance; these new
-paths await execution. CodeQL and required verification still fail; signing and publication stay gated.
+Native macOS identity/group tests pass after two exact historical failures/restoration, four locale/timezone
+source-token comparisons and real descendant/claim settlement.
+CodeQL and required verification still fail; signing and publication stay gated.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.

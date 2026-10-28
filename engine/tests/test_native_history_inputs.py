@@ -120,6 +120,6 @@ def test_explicit_platform_proofs_keep_exact_admission_and_do_not_run_other_case
         assert not any(call[0] == 'show' for call in calls)
     else:
         module.prove(tmp_path, tmp_path / 'original', logger, cases=selected)
-        assert calls == [('diff', '--exit-code', 'HEAD', 'engine-rust/src/ownership/identity.rs'),
+        assert calls == [('diff', '--exit-code', 'HEAD', '--', 'engine-rust/src/ownership/identity.rs'),
                          ('show', f"{case['commit']}:engine-rust/src/ownership/identity.rs")]
     assert path.read_bytes() == current and logger.handlers == []

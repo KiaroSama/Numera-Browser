@@ -67,7 +67,9 @@ def registered_receipt(report, deadline):
         time.sleep(min(.01, remaining))
 
 
-def observe(argv, environment, logger, *, wall=15, nested=False):
+def observe(argv, environment, logger, *, wall=15, nested=False, diagnostics=False):
+    if diagnostics and not nested:
+        raise ValueError('Memory diagnostics require nested browser ownership')
     if not 0 < wall <= 90:
         raise ValueError('Benchmark deadline must be positive and at most 90 seconds')
     deadline = time.monotonic() + wall if nested else None
@@ -85,6 +87,7 @@ def observe(argv, environment, logger, *, wall=15, nested=False):
     attempt = unit_report.begin_spawn()
     query = None
     process = None
+    recorder = None
     phase = 'spawn'
     started = time.perf_counter_ns()
     try:
@@ -95,6 +98,9 @@ def observe(argv, environment, logger, *, wall=15, nested=False):
             process, tree = proctree.spawn(argv, env=environment, stdin=subprocess.DEVNULL,
                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         unit_report.record(tree, attempt=attempt)
+        if diagnostics:
+            from benchmark_memory import Recorder
+            recorder = Recorder(tree, report, before.trees, query)
         phase = 'pipe-setup'
         readers = [pipe_reader(process.stdout), pipe_reader(process.stderr)]
         buffers = [bytearray(), bytearray()]
@@ -103,6 +109,8 @@ def observe(argv, environment, logger, *, wall=15, nested=False):
             deadline = time.monotonic() + wall
         phase = 'capture'
         while len(ended) != 2 or process.poll() is None:
+            if recorder is not None:
+                recorder.sample()
             if time.monotonic() >= deadline:
                 raise TimeoutError(f'Benchmark child exceeded its {wall}-second deadline')
             progress = False
@@ -144,8 +152,11 @@ def observe(argv, environment, logger, *, wall=15, nested=False):
         phase = 'memory'
         memory = windows_peak(query) if query is not None else linux_peak()
         phase = 'json'
-        return {'elapsed_ns': elapsed, 'memory': memory,
-                'payload': json.loads(buffers[0].decode('utf-8'))}
+        result = {'elapsed_ns': elapsed, 'memory': memory,
+                  'payload': json.loads(buffers[0].decode('utf-8'))}
+        if recorder is not None:
+            result['diagnostics'] = recorder.result()
+        return result
     except Exception as error:
         logger.error('Observation failed phase=%s type=%s winerror=%s', phase, type(error).__name__,
                      getattr(error, 'winerror', None) if isinstance(getattr(error, 'winerror', None), int) else None)
@@ -182,6 +193,8 @@ def main():
     parser.add_argument('--runtime', choices=('original', 'native'), required=True)
     parser.add_argument('--wall', type=int, default=15, help='Command and natural-settlement ceiling, at most 90s')
     parser.add_argument('--nested', action='store_true', help='Require all reported SDK trees to settle naturally')
+    parser.add_argument('--memory-diagnostics', action='store_true',
+                        help='Unmeasured numeric snapshots; never performance acceptance')
     parser.add_argument('arguments', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     arguments = args.arguments[1:] if args.arguments[:1] == ['--'] else args.arguments
@@ -190,7 +203,8 @@ def main():
     environment = dict(os.environ, PYTHONPATH=str(args.original / 'engine'))
     with run_log('benchmark-sample', Path(os.environ['NUMERA_LOG_DIR'])) as logger:
         logger.info('Observing runtime=%s', args.runtime)
-        result = observe([*executable, *arguments], environment, logger, wall=args.wall, nested=args.nested)
+        result = observe([*executable, *arguments], environment, logger, wall=args.wall,
+                         nested=args.nested, diagnostics=args.memory_diagnostics)
         print(json.dumps(result, allow_nan=False), flush=True)
     return 0
 

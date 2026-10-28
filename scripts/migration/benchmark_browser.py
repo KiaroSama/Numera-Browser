@@ -105,7 +105,8 @@ def metadata_bytes(root):
     return result
 
 
-def observation(candidate, original, parent, template, env, runtime, identifier, *, logger=None, repetition=-1):
+def observation(candidate, original, parent, template, env, runtime, identifier, *, logger=None,
+                repetition=-1, diagnostics=False):
     with fixture_directory('browser-pair-', parent, retain=True) as workspace:
         root = workspace / 'data with spaces'
         # Firefox lock links name host/PID ownership, not a file to dereference.
@@ -120,7 +121,8 @@ def observation(candidate, original, parent, template, env, runtime, identifier,
             code, stdout, stderr = execute(
                 [sys.executable, '-I', str(ROOT / 'scripts/migration/benchmark_sample.py'),
                  '--candidate', str(candidate), '--original', str(original), '--runtime', runtime,
-                 '--wall', '90', '--nested', '--', '--data-dir', str(root),
+                 '--wall', '90', '--nested', *(['--memory-diagnostics'] if diagnostics else []),
+                 '--', '--data-dir', str(root),
                  'cookies', 'export', identifier, str(destination), '--format', 'json', '--json'],
                 dict(env, NUMERA_LOG_DIR=str(logs)), timeout=100)
         finally:
@@ -133,6 +135,10 @@ def observation(candidate, original, parent, template, env, runtime, identifier,
             raise ValueError(f'Browser benchmark observation refused runtime={runtime} exit={code}')
         sample = json.loads(stdout)
         payload = sample.pop('payload')
+        memory_diagnostics = sample.pop('diagnostics', None)
+        if diagnostics and logger is not None:
+            from benchmark_memory import log_evidence
+            log_evidence(memory_diagnostics, runtime, logger)
         if exact_json(payload) != exact_json({'ok': True, 'count': 2, 'file': str(destination), 'format': 'json'}):
             raise ValueError('Browser benchmark export metadata differs')
         if metadata_bytes(root) != before:
@@ -201,7 +207,16 @@ def run(report, destination, engine, logger):
             stream.write(json.dumps(evidence, indent=2, allow_nan=False) + '\n')
         logger.info('Browser performance verdict engine=%s time=%s memory=%s', engine, result['time'], result['memory'])
         if any(result[key] != 'no-regression' for key in ('time', 'memory')):
-            failure_diagnostics(parent / 'logs', logger)
+            try:
+                if result['memory'] != 'no-regression':
+                    # Separate runs cannot affect the saved measured samples or verdict.
+                    for runtime in ('original', 'native'):
+                        _, payload = observation(candidate, original, parent, template, env, runtime,
+                                                 identifier, logger=logger, repetition=-2, diagnostics=True)
+                        if payload != baseline_payload:
+                            raise ValueError('Diagnostic cookie export parity differs')
+            finally:
+                failure_diagnostics(parent / 'logs', logger)
             raise ValueError('Browser performance blocked: regression or inconclusive measurements; inputs retained')
     return 0
 
