@@ -18,6 +18,7 @@ mod import_commands;
 pub mod job_commands;
 pub mod job_render;
 pub mod launch_commands;
+mod option_tokens;
 pub mod output;
 pub mod pool_commands;
 pub mod pool_output;
@@ -71,7 +72,11 @@ where
     I: IntoIterator<Item = T>,
     T: Into<std::ffi::OsString> + Clone,
 {
-    registry().try_get_matches_from(arguments)
+    let mut command = option_tokens::configure(registry());
+    command.build();
+    let arguments =
+        option_tokens::normalize(&command, arguments.into_iter().map(Into::into).collect());
+    command.try_get_matches_from(arguments)
 }
 
 pub(crate) fn agent(command: Command) -> Command {

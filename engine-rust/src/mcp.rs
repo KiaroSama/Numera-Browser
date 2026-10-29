@@ -26,9 +26,7 @@ pub fn execute_native(
 ) -> io::Result<Outcome> {
     let mut registry = crate::cli::registry();
     registry.build();
-    let matches = registry
-        .clone()
-        .try_get_matches_from(std::iter::once("numera".to_owned()).chain(argv))
+    let matches = crate::cli::parse(std::iter::once("numera".to_owned()).chain(argv))
         .map_err(io::Error::other)?;
     let values = reflection::values(&registry, &matches);
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(CALL_TIMEOUT_SECONDS);

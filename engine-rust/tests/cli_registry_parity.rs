@@ -94,6 +94,114 @@ print(json.dumps(rows,ensure_ascii=True))
 }
 
 #[test]
+fn separate_option_values_match_original_token_classification()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use serde_json::Value;
+
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut original = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    original
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import contextlib,io,json,sys
+from pathlib import Path
+repository=Path(sys.argv[1])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.cli.parser import build_parser
+parser=build_parser()
+options=[(['create','fixture'],'seed'),(['bulk-create','--count=2'],'seed'),
+         (['bulk-create'],'count'),(['bulk-create','--count=2'],'start'),
+         (['bulk-create','--count=2'],'pad'),(['jobs','show','fixture'],'lines'),
+         (['serve'],'port'),(['attach','fixture'],'port'),
+         (['warmup','fixture'],'minutes'),(['schedule','add','fixture'],'every'),
+         (['schedule','add','fixture','--every=1'],'minutes'),
+         (['schedule','set','fixture'],'every'),(['schedule','set','fixture'],'minutes'),
+         (['edit','fixture'],'notes'),(['warmup','fixture'],'site')]
+inputs=['-١٢','-1','-.5','-.٥','-١.٥','-1e2','-1.','-1_2','-','--',
+        '- value','--unknown value','-١٢\n','-١٢\r','0','+1.5',
+        '--json','--minutes=2 value','-h value']
+argvs=[]
+for prefix,option in options:
+    for text in inputs:
+        argvs.extend(([*prefix,'--'+option,text],[*prefix,'--'+option+'='+text]))
+argvs.extend([
+    ['--data-dir','-١٢','list'],['--password','- value','list'],
+    ['create','fixture','--se','-١٢'],['create','fixture','--co','-١٢'],
+    ['create','fixture','--notes','--co=two words'],
+    ['edit','fixture','--notes','-١٢','--notes','last'],
+    ['warmup','fixture','--site','-١٢','--site','-.٥'],
+    ['schedule','add','--json','fixture','--every','-.٥'],
+    ['--','edit','fixture','--notes','-١٢'],
+    ['edit','fixture','--','--notes','-١٢'],
+    ['create','--seed','-١٢','fixture','--json'],
+    ['create','fixture','--notes','--json','tail'],
+    ['--password','--','list','health'],
+    ['--data-dir','--','list','health'],
+])
+rows=[]
+for argv in argvs:
+    with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
+        try:
+            values=vars(parser.parse_args(argv));values.pop('func',None)
+            rows.append({'argv':argv,'exit':0,'values':values})
+        except SystemExit as error:
+            rows.append({'argv':argv,'exit':error.code})
+print(json.dumps(rows,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut original,
+        capture::Limits {
+            wall: Duration::from_secs(20),
+            idle: Duration::from_secs(15),
+            bytes: 1024 * 1024,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original option token observer failed");
+    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(cases.len(), 584, "Option token observations missing");
+    let mut registry = cli::registry();
+    registry.build();
+    for (index, case) in cases.iter().enumerate() {
+        let argv = case["argv"]
+            .as_array()
+            .ok_or("Option arguments missing")?
+            .iter()
+            .map(|value| value.as_str().ok_or("Option argument not text"))
+            .collect::<Result<Vec<_>, _>>()?;
+        let actual = cli::parse(std::iter::once("numera").chain(argv));
+        assert_eq!(
+            i64::from(actual.as_ref().err().map_or(0, clap::Error::exit_code)),
+            case["exit"]
+                .as_i64()
+                .ok_or("Original option exit missing")?,
+            "CLI option token admission differs: case={index}"
+        );
+        if let Ok(matches) = actual {
+            assert_eq!(
+                cli::reflection::values(&registry, &matches),
+                case["values"],
+                "CLI option token value differs: case={index}"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn command_registry_matches_original_schemas_arguments_and_parse_views()
 -> Result<(), Box<dyn std::error::Error>> {
     let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;

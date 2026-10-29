@@ -198,7 +198,7 @@ def test_history_timings_preserve_previous_reports_and_refuse_uncertain_paths(tm
 def test_directory_metadata_history_retains_exact_prior_source_and_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[31]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 34
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 35
     assert case == {
         'target': 'first_run_parity',
         'test': 'imported_new_directories_preserve_original_metadata_without_replacing_existing_modes',
@@ -207,14 +207,14 @@ def test_directory_metadata_history_retains_exact_prior_source_and_assertion():
         'files': {'engine-rust/src/storage/first_run.rs':
                   '6a9afa7356a02b123d13ebf8d5742a67e4d6e2bf8abff0d1cb8f2459a94c5670'},
     }
-    assert module.REGRESSIONS[-3] == case
+    assert module.REGRESSIONS[-4] == case
 
 
 @pytest.mark.timeout(10)
 def test_cli_integer_history_retains_exact_prior_source_and_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[32]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 34
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 35
     assert case == {
         'target': 'cli_registry_parity',
         'test': 'integer_options_preserve_original_digit_bound_before_zero_normalization',
@@ -223,14 +223,14 @@ def test_cli_integer_history_retains_exact_prior_source_and_assertion():
         'files': {'engine-rust/src/cli/definitions.rs':
                   '62577821c1120e9518a30277bb165d4e77c103ef5803c06157a2a4bc4922c4a7'},
     }
-    assert module.REGRESSIONS[-2] == case
+    assert module.REGRESSIONS[-3] == case
 
 
 @pytest.mark.timeout(10)
 def test_hint_peer_disconnect_history_retains_compile_compatible_source_and_assertion():
     module = load()
-    case = module.CURRENT_CALLER_REGRESSIONS[-1]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 34
+    case = module.CURRENT_CALLER_REGRESSIONS[33]
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 35
     assert case == {
         'target': 'browser_hints_parity',
         'test': 'hint_response_peer_disconnects_preserve_other_io_failures',
@@ -238,5 +238,21 @@ def test_hint_peer_disconnect_history_retains_compile_compatible_source_and_asse
         'commit': 'f173f3ae59c91fc9524507f91fe6d936b2c4a0d4',
         'files': {'engine-rust/tests/common/hint_site.rs':
                   '4dcfdaa91e4079186c5b7c9268ad50efa06c7f6f5782170c4af8fa2172a879ae'},
+    }
+    assert module.REGRESSIONS[-2] == case
+
+
+@pytest.mark.timeout(10)
+def test_cli_option_token_history_retains_prior_parser_and_named_assertion():
+    module = load()
+    case = module.CURRENT_CALLER_REGRESSIONS[-1]
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 35
+    assert case == {
+        'target': 'cli_registry_parity',
+        'test': 'separate_option_values_match_original_token_classification',
+        'symptom': 'CLI option token admission differs',
+        'commit': 'c299ef506c593623bfd0646b3d2efe1d83596532',
+        'files': {'engine-rust/src/cli/mod.rs':
+                  'c534342a6f7db08b99641bd52e02e729d3abb68a1e78257b0c502c077479fcd8'},
     }
     assert module.REGRESSIONS[-1] == case

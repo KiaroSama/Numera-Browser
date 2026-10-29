@@ -49,16 +49,15 @@ pub fn run(argv: Vec<String>) -> i32 {
     }
     let mut command = cli::registry();
     command.build();
-    let matches = match command.clone().try_get_matches_from(
-        std::iter::once("numera-native".to_owned()).chain(argv.iter().cloned()),
-    ) {
-        Ok(matches) => matches,
-        Err(error) => {
-            let code = error.exit_code();
-            let _ = error.print();
-            return code;
-        }
-    };
+    let matches =
+        match cli::parse(std::iter::once("numera-native".to_owned()).chain(argv.iter().cloned())) {
+            Ok(matches) => matches,
+            Err(error) => {
+                let code = error.exit_code();
+                let _ = error.print();
+                return code;
+            }
+        };
     let values = cli::reflection::values(&command, &matches);
     let Some(args) = values.as_object() else {
         return 1;

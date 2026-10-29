@@ -110,7 +110,7 @@ pub(crate) fn tool(
         parse_argv.extend(["--data-dir".into(), root.to_string_lossy().into_owned()]);
     }
     parse_argv.extend_from_slice(argv);
-    let matches = match registry.clone().try_get_matches_from(parse_argv) {
+    let matches = match crate::cli::parse(parse_argv) {
         Ok(matches) => matches,
         // A parser failure is not JSON command output: preserve the MCP crash
         // shape (isError, no structuredContent/_meta) used by captured commands.

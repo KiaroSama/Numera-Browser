@@ -7,12 +7,12 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 29, 2026
 
-Checkpoint `ff56fc2` ran in manual hosted batch
-[40898752635](https://github.com/KiaroSama/Numera-Browser/actions/runs/40898752635). Seven browser legs passed native SDK and relocated acceptance;
-two time verdicts show no regression, five remain inconclusive; all seven memory comparisons remain inconclusive. No browser comparison is accepted.
-Linux Playwright passed navigation, wire and page checks, then its HTTP fixture failed during cleanup with BrokenPipe; that leg was not measured.
-A response-only fixture repair and deterministic write/flush failure controls are prepared, not yet verified. Production SDK/relay behavior and assertions are unchanged.
-Linux passed 77 historical proofs, including new-directory metadata failure/restoration/current acceptance; Windows reached the unchanged 900-second ceiling before current acceptance.
+Checkpoint `c299ef5` ran in manual hosted batch
+[40918252781](https://github.com/KiaroSama/Numera-Browser/actions/runs/40918252781). Linux passed 79 historical proofs and current contracts;
+the 96-case CLI integer bound and hint write/flush controls failed their exact old sources, restored fixed bytes and passed current tests.
+Linux Playwright now passes its actual SDK, cookie/HTTP/foreground CLI and relocated scenarios; latency shows no regression, memory remains inconclusive.
+All eight SDK/relocated legs pass; four latency verdicts show no regression, four remain inconclusive, and all eight memory comparisons remain inconclusive.
+Windows reached the unchanged 900-second ceiling before current acceptance; the Linux results do not certify its unexecuted fixed tests.
 The Windows-history-only codegen-unit reduction remains insufficient and is not a verified speedup. ZIP 9.1.3 passes dependency/advisory gates.
 Earlier Linux log-root, nine-case entry comparison and detached/server acceptance passed; generic logging and full first-run compatibility remain incomplete.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
@@ -487,7 +487,7 @@ rollback still gate Rust selection and retirement.
 
 - Native clap command definitions and automation reflection are now prepared for
   the original command tree, including shared flags, numeric/default/choice rules
-  and MCP schemas derived from that same registry. Integer options now retain the original isolated runtime's 4,300-digit input bound before zero normalization; 96 parser comparisons await hosted proof. Profile create/list/show/edit,
+  and MCP schemas derived from that same registry. Integer options retain the original 4,300-digit bound. Shared CLI/MCP parsing now preserves separate long-option token admission, with 584 original-parser comparisons prepared; positional and error-layout parity remain open. Profile create/list/show/edit,
   coherence/collision verdicts and archive service seams reuse native stores rather
   than forwarding Python application commands. New original-handler/parser tests
   are pending hosted execution; exact help/error/human output, all command handlers,
