@@ -598,6 +598,8 @@ def test_historical_runner_restores_source_and_environment(
     excluded = dict(case, platform='linux' if platform == 'win32' else 'win32',
                     commit='excluded-source-must-not-be-read')
     selected = dict(case, platform=platform)
+    override = (['--config', 'profile.dev.package.numera-core.codegen-units=16', '--config',
+                 'profile.dev.package.numera-core.debug="line-tables-only"'] if platform == 'win32' else [])
     monkeypatch.setattr(module, 'sys', SimpleNamespace(platform=platform))
     monkeypatch.setattr(module, 'REGRESSIONS',
                         (excluded, selected, case) if damage is None else (excluded, selected))
@@ -634,9 +636,7 @@ def test_historical_runner_restores_source_and_environment(
         assert command[-4:] == [case['test'], '--exact', '--test-threads=1', '--color=never']
         assert '--locked' in command and '--offline' in command
         assert command[command.index('--config') + 1] == 'profile.dev.package.numera-core.opt-level=0'
-        override = (['--config', 'profile.dev.package.numera-core.codegen-units=16']
-                    if platform == 'win32' else [])
-        assert command.count('--config') == (2 if override else 1)
+        assert command.count('--config') == (3 if override else 1)
         selection = ['--lib'] if target == 'lib' else ['--test', target]
         assert command[command.index('--config') + 2:command.index('--')] == ['--timings', *override, *selection]
         assert os.environ['NUMERA_ORACLE_SOURCE_ROOT'] == str(tmp_path / 'original')
@@ -657,8 +657,6 @@ def test_historical_runner_restores_source_and_environment(
         assert os.environ['CARGO_INCREMENTAL'] == '1'
         assert source.read_bytes() == historical
         assert companion.read_bytes() == old_test
-        override = (['--config', 'profile.dev.package.numera-core.codegen-units=16']
-                    if platform == 'win32' else [])
         assert command == ['cargo', 'test', '--manifest-path', str(tmp_path / 'engine-rust/Cargo.toml'),
                            '--locked', '--offline', '--config',
                            'profile.dev.package.numera-core.opt-level=0', '--timings', *override,
