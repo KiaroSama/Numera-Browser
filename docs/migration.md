@@ -281,7 +281,7 @@ rollback still gate Rust selection and retirement.
   identity validator; complete malformed/legacy/browser parity remains pending.
 - Data-root precedence, isolated portable write probes and actionable directory-permission
   errors retaining their OS cause; first-run copy/merge primitives preserve destination files.
-  Permission-denial fixtures and complete executable/environment acceptance remain pending.
+  Legacy discovery now retains access failures for retry; eight ordered source comparisons include raw platform marker bytes. Hosted proof and complete executable/environment acceptance remain pending.
 - Native reentrant data locks, immediate session lease refusal, atomic file
   replacement and byte-preserving batch rollback primitives.
 - Fernet v1/v2 envelopes, secret-write policy, authenticated completion checks,

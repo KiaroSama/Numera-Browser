@@ -513,6 +513,13 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'commit': '9541cdec57186d11b8adfea77f52f27a29018848',
         'files': {'engine-rust/src/native_entry.rs':
                   '9e4f147c6ec4ef2674af3e1af809b988e0dbab3ce6aa81f04367f5ef52b9a665'},
+    }, {
+        'target': 'first_run_parity',
+        'test': 'legacy_discovery_preserves_original_order_and_never_marks_denied_sources_complete',
+        'symptom': 'Legacy discovery refusal differs',
+        'commit': 'de48cf502e6d89046b0895e84216a5be2e95507c',
+        'files': {'engine-rust/src/storage/first_run.rs':
+                  '4459858581e6820f7a0ca4b419cee1b0a546c303f2b7934b8f3e3e33d809dd7a'},
     })
     assert module.REGRESSIONS == module._EXTENSION_REGRESSIONS + module.CURRENT_CALLER_REGRESSIONS
     assert not any(case.get('companions') for case in module.CURRENT_CALLER_REGRESSIONS)

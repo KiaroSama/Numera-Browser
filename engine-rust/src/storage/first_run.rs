@@ -181,11 +181,44 @@ pub fn run_if_needed(
         return Ok(None);
     }
     let destination_identity = destination.canonicalize()?;
-    let source = candidates.iter().find(|path| {
-        path.canonicalize()
-            .is_ok_and(|identity| identity != destination_identity)
-            && (path.join("profiles").is_dir() || path.join("proxies.json").is_file())
-    });
+    let source = 'search: {
+        for path in candidates {
+            match path.canonicalize() {
+                Ok(identity) if identity == destination_identity => continue,
+                Ok(_) => {}
+                Err(error)
+                    if matches!(
+                        error.kind(),
+                        io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
+                    ) =>
+                {
+                    continue;
+                }
+                Err(error) => return Err(error),
+            }
+            for (item, directory) in [("profiles", true), ("proxies.json", false)] {
+                match fs::metadata(path.join(item)) {
+                    Ok(metadata)
+                        if if directory {
+                            metadata.is_dir()
+                        } else {
+                            metadata.is_file()
+                        } =>
+                    {
+                        break 'search Some(path);
+                    }
+                    Ok(_) => {}
+                    Err(error)
+                        if matches!(
+                            error.kind(),
+                            io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
+                        ) => {}
+                    Err(error) => return Err(error),
+                }
+            }
+        }
+        None
+    };
     let summary = source
         .map(|path| import_from(path, destination))
         .transpose()?;
@@ -195,9 +228,10 @@ pub fn run_if_needed(
     {
         return Ok(summary);
     }
+    let newline = if cfg!(windows) { "\r\n" } else { "\n" };
     let text = source.map_or_else(
-        || "nothing to import\n".into(),
-        |source| format!("imported from {}\n", source.display()),
+        || format!("nothing to import{newline}"),
+        |source| format!("imported from {}{newline}", source.display()),
     );
     // Marker is last. A failed or partial import remains retryable.
     super::atomic::write_bytes(&marker, text.as_bytes())?;

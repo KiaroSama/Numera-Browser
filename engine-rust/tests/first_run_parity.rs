@@ -184,6 +184,247 @@ with run_log('first-run-summary-oracle',root/'logs') as log:
     Ok(())
 }
 
+#[test]
+fn legacy_discovery_preserves_original_order_and_never_marks_denied_sources_complete()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{io, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("legacy discovery α")?;
+    let inputs: PathBuf = temporary.path().components().collect();
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut original = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    original.args(["-I", "-B", "-c", r#"
+import json,os,subprocess,sys
+from pathlib import Path
+from unittest.mock import patch
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import firstrun
+rows=[]
+for index,variant in enumerate(('denied-only','denied-first','none','missing','empty','profiles-first','proxies-first','self')):
+    root=parent/str(index)
+    destination=root/'destination'
+    destination.mkdir(parents=True)
+    (destination/'untouched.bin').write_bytes(b'preserved destination')
+    first,second=root/'first',root/'second'
+    if variant not in ('none','missing','empty','self'):
+        if variant=='proxies-first':
+            first.mkdir();(first/'proxies.json').write_bytes(b'[]')
+        else:
+            (first/'profiles').mkdir(parents=True)
+            (first/'profiles/a.json').write_bytes(b'{"name":"first"}')
+    if variant=='empty':first.mkdir()
+    if variant not in ('denied-only','none'):
+        (second/'profiles').mkdir(parents=True)
+        (second/'profiles/b.json').write_bytes(b'{"name":"second"}')
+    candidates=([destination,second] if variant=='self' else [first,second])
+    def access(denied):
+        if os.name=='nt':
+            args=['/deny','*S-1-1-0:(OI)(CI)(RD,REA,RA)'] if denied else ['/remove:d','*S-1-1-0']
+            subprocess.run(['icacls',str(first),*args],check=True,timeout=5,
+                           stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        else:first.chmod(0 if denied else 0o700)
+    denied=variant.startswith('denied')
+    result=None;refused=False
+    try:
+        if denied:access(True)
+        with patch('numera.firstrun.legacy_dirs',return_value=candidates):
+            try:result=firstrun.run_if_needed(destination)
+            except PermissionError:refused=True
+    finally:
+        if denied:access(False)
+    assert refused==denied,'Original fixture did not cause the expected discovery refusal'
+    marker=destination/'.imported'
+    before=list(marker.read_bytes()) if marker.exists() else None
+    assert (before is None) if denied else (before is not None)
+    with patch('numera.firstrun.legacy_dirs',return_value=candidates):
+        retry=firstrun.run_if_needed(destination)
+    rows.append(dict(variant=variant,result=result,refused=refused,marker=before,
+                     retry=retry,retried_marker=list(marker.read_bytes())))
+print(json.dumps(rows,ensure_ascii=True))
+"#]).arg(repository).arg(&inputs);
+    let observed = capture::run(
+        &mut original,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 131072,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        observed.exit, 0,
+        "Original legacy discovery observer failed"
+    );
+    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(cases.len(), 8, "Legacy discovery observations missing");
+    for (index, case) in cases.iter().enumerate() {
+        let root = inputs.join(index.to_string());
+        fs::remove_dir_all(&root)?;
+        let destination = root.join("destination");
+        fs::create_dir_all(&destination)?;
+        fs::write(destination.join("untouched.bin"), b"preserved destination")?;
+        let first = root.join("first");
+        let second = root.join("second");
+        let variant = case["variant"]
+            .as_str()
+            .ok_or("Discovery variant missing")?;
+        if !matches!(variant, "none" | "missing" | "empty" | "self") {
+            if variant == "proxies-first" {
+                fs::create_dir(&first)?;
+                fs::write(first.join("proxies.json"), b"[]")?;
+            } else {
+                fs::create_dir_all(first.join("profiles"))?;
+                fs::write(first.join("profiles/a.json"), br#"{"name":"first"}"#)?;
+            }
+        }
+        if variant == "empty" {
+            fs::create_dir(&first)?;
+        }
+        if !matches!(variant, "denied-only" | "none") {
+            fs::create_dir_all(second.join("profiles"))?;
+            fs::write(second.join("profiles/b.json"), br#"{"name":"second"}"#)?;
+        }
+        let candidates = if variant == "self" {
+            vec![destination.clone(), second.clone()]
+        } else {
+            vec![first.clone(), second.clone()]
+        };
+        let mut source_before = Map::new();
+        file_bytes(&root, &root, &mut source_before)?;
+        let denied = case["refused"]
+            .as_bool()
+            .ok_or("Discovery verdict missing")?;
+        let attempt = (|| -> io::Result<_> {
+            if denied {
+                discovery_access(&first, true)?;
+            }
+            run_if_needed(&destination, &candidates)
+        })();
+        // Restore the owned fixture before assertions or recursive cleanup.
+        if denied {
+            discovery_access(&first, false)?;
+        }
+        let actual = match attempt {
+            Ok(result) => {
+                assert!(!denied, "Legacy discovery refusal differs: case={index}");
+                serde_json::to_value(result)?
+            }
+            Err(error) => {
+                assert!(
+                    denied && error.kind() == io::ErrorKind::PermissionDenied,
+                    "Legacy discovery refusal differs: case={index}, kind={:?}",
+                    error.kind()
+                );
+                Value::Null
+            }
+        };
+        assert_eq!(
+            actual, case["result"],
+            "Legacy discovery selected source differs"
+        );
+        let marker = destination.join(".imported");
+        let marker_text = if marker.try_exists()? {
+            serde_json::to_value(fs::read(&marker)?)?
+        } else {
+            Value::Null
+        };
+        assert_eq!(
+            marker_text, case["marker"],
+            "Legacy discovery marker differs"
+        );
+        assert_eq!(
+            fs::read(destination.join("untouched.bin"))?,
+            b"preserved destination"
+        );
+        if denied {
+            let mut unchanged = Map::new();
+            file_bytes(&root, &root, &mut unchanged)?;
+            assert_eq!(
+                unchanged, source_before,
+                "Denied discovery changed fixture bytes"
+            );
+        }
+        let retried = run_if_needed(&destination, &candidates)?;
+        assert_eq!(
+            serde_json::to_value(retried)?,
+            case["retry"],
+            "Discovery retry differs"
+        );
+        assert_eq!(
+            fs::read(marker)?,
+            fixture_bytes(&case["retried_marker"])?,
+            "Discovery retry marker bytes differ"
+        );
+        for candidate in [&first, &second] {
+            for name in ["profiles/a.json", "profiles/b.json", "proxies.json"] {
+                let path = candidate.join(name);
+                if let Some(before) = source_before.get(
+                    path.strip_prefix(&root)?
+                        .to_str()
+                        .ok_or("Discovery fixture path missing")?
+                        .replace('\\', "/")
+                        .as_str(),
+                ) {
+                    assert_eq!(
+                        fs::read(path)?,
+                        fixture_bytes(before)?,
+                        "Legacy source changed"
+                    );
+                }
+            }
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+fn discovery_access(path: &Path, denied: bool) -> std::io::Result<()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(
+            path,
+            fs::Permissions::from_mode(if denied { 0 } else { 0o700 }),
+        )
+    }
+    #[cfg(windows)]
+    {
+        use numera_core::ownership::capture;
+        use std::{io, process::Command, time::Duration};
+        let mut command = Command::new("icacls");
+        command.arg(path).args(if denied {
+            ["/deny", "*S-1-1-0:(OI)(CI)(RD,REA,RA)"]
+        } else {
+            ["/remove:d", "*S-1-1-0"]
+        });
+        let output = capture::run(
+            &mut command,
+            capture::Limits {
+                wall: Duration::from_secs(5),
+                idle: Duration::from_secs(5),
+                bytes: 65536,
+                cleanup: Duration::from_secs(3),
+            },
+        )
+        .map_err(io::Error::other)?;
+        if output.exit == 0 {
+            Ok(())
+        } else {
+            Err(io::Error::other(
+                "Owned legacy fixture permission change failed",
+            ))
+        }
+    }
+}
+
 fn fixture_bytes(value: &Value) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     Ok(serde_json::from_value(value.clone())?)
 }
