@@ -7,12 +7,12 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 29, 2026
 
-Checkpoint `5bd0aca` ran in manual hosted batch
-[40772892879](https://github.com/KiaroSama/Numera-Browser/actions/runs/40772892879). All eight browser legs passed source, native SDK and relocated functional acceptance;
-four time verdicts show no regression, four remain inconclusive; all eight memory comparisons remain inconclusive. No browser comparison is accepted.
-Separate unmeasured numeric diagnostics do not identify the lifetime peak or prove a leak. Windows completed 71 historical proofs before the 900-second build ceiling;
-stable Cargo timing reports are prepared for diagnosis, not a claimed speedup. The ZIP advisory upgrade to 9.1.3 preserves unrelated resolved packages and archive policy.
-Native data-root log binding, nine original-derived entry cases and existing detached/server acceptance are prepared; these changes still require hosted verification.
+Checkpoint `63f04aa` ran in manual hosted batch
+[40801395621](https://github.com/KiaroSama/Numera-Browser/actions/runs/40801395621). All eight browser legs passed source, native SDK and relocated functional acceptance;
+six time verdicts show no regression, two remain inconclusive; all eight memory comparisons remain inconclusive. No browser comparison is accepted.
+Separate numeric diagnostics do not identify the lifetime peak or prove a leak. Windows completed 60 historical proofs before the unchanged 900-second ceiling;
+Cargo reports localize repeated library backend cost. A Windows-history-only codegen-unit reduction is prepared, not a verified speedup. ZIP 9.1.3 passes dependency/advisory gates.
+Linux proves the old log-root failure, fixed nine-case entry comparison and detached/server acceptance; Windows current acceptance remains blocked before fixed compilation.
 Linux Camoufox passed runtime-package/bundled-font prerequisites. Windows Camoufox reached full
 functional acceptance this time; the previous acquisition stall's underlying cause remains unknown.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration

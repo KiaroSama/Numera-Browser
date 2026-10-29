@@ -613,9 +613,11 @@ def test_historical_runner_restores_source_and_environment(
         assert command[-4:] == [case['test'], '--exact', '--test-threads=1', '--color=never']
         assert '--locked' in command and '--offline' in command
         assert command[command.index('--config') + 1] == 'profile.dev.package.numera-core.opt-level=0'
-        assert command.count('--config') == 1
+        override = (['--config', 'profile.dev.package.numera-core.codegen-units=16']
+                    if platform == 'win32' else [])
+        assert command.count('--config') == (2 if override else 1)
         selection = ['--lib'] if target == 'lib' else ['--test', target]
-        assert command[command.index('--config') + 2:command.index('--')] == ['--timings', *selection]
+        assert command[command.index('--config') + 2:command.index('--')] == ['--timings', *override, *selection]
         assert os.environ['NUMERA_ORACLE_SOURCE_ROOT'] == str(tmp_path / 'original')
         assert os.environ['PYTHONDONTWRITEBYTECODE'] == '1'
         assert os.environ['CARGO_INCREMENTAL'] == '1'
@@ -634,9 +636,11 @@ def test_historical_runner_restores_source_and_environment(
         assert os.environ['CARGO_INCREMENTAL'] == '1'
         assert source.read_bytes() == historical
         assert companion.read_bytes() == old_test
+        override = (['--config', 'profile.dev.package.numera-core.codegen-units=16']
+                    if platform == 'win32' else [])
         assert command == ['cargo', 'test', '--manifest-path', str(tmp_path / 'engine-rust/Cargo.toml'),
                            '--locked', '--offline', '--config',
-                           'profile.dev.package.numera-core.opt-level=0', '--timings',
+                           'profile.dev.package.numera-core.opt-level=0', '--timings', *override,
                            *(['--lib'] if target == 'lib' else ['--test', target]), '--no-run']
         assert options == {'stdin': module.subprocess.DEVNULL, 'check': True}
         warmups.append(command)
