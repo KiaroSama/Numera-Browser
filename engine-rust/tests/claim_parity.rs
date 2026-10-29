@@ -1,6 +1,9 @@
 use numera_core::ownership::claims::{self, Claim, State};
 use serde_json::Value;
 use std::{fs, path::PathBuf};
+mod common;
+#[path = "claim_parity/diagnostics.rs"]
+mod diagnostics;
 
 #[test]
 fn unreadable_and_unverifiable_claims_never_admit_a_second_session()

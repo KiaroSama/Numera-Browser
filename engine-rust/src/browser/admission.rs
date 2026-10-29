@@ -7,7 +7,7 @@ use crate::{
         repo::{ProfileRepo, RepoError},
     },
 };
-use std::{io, path::Path, time::Duration};
+use std::{io, path::Path};
 
 fn storage_failure(error: RepoError) -> StartupFailed {
     let kind = match &error {
@@ -45,7 +45,7 @@ pub fn current(
         .map_err(RepoError::from)
         .map_err(storage_failure)?;
     let _guard = lock
-        .acquire(Duration::from_secs(30))
+        .acquire_configured()
         .map_err(RepoError::from)
         .map_err(storage_failure)?;
     let repo = ProfileRepo::new(root.into(), password.map(str::to_owned));

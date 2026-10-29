@@ -9,6 +9,97 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
+mod common;
+
+#[test]
+fn persisted_json_text_matches_original_escaping_and_platform_newlines()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use serde_json::Value;
+    use std::{path::Path, process::Command};
+
+    let temporary = common::TempDirectory::new("persisted-json")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,sys
+from pathlib import Path
+repository,root=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.paths import write_json
+from run_logging import run_log
+
+with run_log('persisted-json-oracle',root/'logs') as log:
+    values=[{'text':'日本語 α فارسی'},
+            {'controls':''.join(map(chr,range(32)))+chr(127)},
+            {'astral':chr(0x1f600)+chr(0x1d120)},
+            {'日本語':{'z':'last','a':['first',{},[]]}},
+            {'literal':'quote" backslash\\ slash/ newline\n tab\t'},
+            {'nested':[{'enabled':True,'empty':None},False,[],{}]},
+            {},[],None,True,'plain ASCII',{'integers':[0,-1,42]}]
+    rows=[]
+    for index,value in enumerate(values):
+        path=root/'cases'/str(index)/'document.json'
+        write_json(path,value)
+        rows.append({'input':value,'bytes':list(path.read_bytes())})
+    log.info('Observed persisted JSON cases=%s',len(rows))
+    print(json.dumps(rows,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .arg(temporary.path())
+        .env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 65536,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original persisted JSON observer failed");
+    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(cases.len(), 12, "Persisted JSON observations missing");
+    for (index, case) in cases.iter().enumerate() {
+        let path = temporary
+            .path()
+            .join("cases")
+            .join(index.to_string())
+            .join("document.json");
+        let expected: Vec<u8> = serde_json::from_value(case["bytes"].clone())?;
+        assert_eq!(fs::read(&path)?, expected, "Original JSON bytes changed");
+        fs::write(&path, b"previous document must be replaced completely")?;
+        write_json(&path, &case["input"])?;
+        assert_eq!(
+            fs::read(&path)?,
+            expected,
+            "Persisted JSON bytes differ: case={index}"
+        );
+        assert_eq!(serde_json::from_slice::<Value>(&expected)?, case["input"]);
+        write_json(&path, &case["input"])?;
+        assert_eq!(fs::read(&path)?, expected, "Repeated JSON write differs");
+        assert_eq!(
+            fs::read_dir(path.parent().ok_or("Parent missing")?)?.count(),
+            1,
+            "JSON publication left temporary files"
+        );
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
 #[test]
 fn locked_atomic_write_and_rollback_preserve_original_bytes()
 -> Result<(), Box<dyn std::error::Error>> {

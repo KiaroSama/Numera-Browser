@@ -3,8 +3,7 @@ use serde::Serialize;
 use std::{
     fs::{self, File, FileTimes, OpenOptions},
     io,
-    path::Path,
-    time::Duration,
+    path::{Path, PathBuf},
 };
 
 const ITEMS: &[&str] = &[
@@ -22,6 +21,8 @@ const ITEMS: &[&str] = &[
 
 #[derive(Default, Serialize)]
 pub struct Summary {
+    pub source: PathBuf,
+    pub destination: PathBuf,
     pub copied: Vec<String>,
     pub skipped: Vec<String>,
     pub failed: Vec<String>,
@@ -30,6 +31,17 @@ pub struct Summary {
 
 fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
     let metadata = fs::metadata(source)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::FileTypeExt;
+        // Match copy2's refusal before opening a pipe can block the importer.
+        if metadata.file_type().is_fifo() {
+            return Err(io::Error::other(format!(
+                "`{}` is a named pipe",
+                source.display()
+            )));
+        }
+    }
     let mut input = File::open(source)?;
     // Exclusive creation is the final no-overwrite boundary, even if another
     // file-only writer does not participate in the root transaction.
@@ -44,6 +56,8 @@ fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
                 .set_accessed(metadata.accessed()?)
                 .set_modified(metadata.modified()?),
         )?;
+        #[cfg(target_os = "linux")]
+        super::first_run_xattrs::copy(&input, &output)?;
         output.sync_all()?;
         drop(output);
         fs::set_permissions(destination, metadata.permissions())
@@ -102,6 +116,26 @@ fn merge_dir(source: &Path, destination: &Path, depth: usize) -> io::Result<(usi
             }
         } else if path.is_dir() {
             merge_dir(&path, &target, depth + 1)?;
+            // copytree applies metadata after children, only for a new subtree.
+            let metadata = fs::metadata(&path)?;
+            fs::set_times(
+                &target,
+                FileTimes::new()
+                    .set_accessed(metadata.accessed()?)
+                    .set_modified(metadata.modified()?),
+            )?;
+            #[cfg(target_os = "linux")]
+            {
+                use std::os::unix::fs::OpenOptionsExt;
+                let open = |path: &Path| {
+                    File::options()
+                        .read(true)
+                        .custom_flags(libc::O_NOFOLLOW | libc::O_DIRECTORY)
+                        .open(path)
+                };
+                super::first_run_xattrs::copy(&open(&path)?, &open(&target)?)?;
+            }
+            fs::set_permissions(&target, metadata.permissions())?;
             added += 1;
         } else {
             copy_file(&path, &target)?;
@@ -113,7 +147,11 @@ fn merge_dir(source: &Path, destination: &Path, depth: usize) -> io::Result<(usi
 
 pub fn import_from(source: &Path, destination: &Path) -> io::Result<Summary> {
     fs::create_dir_all(destination)?;
-    let mut summary = Summary::default();
+    let mut summary = Summary {
+        source: source.to_owned(),
+        destination: destination.to_owned(),
+        ..Summary::default()
+    };
     for name in ITEMS {
         let src = source.join(name);
         let dst = destination.join(name);
@@ -136,7 +174,7 @@ pub fn import_from(source: &Path, destination: &Path) -> io::Result<Summary> {
                 }
             } else {
                 let lock = DataLock::for_file(&dst)?;
-                let _guard = lock.acquire(Duration::from_secs(30))?;
+                let _guard = lock.acquire_configured()?;
                 if dst.try_exists()? {
                     summary.skipped.push((*name).into());
                 } else {
@@ -153,7 +191,7 @@ pub fn import_from(source: &Path, destination: &Path) -> io::Result<Summary> {
     let profiles = destination.join("profiles");
     if profiles.is_dir() {
         for entry in fs::read_dir(profiles)? {
-            if entry?.path().extension().is_some_and(|v| v == "json") {
+            if super::paths::json_filename(&entry?.path()) {
                 summary.profiles += 1;
             }
         }
@@ -171,16 +209,49 @@ pub fn run_if_needed(
     }
     fs::create_dir_all(destination)?;
     let lock = DataLock::transaction(destination)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     if marker.try_exists()? {
         return Ok(None);
     }
     let destination_identity = destination.canonicalize()?;
-    let source = candidates.iter().find(|path| {
-        path.canonicalize()
-            .is_ok_and(|identity| identity != destination_identity)
-            && (path.join("profiles").is_dir() || path.join("proxies.json").is_file())
-    });
+    let source = 'search: {
+        for path in candidates {
+            match path.canonicalize() {
+                Ok(identity) if identity == destination_identity => continue,
+                Ok(_) => {}
+                Err(error)
+                    if matches!(
+                        error.kind(),
+                        io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
+                    ) =>
+                {
+                    continue;
+                }
+                Err(error) => return Err(error),
+            }
+            for (item, directory) in [("profiles", true), ("proxies.json", false)] {
+                match fs::metadata(path.join(item)) {
+                    Ok(metadata)
+                        if if directory {
+                            metadata.is_dir()
+                        } else {
+                            metadata.is_file()
+                        } =>
+                    {
+                        break 'search Some(path);
+                    }
+                    Ok(_) => {}
+                    Err(error)
+                        if matches!(
+                            error.kind(),
+                            io::ErrorKind::NotFound | io::ErrorKind::NotADirectory
+                        ) => {}
+                    Err(error) => return Err(error),
+                }
+            }
+        }
+        None
+    };
     let summary = source
         .map(|path| import_from(path, destination))
         .transpose()?;
@@ -190,9 +261,10 @@ pub fn run_if_needed(
     {
         return Ok(summary);
     }
+    let newline = if cfg!(windows) { "\r\n" } else { "\n" };
     let text = source.map_or_else(
-        || "nothing to import\n".into(),
-        |source| format!("imported from {}\n", source.display()),
+        || format!("nothing to import{newline}"),
+        |source| format!("imported from {}{newline}", source.display()),
     );
     // Marker is last. A failed or partial import remains retryable.
     super::atomic::write_bytes(&marker, text.as_bytes())?;

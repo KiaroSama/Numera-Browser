@@ -1,9 +1,269 @@
 # Rust and TypeScript migration
 
-The accepted boundary is [ADR0001](adr/0001-parity-gated-rust-migration.md).
-The existing Python application remains the default and rollback implementation.
-`engine-rust` is currently a native domain/persistence library, **not a replacement
-CLI/server**. A passing library test does not certify a finished product migration.
+The accepted boundary is [ADR0001](adr/0001-parity-gated-rust-migration.md); Python remains the default and rollback implementation.
+`engine-rust` includes native domain/persistence services and an explicitly enabled
+[candidate executable](migration-candidate.md), **not an installed replacement**.
+Passing library or narrow entrypoint tests does not certify a finished migration.
+
+## Current integration status — October 30, 2026
+
+Checkpoint `8f302c2` ran in manual hosted batch
+[40963786691](https://github.com/KiaroSama/Numera-Browser/actions/runs/40963786691). Linux passed 82 historical proofs and current contracts;
+the attribute fixture caught the exact old metadata loss, restored fixed bytes and passed three current cases; the earlier FIFO, 584-case CLI token and hint controls remain accepted.
+All eight Windows/Linux SDK legs pass actual browser and relocated scenarios, including cookie/HTTP/foreground CLI checks.
+Five latency verdicts show no regression, three remain inconclusive, and all eight memory comparisons remain inconclusive.
+Windows reached the unchanged 900-second ceiling before current acceptance; the Linux results do not certify its unexecuted fixed tests.
+Windows codegen-unit reduction remains insufficient; all 17 resource controls and 50 owned-job observations passed. A historical-only line-table debug experiment is prepared, not a verified speedup; current/release profiles stay unchanged.
+Earlier Linux log-root, nine-case entry comparison and detached/server acceptance passed; generic logging and full first-run compatibility remain incomplete.
+The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
+and current acceptance, including read warnings, delete recovery and Linux process-group uncertainty.
+Native macOS identity/group tests pass after two exact historical failures/restoration, four locale/timezone
+source-token comparisons and real descendant/claim settlement.
+CodeQL and required verification still fail; signing and publication stay gated.
+Shared-store HTTP/CLI replay and original-server restart passed on both systems with
+18 complete, clean units each. The shared-executor correction preserves caller environments
+and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.
+Linux detached jobs and all three MCP signal/ancestor cases passed without leaked trees.
+Both systems passed actual confirmations and entry replay with 172 complete, clean units.
+Functional acceptance precedes the unchanged required benchmark; all four CLI time/memory
+comparisons passed on both systems with 131 complete, clean units each.
+Earlier `5501361` Linux vault-read overlap
+(native 89.825–502.846 ms versus original 343.394–347.005 ms) remains inconclusive.
+Linux/Camoufox prerequisites passed without retry, deadline or privilege changes;
+the earlier download/cleanup cause remains unproved. Windows fixed-build idle failure
+did not recur; its cause and repeatable speedup remain unproved. macOS tests passed;
+the earlier cancellation was a hosted arm64 capacity failure.
+The prior-importer companion resolves the old pool swap's E0425 without changing its selected defect.
+Shared identity helpers passed 123 frozen-original version/platform/page/CDP comparisons on both systems. All eight real SDK paths passed again on `f409196`.
+Fifteen deterministic cleanup-failure controls and the exact prior
+runner's negative control passed on Windows (16 tests, 0.21 seconds); the failed exit, original
+exception, protected bytes and sanitized diagnostics are retained without retries or permission
+changes. The previous cleanup PermissionError's filesystem cause remains unproved.
+Ten original-derived batch-refusal cases retain indexed context, complete ordered problems and
+validation-before-write byte preservation. The shared write-contract boundary passed all 270
+raw/model/shape/context/refusal comparisons on both systems. All 89 importer profile and 17
+envelope comparisons passed on both systems, after exact historical assertion failures and restoration.
+All 1,011 unknown/foreign claim-description comparisons passed on both systems after historical
+failure and restoration; ownership/state/read/release safety is unchanged. All 54 strict job-text
+comparisons passed on both systems after historical failure/restoration. The earlier Windows lock
+failure stopped during descriptor creation at its five-second idle limit; its particular entropy,
+key-derivation or scheduling cause remains unproved. Development/test-only basic optimization
+retains real cryptographic parameters and default safety checks. Historical commands use a local
+application opt-level0 override, while current acceptance retains opt-level1. Both systems now pass
+38 tag/display, four complete-refusal and 83 bulk-selection comparisons, plus the real released-vault
+lock test. Historical proofs and fixed compilation remain separate required commands, each bounded
+by 900 seconds wall/300 seconds idle under the same 45-minute job. Both systems' four foreground CLI
+time/memory log verdicts report no regression; earlier overlap and vault timeout causes remain unproved.
+Native NaN/infinity refusal remains an explicit nonfinite difference. Both systems pass 126 DNS
+cases and 40 full-option fixtures, 99 actual-loopback proxy responses, 99 MCP stdio boundary cases
+and 44 captured-output cases after named historical assertion failures and fixed-byte restoration.
+MCP retains UTF8/frame/ownership limits and nonzero JSON verdicts; its real child ping/list passed
+with owned-tree settlement. Ordinary output cases do not certify every forced-timeout cleanup branch.
+Fixed builds reuse sanitized Cargo progress, not heartbeat or longer deadlines. All 907 source
+occurrences now have nearest target/test references; none establishes complete parity or permits selection.
+Zod 4.6.7 and ctutils 0.4.5 resolved GHSA-mrhx-c7xc-m3w5 and RUSTSEC-2026-0385 through passing
+hosted audits and application/native checks, without changing other resolved records or manifests.
+The shared timezone correction passed 103 original-derived proxy/trust grade pairs on both systems
+after the exact prior source failed its named assertion and fixed bytes were restored. Alignment
+also passed 92 full-fingerprint/change-label comparisons after its exact prior source failed at
+case 1 and fixed bytes were restored. Shared-store HTTP/CLI write replay and original
+server restart passed on both systems, each with 18 complete, clean ownership units.
+CLI confirmation reuses source-compatible boundary whitespace in its public output
+helper and actual entrypoint. Both systems proved the exact old source fails case 4,
+restored fixed bytes and passed all 39 output cases. Both systems passed four actual
+confirmation pairs, including deletion and refused-input byte preservation. The executor's
+optional parent receipts and deliberate child ancestors are covered by 20 helper controls;
+failed entry fixtures remain retained. Both native model-policy drift tests passed on
+both systems: persisted fields match all 56 frozen policy entries and owned/normalized
+exemptions require nonblank explanations. Actual HTTP request performance passed on both
+systems, including ordered response/byte parity and 163 complete, clean ownership units.
+The growth-aware Windows checkpoint passed all 39 modules/916 tests on `85a1142`;
+both systems also proved historical restore-name failure, restoration and all twelve current cases.
+Real-browser exports now complete seven alternating pairs in every engine/OS leg, with
+full cookie output, protected metadata/session sentinel and natural SDK settlement checked.
+On `edca9d0`, Linux Playwright/Patchright latency regresses; every memory range overlaps.
+All eight browser comparisons remain unaccepted under the unchanged strict criterion.
+Earlier Linux detached stop/crash acceptance matches exact command/SDK claims and complete
+receipts instead of requiring a removed metadata process. All captured trees settled.
+Both systems caught the old SOCKS EOF diagnostic mismatch and restored fixed bytes, but the
+current 63-case fixture failed: premature cancellation on Linux and its 30-second ceiling on
+Windows. The fixture repair shares setup and cancels only on exceptional cleanup; all cases,
+wire/error assertions and deadlines remain. Native phase timing/privacy tests passed on both OS;
+the new sample-correlated six-phase adapter probe is source-reviewed but not yet executed.
+The restored known-folder extension-icon route and shared `ProfileDiverged` response kind are
+source-reviewed with 16 icon and two divergent-store cases; hosted proof remains pending.
+Python remains selected; full migration, security, signing and release gates remain open.
+The previous `348bac2` measurements completed seven alternating pairs for all four
+foreground CLI scenarios on both systems, with lower native time/memory ranges.
+These are CLI results, not API/browser or full migration acceptance. The
+[observer correction](migration-candidate.md#representative-release-performance)
+passed its historical-failure and natural-settlement controls within the unchanged
+deadline. No forced-cleanup result is accepted; the earlier query's cause is unproved.
+Windows Camoufox now passes CLI/MCP cookie persistence and HTTP/auth/dashboard,
+restart/idempotence/stop with 24 complete, clean ownership units. Binding its
+existing cache before synthetic home isolation resolves the previous open failure;
+no browser was copied or downloaded by this correction. CodeQL and required verification failed.
+Rendered update consent, keyboard, deferral and cancellation passed in both themes;
+its synthetic bridge does not prove a real portable upgrade.
+
+The earlier `ef09a57` replacement resolved the `5d2e92e` listing regression without
+relaxing the existing limit of 20 JSON read attempts. The Windows performance
+module passed all 16 tests, including the listing contract. The ownership module
+passed all 16 tests, including separate denied-stat/read cases and public CLI/HTTP
+refusal and recovery. Python 3.10 and 3.14 each passed 2,783 tests with six
+explicit limits; macOS passed 2,776 with 13 explicit limits. The earlier macOS
+malformed-report immediate reader snapshot also passed this time, with unchanged
+assertions and budgets plus fixture-local phase diagnostics. Its previous
+transient failure still has no established production root cause or persistent
+leak; a passing rerun alone does not settle that question.
+
+The previous `0a4153d` batch passed every source platform and all four new lease
+variants. Its Linux Python 3.14 result was 2,776 passes, six explicit limits and
+all 147 source suites. The earlier `7020a0a` checkpoint verified Windows partition
+1 with 790 passes, 42 explicit platform limits and 37 suites, including 59
+release-distribution tests. These historical results do not certify the changed tree.
+The latest independent CodeQL check fails; its exact-source analyses contain 33 Python and 37 Rust
+results, not a changed-line annotation count. An earlier bounded independent source review
+rejected 20 of 23 selected rows and left three empty-salt storage paths needing validation.
+No cross-principal exploit was confirmed; this does not clear the host gate or the whole product.
+Distribution, promotion and publication were skipped. There is no signed release
+or completed native updater acceptance. Python remains selected; narrow passing
+tiers do not complete the 907-row capability ledger, replay, comparative
+performance or rollback acceptance.
+
+- The portable updater and private quiescence protocol are drafted in the shell
+  and retained engine. A durable commit prevents automatic downgrade after work
+  admission might reopen; interrupted rollback stays pending until actual restart
+  and private resume succeed. This is not native application cutover.
+- Hosted acceptance now builds two distinct shell/frozen-engine generations and
+  exercises the real hidden WebView, update worker, interruption recovery and
+  preservation of isolated vault/profile/configuration data. These checks have
+  not run. Their compact browser fixture includes real compatibility metadata and
+  one real resource, not full browser archive space/performance acceptance.
+- Parity tooling now reads the pinned original Git blobs rather than importing
+  the mutable current Python application. Recorded original fixture expectations
+  and capability rows are unchanged. Source-freeze regression checks passed in
+  the latest hosted Linux and macOS source suites.
+- Source repairs address scanner configuration parsing, advisory input selection,
+  Linux browser socket-path length, bounded cookie expiry and Windows MIME lookup.
+  Windows source tests now partition every discovered module exactly once across
+  four jobs, at most two concurrently, with a fresh owned interpreter and report
+  per module. The affected partition has four ordered checkpoint steps, with
+  immutable uploads between them and one shared 600-second deadline. Nine separate
+  local action run/upload pairs retain each completed module in the third block
+  before starting the next; all nine checkpoints survived the latest run.
+  A persisted cursor rejects repeats, skipped indices and uncertain cleanup;
+  both inner and outer process owners must settle before continuation. The previous
+  run retained two ordinary test failures while executing later modules and
+  correctly failing the final report; the latest run passed every module execution.
+  Upload time consumes the original deadline.
+  One SHA256 vector previously generated a million-character verbose identifier
+  before the test ran. Explicit short identifiers preserve all three vectors and
+  assertions; the next hosted Windows run completed all 37 modules and its maximum
+  job-log line was 602 characters. The prior runner masking/backpressure mechanism
+  was not directly observed, so this is bounded completion evidence, not universal
+  hang-freedom. The two release-fixture failures assumed Windows `chmod` supplied
+  POSIX execute bits. The fixture correction supplies only that unavailable OS
+  metadata for the exact file on Windows, retaining named metadata and fractional
+  timestamps. Executable and non-executable inputs pass real archive readback and
+  manifest hashing checks. Unix keeps real filesystem permissions; production
+  permission behavior is unchanged. The next run also fixed skip-marker precedence:
+  the function-level procfs condition no longer overrides the existing Windows
+  module exclusion. The strict report and its whole-module exceptions are unchanged;
+  the final Windows report now passes. Explicit byte fixtures and the
+  CRLF array-line parser correction pass on Linux, macOS and Windows; raw-byte
+  checksum authentication remains unchanged.
+- A subsequent source review found that an inaccessible session-lease file was
+  treated as evidence that no other process held it. The correction conservatively
+  retains occupancy when directory creation or opening fails, preserving the
+  own-held and successfully observed free cases. Existing CLI/HTTP stop and status
+  regressions inject the exact OS failure and verify recovery after access returns.
+  All four new variants passed in hosted source suites, including Windows, where
+  the two affected modules passed 9 and 10 tests respectively. This verifies the
+  conservative status/stop correction, not the remaining CodeQL verdict or native
+  updater acceptance.
+- A further source review found an ambiguous durable-claim existence probe:
+  Python 3.14 can return false for an inaccessible path as well as a missing one.
+  The initial direct-read correction exposed the read-count regression above.
+  Its replacement uses explicit `stat` to distinguish an absent claim without
+  opening it, retaining unreadable ownership for path-resolution or access
+  failures. Existing public ownership and CLI/HTTP regression seams retain denied
+  observation, unchanged claim bytes and recovery controls. Python 3.10 fixtures
+  now substitute the exact path accessors rather than functions cached at import.
+  The replacement and public refusal/recovery cases passed hosted source suites;
+  the unchanged listing read-count contract passed too. No exact final read count
+  or comparative latency improvement was reported.
+- Resumed native model review found that optional proxy reads only recognized an
+  empty mapping, while the original also treats false, zero and empty strings or
+  lists as no proxy. The shared-model correction reuses the existing JSON truth
+  policy and retains malformed truthy-proxy refusal. Its bounded original-source
+  comparison passed all 15 model/storage cases on hosted Windows and Linux,
+  including unchanged stored bytes. The existing 35 recorded model cases are
+  untouched and passed too. The later historical failure-proof run observed the
+  old code reject the false-proxy case, then passed the restored model target on
+  Linux in 0.19 seconds and Windows in 0.42 seconds. Broader wrong-type model
+  compatibility and the capability ledger remain open.
+- Cookie input review found another bounded compatibility gap: Python treats four
+  ASCII separators as whitespace that Rust's standard predicate excludes. The
+  cookie-only correction preserves JSON boundary trimming and Netscape fallback
+  field splitting without changing TAB-first parsing or line boundaries. Sixteen
+  additional original-source observations cover padding, field separation and
+  controls that must remain data. The combined cookie parity target passed on
+  hosted Linux in 0.11 seconds and Windows in 0.25 seconds on the earlier checkpoint.
+  The later historical failure-proof run observed the old parser lose the padded
+  JSON cookie, then passed the restored target on Linux in 0.18 seconds and Windows
+  in 0.43 seconds. Broader cookie, numeric and non-finite compatibility remain open.
+- Hosted Windows/Linux verification proved all three historical assertion failures,
+  fixed-byte restoration and passing fixed tests; build errors or timeouts cannot
+  count. Oversized integer expiry now refuses instead of creating a session cookie.
+  Its 16 original-source inputs cover normalization and 48 parse envelopes; finite
+  expiry compares exact float bits, other fields exactly. The combined cookie target
+  passed in 0.20 seconds on Linux and 0.37 on Windows; broader gates stay open.
+- The earlier 31 CodeQL candidates and the subsequent 21-candidate subset were
+  independently assessed against their exact source paths; that assessment is not
+  a clean verdict for the current tree. Identifier, exclusive JSON creation,
+  linked-session refusal and generic public-error regressions passed in the latest
+  Linux and macOS source suites. Explicit credential-result handling and piped
+  package-smoke input also passed those suites; their related annotations are no
+  longer present. The explicit canonical-path containment gate resolves the
+  original archive member and retains the final physical ancestry check. Its
+  archive regressions passed in the latest hosted Windows suite, but the CodeQL
+  annotations remain unchanged. Profile paths still return their original
+  nonlinked lexical identity. Passing regressions do not clear that verdict.
+  A subsequent source trace found a separate concrete gap in extension labels:
+  a manifest's `default_locale` could select a catalog outside its extension.
+  The correction requires a single directory name and reuses physical containment
+  before catalog reads, preserving English/regional/default lookup order and
+  folder-name fallback. Traversal, absolute-path and lookup-priority regressions
+  passed in hosted source suites. The linked-catalog test substitutes the exact
+  OS resolution boundary; it does not prove real symlink/junction behavior.
+  The CodeQL annotation count remains unchanged despite the passing regressions.
+  The legacy store-URL recognizer is not a download allowlist and
+  retains original substring behavior for parity; its annotation is unresolved,
+  not hidden by changing syntax or recorded expectations. Optional-vault plaintext
+  storage also remains an explicitly documented limitation. Signing requires a
+  successful independent CodeQL verdict for the exact SHA, in addition to
+  successful scanner jobs; missing or failed verdicts block publication.
+- Hosted verification confirmed the control-character validation, smaller Rust
+  error retaining detached ownership, and existing Cloak executable handoff. The
+  SDK adapter still refuses missing selections instead of acquiring during launch.
+  The existing Cloak CLI capability map, temporary-path fixture and deterministic
+  shared-deadline correction now pass hosted Linux and macOS source checks. The
+  macOS diagnostics localized the refusal to Darwin returning `EPERM`. Official
+  kernel source shows that a zombie-only group can produce that result even for
+  a zero-signal probe; the old early return bypassed the zombie-aware observer
+  and retained a stale live-process sample. The Darwin-only correction requires
+  the existing complete observer to prove emptiness; live or unknown observations
+  remain owned. All three original failing scenarios and the new refusal/observer
+  regressions passed in the latest hosted macOS suite. Ownership checks and time
+  budgets are unchanged. Windows diagnostic isolation is not a claim that its
+  root cause is fixed.
+
+The chronological seam inventory below records earlier scoped evidence and
+historical prepared work. Only an actual later check supersedes an earlier
+unverified claim. The capability ledger, complete four-engine Windows/Linux
+application acceptance, replay, comparative latency/peak memory and exercised
+rollback still gate Rust selection and retirement.
 
 ## Implemented native seams
 
@@ -19,9 +279,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
 - Bidirectional profile shape conversion and absent/null/empty secret intent.
   The HTTP fingerprint-validation route uses tolerant conversion and the native
   identity validator; complete malformed/legacy/browser parity remains pending.
-- Data-root precedence and isolated portable write probes; first-run copy/merge
-  primitives that preserve destination files and retry failed imports without
-  marking them complete. Executable/environment wiring remains pending.
+- Data-root precedence, isolated portable write probes and actionable directory-permission
+  errors retaining their OS cause; first-run copy/merge primitives preserve destination files.
+  Legacy discovery, directory times/permissions, four FIFO refusal/continuation/retry cases and three new/overlap/mixed extended-attribute comparisons passed narrow Linux historical/current tests. Attribute copying precedes read-only modes and preserves existing destinations. Full first-run/platform/error-path acceptance remains pending.
 - Native reentrant data locks, immediate session lease refusal, atomic file
   replacement and byte-preserving batch rollback primitives.
 - Fernet v1/v2 envelopes, secret-write policy, authenticated completion checks,
@@ -29,9 +289,9 @@ CLI/server**. A passing library test does not certify a finished product migrati
   Ordinary rotation retains the old generation on refusal; interrupted rotation
   authenticates both generations before resuming. Complete runtime-open integration,
   crash/concurrency acceptance and remaining error contracts are unfinished.
-- Dual-store adoption/materialization and save primitives, including exact-byte
-  rollback when a later batch write fails; batch/transaction-time patch, tolerant
-  lookup and lease/claim-aware deletion primitives. Full repository contracts remain pending.
+- Dual-store adoption/materialization, save and byte-preserving batch rollback primitives.
+  Read repair reports divergent-copy warnings; failed deletion retains its initial cause,
+  every failed recovery path and stranded-session destination. Hosted fixtures remain pending.
 - Credential-aware JSON profile export and dual-store import primitives; locked
   exports refuse before touching the destination. Streaming ZIP backup and staged
   restore replace sessions under a lease and roll back failed metadata commits.
@@ -50,14 +310,31 @@ CLI/server**. A passing library test does not certify a finished product migrati
   HTTP list/create/edit/delete/export handlers reuse those stores, preserving
   credential identity, clear/preserve intent, locked-vault refusal and health
   invalidation. URL/network trust rules, bulk
-  assignment and live proxy operations remain pending.
+  HTTP archive and atomic round-robin assignment now reuse these stores,
+  preserving explicit archived selection, unreadable-password refusal and
+  transaction-time profile readback. Original HTTP/store fixtures are prepared,
+  not executed. Native proxy checking now uses explicit authenticated transports,
+  remote SOCKS DNS and the original echo/UA/result policy; HTTP checks run at most
+  eight tasks and commit health once, while CLI checks retain sequential verdicts.
+  Single checks preserve missing/locked refusal before network access. Native
+  rotation now validates all destination addresses, pins each direct control-plane
+  hop, revalidates redirects, applies cooldown and checks whether the exit moved.
+  CLI and single/bulk HTTP handlers preserve their distinct attempt/health updates;
+  original refusal/store and two-address loopback fixtures are prepared, unexecuted.
+  The native loopback relay now supplies browser HTTP/SOCKS credentials and
+  SOCKS4 USERID checks, retaining its runtime and connection tasks through SDK
+  settlement. Original wire, admitted-idle shutdown and framed-SDK lifetime
+  fixtures are prepared, not executed. Precise legacy/network errors, failed
+  cleanup retention, real DNS/TLS/rotation checks and full acceptance remain pending.
 - Extension manifest/localized labels, contained icon selection, ID diagnostics,
   CRX2/CRX3 extraction and staged install/reuse/replacement/removal primitives.
   Failed replacement keeps the prior installation; installed-list HTTP includes
   known store and manually configured resources through the same native description.
-  Package downloading is supplied at a narrow adapter seam. Live download,
-  icon-serving, hostile-resource budgets, remaining
-  compatibility contracts and real browser activation are pending.
+  Native async TLS download now supplies the fixed Web Store request to the
+  staged installer, with total/read/connect deadlines, a streamed output ceiling
+  and CRX magic checks. CLI installation is wired; loopback transport fixtures
+  are prepared but unexecuted. Actual TLS/proxy compatibility, live download,
+  icon-serving, remaining contracts and real browser activation are pending.
 - Named token persistence, sticky auth-policy adoption, duplicate-name creation,
   lockout-aware revocation and constant-time digest verification primitives.
   Per-request auth and literal-host bind refusal decisions are present, with auth
@@ -102,7 +379,11 @@ CLI/server**. A passing library test does not certify a finished product migrati
   backend/application acceptance. Forty source-derived effective-option cases
   capture the SDK call boundary with network/resources isolated explicitly. Native
   backend option construction passed all forty cases on hosted Windows/Linux;
-  resource preparation, IP resolution, relay and launch-service integration remain pending.
+  Native packaged-resource selection now preserves per-backend executables,
+  explicit overrides, Camoufox addon/version options and writable GeoIP seeding.
+  Its original-option, file-preservation and framed-runtime cases are prepared,
+  unexecuted. Automatic executable-entry discovery, actual SDK enum receipt,
+  platform packaging and complete launch-service acceptance remain pending.
   A native post-lease admission seam now rereads coherent current state and refuses
   missing, divergent or unreadable-credential profiles before any SDK activation;
   five source-derived cases passed hosted Windows/Linux. The admitted session lease
@@ -166,8 +447,19 @@ CLI/server**. A passing library test does not certify a finished product migrati
   and format fallback, reusing the existing identity string encoder. Native
   Netscape parsing preserves tab/whitespace fallback, HttpOnly/comment handling,
   original digit rules and text line boundaries through source-observation cases.
-  Complete JSON normalization, non-finite/legacy formats and public service wiring
-  remain pending.
+  Finite JSON normalization now covers storage-state/extension records and ISO
+  expiry using native calendar/timezone primitives. A deployment-selected runtime
+  composes native launch policy with the fixed SDK transport; cookie import/export
+  and launch handlers reuse it through the authenticated router. These additions
+  are unverified pending hosted execution. HTTP import rejects empty usable jars
+  before clearing, matching the original CLI boundary. Finite operations join the
+  registry's shutdown/admission synchronization without becoming user launch
+  sessions; unsuccessful cleanup remains retained for a later sweep. New original
+  command-handler observations and synchronized shutdown tests cover those policies.
+  Actual SDK tests also exercise persisted-cookie reopen, idempotent HTTP launch,
+  busy refusal and stop, but their extended acceptance has not run yet.
+  Complete non-finite/surrogate/legacy/DST compatibility, CLI service wiring,
+  full listener and lifecycle acceptance remain pending.
   Native extension path resolution reuses existing home expansion and canonical
   Windows/UNC spelling, preserving directory filtering, order and duplicates.
   Isolated original flag comparison passed hosted Windows/Linux on `dee4c5b`.
@@ -193,6 +485,110 @@ CLI/server**. A passing library test does not certify a finished product migrati
   native parity and strict lint passed both hosts on `e106e2c`, which changes only
   that source-fixture test. Full launch/stop failure and concurrent lifecycle remain pending.
 
+- Native clap command definitions and automation reflection are now prepared for
+  the original command tree, including shared flags, numeric/default/choice rules
+  and MCP schemas derived from that same registry. Integer options retain the original 4,300-digit bound. Shared CLI/MCP separate long-option token admission passed 584 original-parser comparisons on Linux; Windows-current, positional and error-layout parity remain open. Profile create/list/show/edit,
+  coherence/collision verdicts and archive service seams reuse native stores rather
+  than forwarding Python application commands. New original-handler/parser tests
+  are pending hosted execution; exact help/error/human output, all command handlers,
+  detached jobs and executable MCP/server lifecycle remain incomplete.
+  A native output owner now separates human narration from one structured document,
+  using the existing ASCII JSON formatter and TTY-gated colors. Profile, settings,
+  folder/vault and durable-job renderers have original-handler byte fixtures.
+  Probe startup/result narration now runs through the actual native service, and
+  warmup/run-due progress is emitted at its execution boundary rather than invented
+  from final payloads. Token/schedule display reuses the existing local-time library.
+  Public presentation now composes native pool, extension, cookie, fleet and mutation
+  output without a generic JSON fallback. Launch narration uses the admitted profile;
+  attachment publishes its single structured endpoint while ownership is still held.
+  Omitted CDP browser titles retain the original human fallback without changing JSON.
+  A native HTTP lifetime is drafted with secure bind checks, readiness, the original
+  scheduler cadence and retained shutdown retries; its loopback/failure fixtures are
+  prepared for hosted execution. Static dashboard discovery/fallback now has a native
+  draft backed by the maintained file service and fourteen original-response cases,
+  including missing assets, unknown API paths, HEAD policy and text charset fidelity.
+  It is not a selectable replacement server: executable signals, detached supervision,
+  full static/auth verification and acceptance remain open. The fallback is now mounted
+  before the shared CORS/auth layers; four original-auth cases cover protected unknown
+  API paths alongside public SPA/readiness. These checks are prepared, not executed.
+  These fixtures are prepared, not compiled or executed; file-output rendering tests
+  do not certify archive behavior, and interactive input deadlines, other command
+  families and executable output/signal acceptance remain pending.
+  Native settings, folder/token/schedule, extension, vault, pool and cookie CLI
+  service seams now compose through one shared application dispatcher. Native
+  DNS/TLS and combined proxy probes now use finite browser ownership: Rust
+  selects the original scripts, endpoints, retry order, grading and command exit;
+  Python performs only SDK navigation/evaluation. The combined probe reads
+  IP/WebRTC/DNS/TLS in one context, preserving the original private-address
+  heuristic and timezone aliases rather than substituting rotation policy.
+  Initial IP evaluation failure stops later probes; raw SDK error text remains
+  suppressed for credential safety, so exact exception-message parity is unfinished.
+  HTTP proxy/TLS/DNS routes reuse those same services,
+  preserving auth, missing/busy admission and unhealthy-result HTTP 200 behavior.
+  Original grade/retry/HTTP observations and actual CLI/HTTP protocol fixtures
+  are prepared, unexecuted. Invalid navigation deadlines
+  refuse before SDK calls; tolerated SDK errors do not hide protocol serialization
+  failures. Offline trust now selects its in-memory HTTPS page and original
+  observation script natively, with backend-aware grading and distinct human/JSON
+  exit rules. HTTP trust caches only grade/score/time onto the current profile.
+  Alignment observes the original font candidates and patches only its owned
+  fingerprint fields onto a fresh transaction-time profile after browser cleanup;
+  unrelated edits are retained. Original grades and concurrent-edit/frame fixtures
+  are prepared, unexecuted. Real service/CORS, stalled-evaluation cleanup, exact
+  legacy errors, complete alignment and full backend acceptance remain pending.
+  Native CLI DevTools attachment publishes connection details through an explicit
+  output owner before waiting for browser closure. Natural SDK exit finishes the
+  existing owner without sending a second close request. HTTP attachment stores
+  endpoint metadata beside its exact registry owner; admission, readiness and
+  failure cleanup share one per-profile decision, preventing an older request from
+  stopping a replacement attachment. Original HTTP refusals/success/idempotence,
+  actual native loopback CDP/stop and controlled readiness-failure fixtures are
+  prepared, unexecuted. Actual SDK attachment, concurrent shutdown, failed
+  settlement and executable signal/output acceptance remain pending.
+  Native warmup control now owns the original preset destinations, timing,
+  navigation, mouse-action selection and same-site link scripts. Its duration
+  and preset validator is shared with schedules. The SDK only passes selected
+  mouse operations and navigation deadlines; finite sessions strip startup URLs
+  without changing stored profiles. Original validation and virtual-time runs,
+  native service/claim cleanup and fixed-SDK mouse/deadline fixtures are prepared,
+  unexecuted. HTTP manual warmup now registers an owned native control worker;
+  stop deadlines retain unfinished workers/adapters for retry rather than losing
+  their ownership. CLI run-due and a caller-driven server scheduler tick are
+  drafted, sharing occurrence claims and native warmup. Scheduled admission,
+  atomic outcome bookkeeping and failure cleanup hold one profile decision;
+  unsettled startup retains the occurrence claim. Controlled worker/claim,
+  quarantine retry, HTTP refusal/start/stop and bookkeeping-failure fixtures are
+  prepared, unexecuted. Full failure injection, automatic server lifetime,
+  cancellation/progress, wider branch coverage and actual backend acceptance
+  remain incomplete. Pool
+  standard-input import shares the same service through an explicit input owner;
+  unrelated commands never consume stdin. Shared
+  CLI store opening resolves explicit/inherited unlock and supplies both keys
+  for interrupted-rotation resume before exposing services; its generated
+  recovery-fixture regression is prepared, not executed. Bulk
+  generation/apply and vendor imports reuse native identity and atomic dual-store
+  services; fresh proxy-password choices survive storage reads. Original-handler
+  observations cover structured payloads, refusal order and persisted twins.
+  Durable job identity/outcome merging, bounded UTF-8 log reads, finished-job
+  pruning and recorded-tree stopping are prepared with source and isolated OS
+  fixtures. Unknown process observations remain owned; cleanup refuses a log
+  belonging to another job. Detached spawning, legacy Windows tree stopping and
+  full failure/recovery acceptance remain unfinished. MCP dispatch also reaches
+  the shared native application and reuses the existing JSON formatter; non-zero
+  command verdicts remain structured results rather than transport errors. This is still library
+  code, not proof of a running MCP server or a completed CLI. A bounded sequential
+  stdio loop now reuses that dispatch and checks frame size before buffering;
+  tool subprocess capture uses one nonblocking pipe owner with wall, idle,
+  output and cleanup ceilings. Failed cleanup retains its tree owner. Inherited
+  vault unlock stays in the environment, never public argv. Original protocol
+  observations now traverse the loop; these additions have not run in hosted CI.
+  POSIX escaped-writer fixtures check capture deadlines and separately stop their
+  own escaped tree; they do not prove universal descendant containment. A complete
+  native executable and detached-job supervisor are still required. The integrated native
+  dependency batch selects clap 4.6.7, Chrono 0.4.45, serde_json 1.0.154 and ZIP 9.1.3;
+  upstream exact transitive pins remain respected. Hosted compatibility is pending. No library
+  registry entry is evidence that its command is runnable in the finished product.
+
 All expected fixture outcomes are produced by the retained implementation,
 using non-sensitive inputs, fixed source clocks for conversion and deterministic
 crypto fixture IVs **only in the fixture generator**. Production encryption uses
@@ -201,17 +597,21 @@ source tests, and CI checks their regeneration for drift.
 
 ## Coverage and unfinished work
 
-[The source capability ledger](migration-coverage.json) inventories the frozen
-original source and keeps its required symbols pending until their complete target
-and test evidence is reconciled. It intentionally refuses release/default switch.
-The inventory counts symbols, not user features or completed test cases.
+[The source capability ledger](migration-coverage.json) retains all 907 frozen
+source occurrences and hashes. All 907 occurrences now carry nearest responsibility/test
+references, including the final 424 HTTP, runtime, storage and CLI mappings. References include
+private/inlined replacements and explicitly missing behavior, not equivalent public APIs or
+complete test coverage. Statuses remain 906 pending, one implemented, zero verified.
+It intentionally refuses default switch; references are not acceptance evidence.
+Alternative definitions retain separate deterministic IDs. The verified leaf cases
+and pending screen repair are detailed in the [candidate notes](migration-candidate.md#occurrence-level-reconciliation).
 
-Remaining application work includes complete dual-store operations and vault
-recovery; complete native browser/session/helper/job ownership; all browser adapters
-and operations; full CLI/HTTP/MCP surfaces; portable/runtime packaging; real
-Windows/Linux four-engine acceptance; representative replay, benchmarks with no
-measurable regression, and exercised rollback. Do not hide these obligations by
-removing source tests or declaring a Python-forwarding facade a Rust engine.
+Remaining work includes complete dual-store/vault recovery and native browser/session/
+helper/job ownership. Malformed Linux process-group observations now remain unknown;
+14 original-derived cases and their historical failure proof await hosted verification.
+Full browser operations, CLI/HTTP/MCP, packaging, four-engine acceptance, representative
+replay, strict time/memory benchmarks and rollback remain required. Do not remove source
+tests or declare a Python-forwarding facade a Rust engine to hide these obligations.
 
 All original dashboard source and test modules are now TypeScript/TSX, with
 strict compilation and typed, checked API boundaries. Independent wire-contract
@@ -219,13 +619,102 @@ regressions and a narrow demo editor render have passed; complete live interface
 viewport and final CI acceptance remain pending. TypeScript6.0.3 is retained
 because the current ESLint parser supports versions below6.1, not TypeScript7.
 Existing React, theme tokens, handwritten CSS and Tauri are retained.
-The October 10 maintenance refresh selects Vite8.3.4, Lucide React1.55.0 and
-Node types26.6.5 without changing the interface or compiler compatibility hold.
+The October 15 integration retains Vite8.3.4 and Node types26.6.5, with
+React/React DOM19.3.1, Lucide React1.57.0, jsdom30.1.3, Vitest5.0.5 and
+typescript-eslint8.71.2. Lock resolution is complete; hosted compatibility checks
+remain pending. The interface and compiler compatibility hold are unchanged.
 Dashboard tests, strict types, lint, build and dependency checks share one manually
 dispatchable hosted workflow, also called by full CI. A dashboard-only checkpoint
 does not certify native product acceptance or self-hosted runner job compatibility.
 
+## Hosted-only distribution update — October 14, 2026
+
+All further application tests, checks and builds run on GitHub-hosted runners.
+Earlier local checkpoints below remain historical and cannot verify the newly
+edited tree. Full CI discovers the maintained source/native/dashboard tiers,
+runs source and native SDK checks in the same eight Windows/Linux browser legs,
+and gates Windows x64, Linux x64 and macOS ARM64 retained-Python distributions.
+macOS source/package checks do not certify unsupported native process ownership.
+
+The new detached MCP path shares the durable native supervisor instead of
+creating an unnecessary transient command-capture tree. It preserves parser
+versus application verdicts, cancellation ownership and idle supervisor reaping.
+Actual handoff-cancellation and no-zombie regressions are prepared for hosted
+execution; the current source has not been compiled or runtime-verified.
+
+Only a successful exact-SHA trusted manual CI batch with every applicable required
+check can publish a `build-<SHA>` prerelease. An approved candidate must first
+fast-forward an unprotected `main` to that exact verified SHA; the publisher
+independently checks that promotion and reuses the same batch's artifacts. Archives include matching editable
+source, full project/third-party notices and checksums; restricted Cloak binaries
+are excluded. The new workflows and their downloads are not yet verified. This
+distribution work changes neither default selection nor the remaining capability,
+real-browser, replay, performance and rollback acceptance gates.
+
 ## Verification
+
+### Local Windows checkpoint — October 13, 2026
+
+After hosted jobs were refused before runner startup, the owner authorized local
+verification. The initial profile bucket failed twelve tests in ten targets. All
+observed failures were repaired: the final bucket passed 80 tests across 42 targets,
+including one added pipe-framing regression. A separate discovery-driven pass passed
+76 tests across the other 71 non-live native targets. Source-oracle regeneration and
+inventory drift checks, strict all-target Clippy and formatting also passed.
+
+Corrections preserve stored profile identity under Windows case-insensitive lookup,
+source integer/float JSON distinctions, persisted-language readback, path identity and
+exact record counts. Fixture sockets explicitly enter blocking mode before bounded
+reads. The SDK adapter now uses one main-thread input owner rather than leaving a
+blocked daemon reader during Python shutdown; the reproduced Windows exit crash and
+packaged-option failures passed their regression checks without weakening assertions.
+
+After entry integration and review corrections, the discovery-driven final Windows
+batch passed 160 tests across the library and 115 non-live integration targets, with
+zero failed or ignored cases. Strict all-target Clippy and formatting passed on that
+tree. These results describe uncommitted changes, not the unchanged published candidate. Tests used reduced debug information with
+assertions unchanged; documented cold compilation idle timeouts were build failures,
+not test verdicts. Every bounded command owner reported its tree empty.
+
+An acceptance-only `native_candidate` example now composes the real Rust entrypoint.
+Fifteen JSON CLI scenarios, three human output scenarios and MCP ping/tool execution
+matched the original runtime on Windows/Linux using isolated stores. Twenty-one actual
+HTTP read/authentication/error and documentation cases also matched status, bodies
+and selected headers on both platforms; listeners and process trees settled.
+Documentation assets are generated from the pinned original application, carry the
+FastAPI MIT notice and are served natively without application forwarding. A Router
+regression also compares allowed methods and content lengths for twelve documentation
+requests. Swagger loaded the schema in a browser preview and executed readiness with
+status 200; ReDoc rendering remains unverified. Real invisible ConPTY/PTY
+checks exercised vault enable/change/resume, Unicode password input without echo,
+Ctrl-C cancellation and damaged-journal refusal before prompts. Recovery checks
+decrypted every source-fixture secret and preserved unrelated config; Linux checks
+also inspected terminal echo restoration after success and cancellation. The example is not installed or selected
+as the product. Deployment discovery reaches ordinary browser opens; SDK metadata and
+redirected UTF-8 input/cancellation have narrow Windows checks.
+
+Linux detached execution now records trusted nested native/SDK spawn transfers before
+activation, gates the command until its durable identity is published, and retains
+incomplete receipts rather than declaring them empty. Actual detached list/MCP/server
+start, poll, stop and prune checks passed, including a separately-owned SDK protocol
+stand-in after normal stop and a hard-killed leader. MCP signal cancellation also
+passed with stdin kept open and a nonresponsive SDK stand-in; the parent settles its
+nested receipts rather than only terminating the command group. These checks preserve
+the original trusted-spawn contract, not universal containment of hostile arbitrary
+process-group changes. They do not substitute for real four-engine acceptance.
+
+Windows detached startup explicitly refuses under a non-breakaway outer job. That
+refusal is verified; successful cooperative handoff, non-password console/signal
+handling and the complete parent-death matrix remain pending. Native server parent
+identity disappearance has scoped Windows/Linux evidence; the original Windows
+PID-only path is inapplicable because the desktop shell owns it through a job object. Kill-on-close ownership is not disabled.
+
+The real four-engine matrix, complete native CLI/MCP/server packaging,
+replay, performance and rollback remain required. Python stays selected; these results
+authorize neither cutover nor retirement. Earlier **prepared/unexecuted** descriptions
+in the seam inventory are historical and superseded only by actual scoped evidence.
+
+### Earlier hosted evidence
 
 The owner-requested October 8 checkpoint uses manually dispatched GitHub-hosted
 Windows/Linux jobs, without local or self-hosted test execution. It verifies the
@@ -262,9 +751,13 @@ fixture-drift, security, replay, performance and rollback gate passes. The
 explicitly selected non-default candidate is checked first; only afterward does
 the default selector change get its affected selector/rollback check. Retain the
 old runtime through those checks. The owner has approved removing obsolete product
-versions and disposable temp/caches **only after** all acceptance and selector/rollback
-checks pass, leaving one current usable product. That condition has not been met;
-no original runtime has been deleted. Current SDK-only adapters, user assets,
+versions **only after** all acceptance and selector/rollback checks pass, leaving
+one current usable product. That condition has not been met; no original runtime
+has been deleted. The subsequent immediate footprint-cleanup request independently
+authorized inspected generated compiler/package caches: 43.733 GB of such output
+was moved recoverably out of the checkout, without removing source, maintained
+fixtures or application data. This is not runtime retirement or a claim of freed
+drive space while the Recycle Bin retains those bytes. Current SDK-only adapters, user assets,
 required fixtures, LICENSE and Git history are not obsolete product copies.
 
 ## Migration tooling diagnostics
@@ -277,8 +770,14 @@ WARNING/ERROR report failures, and handler-level redaction protects credential-s
 values. Logging initialization failure falls back explicitly to stderr; handlers
 close on every path. Logs are local diagnostics, not bundled or committed; remove
 old run logs deliberately after diagnosis, and sanitize any approved support export.
-The original engine's logging policy remains unchanged.
+Native logs default to `<data-dir>/logs`, with `NUMERA_LOG_DIR` taking precedence. Prepared dynamic diagnostic filtering preserves the original four ordered credential rules.
+Scheduler failures use that sink; ERROR/CRITICAL remain visible on stderr as well as in the file. File-only diagnostics stay quiet, including write failures.
+`serve --verbose` per-run DEBUG admission, scheduler diagnostics and redaction passed the original-derived Linux hosted checks. Windows current checks remain blocked by historical compilation cost; generic hierarchy and retention remain incomplete. A macOS source delete-order failure now retains bounded caller diagnostics without changing assertions; its cause remains unresolved.
+Verification timeouts record wall/idle flags and numeric durations before cleanup. Failed temporary cleanup records fixed operations, numeric OS errors and file-kind/read-only/reparse flags, not arbitrary paths or exception text.
+The original cleanup exception still fails verification and retains the root; no retry, permission change or ignored removal error is introduced.
 
 Algorithm redistribution notices are in
-[migration-random-notices.txt](migration-random-notices.txt); the project's LICENSE
-has not been changed.
+[migration-random-notices.txt](migration-random-notices.txt). The maintainer-selected
+[Noncommercial Network Share-Alike License 1.0](../LICENSE) now applies to authorized
+project material; independent dependency licenses and earlier valid grants remain
+in force. See [licensing scope and notices](licensing.md).

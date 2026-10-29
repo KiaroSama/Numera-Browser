@@ -213,7 +213,18 @@ def safe_join(base: Path, member: str) -> Path:
     if _DRIVE_PREFIX.match(rel):
         raise ValueError(
             f"{member!r} names a Windows drive and cannot be part of an archive")
-    target = (base / rel).resolve()
+    absolute = os.path.abspath(base / rel)
+    if absolute != str(base) and not absolute.startswith(str(base).rstrip(os.sep) + os.sep):
+        raise ValueError(
+            f"refusing archive member that escapes its folder: {member!r}")
+    # Resolve the original member: abspath would erase a link before '..'.
+    physical = os.path.realpath(base / rel)
+    checked = os.path.normcase(physical)
+    boundary = os.path.normcase(str(base))
+    if checked != boundary and not checked.startswith(boundary.rstrip(os.sep) + os.sep):
+        raise ValueError(
+            f"refusing archive member that escapes its folder: {member!r}")
+    target = Path(physical).resolve()
     if target != base and base not in target.parents:
         raise ValueError(
             f"refusing archive member that escapes its folder: {member!r}")
@@ -246,7 +257,7 @@ def safe_id(value, *, what: str = "id") -> str:
     lives at the point the value becomes a path.
     """
     text = str(value or "")
-    if not _SAFE_ID.match(text):
+    if not _SAFE_ID.fullmatch(text):
         raise ValueError(
             f"{what} {text!r} is not a valid profile id: expected 1-64 characters "
             "from A-Z, a-z, 0-9, '_' or '-'")
@@ -265,7 +276,14 @@ def safe_id(value, *, what: str = "id") -> str:
 
 def id_path(base: Path, value, suffix: str = "") -> Path:
     """`<base>/<id><suffix>`, refusing anything that would leave `base`."""
-    return Path(base) / f"{safe_id(value)}{suffix}"
+    base = Path(base).resolve()
+    target = base / f"{safe_id(value)}{suffix}"
+    absolute = os.path.abspath(target)
+    if not absolute.startswith(str(base).rstrip(os.sep) + os.sep):
+        raise ValueError('profile path escapes its data directory')
+    if target.is_symlink() or target.resolve().parent != base:
+        raise ValueError('profile path escapes its data directory or is linked')
+    return target
 
 
 # The lock layer lives in `data_locks`; these names stay importable from here.
@@ -313,6 +331,10 @@ def child_env(password=None, base=None) -> dict:
     looks exactly like success.
     """
     env = dict(os.environ if base is None else base)
+    # Shell-only capabilities must never reach browser/helpers or detached jobs.
+    env.pop("NUMERA_UPDATE_TOKEN", None)
+    env.pop("NUMERA_UPDATE_TICKET", None)
+    env.pop("NUMERA_UPDATE_ACTIVATION", None)
     if password:
         env["NUMERA_PASSWORD"] = password
     return env
@@ -458,8 +480,12 @@ def write_json(path, data) -> None:
     blob = json.dumps(data, indent=2)          # may raise; nothing written yet
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f"{path.name}.tmp-{os.getpid()}-{threading.get_ident():x}")
+    # Exclusive private creation refuses a planted link instead of truncating
+    # its target. Only a file created by this invocation belongs to its cleanup.
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     try:
-        tmp.write_text(blob, encoding="utf-8")
+        with os.fdopen(fd, 'w', encoding='utf-8') as stream:
+            stream.write(blob)
         _replace(tmp, path)
     finally:
         if tmp.exists():

@@ -15,6 +15,20 @@ existed without anyone noticing. One file, one definition, no drift.
 """
 import sys
 
-from numera.cli import main
+# Top-level module deliberately avoids importing numera.__init__/store/SDKs
+# before the frozen installation participates in update exclusion. PyInstaller's
+# bootloader/stdlib load precedes this entry and is not controlled by this guard.
+from numera_installation import InstallationBusy, runtime_lease
 
-sys.exit(main())
+try:
+    with runtime_lease():
+        if sys.argv[1:] == ['--build-info']:
+            import json
+            from numera_build import IDENTITY
+            print(json.dumps(IDENTITY, separators=(',', ':'), ensure_ascii=True))
+            sys.exit(0)
+        from numera.cli import main
+        sys.exit(main())
+except InstallationBusy as error:
+    print(f'numera: {error}', file=sys.stderr)
+    sys.exit(1)

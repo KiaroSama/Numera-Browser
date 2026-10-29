@@ -14,7 +14,7 @@ use crate::{
     },
 };
 use serde_json::Value;
-use std::{collections::HashMap, fs, time::Duration};
+use std::{collections::HashMap, fs};
 
 impl ProfileRepo {
     /// Prepare both copies before the first write; no caller snapshot bypasses
@@ -32,11 +32,16 @@ impl ProfileRepo {
         policy: &str,
         now: f64,
     ) -> Result<Vec<Profile>, RepoError> {
-        for profile in &profiles {
-            Self::validate_write(profile)?;
+        for (index, profile) in profiles.iter().enumerate() {
+            let context = if profiles.len() > 1 {
+                format!("profiles[{index}]")
+            } else {
+                "profile".into()
+            };
+            Self::validate_write(profile, &context)?;
         }
         let root = DataLock::transaction(&self.root)?;
-        let _root = root.acquire(Duration::from_secs(30))?;
+        let _root = root.acquire_configured()?;
         self.require_settled()?;
         if !matches!(policy, "reject" | "skip") {
             return Err(RepoError::Message(format!(
@@ -95,7 +100,7 @@ impl ProfileRepo {
             .collect::<Result<Vec<_>, _>>()?;
         let _guards = locks
             .iter()
-            .map(|lock| lock.acquire(Duration::from_secs(30)))
+            .map(|lock| lock.acquire_configured())
             .collect::<Result<Vec<_>, _>>()?;
         let mut batch = Batch::default();
         let result = (|| -> Result<(), RepoError> {
@@ -104,7 +109,8 @@ impl ProfileRepo {
                 batch.write(&self.path(&profile.id, "dashboard")?, dashboard)?;
             }
             if !changes.is_empty() {
-                let mut config = ConfigStore::new(self.root.clone()).read();
+                let mut config =
+                    ConfigStore::new(self.root.clone()).set_many(serde_json::Map::new())?;
                 config.extend(changes);
                 batch.write(&self.root.join("config.json"), &Value::Object(config))?;
             }
@@ -126,6 +132,22 @@ impl ProfileRepo {
             .collect())
     }
 
+    pub fn edit(
+        &self,
+        reference: &str,
+        apply: impl FnOnce(&mut Profile) -> Result<Option<Profile>, RepoError>,
+        now: f64,
+    ) -> Result<Option<Profile>, RepoError> {
+        let root = DataLock::transaction(&self.root)?;
+        let _root = root.acquire_configured()?;
+        self.require_settled()?;
+        let Some(mut current) = self.resolve(reference, now)? else {
+            return Ok(None);
+        };
+        let updated = apply(&mut current)?.unwrap_or(current);
+        self.save(updated, now).map(Some)
+    }
+
     pub fn patch_many(
         &self,
         references: &[String],
@@ -135,7 +157,7 @@ impl ProfileRepo {
         now: f64,
     ) -> Result<Vec<Profile>, RepoError> {
         let root = DataLock::transaction(&self.root)?;
-        let _root = root.acquire(Duration::from_secs(30))?;
+        let _root = root.acquire_configured()?;
         self.require_settled()?;
         let mut pending = Vec::new();
         for reference in references {
@@ -148,19 +170,13 @@ impl ProfileRepo {
         self.save_many(pending, changes, policy, now)
     }
 
-    fn validate_write(profile: &Profile) -> Result<(), RepoError> {
-        let problems = validation::profile_problems(
-            &serde_json::to_value(profile)
-                .map_err(|_| RepoError::Message("Profile cannot be serialized".into()))?,
-            "engine record",
+    fn validate_write(profile: &Profile, context: &str) -> Result<(), RepoError> {
+        crate::write_contract::require(
+            crate::write_contract::Input::Profile(profile),
+            context,
+            None,
         )
-        .map_err(|_| RepoError::Message("Field policy is unreadable".into()))?;
-        if !problems.is_empty() {
-            return Err(RepoError::Message(
-                problems.into_iter().take(8).collect::<Vec<_>>().join("; "),
-            ));
-        }
-        Ok(())
+        .map_err(|error| RepoError::Message(error.to_string()))
     }
 
     pub(crate) fn held_names(&self) -> Result<HashMap<String, Vec<String>>, RepoError> {
@@ -173,22 +189,20 @@ impl ProfileRepo {
             };
             for entry in entries {
                 let path = entry?.path();
-                if path.extension().is_none_or(|v| v != "json") {
+                if !super::paths::json_filename(&path) {
                     continue;
                 }
-                if let Some(value) = Self::raw(&path).filter(Value::is_object)
+                if let Some(value) = Self::raw(&path)?.filter(Value::is_object)
                     && crate::conversion::truth(&value["name"])
                 {
                     let id = value["id"]
                         .as_str()
                         .filter(|id| !id.is_empty())
                         .or_else(|| path.file_stem().and_then(|stem| stem.to_str()));
-                    let name = match &value["name"] {
-                        Value::String(name) => name.clone(),
-                        Value::Bool(value) => value.to_string(),
-                        Value::Number(value) => value.to_string(),
-                        _ => String::new(),
-                    };
+                    let name = crate::read_view::readable_value("name", &value["name"])
+                        .as_str()
+                        .unwrap_or("")
+                        .to_owned();
                     if let Some(id) = id {
                         held.entry(id.into()).or_default().push(name);
                     }
@@ -205,12 +219,19 @@ impl ProfileRepo {
     ) -> Result<(Profile, Value, Value), RepoError> {
         let engine_path = self.path(&profile.id, "profiles")?;
         let dash_path = self.path(&profile.id, "dashboard")?;
-        let previous = Self::raw(&dash_path).unwrap_or(Value::Null);
-        let current = Self::raw(&engine_path).unwrap_or(Value::Null);
+        let previous = Self::raw(&dash_path)?.unwrap_or(Value::Null);
+        let current = Self::raw(&engine_path)?.unwrap_or(Value::Null);
         let old = current["proxy"]["password"].as_str();
         let twin = previous["proxy"]["pass"].as_str();
-        let config = Value::Object(ConfigStore::new(self.root.clone()).read());
-        let descriptor = &config["vault"];
+        let descriptor = if profile
+            .proxy
+            .as_ref()
+            .is_none_or(|proxy| proxy.password_intent() != "preserve")
+        {
+            self.vault()?.unwrap_or(Value::Null)
+        } else {
+            Value::Null
+        };
         let salt = descriptor["salt"].as_str().unwrap_or("");
         let password = self.password.as_deref().unwrap_or("");
         let state = if descriptor.is_null() {
@@ -229,15 +250,7 @@ impl ProfileRepo {
         let seal = |value: &str| vault::encrypt(password, salt, value);
         let (left, right) = if let Some(proxy) = &profile.proxy {
             if proxy.password_intent() == "preserve" {
-                let missing = old.is_none_or(str::is_empty) || twin.is_none_or(str::is_empty);
-                let both_readable =
-                    self.readable_secret(old).is_some() && self.readable_secret(twin).is_some();
-                if !self.same_secret(old, twin)
-                    && !(old.is_none_or(str::is_empty) && twin.is_none_or(str::is_empty))
-                    && (missing || both_readable)
-                {
-                    return Err(Self::diverged(&profile.id, "password"));
-                }
+                self.refuse_unresolved_secret(&profile.id, old, twin)?;
                 (old.map(str::to_owned), twin.map(str::to_owned))
             } else {
                 let asked = proxy.to_record()["password"].as_str().map(str::to_owned);

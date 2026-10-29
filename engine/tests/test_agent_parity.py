@@ -47,6 +47,8 @@ PARITY: dict[str, tuple[str, tuple[tuple[str, ...], ...], str]] = {
     "health":          (NA, (), "the GUI probing whether its backend is reachable; "
                                 "a CLI has no backend to probe"),
     "engines":         (CLI, (("engines",),), ""),
+    "cloakOffer":      (CLI, (("engines",),), "`engines --cloak-offer` reads the local exact target without downloading"),
+    "acquireCloak":    (CLI, (("engines",),), "`engines --acquire-cloak OFFER_ID --approve` requires consent to that target"),
     "getConfig":       (CLI, (("config",),), ""),
     "setDefaultEngine": (CLI, (("default-engine",),), "also `config --default-engine`"),
     "setDefaultExtensions": (CLI, (("config",),), "`config --default-extension` replaces the "
@@ -499,6 +501,7 @@ def test_the_installed_entry_point_agrees_with_the_in_process_one(tmp_path):
 # dashboard depends on. `allow_fail` mirrors the flag server.py passes: without
 # it, a non-zero exit becomes a 500 behind the button that ran it.
 SERVER_INVOCATIONS = [
+    (["engines", "--acquire-cloak", "OFFER_ID", "--approve", "--json"], False),
     (["cookies", "export", "PID", "out.json"], False),
     (["cookies", "import", "PID", "in.json"], False),
     (["cookies", "import", "PID", "in.json", "--clear"], False),

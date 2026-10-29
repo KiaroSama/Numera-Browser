@@ -10,7 +10,6 @@ use std::{
     fs,
     io::{self, Read},
     path::{Path, PathBuf},
-    time::Duration,
 };
 use zip::{ZipArchive, result::ZipError};
 
@@ -51,10 +50,11 @@ fn read_profile(archive: &mut ZipArchive<fs::File>, source: &Path) -> Result<Pro
 fn unpack(archive: &mut ZipArchive<fs::File>, staging: &Path) -> Result<(), RepoError> {
     for index in 0..archive.len() {
         let mut file = archive.by_index(index).map_err(zip_error)?;
-        let Some(member) = file.name().strip_prefix("user-data/") else {
+        let name = file.name().map_err(zip_error)?;
+        let Some(member) = name.strip_prefix("user-data/") else {
             continue;
         };
-        if file.is_dir() || file.name().ends_with('/') {
+        if file.is_dir() || name.ends_with('/') {
             continue;
         }
         // ZIP link metadata is never honored; only regular bytes enter staging.
@@ -152,7 +152,7 @@ impl ProfileRepo {
             claims::refuse_if_busy(&self.root, &profile.id, host)
                 .map_err(|error| RepoError::Message(error.to_string()))?;
             let lock = DataLock::transaction(&self.root)?;
-            let _root = lock.acquire(Duration::from_secs(30))?;
+            let _root = lock.acquire_configured()?;
             self.require_settled()?;
             if new_id
                 && (self.path(&profile.id, "profiles")?.try_exists()?
@@ -164,15 +164,16 @@ impl ProfileRepo {
             }
             let held = self.held_names()?;
             if let Some(name) = profile.name.as_str().filter(|name| !name.is_empty()) {
-                let own = held
-                    .get(&profile.id)
-                    .is_some_and(|names| names.iter().any(|held| held == name));
-                let taken = |candidate: &str| {
-                    held.iter().any(|(id, names)| {
-                        id != &profile.id && names.iter().any(|name| name == candidate)
-                    })
+                // An existing name is not a new claim, including copy candidates
+                // shared by legacy records. Match the ordinary write policy.
+                let available = |candidate: &str| {
+                    held.get(&profile.id)
+                        .is_some_and(|names| names.iter().any(|name| name == candidate))
+                        || !held.iter().any(|(id, names)| {
+                            id != &profile.id && names.iter().any(|name| name == candidate)
+                        })
                 };
-                if !own && taken(name) {
+                if !available(name) {
                     let original = name.to_owned();
                     let selected = (1..=held.values().map(Vec::len).sum::<usize>() + 1)
                         .map(|count| {
@@ -182,7 +183,7 @@ impl ProfileRepo {
                                 format!("{original} (copy {count})")
                             }
                         })
-                        .find(|candidate| !taken(candidate))
+                        .find(|candidate| available(candidate))
                         .ok_or_else(|| {
                             RepoError::Message("No unclaimed restore name found".into())
                         })?;

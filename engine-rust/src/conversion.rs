@@ -36,23 +36,76 @@ pub(crate) fn value_text(v: &Value) -> String {
         _ => v.to_string(),
     }
 }
-fn number(v: &Value, default: f64, whole: bool) -> Value {
-    let out = if v.is_boolean() {
-        None
-    } else {
-        v.as_f64()
-            .or_else(|| v.as_str().and_then(|v| v.parse::<f64>().ok()))
+fn integer_number(value: &Value) -> Option<Value> {
+    let integer = match value {
+        Value::String(text) => {
+            let integer = crate::decimal::integer(text)?;
+            if integer.trim_start_matches('-').len() > 4300 {
+                return None;
+            }
+            integer
+        }
+        Value::Number(number) => {
+            let text = number.to_string();
+            if !text.contains(['.', 'e', 'E']) {
+                text
+            } else {
+                format!(
+                    "{:.0}",
+                    number.as_f64().filter(|value| value.is_finite())?.trunc()
+                )
+            }
+        }
+        _ => return None,
     };
-    let n = out.filter(|v| v.is_finite()).unwrap_or(default);
-    if whole || n.fract() == 0.0 {
-        json!(n as i64)
+    let negative = integer.starts_with('-');
+    let digits = integer.trim_start_matches('-').trim_start_matches('0');
+    let normalized = if digits.is_empty() {
+        "0".into()
+    } else if negative {
+        format!("-{digits}")
+    } else {
+        digits.to_owned()
+    };
+    normalized
+        .parse::<serde_json::Number>()
+        .ok()
+        .map(Value::Number)
+}
+fn finite_number(value: &Value) -> Option<f64> {
+    match value {
+        Value::Number(number) => number.as_f64(),
+        Value::String(text) => crate::browser::cookie_expiry::numeric_text(text),
+        _ => None,
+    }
+    .filter(|number| number.is_finite())
+}
+fn number(v: &Value, default: f64, whole: bool) -> Value {
+    if whole {
+        return integer_number(v).unwrap_or_else(|| json!(default as i64));
+    }
+    let n = finite_number(v).unwrap_or(default);
+    if n.fract() == 0.0 {
+        integer_number(&json!(n)).expect("Finite whole conversion number")
     } else {
         json!(n)
     }
 }
+fn trim(value: &str) -> &str {
+    value.trim_matches(|c: char| c.is_whitespace() || matches!(c, '\u{1c}'..='\u{1f}'))
+}
 fn lines(v: &Value) -> Vec<String> {
     let parts = if let Some(v) = v.as_str() {
-        v.lines().map(str::to_owned).collect()
+        // Empty CRLF segments are discarded below, along with blank source lines.
+        v.split(|c| {
+            matches!(
+                c,
+                '\n' | '\r' | '\u{b}' | '\u{c}' | '\u{1c}'
+                    ..='\u{1e}' | '\u{85}' | '\u{2028}' | '\u{2029}'
+            )
+        })
+        .map(str::to_owned)
+        .collect()
     } else {
         v.as_array()
             .into_iter()
@@ -63,7 +116,7 @@ fn lines(v: &Value) -> Vec<String> {
     };
     parts
         .into_iter()
-        .map(|v| v.trim().to_owned())
+        .map(|v| trim(&v).to_owned())
         .filter(|v| !v.is_empty())
         .collect()
 }
@@ -132,7 +185,7 @@ fn urls(v: &Value) -> Vec<String> {
     }
     entries
         .into_iter()
-        .map(|v| v.trim().to_owned())
+        .map(|v| trim(&v).to_owned())
         .filter(|v| !v.is_empty())
         .map(|v| {
             if !v.contains("://") && !v.starts_with("about:") {
@@ -149,7 +202,7 @@ fn bookmarks(v: &Value) -> Vec<Value> {
         .filter_map(|line| {
             let (name, url) = line
                 .rsplit_once('|')
-                .map_or(("", line.as_str()), |(name, url)| (name.trim(), url.trim()));
+                .map_or(("", line.as_str()), |(name, url)| (trim(name), trim(url)));
             if url.is_empty() {
                 None
             } else {
@@ -189,8 +242,8 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
     };
     let locale = text(&d["locale"], "en-US");
     let language = c["LOCALES"].get(&locale).unwrap_or(&c["LOCALES"]["en-US"]);
-    let mut renderer = text(&d["webglRenderer"], "").trim().to_owned();
-    let mut vendor = text(&d["webglVendor"], "").trim().to_owned();
+    let mut renderer = trim(&text(&d["webglRenderer"], "")).to_owned();
+    let mut vendor = trim(&text(&d["webglVendor"], "")).to_owned();
     if renderer.is_empty() {
         renderer = text(&c["WEBGL"][os][0][1], "");
         vendor = text(&c["WEBGL"][os][0][0], "");
@@ -269,18 +322,21 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
     };
     let mode = |key: &str, default: &str| {
         if truth(&d[key]) {
-            value_text(&d[key]).trim().to_lowercase()
+            trim(&value_text(&d[key])).to_lowercase()
         } else {
             default.into()
         }
     };
+    let ratio = finite_number(&d["devicePixelRatio"])
+        .filter(|value| *value != 0.0)
+        .map_or_else(|| c["PIXEL_RATIOS"][os][0].clone(), |value| json!(value));
     let fp=Fingerprint::from_record(&json!({"os":os,"user_agent":ua,"platform":c["NAV_PLATFORM"][os],"ch_platform":c["CH_PLATFORM"][os],"chrome_version":chrome,
         "screen_width":sw,"screen_height":sh,"viewport_width":sw,"viewport_height":(sh-if os=="ios"{113}else if mobile{80}else{88}).max(1),
         "hardware_concurrency":number(&d["cores"],8.0,true),"device_memory":if os=="ios"{json!(0)}else{number(&d["memory"],16.0,false)},
         "fonts":fonts,"cameras":number(&d["mediaVideo"],1.0,true),"microphones":number(&d["mediaAudio"],1.0,true),"speakers":number(&d["mediaSpeakers"],1.0,true),
         "webrtc":mode("webrtc","altered"),"canvas":mode("canvas","noise"),"audio":mode("audio","noise"),"client_rects":mode("clientRects","noise"),"webgl_image":mode("webglImage","noise"),"media_mode":mode("mediaDevices","masked"),"font_mode":mode("fonts","masked"),"geolocation":mode("geo","prompt"),"do_not_track":truth(&d["dnt"]),
         "webgl_vendor":vendor,"webgl_renderer":renderer,"locale":locale,"timezone":if truth(&d["timezone"]){d["timezone"].clone()}else{language[0].clone()},"languages":language[1],"is_mobile":mobile,"os_version":version,"device_model":model,"max_touch_points":number(&d["maxTouchPoints"],c["TOUCH_POINTS"][os][0].as_f64().unwrap_or(0.0),true),
-        "device_pixel_ratio":if truth(&number(&d["devicePixelRatio"],0.0,false)){number(&d["devicePixelRatio"],1.0,false)}else{c["PIXEL_RATIOS"][os][0].clone()},"seed":seed})).map_err(|_|ConversionError("Converted fingerprint is invalid".into()))?;
+        "device_pixel_ratio":ratio,"seed":seed})).map_err(|_|ConversionError("Converted fingerprint is invalid".into()))?;
     let px = &d["proxy"];
     let proxy = if px.is_object() && truth(&px["host"]) {
         let kind = text(&px["type"], "HTTP").to_uppercase();
@@ -334,7 +390,7 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
         launch_args: lines(&d["launchArgs"]),
         bookmarks: bookmarks(&d["bookmarks"]),
         dns: if truth(&d["dns"]) {
-            value_text(&d["dns"]).trim().into()
+            trim(&value_text(&d["dns"])).into()
         } else {
             String::new()
         },
@@ -358,12 +414,32 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
     })
 }
 
+pub fn dashboard_coherence(record: &Value, now: f64) -> Vec<String> {
+    let profile = match to_engine(record, now) {
+        Ok(profile) => profile,
+        Err(error) => return vec![format!("could not validate: {error}")],
+    };
+    crate::identity::validate(&profile.fingerprint)
+        .unwrap_or_else(|error| vec![format!("could not validate: {error}")])
+}
+
 pub fn to_dashboard(profile: &Profile) -> Value {
     let fp = &profile.fingerprint;
-    let proxy=profile.proxy.as_ref().map_or(Value::Null,|p|{
-        let record=p.to_record();let (scheme,hostport)=p.server.split_once("://").unwrap_or(("http",&p.server));
-        let (host,port)=if let Some(v)=hostport.strip_prefix('['){v.split_once(']').map_or((hostport,""),|(host,tail)|(host,tail.strip_prefix(':').unwrap_or("")))}else if hostport.matches(':').count()==1{hostport.split_once(':').unwrap_or((hostport,""))}else{(hostport,"")};
-        json!({"type":match scheme{"https"=>"HTTPS","socks4"=>"SOCKS4","socks5"=>"SOCKS5",_=>"HTTP"},"host":host,"port":port,"user":record["username"].as_str().unwrap_or(""),"pass":record["password"].as_str().unwrap_or(""),"country":record["country"].as_str().unwrap_or("")})});
+    let proxy = profile.proxy.as_ref().filter(|p| !p.server.is_empty()).map_or(Value::Null, |p| {
+        let record = p.to_record();
+        let server = trim(&p.server);
+        let (scheme, hostport) = server.split_once("://").unwrap_or(("http", server));
+        let (host, port) = if let Some(value) = hostport.strip_prefix('[') {
+            value.split_once(']').map_or((hostport, ""), |(host, tail)| {
+                (host, tail.strip_prefix(':').unwrap_or(""))
+            })
+        } else if hostport.matches(':').count() == 1 {
+            hostport.split_once(':').unwrap_or((hostport, ""))
+        } else {
+            (hostport, "")
+        };
+        json!({"type":match scheme.to_lowercase().as_str(){"https"=>"HTTPS","socks4"=>"SOCKS4","socks"|"socks5h"|"socks5"=>"SOCKS5",_=>"HTTP"},"host":host,"port":port,"user":record["username"].as_str().unwrap_or(""),"pass":record["password"].as_str().unwrap_or(""),"country":record["country"].as_str().unwrap_or("")})
+    });
     let mut output = json!({"name":profile.name,"folder":"Facebook Ads","status":"stopped","os":dash_os(&fp.os),"engine":if profile.engine.is_empty(){"playwright"}else{&profile.engine},"browser":"Chrome","browserVersion":fp.chrome_version,"userAgent":fp.user_agent,"screen":format!("{}x{}",fp.screen_width,fp.screen_height),"cores":fp.hardware_concurrency,"memory":fp.device_memory,"webglVendor":fp.webgl_vendor,"webglRenderer":fp.webgl_renderer});
     let signals = json!({"canvas":capitalize(&fp.canvas),"webrtc":capitalize(&fp.webrtc),"audio":capitalize(&fp.audio),"fonts":capitalize(&fp.font_mode),"clientRects":capitalize(&fp.client_rects),"webglImage":capitalize(&fp.webgl_image),"mediaDevices":capitalize(&fp.media_mode),"locale":fp.locale,"timezone":fp.timezone,"geo":capitalize(&fp.geolocation),"mediaVideo":fp.cameras,"mediaAudio":fp.microphones,"mediaSpeakers":fp.speakers,"fontList":fp.fonts.join("\n"),"osVersion":fp.os_version,"deviceModel":fp.device_model,"maxTouchPoints":fp.max_touch_points,"devicePixelRatio":fp.device_pixel_ratio,"seed":fp.seed,"dnt":fp.do_not_track});
     let extras = json!({"proxy":proxy,"notes":profile.notes,"tags":profile.tags,"startupUrls":profile.startup_urls.join("\n"),"extensions":profile.extensions.join("\n"),"launchArgs":profile.launch_args.join("\n"),"bookmarks":profile.bookmarks.iter().filter(|b|truth(&b["url"])).map(|b|{let url=text(&b["url"],"");let name=text(&b["name"],"");if name.is_empty()||name==url{url}else{format!("{name} | {url}")}}).collect::<Vec<_>>().join("\n"),"dns":profile.dns,"ipBased":profile.ip_based,"clearOnStart":profile.clear_on_start,"switchedOff":profile.switched_off,"lastActive":"never"});

@@ -1,0 +1,21 @@
+.ps-update-panel { min-width: 0; }
+.ps-update-panel .ps-set-h { color: var(--text); }
+.ps-update-panel .ps-set-h svg { color: var(--lilac); }
+.ps-update-current { font-size: 12px; line-height: 1.7; color: var(--muted); overflow-wrap: anywhere; }
+.ps-update-offer { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+.ps-update-offer summary { cursor: pointer; font-size: 12px; color: var(--lilac); padding: 8px 0; }
+.ps-update-offer .ps-code { max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ps-update-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.ps-update-notice { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 26px; border-bottom: 1px solid var(--line); background: var(--bg2); font-size: 12px; color: var(--text); }
+.ps-update-notice > svg { color: var(--lilac); flex-shrink: 0; }
+.ps-update-notice > span { flex: 1; min-width: 160px; }
+.ps-update-progress { display: grid; gap: 8px; margin-top: 12px; font-size: 12px; color: var(--muted); }
+.ps-update-progress progress { width: 100%; accent-color: var(--violet); }
+.ps-update-dialog { width: min(460px, calc(100vw - 32px)); }
+.ps-update-dialog .ps-drawer-title { margin: 0; font-size: 18px; }
+.ps-update-body { padding: 8px 20px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.ps-update-dialog button:focus-visible, .ps-update-panel summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+@media (max-width: 480px) {
+  .ps-update-notice { padding: 12px 16px; gap: 8px; }
+  .ps-update-actions > button { flex: 1 1 auto; }
+}

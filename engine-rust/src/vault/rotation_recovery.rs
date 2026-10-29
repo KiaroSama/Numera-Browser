@@ -35,7 +35,11 @@ pub(crate) fn finish(
             .map_err(|_| {
                 refusal("Persisted vault config cannot be read; recovery evidence retained")
             })?;
-        if persisted["vault"] != *new {
+        let active = &persisted["vault"];
+        if !super::journal::usable_descriptor(active)
+            || active["salt"] != new["salt"]
+            || active["verifier"] != new["verifier"]
+        {
             return Err(refusal(
                 "Persisted descriptor disagrees with the verified generation; recovery evidence retained",
             ));
@@ -57,7 +61,12 @@ pub(crate) fn finish(
         let mut error = refusal(
             "A master-password rotation was interrupted, so some secrets are under the new password and some under the old one. Finish it with `numera vault resume`, which needs both passwords - they are the only way to tell the two apart, because both are ciphertext. This data root is not served until then, and the record of the new salt is kept.",
         );
+        error.kind = super::recovery::RecoveryErrorKind::VaultIncomplete;
         error.codes.push("needs_both_passwords");
+        error.problems.push(super::completion::Problem {
+            code: "needs_both_passwords",
+            detail: "a resumed rotation needs both the old and the new master password".into(),
+        });
         return Err(error);
     };
     if !check_password(

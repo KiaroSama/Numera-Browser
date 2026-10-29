@@ -16,6 +16,16 @@ from .out import C, _c, _resolve_or_fail, emit, json_mode, say
 
 def cmd_engines(args, store: ProfileStore) -> int:
     from .. import drivers
+    from .. import cloak_acquisition
+    if getattr(args, 'cloak_offer', False) or getattr(args, 'acquire_cloak', None):
+        from .. import bundled
+        bundled.launch_options('cloak', store.root)
+    if getattr(args, 'cloak_offer', False):
+        return emit(cloak_acquisition.offer())
+    if getattr(args, 'acquire_cloak', None):
+        result = cloak_acquisition.acquire(args.acquire_cloak,
+                                           approved=getattr(args, 'approve', False))
+        return emit(result)
     default = store.get_default_engine()
     say(_c("Launch engines:", C.B))
     for name, ok in drivers.available().items():

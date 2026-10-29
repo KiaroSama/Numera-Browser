@@ -89,7 +89,7 @@ def register(app, ctx):
     # reached another's helpers and the first shutdown anywhere closed the door
     # on everybody. A manager per app needs no reopening - a swept one is
     # finished, and a restart simply gets a new one.
-    helpers = app.state.helpers = HelperManager()
+    helpers = app.state.helpers = HelperManager(engine_store.root)
 
     # Beside the hook that stops sessions. A probe holds a browser exactly as a
     # session does, and until this existed the server could exit while one was
@@ -209,6 +209,9 @@ def register(app, ctx):
         if proc.returncode != 0 and not (allow_fail and proc.stdout.strip()):
             raise HTTPException(500, (proc.stdout + proc.stderr).strip() or "command failed")
         return proc.stdout
+
+    from . import routes_acquisition
+    routes_acquisition.register(app, engine_store, _run_cli)
 
     def _prepare(pid: str) -> dict:
         """Fetch a dashboard profile, refuse if its session is busy, and bring the

@@ -157,12 +157,43 @@ def test_the_session_is_detached_before_any_metadata_is_touched(tmp_path, monkey
     monkeypatch.setattr(ProfileStore, "discard_tombstone",
                         staticmethod(lambda t: (order.append("discard"), real_discard(t))[1]))
     real_unlink = type(session).unlink
-    monkeypatch.setattr(type(session), "unlink",
-                        lambda self, *a, **k: (order.append("metadata"),
-                                               real_unlink(self, *a, **k))[1])
+    unlinks = []
+    unlink_lock = threading.Lock()
+    owner = threading.get_ident()
+
+    def observe_unlink(path, *args, **kwargs):
+        import sys
+
+        order.append("metadata")
+        if len(unlinks) < 8:
+            kind = "outside-fixture"
+            if path == tmp_path / "dashboard" / f"{pid}.json":
+                kind = "dashboard-record"
+            elif path == tmp_path / "profiles" / f"{pid}.json":
+                kind = "engine-record"
+            elif path.is_relative_to(tmp_path):
+                kind = "other-fixture-file"
+            callers = []
+            frame = sys._getframe(1)
+            try:
+                for _ in range(12):
+                    if frame is None:
+                        break
+                    callers.append((frame.f_globals.get("__name__", ""),
+                                    frame.f_code.co_name, frame.f_lineno))
+                    frame = frame.f_back
+            finally:
+                del frame
+            with unlink_lock:
+                if len(unlinks) < 8:
+                    unlinks.append((kind, threading.get_ident() == owner, callers))
+        return real_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(type(session), "unlink", observe_unlink)
     dash.delete(pid)
 
-    assert order[0] == "detach", f"metadata moved before the session: {order}"
+    assert order[0] == "detach", (f"metadata moved before the session: {order}; "
+                                   f"unlink callers: {unlinks}")
     assert order[-1] == "discard", f"the tombstone was not reclaimed last: {order}"
     assert "metadata" in order
     assert not (tmp_path / "dashboard" / f"{pid}.json").exists()

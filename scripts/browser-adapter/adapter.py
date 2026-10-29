@@ -6,7 +6,6 @@ import importlib.util
 import json
 import logging
 import os
-import queue
 import sys
 import threading
 import time
@@ -43,27 +42,6 @@ def logger():
         print('Browser adapter file logging unavailable; diagnostics remain on stderr', file=sys.stderr)
         log.addHandler(logging.StreamHandler(sys.stderr))
     return log
-
-
-def read_frames(events, permit):
-    try:
-        while True:
-            # No pipe read overlaps SDK calls: Windows DLL initialization may
-            # inspect standard handles and wait for an outstanding read.
-            permit.wait()
-            permit.clear()
-            line = sys.stdin.buffer.readline(MAX_FRAME + 1)
-            if not line:
-                events.put(None)
-                return
-            if len(line) > MAX_FRAME or not line.endswith(b'\n'):
-                raise ValueError('Invalid frame size')
-            value = json.loads(line.decode('utf-8', errors='strict'))
-            if not isinstance(value, dict):
-                raise ValueError('Frame must be an object')
-            events.put(value)
-    except Exception:
-        events.put({'invalid': True})
 
 
 def send(request_id, result=None, error=None):
@@ -106,12 +84,27 @@ def open_context(backend, options):
         log = logging.getLogger('numera.browser-adapter')
         log.info('Camoufox SDK import starting')
         from camoufox.sync_api import Camoufox
+        if 'exclude_addons' in options:
+            from camoufox.addons import DefaultAddons
+            options = dict(options)
+            options['exclude_addons'] = [DefaultAddons[name] for name in options['exclude_addons']]
+        geoip = os.environ.get('NUMERA_ADAPTER_GEOIP_DIR')
+        if geoip:
+            from camoufox import geolocation
+            geolocation.GEOIP_DIR = Path(geoip)
+            geolocation.MMDB_DIR = Path(geoip) / 'mmdb'
+            geolocation.GEOIP_CONFIG = Path(geoip) / 'config.yml'
         log.info('Camoufox SDK import complete')
         manager = Camoufox(**options)
         log.info('Camoufox persistent context entering')
         context = manager.__enter__()
         log.info('Camoufox persistent context entered')
         return None, context, manager
+    # Acquisition belongs to the native owner after consent, never this SDK call.
+    os.environ['CLOAKBROWSER_AUTO_UPDATE'] = 'false'
+    executable = os.environ.get('CLOAKBROWSER_BINARY_PATH')
+    if not executable or not Path(executable).is_file():
+        raise RuntimeError('Cloak requires an existing native-selected browser binary')
     import cloakbrowser
     return None, cloakbrowser.launch_persistent_context(**options), None
 
@@ -130,11 +123,10 @@ def main():
     with open(os.devnull, 'wb') as sink:
         os.dup2(sink.fileno(), sys.stdout.fileno(), inheritable=False)
     log = logger()
-    events = queue.Queue(maxsize=8)
-    permit = threading.Event()
-    reader = threading.Thread(target=read_frames, args=(events, permit), daemon=True, name='adapter-input')
-    reader.start()
-    permit.set()
+    # Import by the adapter's location even when a fixture loads it by spec.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from frame_input import FrameInput
+    frames = FrameInput(sys.stdin.buffer, MAX_FRAME)
     owner = context = manager = None
     initialized = False
     closed = threading.Event()
@@ -146,28 +138,33 @@ def main():
     log.info('Starting protocol=%s runtime=%s pid=%s', PROTOCOL, sys.version.split()[0], os.getpid())
     try:
         while True:
-            if context is not None:
-                try:
-                    request = events.get_nowait()
-                except queue.Empty:
-                    if closed.is_set():
-                        break
-                    # Pump the sync SDK event loop; stdin reader never invokes SDK.
-                    context.pages[0].wait_for_timeout(25) if context.pages else context.new_page().wait_for_timeout(25)
-                    continue
-            else:
-                request = events.get(timeout=max(0.001, input_deadline - time.monotonic()))
+            if closed.is_set():
+                break
+            ready, request = frames.poll(.025)
+            if not ready:
+                if context is not None:
+                    # Input readiness owns the wait; this call only dispatches SDK events.
+                    try:
+                        context.pages[0].wait_for_timeout(0) if context.pages else context.new_page().wait_for_timeout(0)
+                    except Exception:
+                        if not closed.is_set():
+                            raise
+                else:
+                    remaining = input_deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise TimeoutError('Input deadline exceeded')
+                continue
             if request is None:
                 break
             request_id = request.get('id')
             if request.get('protocol') != PROTOCOL or type(request_id) is not int or request_id < 1:
                 raise ValueError('Invalid protocol envelope')
             operation = request.get('operation')
+            started = time.perf_counter_ns()
             try:
                 if operation == 'hello' and not initialized:
                     send(request_id, {'backends': available(), 'runtime': sys.version.split()[0]})
                     initialized = True
-                    permit.set()
                 elif operation == 'open' and initialized and context is None:
                     backend = request.get('backend')
                     options = request.get('options')
@@ -188,11 +185,12 @@ def main():
                         sessions, cdp_ready = apply(context, request['cdp_policy'])
                         cdp_sessions.extend(sessions)
                     page = context.pages[0] if context.pages else context.new_page()
+                    if os.environ.get('NUMERA_ADAPTER_FIRST_PAGE') == '1':
+                        page.on('close', lambda *_: closed.set())
                     if cdp_ready:
                         cdp_ready(page)
                     send(request_id, {'opened': True, 'backend': backend})
                     log.info('Persistent context opened backend=%s', backend)
-                    permit.set()
                 elif operation == 'navigate' and initialized and context is not None:
                     url = request.get('url')
                     if not isinstance(url, str) or not url:
@@ -203,19 +201,65 @@ def main():
                     tolerate_failure = request.get('tolerate_failure', False)
                     if type(tolerate_failure) is not bool:
                         raise ValueError('Navigation failure option must be a boolean')
+                    timeout_ms = request.get('timeout_ms', 30000)
+                    if type(timeout_ms) is not int or not 1 <= timeout_ms <= 45000:
+                        raise ValueError('Navigation deadline is invalid')
                     navigated = True
                     try:
                         if new_page:
                             page = context.new_page()
                             if cdp_ready:
                                 cdp_ready(page)
-                        page.goto(url, wait_until='domcontentloaded', timeout=30000)
+                        page.goto(url, wait_until='domcontentloaded', timeout=timeout_ms)
                     except Exception:
                         if not tolerate_failure:
                             raise
                         navigated = False
                     send(request_id, {'navigated': navigated})
-                    permit.set()
+                elif operation == 'mouse' and initialized and context is not None:
+                    import math
+                    action, x, y = request.get('action'), request.get('x'), request.get('y')
+                    if (action not in ('wheel', 'move') or type(x) not in (int, float)
+                            or type(y) not in (int, float) or not math.isfinite(x)
+                            or not math.isfinite(y)):
+                        raise ValueError('Invalid mouse action')
+                    steps = request.get('steps', 1)
+                    if type(steps) is not int or not 1 <= steps <= 1000:
+                        raise ValueError('Invalid mouse steps')
+                    performed = True
+                    try:
+                        if action == 'wheel':
+                            page.mouse.wheel(x, y)
+                        else:
+                            page.mouse.move(x, y, steps=steps)
+                    except Exception as error:
+                        log.warning('Mouse failed type=%s', type(error).__name__)
+                        performed = False
+                    send(request_id, {'performed': performed})
+                elif operation == 'route' and initialized and context is not None:
+                    pattern, body = request.get('pattern'), request.get('body')
+                    content_type, status = request.get('content_type'), request.get('status')
+                    if (not isinstance(pattern, str) or not pattern or not isinstance(body, str)
+                            or not isinstance(content_type, str) or not content_type
+                            or type(status) is not int or not 100 <= status <= 599):
+                        raise ValueError('Invalid route response')
+                    page.route(pattern, lambda route, body=body, content_type=content_type, status=status:
+                               route.fulfill(status=status, content_type=content_type, body=body))
+                    send(request_id, {'routed': True})
+                elif operation == 'evaluate' and initialized and context is not None:
+                    expression = request.get('expression')
+                    tolerate_failure = request.get('tolerate_failure', False)
+                    if not isinstance(expression, str) or not expression or type(tolerate_failure) is not bool:
+                        raise ValueError('Invalid evaluation request')
+                    evaluated = True
+                    try:
+                        value = page.evaluate(expression, request.get('argument'))
+                    except Exception as error:
+                        if not tolerate_failure:
+                            raise
+                        log.warning('Evaluation failed type=%s', type(error).__name__)
+                        evaluated, value = False, None
+                    send(request_id, {'evaluated': evaluated, 'value': value})
                 elif operation == 'inspect' and initialized and context is not None:
                     observation = """async () => ({
                         userAgent:navigator.userAgent, platform:navigator.platform,
@@ -228,21 +272,17 @@ def main():
                     })"""
                     view = page.evaluate(observation, isolated_context=False) if backend == 'patchright' else page.evaluate(observation)
                     send(request_id, view)
-                    permit.set()
                 elif operation == 'cookies-read' and initialized and context is not None:
                     send(request_id, {'cookies': context.cookies()})
-                    permit.set()
                 elif operation == 'cookies-clear' and initialized and context is not None:
                     context.clear_cookies()
                     send(request_id, {'cleared': True})
-                    permit.set()
                 elif operation == 'cookies-add' and initialized and context is not None:
                     cookies = request.get('cookies')
                     if not isinstance(cookies, list) or not all(isinstance(cookie, dict) for cookie in cookies):
                         raise ValueError('Cookie rows must be objects')
                     context.add_cookies(cookies)
                     send(request_id, {'added': True})
-                    permit.set()
                 elif operation == 'close' and initialized:
                     closing_request = request_id
                     break
@@ -251,14 +291,18 @@ def main():
             except Exception as error:
                 # SDK errors can embed proxy credentials/URLs. Type is safe;
                 # never send or log raw exception messages or request payloads.
-                log.error('Operation failed operation=%s type=%s', operation if operation in ('hello','open','close','inspect','navigate','cookies-read','cookies-clear','cookies-add') else 'invalid', type(error).__name__)
+                log.error('Operation failed operation=%s type=%s', operation if operation in ('hello','open','close','inspect','navigate','mouse','route','evaluate','cookies-read','cookies-clear','cookies-add') else 'invalid', type(error).__name__)
                 send(request_id, error={'kind':'sdk','type':type(error).__name__})
                 exit_code = 1
                 break
+            finally:
+                label = operation if operation in ('hello','open','close','inspect','navigate','mouse','route','evaluate','cookies-read','cookies-clear','cookies-add') else 'invalid'
+                log.info('SDK timing operation=%s elapsed_ns=%s', label, time.perf_counter_ns() - started)
     except Exception as error:
         log.error('Protocol failed type=%s', type(error).__name__)
         exit_code = 1
     finally:
+        started = time.perf_counter_ns()
         for action in (lambda: manager.__exit__(None,None,None) if manager else context.close() if context else None,
                        lambda: owner.stop() if owner else None):
             try:
@@ -266,6 +310,7 @@ def main():
             except Exception as error:
                 log.error('SDK cleanup failed type=%s', type(error).__name__)
                 exit_code = 1
+        log.info('SDK timing operation=cleanup elapsed_ns=%s', time.perf_counter_ns() - started)
         if closing_request is not None:
             try:
                 send(closing_request, {'closing': True} if exit_code == 0 else None,

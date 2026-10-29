@@ -1,5 +1,5 @@
 use super::{cors, middleware::protect, request_auth::RequestAuth};
-use axum::{Json, Router, extract::State, http::StatusCode, response::IntoResponse, routing::get};
+use axum::{Json, Router, http::StatusCode, response::IntoResponse, routing::get};
 use serde_json::{Value, json};
 use std::sync::Arc;
 
@@ -10,14 +10,14 @@ pub fn router(auth: Arc<RequestAuth>) -> Router {
 }
 pub(crate) fn routes(auth: Arc<RequestAuth>) -> Router {
     Router::new()
-        .route("/api/ready", get(ready).head(method_not_allowed))
+        .route(
+            "/api/ready",
+            get(move || ready(auth.clone())).head(method_not_allowed),
+        )
         .route("/api/health", get(health).head(method_not_allowed))
         .method_not_allowed_fallback(method_not_allowed)
-        .with_state(auth)
 }
-async fn ready(
-    State(auth): State<Arc<RequestAuth>>,
-) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
+async fn ready(auth: Arc<RequestAuth>) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
     let required = tokio::task::spawn_blocking(move || auth.required())
         .await
         .map_err(|_| {

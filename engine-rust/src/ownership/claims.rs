@@ -4,7 +4,7 @@ use serde_json::{Value, json};
 use std::{
     fs, io,
     path::{Path, PathBuf},
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 pub enum Claim {
@@ -70,18 +70,22 @@ pub fn describe(claim: &Claim, host: &str) -> String {
         Claim::Record(record) if record.as_object().is_some_and(|v| v.is_empty()) => return "no session".into(),
         Claim::Record(record) => record,
     };
-    let what = record["what"]
-        .as_str()
-        .filter(|v| !v.is_empty())
-        .unwrap_or("a session");
-    let pid = record.get("pid").map_or("None".into(), |v| v.to_string());
+    let display = |value: &Value| {
+        value
+            .as_str()
+            .map_or_else(|| crate::validation::repr(value), str::to_owned)
+    };
+    let what = if crate::conversion::truth(&record["what"]) {
+        display(&record["what"])
+    } else {
+        "a session".into()
+    };
+    let pid = display(&record["pid"]);
     if state(claim, host) != State::Unknown {
         return format!("{what} started by pid {pid}, whose browser is still running");
     }
     if crate::conversion::truth(&record["host"]) && record["host"] != host {
-        let other = record["host"]
-            .as_str()
-            .map_or_else(|| record["host"].to_string(), str::to_owned);
+        let other = display(&record["host"]);
         return format!("{what} claimed by pid {pid} on {other}, which this process cannot verify");
     }
     format!(
@@ -106,7 +110,8 @@ pub fn refuse_if_busy(root: &Path, id: &str, host: &str) -> io::Result<()> {
 /// The caller holds the source-compatible session lease through this lifetime.
 pub fn take(root: &Path, id: &str, tree: &OwnedTree, host: &str, what: &str) -> io::Result<String> {
     let lock = DataLock::transaction(root)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
+    super::update_admission::assert_open_locked(root)?;
     if state(&read(root, id), host) != State::Free {
         return Err(io::Error::new(
             io::ErrorKind::WouldBlock,
@@ -134,7 +139,7 @@ pub fn take(root: &Path, id: &str, tree: &OwnedTree, host: &str, what: &str) -> 
 }
 pub fn clear(root: &Path, id: &str, host: &str) -> io::Result<bool> {
     let lock = DataLock::transaction(root)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     let claim = read(root, id);
     if !matches!(&claim,Claim::Record(record) if !record.as_object().is_some_and(|v|v.is_empty()))
         || state(&claim, host) != State::Free
@@ -149,7 +154,7 @@ pub fn clear(root: &Path, id: &str, host: &str) -> io::Result<bool> {
 }
 pub fn release(root: &Path, id: &str, session: &str, tree: &mut OwnedTree) -> io::Result<bool> {
     let lock = DataLock::transaction(root)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     let Claim::Record(record) = read(root, id) else {
         return Ok(false);
     };

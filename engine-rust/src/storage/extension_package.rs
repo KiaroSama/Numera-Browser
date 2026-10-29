@@ -91,7 +91,8 @@ pub fn unpack(data: &[u8], destination: &Path, crx: bool) -> io::Result<()> {
                 "Extension extraction refuses symbolic link members",
             ));
         }
-        let target = contained_target(&base, file.name()).map_err(|error| {
+        let name = file.name().map_err(invalid_zip)?;
+        let target = contained_target(&base, &name).map_err(|error| {
             io::Error::other(format!(
                 "refusing archive member outside the folder: {error}"
             ))

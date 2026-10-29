@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import importlib
 from importlib.metadata import version
+import json
 import logging
 import os
 from pathlib import Path
@@ -28,6 +29,55 @@ TREE_TESTS = (
 )
 
 
+def require_camoufox_fonts(bundle: Path) -> None:
+    """Check Linux's bundled font inputs without launching or modifying the SDK."""
+    fonts = bundle / 'fonts'
+    groups = fonts / 'groups.json'
+    mapping = None
+    if groups.exists():
+        if groups.stat().st_size > 32768:
+            raise ValueError('Camoufox bundled font groups exceed their bound')
+        try:
+            mapping = json.loads(groups.read_text(encoding='utf-8'))['readBy']
+        except (ValueError, KeyError, TypeError) as error:
+            raise ValueError('Camoufox bundled font groups are malformed') from error
+        if not isinstance(mapping, dict):
+            raise ValueError('Camoufox bundled font groups are malformed')
+    for key, identity in (('lin', 'linux'), ('mac', 'macos'), ('win', 'windows')):
+        config = bundle / 'fontconfig' / identity / 'fonts.conf'
+        if not config.is_file():
+            config = bundle / 'fontconfigs' / identity / 'fonts.conf'
+        if not config.is_file() or not 0 < config.stat().st_size <= 1048576:
+            raise RuntimeError(f'Camoufox bundled font configuration is missing: {identity}')
+        content = config.read_text(encoding='utf-8')
+        # Apply the SDK's literal replacement before parsing: a marker in a
+        # comment or CDATA must not stand in for an active directory binding.
+        marker = '<dir prefix="cwd">fonts</dir>'
+        probe = 'numera-bundled-font-directory-probe'
+        try:
+            document = ET.fromstring(content.replace(marker, f'<dir>{probe}</dir>'))
+        except ET.ParseError as error:
+            raise ValueError('Camoufox bundled font configuration is malformed') from error
+        if (document.tag != 'fontconfig' or marker not in content
+                or not any(node.text == probe and node.get('prefix') is None
+                           for node in document.findall('dir'))):
+            raise ValueError('Camoufox bundled font configuration has no supported font binding')
+        if mapping is not None:
+            selected = mapping.get(key)
+            if (not isinstance(selected, list) or not selected
+                    or any(type(group) is not str or not group or len(group) > 16
+                           or not all('A' <= char <= 'Z' for char in group) for group in selected)):
+                raise ValueError('Camoufox bundled font groups are malformed')
+            directories = [fonts / group for group in selected]
+        else:
+            directories = [fonts / identity if (fonts / identity).is_dir() else fonts]
+        for directory in directories:
+            if not directory.is_dir() or not any(
+                    path.is_file() and path.suffix.lower() in ('.ttf', '.otf', '.ttc')
+                    and path.stat().st_size > 0 for path in directory.iterdir()):
+                raise RuntimeError(f'Camoufox bundled fonts are missing: {identity}')
+
+
 def prepare(engine: str, *, fetch: bool = False) -> Path:
     """Fail on a missing package/binary; only explicit Cloak fetch can download."""
     package = ENGINES[engine]
@@ -39,6 +89,8 @@ def prepare(engine: str, *, fetch: bool = False) -> Path:
     elif engine == "camoufox":
         from camoufox.pkgman import camoufox_path, launch_path
         binary = Path(launch_path(camoufox_path(download_if_missing=False)))
+        if sys.platform == 'linux':
+            require_camoufox_fonts(binary.parent)
     else:
         from cloakbrowser.config import get_binary_path
         from cloakbrowser.license import resolve_license_key
@@ -62,6 +114,20 @@ def prepare(engine: str, *, fetch: bool = False) -> Path:
     return binary
 
 
+def export_native(engine: str, binary: Path) -> None:
+    """Pass only the verified existing Cloak executable to subsequent CI steps."""
+    if engine != 'cloak':
+        return
+    target = os.environ.get('GITHUB_ENV')
+    if not target:
+        raise RuntimeError('Native browser handoff requires the GitHub environment file')
+    path = str(binary.resolve(strict=True))
+    if any(ord(char) < 32 or ord(char) == 127 for char in path):
+        raise RuntimeError('Native browser path contains invalid environment characters')
+    with Path(target).open('a', encoding='utf-8', newline='\n') as stream:
+        stream.write(f'CLOAKBROWSER_BINARY_PATH={path}\n')
+
+
 def check_report(path: Path, engine: str) -> None:
     """Success means both selected engine tests ran and passed without skips."""
     cases = list(ET.parse(path).iter("testcase"))
@@ -80,11 +146,15 @@ def main() -> int:
     parser.add_argument("--engine", choices=tuple(ENGINES), required=True)
     parser.add_argument("--fetch", action="store_true", help="fetch the pinned Cloak binary")
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--export-native", action="store_true",
+                        help="hand the verified Cloak executable to later GitHub CI steps")
     args = parser.parse_args()
     if args.command == "report" and args.report is None:
         parser.error("report requires --report PATH")
     if args.fetch and (args.command != "prepare" or args.engine != "cloak"):
         parser.error("--fetch is only valid for prepare --engine cloak")
+    if args.export_native and args.command != "prepare":
+        parser.error("--export-native is only valid for prepare")
 
     from numera import logs
     logs.setup(ROOT / "build" / "live-engine")
@@ -92,7 +162,9 @@ def main() -> int:
     log.info("command=%s engine=%s fetch=%s", args.command, args.engine, args.fetch)
     try:
         if args.command == "prepare":
-            prepare(args.engine, fetch=args.fetch)
+            binary = prepare(args.engine, fetch=args.fetch)
+            if args.export_native:
+                export_native(args.engine, binary)
         else:
             check_report(args.report, args.engine)
     except Exception as exc:

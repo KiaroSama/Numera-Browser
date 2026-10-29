@@ -1,0 +1,80 @@
+"""Independent original cookie normalization and input-format observations."""
+from __future__ import annotations
+
+import json
+from baseline_source import activate
+activate()
+
+from numera import cookies
+
+
+def cases():
+    base = {'name': 'fixture', 'value': 'synthetic', 'domain': '.fixture.test'}
+    rows = [None, 'bad', [], {}, {'name': 'missing-domain'},
+            dict(base, host='fallback.test', domain=''),
+            dict(base, name=1, value=None, path=''),
+            dict(base, name=True, value=['α', True, None]),
+            dict(base, value={'a': 'synthetic', 'b': [1, False]}),
+            dict(base, secure=True, httpOnly='yes', sameSite='no_restriction'),
+            dict(base, secure=False, sameSite='None'),
+            dict(base, sameSite='STRICT'), dict(base, sameSite='unknown')]
+    for expiry in (None, '', 0, False, True, -0.0, -1, 1.25, '١٢٣.٥',
+                   '1_234.5', '1__2', 'bad', [], {}, '2027-01-01T00:00:00Z',
+                   '2027-01-01T03:00:00+03:00', '2027-01-01',
+                   '20270101T000000', '2027-W01-1T00:00:00+00:00',
+                   '2027-01-01🐈00:00:00.1234567+00:00',
+                   '2027-01-01T00:00:00+00:00:30.5', '2027-02-30T00:00:00Z',
+                   '2027-01-01T00:00:00+01:60', '2027-01-01T00:00:00-01:60',
+                   '2027-01-01T00:00:00+00:00:99', '2027-01-01T00:00:00+00:00:00.5',
+                   '2027-01-01T00:00:00-00:00:00.5', '2027-01-01T00:00:00+24:00',
+                   '2027-01-01T00:00:00-24:00', '2027-01-01T24:00:00+00:00'):
+        rows.append(dict(base, expires=expiry))
+    rows.extend([dict(base, expirationDate='2027-01-01T00:00:00Z'),
+                 dict(base, expires=None, expirationDate=123),
+                 dict(base, expires='bad', session=True)])
+    normalized = [{'input': row, 'expected': cookies.normalize(row)} for row in rows]
+    texts = ['', '   ', '{}', 'null', 'true', '12', '"plain"',
+             json.dumps(base), json.dumps([base, None, {'name': 'missing'}]),
+             json.dumps({'cookies': [base], 'origins': []}),
+             json.dumps({'cookies': None}), json.dumps({'cookies': {}}),
+             json.dumps({'cookies': 'bad'}), 'not JSON']
+    return {'normalize': normalized,
+            'parse': [{'text': text, 'expected': cookies.parse(text)} for text in texts]}
+
+
+def expiry_overflow_cases():
+    base = {'name': 'fixture', 'value': 'synthetic', 'domain': '.fixture.test'}
+    huge = 10**400
+    inputs = [
+        ('positive-expires', dict(base, expires=huge)),
+        ('negative-expires', dict(base, expires=-huge)),
+        ('positive-expiration-date', dict(base, expirationDate=huge)),
+        ('negative-expiration-date', dict(base, expirationDate=-huge)),
+        ('finite-positive', dict(base, expires=10**308)),
+        ('finite-negative', dict(base, expires=-(10**308))),
+        ('session-positive', dict(base, expires=huge, session=True)),
+        ('session-negative', dict(base, expires=-huge, session=True)),
+        ('expires-precedence', dict(base, expires=1, expirationDate=huge)),
+        ('null-precedence', dict(base, expires=None, expirationDate=huge)),
+        ('zero-precedence', dict(base, expires=0, expirationDate=huge)),
+        ('malformed-text', dict(base, expires='bad')),
+        ('malformed-list', dict(base, expires=[])),
+        ('boolean', dict(base, expires=True)),
+        ('fractional', dict(base, expires=1.25)),
+        ('missing', base),
+    ]
+
+    def observe(operation, value):
+        try:
+            return {'failed': False, 'value': operation(value)}
+        except OverflowError:
+            return {'failed': True}
+
+    observations = []
+    for name, row in inputs:
+        texts = [json.dumps(envelope) for envelope in (row, [row], {'cookies': [row]})]
+        observations.append({'name': name, 'input': row,
+                             'normalized': observe(cookies.normalize, row),
+                             'parsed': [{'text': text, 'expected': observe(cookies.parse, text)}
+                                        for text in texts]})
+    return observations
