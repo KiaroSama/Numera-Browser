@@ -7,11 +7,11 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 29, 2026
 
-Checkpoint `c299ef5` ran in manual hosted batch
-[40918252781](https://github.com/KiaroSama/Numera-Browser/actions/runs/40918252781). Linux passed 79 historical proofs and current contracts;
-the 96-case CLI integer bound and hint write/flush controls failed their exact old sources, restored fixed bytes and passed current tests.
-Linux Playwright now passes its actual SDK, cookie/HTTP/foreground CLI and relocated scenarios; latency shows no regression, memory remains inconclusive.
-All eight SDK/relocated legs pass; four latency verdicts show no regression, four remain inconclusive, and all eight memory comparisons remain inconclusive.
+Checkpoint `f13c271` ran in manual hosted batch
+[40931610293](https://github.com/KiaroSama/Numera-Browser/actions/runs/40931610293). Linux passed 80 historical proofs and current contracts;
+the 584-case CLI token fixture failed the old parser at case 0, restored fixed bytes and passed current tests; the earlier integer and hint controls remain accepted.
+All eight engines pass actual SDK and relocated scenarios, including cookie/HTTP/foreground CLI checks.
+Two latency verdicts show no regression, six remain inconclusive, and all eight memory comparisons remain inconclusive.
 Windows reached the unchanged 900-second ceiling before current acceptance; the Linux results do not certify its unexecuted fixed tests.
 The Windows-history-only codegen-unit reduction remains insufficient and is not a verified speedup. ZIP 9.1.3 passes dependency/advisory gates.
 Earlier Linux log-root, nine-case entry comparison and detached/server acceptance passed; generic logging and full first-run compatibility remain incomplete.
@@ -281,7 +281,7 @@ rollback still gate Rust selection and retirement.
   identity validator; complete malformed/legacy/browser parity remains pending.
 - Data-root precedence, isolated portable write probes and actionable directory-permission
   errors retaining their OS cause; first-run copy/merge primitives preserve destination files.
-  Legacy discovery retains access failures for retry; eight source comparisons include raw marker bytes. New directory copies now retain source times/permissions, with three prepared comparisons preserving existing destination modes. Hosted proof and full acceptance remain pending.
+  Legacy discovery retains access failures for retry; raw marker and new-directory times/permissions passed narrow Linux comparisons. Unix named pipes are now refused before opening, with four original-derived refusal, continuation, destination-wins and retry cases prepared. Hosted FIFO proof and full first-run acceptance remain pending.
 - Native reentrant data locks, immediate session lease refusal, atomic file
   replacement and byte-preserving batch rollback primitives.
 - Fernet v1/v2 envelopes, secret-write policy, authenticated completion checks,
@@ -487,7 +487,7 @@ rollback still gate Rust selection and retirement.
 
 - Native clap command definitions and automation reflection are now prepared for
   the original command tree, including shared flags, numeric/default/choice rules
-  and MCP schemas derived from that same registry. Integer options retain the original 4,300-digit bound. Shared CLI/MCP parsing now preserves separate long-option token admission, with 584 original-parser comparisons prepared; positional and error-layout parity remain open. Profile create/list/show/edit,
+  and MCP schemas derived from that same registry. Integer options retain the original 4,300-digit bound. Shared CLI/MCP separate long-option token admission passed 584 original-parser comparisons on Linux; Windows-current, positional and error-layout parity remain open. Profile create/list/show/edit,
   coherence/collision verdicts and archive service seams reuse native stores rather
   than forwarding Python application commands. New original-handler/parser tests
   are pending hosted execution; exact help/error/human output, all command handlers,

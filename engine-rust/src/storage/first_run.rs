@@ -31,6 +31,17 @@ pub struct Summary {
 
 fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
     let metadata = fs::metadata(source)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::FileTypeExt;
+        // Match copy2's refusal before opening a pipe can block the importer.
+        if metadata.file_type().is_fifo() {
+            return Err(io::Error::other(format!(
+                "`{}` is a named pipe",
+                source.display()
+            )));
+        }
+    }
     let mut input = File::open(source)?;
     // Exclusive creation is the final no-overwrite boundary, even if another
     // file-only writer does not participate in the root transaction.

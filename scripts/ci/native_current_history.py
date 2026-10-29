@@ -345,4 +345,13 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/cli/mod.rs':
                   'c534342a6f7db08b99641bd52e02e729d3abb68a1e78257b0c502c077479fcd8'},
     },
+    {
+        'target': 'first_run_failure',
+        'test': 'fifo_import_matches_original_refusal_continuation_and_retry',
+        'symptom': 'First-run FIFO refusal differs',
+        'commit': 'f13c271b158663ca44091efba7539a11b6542c59',
+        'platform': 'linux',
+        'files': {'engine-rust/src/storage/first_run.rs':
+                  'ae6dcc19e630d1b110837c55f4726fe300309470772945a6904a634692f59b43'},
+    },
 )
