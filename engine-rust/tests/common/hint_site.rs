@@ -62,6 +62,9 @@ fn serve(mut stream: TcpStream, seen: &Seen) -> io::Result<()> {
     seen.lock()
         .map_err(|_| io::Error::other("Hint fixture state poisoned"))?
         .push((path.clone(), headers));
+    respond(&mut stream, &path)
+}
+pub(super) fn respond(stream: &mut impl Write, path: &str) -> io::Result<()> {
     let document = "<!doctype html><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>hint fixture</title>";
     let body = if let Some(prefix) = path.strip_suffix("/first") {
         format!("{document}<script src=\"{prefix}/resource\"></script>")
