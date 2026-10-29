@@ -585,7 +585,7 @@ rollback still gate Rust selection and retirement.
   POSIX escaped-writer fixtures check capture deadlines and separately stop their
   own escaped tree; they do not prove universal descendant containment. A complete
   native executable and detached-job supervisor are still required. The integrated native
-  dependency batch selects clap 4.6.7, Chrono 0.4.45, serde_json 1.0.154 and ZIP 9.0.3;
+  dependency batch selects clap 4.6.7, Chrono 0.4.45, serde_json 1.0.154 and ZIP 9.1.3;
   upstream exact transitive pins remain respected. Hosted compatibility is pending. No library
   registry entry is evidence that its command is runnable in the finished product.
 
