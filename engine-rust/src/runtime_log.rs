@@ -43,6 +43,7 @@ pub struct RuntimeLog {
     file: Mutex<Option<File>>,
     path: Option<PathBuf>,
     console_fallback: bool,
+    verbose: bool,
 }
 impl RuntimeLog {
     pub(crate) fn directory(root: &Path) -> PathBuf {
@@ -82,6 +83,7 @@ impl RuntimeLog {
                 file: Mutex::new(Some(file)),
                 path: Some(path),
                 console_fallback,
+                verbose: false,
             },
             Err(_) => {
                 if console_fallback {
@@ -93,14 +95,22 @@ impl RuntimeLog {
                     file: Mutex::new(None),
                     path: None,
                     console_fallback,
+                    verbose: false,
                 }
             }
         }
+    }
+    pub(crate) fn with_verbose(mut self, verbose: bool) -> Self {
+        self.verbose = verbose;
+        self
     }
     pub fn path(&self) -> Option<&Path> {
         self.path.as_deref()
     }
     pub fn event(&self, level: &'static str, component: &'static str, event: &'static str) {
+        if level == "DEBUG" && !self.verbose {
+            return;
+        }
         let stamp = chrono::Utc::now()
             .format("%Y-%m-%d %H:%M:%S UTC")
             .to_string();
@@ -108,6 +118,9 @@ impl RuntimeLog {
         self.write(&line, self.console_fallback);
     }
     pub fn message(&self, level: &'static str, component: &'static str, message: &str) {
+        if level == "DEBUG" && !self.verbose {
+            return;
+        }
         let message = crate::log_redaction::redact(message);
         let stamp = chrono::Utc::now()
             .format("%Y-%m-%d %H:%M:%S UTC")

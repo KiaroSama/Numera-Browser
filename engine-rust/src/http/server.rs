@@ -60,6 +60,9 @@ pub struct Server {
 }
 impl Server {
     pub fn start(options: Options) -> io::Result<Self> {
+        Self::start_with_verbosity(options, false)
+    }
+    pub(crate) fn start_with_verbosity(options: Options, verbose: bool) -> io::Result<Self> {
         let startup_admission = crate::ownership::update_admission::Reservation::begin(
             &options.root,
             "native-server-startup",
@@ -87,10 +90,10 @@ impl Server {
         let listener = std::net::TcpListener::bind(options.address)?;
         listener.set_nonblocking(true)?;
         let address = listener.local_addr()?;
-        let log = Arc::new(crate::runtime_log::RuntimeLog::new(
-            &options.browser.logs,
-            "native-http",
-        ));
+        let log = Arc::new(
+            crate::runtime_log::RuntimeLog::new(&options.browser.logs, "native-http")
+                .with_verbose(verbose),
+        );
         log.event("INFO", "server", "Startup requested");
         let worker_log = log.clone();
         let stop = Arc::new(AtomicBool::new(false));
@@ -140,6 +143,7 @@ impl Server {
                             return Err(error);
                         }
                     };
+                    worker_log.event("DEBUG", "server", "Router prepared");
                     startup_admission.release()?;
                     if worker_stop.load(Ordering::Acquire) || ready.send(Ok(())).is_err() {
                         return Ok(());

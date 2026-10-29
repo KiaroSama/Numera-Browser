@@ -293,6 +293,16 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {
             'engine-rust/src/http/server.rs':
                 '7a3f0426584cde037a661abe397344a4d859eb743bef4629b3dc96a20eaf8894',
+            'engine-rust/src/native_entry.rs':
+                '9e4f147c6ec4ef2674af3e1af809b988e0dbab3ce6aa81f04367f5ef52b9a665',
         },
+    },
+    {
+        'target': 'logging_parity',
+        'test': 'serve_verbose_matches_original_debug_admission_through_cli_dispatch',
+        'symptom': 'Serve verbose debug admission differs',
+        'commit': '9541cdec57186d11b8adfea77f52f27a29018848',
+        'files': {'engine-rust/src/native_entry.rs':
+                  '9e4f147c6ec4ef2674af3e1af809b988e0dbab3ce6aa81f04367f5ef52b9a665'},
     },
 )

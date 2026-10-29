@@ -498,18 +498,21 @@ fn serve(
         .to_socket_addrs()?
         .next()
         .ok_or_else(|| io::Error::other("Server address unavailable"))?;
-    let mut server = crate::http::server::Server::start(crate::http::server::Options {
-        root: root.into(),
-        address,
-        token: std::env::var("NUMERA_API_TOKEN").unwrap_or_default(),
-        origins: std::env::var("NUMERA_ALLOWED_ORIGINS").unwrap_or_default(),
-        insecure_override: std::env::var("NUMERA_ALLOW_INSECURE_BIND").unwrap_or_default(),
-        password,
-        host: environment.host.clone(),
-        installed,
-        browser: environment.browser.clone(),
-        dashboard: crate::http::dashboard::discover(&environment.app),
-    })?;
+    let mut server = crate::http::server::Server::start_with_verbosity(
+        crate::http::server::Options {
+            root: root.into(),
+            address,
+            token: std::env::var("NUMERA_API_TOKEN").unwrap_or_default(),
+            origins: std::env::var("NUMERA_ALLOWED_ORIGINS").unwrap_or_default(),
+            insecure_override: std::env::var("NUMERA_ALLOW_INSECURE_BIND").unwrap_or_default(),
+            password,
+            host: environment.host.clone(),
+            installed,
+            browser: environment.browser.clone(),
+            dashboard: crate::http::dashboard::discover(&environment.app),
+        },
+        args.get("verbose") == Some(&Value::Bool(true)),
+    )?;
     let parent = std::env::var("NUMERA_PARENT_PID")
         .ok()
         .and_then(|value| value.parse::<u32>().ok())

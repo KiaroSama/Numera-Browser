@@ -71,7 +71,8 @@ for key in ('pass','password','passwd','pwd','token','secret','api_key','apikey'
     for spelling in (key,key.upper(),key.replace('s','ſ').replace('k','K').replace('i','İ'),key.replace('i','ı')):
         for quote in ('',"'",'"'):
             inputs.append(f'{quote}{spelling}{quote} = {quote}synthetic-value{quote}')
-for separator in ('\t','\n','\r','\v','\f','\x1c','\x1d','\x1e','\x1f','\x85','\xa0',' ',' ',' ',' ',' ',' ','　','​'):
+for separator in map(chr,(9,10,13,11,12,0x1c,0x1d,0x1e,0x1f,0x85,0xa0,
+                          0x1680,0x2003,0x2028,0x2029,0x202f,0x205f,0x3000,0x200b)):
     inputs.extend((f'Bearer{separator}abcdefgh',f'password{separator}={separator}fixture',
                    f'http://user:{separator}value@host',f'Authorization:{separator}fixture'))
 # Transition neighbours cover the frozen word predicate, including post-15.1
@@ -265,6 +266,197 @@ fn server_scheduler_errors_reach_the_runtime_file_without_starting_an_sdk()
     match observed {
         Ok(result) => result?,
         Err(panic) => std::panic::resume_unwind(panic),
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn serve_verbose_matches_original_debug_admission_through_cli_dispatch()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{cli, native_entry, native_environment::Environment};
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+
+    if let Some(root) = std::env::var_os("NUMERA_VERBOSE_FIXTURE") {
+        let root = Path::new(&root);
+        let verbose = std::env::var("NUMERA_VERBOSE_EXPECTED")? == "true";
+        let mut argv = vec!["serve", "--host", "127.0.0.1", "--port", "0"];
+        if verbose {
+            argv.push("--verbose");
+        }
+        let mut command = cli::registry();
+        command.build();
+        let parsed = command
+            .clone()
+            .try_get_matches_from(std::iter::once("numera").chain(argv.iter().copied()))?;
+        let values = cli::reflection::values(&command, &parsed);
+        let environment = Environment {
+            app: root.into(),
+            home: root.into(),
+            cwd: root.into(),
+            host: "fixture-host".into(),
+            browser: numera_core::browser::runtime::Runtime {
+                python: root.join("never-start-python"),
+                adapter: root.join("absent-sdk"),
+                cwd: root.into(),
+                home: root.into(),
+                logs: root.join("logs"),
+                country: None,
+                relay: None,
+                binary_options: Default::default(),
+                deployment: None,
+            },
+        };
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let signal = cancelled.clone();
+        let directory = root.join("logs");
+        let watcher = std::thread::spawn(move || -> std::io::Result<()> {
+            let deadline = std::time::Instant::now() + Duration::from_secs(5);
+            let observed = (|| {
+                loop {
+                    for entry in fs::read_dir(&directory)? {
+                        let entry = entry?;
+                        if entry
+                            .file_name()
+                            .to_string_lossy()
+                            .starts_with("native-http_")
+                            && fs::read_to_string(entry.path())?
+                                .contains("[INFO] [server] Readiness published\n")
+                        {
+                            return Ok(());
+                        }
+                    }
+                    if std::time::Instant::now() >= deadline {
+                        return Err(std::io::Error::other("Verbose server readiness missing"));
+                    }
+                    std::thread::park_timeout(
+                        deadline
+                            .saturating_duration_since(std::time::Instant::now())
+                            .min(Duration::from_millis(10)),
+                    );
+                }
+            })();
+            signal.store(true, Ordering::Release);
+            observed
+        });
+        let log = RuntimeLog::new(&root.join("entry logs"), "native-entry-test");
+        let mut output = cli::output::Output::new(Vec::new(), Vec::new(), false, false);
+        let result = native_entry::dispatch(
+            values.as_object().ok_or("Parsed serve args missing")?,
+            &argv.into_iter().map(String::from).collect::<Vec<_>>(),
+            &mut output,
+            environment,
+            root,
+            cancelled,
+            &log,
+        );
+        watcher.join().map_err(|_| "Readiness watcher panicked")??;
+        assert_eq!(result?, 0, "Verbose server dispatch failed");
+        let logs = fs::read_dir(root.join("logs"))?.collect::<Result<Vec<_>, _>>()?;
+        assert_eq!(logs.len(), 1, "Verbose serving launched an SDK");
+        let text = fs::read_to_string(logs[0].path())?;
+        assert!(text.contains("[INFO] [server] Readiness published\n"));
+        assert!(text.contains("[INFO] [server] Shutdown settled\n"));
+        assert_eq!(
+            text.contains("[DEBUG] [server] Router prepared\n"),
+            verbose,
+            "Serve verbose debug admission differs"
+        );
+        assert!(!text.contains("private-verbose-sentinel"));
+        return Ok(());
+    }
+    let temporary = common::TempDirectory::new("verbose logs α")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut original = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    original
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,logging,sys
+from pathlib import Path
+repository,root=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import logs
+rows=[]
+for verbose in (False,True):
+    directory=root/str(verbose)
+    path=logs.setup(directory,verbose=verbose)
+    assert path is not None
+    logger=logs.get('fixture')
+    logger.debug('Router prepared')
+    logger.info('Readiness published')
+    for handler in list(logs.get().handlers):
+        handler.flush();handler.close();logs.get().removeHandler(handler)
+    text=path.read_text(encoding='utf-8')
+    assert 'Readiness published' in text
+    rows.append('Router prepared' in text)
+print(json.dumps(rows))
+"#,
+        ])
+        .arg(repository)
+        .arg(temporary.path());
+    let output = capture::run(
+        &mut original,
+        capture::Limits {
+            wall: Duration::from_secs(10),
+            idle: Duration::from_secs(10),
+            bytes: 65536,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(output.exit, 0, "Original log verbosity observer failed");
+    let expected: Vec<bool> = serde_json::from_slice(&output.stdout)?;
+    assert_eq!(
+        expected,
+        [false, true],
+        "Original verbosity observations missing"
+    );
+    for (index, verbose) in expected.into_iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        fs::create_dir_all(root.join("logs"))?;
+        let mut child = Command::new(std::env::current_exe()?);
+        child
+            .args([
+                "--exact",
+                "serve_verbose_matches_original_debug_admission_through_cli_dispatch",
+                "--nocapture",
+                "--test-threads=1",
+            ])
+            .env("NUMERA_VERBOSE_FIXTURE", &root)
+            .env("NUMERA_VERBOSE_EXPECTED", verbose.to_string())
+            .env("NUMERA_PASSWORD", "private-verbose-sentinel")
+            .env_remove("NUMERA_PARENT_PID")
+            .env_remove("NUMERA_API_TOKEN")
+            .env_remove("NUMERA_ALLOWED_ORIGINS")
+            .env_remove("NUMERA_ALLOW_INSECURE_BIND");
+        let output = capture::run(
+            &mut child,
+            capture::Limits {
+                wall: Duration::from_secs(10),
+                idle: Duration::from_secs(10),
+                bytes: 65536,
+                cleanup: Duration::from_secs(5),
+            },
+        )?;
+        assert_eq!(output.exit, 0, "Serve verbose debug admission differs");
+        let stdout = String::from_utf8(output.stdout)?;
+        assert!(stdout.lines().any(|line| line == "running 1 test"));
+        assert!(stdout.contains("\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; "));
+        assert!(
+            output.stderr.is_empty(),
+            "Verbose server wrote private diagnostics"
+        );
     }
     temporary.cleanup()?;
     Ok(())

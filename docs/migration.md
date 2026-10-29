@@ -772,7 +772,7 @@ close on every path. Logs are local diagnostics, not bundled or committed; remov
 old run logs deliberately after diagnosis, and sanitize any approved support export.
 Native logs default to `<data-dir>/logs`, with `NUMERA_LOG_DIR` taking precedence. Prepared dynamic diagnostic filtering preserves the original four ordered credential rules.
 Scheduler failures use that sink; ERROR/CRITICAL remain visible on stderr as well as in the file. File-only diagnostics stay quiet, including write failures.
-Frozen-original file/fallback comparisons and an actual server error-path regression await hosted verification. Generic logger hierarchy, verbosity and retention parity remain incomplete.
+`serve --verbose` now forwards per-run DEBUG admission; its original-derived CLI proof awaits hosted verification. Generic logger hierarchy and retention remain incomplete; the prior batch proved the old scheduler failure but stopped at an invisible-character test lint, now escaped without changing inputs.
 Verification timeouts record wall/idle flags and numeric durations before cleanup. Failed temporary cleanup records fixed operations, numeric OS errors and file-kind/read-only/reparse flags, not arbitrary paths or exception text.
 The original cleanup exception still fails verification and retains the root; no retry, permission change or ignored removal error is introduced.
 
