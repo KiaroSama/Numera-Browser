@@ -5,6 +5,10 @@ pub struct Integer(pub String);
 fn integer(text: &str) -> Result<Integer, String> {
     let value =
         crate::decimal::integer(text).ok_or_else(|| format!("invalid int value: {text:?}"))?;
+    // The isolated source runtime counts all decimal digits, including zeroes.
+    if value.trim_start_matches('-').len() > 4300 {
+        return Err(format!("invalid int value: {text:?}"));
+    }
     let negative = value.starts_with('-');
     let digits = value.trim_start_matches('-').trim_start_matches('0');
     Ok(Integer(if digits.is_empty() {

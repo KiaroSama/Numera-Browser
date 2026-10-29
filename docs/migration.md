@@ -487,7 +487,7 @@ rollback still gate Rust selection and retirement.
 
 - Native clap command definitions and automation reflection are now prepared for
   the original command tree, including shared flags, numeric/default/choice rules
-  and MCP schemas derived from that same registry. Profile create/list/show/edit,
+  and MCP schemas derived from that same registry. Integer options now retain the original isolated runtime's 4,300-digit input bound before zero normalization; 96 parser comparisons await hosted proof. Profile create/list/show/edit,
   coherence/collision verdicts and archive service seams reuse native stores rather
   than forwarding Python application commands. New original-handler/parser tests
   are pending hosted execution; exact help/error/human output, all command handlers,

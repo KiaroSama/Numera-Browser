@@ -3,6 +3,97 @@ use std::{path::Path, process::Command, time::Duration};
 mod common;
 
 #[test]
+fn integer_options_preserve_original_digit_bound_before_zero_normalization()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use serde_json::Value;
+
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import contextlib,io,json,sys
+from pathlib import Path
+repository=Path(sys.argv[1])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.cli.parser import build_parser
+assert sys.get_int_max_str_digits()==4300,'Original integer digit limit differs'
+parser=build_parser()
+options=[(['create','fixture'],'seed'),(['bulk-create','--count=2'],'seed'),
+         (['bulk-create'],'count'),(['bulk-create','--count=2'],'start'),
+         (['bulk-create','--count=2'],'pad'),(['jobs','show','fixture'],'lines'),
+         (['serve'],'port'),(['attach','fixture'],'port')]
+inputs=['0','9'*4300,'-'+'9'*4300,'+'+'0'*4299+'1',
+        '1_'*4299+'1','١'*4300,'9'*4301,'0'*4301,
+        '-'+'0'*4300+'1','1_'*4300+'1','١'*4301,'1__2']
+rows=[]
+for prefix,option in options:
+    for text in inputs:
+        argv=[*prefix,'--'+option+'='+text]
+        with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
+            try:
+                values=vars(parser.parse_args(argv))
+                values.pop('func',None)
+                rows.append({'argv':argv,'exit':0,'values':values})
+            except SystemExit as error:
+                rows.append({'argv':argv,'exit':error.code})
+print(json.dumps(rows,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(20),
+            idle: Duration::from_secs(15),
+            bytes: 4 * 1024 * 1024,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original integer option observer failed");
+    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(cases.len(), 96, "Integer option observations missing");
+    let mut registry = cli::registry();
+    registry.build();
+    for (index, case) in cases.iter().enumerate() {
+        let argv = case["argv"]
+            .as_array()
+            .ok_or("Integer arguments missing")?
+            .iter()
+            .map(|value| value.as_str().ok_or("Integer argument not text"))
+            .collect::<Result<Vec<_>, _>>()?;
+        let actual = registry
+            .clone()
+            .try_get_matches_from(std::iter::once("numera").chain(argv));
+        let exit = actual.as_ref().err().map_or(0, clap::Error::exit_code);
+        assert_eq!(
+            i64::from(exit),
+            case["exit"].as_i64().ok_or("Original exit missing")?,
+            "CLI integer digit admission differs: case={index}"
+        );
+        if let Ok(matches) = actual {
+            assert_eq!(
+                cli::reflection::values(&registry, &matches),
+                case["values"],
+                "CLI integer value differs: case={index}"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn command_registry_matches_original_schemas_arguments_and_parse_views()
 -> Result<(), Box<dyn std::error::Error>> {
     let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;

@@ -321,4 +321,12 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/storage/first_run.rs':
                   '6a9afa7356a02b123d13ebf8d5742a67e4d6e2bf8abff0d1cb8f2459a94c5670'},
     },
+    {
+        'target': 'cli_registry_parity',
+        'test': 'integer_options_preserve_original_digit_bound_before_zero_normalization',
+        'symptom': 'CLI integer digit admission differs',
+        'commit': 'ff56fc25f25a4ad9874e644b85295ccd622fd34f',
+        'files': {'engine-rust/src/cli/definitions.rs':
+                  '62577821c1120e9518a30277bb165d4e77c103ef5803c06157a2a4bc4922c4a7'},
+    },
 )

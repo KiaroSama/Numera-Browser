@@ -197,8 +197,8 @@ def test_history_timings_preserve_previous_reports_and_refuse_uncertain_paths(tm
 @pytest.mark.timeout(10)
 def test_directory_metadata_history_retains_exact_prior_source_and_assertion():
     module = load()
-    case = module.CURRENT_CALLER_REGRESSIONS[-1]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 32
+    case = module.CURRENT_CALLER_REGRESSIONS[31]
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 33
     assert case == {
         'target': 'first_run_parity',
         'test': 'imported_new_directories_preserve_original_metadata_without_replacing_existing_modes',
@@ -206,5 +206,21 @@ def test_directory_metadata_history_retains_exact_prior_source_and_assertion():
         'commit': '1a46f71178be5c482ecad04f14666eadaa52dc0d',
         'files': {'engine-rust/src/storage/first_run.rs':
                   '6a9afa7356a02b123d13ebf8d5742a67e4d6e2bf8abff0d1cb8f2459a94c5670'},
+    }
+    assert module.REGRESSIONS[-2] == case
+
+
+@pytest.mark.timeout(10)
+def test_cli_integer_history_retains_exact_prior_source_and_assertion():
+    module = load()
+    case = module.CURRENT_CALLER_REGRESSIONS[-1]
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 33
+    assert case == {
+        'target': 'cli_registry_parity',
+        'test': 'integer_options_preserve_original_digit_bound_before_zero_normalization',
+        'symptom': 'CLI integer digit admission differs',
+        'commit': 'ff56fc25f25a4ad9874e644b85295ccd622fd34f',
+        'files': {'engine-rust/src/cli/definitions.rs':
+                  '62577821c1120e9518a30277bb165d4e77c103ef5803c06157a2a4bc4922c4a7'},
     }
     assert module.REGRESSIONS[-1] == case
