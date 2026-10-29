@@ -7,14 +7,14 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 29, 2026
 
-Checkpoint `63f04aa` ran in manual hosted batch
-[40801395621](https://github.com/KiaroSama/Numera-Browser/actions/runs/40801395621). All eight browser legs passed source, native SDK and relocated functional acceptance;
-six time verdicts show no regression, two remain inconclusive; all eight memory comparisons remain inconclusive. No browser comparison is accepted.
-Separate numeric diagnostics do not identify the lifetime peak or prove a leak. Windows completed 60 historical proofs before the unchanged 900-second ceiling;
-Cargo reports localize repeated library backend cost. A Windows-history-only codegen-unit reduction is prepared, not a verified speedup. ZIP 9.1.3 passes dependency/advisory gates.
-Linux proves the old log-root failure, fixed nine-case entry comparison and detached/server acceptance; Windows current acceptance remains blocked before fixed compilation.
-Linux Camoufox passed runtime-package/bundled-font prerequisites. Windows Camoufox reached full
-functional acceptance this time; the previous acquisition stall's underlying cause remains unknown.
+Checkpoint `ff56fc2` ran in manual hosted batch
+[40898752635](https://github.com/KiaroSama/Numera-Browser/actions/runs/40898752635). Seven browser legs passed native SDK and relocated acceptance;
+two time verdicts show no regression, five remain inconclusive; all seven memory comparisons remain inconclusive. No browser comparison is accepted.
+Linux Playwright passed navigation, wire and page checks, then its HTTP fixture failed during cleanup with BrokenPipe; that leg was not measured.
+A response-only fixture repair and deterministic write/flush failure controls are prepared, not yet verified. Production SDK/relay behavior and assertions are unchanged.
+Linux passed 77 historical proofs, including new-directory metadata failure/restoration/current acceptance; Windows reached the unchanged 900-second ceiling before current acceptance.
+The Windows-history-only codegen-unit reduction remains insufficient and is not a verified speedup. ZIP 9.1.3 passes dependency/advisory gates.
+Earlier Linux log-root, nine-case entry comparison and detached/server acceptance passed; generic logging and full first-run compatibility remain incomplete.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
 and current acceptance, including read warnings, delete recovery and Linux process-group uncertainty.
 Native macOS identity/group tests pass after two exact historical failures/restoration, four locale/timezone

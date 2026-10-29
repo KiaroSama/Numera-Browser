@@ -329,4 +329,12 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/cli/definitions.rs':
                   '62577821c1120e9518a30277bb165d4e77c103ef5803c06157a2a4bc4922c4a7'},
     },
+    {
+        'target': 'browser_hints_parity',
+        'test': 'hint_response_peer_disconnects_preserve_other_io_failures',
+        'symptom': 'Hint response peer disconnect escaped',
+        'commit': 'f173f3ae59c91fc9524507f91fe6d936b2c4a0d4',
+        'files': {'engine-rust/tests/common/hint_site.rs':
+                  '4dcfdaa91e4079186c5b7c9268ad50efa06c7f6f5782170c4af8fa2172a879ae'},
+    },
 )

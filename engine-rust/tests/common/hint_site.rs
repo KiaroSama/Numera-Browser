@@ -78,13 +78,29 @@ pub(super) fn respond(stream: &mut impl Write, path: &str) -> io::Result<()> {
     } else {
         "text/html"
     };
-    write!(
-        stream,
-        "HTTP/1.1 200 OK\r\nContent-Type: {content_type}; charset=utf-8\r\nContent-Length: {}\r\nAccept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Model, Sec-CH-UA-Full-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-WoW64\r\nConnection: close\r\n\r\n{}",
-        body.len(),
-        body
-    )?;
-    stream.flush()
+    let result = (|| {
+        write!(
+            stream,
+            "HTTP/1.1 200 OK\r\nContent-Type: {content_type}; charset=utf-8\r\nContent-Length: {}\r\nAccept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Model, Sec-CH-UA-Full-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-WoW64\r\nConnection: close\r\n\r\n{}",
+            body.len(),
+            body
+        )?;
+        stream.flush()
+    })();
+    // Browsers may abandon an incidental response after required requests passed.
+    match result {
+        Err(error)
+            if matches!(
+                error.kind(),
+                io::ErrorKind::BrokenPipe
+                    | io::ErrorKind::ConnectionReset
+                    | io::ErrorKind::ConnectionAborted
+            ) =>
+        {
+            Ok(())
+        }
+        result => result,
+    }
 }
 impl HintSite {
     pub fn new() -> io::Result<Self> {
