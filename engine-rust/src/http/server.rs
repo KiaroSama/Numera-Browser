@@ -150,8 +150,11 @@ impl Server {
                     let scheduled = tokio::task::spawn_blocking(move || {
                         while !scheduler_stop.load(Ordering::Acquire) {
                             if let Err(error) = scheduler.tick() {
-                                scheduler_log.event("ERROR", "scheduler", "Tick failed");
-                                eprintln!("Scheduler tick failed: {error}");
+                                scheduler_log.message(
+                                    "ERROR",
+                                    "scheduler",
+                                    &format!("Scheduler tick failed: {error}"),
+                                );
                             }
                             for error in retry_retained_background(Duration::ZERO) {
                                 eprintln!("Retained browser cleanup pending: {error}");

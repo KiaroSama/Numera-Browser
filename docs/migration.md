@@ -770,11 +770,11 @@ WARNING/ERROR report failures, and handler-level redaction protects credential-s
 values. Logging initialization failure falls back explicitly to stderr; handlers
 close on every path. Logs are local diagnostics, not bundled or committed; remove
 old run logs deliberately after diagnosis, and sanitize any approved support export.
-The original policy is unchanged; native logs default to `<data-dir>/logs`, with `NUMERA_LOG_DIR` taking precedence. Verification timeouts record expired
-wall/idle flags and numeric durations before cleanup can fail. Failed temporary cleanup records
-fixed operations, numeric OS errors and file-kind/read-only/reparse flags, not arbitrary paths
-or exception text. The original cleanup exception still fails verification and retains the root;
-no retry, permission change or ignored removal error is introduced.
+Native logs default to `<data-dir>/logs`, with `NUMERA_LOG_DIR` taking precedence. Prepared dynamic diagnostic filtering preserves the original four ordered credential rules.
+Scheduler failures use that sink; ERROR/CRITICAL remain visible on stderr as well as in the file. File-only diagnostics stay quiet, including write failures.
+Frozen-original file/fallback comparisons and an actual server error-path regression await hosted verification. Generic logger hierarchy, verbosity and retention parity remain incomplete.
+Verification timeouts record wall/idle flags and numeric durations before cleanup. Failed temporary cleanup records fixed operations, numeric OS errors and file-kind/read-only/reparse flags, not arbitrary paths or exception text.
+The original cleanup exception still fails verification and retains the root; no retry, permission change or ignored removal error is introduced.
 
 Algorithm redistribution notices are in
 [migration-random-notices.txt](migration-random-notices.txt). The maintainer-selected

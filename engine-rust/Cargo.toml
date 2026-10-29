@@ -28,6 +28,7 @@ tokio = { version = "1.53.2", features = ["rt", "time", "net", "io-util", "sync"
 tower = { version = "0.5.3", features = ["util"] }
 tower-http = { version = "0.7.1", default-features = false, features = ["fs"] }
 percent-encoding = "2.3.2"
+regex = "=1.13.1"
 reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "socks"] }
 hickory-resolver = { version = "0.26.3", default-features = false, features = ["system-config", "tokio"] }
 serde = { version = "1.0.229", features = ["derive"] }

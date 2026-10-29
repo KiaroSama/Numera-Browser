@@ -285,4 +285,14 @@ CURRENT_CALLER_REGRESSIONS = (
                 '9be0a936e39e8ee56c3ac183af13d760fa067c7ae02c6412b28e2e18a199d7dd',
         },
     },
+    {
+        'target': 'logging_parity',
+        'test': 'server_scheduler_errors_reach_the_runtime_file_without_starting_an_sdk',
+        'symptom': 'Scheduler error runtime log missing',
+        'commit': '09da16a74b2d12d86dfe291148cc431ba39b0e35',
+        'files': {
+            'engine-rust/src/http/server.rs':
+                '7a3f0426584cde037a661abe397344a4d859eb743bef4629b3dc96a20eaf8894',
+        },
+    },
 )

@@ -37,8 +37,8 @@ impl NativePhase {
     }
 }
 
-/// Only fixed event labels are accepted here. User records,
-/// arguments, URLs, passwords and transport bodies never become log entries.
+/// Fixed lifecycle events avoid dynamic input. Diagnostic messages pass through
+/// the credential filter before either the file or stderr sink.
 pub struct RuntimeLog {
     file: Mutex<Option<File>>,
     path: Option<PathBuf>,
@@ -107,6 +107,19 @@ impl RuntimeLog {
         let line = format!("[{stamp}] [{level}] [{component}] {event}\n");
         self.write(&line, self.console_fallback);
     }
+    pub fn message(&self, level: &'static str, component: &'static str, message: &str) {
+        let message = crate::log_redaction::redact(message);
+        let stamp = chrono::Utc::now()
+            .format("%Y-%m-%d %H:%M:%S UTC")
+            .to_string();
+        let line = format!("[{stamp}] [{level}] [{component}] {message}\n");
+        if self.console_fallback && matches!(level, "ERROR" | "CRITICAL") {
+            self.write(&line, false);
+            eprint!("{line}");
+        } else {
+            self.write(&line, self.console_fallback);
+        }
+    }
     pub(crate) fn timing(&self, phase: NativePhase, elapsed: Duration) {
         let stamp = chrono::Utc::now()
             .format("%Y-%m-%d %H:%M:%S UTC")
@@ -163,6 +176,7 @@ mod tests {
             log.timing(NativePhase::BrowserSpawn, Duration::from_nanos(123));
             log.timing(NativePhase::BrowserSettle, Duration::from_nanos(123));
             log.event("INFO", "vault", "Enable lock requested");
+            log.message("ERROR", "fixture", "password=synthetic-log-value");
             assert_eq!(fs::read(&unavailable)?, b"retained");
             if quiet {
                 let log = RuntimeLog::file_only(&root.join("logs"), "native-vault-enable");
@@ -174,6 +188,7 @@ mod tests {
                     Some(File::open(&path)?);
                 log.timing(NativePhase::Prepare, Duration::from_nanos(123));
                 log.event("INFO", "vault", "Enable descriptor derivation started");
+                log.message("ERROR", "fixture", "password=synthetic-log-value");
                 assert!(fs::read(path)?.is_empty());
             }
             return Ok(());
@@ -206,6 +221,9 @@ mod tests {
             assert!(stdout.contains("test runtime_log::tests::file_only_diagnostics_do_not_enable_console_fallback ... ok"));
             assert!(!stdout.contains("Native timing") && !stderr.contains("Native timing"));
             assert!(
+                !stdout.contains("synthetic-log-value") && !stderr.contains("synthetic-log-value")
+            );
+            assert!(
                 !stdout.contains("Enable lock requested")
                     && !stdout.contains("Enable descriptor derivation started"),
                 "Diagnostics wrote to captured stdout"
@@ -218,6 +236,12 @@ mod tests {
             } else {
                 assert!(stderr.contains("Runtime file logging unavailable"));
                 assert!(stderr.contains("Enable lock requested"));
+                assert_eq!(
+                    stderr
+                        .matches("[ERROR] [fixture] password=[REDACTED]")
+                        .count(),
+                    1
+                );
             }
         }
         root.cleanup()?;
