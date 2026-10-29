@@ -5,15 +5,15 @@ The accepted boundary is [ADR0001](adr/0001-parity-gated-rust-migration.md); Pyt
 [candidate executable](migration-candidate.md), **not an installed replacement**.
 Passing library or narrow entrypoint tests does not certify a finished migration.
 
-## Current integration status — October 29, 2026
+## Current integration status — October 30, 2026
 
-Checkpoint `ce84984` ran in manual hosted batch
-[40941356326](https://github.com/KiaroSama/Numera-Browser/actions/runs/40941356326). Linux passed 81 historical proofs and current contracts;
-the FIFO fixture caught the exact old blocking source, restored fixed bytes and passed four current cases; the earlier 584-case CLI token and hint controls remain accepted.
+Checkpoint `93d89ff` ran in manual hosted batch
+[40952896893](https://github.com/KiaroSama/Numera-Browser/actions/runs/40952896893). Linux passed 82 historical proofs and current contracts;
+the attribute fixture caught the exact old metadata loss, restored fixed bytes and passed three current cases; the earlier FIFO, 584-case CLI token and hint controls remain accepted.
 All eight Windows/Linux SDK legs pass actual browser and relocated scenarios, including cookie/HTTP/foreground CLI checks.
-Four latency verdicts show no regression, four remain inconclusive, and all eight memory comparisons remain inconclusive.
+Five latency verdicts show no regression, three remain inconclusive, and all eight memory comparisons remain inconclusive.
 Windows reached the unchanged 900-second ceiling before current acceptance; the Linux results do not certify its unexecuted fixed tests.
-The Windows-history-only codegen-unit reduction remains insufficient and is not a verified speedup. ZIP 9.1.3 passes dependency/advisory gates.
+Windows historical codegen-unit reduction remains insufficient; query-only owned-job CPU/I/O diagnostics are prepared, not a verified speedup. ZIP 9.1.3 passes dependency/advisory gates.
 Earlier Linux log-root, nine-case entry comparison and detached/server acceptance passed; generic logging and full first-run compatibility remain incomplete.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
 and current acceptance, including read warnings, delete recovery and Linux process-group uncertainty.
@@ -281,7 +281,7 @@ rollback still gate Rust selection and retirement.
   identity validator; complete malformed/legacy/browser parity remains pending.
 - Data-root precedence, isolated portable write probes and actionable directory-permission
   errors retaining their OS cause; first-run copy/merge primitives preserve destination files.
-  Legacy discovery, directory times/permissions and four FIFO refusal/continuation/retry cases passed narrow Linux historical/current comparisons. Linux extended attributes now copy before read-only modes, with three original-derived new/overlap/mixed comparisons prepared. Attribute proof and full first-run acceptance remain pending.
+  Legacy discovery, directory times/permissions, four FIFO refusal/continuation/retry cases and three new/overlap/mixed extended-attribute comparisons passed narrow Linux historical/current tests. Attribute copying precedes read-only modes and preserves existing destinations. Full first-run/platform/error-path acceptance remains pending.
 - Native reentrant data locks, immediate session lease refusal, atomic file
   replacement and byte-preserving batch rollback primitives.
 - Fernet v1/v2 envelopes, secret-write policy, authenticated completion checks,

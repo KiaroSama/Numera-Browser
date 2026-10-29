@@ -12,6 +12,7 @@ import sys
 import tempfile
 
 from native_current_history import CURRENT_CALLER_REGRESSIONS
+from native_history_resources import measure
 from native_regression_cases import REGRESSIONS
 
 
@@ -187,7 +188,7 @@ def prove(root: Path, original: Path, logger, *, cases: tuple | None = None) -> 
             evidence = FailureEvidence(case)
             logger.addHandler(evidence)
             try:
-                with historical_sources(root, case, inputs):
+                with historical_sources(root, case, inputs), measure(index, logger):
                     target = ['--lib'] if case['target'] == 'lib' else ['--test', case['target']]
                     if index == 0:
                         # Cold dependency compilation belongs to the outer build budget.

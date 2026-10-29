@@ -63,17 +63,13 @@ def load():
     helper_spec.loader.exec_module(helper)
     from unittest.mock import patch
 
-    cases_spec = importlib.util.spec_from_file_location(
-        'native_regression_cases', ROOT / 'scripts/ci/native_regression_cases.py')
-    cases = importlib.util.module_from_spec(cases_spec)
-    cases_spec.loader.exec_module(cases)
-    current_spec = importlib.util.spec_from_file_location(
-        'native_current_history', ROOT / 'scripts/ci/native_current_history.py')
-    current = importlib.util.module_from_spec(current_spec)
-    current_spec.loader.exec_module(current)
-    with patch.dict(sys.modules, {'native_settings_history': helper,
-                                 'native_current_history': current,
-                                 'native_regression_cases': cases}):
+    dependencies = {'native_settings_history': helper}
+    for name in ('native_regression_cases', 'native_current_history', 'native_history_resources'):
+        dependency = importlib.util.spec_from_file_location(name, ROOT / 'scripts/ci' / (name + '.py'))
+        loaded = importlib.util.module_from_spec(dependency)
+        dependency.loader.exec_module(loaded)
+        dependencies[name] = loaded
+    with patch.dict(sys.modules, dependencies):
         spec.loader.exec_module(module)
     return module
 
