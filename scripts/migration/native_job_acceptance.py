@@ -46,13 +46,13 @@ def main(candidate, log):
     root.mkdir()
     env = os.environ.copy()
     for key in ('NUMERA_PASSWORD', 'NUMERA_API_TOKEN', 'NUMERA_DATA_DIR', 'NUMERA_NATIVE_SUPERVISE',
-                'NUMERA_NATIVE_JOB_GATE', 'NUMERA_HELPER_UNITS', 'NUMERA_HELPER_SCOPE', 'NUMERA_PARENT_PID'):
+                'NUMERA_NATIVE_JOB_GATE', 'NUMERA_HELPER_UNITS', 'NUMERA_HELPER_SCOPE', 'NUMERA_PARENT_PID',
+                'NUMERA_LOG_DIR'):
         env.pop(key, None)
     home = parent / 'home'
     home.mkdir()
     env.update(PYTHONUTF8='1', HOME=str(home), USERPROFILE=str(home), NUMERA_APP_DIR=str(parent),
-               NUMERA_LOG_DIR=str(parent / 'logs'), NUMERA_BROWSER_ADAPTER=str(parent / 'absent.py'),
-               NUMERA_SDK_PYTHON=sys.executable)
+               NUMERA_BROWSER_ADAPTER=str(parent / 'absent.py'), NUMERA_SDK_PYTHON=sys.executable)
     supervisors = []
 
     def cli(*argv):
@@ -133,6 +133,10 @@ def main(candidate, log):
         response = json.loads(stdout)['result']
         job = response['structuredContent']
         adopt(job)
+        entries = list((root / 'logs').glob('native-cli_*.log'))
+        assert any('[entry] Detached MCP startup' in path.read_text(encoding='utf-8')
+                   for path in entries), 'Detached MCP log destination differs'
+        assert not (parent / 'logs').exists(), 'Detached entry wrote logs beside the application'
         assert ancestor.read_bytes() == header, 'Detached MCP published an unnecessary captured command tree'
         if os.name == 'nt' and response['_meta']['exitCode'] != 0:
             assert 'breakaway' in job.get('error', '').lower(), response
@@ -189,7 +193,7 @@ def main(candidate, log):
         jid = job['id']
         # JSON mode deliberately suppresses human stdout; observe the server's own readiness log.
         wait_for(lambda: any('Readiness published' in path.read_text(encoding='utf-8')
-                             for path in (parent / 'logs').glob('native-http_*.log')),
+                             for path in (root / 'logs').glob('native-http_*.log')),
                  10, 'Detached server never published readiness')
         code, stopped, stderr = cli('jobs', 'stop', jid)
         assert code == 0 and not stderr and not stopped['running'] and stopped['state'] == 'stopped', (code, stopped, stderr)

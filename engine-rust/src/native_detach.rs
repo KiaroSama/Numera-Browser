@@ -126,7 +126,7 @@ pub(crate) fn tool(
         .as_object()
         .ok_or_else(|| io::Error::other("Native CLI values missing"))?;
     let prepared = (|| -> io::Result<_> {
-        let environment = Environment::discover()?;
+        let mut environment = Environment::discover()?;
         let inherited_root = std::env::var_os("NUMERA_DATA_DIR");
         let root = data_root::resolve(
             args.get("data_dir").and_then(Value::as_str).map(Path::new),
@@ -134,6 +134,7 @@ pub(crate) fn tool(
             &environment.app,
             &environment.home,
         )?;
+        environment.browser.logs = RuntimeLog::directory(&root);
         let admission =
             crate::ownership::update_admission::Reservation::begin(&root, "native-mcp-detach")?;
         let inherited_password = std::env::var("NUMERA_PASSWORD").ok();

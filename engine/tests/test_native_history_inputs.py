@@ -123,3 +123,72 @@ def test_explicit_platform_proofs_keep_exact_admission_and_do_not_run_other_case
         assert calls == [('diff', '--exit-code', 'HEAD', '--', 'engine-rust/src/ownership/identity.rs'),
                          ('show', f"{case['commit']}:engine-rust/src/ownership/identity.rs")]
     assert path.read_bytes() == current and logger.handlers == []
+
+
+@pytest.mark.timeout(10)
+@pytest.mark.parametrize('previous', ['absent', 'present', 'rename', 'linked'])
+def test_history_timings_preserve_previous_reports_and_refuse_uncertain_paths(tmp_path, monkeypatch, previous):
+    module = load()
+    timing = tmp_path / 'engine-rust/target/cargo-timings'
+    owned = tmp_path / 'owned-temp'
+    owned.mkdir()
+    monkeypatch.setenv('NUMERA_TEST_TEMP', str(owned))
+    output = tmp_path / 'step-output'
+    monkeypatch.setenv('GITHUB_OUTPUT', str(output))
+    timing.mkdir(parents=True)
+    old = b'<html>previous build timing</html>'
+    (timing / 'cargo-timing.html').write_bytes(old)
+    if previous == 'absent':
+        (timing / 'cargo-timing.html').unlink()
+        timing.rmdir()
+    elif previous == 'rename':
+        rename = type(timing).rename
+
+        def denied(path, destination):
+            if path == timing:
+                raise PermissionError('Fixture timing retention denied')
+            return rename(path, destination)
+
+        monkeypatch.setattr(type(timing), 'rename', denied)
+    elif previous == 'linked':
+        is_symlink = type(timing).is_symlink
+        monkeypatch.setattr(type(timing), 'is_symlink',
+                            lambda path: path == timing or is_symlink(path))
+    source = tmp_path / 'engine-rust/src/models.rs'
+    source.parent.mkdir()
+    source.write_bytes(b'current source')
+    historical = b'historical source'
+    case = dict(module.REGRESSIONS[0], files={
+        'engine-rust/src/models.rs': hashlib.sha256(historical).hexdigest()}, companions={})
+    monkeypatch.setattr(module, 'REGRESSIONS', (case,))
+    monkeypatch.setattr(module, 'require_hosted_source', lambda root: 'a' * 40)
+    monkeypatch.setattr(module, 'git', lambda *args: historical)
+    monkeypatch.setitem(sys.modules, 'baseline_source', SimpleNamespace(ENVIRONMENT='NUMERA_ORACLE_SOURCE_ROOT'))
+    calls = []
+
+    def compile(command, **kwargs):
+        calls.append(command)
+        assert '--timings' in command and not timing.exists()
+        timing.mkdir()
+        (timing / 'cargo-timing.html').write_bytes(b'<html>current build timing</html>')
+        raise module.subprocess.CalledProcessError(1, command)
+
+    monkeypatch.setattr(module.subprocess, 'run', compile)
+    monkeypatch.setitem(sys.modules, 'run_owned', SimpleNamespace(run=lambda *args: pytest.fail('Unexpected proof')))
+    logger = logging.Logger('historical-timing-fixture', level=logging.INFO)
+    if previous in ('rename', 'linked'):
+        with pytest.raises((ValueError, PermissionError), match='Historical timing directory|Fixture timing retention denied'):
+            module.prove(tmp_path, tmp_path / 'original', logger)
+        assert calls == [] and (timing / 'cargo-timing.html').read_bytes() == old
+        assert not output.exists(), 'Old timing reports were advertised as fresh'
+    else:
+        with pytest.raises(module.subprocess.CalledProcessError):
+            module.prove(tmp_path, tmp_path / 'original', logger)
+        assert len(calls) == 1
+        assert output.read_text(encoding='utf-8') == 'timings_ready=true\n'
+        assert (timing / 'cargo-timing.html').read_bytes() == b'<html>current build timing</html>'
+        retained = list(owned.glob('native-history-timings-*/previous/cargo-timing.html'))
+        assert len(retained) == (1 if previous == 'present' else 0)
+        if retained:
+            assert retained[0].read_bytes() == old
+    assert source.read_bytes() == b'current source' and logger.handlers == []

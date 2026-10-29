@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 
 from native_current_history import CURRENT_CALLER_REGRESSIONS
 from native_regression_cases import REGRESSIONS
@@ -157,6 +158,16 @@ def prove(root: Path, original: Path, logger, *, cases: tuple | None = None) -> 
             raise ValueError('Explicit historical proof cases must match the owning platform')
         files = [name for case in cases for name in (*case['files'], *case.get('companions', {}))]
         git(root, 'diff', '--exit-code', 'HEAD', '--', *files)
+    timings = root / 'engine-rust/target/cargo-timings'
+    if timings.is_symlink() or (timings.exists() and not timings.is_dir()):
+        raise ValueError('Historical timing directory is not an owned directory')
+    if timings.exists():
+        owned = Path(os.environ['NUMERA_TEST_TEMP'])
+        retained = Path(tempfile.mkdtemp(prefix='native-history-timings-', dir=owned))
+        timings.rename(retained / 'previous')
+    if output := os.environ.get('GITHUB_OUTPUT'):
+        with Path(output).open('a', encoding='utf-8', newline='\n') as destination:
+            destination.write('timings_ready=true\n')
     keys = (ENVIRONMENT, 'PYTHONDONTWRITEBYTECODE', 'CARGO_INCREMENTAL')
     previous = {key: os.environ.get(key) for key in keys}
     # Immutable source bytes are shared only within this invocation, never proof verdicts.
@@ -179,12 +190,12 @@ def prove(root: Path, original: Path, logger, *, cases: tuple | None = None) -> 
                         # Cold dependency compilation belongs to the outer build budget.
                         subprocess.run(['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
                                         '--locked', '--offline', '--config',
-                                        'profile.dev.package.numera-core.opt-level=0',
+                                        'profile.dev.package.numera-core.opt-level=0', '--timings',
                                         *target, '--no-run'],
                                        stdin=subprocess.DEVNULL, check=True)
                     command = ['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
                                '--locked', '--offline', '--config',
-                               'profile.dev.package.numera-core.opt-level=0',
+                               'profile.dev.package.numera-core.opt-level=0', '--timings',
                                *target, '--', case['test'],
                                '--exact', '--test-threads=1', '--color=never']
                     code = run(command, 180, 90, logger)

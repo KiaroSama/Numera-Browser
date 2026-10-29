@@ -45,6 +45,11 @@ pub struct RuntimeLog {
     console_fallback: bool,
 }
 impl RuntimeLog {
+    pub(crate) fn directory(root: &Path) -> PathBuf {
+        std::env::var_os("NUMERA_LOG_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| root.join("logs"))
+    }
     pub fn new(directory: &Path, component: &'static str) -> Self {
         Self::open(directory, component, true)
     }

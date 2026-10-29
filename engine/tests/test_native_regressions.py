@@ -478,6 +478,17 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
         'files': {'engine-rust/src/ownership/tree.rs':
                   '2688b722ab3411a1a5528335a69b029a97e840cb79f7cb065d55735cefe6078b'},
     }, {
+        'target': 'native_entry',
+        'test': 'entry_logs_follow_original_data_root_and_preserve_explicit_override',
+        'symptom': 'Entry log destination differs',
+        'commit': '5bd0aca5731e5bd1b5f3a53e2e45c8d58823c756',
+        'files': {
+            'engine-rust/src/native_entry.rs':
+                '2c785a4d4171742e69e9b970960622d55cbfeb0a9eefa65f3f0b5efafa5ec3eb',
+            'engine-rust/src/native_detach.rs':
+                '194e25cf92609c836d5a3ae1e53d2e6942145842449c50175557470d24e09350',
+        },
+    }, {
         'target': 'lib',
         'test': 'storage::repo_delete::tests::failed_delete_rollback_preserves_causes_and_actual_recovery_paths',
         'symptom': 'Delete rollback recovery paths differ',
@@ -604,7 +615,7 @@ def test_historical_runner_restores_source_and_environment(
         assert command[command.index('--config') + 1] == 'profile.dev.package.numera-core.opt-level=0'
         assert command.count('--config') == 1
         selection = ['--lib'] if target == 'lib' else ['--test', target]
-        assert command[command.index('--config') + 2:command.index('--')] == selection
+        assert command[command.index('--config') + 2:command.index('--')] == ['--timings', *selection]
         assert os.environ['NUMERA_ORACLE_SOURCE_ROOT'] == str(tmp_path / 'original')
         assert os.environ['PYTHONDONTWRITEBYTECODE'] == '1'
         assert os.environ['CARGO_INCREMENTAL'] == '1'
@@ -625,7 +636,7 @@ def test_historical_runner_restores_source_and_environment(
         assert companion.read_bytes() == old_test
         assert command == ['cargo', 'test', '--manifest-path', str(tmp_path / 'engine-rust/Cargo.toml'),
                            '--locked', '--offline', '--config',
-                           'profile.dev.package.numera-core.opt-level=0',
+                           'profile.dev.package.numera-core.opt-level=0', '--timings',
                            *(['--lib'] if target == 'lib' else ['--test', target]), '--no-run']
         assert options == {'stdin': module.subprocess.DEVNULL, 'check': True}
         warmups.append(command)

@@ -384,6 +384,16 @@ def test_native_history_precedes_fixed_build_and_never_runs_in_fixed_test(monkey
     assert len(steps) == 2 and steps[0]['run'].count(' && ') == 1
     assert not any(step.get('if') or step.get('continue-on-error') for step in steps)
     assert job['timeout-minutes'] == 45
+    reports = [step for step in job['steps'] if step.get('name') == 'Retain historical build timings']
+    assert len(reports) == 1
+    assert reports[0] == {
+        'name': 'Retain historical build timings',
+        'if': "${{ always() && steps.native_history.outputs.timings_ready == 'true' }}",
+        'uses': 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9',
+        'with': {'name': 'native-history-timings-${{ matrix.os }}',
+                 'path': 'engine-rust/target/cargo-timings/*.html',
+                 'if-no-files-found': 'warn', 'retention-days': 7},
+    }
 
 
 @pytest.mark.parametrize('exit_code', [0, 101])

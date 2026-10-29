@@ -106,13 +106,7 @@ fn execute(
     output: &mut Output<impl Write, impl Write>,
 ) -> io::Result<i32> {
     let started = std::time::Instant::now();
-    let environment = Environment::discover()?;
-    let log = RuntimeLog::new(&environment.browser.logs, "native-cli");
-    log.event("INFO", "entry", "Startup");
-    let cancelled = Arc::new(AtomicBool::new(false));
-    let signal = cancelled.clone();
-    ctrlc::try_set_handler(move || signal.store(true, Ordering::Release))
-        .map_err(io::Error::other)?;
+    let mut environment = Environment::discover()?;
     let explicit = args.get("data_dir").and_then(Value::as_str).map(Path::new);
     let inherited = std::env::var_os("NUMERA_DATA_DIR");
     let root = data_root::resolve(
@@ -121,6 +115,13 @@ fn execute(
         &environment.app,
         &environment.home,
     )?;
+    environment.browser.logs = RuntimeLog::directory(&root);
+    let log = RuntimeLog::new(&environment.browser.logs, "native-cli");
+    log.event("INFO", "entry", "Startup");
+    let cancelled = Arc::new(AtomicBool::new(false));
+    let signal = cancelled.clone();
+    ctrlc::try_set_handler(move || signal.store(true, Ordering::Release))
+        .map_err(io::Error::other)?;
     let operation = args.get("command").and_then(Value::as_str).unwrap_or("");
     if operation == "serve" && args.get("detach") != Some(&Value::Bool(true)) {
         let _admission =

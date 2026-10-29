@@ -5,14 +5,14 @@ The accepted boundary is [ADR0001](adr/0001-parity-gated-rust-migration.md); Pyt
 [candidate executable](migration-candidate.md), **not an installed replacement**.
 Passing library or narrow entrypoint tests does not certify a finished migration.
 
-## Current integration status — October 28, 2026
+## Current integration status — October 29, 2026
 
-Checkpoint `2022197` ran in manual hosted batch
-[40748157466](https://github.com/KiaroSama/Numera-Browser/actions/runs/40748157466). All eight browser legs passed source, native SDK and relocated functional acceptance;
-five time verdicts show no regression; three Windows time and all eight memory comparisons remain inconclusive.
-Windows native functional checks reached measurement, where HTTP latency ranges overlapped despite passing memory and all four CLI comparisons.
-A new source fixture omitted Git's revision/path separator in its expectation; only the expectation is corrected.
-Separate unmeasured memory diagnostics follow refusals and never enter the seven-pair verdict.
+Checkpoint `5bd0aca` ran in manual hosted batch
+[40772892879](https://github.com/KiaroSama/Numera-Browser/actions/runs/40772892879). All eight browser legs passed source, native SDK and relocated functional acceptance;
+four time verdicts show no regression, four remain inconclusive; all eight memory comparisons remain inconclusive. No browser comparison is accepted.
+Separate unmeasured numeric diagnostics do not identify the lifetime peak or prove a leak. Windows completed 71 historical proofs before the 900-second build ceiling;
+stable Cargo timing reports are prepared for diagnosis, not a claimed speedup. The ZIP advisory upgrade to 9.1.3 preserves unrelated resolved packages and archive policy.
+Native data-root log binding, nine original-derived entry cases and existing detached/server acceptance are prepared; these changes still require hosted verification.
 Linux Camoufox passed runtime-package/bundled-font prerequisites. Windows Camoufox reached full
 functional acceptance this time; the previous acquisition stall's underlying cause remains unknown.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
@@ -770,7 +770,7 @@ WARNING/ERROR report failures, and handler-level redaction protects credential-s
 values. Logging initialization failure falls back explicitly to stderr; handlers
 close on every path. Logs are local diagnostics, not bundled or committed; remove
 old run logs deliberately after diagnosis, and sanitize any approved support export.
-The original engine's logging policy remains unchanged. Verification timeouts record expired
+The original policy is unchanged; native logs default to `<data-dir>/logs`, with `NUMERA_LOG_DIR` taking precedence. Verification timeouts record expired
 wall/idle flags and numeric durations before cleanup can fail. Failed temporary cleanup records
 fixed operations, numeric OS errors and file-kind/read-only/reparse flags, not arbitrary paths
 or exception text. The original cleanup exception still fails verification and retains the root;

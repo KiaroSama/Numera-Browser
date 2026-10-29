@@ -10,6 +10,155 @@ use std::{
 mod common;
 
 #[test]
+fn entry_logs_follow_original_data_root_and_preserve_explicit_override()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{path::Path, process::Command, time::Duration};
+
+    if let Some(case) = std::env::var_os("NUMERA_LOG_ROOT_CASE") {
+        let case: Value = serde_json::from_slice(&fs::read(case)?)?;
+        let argv: Vec<String> = serde_json::from_value(case["argv"].clone())?;
+        assert_eq!(native_entry::run(argv), 0, "Log destination entry failed");
+        let logs = Path::new(case["logs"].as_str().ok_or("Log directory missing")?);
+        if case["name"] == "unavailable" {
+            assert_eq!(fs::read(logs)?, b"retained log blocker");
+        } else {
+            let files = fs::read_dir(logs)?.collect::<Result<Vec<_>, _>>()?;
+            assert_eq!(files.len(), 1, "Entry log destination differs");
+            let text = fs::read_to_string(files[0].path())?;
+            assert!(text.contains("[INFO] [entry] Startup\n"));
+            assert!(text.contains("[INFO] [entry] Shutdown\n"));
+            assert!(!text.contains("private-fixture-sentinel"));
+        }
+        assert!(
+            !Path::new(case["app"].as_str().ok_or("App directory missing")?)
+                .join("logs")
+                .exists(),
+            "Entry log destination differs: application directory was used"
+        );
+        return Ok(());
+    }
+    let temporary = common::TempDirectory::new("entry log roots α")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I", "-B", "-c",
+            r#"
+import json,os,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import logs,paths
+rows=[]
+for name in ('explicit','environment','portable','home','legacy','override','relative','empty-override','unavailable'):
+    base=parent/name
+    app,home,cwd=(base/part for part in ('app','home','cwd'))
+    for path in (app,home,cwd):path.mkdir(parents=True)
+    paths.app_dir=lambda:app
+    os.environ['HOME']=os.environ['USERPROFILE']=str(home)
+    os.environ.pop('NUMERA_DATA_DIR',None)
+    explicit=str(base/'selected data') if name not in ('environment','portable','home','legacy') else None
+    inherited=str(base/'environment data') if name in ('explicit','environment') else None
+    if inherited is not None:os.environ['NUMERA_DATA_DIR']=inherited
+    if name in ('home','legacy'):(app/'data').write_bytes(b'read-only layout stand-in')
+    if name=='legacy':(home/'.persona').mkdir()
+    root=paths.resolve_data_dir(explicit)
+    override={'override':str(base/'separate logs'),'relative':'relative logs','empty-override':''}.get(name)
+    directory=logs.log_dir(root) if override is None else Path(override)
+    if not directory.is_absolute():directory=cwd/directory
+    if name=='unavailable':
+        directory.parent.mkdir(parents=True,exist_ok=True)
+        directory.write_bytes(b'retained log blocker')
+    argv=['list','--json'] if explicit is None else ['--data-dir',explicit,'list','--json']
+    row=dict(name=name,app=str(app),home=str(home),cwd=str(cwd),root=str(root),logs=str(directory),override=override,inherited=inherited,argv=argv)
+    record=base/'case.json'
+    record.write_text(json.dumps(row),encoding='utf-8')
+    row['record']=str(record)
+    rows.append(row)
+print(json.dumps(rows,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .arg(temporary.path())
+        .env("PYTHONUTF8", "1");
+    let original = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(10),
+            idle: Duration::from_secs(10),
+            bytes: 65536,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(original.exit, 0, "Original log directory observer failed");
+    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    assert_eq!(cases.len(), 9, "Log directory observations missing");
+    for case in cases {
+        let mut child = Command::new(std::env::current_exe()?);
+        child
+            .args([
+                "--exact",
+                "entry_logs_follow_original_data_root_and_preserve_explicit_override",
+                "--nocapture",
+                "--test-threads=1",
+            ])
+            .current_dir(case["cwd"].as_str().ok_or("CWD missing")?)
+            .env(
+                "NUMERA_LOG_ROOT_CASE",
+                case["record"].as_str().ok_or("Record missing")?,
+            )
+            .env("NUMERA_APP_DIR", case["app"].as_str().ok_or("App missing")?)
+            .env("HOME", case["home"].as_str().ok_or("Home missing")?)
+            .env("USERPROFILE", case["home"].as_str().ok_or("Home missing")?)
+            .env("NUMERA_BROWSER_ADAPTER", temporary.path().join("absent.py"))
+            .env("NUMERA_PASSWORD", "private-fixture-sentinel")
+            .env_remove("NUMERA_NATIVE_SUPERVISE")
+            .env_remove("NUMERA_NATIVE_JOB_GATE")
+            .env_remove("NUMERA_PARENT_PID")
+            .env_remove("NUMERA_LOG_DIR")
+            .env_remove("NUMERA_DATA_DIR");
+        if let Some(value) = case["override"].as_str() {
+            child.env("NUMERA_LOG_DIR", value);
+        }
+        if let Some(value) = case["inherited"].as_str() {
+            child.env("NUMERA_DATA_DIR", value);
+        }
+        let observed = capture::run(
+            &mut child,
+            capture::Limits {
+                wall: Duration::from_secs(5),
+                idle: Duration::from_secs(5),
+                bytes: 65536,
+                cleanup: Duration::from_secs(5),
+            },
+        )?;
+        assert_eq!(
+            observed.exit, 0,
+            "Entry log destination differs: {}",
+            case["name"]
+        );
+        let text = String::from_utf8(observed.stdout)?;
+        assert!(text.lines().any(|line| line == "running 1 test"));
+        assert!(text.contains("\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; "));
+        let stderr = String::from_utf8(observed.stderr)?;
+        assert_eq!(
+            stderr.contains("Runtime file logging unavailable"),
+            case["name"] == "unavailable"
+        );
+        assert!(!stderr.contains("private-fixture-sentinel"));
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn browser_dispatch_uses_actual_handshake_without_redundant_metadata()
 -> Result<(), Box<dyn std::error::Error>> {
     use numera_core::{

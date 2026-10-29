@@ -264,6 +264,18 @@ CURRENT_CALLER_REGRESSIONS = (
         },
     },
     {
+        'target': 'native_entry',
+        'test': 'entry_logs_follow_original_data_root_and_preserve_explicit_override',
+        'symptom': 'Entry log destination differs',
+        'commit': '5bd0aca5731e5bd1b5f3a53e2e45c8d58823c756',
+        'files': {
+            'engine-rust/src/native_entry.rs':
+                '2c785a4d4171742e69e9b970960622d55cbfeb0a9eefa65f3f0b5efafa5ec3eb',
+            'engine-rust/src/native_detach.rs':
+                '194e25cf92609c836d5a3ae1e53d2e6942145842449c50175557470d24e09350',
+        },
+    },
+    {
         'target': 'lib',
         'test': 'storage::repo_delete::tests::failed_delete_rollback_preserves_causes_and_actual_recovery_paths',
         'symptom': 'Delete rollback recovery paths differ',
