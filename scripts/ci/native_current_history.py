@@ -354,4 +354,13 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/storage/first_run.rs':
                   'ae6dcc19e630d1b110837c55f4726fe300309470772945a6904a634692f59b43'},
     },
+    {
+        'target': 'first_run_metadata_parity',
+        'test': 'imported_attributes_match_original_without_replacing_destination_metadata',
+        'symptom': 'First-run extended attributes differ',
+        'commit': 'ce84984c7ea2da7cb78ca8a27917fa051c96ab5d',
+        'platform': 'linux',
+        'files': {'engine-rust/src/storage/first_run.rs':
+                  'fe024803ade4378889782ce206386660c92a790bde9d1d24ca0451080cb470d4'},
+    },
 )

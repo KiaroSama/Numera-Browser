@@ -11,6 +11,8 @@ pub mod extension_install;
 pub mod extension_package;
 pub mod extensions;
 pub mod first_run;
+#[cfg(target_os = "linux")]
+mod first_run_xattrs;
 pub mod folders;
 pub mod locks;
 pub mod paths;

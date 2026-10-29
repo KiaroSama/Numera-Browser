@@ -56,6 +56,8 @@ fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
                 .set_accessed(metadata.accessed()?)
                 .set_modified(metadata.modified()?),
         )?;
+        #[cfg(target_os = "linux")]
+        super::first_run_xattrs::copy(&input, &output)?;
         output.sync_all()?;
         drop(output);
         fs::set_permissions(destination, metadata.permissions())
@@ -122,6 +124,17 @@ fn merge_dir(source: &Path, destination: &Path, depth: usize) -> io::Result<(usi
                     .set_accessed(metadata.accessed()?)
                     .set_modified(metadata.modified()?),
             )?;
+            #[cfg(target_os = "linux")]
+            {
+                use std::os::unix::fs::OpenOptionsExt;
+                let open = |path: &Path| {
+                    File::options()
+                        .read(true)
+                        .custom_flags(libc::O_NOFOLLOW | libc::O_DIRECTORY)
+                        .open(path)
+                };
+                super::first_run_xattrs::copy(&open(&path)?, &open(&target)?)?;
+            }
             fs::set_permissions(&target, metadata.permissions())?;
             added += 1;
         } else {

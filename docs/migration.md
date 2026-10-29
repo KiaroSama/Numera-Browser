@@ -7,11 +7,11 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — October 29, 2026
 
-Checkpoint `f13c271` ran in manual hosted batch
-[40931610293](https://github.com/KiaroSama/Numera-Browser/actions/runs/40931610293). Linux passed 80 historical proofs and current contracts;
-the 584-case CLI token fixture failed the old parser at case 0, restored fixed bytes and passed current tests; the earlier integer and hint controls remain accepted.
-All eight engines pass actual SDK and relocated scenarios, including cookie/HTTP/foreground CLI checks.
-Two latency verdicts show no regression, six remain inconclusive, and all eight memory comparisons remain inconclusive.
+Checkpoint `ce84984` ran in manual hosted batch
+[40941356326](https://github.com/KiaroSama/Numera-Browser/actions/runs/40941356326). Linux passed 81 historical proofs and current contracts;
+the FIFO fixture caught the exact old blocking source, restored fixed bytes and passed four current cases; the earlier 584-case CLI token and hint controls remain accepted.
+All eight Windows/Linux SDK legs pass actual browser and relocated scenarios, including cookie/HTTP/foreground CLI checks.
+Four latency verdicts show no regression, four remain inconclusive, and all eight memory comparisons remain inconclusive.
 Windows reached the unchanged 900-second ceiling before current acceptance; the Linux results do not certify its unexecuted fixed tests.
 The Windows-history-only codegen-unit reduction remains insufficient and is not a verified speedup. ZIP 9.1.3 passes dependency/advisory gates.
 Earlier Linux log-root, nine-case entry comparison and detached/server acceptance passed; generic logging and full first-run compatibility remain incomplete.
@@ -281,7 +281,7 @@ rollback still gate Rust selection and retirement.
   identity validator; complete malformed/legacy/browser parity remains pending.
 - Data-root precedence, isolated portable write probes and actionable directory-permission
   errors retaining their OS cause; first-run copy/merge primitives preserve destination files.
-  Legacy discovery retains access failures for retry; raw marker and new-directory times/permissions passed narrow Linux comparisons. Unix named pipes are now refused before opening, with four original-derived refusal, continuation, destination-wins and retry cases prepared. Hosted FIFO proof and full first-run acceptance remain pending.
+  Legacy discovery, directory times/permissions and four FIFO refusal/continuation/retry cases passed narrow Linux historical/current comparisons. Linux extended attributes now copy before read-only modes, with three original-derived new/overlap/mixed comparisons prepared. Attribute proof and full first-run acceptance remain pending.
 - Native reentrant data locks, immediate session lease refusal, atomic file
   replacement and byte-preserving batch rollback primitives.
 - Fernet v1/v2 envelopes, secret-write policy, authenticated completion checks,
