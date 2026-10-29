@@ -426,7 +426,7 @@ def test_current_caller_history_is_appended_after_compatibility_overlays():
                   'aab0acee9ecf439ddf252a983878e908b362eebeb54901e6e892d205b2b55ac6'},
     }
     assert module.CURRENT_CALLER_REGRESSIONS[14:19] == expected
-    assert module.CURRENT_CALLER_REGRESSIONS[19:] == ({
+    assert module.CURRENT_CALLER_REGRESSIONS[19:31] == ({
         'target': 'extension_routes_parity',
         'test': 'icons::extension_icon_http_matches_original_known_folder_and_file_contracts',
         'symptom': 'Extension icon HTTP status differs',

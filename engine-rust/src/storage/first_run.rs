@@ -103,6 +103,15 @@ fn merge_dir(source: &Path, destination: &Path, depth: usize) -> io::Result<(usi
             }
         } else if path.is_dir() {
             merge_dir(&path, &target, depth + 1)?;
+            // copytree applies metadata after children, only for a new subtree.
+            let metadata = fs::metadata(&path)?;
+            fs::set_times(
+                &target,
+                FileTimes::new()
+                    .set_accessed(metadata.accessed()?)
+                    .set_modified(metadata.modified()?),
+            )?;
+            fs::set_permissions(&target, metadata.permissions())?;
             added += 1;
         } else {
             copy_file(&path, &target)?;

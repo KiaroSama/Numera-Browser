@@ -386,6 +386,172 @@ print(json.dumps(rows,ensure_ascii=True))
     Ok(())
 }
 
+#[test]
+fn imported_new_directories_preserve_original_metadata_without_replacing_existing_modes()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{ownership::capture, storage::first_run::import_from};
+    use std::{process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("first-run directory metadata")?;
+    let inputs: PathBuf = temporary.path().components().collect();
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args(["-I", "-B", "-c", r#"
+import json,os,stat,sys
+from pathlib import Path
+repository,root=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import firstrun
+from run_logging import run_log
+
+with run_log('first-run-directory-oracle',root/'logs') as log:
+    rows=[]
+    for variant in ['new','existing','mixed']:
+        case=root/'cases'/variant
+        source,destination=case/'source',case/'destination'
+        source.joinpath('profiles/a/nested').mkdir(parents=True)
+        destination.joinpath('profiles').mkdir(parents=True)
+        source.joinpath('profiles/a/state.bin').write_bytes(bytes([0,255,10]))
+        source.joinpath('profiles/a/nested/deep.bin').write_bytes(b'deep')
+        initial=['profiles/a','profiles/a/nested'] if variant=='existing' else ['profiles/a'] if variant=='mixed' else []
+        for name in initial:
+            destination.joinpath(name).mkdir(parents=True,exist_ok=True)
+        for base,names,stamp,mode in [(source,['profiles/a','profiles/a/nested'],1600000000,0o750),
+                                     (destination,initial,1500000000,0o700)]:
+            for index,name in enumerate(names):
+                path=base/name
+                path.chmod(mode)
+                os.utime(path,ns=((stamp+index)*10**9,(stamp+index)*10**9))
+        result=firstrun.import_from(source,destination)
+        metadata={}
+        for name in ['profiles/a','profiles/a/nested']:
+            value=(destination/name).stat()
+            metadata[name]={'modified':value.st_mtime_ns,
+                            'mode':stat.S_IMODE(value.st_mode) if os.name!='nt' else None}
+        rows.append({'variant':variant,'result':result,'metadata':metadata})
+    log.info('Observed directory metadata cases=%s',len(rows))
+    print(json.dumps(rows,ensure_ascii=True))
+"#])
+        .arg(repository)
+        .arg(&inputs)
+        .env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(20),
+            idle: Duration::from_secs(15),
+            bytes: 65536,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        observed.exit, 0,
+        "Original directory metadata observer failed"
+    );
+    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(cases.len(), 3, "Directory metadata observations missing");
+    for case in cases {
+        let variant = case["variant"].as_str().ok_or("Variant missing")?;
+        let root = inputs.join("cases").join(variant);
+        fs::remove_dir_all(&root)?;
+        let source = root.join("source");
+        let destination = root.join("destination");
+        fs::create_dir_all(source.join("profiles/a/nested"))?;
+        fs::create_dir_all(destination.join("profiles"))?;
+        for (name, raw) in [
+            ("profiles/a/state.bin", &[0, 255, 10][..]),
+            ("profiles/a/nested/deep.bin", &b"deep"[..]),
+        ] {
+            fs::write(source.join(name), raw)?;
+        }
+        let initial: &[&str] = match variant {
+            "new" => &[],
+            "existing" => &["profiles/a", "profiles/a/nested"],
+            "mixed" => &["profiles/a"],
+            _ => return Err("Unknown directory variant".into()),
+        };
+        for name in initial {
+            fs::create_dir_all(destination.join(name))?;
+        }
+        for (base, names, stamp, mode) in [
+            (
+                &source,
+                &["profiles/a", "profiles/a/nested"][..],
+                1_600_000_000,
+                0o750,
+            ),
+            (&destination, initial, 1_500_000_000, 0o700),
+        ] {
+            for (index, name) in names.iter().enumerate() {
+                let path = base.join(name);
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    fs::set_permissions(&path, fs::Permissions::from_mode(mode))?;
+                }
+                #[cfg(windows)]
+                let _ = mode;
+                let time = std::time::UNIX_EPOCH + Duration::from_secs(stamp + index as u64);
+                fs::set_times(
+                    &path,
+                    fs::FileTimes::new().set_accessed(time).set_modified(time),
+                )?;
+            }
+        }
+        let result = import_from(&source, &destination)?;
+        assert_eq!(
+            serde_json::to_value(result)?,
+            case["result"],
+            "Directory import summary differs"
+        );
+        for name in ["profiles/a", "profiles/a/nested"] {
+            let metadata = fs::metadata(destination.join(name))?;
+            // Existing merge directories acquire normal child-write timestamps;
+            // only copytree's newly created subtree has an exact source time.
+            if !initial.contains(&name) {
+                let actual = metadata
+                    .modified()?
+                    .duration_since(std::time::UNIX_EPOCH)?
+                    .as_nanos();
+                assert_eq!(
+                    actual,
+                    case["metadata"][name]["modified"]
+                        .as_u64()
+                        .ok_or("Timestamp missing")? as u128,
+                    "First-run directory metadata differs: {variant}/{name}"
+                );
+            }
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                assert_eq!(
+                    metadata.permissions().mode() & 0o7777,
+                    case["metadata"][name]["mode"]
+                        .as_u64()
+                        .ok_or("Mode missing")? as u32,
+                    "First-run directory mode differs: {variant}/{name}"
+                );
+            }
+        }
+        for name in ["profiles/a/state.bin", "profiles/a/nested/deep.bin"] {
+            assert_eq!(
+                fs::read(source.join(name))?,
+                fs::read(destination.join(name))?,
+                "Imported directory bytes differ"
+            );
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
 fn discovery_access(path: &Path, denied: bool) -> std::io::Result<()> {
     #[cfg(unix)]
     {

@@ -313,4 +313,12 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/storage/first_run.rs':
                   '4459858581e6820f7a0ca4b419cee1b0a546c303f2b7934b8f3e3e33d809dd7a'},
     },
+    {
+        'target': 'first_run_parity',
+        'test': 'imported_new_directories_preserve_original_metadata_without_replacing_existing_modes',
+        'symptom': 'First-run directory metadata differs',
+        'commit': '1a46f71178be5c482ecad04f14666eadaa52dc0d',
+        'files': {'engine-rust/src/storage/first_run.rs':
+                  '6a9afa7356a02b123d13ebf8d5742a67e4d6e2bf8abff0d1cb8f2459a94c5670'},
+    },
 )

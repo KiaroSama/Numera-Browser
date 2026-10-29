@@ -192,3 +192,19 @@ def test_history_timings_preserve_previous_reports_and_refuse_uncertain_paths(tm
         if retained:
             assert retained[0].read_bytes() == old
     assert source.read_bytes() == b'current source' and logger.handlers == []
+
+
+@pytest.mark.timeout(10)
+def test_directory_metadata_history_retains_exact_prior_source_and_assertion():
+    module = load()
+    case = module.CURRENT_CALLER_REGRESSIONS[-1]
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 32
+    assert case == {
+        'target': 'first_run_parity',
+        'test': 'imported_new_directories_preserve_original_metadata_without_replacing_existing_modes',
+        'symptom': 'First-run directory metadata differs',
+        'commit': '1a46f71178be5c482ecad04f14666eadaa52dc0d',
+        'files': {'engine-rust/src/storage/first_run.rs':
+                  '6a9afa7356a02b123d13ebf8d5742a67e4d6e2bf8abff0d1cb8f2459a94c5670'},
+    }
+    assert module.REGRESSIONS[-1] == case
