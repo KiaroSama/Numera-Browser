@@ -7,9 +7,9 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — November 1, 2026
 
-Checkpoint `a104df0` ran in manual hosted batch
-[41340939884](https://github.com/KiaroSama/Numera-Browser/actions/runs/41340939884). Linux passed 83 historical proofs and current contracts;
-the positional fixture caught the exact old admission failure, restored fixed bytes and passed the current comparison; the earlier attribute, FIFO, 584-case CLI token and hint controls remain accepted.
+Checkpoint `e382b54` ran in manual hosted batch
+[41348729336](https://github.com/KiaroSama/Numera-Browser/actions/runs/41348729336). Linux passed 84 historical proofs and current contracts;
+the short-help fixture caught the exact old admission failure, restored fixed bytes and passed the current comparison; the earlier positional, attribute, FIFO, 584-case CLI token and hint controls remain accepted.
 All eight Windows/Linux SDK legs pass actual browser and relocated scenarios, including cookie/HTTP/foreground CLI checks.
 All eight browser performance gates remain unaccepted; all five Linux CLI/HTTP time and memory comparisons passed this batch without changing the strict gate.
 Windows completed 54 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached.
@@ -487,7 +487,7 @@ rollback still gate Rust selection and retirement.
 
 - Native clap command definitions and automation reflection are now prepared for
   the original command tree, including shared flags, numeric/default/choice rules
-  and MCP schemas derived from that same registry. Integer options retain the original 4,300-digit bound. Separate long-option and registry-derived positional admission with raw-value preservation passed original-parser comparisons on Linux. Short-help explicit-tail admission is prepared but unverified; Windows-current and full error/grammar parity remain open. Profile create/list/show/edit,
+  and MCP schemas derived from that same registry. Integer options retain the original 4,300-digit bound. Separate long-option, positional raw-value and short-help explicit-tail admission passed original-parser comparisons on Linux. Option-separated variadic-run and exhausted trailing-marker refusals await hosted acceptance; Windows-current and full error/grammar parity remain open. Profile create/list/show/edit,
   coherence/collision verdicts and archive service seams reuse native stores rather
   than forwarding Python application commands. New original-handler/parser tests
   are pending hosted execution; exact help/error/human output, all command handlers,

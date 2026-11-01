@@ -379,4 +379,14 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/cli/option_tokens.rs':
                   'dd7ca91090c4cdbfb2e2c17f5f9108432595f3bd28e7356708b4284d938634da'},
     },
+    {
+        'target': 'cli_registry_parity',
+        'test': 'variadic::variadic_positionals_preserve_original_option_separated_runs',
+        'symptom': 'CLI variadic run admission differs',
+        'commit': 'e382b5432e7a2bceab89849b037e2b3727fc76c8',
+        'files': {'engine-rust/src/cli/mod.rs':
+                  '7aa0a8e0303f0e674891d554bfcf38e394569ac6e1219b2c11ad85785be92a54',
+                  'engine-rust/src/cli/positional_tokens.rs':
+                  'cfe23726c81a6a2f04c827c6dc68f4da68bfcc00cffce2c84bec95847d63b093'},
+    },
 )

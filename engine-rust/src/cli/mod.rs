@@ -77,8 +77,15 @@ where
     command.build();
     let arguments =
         option_tokens::normalize(&command, arguments.into_iter().map(Into::into).collect());
-    let arguments = positional_tokens::normalize(&command, arguments);
-    command.try_get_matches_from(arguments)
+    let (arguments, extras) = positional_tokens::normalize(&command, arguments);
+    let matches = command.try_get_matches_from_mut(arguments)?;
+    if extras {
+        return Err(command.error(
+            clap::error::ErrorKind::UnknownArgument,
+            "unexpected positional arguments after an option",
+        ));
+    }
+    Ok(matches)
 }
 
 pub(crate) fn agent(command: Command) -> Command {

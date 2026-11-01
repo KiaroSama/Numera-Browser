@@ -1,6 +1,8 @@
 use numera_core::{browser::adapter::Adapter, cli};
 use std::{path::Path, process::Command, time::Duration};
 mod common;
+#[path = "cli_registry_parity/variadic.rs"]
+mod variadic;
 
 #[test]
 fn integer_options_preserve_original_digit_bound_before_zero_normalization()
