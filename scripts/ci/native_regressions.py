@@ -173,10 +173,9 @@ def prove(root: Path, original: Path, logger, *, cases: tuple | None = None) -> 
     previous = {key: os.environ.get(key) for key in keys}
     # Immutable source bytes are shared only within this invocation, never proof verdicts.
     inputs = {}
-    # Historical Windows builds reduce incremental artifact fan-out and keep line
-    # backtraces without variable/type metadata. Current profiles remain unchanged.
-    codegen = (['--config', 'profile.dev.package.numera-core.codegen-units=16',
-                '--config', 'profile.dev.package.numera-core.debug="line-tables-only"']
+    # Historical Windows builds reduce incremental artifact fan-out. Inherit CI's
+    # existing debug setting instead of adding metadata; current profiles are unchanged.
+    codegen = (['--config', 'profile.dev.package.numera-core.codegen-units=16']
                if sys.platform == 'win32' else [])
     # rust-cache disables this for cross-job caches; these source swaps share one build tree.
     os.environ.update({ENVIRONMENT: str(original), 'PYTHONDONTWRITEBYTECODE': '1',

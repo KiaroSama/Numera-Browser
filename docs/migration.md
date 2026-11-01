@@ -7,13 +7,13 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — November 1, 2026
 
-Checkpoint `e382b54` ran in manual hosted batch
-[41348729336](https://github.com/KiaroSama/Numera-Browser/actions/runs/41348729336). Linux passed 84 historical proofs and current contracts;
-the short-help fixture caught the exact old admission failure, restored fixed bytes and passed the current comparison; the earlier positional, attribute, FIFO, 584-case CLI token and hint controls remain accepted.
+Checkpoint `209ef27` ran in manual hosted batch
+[41355223991](https://github.com/KiaroSama/Numera-Browser/actions/runs/41355223991). Linux passed 85 historical proofs and current contracts;
+the variadic fixture caught the exact old admission failure, restored fixed bytes and passed all 176 current comparisons; the six-test CLI registry target passed, including the earlier short-help and positional controls.
 All eight Windows/Linux SDK legs pass actual browser and relocated scenarios, including cookie/HTTP/foreground CLI checks.
 All eight browser performance gates remain unaccepted; all five Linux CLI/HTTP time and memory comparisons passed this batch without changing the strict gate.
-Windows completed 54 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached.
-The historical-only line-table experiment retains current/release profiles. Its 54 resource observations and earlier 17 passing controls are diagnostic evidence, not a controlled speedup or a resolved compiler bottleneck.
+Windows completed 41 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached.
+The historical-only line-table experiment added metadata over CI's existing debug=0 baseline; its removal awaits hosted verification. Earlier resource observations and 17 passing controls are diagnostic evidence, not a controlled speedup or a resolved compiler bottleneck.
 Earlier Linux log-root, nine-case entry comparison and detached/server acceptance passed; generic logging and full first-run compatibility remain incomplete.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
 and current acceptance, including read warnings, delete recovery and Linux process-group uncertainty.
@@ -487,7 +487,7 @@ rollback still gate Rust selection and retirement.
 
 - Native clap command definitions and automation reflection are now prepared for
   the original command tree, including shared flags, numeric/default/choice rules
-  and MCP schemas derived from that same registry. Integer options retain the original 4,300-digit bound. Separate long-option, positional raw-value and short-help explicit-tail admission passed original-parser comparisons on Linux. Option-separated variadic-run and exhausted trailing-marker refusals await hosted acceptance; Windows-current and full error/grammar parity remain open. Profile create/list/show/edit,
+  and MCP schemas derived from that same registry. Integer options retain the original 4,300-digit bound. Separate long-option, positional raw-value, short-help explicit-tail, option-separated variadic-run and exhausted trailing-marker admission passed original-parser comparisons on Linux. Windows-current and full error/grammar parity remain open. Profile create/list/show/edit,
   coherence/collision verdicts and archive service seams reuse native stores rather
   than forwarding Python application commands. New original-handler/parser tests
   are pending hosted execution; exact help/error/human output, all command handlers,
