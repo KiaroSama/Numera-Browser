@@ -22,6 +22,7 @@ mod option_tokens;
 pub mod output;
 pub mod pool_commands;
 pub mod pool_output;
+mod positional_tokens;
 mod presentation;
 pub mod probe_commands;
 pub mod probe_output;
@@ -76,6 +77,7 @@ where
     command.build();
     let arguments =
         option_tokens::normalize(&command, arguments.into_iter().map(Into::into).collect());
+    let arguments = positional_tokens::normalize(&command, arguments);
     command.try_get_matches_from(arguments)
 }
 

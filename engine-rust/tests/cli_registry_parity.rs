@@ -202,6 +202,160 @@ print(json.dumps(rows,ensure_ascii=True))
 }
 
 #[test]
+fn positional_values_preserve_original_admission_and_option_boundaries()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use serde_json::Value;
+
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut original = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    original
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import argparse,contextlib,io,json,sys
+from pathlib import Path
+repository=Path(sys.argv[1])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.cli.parser import build_parser
+parser=build_parser()
+inputs=['-١٢','-.٥','-1','-.5','-١.٥','-١٢\n','- value','--unknown value',
+        '-','value with spaces','--json','-y value','--unknown','-1e2','-1_2','-١٢\r']
+argvs=[]
+occurrences=0
+def visit(command,path):
+    global occurrences
+    actions=[a for a in command._actions if not a.option_strings
+             and not isinstance(a,argparse._SubParsersAction)]
+    if actions:
+        required=[a.option_strings[0]+'=1' for a in command._actions
+                  if a.option_strings and a.required]
+        for index,action in enumerate(actions):
+            occurrences+=1
+            for text in inputs:
+                values=['fixture']*len(actions);values[index]=text
+                argvs.extend([path+required+values,path+required+values+['--json'],
+                              path+required+['--json']+values,
+                              path+required+['--']+values])
+    for action in command._actions:
+        if isinstance(action,argparse._SubParsersAction):
+            for name,child in action.choices.items():visit(child,path+[name])
+visit(parser,[])
+argvs.extend([
+    ['delete','-١٢','other','-y','--json'],
+    ['delete','--json','-١٢','other','-y'],
+    ['delete','-١٢','--json','other'],
+    ['pool','remove','-١٢','--json','other'],
+    ['pool','archive','-١٢','other','--restore','--json'],
+    ['pool','export','--file=-١٢','-١٢','other','--json'],
+    ['pool','export','-١٢','--file=fixture','other'],
+    ['apply','--notes=-١٢','-١٢','other','--json','-y'],
+    ['apply','-١٢','--json','other'],
+    ['apply','--json','-١٢','--','other'],
+    ['apply','--json','-١٢','--','--'],
+    ['export','-١٢','--json','--unknown value'],
+    ['folder','rename','-١٢','--json','-.٥'],
+    ['create','--seed=-١٢','-١٢','--notes=two words','--json'],
+    ['warmup','-١٢','--site=-١٢','--site=last','--json'],
+    ['show','-١٢','--json=bad'],['show','-١٢','--unknown'],
+    ['show','-١٢','--j'],['show','-١٢','--password=fixture'],
+    ['show','-١٢','-jh'],['show','-١٢','--json','--json'],
+    ['show','--','-١٢','--json'],['show','-١٢','--','--json'],
+    ['--data-dir=fixture','show','-١٢','--json'],
+    ['--','show','-١٢','--json'],['--password','--','show','-١٢'],
+    ['schedule','add','--every=-.٥','-١٢','--json'],
+])
+rows=[]
+for argv in argvs:
+    with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
+        try:
+            values=vars(parser.parse_args(argv));values.pop('func',None)
+            rows.append({'argv':argv,'exit':0,'values':values})
+        except SystemExit as error:rows.append({'argv':argv,'exit':error.code})
+print(json.dumps({'occurrences':occurrences,'rows':rows},ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut original,
+        capture::Limits {
+            wall: Duration::from_secs(20),
+            idle: Duration::from_secs(15),
+            bytes: 2 * 1024 * 1024,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original positional observer failed");
+    let document: Value = serde_json::from_slice(&observed.stdout)?;
+    let occurrences = document["occurrences"]
+        .as_u64()
+        .ok_or("Occurrences missing")?;
+    assert!(
+        occurrences > 30,
+        "Original positional inventory is incomplete"
+    );
+    let cases = document["rows"]
+        .as_array()
+        .ok_or("Positional rows missing")?;
+    assert_eq!(cases.len() as u64, occurrences * 16 * 4 + 27);
+    let mut registry = cli::registry();
+    registry.build();
+    for (index, case) in cases.iter().enumerate() {
+        let argv = case["argv"]
+            .as_array()
+            .ok_or("Positional arguments missing")?
+            .iter()
+            .map(|v| v.as_str().ok_or("Argument not text"))
+            .collect::<Result<Vec<_>, _>>()?;
+        let actual = cli::parse(std::iter::once("numera").chain(argv));
+        assert_eq!(
+            i64::from(actual.as_ref().err().map_or(0, clap::Error::exit_code)),
+            case["exit"].as_i64().ok_or("Original exit missing")?,
+            "CLI positional token admission differs: case={index}"
+        );
+        if let Ok(matches) = actual {
+            assert_eq!(
+                cli::reflection::values(&registry, &matches),
+                case["values"],
+                "CLI positional token value differs: case={index}"
+            );
+            let (mut command, mut parsed) = (&registry, &matches);
+            while let Some((name, child)) = parsed.subcommand() {
+                command = command
+                    .find_subcommand(name)
+                    .ok_or("Parsed command missing")?;
+                parsed = child;
+            }
+            for arg in command.get_positionals() {
+                let id = arg.get_id().as_str();
+                let raw = parsed.get_raw(id).map_or_else(Vec::new, |values| {
+                    values.map(|value| value.to_str()).collect::<Vec<_>>()
+                });
+                let expected = &case["values"][id];
+                let expected = expected.as_array().map_or_else(
+                    || expected.as_str().map(Some).into_iter().collect::<Vec<_>>(),
+                    |values| values.iter().map(Value::as_str).collect(),
+                );
+                assert_eq!(
+                    raw, expected,
+                    "CLI raw positional bytes differ: case={index}"
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn command_registry_matches_original_schemas_arguments_and_parse_views()
 -> Result<(), Box<dyn std::error::Error>> {
     let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
