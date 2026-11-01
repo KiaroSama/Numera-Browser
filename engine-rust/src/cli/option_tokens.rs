@@ -62,9 +62,45 @@ pub(super) fn normalize(command: &Command, arguments: Vec<OsString>) -> Vec<OsSt
         } else if let Some(child) = current.find_subcommand(text) {
             current = child;
         }
-        output.push(argument);
+        output.push(short_help_error(current, text).unwrap_or(argument));
     }
     output
+}
+
+// argparse validates a whole short cluster before taking its queued help action.
+// Let clap reject the equivalent attached value without overriding earlier errors.
+fn short_help_error(command: &Command, text: &str) -> Option<OsString> {
+    let shorts = text
+        .strip_prefix('-')
+        .filter(|rest| !rest.starts_with('-'))?;
+    let mut help = false;
+    for (index, short) in shorts.char_indices() {
+        let arg = command
+            .get_arguments()
+            .find(|arg| arg.get_short() == Some(short))?;
+        if arg
+            .get_num_args()
+            .is_none_or(|range| range.max_values() != 0)
+        {
+            return None;
+        }
+        help |= matches!(
+            arg.get_action(),
+            clap::ArgAction::Help | clap::ArgAction::HelpShort | clap::ArgAction::HelpLong
+        );
+        let tail = &shorts[index + short.len_utf8()..];
+        if help && (tail.starts_with('=') || tail.starts_with('-')) {
+            return Some(
+                format!(
+                    "--{}={}",
+                    arg.get_long()?,
+                    tail.strip_prefix('=').unwrap_or(tail)
+                )
+                .into(),
+            );
+        }
+    }
+    None
 }
 
 pub(super) fn long_option<'a>(command: &'a Command, name: &str) -> Option<&'a clap::Arg> {

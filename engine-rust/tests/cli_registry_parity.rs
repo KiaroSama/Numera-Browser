@@ -356,6 +356,113 @@ print(json.dumps({'occurrences':occurrences,'rows':rows},ensure_ascii=True))
 }
 
 #[test]
+fn short_help_preserves_original_explicit_tail_admission() -> Result<(), Box<dyn std::error::Error>>
+{
+    use numera_core::ownership::capture;
+    use serde_json::Value;
+
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut original = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    original
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import argparse,contextlib,io,json,sys
+from pathlib import Path
+repository=Path(sys.argv[1])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.cli.parser import build_parser
+parser=build_parser()
+inputs=['-h=','-h=bad','-h-','-h--help','-hh=','-hh-',
+        '-h','-hh','-h value','-hx','-hxy=','--help=bad']
+argvs=[]
+scopes=0
+def visit(command,path):
+    global scopes
+    scopes+=1
+    argvs.extend(path+[text] for text in inputs)
+    for action in command._actions:
+        if isinstance(action,argparse._SubParsersAction):
+            for name,child in action.choices.items():visit(child,path+[name])
+visit(parser,[])
+argvs.extend([
+    ['delete','-hy='],['delete','-yh='],['delete','-hyy-'],
+    ['delete','-hyy'],['delete','-yhh'],['delete','-hyx='],
+    ['show','--help','-h='],['show','-h','-h='],
+    ['show','--unknown','-h='],['show','--json=bad','-h='],
+    ['show','--password=fixture','-h='],['unknown','-h='],
+    ['--password','--','show','-h='],['--password=-h=','show','--json','fixture'],
+    ['edit','--notes=-h=','fixture','--json'],
+    ['edit','--notes','-h=','fixture'],['show','--','-h='],
+    ['--','show','-h='],['show','-١٢','-h='],
+    ['show','-١٢','-h'],['--data-dir=-h=','show','-hh'],
+])
+rows=[]
+for argv in argvs:
+    with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
+        try:
+            values=vars(parser.parse_args(argv));values.pop('func',None)
+            rows.append({'argv':argv,'exit':0,'values':values})
+        except SystemExit as error:rows.append({'argv':argv,'exit':error.code})
+print(json.dumps({'scopes':scopes,'rows':rows},ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut original,
+        capture::Limits {
+            wall: Duration::from_secs(20),
+            idle: Duration::from_secs(15),
+            bytes: 2 * 1024 * 1024,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original short-help observer failed");
+    let document: Value = serde_json::from_slice(&observed.stdout)?;
+    let scopes = document["scopes"]
+        .as_u64()
+        .ok_or("Command scopes missing")?;
+    assert!(scopes > 40, "Original command inventory is incomplete");
+    let cases = document["rows"]
+        .as_array()
+        .ok_or("Short-help rows missing")?;
+    assert_eq!(cases.len() as u64, scopes * 12 + 21);
+    let mut registry = cli::registry();
+    registry.build();
+    for (index, case) in cases.iter().enumerate() {
+        let argv = case["argv"]
+            .as_array()
+            .ok_or("Short-help arguments missing")?
+            .iter()
+            .map(|v| v.as_str().ok_or("Argument not text"))
+            .collect::<Result<Vec<_>, _>>()?;
+        let actual = cli::parse(std::iter::once("numera").chain(argv));
+        assert_eq!(
+            i64::from(actual.as_ref().err().map_or(0, clap::Error::exit_code)),
+            case["exit"].as_i64().ok_or("Original exit missing")?,
+            "CLI short-help token admission differs: case={index}"
+        );
+        if let Ok(matches) = actual {
+            assert_eq!(
+                cli::reflection::values(&registry, &matches),
+                case["values"],
+                "CLI short-help value differs: case={index}"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn command_registry_matches_original_schemas_arguments_and_parse_views()
 -> Result<(), Box<dyn std::error::Error>> {
     let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;

@@ -5,15 +5,15 @@ The accepted boundary is [ADR0001](adr/0001-parity-gated-rust-migration.md); Pyt
 [candidate executable](migration-candidate.md), **not an installed replacement**.
 Passing library or narrow entrypoint tests does not certify a finished migration.
 
-## Current integration status — October 30, 2026
+## Current integration status — November 1, 2026
 
-Checkpoint `f0bc556` ran in manual hosted batch
-[40974001701](https://github.com/KiaroSama/Numera-Browser/actions/runs/40974001701). Linux passed 82 historical proofs and current contracts;
-the attribute fixture caught the exact old metadata loss, restored fixed bytes and passed three current cases; the earlier FIFO, 584-case CLI token and hint controls remain accepted.
+Checkpoint `a104df0` ran in manual hosted batch
+[41340939884](https://github.com/KiaroSama/Numera-Browser/actions/runs/41340939884). Linux passed 83 historical proofs and current contracts;
+the positional fixture caught the exact old admission failure, restored fixed bytes and passed the current comparison; the earlier attribute, FIFO, 584-case CLI token and hint controls remain accepted.
 All eight Windows/Linux SDK legs pass actual browser and relocated scenarios, including cookie/HTTP/foreground CLI checks.
-All eight browser performance gates remain unaccepted; the Linux foreground CLI benchmark also refused regression or inconclusive measurements.
-Windows completed 75 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached.
-The historical-only line-table experiment retains current/release profiles. Its 75 resource observations and earlier 17 passing controls are diagnostic evidence, not a controlled speedup or a resolved compiler bottleneck.
+All eight browser performance gates remain unaccepted; all five Linux CLI/HTTP time and memory comparisons passed this batch without changing the strict gate.
+Windows completed 54 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached.
+The historical-only line-table experiment retains current/release profiles. Its 54 resource observations and earlier 17 passing controls are diagnostic evidence, not a controlled speedup or a resolved compiler bottleneck.
 Earlier Linux log-root, nine-case entry comparison and detached/server acceptance passed; generic logging and full first-run compatibility remain incomplete.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
 and current acceptance, including read warnings, delete recovery and Linux process-group uncertainty.
@@ -487,7 +487,7 @@ rollback still gate Rust selection and retirement.
 
 - Native clap command definitions and automation reflection are now prepared for
   the original command tree, including shared flags, numeric/default/choice rules
-  and MCP schemas derived from that same registry. Integer options retain the original 4,300-digit bound. Separate long-option admission passed 584 original-parser comparisons on Linux; registry-derived positional admission and raw-value preservation are prepared but unverified. Windows-current and full error/grammar parity remain open. Profile create/list/show/edit,
+  and MCP schemas derived from that same registry. Integer options retain the original 4,300-digit bound. Separate long-option and registry-derived positional admission with raw-value preservation passed original-parser comparisons on Linux. Short-help explicit-tail admission is prepared but unverified; Windows-current and full error/grammar parity remain open. Profile create/list/show/edit,
   coherence/collision verdicts and archive service seams reuse native stores rather
   than forwarding Python application commands. New original-handler/parser tests
   are pending hosted execution; exact help/error/human output, all command handlers,

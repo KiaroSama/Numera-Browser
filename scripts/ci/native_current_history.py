@@ -371,4 +371,12 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/cli/mod.rs':
                   '43b939bcaeb5acef515b2b22cef85f85842a1667547c17811fca17102935aba5'},
     },
+    {
+        'target': 'cli_registry_parity',
+        'test': 'short_help_preserves_original_explicit_tail_admission',
+        'symptom': 'CLI short-help token admission differs',
+        'commit': 'a104df072bf48ca200440d5f40298a9ce9b9f24d',
+        'files': {'engine-rust/src/cli/option_tokens.rs':
+                  'dd7ca91090c4cdbfb2e2c17f5f9108432595f3bd28e7356708b4284d938634da'},
+    },
 )
