@@ -208,6 +208,57 @@ fn journaled_activation_and_rollback_preserve_real_format_mutable_data(
     Ok(())
 }
 #[test]
+fn rollback_preserves_an_occupied_recovery_destination() -> Result<(), Box<dyn std::error::Error>> {
+    let fixture = Scratch::new();
+    let root = fixture.0.join("occupied recovery 日本語");
+    let old = build(&root, 1, b"old immutable shell");
+    fs::create_dir(root.join("data"))?;
+    fs::write(root.join("data/preserved.bin"), b"user data\x00\xff")?;
+    let mut journal = transaction::create(&root, &"a".repeat(64))?;
+    let next = build(&journal.staged(), 2, b"new immutable shell");
+    transaction::activate(&mut journal, &old, &next)?;
+    let failed = journal.directory.join("failed");
+    fs::create_dir(&failed)?;
+    let shell = if cfg!(windows) {
+        "numera.exe"
+    } else {
+        "numera"
+    };
+    let obstruction = failed.join(shell);
+    fs::write(&obstruction, b"unknown recovery evidence")?;
+    let journal_path = journal.directory.join("journal.json");
+    let before = fs::read(&journal_path)?;
+
+    let error = transaction::rollback(&mut journal, &old, &next)
+        .expect_err("Rollback overwrote an occupied recovery destination");
+    assert_eq!(error.kind(), std::io::ErrorKind::AlreadyExists);
+    assert_eq!(fs::read(&obstruction)?, b"unknown recovery evidence");
+    assert_eq!(fs::read(root.join(shell))?, b"new immutable shell");
+    assert_eq!(
+        fs::read(journal.backup().join(shell))?,
+        b"old immutable shell"
+    );
+    assert_eq!(
+        fs::read(root.join("data/preserved.bin"))?,
+        b"user data\x00\xff"
+    );
+    assert_eq!(fs::read(&journal_path)?, before);
+    assert_eq!(journal.phase, "awaiting-ready");
+    transaction::validate_files(&root, &next)?;
+    transaction::validate_files(&journal.backup(), &old)?;
+
+    fs::remove_file(&obstruction)?;
+    transaction::rollback(&mut journal, &old, &next)?;
+    transaction::validate_files(&root, &old)?;
+    assert_eq!(fs::read(&obstruction)?, b"new immutable shell");
+    assert_eq!(
+        fs::read(root.join("data/preserved.bin"))?,
+        b"user data\x00\xff"
+    );
+    assert_eq!(journal.phase, "rollback-pending");
+    Ok(())
+}
+#[test]
 fn unsigned_install_and_cancelled_unapproved_download_do_not_mutate_installation(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let fixture = Scratch::new();

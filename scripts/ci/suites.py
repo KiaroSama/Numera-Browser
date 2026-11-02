@@ -291,6 +291,16 @@ def check_desktop_contracts(workflows: dict) -> None:
         if (len(matches) != 1 or matches[0].get('working-directory') != 'desktop/src-tauri'
                 or matches[0].get('if') or matches[0].get('continue-on-error')):
             raise ValueError('Desktop contract commands must remain required with unchanged bounds')
+    history = [step for step in steps if 'desktop_history.py' in step.get('run', '')]
+    if (len(history) != 1 or history[0] != {
+            'name': 'Prove previous updater recovery overwrite refusal',
+            'if': "runner.os != 'Windows'", 'working-directory': 'desktop/src-tauri',
+            'run': 'python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- '
+                   'python ../../scripts/ci/desktop_history.py'}
+            or not steps.index(history[0]) < next(
+                index for index, step in enumerate(steps)
+                if step.get('run', '').endswith('--no-default-features --no-run'))):
+        raise ValueError('Desktop contract history must prove the Unix defect before current compilation')
     distribution = jobs['distribution']
     if ('desktop-contracts' not in distribution.get('needs', [])
             or "needs.desktop-contracts.result == 'success'" not in distribution.get('if', '')

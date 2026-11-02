@@ -52,6 +52,10 @@ jobs:
       - name: Compile and lint the Tauri shell
         working-directory: desktop/src-tauri
         run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo clippy --locked --all-targets --no-default-features -- -D warnings
+      - name: Prove previous updater recovery overwrite refusal
+        if: runner.os != 'Windows'
+        working-directory: desktop/src-tauri
+        run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- python ../../scripts/ci/desktop_history.py
       - name: Compile Tauri shell contract binaries
         working-directory: desktop/src-tauri
         run: python ../../scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo test --locked --no-default-features --no-run

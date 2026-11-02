@@ -54,3 +54,29 @@ def test_desktop_contracts_are_independent_required_and_not_repeated(damage):
             suites.check_desktop_contracts(workflows)
     else:
         suites.check_desktop_contracts(workflows)
+
+
+@pytest.mark.parametrize('damage', [None, 'missing', 'duplicate', 'platform', 'bound', 'order', 'ignored'])
+def test_desktop_history_retains_the_named_unix_negative_proof_before_current_tests(damage):
+    workflows = {name: yaml.safe_load((ROOT / f'.github/workflows/{name}.yml').read_text(encoding='utf-8'))
+                 for name in ('ci', 'desktop-contracts', 'build-desktop', 'container')}
+    steps = workflows['desktop-contracts']['jobs']['contracts']['steps']
+    proof = next(step for step in steps if 'desktop_history.py' in step.get('run', ''))
+    if damage == 'missing':
+        steps.remove(proof)
+    elif damage == 'duplicate':
+        steps.append(deepcopy(proof))
+    elif damage == 'platform':
+        proof['if'] = "runner.os == 'Linux'"
+    elif damage == 'bound':
+        proof['run'] = proof['run'].replace('--wall 900', '--wall 1800')
+    elif damage == 'order':
+        steps.remove(proof)
+        steps.append(proof)
+    elif damage == 'ignored':
+        proof['continue-on-error'] = True
+    if damage:
+        with pytest.raises(ValueError, match='Desktop contract history'):
+            suites.check_desktop_contracts(workflows)
+    else:
+        suites.check_desktop_contracts(workflows)

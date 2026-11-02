@@ -148,13 +148,47 @@ pub fn move_file(source: &Path, target: &Path) -> io::Result<()> {
             return Err(io::Error::last_os_error());
         }
     }
-    #[cfg(not(windows))]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     {
-        fs::rename(source, target)?;
+        use std::{ffi::CString, os::unix::ffi::OsStrExt};
+        let from = CString::new(source.as_os_str().as_bytes()).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Update source path contains NUL",
+            )
+        })?;
+        let to = CString::new(target.as_os_str().as_bytes()).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Update destination path contains NUL",
+            )
+        })?;
+        // SAFETY: both NUL-checked path buffers outlive the synchronous call.
+        // Exclusive rename preserves unknown recovery evidence without a check/move race.
+        #[cfg(target_os = "linux")]
+        let result = unsafe {
+            libc::renameat2(
+                libc::AT_FDCWD,
+                from.as_ptr(),
+                libc::AT_FDCWD,
+                to.as_ptr(),
+                libc::RENAME_NOREPLACE,
+            )
+        };
+        #[cfg(target_os = "macos")]
+        let result = unsafe { libc::renamex_np(from.as_ptr(), to.as_ptr(), libc::RENAME_EXCL) };
+        if result != 0 {
+            return Err(io::Error::last_os_error());
+        }
         for parent in [source.parent(), target.parent()].into_iter().flatten() {
             File::open(parent)?.sync_all()?;
         }
     }
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
+    return Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "Exclusive update file moves are unavailable on this platform",
+    ));
     Ok(())
 }
 pub fn hash(path: &Path) -> io::Result<String> {
