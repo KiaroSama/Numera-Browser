@@ -438,4 +438,12 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/storage/first_run.rs':
                   '7f07dcc91641071ebb5e5576c3e0bcf3186400fd9e0d199f227231503a2ea002'},
     },
+    {
+        'target': 'conversion_parity',
+        'test': 'container_text_conversion_matches_original_profiles_and_roundtrips',
+        'symptom': 'Container text conversion differs',
+        'commit': '12a76ec9f205fd6c2e760eaf28bdd64aa0105c8b',
+        'files': {'engine-rust/src/conversion.rs':
+                  'c52af49700c56939aa482ba1c155aed5b861258e7404cf4c5069df70e65ceef4'},
+    },
 )

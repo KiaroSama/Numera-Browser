@@ -105,6 +105,107 @@ with run_log('conversion-text-oracle',parent/'logs') as log:
 }
 
 #[test]
+fn container_text_conversion_matches_original_profiles_and_roundtrips()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("conversion-container-text")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import copy,json,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import convert
+from run_logging import run_log
+fixture=json.loads((repository/'engine-rust/tests/fixtures/conversion.json').read_text(encoding='utf-8'))
+base=next(case['input'] for case in fixture['cases'] if case['operation']=='to-engine')
+base=dict(base,id='conversion-container-text',userAgent='')
+original=convert.Profile
+def clocked(*args,**kwargs):
+    kwargs.setdefault('created_at',1700000000.0)
+    kwargs.setdefault('updated_at',1700000000.0)
+    return original(*args,**kwargs)
+convert.Profile=clocked
+values=[['alpha',True,None],{'z':[False,None],'a':{'inner':'value'}},
+        ['quote\'','double"','both\'"','\\','\n\t\r\x00'],
+        {'α':['日本語','😀','e\u0301','\u200b','\ue000','\u0378']},
+        [0,-0.0,1e-5,1e16,9007199254740993],
+        [[],{},[{'inner':[]}]],[],{},None,False,True,0,17,-0.0,0.25,
+        '',' plain text ','True, None, []']
+fields=('osVersion','deviceModel','dns','webrtc','canvas','audio','clientRects',
+        'webglImage','mediaDevices','fonts','geo')
+observed=[]
+with run_log('conversion-container-text-oracle',parent/'logs') as log:
+    for os in ('Windows','Android','iOS'):
+        for index,value in enumerate(values):
+            changes={key:copy.deepcopy(value) for key in fields}
+            changes['os']=os
+            record=dict(copy.deepcopy(base),**changes)
+            before=copy.deepcopy(record)
+            profile=convert.to_engine_profile(record)
+            observed.append({'label':os+'-'+str(index),'changes':changes,
+                             'profile':profile.to_dict(),
+                             'dashboard':convert.to_dashboard_profile(profile)})
+            assert record==before,'Original container conversion mutated its input'
+    log.info('Observed container text conversion cases=%s',len(observed))
+    print(json.dumps({'base':base,'cases':observed},ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 1_048_576,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original container text observer failed");
+    let oracle: Value = serde_json::from_slice(&observed.stdout)?;
+    let cases = oracle["cases"]
+        .as_array()
+        .ok_or("Container cases missing")?;
+    assert_eq!(cases.len(), 54, "Container text observations missing");
+    for case in cases {
+        let mut record = oracle["base"].clone();
+        record
+            .as_object_mut()
+            .ok_or("Profile input missing")?
+            .extend(
+                case["changes"]
+                    .as_object()
+                    .ok_or("Container changes missing")?
+                    .clone(),
+            );
+        let before = record.clone();
+        let profile = to_engine(&record, 1700000000.0)?;
+        assert_eq!(
+            serde_json::to_value(&profile)?,
+            case["profile"],
+            "Container text conversion differs: {}",
+            case["label"]
+        );
+        assert_eq!(
+            to_dashboard(&profile),
+            case["dashboard"],
+            "Container text roundtrip differs: {}",
+            case["label"]
+        );
+        assert_eq!(record, before, "Container conversion mutated its input");
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn reverse_proxy_conversion_matches_original_without_canonicalizing_records()
 -> Result<(), Box<dyn std::error::Error>> {
     use numera_core::ownership::capture;

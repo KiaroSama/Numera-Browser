@@ -33,8 +33,7 @@ pub(crate) fn value_text(v: &Value) -> String {
         Value::String(v) => v.clone(),
         Value::Null => "None".into(),
         Value::Bool(v) => if *v { "True" } else { "False" }.into(),
-        Value::Number(_) => crate::validation::repr(v),
-        _ => v.to_string(),
+        _ => crate::validation::repr(v),
     }
 }
 fn integer_number(value: &Value) -> Option<Value> {
