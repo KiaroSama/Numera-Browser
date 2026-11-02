@@ -74,7 +74,12 @@ fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
     result
 }
 
-fn merge_dir(source: &Path, destination: &Path, depth: usize) -> io::Result<(usize, usize)> {
+fn merge_dir(
+    source: &Path,
+    destination: &Path,
+    depth: usize,
+    merging: bool,
+) -> io::Result<(usize, usize)> {
     if depth > 128 {
         return Err(io::Error::other(
             "First-run source nesting exceeds the safe copy limit",
@@ -86,7 +91,9 @@ fn merge_dir(source: &Path, destination: &Path, depth: usize) -> io::Result<(usi
     let (mut added, mut kept) = (0, 0);
     for entry in entries {
         let name = entry.file_name();
-        if name == ".locks" {
+        // The original merge skips its own locks, but copytree retains every
+        // ordinary entry inside a newly imported subtree.
+        if merging && name == ".locks" {
             continue;
         }
         if name == ".ignoreme" {
@@ -108,14 +115,14 @@ fn merge_dir(source: &Path, destination: &Path, depth: usize) -> io::Result<(usi
                 ));
             }
             if path.is_dir() {
-                let (a, k) = merge_dir(&path, &target, depth + 1)?;
+                let (a, k) = merge_dir(&path, &target, depth + 1, merging)?;
                 added += a;
                 kept += k;
             } else {
                 kept += 1;
             }
         } else if path.is_dir() {
-            merge_dir(&path, &target, depth + 1)?;
+            merge_dir(&path, &target, depth + 1, false)?;
             // copytree applies metadata after children, only for a new subtree.
             let metadata = fs::metadata(&path)?;
             fs::set_times(
@@ -163,7 +170,7 @@ pub fn import_from(source: &Path, destination: &Path) -> io::Result<Summary> {
                 return Err(io::Error::other("First-run source item is a symbolic link"));
             }
             if src.is_dir() {
-                let (added, kept) = merge_dir(&src, &dst, 0)?;
+                let (added, kept) = merge_dir(&src, &dst, 0, true)?;
                 if added > 0 {
                     summary.copied.push(format!("{name} ({added})"));
                 }

@@ -196,7 +196,7 @@ fn pruning_failure_keeps_the_new_file_sink_usable() -> Result<(), Box<dyn std::e
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        denied.set_mode(0);
+        denied.set_mode(0o0);
     }
     #[cfg(windows)]
     denied.set_readonly(true);

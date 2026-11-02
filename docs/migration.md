@@ -7,12 +7,12 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — November 2, 2026
 
-Checkpoint `3be5362` ran in manual hosted batch
-[41359286019](https://github.com/KiaroSama/Numera-Browser/actions/runs/41359286019). Linux passed 85 historical proofs and current contracts;
-the variadic fixture caught the exact old admission failure, restored fixed bytes and passed all 176 current comparisons; the six-test CLI registry target passed in 8.20 seconds, including the earlier short-help and positional controls.
+Checkpoint `c44a948` ran in manual hosted batch
+[41373426640](https://github.com/KiaroSama/Numera-Browser/actions/runs/41373426640). Linux passed 86 historical proofs, including the old retention failure and fixed-byte restoration;
+current tests were blocked by a non-octal permission literal in the new fixture, also rejected on macOS. The behavior-identical octal spelling correction is prepared, not yet verified remotely.
 All eight Windows/Linux SDK legs pass actual browser and relocated scenarios, including cookie/HTTP/foreground CLI checks.
-All eight browser performance gates remain unaccepted; all five Linux CLI/HTTP time and memory comparisons passed this batch without changing the strict gate.
-Windows completed 50 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached.
+All eight browser performance gates remain unaccepted. Previous `3be5362` passed 176 variadic comparisons, the six-test registry target and five Linux CLI/HTTP benchmarks; its browser time verdicts were five no-regression/three inconclusive, with all eight memory verdicts inconclusive.
+Windows completed 67 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached.
 The historical-only line-table experiment added metadata over CI's existing debug=0 baseline; removing it did not establish complete Windows acceptance. Earlier resource observations and 17 passing controls are diagnostic evidence, not a controlled speedup or a resolved compiler bottleneck.
 Earlier Linux log-root, nine-case entry comparison and detached/server acceptance passed; generic logging and full first-run compatibility remain incomplete.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
@@ -772,7 +772,7 @@ close on every path. Logs are local diagnostics, not bundled or committed; remov
 old run logs deliberately after diagnosis, and sanitize any approved support export.
 Native logs default to `<data-dir>/logs`, with `NUMERA_LOG_DIR` taking precedence. Prepared dynamic diagnostic filtering preserves the original four ordered credential rules.
 Scheduler failures use that sink; ERROR/CRITICAL remain visible on stderr as well as in the file. File-only diagnostics stay quiet, including write failures.
-`serve --verbose`, scheduler diagnostics and redaction passed original-derived Linux checks; Windows current checks remain blocked. Prepared retention keeps 20 per component by mtime, preserving active/linked/nonregular entries; failures leave logging usable. Unix publication requires hardlinks/advisory locks and may retain pending links after cleanup failure/crash. Retention tests remain unexecuted; generic hierarchy and full logging parity remain incomplete. The earlier macOS delete-order cause remains unresolved.
+`serve --verbose`, scheduler diagnostics and redaction passed original-derived Linux checks; Windows current checks remain blocked. Retention's old-source failure/restoration passed on Linux; current tests await the fixture lint correction. Prepared retention keeps 20 per component by mtime, preserving active/linked/nonregular entries; Unix publication requires hardlinks/advisory locks and may retain pending links after cleanup failure/crash. First-run nested-copy preservation has a prepared original-derived three-case regression, not hosted acceptance. Generic logging, full first-run parity and the earlier macOS delete-order cause remain unresolved.
 Verification timeouts record wall/idle flags and numeric durations before cleanup. Failed temporary cleanup records fixed operations, numeric OS errors and file-kind/read-only/reparse flags, not arbitrary paths or exception text.
 The original cleanup exception still fails verification and retains the root; no retry, permission change or ignored removal error is introduced.
 

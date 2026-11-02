@@ -397,4 +397,12 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/runtime_log.rs':
                   '78db62948c0519ffadbcf154574caac10078bee0577c6269a0161e4191743590'},
     },
+    {
+        'target': 'first_run_parity',
+        'test': 'nested_copy::new_subtrees_preserve_original_nested_lock_entries',
+        'symptom': 'First-run nested copy differs',
+        'commit': 'c44a948d6f194368fc8316efb127b46cfd80d9d7',
+        'files': {'engine-rust/src/storage/first_run.rs':
+                  'a7e702675adb3f12e7495d625d0cb06aa400c594d4997526f8027b6dbb578f73'},
+    },
 )

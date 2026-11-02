@@ -34,6 +34,8 @@ fn files(
 }
 
 mod common;
+#[path = "first_run_parity/nested_copy.rs"]
+mod nested_copy;
 
 #[test]
 fn complete_first_run_summaries_match_original_paths_and_copy_results()
