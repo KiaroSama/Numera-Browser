@@ -261,6 +261,131 @@ with run_log('unicode-representation-oracle',parent/'logs') as log:
 }
 
 #[test]
+fn finite_numbers_match_original_validation_and_mcp_representation()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{cli, http::profile_fields, ownership::capture};
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("numeric-representation")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,math,struct,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import cli,mcp,write_contract
+from numera.server.routes_profiles import check_fields
+from run_logging import run_log
+texts=['0','1','-1','9007199254740993','18446744073709551616',
+       '-'+'9'*100,'9'*100,'0.0','-0.0','1e0','1E+000','1e-05',
+       '0.000010000000000000001','10000000000000000.0',
+       '1.234567890123456789','1.0000000000000001','-1e-400']
+values=[0.0,-0.0,1.0,-1.0,0.1,1.5,112171935477118.12,
+        181681934355391.62,-581170764721946.2,5.444310685350916e14,
+        2e16+8,1.2999999999999999,math.pi,sys.float_info.max,
+        sys.float_info.min,math.ulp(0.0)]
+for exponent in [-308,-100,-10,-6,-5,-4,-3,0,1,14,15,16,17,100,308]:
+    value=10.0**exponent
+    values.extend([math.nextafter(value,0.0),value,math.nextafter(value,math.inf)])
+state=0x9e3779b97f4a7c15
+for _ in range(256):
+    state=(state*6364136223846793005+1442695040888963407)&((1<<64)-1)
+    value=struct.unpack('>d',state.to_bytes(8,'big'))[0]
+    if math.isfinite(value):
+        values.append(value)
+texts.extend(json.dumps(sign*value) for value in values for sign in (1,-1))
+path,parser,_=next(row for row in mcp._walk(cli.build_parser(),(),{}) if row[0]==('show',))
+rows=[]
+with run_log('numeric-representation-oracle',parent/'logs') as log:
+    for text in texts:
+        value=json.loads(text)
+        assert not isinstance(value,float) or math.isfinite(value)
+        record={'name':value,'notes':{'nested':[value,True,None]},'cores':value,
+                'proxy':{'password':[value],'pass':{'private-control':value}}}
+        arguments={'ref':[value,{'nested':[value,True,None]},text]}
+        before=json.dumps([record,arguments],ensure_ascii=True)
+        rows.append({'text':text,'core':write_contract.profile_problems(
+                         record,kind=write_contract.DASHBOARD_PATCH),
+                     'http':check_fields({'cores':value},where='profile'),
+                     'argv':mcp._argv(path,parser,arguments)})
+        assert json.dumps([record,arguments],ensure_ascii=True)==before
+    assert len(rows)==651
+    log.info('Observed finite numeric representation cases=%s',len(rows))
+    print(json.dumps(rows,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .arg(temporary.path())
+        .env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 2 * 1024 * 1024,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        observed.exit, 0,
+        "Original numeric representation observer failed"
+    );
+    let rows: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(
+        rows.len(),
+        651,
+        "Numeric representation observations missing"
+    );
+    for (index, row) in rows.iter().enumerate() {
+        let value: Value =
+            serde_json::from_str(row["text"].as_str().ok_or("Numeric input missing")?)?;
+        let input = serde_json::json!({
+            "name":value,"notes":{"nested":[value,true,null]},"cores":value,
+            "proxy":{"password":[value],"pass":{"private-control":value}}
+        });
+        let before = input.clone();
+        assert_eq!(
+            serde_json::to_value(profile_problems(&input, "dashboard patch")?)?,
+            row["core"],
+            "Numeric representation differs: core case={index}"
+        );
+        assert_eq!(
+            serde_json::to_value(profile_fields::check(
+                &serde_json::json!({"cores":value}),
+                "profile",
+                &[]
+            )?)?,
+            row["http"],
+            "Numeric representation differs: HTTP case={index}"
+        );
+        let arguments = serde_json::json!({"ref":[value,{"nested":[value,true,null]},row["text"]]});
+        assert_eq!(
+            serde_json::to_value(cli::reflection::argv(
+                "show",
+                arguments.as_object().ok_or("Arguments missing")?
+            )?)?,
+            row["argv"],
+            "Numeric representation differs: argv case={index}"
+        );
+        assert_eq!(input, before, "Validation changed its numeric input");
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn uncoerced_write_validation_matches_source() -> Result<(), Box<dyn std::error::Error>> {
     let oracle: Value = serde_json::from_str(include_str!("fixtures/validation.json"))?;
     let cases = oracle["cases"]

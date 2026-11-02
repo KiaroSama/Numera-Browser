@@ -413,4 +413,12 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/validation.rs':
                   '5397a1882c0a5cdf867e4d21a353322da76129db2d982fe6093c4eeb9c7d0591'},
     },
+    {
+        'target': 'validation_parity',
+        'test': 'finite_numbers_match_original_validation_and_mcp_representation',
+        'symptom': 'Numeric representation differs',
+        'commit': '65e9dbd4b9a1b15ee76a27d7cf3947b18455c21d',
+        'files': {'engine-rust/src/validation.rs':
+                  '01a2a4718ff2792ffd80ab5f130261007409ed58e3aea1ffaf28d8eae3327158'},
+    },
 )

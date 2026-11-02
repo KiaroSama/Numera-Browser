@@ -42,6 +42,28 @@ fn printable(character: char) -> bool {
         })
         .is_match(character.encode_utf8(&mut [0; 4]))
 }
+fn number_text(number: &serde_json::Number) -> String {
+    let raw = number.to_string();
+    if !raw.contains(['.', 'e', 'E']) {
+        return raw;
+    }
+    let Some(canonical) = number.as_f64().and_then(serde_json::Number::from_f64) else {
+        return raw;
+    };
+    // Keep the existing shortest-rounding engine; only Python's notation differs.
+    let text = canonical.to_string();
+    if let Some((mantissa, exponent)) = text.split_once('e') {
+        let exponent: i32 = exponent.parse().expect("Finite JSON exponent is numeric");
+        return format!("{mantissa}e{exponent:+03}");
+    }
+    if let Some(digits) = text.trim_start_matches('-').strip_prefix("0.0000") {
+        let (first, rest) = digits.split_at(1);
+        let point = if rest.is_empty() { "" } else { "." };
+        let sign = if text.starts_with('-') { "-" } else { "" };
+        return format!("{sign}{first}{point}{rest}e-05");
+    }
+    text
+}
 pub(crate) fn repr(value: &Value) -> String {
     match value {
         Value::Null => "None".into(),
@@ -83,12 +105,14 @@ pub(crate) fn repr(value: &Value) -> String {
                 .collect::<Vec<_>>()
                 .join(", ")
         ),
-        _ => value.to_string(),
+        Value::Number(number) => number_text(number),
     }
 }
 fn short(value: &Value, quoted: bool) -> String {
     let text = if quoted {
         repr(value)
+    } else if let Value::Number(number) = value {
+        number_text(number)
     } else {
         value.to_string()
     };
