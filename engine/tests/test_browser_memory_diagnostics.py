@@ -235,6 +235,8 @@ def test_windows_memory_uses_retained_job_and_closes_process_handles(monkeypatch
     if failed_close:
         import sys
         monkeypatch.setitem(sys.modules, 'benchmark_memory_windows', native)
+        monkeypatch.setitem(sys.modules, 'benchmark_sample', SimpleNamespace(
+            windows_peak=lambda job: {'bytes': 1000}))
         monkeypatch.setattr(module.sys, 'platform', 'win32')
         monkeypatch.setattr(module, 'unit_report', SimpleNamespace(
             read=lambda path: SimpleNamespace(complete=True, trees=[])))
@@ -249,6 +251,144 @@ def test_windows_memory_uses_retained_job_and_closes_process_handles(monkeypatch
         assert rows == [(pid, pid + 100, {'rss_bytes': 11, 'peak_rss_bytes': 17,
                                         'private_bytes': 23, 'peak_private_bytes': 29}) for pid in (41, 42)]
         assert [value for kind, value in seen if kind == 'close'] == [141, 142, 143, 199]
+
+
+@pytest.mark.parametrize('damage', [None, 'query', 'changed-members', 'capacity'])
+def test_windows_recorder_retains_joint_current_private_vectors(monkeypatch, damage):
+    module = load(monkeypatch)
+    import benchmark_memory_windows as native
+
+    direct = SimpleNamespace(pid=41, token=900, group='owned-job', kind='job')
+    sdk = SimpleNamespace(pid=42, token=901, group='sdk-job', kind='job')
+    monkeypatch.setattr(module.sys, 'platform', 'win32')
+    clock = [1.0]
+    monkeypatch.setattr(module.time, 'monotonic', lambda: clock[0])
+    monkeypatch.setattr(module, 'unit_report', SimpleNamespace(
+        read=lambda path: SimpleNamespace(complete=True, trees=[direct, sdk])))
+    calls = []
+
+    def joint(job):
+        assert job == 500
+        calls.append(job)
+        if damage == 'query':
+            raise OSError('private diagnostic must not be published')
+        index = len(calls)
+        rows = [(41, 900, {'private_bytes': 10 * index, 'peak_private_bytes': 900}),
+                (42, 901, {'private_bytes': 20, 'peak_private_bytes': 800}),
+                (43, 902, {'private_bytes': 30, 'peak_private_bytes': 700}),
+                (44, 903, {'private_bytes': 40, 'peak_private_bytes': 600})]
+        return rows, int(damage == 'changed-members'), {
+            'started_ns': index * 100, 'finished_ns': index * 100 + 10,
+            'peak_before_bytes': index * 1000, 'peak_after_bytes': index * 1000 + 100,
+            'membership_changed': damage == 'changed-members'}
+
+    monkeypatch.setattr(native, 'joint_snapshot', joint)
+    if damage == 'capacity':
+        monkeypatch.setattr(module, 'MAX_WINDOWS_INTERVALS', 1)
+    recorder = module.Recorder(direct, Path('inert-receipt'), [], 500)
+    recorder.sample()
+    recorder.sample()
+    clock[0] += .1
+    recorder.sample()
+    result = recorder.result()
+    if damage == 'query':
+        assert result['missing'] == 2 and not result['windows_intervals']
+    else:
+        intervals = result['windows_intervals']
+        assert len(intervals) == (1 if damage == 'capacity' else 2)
+        assert intervals[0] == {
+            'started_ns': 100, 'finished_ns': 110, 'peak_before_bytes': 1000,
+            'peak_after_bytes': 1100, 'membership_changed': damage == 'changed-members',
+            'missing': int(damage == 'changed-members'),
+            'private_bytes': {'command': 10, 'sdk-leader': 20, 'owned-descendant': 70},
+            'members': {'command': 1, 'sdk-leader': 1, 'owned-descendant': 2}}
+        if damage != 'capacity':
+            assert intervals[1]['private_bytes']['command'] == 20
+            assert intervals[0]['private_bytes']['command'] == 10
+        else:
+            assert result['truncated']
+        assert result['roles']['owned-descendant']['max_observed']['peak_private_bytes'] == 700
+        events = []
+        module.log_evidence(result, 'native', SimpleNamespace(
+            warning=lambda message, *args: events.append(message % args)))
+        assert any('interval=0' in event and 'owned_descendant_private_bytes=70' in event for event in events)
+    assert len(calls) == 2
+    assert 'private diagnostic' not in str(result)
+
+
+@pytest.mark.parametrize('damage', [None, 'membership', 'peak', 'clock', 'query'])
+def test_joint_windows_snapshot_brackets_the_same_current_observation(monkeypatch, damage):
+    module = load(monkeypatch)
+    import benchmark_memory_windows as native
+    import sys
+
+    calls = []
+    ticks = iter((100, 90 if damage == 'clock' else 110))
+    peaks = iter((1000, 900 if damage == 'peak' else 1100))
+    monkeypatch.setattr(native.time, 'monotonic_ns', lambda: next(ticks))
+    monkeypatch.setattr(native, 'api', lambda: 'query-api')
+
+    def members(api, job):
+        assert (api, job) == ('query-api', 500)
+        calls.append('members')
+        return [41, 43] if damage == 'membership' and calls.count('members') == 2 else [41, 42]
+
+    def peak(job):
+        assert job == 500
+        calls.append('peak')
+        return {'bytes': next(peaks)}
+
+    rows = [(41, 900, {'private_bytes': 11, 'peak_private_bytes': 900})]
+
+    def snapshot(job):
+        assert job == 500
+        calls.append('snapshot')
+        if damage == 'query':
+            raise PermissionError('private query failure')
+        return rows, 1
+
+    monkeypatch.setattr(native, 'members', members)
+    monkeypatch.setattr(native, 'snapshot', snapshot)
+    monkeypatch.setitem(sys.modules, 'benchmark_sample', SimpleNamespace(windows_peak=peak))
+    if damage in ('peak', 'clock', 'query'):
+        with pytest.raises((ValueError, OSError)):
+            native.joint_snapshot(500)
+    else:
+        observed, missing, interval = native.joint_snapshot(500)
+        assert observed == rows and missing == (2 if damage else 1)
+        assert interval == {'started_ns': 100, 'finished_ns': 110, 'peak_before_bytes': 1000,
+                            'peak_after_bytes': 1100, 'membership_changed': bool(damage)}
+    assert calls[:3] == ['members', 'peak', 'snapshot']
+    if damage != 'query':
+        assert calls == ['members', 'peak', 'snapshot', 'peak', 'members']
+
+
+@pytest.mark.parametrize('damage', ['text', 'counter', 'member', 'peak', 'time', 'limit'])
+def test_joint_memory_projection_rejects_invalid_intervals_before_logging(monkeypatch, damage):
+    module = load(monkeypatch)
+    interval = {'started_ns': 100, 'finished_ns': 110, 'peak_before_bytes': 1000,
+                'peak_after_bytes': 1100, 'membership_changed': False, 'missing': 0,
+                'private_bytes': dict.fromkeys(module.ROLES, 10),
+                'members': dict.fromkeys(module.ROLES, 1)}
+    value = {'coverage': 'sampled-not-lifetime-attribution', 'snapshots': 1, 'missing': 0,
+             'truncated': False, 'roles': {}, 'windows_intervals': [interval]}
+    if damage == 'text':
+        interval['private'] = 'do-not-publish'
+    elif damage == 'counter':
+        interval['private_bytes']['command'] = 'do-not-publish'
+    elif damage == 'member':
+        interval['members']['command'] = 513
+    elif damage == 'peak':
+        interval['peak_after_bytes'] = 999
+    elif damage == 'time':
+        interval['finished_ns'] = 99
+    else:
+        value['windows_intervals'] *= module.MAX_WINDOWS_INTERVALS + 1
+    events = []
+    with pytest.raises(ValueError, match='diagnostic'):
+        module.log_evidence(value, 'native', SimpleNamespace(
+            warning=lambda message, *args: events.append(message % args)))
+    assert not events
 
 
 @pytest.mark.parametrize('damage', [None, 'short', 'truncated', 'duplicate', 'zero'])

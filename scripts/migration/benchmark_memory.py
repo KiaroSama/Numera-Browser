@@ -11,6 +11,8 @@ from numera import proctree, unit_report
 
 MAX_PROCESSES = 512
 MAX_SNAPSHOTS = 1800
+MAX_WINDOWS_INTERVALS = 128
+ROLES = ('command', 'sdk-leader', 'owned-descendant')
 INTERVAL = .05
 
 
@@ -89,7 +91,8 @@ def linux_snapshot(groups, *, root=Path('/proc')):
 
 def log_evidence(value, runtime, logger):
     keys = {'coverage', 'snapshots', 'missing', 'truncated', 'roles'}
-    if (runtime not in ('original', 'native') or not isinstance(value, dict) or set(value) != keys
+    if (runtime not in ('original', 'native') or not isinstance(value, dict)
+            or set(value) not in (keys, keys | {'windows_intervals'})
             or value['coverage'] != 'sampled-not-lifetime-attribution'
             or type(value['truncated']) is not bool
             or any(type(value[key]) is not int or not 0 <= value[key] <= 2**64 - 1
@@ -108,6 +111,26 @@ def log_evidence(value, runtime, logger):
                 or any(type(number) is not int or not 0 <= number <= 2**64 - 1
                        for number in row['max_observed'].values())):
             raise ValueError('Memory diagnostic counters are invalid')
+    intervals = value.get('windows_intervals', [])
+    fields = {'started_ns', 'finished_ns', 'peak_before_bytes', 'peak_after_bytes',
+              'membership_changed', 'missing', 'private_bytes', 'members'}
+    if not isinstance(intervals, list) or len(intervals) > MAX_WINDOWS_INTERVALS:
+        raise ValueError('Memory diagnostic intervals exceed their bound')
+    previous_end = previous_peak = 0
+    for interval in intervals:
+        if (not isinstance(interval, dict) or set(interval) != fields
+                or type(interval['membership_changed']) is not bool
+                or any(type(interval[key]) is not int or not 0 <= interval[key] <= 2**64 - 1
+                       for key in fields - {'membership_changed', 'private_bytes', 'members'})
+                or not previous_end <= interval['started_ns'] <= interval['finished_ns']
+                or not previous_peak <= interval['peak_before_bytes'] <= interval['peak_after_bytes']
+                or any(not isinstance(interval[key], dict) or set(interval[key]) != set(ROLES)
+                       or any(type(number) is not int or not 0 <= number <= 2**64 - 1
+                              for number in interval[key].values())
+                       for key in ('private_bytes', 'members'))
+                or sum(interval['members'].values()) > MAX_PROCESSES):
+            raise ValueError('Memory diagnostic interval is invalid')
+        previous_end, previous_peak = interval['finished_ns'], interval['peak_after_bytes']
     logger.warning('Unmeasured memory coverage=sampled-not-lifetime-attribution runtime=%s '
                    'snapshots=%s missing=%s truncated=%s',
                    runtime, value['snapshots'], value['missing'], value['truncated'])
@@ -115,6 +138,17 @@ def log_evidence(value, runtime, logger):
         for metric, number in row['max_observed'].items():
             logger.warning('Unmeasured memory runtime=%s role=%s identities=%s metric=%s max_observed=%s',
                            runtime, role, row['identities'], metric, number)
+    for index, interval in enumerate(intervals):
+        logger.warning(
+            'Unmeasured memory coverage=non-atomic-current-private runtime=%s interval=%s '
+            'started_ns=%s finished_ns=%s peak_before_bytes=%s peak_after_bytes=%s '
+            'membership_changed=%s missing=%s command_private_bytes=%s sdk_leader_private_bytes=%s '
+            'owned_descendant_private_bytes=%s command_members=%s sdk_leader_members=%s '
+            'owned_descendant_members=%s', runtime, index,
+            *(interval[key] for key in ('started_ns', 'finished_ns', 'peak_before_bytes',
+                                       'peak_after_bytes', 'membership_changed', 'missing')),
+            *(interval['private_bytes'][role] for role in ROLES),
+            *(interval['members'][role] for role in ROLES))
 
 
 class Recorder:
@@ -126,6 +160,7 @@ class Recorder:
         self.truncated = False
         self.roles = {}
         self.identities = {}
+        self.windows_intervals = [] if sys.platform == 'win32' else None
 
     def sample(self):
         now = time.monotonic()
@@ -143,12 +178,15 @@ class Recorder:
         trees = [tree for tree in receipt.trees if tree not in self.prior and tree != self.tree]
         leaders = {(tree.pid, tree.token) for tree in trees}
         try:
+            interval = None
             if sys.platform == 'linux':
                 groups = {tree.group: tree.token for tree in (self.tree, *trees) if tree.kind == 'pgid'}
                 rows, missing = linux_snapshot(groups)
             elif sys.platform == 'win32' and self.job is not None:
-                from benchmark_memory_windows import snapshot
-                rows, missing = snapshot(self.job)
+                from benchmark_memory_windows import joint_snapshot
+                rows, missing, interval = joint_snapshot(self.job)
+                interval.update(missing=missing, private_bytes=dict.fromkeys(ROLES, 0),
+                                members=dict.fromkeys(ROLES, 0))
             else:
                 raise ValueError('Unsupported memory diagnostic platform')
             self.missing += missing
@@ -158,16 +196,29 @@ class Recorder:
                 known = self.identities.setdefault(role, set())
                 if (pid, birth) not in known and sum(map(len, self.identities.values())) >= MAX_PROCESSES:
                     self.truncated = True
+                    if interval is not None:
+                        interval['missing'] += 1
                     continue
                 known.add((pid, birth))
                 maximum = self.roles.setdefault(role, {})
                 for key, value in counters.items():
                     maximum[key] = max(maximum.get(key, 0), value)
+                if interval is not None:
+                    interval['private_bytes'][role] += counters['private_bytes']
+                    interval['members'][role] += 1
+            if interval is not None:
+                if len(self.windows_intervals) < MAX_WINDOWS_INTERVALS:
+                    self.windows_intervals.append(interval)
+                else:
+                    self.truncated = True
         except (OSError, ValueError, IndexError):
             self.missing += 1
 
     def result(self):
-        return {'coverage': 'sampled-not-lifetime-attribution', 'snapshots': self.snapshots,
-                'missing': self.missing, 'truncated': self.truncated,
-                'roles': {role: {'identities': len(self.identities[role]), 'max_observed': values}
-                          for role, values in self.roles.items()}}
+        result = {'coverage': 'sampled-not-lifetime-attribution', 'snapshots': self.snapshots,
+                  'missing': self.missing, 'truncated': self.truncated,
+                  'roles': {role: {'identities': len(self.identities[role]), 'max_observed': values}
+                            for role, values in self.roles.items()}}
+        if self.windows_intervals is not None:
+            result['windows_intervals'] = self.windows_intervals
+        return result

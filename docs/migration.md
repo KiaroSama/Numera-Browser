@@ -7,12 +7,12 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — November 2, 2026
 
-Checkpoint `65e9dbd` ran in manual hosted batch
-[41396648679](https://github.com/KiaroSama/Numera-Browser/actions/runs/41396648679). Linux passed 88 historical proofs and current contracts; all five CLI/HTTP time and memory comparisons passed.
-All three desktop platforms passed the occupied recovery-file regression. Linux/macOS also caught the exact old-source overwrite assertion, restored fixed bytes and passed current contracts after the library-target correction. This is not updater activation or native-signing acceptance.
-All eight Windows/Linux SDK legs passed their native functional test and reached browser performance validation.
-All eight browser performance gates remain unaccepted; no new per-leg numeric aggregate is claimed. Previous `3be5362` measurements were five time no-regression/three inconclusive and eight memory inconclusive.
-Windows completed 63 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached.
+Checkpoint `16ebe9d` ran in manual hosted batch
+[41406334385](https://github.com/KiaroSama/Numera-Browser/actions/runs/41406334385). Linux passed 89 historical proofs and current contracts, including 651 finite-number comparisons; all five CLI/HTTP time and memory comparisons passed.
+The prior batch proved occupied recovery-file preservation on all three desktop platforms, including exact old-source failure/restoration on Linux/macOS. This is not updater activation or native-signing acceptance.
+Seven Windows/Linux SDK legs passed their native functional test and reached browser performance validation; Linux Camoufox refused Ubuntu 26.04 before SDK execution because its runtime contract requires 24.04.
+All seven measured browser performance gates remain unaccepted. The live matrix is pinned to supported Ubuntu 24.04, pending hosted validation; separate unmeasured Windows diagnostics now bracket current process-private memory with job peaks, without changing acceptance.
+Windows completed 49 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached.
 The historical-only line-table experiment added metadata over CI's existing debug=0 baseline; removing it did not establish complete Windows acceptance. Earlier resource observations and 17 passing controls are diagnostic evidence, not a controlled speedup or a resolved compiler bottleneck.
 Earlier Linux log-root, nine-case entry comparison and detached/server acceptance passed; generic logging and full first-run compatibility remain incomplete.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
@@ -244,7 +244,7 @@ performance or rollback acceptance.
   storage also remains an explicitly documented limitation. Signing requires a
   successful independent CodeQL verdict for the exact SHA, in addition to
   successful scanner jobs; missing or failed verdicts block publication.
-- ASCII controls and 315 Unicode core/HTTP/argv comparisons passed on Linux after exact old-source failure/restoration; 651 finite-number display comparisons are prepared, not yet executed.
+- ASCII controls, 315 Unicode and 651 finite-number core/HTTP/argv comparisons passed on Linux after exact old-source failure/restoration; Windows current acceptance remains blocked by historical compilation.
   Smaller Rust errors retain detached ownership, and existing Cloak executable handoff passed. The
   SDK adapter still refuses missing selections instead of acquiring during launch.
   The existing Cloak CLI capability map, temporary-path fixture and deterministic

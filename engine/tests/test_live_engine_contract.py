@@ -96,7 +96,7 @@ def test_every_supported_engine_is_required_on_both_platforms():
     matrix = jobs["engine-live"]
     engines = re.search(r"engine: \[([^\]]+)\]", matrix).group(1).split(", ")
     assert set(engines) == set(drivers.names()) == set(live.ENGINES)
-    assert "os: [ubuntu-latest, windows-latest]" in matrix
+    assert "os: [ubuntu-24.04, windows-latest]" in matrix
     pins = re.findall(r"- engine: (\w+)\n\s+package: ([^\n]+)", matrix)
     assert {name for name, _ in pins} == set(engines)
     assert all(re.fullmatch(r"[a-z]+(?:\[geoip\])?==\d+\.\d+\.\d+", pin)

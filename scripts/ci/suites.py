@@ -467,7 +467,7 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
     if (windows_strategy['matrix'] != {'shard': [0, 1, 2, 3]}
             or windows_strategy['max-parallel'] != 2 or windows_strategy['fail-fast'] is not False):
         raise ValueError('Windows source partitions must remain complete and independently diagnostic')
-    if jobs['engine-live']['strategy']['matrix']['os'] != ['ubuntu-latest', 'windows-latest']:
+    if jobs['engine-live']['strategy']['matrix']['os'] != ['ubuntu-24.04', 'windows-latest']:
         raise ValueError('SDK coverage must retain both supported native ownership platforms')
     if set(jobs['engine-live']['strategy']['matrix']['engine']) != {'playwright', 'patchright', 'camoufox', 'cloak'}:
         raise ValueError('A supported SDK is absent from the required live matrix')

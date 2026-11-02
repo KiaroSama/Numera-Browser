@@ -388,7 +388,8 @@ def test_browser_sample_requires_natural_nested_settlement_before_peak(monkeypat
         assert calls.count('direct-cleanup') == calls.count('sdk-cleanup') == 1
 
 
-@pytest.mark.parametrize('damage', [None, 'missing', 'shallow', 'conditional', 'duplicate', 'late'])
+@pytest.mark.parametrize('damage', [None, 'missing', 'shallow', 'conditional', 'duplicate', 'late',
+                                    'moving-host', 'missing-windows'])
 def test_browser_workflow_requires_original_history_before_acceptance(monkeypatch, damage):
     import yaml
 
@@ -410,12 +411,17 @@ def test_browser_workflow_requires_original_history_before_acceptance(monkeypatc
     elif damage == 'late':
         steps.remove(checkout)
         steps.append(checkout)
+    elif damage == 'moving-host':
+        document['jobs']['engine-live']['strategy']['matrix']['os'][0] = 'ubuntu-latest'
+    elif damage == 'missing-windows':
+        document['jobs']['engine-live']['strategy']['matrix']['os'].remove('windows-latest')
     changed = yaml.safe_dump(document)
     read_text = Path.read_text
     monkeypatch.setattr(Path, 'read_text', lambda selected, *args, **kwargs:
                         changed if selected == path else read_text(selected, *args, **kwargs))
     if damage:
-        with pytest.raises(ValueError, match='original history'):
+        symptom = 'supported native ownership platforms' if damage in ('moving-host', 'missing-windows') else 'original history'
+        with pytest.raises(ValueError, match=symptom):
             coverage.check_workflows()
     else:
         assert coverage.check_workflows()['python'] > 0

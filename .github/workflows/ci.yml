@@ -276,7 +276,8 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # The pinned browser runtime packages require Ubuntu 24.04.
+        os: [ubuntu-24.04, windows-latest]
         engine: [playwright, patchright, camoufox, cloak]
         include:
           - engine: playwright

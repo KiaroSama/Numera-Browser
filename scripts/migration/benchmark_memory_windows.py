@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ctypes
+import time
 
 MAX_PROCESSES = 512
 
@@ -85,3 +86,23 @@ def snapshot(job):
             if not kernel.CloseHandle(handle):
                 raise RuntimeError('Owned memory diagnostic process handle did not close')
     return rows, missing
+
+
+def joint_snapshot(job):
+    from benchmark_sample import windows_peak
+
+    kernel = api()
+    started = time.monotonic_ns()
+    before = set(members(kernel, job))
+    peak_before = windows_peak(job)['bytes']
+    rows, missing = snapshot(job)
+    peak_after = windows_peak(job)['bytes']
+    changed = set(members(kernel, job)) != before
+    finished = time.monotonic_ns()
+    if finished < started or peak_after < peak_before:
+        raise ValueError('Owned memory diagnostic counters decreased')
+    return rows, missing + int(changed), {
+        'started_ns': started, 'finished_ns': finished,
+        'peak_before_bytes': peak_before, 'peak_after_bytes': peak_after,
+        'membership_changed': changed,
+    }

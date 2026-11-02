@@ -175,7 +175,17 @@ def test_entrypoint_refuses_unproved_host_observation_or_install(
 
 
 def test_workflow_keeps_camoufox_runtime_and_real_sdk_acceptance_bounded():
+    import yaml
+
     workflow = (ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
+    job = yaml.safe_load(workflow)['jobs']['engine-live']
+    strategy = job['strategy']
+    assert job['runs-on'] == '${{ matrix.os }}'
+    assert strategy['matrix']['os'] == ['ubuntu-24.04', 'windows-latest'], \
+        'Live SDK jobs must use the Ubuntu release required by their runtime packages'
+    assert strategy['matrix']['engine'] == ['playwright', 'patchright', 'camoufox', 'cloak']
+    assert strategy['max-parallel'] == 2 and strategy['fail-fast'] is False
+    assert job['timeout-minutes'] == 35
     start = workflow.index('      - name: Install Firefox system dependencies\n')
     step = workflow[start:workflow.index('      - name:', start + 10)]
     assert "if: runner.os == 'Linux' && matrix.engine == 'camoufox'" in step
