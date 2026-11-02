@@ -7,6 +7,117 @@ use std::{path::Path, process::Command, time::Duration};
 mod common;
 
 #[test]
+fn direct_copy_access_times_match_original_without_changing_copytree_snapshots()
+-> Result<(), Box<dyn std::error::Error>> {
+    const OBSERVER: &str = r#"
+import json,os,shutil,stat,sys
+from pathlib import Path
+repository,root=map(Path,sys.argv[1:3])
+operation=sys.argv[3]
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.firstrun import import_from
+from run_logging import run_log
+names=['tokens.json','profiles/existing/state.bin','profiles/new/state.bin',
+       'profiles/new/nested/deep.bin','config.json']
+accessed=1600000000*10**9
+modified=1500000000*10**9
+source,destination=root/'source',root/'destination'
+
+def prepare():
+    (source/'profiles/existing').mkdir(parents=True)
+    (source/'profiles/new/nested').mkdir(parents=True)
+    (destination/'profiles/existing').mkdir(parents=True)
+    for index,name in enumerate(names):
+        path=source/name
+        path.write_bytes(bytes([0,255,10,index]))
+        path.chmod(0o640)
+        os.utime(path,ns=(accessed,modified+index))
+    path=destination/'config.json'
+    path.write_bytes(b'destination wins')
+    path.chmod(0o600)
+    os.utime(path,ns=(accessed-10**9,modified-10**9))
+
+def snapshot():
+    rows={}
+    for name in names:
+        src,dst=(source/name).stat(),(destination/name).stat()
+        rows[name]={'source_access_changed':src.st_atime_ns!=accessed,
+                    'copied_initial_access':dst.st_atime_ns==accessed,
+                    'copied_post_read_access':dst.st_atime_ns==src.st_atime_ns,
+                    'modified':dst.st_mtime_ns,'mode':stat.S_IMODE(dst.st_mode)}
+    for name in names:
+        rows[name]['bytes']=list((destination/name).read_bytes())
+        rows[name]['source_bytes']=list((source/name).read_bytes())
+    return rows
+
+with run_log('first-run-access-time-oracle',root/'logs') as log:
+    if operation=='original':
+        prepare()
+        first=import_from(source,destination)
+        again=import_from(source,destination)
+        rows=snapshot()
+        assert not first['failed'] and not again['failed']
+        assert all(rows[name]['source_access_changed'] for name in names[:-1]), \
+            'Hosted filesystem did not exercise source access-time updates'
+        print(json.dumps({'first':first,'again':again,'rows':rows},ensure_ascii=True))
+        shutil.rmtree(source)
+        shutil.rmtree(destination)
+        prepare()
+    else:
+        print(json.dumps(snapshot(),ensure_ascii=True))
+    log.info('Observed direct/copytree access-time cases=%s mode=%s',len(names),operation)
+"#;
+    let temporary = common::TempDirectory::new("first-run-access-times")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let observe = |operation: &str| -> Result<Value, Box<dyn std::error::Error>> {
+        let mut command = Command::new(
+            std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+        );
+        command
+            .args(["-I", "-B", "-c", OBSERVER])
+            .arg(repository)
+            .arg(temporary.path())
+            .arg(operation);
+        let output = capture::run(
+            &mut command,
+            capture::Limits {
+                wall: Duration::from_secs(20),
+                idle: Duration::from_secs(15),
+                bytes: 131072,
+                cleanup: Duration::from_secs(5),
+            },
+        )?;
+        assert_eq!(output.exit, 0, "Original access-time observer failed");
+        Ok(serde_json::from_slice(&output.stdout)?)
+    };
+    let expected = observe("original")?;
+    let source = temporary.path().join("source");
+    let destination = temporary.path().join("destination");
+    assert_eq!(
+        serde_json::to_value(import_from(&source, &destination)?)?,
+        expected["first"],
+        "Access-time import summary differs"
+    );
+    assert_eq!(
+        serde_json::to_value(import_from(&source, &destination)?)?,
+        expected["again"],
+        "Access-time repeat import summary differs"
+    );
+    let actual = observe("readback")?;
+    assert_eq!(actual.as_object().map(|rows| rows.len()), Some(5));
+    assert_eq!(
+        actual, expected["rows"],
+        "First-run access-time copy policy differs"
+    );
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn imported_attributes_match_original_without_replacing_destination_metadata()
 -> Result<(), Box<dyn std::error::Error>> {
     const OBSERVER: &str = r#"

@@ -29,7 +29,7 @@ pub struct Summary {
     pub profiles: usize,
 }
 
-fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
+fn copy_file(source: &Path, destination: &Path, merging: bool) -> io::Result<()> {
     let metadata = fs::metadata(source)?;
     #[cfg(unix)]
     {
@@ -51,6 +51,11 @@ fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
         .open(destination)?;
     let result = (|| {
         io::copy(&mut input, &mut output)?;
+        // Direct copy2 re-stats after reading; copytree reuses DirEntry's cache.
+        #[cfg(unix)]
+        let metadata = if merging { input.metadata()? } else { metadata };
+        #[cfg(not(unix))]
+        let _ = merging;
         output.set_times(
             FileTimes::new()
                 .set_accessed(metadata.accessed()?)
@@ -145,7 +150,7 @@ fn merge_dir(
             fs::set_permissions(&target, metadata.permissions())?;
             added += 1;
         } else {
-            copy_file(&path, &target)?;
+            copy_file(&path, &target, merging)?;
             added += 1;
         }
     }
@@ -185,7 +190,7 @@ pub fn import_from(source: &Path, destination: &Path) -> io::Result<Summary> {
                 if dst.try_exists()? {
                     summary.skipped.push((*name).into());
                 } else {
-                    copy_file(&src, &dst)?;
+                    copy_file(&src, &dst, true)?;
                     summary.copied.push((*name).into());
                 }
             }

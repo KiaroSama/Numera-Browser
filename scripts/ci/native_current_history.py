@@ -429,4 +429,13 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/validation.rs':
                   'd67e56a33198c01e40b4e2fe0ddcfbb4429dd83c4de45c4972e65ed21b486066'},
     },
+    {
+        'target': 'first_run_metadata_parity',
+        'test': 'direct_copy_access_times_match_original_without_changing_copytree_snapshots',
+        'symptom': 'First-run access-time copy policy differs',
+        'commit': 'b6bab47c1f34872e11061586ae5c5291cfe1c056',
+        'platform': 'linux',
+        'files': {'engine-rust/src/storage/first_run.rs':
+                  '7f07dcc91641071ebb5e5576c3e0bcf3186400fd9e0d199f227231503a2ea002'},
+    },
 )
