@@ -2,6 +2,8 @@ use numera_core::{ownership::capture, runtime_log::RuntimeLog};
 use serde::Deserialize;
 use std::{fs, path::Path, process::Command, time::Duration};
 mod common;
+#[path = "logging_parity/retention.rs"]
+mod retention;
 
 #[derive(Deserialize)]
 struct Observation {

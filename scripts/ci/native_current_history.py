@@ -389,4 +389,12 @@ CURRENT_CALLER_REGRESSIONS = (
                   'engine-rust/src/cli/positional_tokens.rs':
                   'cfe23726c81a6a2f04c827c6dc68f4da68bfcc00cffce2c84bec95847d63b093'},
     },
+    {
+        'target': 'logging_parity',
+        'test': 'retention::run_retention_matches_original_mtime_order_and_namespace',
+        'symptom': 'Runtime log retention differs',
+        'commit': '3be53623c6dbd55e22ab23dcbe28dc7c4852053d',
+        'files': {'engine-rust/src/runtime_log.rs':
+                  '78db62948c0519ffadbcf154574caac10078bee0577c6269a0161e4191743590'},
+    },
 )

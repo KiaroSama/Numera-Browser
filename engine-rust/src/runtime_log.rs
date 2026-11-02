@@ -1,5 +1,8 @@
+#[path = "runtime_log_files.rs"]
+mod files;
+
 use std::{
-    fs::{self, File, OpenOptions},
+    fs::{self, File},
     io::{self, Write},
     path::{Path, PathBuf},
     sync::Mutex,
@@ -59,6 +62,16 @@ impl RuntimeLog {
     }
     fn open(directory: &Path, component: &'static str, console_fallback: bool) -> Self {
         let opened = (|| -> io::Result<(File, PathBuf)> {
+            if component.is_empty()
+                || !component
+                    .bytes()
+                    .all(|byte| byte.is_ascii_alphanumeric() || b"-_".contains(&byte))
+            {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Invalid runtime log component",
+                ));
+            }
             fs::create_dir_all(directory)?;
             let stamp = chrono::Utc::now()
                 .format("%Y-%m-%d_%H-%M-%S_UTC")
@@ -70,8 +83,11 @@ impl RuntimeLog {
                     format!("{component}_{stamp}.{suffix}.log")
                 };
                 let path = directory.join(name);
-                match OpenOptions::new().write(true).create_new(true).open(&path) {
-                    Ok(file) => return Ok((file, path)),
+                match files::create(&path) {
+                    Ok(file) => {
+                        let _ = files::prune(directory, component, &path);
+                        return Ok((file, path));
+                    }
                     Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
                     Err(error) => return Err(error),
                 }
