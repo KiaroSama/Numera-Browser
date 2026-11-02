@@ -405,4 +405,12 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/storage/first_run.rs':
                   'a7e702675adb3f12e7495d625d0cb06aa400c594d4997526f8027b6dbb578f73'},
     },
+    {
+        'target': 'validation_parity',
+        'test': 'unicode_representation_matches_original_public_validation_and_argv',
+        'symptom': 'Unicode representation differs',
+        'commit': '57f0d46506f11248640c2fa2095a05e087c20c65',
+        'files': {'engine-rust/src/validation.rs':
+                  '5397a1882c0a5cdf867e4d21a353322da76129db2d982fe6093c4eeb9c7d0591'},
+    },
 )

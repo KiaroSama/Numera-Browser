@@ -151,6 +151,116 @@ with run_log('ascii-refusal-representation-oracle',parent/'logs') as log:
 }
 
 #[test]
+fn unicode_representation_matches_original_public_validation_and_argv()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{cli, http::profile_fields, ownership::capture};
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("unicode-representation")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,sys,unicodedata
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import cli,mcp,write_contract
+from numera.server.routes_profiles import check_fields
+from run_logging import run_log
+assert unicodedata.unidata_version=='15.1.0','Frozen Unicode observer version differs'
+points=list(range(256))+[
+    0x300,0x374,0x378,0x61c,0x1680,0x180e,0x2000,0x200b,0x200c,0x200d,
+    0x2028,0x2029,0x202e,0x2060,0x2066,0x2069,0x20ac,0x3000,0xd7ff,
+    0xe000,0xf8ff,0xf900,0xfdcf,0xfdd0,0xfdef,0xfdf0,0xfe0f,0xfeff,
+    0xfffd,0xfffe,0xffff,0x10000,0x1bca0,0x1d173,0x1f40d,0x1f600,
+    0x1fae8,0x1fae9,0x2ebf0,0x31350,0xe0001,0xe0020,0xe007f,0xe0100,
+    0xeffff,0xf0000,0xffffd,0xffffe,0xfffff,0x100000,0x10fffd,0x10fffe,0x10ffff]
+values=[chr(point) for point in points]
+values += ["a'\"\\\n\t\r ‍\U000e0020z",'مرحبا 日本語 🐍',
+           'a'*34+'‍'+'b'*8,'a'*35+' '+'b'*8,
+           'a'*30+'\U000e0020'+'b'*8,'a'*34+'🐍'+'b'*8]
+path,parser,_=next(row for row in mcp._walk(cli.build_parser(),(),{}) if row[0]==('show',))
+rows=[]
+with run_log('unicode-representation-oracle',parent/'logs') as log:
+    for value in values:
+        record={'name':{'nested':[value,True,None],value:'tail'},
+                'proxy':{'password':['private-control-'+value],
+                         'pass':{'private-control':value}}}
+        http={value:None}
+        arguments={'ref':[{'nested':[value,True,None],value:'tail'},value]}
+        before=json.dumps([record,http,arguments],ensure_ascii=True)
+        core=write_contract.profile_problems(record,kind=write_contract.DASHBOARD_PATCH)
+        assert len(core)==3 and all('private-control' not in error for error in core)
+        rows.append({'input':record,'core':core,'http_input':http,
+                     'http':check_fields(http,where='profile'),'arguments':arguments,
+                     'argv':mcp._argv(path,parser,arguments)})
+        assert json.dumps([record,http,arguments],ensure_ascii=True)==before
+    log.info('Observed Unicode representation cases=%s',len(rows))
+    print(json.dumps(rows,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .arg(temporary.path())
+        .env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 2 * 1024 * 1024,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        observed.exit, 0,
+        "Original Unicode representation observer failed"
+    );
+    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(
+        cases.len(),
+        315,
+        "Unicode representation observations missing"
+    );
+    for (index, case) in cases.iter().enumerate() {
+        let input = case["input"].clone();
+        assert_eq!(
+            serde_json::to_value(profile_problems(&input, "dashboard patch")?)?,
+            case["core"],
+            "Unicode representation differs: core case={index}"
+        );
+        assert_eq!(
+            serde_json::to_value(profile_fields::check(&case["http_input"], "profile", &[])?)?,
+            case["http"],
+            "Unicode representation differs: HTTP case={index}"
+        );
+        assert_eq!(
+            serde_json::to_value(cli::reflection::argv(
+                "show",
+                case["arguments"]
+                    .as_object()
+                    .ok_or("Source arguments missing")?
+            )?)?,
+            case["argv"],
+            "Unicode representation differs: argv case={index}"
+        );
+        assert_eq!(input, case["input"], "Validation changed its input");
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn uncoerced_write_validation_matches_source() -> Result<(), Box<dyn std::error::Error>> {
     let oracle: Value = serde_json::from_str(include_str!("fixtures/validation.json"))?;
     let cases = oracle["cases"]

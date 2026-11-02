@@ -29,6 +29,19 @@ pub(crate) fn kind(value: &Value) -> &'static str {
         }
     }
 }
+fn printable(character: char) -> bool {
+    if character.is_ascii() {
+        return !character.is_ascii_control();
+    }
+    static PRINTABLE: OnceLock<regex::Regex> = OnceLock::new();
+    // The frozen Python 3.13 oracle uses Unicode 15.1 printability.
+    PRINTABLE
+        .get_or_init(|| {
+            regex::Regex::new(r"\A[[\p{L}\p{M}\p{N}\p{P}\p{S}]&&\p{Age:15.1}]\z")
+                .expect("Frozen printable expression is valid")
+        })
+        .is_match(character.encode_utf8(&mut [0; 4]))
+}
 pub(crate) fn repr(value: &Value) -> String {
     match value {
         Value::Null => "None".into(),
@@ -49,8 +62,13 @@ pub(crate) fn repr(value: &Value) -> String {
                         body.push('\\');
                         body.push(c);
                     }
-                    c if c.is_ascii_control() => {
-                        body.push_str(&format!("\\x{:02x}", u32::from(c)));
+                    c if !printable(c) => {
+                        let code = u32::from(c);
+                        body.push_str(&match code {
+                            0..=0xff => format!("\\x{code:02x}"),
+                            0x100..=0xffff => format!("\\u{code:04x}"),
+                            _ => format!("\\U{code:08x}"),
+                        });
                     }
                     c => body.push(c),
                 }

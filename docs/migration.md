@@ -7,12 +7,12 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — November 2, 2026
 
-Checkpoint `09d6fd8` ran in manual hosted batch
-[41381198215](https://github.com/KiaroSama/Numera-Browser/actions/runs/41381198215). Linux passed 87 historical proofs and current contracts, including nested first-run copying and all four retention tests;
-the permission-literal lint correction also passed macOS. All three desktop contract jobs succeeded; this does not certify actual updater activation or native signing.
+Checkpoint `57f0d46` ran in manual hosted batch
+[41388799636](https://github.com/KiaroSama/Numera-Browser/actions/runs/41388799636). Linux passed 87 historical proofs and current contracts; HTTP-list timing was inconclusive, while the other four time and all five memory comparisons passed.
+Windows desktop contracts passed the occupied recovery-file regression. Linux/macOS historical verification selected the binary instead of its library and correctly refused zero tests; the prepared runner correction selects the library. This is not updater activation or native-signing acceptance.
 All eight Windows/Linux SDK legs passed their native functional test and reached browser performance validation.
-All eight browser performance gates remain unaccepted. This checkpoint passed all five Linux CLI/HTTP time and memory comparisons; previous `3be5362` browser measurements were five time no-regression/three inconclusive and eight memory inconclusive, not this checkpoint's numeric verdicts.
-Windows completed 70 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached.
+All eight browser performance gates remain unaccepted; no new per-leg numeric aggregate is claimed. Previous `3be5362` measurements were five time no-regression/three inconclusive and eight memory inconclusive.
+Windows completed 67 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached.
 The historical-only line-table experiment added metadata over CI's existing debug=0 baseline; removing it did not establish complete Windows acceptance. Earlier resource observations and 17 passing controls are diagnostic evidence, not a controlled speedup or a resolved compiler bottleneck.
 Earlier Linux log-root, nine-case entry comparison and detached/server acceptance passed; generic logging and full first-run compatibility remain incomplete.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
@@ -244,8 +244,8 @@ performance or rollback acceptance.
   storage also remains an explicitly documented limitation. Signing requires a
   successful independent CodeQL verdict for the exact SHA, in addition to
   successful scanner jobs; missing or failed verdicts block publication.
-- Hosted verification confirmed the control-character validation, smaller Rust
-  error retaining detached ownership, and existing Cloak executable handoff. The
+- ASCII control diagnostics passed hosted verification; Unicode printability and 315 core/HTTP/argv comparisons are prepared, not yet executed.
+  Smaller Rust errors retain detached ownership, and existing Cloak executable handoff passed. The
   SDK adapter still refuses missing selections instead of acquiring during launch.
   The existing Cloak CLI capability map, temporary-path fixture and deterministic
   shared-deadline correction now pass hosted Linux and macOS source checks. The

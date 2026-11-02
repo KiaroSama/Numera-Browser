@@ -31,7 +31,7 @@ def prove(root: Path, logger: logging.Logger) -> None:
     subprocess.run(['git', '-C', str(root), 'diff', '--exit-code', 'HEAD', '--', *CASE['files']],
                    stdin=subprocess.DEVNULL, check=True, timeout=10)
     base = ['cargo', 'test', '--manifest-path', str(root / 'desktop/src-tauri/Cargo.toml'),
-            '--locked', '--offline', '--no-default-features', '--bin', 'numera']
+            '--locked', '--offline', '--no-default-features', '--lib']
     evidence = FailureEvidence(CASE)
     logger.addHandler(evidence)
     try:

@@ -51,7 +51,7 @@ def test_desktop_history_requires_semantic_failure_and_fixed_source_restoration(
             assert source.read_bytes() == fixed
             return
         assert command == ['cargo', 'test', '--manifest-path', str(tmp_path / 'desktop/src-tauri/Cargo.toml'),
-                           '--locked', '--offline', '--no-default-features', '--bin', 'numera', '--no-run']
+                           '--locked', '--offline', '--no-default-features', '--lib', '--no-run']
         assert options == {'stdin': module.subprocess.DEVNULL, 'check': True}
         assert source.read_bytes() == old
         if damage == 'compile':
@@ -62,7 +62,7 @@ def test_desktop_history_requires_semantic_failure_and_fixed_source_restoration(
         assert source.read_bytes() == old
         assert (wall, idle) == (180, 90)
         assert command == ['cargo', 'test', '--manifest-path', str(tmp_path / 'desktop/src-tauri/Cargo.toml'),
-                           '--locked', '--offline', '--no-default-features', '--bin', 'numera', '--',
+                           '--locked', '--offline', '--no-default-features', '--lib', '--',
                            case['test'], '--exact', '--test-threads=1', '--color=never']
         if damage == 'run':
             raise TimeoutError('Fixture runner failed')
