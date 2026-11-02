@@ -195,7 +195,10 @@ fn number_problem(field: &str, value: &Value, rule: &Value, optional: bool) -> O
         ));
     }
     let fractions = rule["fractions"].as_array();
-    if rule["kind"] == "int" && n.fract() != 0.0 && !fractions.is_some_and(|v| v.contains(value)) {
+    if rule["kind"] == "int"
+        && n.fract() != 0.0
+        && !fractions.is_some_and(|values| values.iter().any(|value| value.as_f64() == Some(n)))
+    {
         let allowed = fractions
             .filter(|v| !v.is_empty())
             .map_or(String::new(), |v| {

@@ -386,6 +386,103 @@ with run_log('numeric-representation-oracle',parent/'logs') as log:
 }
 
 #[test]
+fn permitted_fraction_spellings_match_original_numeric_admission()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{http::profile_fields, ownership::capture, validation};
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("fraction-admission")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import copy,json,math,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import write_contract
+from numera.server.routes_profiles import check_fields
+from run_logging import run_log
+base=json.loads((repository/'engine-rust/tests/fixtures/repo-write.json').read_text(encoding='utf-8'))['cases'][0]['initial']['profiles']
+texts=['0.25','0.250','25e-2','250E-3','0.25000000000000001',
+       '2.5000000000000001e-1','0.5','0.50','5e-1','500E-3',
+       '0.50000000000000001','5.0000000000000001e-1']
+for value in (0.25,0.5):
+    for neighbor in (math.nextafter(value,0.0),value,math.nextafter(value,math.inf)):
+        texts.extend(json.dumps(sign*neighbor) for sign in (1,-1))
+texts += ['0','0.0','-0.0','1','1.0','10e-1','1024','1024.0',
+          '1025','1025.0','-1','-1.0','0.125','0.75','1e-400',
+          '18446744073709551616','9'*100,'true','false','null','"0.25"','[]','{}']
+rows=[]
+with run_log('fraction-admission-oracle',parent/'logs') as log:
+    for text in texts:
+        value=json.loads(text)
+        record=copy.deepcopy(base)
+        record['fingerprint']['device_memory']=value
+        patch={'memory':value}
+        before=json.dumps([record,patch],ensure_ascii=True)
+        rows.append({'text':text,
+                     'engine':write_contract.profile_problems(record,kind=write_contract.ENGINE_RECORD),
+                     'patch':write_contract.profile_problems(patch,kind=write_contract.DASHBOARD_PATCH),
+                     'flat':([str(error)] if (error:=write_contract.flat_number_problem('memory',value,'profile')) else []),
+                     'http':check_fields(patch,where='profile')})
+        assert json.dumps([record,patch],ensure_ascii=True)==before
+    assert len(rows)==47
+    assert all(not row['patch'] and not row['http'] for row in rows[:12])
+    log.info('Observed fractional numeric admission cases=%s',len(rows))
+    print(json.dumps(rows,ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path()).env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 2 * 1024 * 1024,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        observed.exit, 0,
+        "Original fractional admission observer failed"
+    );
+    let rows: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(rows.len(), 47, "Fractional admission observations missing");
+    let fixture: Value = serde_json::from_str(include_str!("fixtures/repo-write.json"))?;
+    let base = &fixture["cases"][0]["initial"]["profiles"];
+    for (index, row) in rows.iter().enumerate() {
+        let value: Value = serde_json::from_str(row["text"].as_str().ok_or("Input missing")?)?;
+        let mut record = base.clone();
+        record["fingerprint"]["device_memory"] = value.clone();
+        let patch = serde_json::json!({"memory": value});
+        let before = (record.clone(), patch.clone());
+        for (label, actual) in [
+            ("engine", profile_problems(&record, "engine record")?),
+            ("patch", profile_problems(&patch, "dashboard patch")?),
+            ("flat", validation::flat_number_problems(&patch)?),
+            ("http", profile_fields::check(&patch, "profile", &[])?),
+        ] {
+            assert_eq!(
+                serde_json::to_value(actual)?,
+                row[label],
+                "Fraction numeric admission differs: {label} case={index}"
+            );
+        }
+        assert_eq!(
+            (record, patch),
+            before,
+            "Numeric validation changed its input"
+        );
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn uncoerced_write_validation_matches_source() -> Result<(), Box<dyn std::error::Error>> {
     let oracle: Value = serde_json::from_str(include_str!("fixtures/validation.json"))?;
     let cases = oracle["cases"]

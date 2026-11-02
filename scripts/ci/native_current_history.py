@@ -421,4 +421,12 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/validation.rs':
                   '01a2a4718ff2792ffd80ab5f130261007409ed58e3aea1ffaf28d8eae3327158'},
     },
+    {
+        'target': 'validation_parity',
+        'test': 'permitted_fraction_spellings_match_original_numeric_admission',
+        'symptom': 'Fraction numeric admission differs',
+        'commit': '75acb553e30728dd58472facc5acd09791de38a1',
+        'files': {'engine-rust/src/validation.rs':
+                  'd67e56a33198c01e40b4e2fe0ddcfbb4429dd83c4de45c4972e65ed21b486066'},
+    },
 )
