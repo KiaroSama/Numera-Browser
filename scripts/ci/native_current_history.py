@@ -455,4 +455,13 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/storage/first_run.rs':
                   '6e865c0e82abea1c6cdb7ad793d5bc2eab39c05bedc37cfbd311d92854e5da1b'},
     },
+    {
+        'target': 'first_run_failure',
+        'test': 'profile_count::advisory_profile_count_matches_original_when_destination_scan_is_denied',
+        'symptom': 'First-run advisory profile count differs',
+        'commit': 'c2615a4e5e90afc60c943142818e37906a952a47',
+        'platform': 'linux',
+        'files': {'engine-rust/src/storage/first_run.rs':
+                  '81ebc1b78e948ce3c23a275db4b69e15c2555c6c7f2938b5d1a80b447f8669f8'},
+    },
 )

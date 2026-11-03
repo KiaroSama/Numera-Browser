@@ -241,11 +241,15 @@ pub fn import_from(source: &Path, destination: &Path) -> io::Result<Summary> {
     }
     let profiles = destination.join("profiles");
     if profiles.is_dir() {
-        for entry in fs::read_dir(profiles)? {
-            if super::paths::json_filename(&entry?.path()) {
-                summary.profiles += 1;
-            }
-        }
+        // Python 3.13 glob suppresses scan errors, including errors midway
+        // through enumeration. This advisory count must not discard copy results.
+        summary.profiles = fs::read_dir(profiles)
+            .and_then(|mut entries| {
+                entries.try_fold(0, |count, entry| {
+                    Ok(count + usize::from(super::paths::json_filename(&entry?.path())))
+                })
+            })
+            .unwrap_or(0);
     }
     Ok(summary)
 }

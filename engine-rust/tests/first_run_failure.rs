@@ -6,6 +6,9 @@ mod common;
 #[cfg(unix)]
 #[path = "first_run_failure/copytree_errors.rs"]
 mod copytree_errors;
+#[cfg(unix)]
+#[path = "first_run_failure/profile_count.rs"]
+mod profile_count;
 
 #[cfg(unix)]
 #[test]
