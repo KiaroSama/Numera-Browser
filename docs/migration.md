@@ -5,21 +5,21 @@ The accepted boundary is [ADR0001](adr/0001-parity-gated-rust-migration.md); Pyt
 [candidate executable](migration-candidate.md), **not an installed replacement**.
 Passing library or narrow entrypoint tests does not certify a finished migration.
 
-## Current integration status — November 3, 2026
+## Current integration status — November 4, 2026
 
-Checkpoint `77cab4f` ran in manual hosted batch
-[41682991782](https://github.com/KiaroSama/Numera-Browser/actions/runs/41682991782). Linux passed 95 historical proofs, including the old long-only version-flag failure, fixed-byte restoration and all 85 current Unix version-admission cases. All four original-derived permission/count cases, strict lint, current native contracts and five CLI/HTTP time-and-memory comparisons passed; these do not establish full platform parity.
-All three desktop shell contract jobs passed; the separate original-runtime macOS job was cancelled before any step, with cause unverified. Prior occupied recovery-file tests remain narrow evidence, not updater activation or native-signing acceptance.
+Checkpoint `dccccf2` ran in manual hosted batch
+[41711277511](https://github.com/KiaroSama/Numera-Browser/actions/runs/41711277511). Linux passed 96 historical proofs, including deferred-display admission failures, fixed-byte restoration and all 117 current Unix version-admission cases. All four original-derived permission/count cases, strict lint, current native contracts and five CLI/HTTP time-and-memory comparisons passed; these do not establish full platform parity.
+All three desktop shell contract jobs and the original-runtime macOS job passed. The preceding macOS cancellation occurred before acquisition because of hosted-runner capacity, not an application assertion. Prior occupied recovery-file tests remain narrow evidence, not updater activation or native-signing acceptance.
 All eight Windows/Linux SDK legs passed source/native functional tests and relocated execution; the supported Ubuntu 24.04 pin resolved Camoufox's earlier pre-SDK host refusal.
-All eight measured browser performance gates remain unaccepted: five latency ranges passed and three overlapped; all eight memory ranges overlapped. Separate unmeasured Windows observations do not identify a removable allocation or alter acceptance.
-Windows completed 48 historical proofs before diagnostic-cache sanitization reported its line bound after 755.129 seconds, within the unchanged 900-second ceiling; current acceptance was not reached. The bounded sanitizer now recognizes exact scoped INFO trace records before applying the ordinary diagnostic-line limit, without raising cache bounds or discarding other diagnostics. The unproved codegen16 experiment remains removed; no repeatable speedup or completed Windows acceptance is established.
+All eight measured browser performance gates remain unaccepted: six latency ranges passed and two overlapped; all eight memory ranges overlapped. Separate unmeasured Windows observations do not identify a removable allocation or alter acceptance.
+Windows completed 60 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached. Cache sanitization no longer failed, and all 67 diagnostic controls passed in 0.82 seconds. The bounded sanitizer recognizes exact scoped INFO records before the ordinary diagnostic-line limit, without raising cache bounds or discarding other diagnostics. The unproved codegen16 experiment remains removed; no repeatable compiler speedup or completed Windows acceptance is established.
 The earlier batch's 61 complete archive-to-artifact receipt intervals totaled 9.21 seconds versus 672.13 seconds before their archive markers. This localizes observed delay before archive assembly, not exclusively to LLVM or incremental copying; all source proofs, timing/privacy diagnostics, budgets and current/release profiles remain.
 Manual merges remain fail-fast. Final advisory profile-count scanning now preserves completed copy results on scan errors, matching Python 3.13 glob. The earlier six-case copytree error/retry comparison also passed on Linux; full platform/error compatibility and generic logging remain incomplete.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
 and current acceptance, including read warnings, delete recovery and Linux process-group uncertainty.
 Native macOS identity/group tests pass after two exact historical failures/restoration, four locale/timezone
 source-token comparisons and real descendant/claim settlement.
-CodeQL and required verification still fail. The preceding macOS cancellation did not recur; its cause remains unknown. Signing and publication stay gated.
+CodeQL and required verification still fail. Authenticated vault text now preserves the original strict UTF-8 refusal details; its new 40-case differential extension awaits hosted verification. Signing and publication stay gated.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.

@@ -480,4 +480,12 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/cli/mod.rs':
                   '1a838cce524b7b46713ea101e3b45160b3f34a979b44ed3e89a2ec7a058000cb'},
     },
+    {
+        'target': 'vault_parity',
+        'test': 'crypto_text_admission_matches_original_and_new_tokens_reopen_there',
+        'symptom': 'Crypto text admission differs',
+        'commit': 'dccccf2ad40820606b1c74f4de951cb163e0fe6a',
+        'files': {'engine-rust/src/vault/mod.rs':
+                  '71150ac122b5f5c26199ff9fcac4c042db5fcd403beb89f1a809dd0da925de3b'},
+    },
 )

@@ -141,6 +141,17 @@ with run_log('crypto-text-admission-oracle',root/'logs') as log:
         for symbols in itertools.product('A=!',repeat=length):
             candidate=''.join(symbols)
             observe(candidate,verifier)
+    # Authenticated bytes can still be invalid UTF-8; preserve that refusal.
+    payloads=[b'\xff',b'\x80',b'\xc0\xaf',b'\xf5\x80\x80\x80',
+              b'\xc2',b'\xe2\x82',b'\xf0\x9f\x92',b'\xed\xa0',
+              b'\xc2A',b'\xe2\x82A',b'\xf0\x9f\x92A',
+              b'\xe0\x80\x80',b'\xed\xa0\x80',b'\xf0\x80\x80\x80',
+              b'\xf4\x90\x80\x80',b'abc\xff','α'.encode()+b'\xe2\x82',
+              b'',b'\x00','Unicode α فارسی'.encode()]
+    for version,rounds in crypto.ROUNDS_BY_VERSION.items():
+        cipher=crypto._fernet(password,salt,rounds)
+        for payload in payloads:
+            observe(salt,'enc:'+version+':'+cipher.encrypt(payload).decode('ascii'))
     # Keep each raw KDF key adjacent; restore original observation order afterward.
     for index,(key,salt,value) in sorted(enumerate(inputs),key=lambda row:(row[1][0],row[1][1])):
         try:result,error=crypto.decrypt(key,salt,value),None
@@ -162,7 +173,7 @@ with run_log('crypto-text-admission-oracle',root/'logs') as log:
     )?;
     assert_eq!(observed.exit, 0, "Original crypto text observer failed");
     let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
-    assert_eq!(cases.len(), 145, "Crypto text observations missing");
+    assert_eq!(cases.len(), 185, "Crypto text observations missing");
     let mut order: Vec<_> = cases.iter().enumerate().collect();
     order.sort_by(|(_, a), (_, b)| {
         (a["password"].as_str(), a["salt"].as_str())

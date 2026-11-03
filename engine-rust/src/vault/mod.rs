@@ -193,7 +193,26 @@ pub fn decrypt(password: &str, salt: &str, value: &str) -> Result<String, VaultE
     let bytes = cipher
         .decrypt(&token)
         .map_err(|_| VaultError("wrong master password".into()))?;
-    String::from_utf8(bytes).map_err(|_| VaultError("vault secret is not valid UTF-8".into()))
+    String::from_utf8(bytes).map_err(|error| {
+        let invalid = error.utf8_error();
+        let start = invalid.valid_up_to();
+        let bytes = error.as_bytes();
+        let length = invalid.error_len().unwrap_or(bytes.len() - start);
+        let first = bytes[start];
+        let reason = if matches!(first, 0x80..=0xc1 | 0xf5..=0xff) {
+            "invalid start byte"
+        } else if invalid.error_len().is_none() {
+            "unexpected end of data"
+        } else {
+            "invalid continuation byte"
+        };
+        let span = if length == 1 {
+            format!("byte 0x{first:02x} in position {start}")
+        } else {
+            format!("bytes in position {start}-{}", start + length - 1)
+        };
+        VaultError(format!("'utf-8' codec can't decode {span}: {reason}"))
+    })
 }
 
 pub fn encrypt(password: &str, salt: &str, plaintext: &str) -> Result<String, VaultError> {
