@@ -81,7 +81,9 @@ fn create(state: &Profiles, body: Map<String, Value>) -> Result<Value, Failure> 
         .next_back()
         .cloned();
     let config = ConfigStore::new(state.root.clone());
-    let default = config.default_engine(&state.installed);
+    let default = config
+        .default_engine(&state.installed)
+        .map_err(RepoError::from)?;
     let time = clock()?;
     for record in &mut incoming {
         *record = profile_fields::complete(
@@ -233,7 +235,7 @@ pub(super) async fn batch(
     State(state): State<Arc<Profiles>>,
     ObjectBody(body): ObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || create(&state, body)).await {
+    match super::admission::blocking(move || create(&state, body)).await {
         Ok(result) => response(result),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),
     }
@@ -242,7 +244,7 @@ pub(super) async fn bulk(
     State(state): State<Arc<Profiles>>,
     ObjectBody(body): ObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || update(&state, body)).await {
+    match super::admission::blocking(move || update(&state, body)).await {
         Ok(result) => response(result),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),
     }

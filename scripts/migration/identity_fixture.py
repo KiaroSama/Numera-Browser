@@ -1,8 +1,7 @@
 """Emit original process birth token for a native parity comparison."""
 import sys
-from pathlib import Path
-ROOT=Path(__file__).resolve().parents[2]
-sys.path.insert(0,str(ROOT/'engine'))
+from baseline_source import activate
+activate()
 from numera.proctree import started_at
 if len(sys.argv)!=2:
     raise SystemExit('One PID is required')

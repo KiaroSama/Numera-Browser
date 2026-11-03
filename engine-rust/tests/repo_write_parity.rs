@@ -5,6 +5,346 @@ use std::{
     path::PathBuf,
     time::{SystemTime, UNIX_EPOCH},
 };
+mod common;
+
+#[test]
+fn single_edit_preserves_callback_results_and_atomic_store_decisions()
+-> Result<(), Box<dyn std::error::Error>> {
+    use base64::{Engine, engine::general_purpose::STANDARD};
+    use numera_core::{ownership::capture, storage::repo::RepoError};
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("repo-single-edit")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import base64,copy,json,os,sys,warnings
+from pathlib import Path
+from unittest.mock import patch
+repository,parent=map(Path,sys.argv[1:])
+os.environ.pop('NUMERA_PASSWORD',None)
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.repo import ProfileRepo
+from numera.store import ProfileStore
+from run_logging import run_log
+fixtures=repository/'engine-rust/tests/fixtures'
+base=json.loads((fixtures/'repo-write.json').read_text(encoding='utf-8'))['cases'][0]['initial']
+for record in base.values(): record['tags']=['retained-tag']
+encrypted=json.loads((fixtures/'repo.json').read_text(encoding='utf-8'))['cases']
+modes=('noop','notes-none','notes-return','replacement','rename','clear-tags',
+       'callback-error','replace-secret','clear-secret','remove-proxy')
+cases=[(reference,mode,base['profiles'],base['dashboard'],{},None)
+       for reference in ('id','name') for mode in modes]
+cases.extend((reference,'notes-none',base['profiles'],base['dashboard'],{},None)
+             for reference in ('missing-id','missing-name'))
+for index,mode in ((10,'notes-none'),(10,'replace-secret'),(10,'clear-secret'),
+                   (10,'remove-proxy'),(11,'notes-none'),(12,'notes-none')):
+    case=encrypted[index]
+    cases.append(('id',mode,case['engine'],case['dashboard'],case['config'],case['password']))
+observed=[]
+with run_log('repo-single-edit-oracle',parent/'logs') as log, warnings.catch_warnings():
+    warnings.simplefilter('ignore',RuntimeWarning)
+    for reference,mode,engine,dashboard,config,password in cases:
+        root=parent/str(len(observed)); store=ProfileStore(root,password=password)
+        repo=ProfileRepo(store); profile_id=engine['id']
+        inputs={'profiles/'+profile_id+'.json':json.dumps(engine).encode('utf-8'),
+                'dashboard/'+profile_id+'.json':json.dumps(dashboard).encode('utf-8'),
+                'config.json':json.dumps(config).encode('utf-8')}
+        for name,raw in inputs.items():
+            path=root/name; path.parent.mkdir(parents=True,exist_ok=True); path.write_bytes(raw)
+        target={'id':profile_id,'name':engine['name'],'missing-id':'not-present',
+                'missing-name':'no such profile name'}[reference]
+        calls=[]
+        def apply(profile):
+            calls.append(copy.deepcopy(profile.to_dict()))
+            if mode=='noop': return None
+            if mode=='replacement':
+                replacement=copy.deepcopy(profile); replacement.notes='replacement α 😀'
+                return replacement
+            if mode=='rename': profile.name='renamed α'
+            elif mode=='clear-tags': profile.tags=[]
+            elif mode=='replace-secret': profile.proxy.password='chosen-fixture-secret'
+            elif mode=='clear-secret': profile.proxy.password=''
+            elif mode=='remove-proxy': profile.proxy=None
+            else: profile.notes='edited 日本語'
+            if mode=='callback-error': raise RuntimeError('Callback refused edit')
+            return profile if mode=='notes-return' else None
+        with patch('numera.repo.time.time',return_value=1700000000.0):
+            try:
+                saved=repo.edit(target,apply)
+                result,error=saved.to_dict() if saved is not None else None,None
+            except (RuntimeError,ValueError) as exc: result,error=None,str(exc)
+        assert len(calls)==(0 if reference.startswith('missing') else 1),'Original callback count differs'
+        after={name:(root/name).read_bytes() for name in inputs}
+        if reference.startswith('missing') or mode=='callback-error' or error is not None:
+            assert after==inputs,'Original refused edit changed protected bytes'
+        observed.append({'reference':target,'mode':mode,'password':password,
+                         'files':{name:base64.b64encode(raw).decode('ascii') for name,raw in inputs.items()},
+                         'calls':calls,'result':result,'error':error,
+                         'unchanged':{name:raw==after[name] for name,raw in inputs.items()},
+                         'written':{name:json.loads(raw) for name,raw in after.items()}})
+    log.info('Observed single-profile edit cases=%s',len(observed))
+    print(json.dumps(observed,ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 1_048_576,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original single-edit observer failed");
+    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(cases.len(), 28, "Single-edit observations missing");
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        let files = case["files"]
+            .as_object()
+            .ok_or("Single-edit inputs missing")?;
+        for (name, raw) in files {
+            let path = root.join(name);
+            fs::create_dir_all(path.parent().ok_or("Input parent missing")?)?;
+            let bytes = STANDARD.decode(raw.as_str().ok_or("Input bytes missing")?)?;
+            fs::write(&path, &bytes)?;
+            assert_eq!(fs::read(path)?, bytes, "Single-edit input bytes differ");
+        }
+        let repo = ProfileRepo::new(root.clone(), case["password"].as_str().map(str::to_owned));
+        let mut calls = Vec::new();
+        let mode = case["mode"].as_str().ok_or("Edit mode missing")?;
+        let result = repo.edit(
+            case["reference"].as_str().ok_or("Reference missing")?,
+            |profile| {
+                calls.push(serde_json::to_value(&*profile).map_err(std::io::Error::other)?);
+                match mode {
+                    "noop" => return Ok(None),
+                    "replacement" => {
+                        let mut replacement = profile.clone();
+                        replacement.notes = "replacement α 😀".into();
+                        return Ok(Some(replacement));
+                    }
+                    "rename" => profile.name = "renamed α".into(),
+                    "clear-tags" => profile.tags.clear(),
+                    "replace-secret" => profile
+                        .proxy
+                        .as_mut()
+                        .ok_or_else(|| RepoError::Message("Proxy missing".into()))?
+                        .set_password(Some("chosen-fixture-secret".into())),
+                    "clear-secret" => profile
+                        .proxy
+                        .as_mut()
+                        .ok_or_else(|| RepoError::Message("Proxy missing".into()))?
+                        .set_password(Some(String::new())),
+                    "remove-proxy" => profile.proxy = None,
+                    _ => profile.notes = "edited 日本語".into(),
+                }
+                if mode == "callback-error" {
+                    return Err(RepoError::Message("Callback refused edit".into()));
+                }
+                Ok((mode == "notes-return").then(|| profile.clone()))
+            },
+            1700000000.0,
+        );
+        assert_eq!(
+            serde_json::to_value(calls)?,
+            case["calls"],
+            "Single-edit callback differs: case={index}"
+        );
+        match result {
+            Ok(saved) => {
+                assert!(
+                    case["error"].is_null(),
+                    "Single-edit refusal missing: case={index}"
+                );
+                assert_eq!(
+                    serde_json::to_value(saved)?,
+                    case["result"],
+                    "Single-edit result differs: case={index}"
+                );
+            }
+            Err(error) => assert_eq!(
+                Some(error.to_string().as_str()),
+                case["error"].as_str(),
+                "Single-edit refusal differs: case={index}"
+            ),
+        }
+        for (name, raw) in files {
+            let before = STANDARD.decode(raw.as_str().ok_or("Input bytes missing")?)?;
+            let after = fs::read(root.join(name))?;
+            assert_eq!(
+                Value::Bool(before == after),
+                case["unchanged"][name],
+                "Single-edit preservation differs: case={index}"
+            );
+            assert_eq!(
+                serde_json::from_slice::<Value>(&after)?,
+                case["written"][name],
+                "Single-edit stored state differs: case={index}"
+            );
+            if case["unchanged"][name] == true {
+                assert_eq!(
+                    after, before,
+                    "Single-edit replaced preserved bytes: case={index}"
+                );
+            }
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn public_credential_conflict_guards_match_original_without_writes()
+-> Result<(), Box<dyn std::error::Error>> {
+    use base64::{Engine, engine::general_purpose::STANDARD};
+    use numera_core::{ownership::capture, storage::repo::RepoError};
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("credential-conflict-guards")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import base64,json,os,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+os.environ.pop('NUMERA_PASSWORD',None)
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.repo import ProfileRepo
+from numera.store import ProfileStore
+from run_logging import run_log
+fixture=json.loads((repository/'engine-rust/tests/fixtures/repo.json').read_text(encoding='utf-8'))['cases'][11]
+config=fixture['config']
+left=fixture['engine']['proxy']['password']
+right=fixture['dashboard']['proxy']['pass']
+pairs=[(None,None),('',None),(None,''),('',''),('same','same'),('left','right'),
+       ('left',None),(None,'right'),('left',''),('', 'right'),(left,left),(left,right),
+       (left,'enc:v9:opaque'),('enc:v9:opaque','enc:v8:opaque'),(left,'plain')]
+pairs.extend([(7,None),([1],None),({'keep':1},None),(None,7),(None,[1]),
+              (None,{'keep':1}),(7,7),([1],[1]),({'keep':1},{'keep':1}),
+              (7,8),([1],[2]),({'keep':1},{'keep':2}),(0,None),([],None),
+              ({},None),(1,True),(left,7),(7,left)])
+rows=[]
+with run_log('credential-conflict-oracle',parent/'logs') as log:
+    for password in (None,'fixture-master','wrong-fixture-password'):
+        for stored,twin in pairs:
+            root=parent/str(len(rows)); store=ProfileStore(root,password=password); repo=ProfileRepo(store)
+            files={'config.json':json.dumps(config).encode('utf-8'),
+                   'profiles/fixture-conflict.json':json.dumps({'proxy':{'password':stored},'future':[True,7]}).encode('utf-8'),
+                   'dashboard/fixture-conflict.json':json.dumps({'proxy':{'pass':twin},'future':'keep'}).encode('utf-8')}
+            for name,raw in files.items():
+                path=root/name; path.parent.mkdir(parents=True,exist_ok=True); path.write_bytes(raw)
+            def observe(call):
+                try:call(); return None
+                except RuntimeError as exc:return str(exc)
+            direct=observe(lambda:repo.refuse_unresolved_secret('fixture-conflict',stored,twin))
+            intents={intent:observe(lambda intent=intent:repo.refuse_conflicting_write('fixture-conflict',intent))
+                     for intent in ('preserve','replace','clear','remove','unknown')}
+            assert all((root/name).read_bytes()==raw for name,raw in files.items())
+            rows.append({'password':password,'stored':stored,'twin':twin,'direct':direct,'intents':intents,
+                         'files':{name:base64.b64encode(raw).decode('ascii') for name,raw in files.items()}})
+    for payload in (b'\xff',b'{broken'):
+        root=parent/str(len(rows)); store=ProfileStore(root); repo=ProfileRepo(store)
+        path=root/'profiles/fixture-conflict.json'; path.write_bytes(payload)
+        results={}
+        for intent in ('preserve','replace','clear','remove','unknown'):
+            try:repo.refuse_conflicting_write('fixture-conflict',intent); results[intent]=None
+            except UnicodeDecodeError:results[intent]='UnicodeDecodeError'
+        assert path.read_bytes()==payload
+        rows.append({'raw':list(payload),'intents':results})
+    log.info('Observed public credential conflict cases=%s',len(rows))
+    print(json.dumps(rows))
+"#]).arg(repository).arg(temporary.path().join("source"));
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 524288,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        observed.exit, 0,
+        "Original credential conflict observer failed"
+    );
+    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(cases.len(), 101);
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        let mut files = Vec::new();
+        if let Some(raw) = case.get("raw") {
+            let path = root.join("profiles/fixture-conflict.json");
+            fs::create_dir_all(path.parent().ok_or("Profile parent missing")?)?;
+            let bytes: Vec<u8> = serde_json::from_value(raw.clone())?;
+            fs::write(&path, &bytes)?;
+            files.push((path, bytes));
+        } else {
+            for (name, raw) in case["files"].as_object().ok_or("Conflict inputs missing")? {
+                let path = root.join(name);
+                fs::create_dir_all(path.parent().ok_or("Input parent missing")?)?;
+                let bytes = STANDARD.decode(raw.as_str().ok_or("Input bytes missing")?)?;
+                fs::write(&path, &bytes)?;
+                files.push((path, bytes));
+            }
+        }
+        let repo = ProfileRepo::new(root, case["password"].as_str().map(str::to_owned));
+        if case.get("raw").is_none()
+            && [&case["stored"], &case["twin"]]
+                .iter()
+                .all(|value| value.is_null() || value.is_string())
+        {
+            let actual = repo.refuse_unresolved_secret(
+                "fixture-conflict",
+                case["stored"].as_str(),
+                case["twin"].as_str(),
+            );
+            assert_eq!(
+                actual.err().map(|error| error.to_string()),
+                case["direct"].as_str().map(str::to_owned),
+                "Direct credential conflict differs: {index}"
+            );
+        }
+        for (intent, expected) in case["intents"]
+            .as_object()
+            .ok_or("Conflict results missing")?
+        {
+            let result = repo.refuse_conflicting_write("fixture-conflict", intent);
+            let actual = match result {
+                Ok(()) => Value::Null,
+                Err(RepoError::Io(error)) if error.kind() == std::io::ErrorKind::InvalidData => {
+                    "UnicodeDecodeError".into()
+                }
+                Err(error) => error.to_string().into(),
+            };
+            assert_eq!(
+                actual, *expected,
+                "Credential intent conflict differs: {index}/{intent}"
+            );
+        }
+        for (path, bytes) in files {
+            assert_eq!(
+                fs::read(path)?,
+                bytes,
+                "Credential guard changed stored bytes"
+            );
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
 
 #[test]
 fn saving_both_copies_keeps_dashboard_fields_and_explicit_secret_intent()

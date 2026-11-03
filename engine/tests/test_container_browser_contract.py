@@ -55,7 +55,9 @@ def test_container_definition_pins_client_to_literal_image():
 
 def test_container_ci_requires_bundled_browser_without_network_or_host_cache():
     ci = (ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
-    docker = ci.split('\n  docker:', 1)[1].split('\n  dashboard:', 1)[0]
+    caller = ci.split('\n  docker:', 1)[1].split('\n  desktop-contracts:', 1)[0]
+    assert 'needs: coverage' in caller and 'uses: ./.github/workflows/container.yml' in caller
+    docker = (ROOT / '.github/workflows/container.yml').read_text(encoding='utf-8')
     assert '< scripts/smoke_container_browser.py' in docker
     smoke = docker.split('- name: The container launches its bundled Chromium', 1)[1].split('\n      - name:', 1)[0]
     for flag in ('--network none', '--init', '--shm-size=1g', '--entrypoint python', 'numera-browser:ci -'):
@@ -65,9 +67,15 @@ def test_container_ci_requires_bundled_browser_without_network_or_host_cache():
     assert 'timeout --signal=TERM --kill-after=5s 60s' in smoke
     assert 'GITHUB_RUN_ID' in smoke and 'GITHUB_RUN_ATTEMPT' in smoke
     assert 'Remove an interrupted browser smoke container\n        if: always()' in docker
-    assert 'needs: [engine, engine-windows, engine-live, browser, rust, rust-core, docker, dashboard]' in ci
+    required = ci.split('\n  required:', 1)[1]
+    claimed = re.search(r'needs: \[([^\]]+)\]', required).group(1).split(', ')
+    assert set(claimed) == {'coverage', 'secrets', 'engine', 'engine-windows', 'engine-macos',
+                            'engine-live', 'browser', 'rust-core', 'docker',
+                            'dashboard', 'codeql', 'dependencies', 'desktop-contracts', 'distribution'}
+    assert 'if: always()' in required and 'job["result"] != "success"' in required
     triggers = ci.split('\non:\n', 1)[1].split('\n# Read-only', 1)[0]
-    assert set(re.findall(r'^  ([a-z_]+):', triggers, re.M)) == {'workflow_dispatch', 'workflow_call'}
+    assert set(re.findall(r'^  ([a-z_]+):', triggers, re.M)) == {'workflow_dispatch'}
+    assert 'trusted_sha:' in triggers and 'publish:' in triggers and 'self-hosted' not in ci
 
 
 def _wheel(directory, name, version, requires=()):

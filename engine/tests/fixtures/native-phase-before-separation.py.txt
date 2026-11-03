@@ -1,0 +1,57 @@
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest='command', required=True)
+    sub.add_parser('coverage')
+    staged = sub.add_parser('stage-tracked')
+    staged.add_argument('--destination', type=Path, required=True)
+    scanner = sub.add_parser('secret-config')
+    scanner.add_argument('--base', type=Path, required=True)
+    scanner.add_argument('--destination', type=Path, required=True)
+    requirements = sub.add_parser('audit-requirements')
+    requirements.add_argument('--destination', type=Path, required=True)
+    native = sub.add_parser('native')
+    native.add_argument('--phase', choices=('build', 'test'), required=True)
+    seam = sub.add_parser('seam')
+    seam.add_argument('--phase', choices=('build', 'test'), required=True)
+    seam.add_argument('--scope', choices=tuple(SEAMS), required=True)
+    report = sub.add_parser('report')
+    report.add_argument('--tier', choices=('python', 'browser', 'dashboard'), required=True)
+    report.add_argument('--report', type=Path, required=True)
+    report.add_argument('--shard', type=int, default=0)
+    report.add_argument('--shards', type=int, default=1)
+    args = parser.parse_args()
+    with run_log('hosted-suite-coverage') as log:
+        if args.command == 'coverage':
+            counts = check_workflows()
+            checked = check_utf8(tracked_paths())
+            log.info('Maintained tiers mapped counts=%s utf8_text_files=%s', json.dumps(counts, sort_keys=True), checked)
+        elif args.command == 'audit-requirements':
+            count = audit_requirements(args.destination)
+            log.info('All installed third-party audit inputs pinned distributions=%s; only local Numera excluded', count)
+        elif args.command == 'secret-config':
+            prepare_secret_config(args.base, args.destination)
+            log.info('Checksum-verified scanner rules retained; inherited path omissions removed')
+        elif args.command == 'stage-tracked':
+            count = stage_tracked(args.destination)
+            log.info('Exact tracked secret scope staged files=%s', count)
+        elif args.command == 'report':
+            result = (check_dashboard(args.report) if args.tier == 'dashboard'
+                      else check_report(args.report, args.tier, shard=args.shard, shards=args.shards))
+            log.info('Actual report verified tier=%s result=%s', args.tier, json.dumps(result))
+        else:
+            command = (seam_command(args.phase, args.scope) if args.command == 'seam'
+                       else native_command(args.phase))
+            log.info('Native phase=%s tier=%s workers=2', args.phase, args.command)
+            if args.phase == 'test':
+                import os
+                from baseline_source import ENVIRONMENT, reference
+                with reference() as original:
+                    if args.command == 'native':
+                        from native_regressions import prove
+                        prove(ROOT, original, log)
+                    environment = {**os.environ, ENVIRONMENT: str(original), 'PYTHONDONTWRITEBYTECODE': '1'}
+                    if args.command == 'native':
+                        return run_native(command, environment)
+                    return subprocess.run(command, env=environment, stdin=subprocess.DEVNULL, check=False).returncode
+            return subprocess.run(command, stdin=subprocess.DEVNULL, check=False).returncode
+    return 0

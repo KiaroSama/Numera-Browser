@@ -12,6 +12,139 @@ use tower::ServiceExt;
 mod common;
 
 #[test]
+fn documentation_routes_match_source_without_sdk_or_api_unlock()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture::{self, Limits};
+    let temporary = common::TempDirectory::new("documentation routes")?;
+    let repository = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut source = std::process::Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Source interpreter required")?,
+    );
+    source.args(["-c", "import json,os; from pathlib import Path; from documentation_cases import cases; print(json.dumps(cases(Path(os.environ['FIXTURE_ROOT']))))"])
+        .env("FIXTURE_ROOT", temporary.path())
+        .env("PYTHONPATH", std::env::join_paths([
+            repository.join("scripts/migration"), repository.join("engine")
+        ])?)
+        .env("PYTHONUTF8", "1");
+    let captured = capture::run(
+        &mut source,
+        Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 131072,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(captured.exit, 0);
+    let cases: Vec<Value> = serde_json::from_slice(&captured.stdout)?;
+    assert_eq!(cases.len(), 12);
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()?;
+    runtime.block_on(async {
+        let app = tokio::time::timeout(
+            Duration::from_secs(5),
+            router(
+                temporary.path().join("native"),
+                "documentation-fixture-only",
+                "",
+                None,
+                "fixture-host",
+                Default::default(),
+            ),
+        )
+        .await??;
+        for case in &cases {
+            let response = tokio::time::timeout(
+                Duration::from_secs(5),
+                app.clone().oneshot(
+                    Request::builder()
+                        .method(case["method"].as_str().ok_or("Method missing")?)
+                        .uri(case["path"].as_str().ok_or("Path missing")?)
+                        .body(Body::empty())?,
+                ),
+            )
+            .await??;
+            assert_eq!(
+                u64::from(response.status().as_u16()),
+                case["status"].as_u64().ok_or("Status missing")?,
+                "{} {}",
+                case["method"],
+                case["path"]
+            );
+            assert_eq!(
+                response
+                    .headers()
+                    .get("content-type")
+                    .and_then(|v| v.to_str().ok()),
+                case["content_type"].as_str(),
+                "{}",
+                case["path"]
+            );
+            let allow = response
+                .headers()
+                .get("allow")
+                .and_then(|v| v.to_str().ok());
+            let methods = |value: Option<&str>| {
+                value.map(|value| {
+                    value
+                        .split(',')
+                        .map(|method| method.trim().to_owned())
+                        .collect::<std::collections::BTreeSet<_>>()
+                })
+            };
+            assert_eq!(
+                methods(allow),
+                methods(case["allow"].as_str()),
+                "{} {} allowed methods",
+                case["method"],
+                case["path"]
+            );
+            assert_eq!(
+                response
+                    .headers()
+                    .get("content-length")
+                    .and_then(|v| v.to_str().ok()),
+                case["content_length"].as_str(),
+                "{} {} content length",
+                case["method"],
+                case["path"]
+            );
+            let bytes = tokio::time::timeout(
+                Duration::from_secs(5),
+                to_bytes(response.into_body(), 65536),
+            )
+            .await??;
+            let text = std::str::from_utf8(&bytes)?;
+            let expected = case["body"].as_str().ok_or("Body missing")?;
+            if case["name"] == "openapi.json" && case["method"] == "GET" {
+                assert_eq!(
+                    serde_json::from_str::<Value>(text)?,
+                    serde_json::from_str::<Value>(expected)?
+                );
+            } else {
+                assert_eq!(text, expected, "{} {}", case["method"], case["path"]);
+            }
+            if case["method"] == "GET" {
+                let asset = repository
+                    .join("engine-rust/src/http/documentation-assets")
+                    .join(case["name"].as_str().ok_or("Asset name missing")?);
+                assert_eq!(
+                    fs::read_to_string(asset)?,
+                    expected,
+                    "Generated documentation asset drift"
+                );
+            }
+        }
+        Ok::<_, Box<dyn std::error::Error>>(())
+    })?;
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn application_composes_auth_once_and_keeps_legacy_protection_after_token_loss()
 -> Result<(), Box<dyn std::error::Error>> {
     let runtime = tokio::runtime::Builder::new_current_thread()

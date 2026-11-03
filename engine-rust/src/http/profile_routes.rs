@@ -20,7 +20,7 @@ use std::{
     io,
     path::PathBuf,
     sync::Arc,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 pub(super) struct Profiles {
@@ -30,6 +30,7 @@ pub(super) struct Profiles {
     pub(super) host: String,
     pub(super) sessions: Arc<crate::ownership::registry::Registry>,
     pub(super) installed: std::collections::BTreeMap<String, bool>,
+    pub(super) browser: Option<crate::browser::runtime::Runtime>,
 }
 pub fn router(root: PathBuf, environment: &str, host: &str) -> io::Result<Router> {
     let auth = Arc::new(RequestAuth::new(TokenStore::new(root.clone()), environment));
@@ -50,6 +51,16 @@ pub(crate) fn routes(
     installed: std::collections::BTreeMap<String, bool>,
     sessions: Arc<crate::ownership::registry::Registry>,
 ) -> Router {
+    routes_with_browser(root, password, host, installed, sessions, None)
+}
+pub(crate) fn routes_with_browser(
+    root: PathBuf,
+    password: Option<String>,
+    host: &str,
+    installed: std::collections::BTreeMap<String, bool>,
+    sessions: Arc<crate::ownership::registry::Registry>,
+    browser: Option<crate::browser::runtime::Runtime>,
+) -> Router {
     let state = Arc::new(Profiles {
         dashboard: DashboardStore::new(root.clone(), password.clone()),
         engine: ProfileRepo::new(root.clone(), password),
@@ -57,6 +68,7 @@ pub(crate) fn routes(
         host: host.into(),
         installed,
         sessions,
+        browser,
     });
     Router::new()
         .route(
@@ -90,6 +102,44 @@ pub(crate) fn routes(
             axum::routing::post(super::profile_import::import),
         )
         .route(
+            "/api/profiles/{pid}/cookies",
+            get(super::cookie_routes::export)
+                .head(super::application::method_not_allowed)
+                .post(super::cookie_routes::import),
+        )
+        .route(
+            "/api/profiles/{pid}/align",
+            axum::routing::post(super::probe_routes::align),
+        )
+        .route(
+            "/api/profiles/{pid}/trust",
+            axum::routing::post(super::probe_routes::trust),
+        )
+        .route(
+            "/api/profiles/{pid}/proxy-test",
+            axum::routing::post(super::probe_routes::proxy),
+        )
+        .route(
+            "/api/profiles/{pid}/tls",
+            axum::routing::post(super::probe_routes::tls),
+        )
+        .route(
+            "/api/profiles/{pid}/dns",
+            axum::routing::post(super::probe_routes::dns),
+        )
+        .route(
+            "/api/profiles/{pid}/attach",
+            axum::routing::post(super::attach_routes::attach_profile),
+        )
+        .route(
+            "/api/profiles/{pid}/warmup",
+            axum::routing::post(super::warmup_routes::warmup_profile),
+        )
+        .route(
+            "/api/profiles/{pid}/launch",
+            axum::routing::post(super::launch_routes::launch_profile),
+        )
+        .route(
             "/api/profiles/{pid}/stop",
             axum::routing::post(super::session_routes::stop_profile),
         )
@@ -117,52 +167,41 @@ const TEXT_FIELDS: &[&str] = &[
     "dns",
 ];
 const LIST_FIELDS: &[&str] = &["tags", "ipBased", "clearOnStart", "switchedOff"];
-pub(super) fn readable(mut profile: Value) -> Result<Value, RepoError> {
-    let object = profile.as_object_mut().ok_or_else(|| {
-        RepoError::InvalidRecord("Stored dashboard profile is not an object".into())
-    })?;
-    for (field, value) in object.iter_mut() {
-        if TEXT_FIELDS.contains(&field.as_str()) {
-            *value = match value {
-                Value::String(_) => continue,
-                Value::Bool(value) => value.to_string().into(),
-                Value::Number(value) => value.to_string().into(),
-                _ => "".into(),
-            };
-        } else if LIST_FIELDS.contains(&field.as_str()) {
-            *value = Value::Array(
-                value
-                    .as_array()
-                    .map(|values| {
-                        values
-                            .iter()
-                            .filter(|value| value.is_string())
-                            .cloned()
-                            .collect()
-                    })
-                    .unwrap_or_default(),
-            );
-        }
+pub(super) fn readable(profile: Value) -> Result<Value, RepoError> {
+    if !profile.is_object() {
+        return Err(RepoError::InvalidRecord(
+            "Stored dashboard profile is not an object".into(),
+        ));
     }
-    object.entry("name").or_insert("".into());
-    Ok(profile)
+    Ok(crate::read_view::readable_with(
+        &profile,
+        TEXT_FIELDS,
+        LIST_FIELDS,
+    ))
 }
 fn relative_time(value: &Value, now: f64) -> Result<String, RepoError> {
     if !truth(value) {
         return Ok("never".into());
     }
-    let timestamp = value.as_f64().ok_or_else(|| {
-        RepoError::InvalidRecord("Stored activity timestamp is not numeric".into())
-    })?;
+    let timestamp = match value {
+        Value::Bool(true) => 1.0,
+        _ => value.as_f64().ok_or_else(|| {
+            RepoError::InvalidRecord("Stored activity timestamp is not numeric".into())
+        })?,
+    };
     let seconds = (now - timestamp).max(0.0);
-    Ok(if seconds < 60.0 {
-        "just now".into()
-    } else if seconds < 3600.0 {
-        format!("{}m ago", (seconds / 60.0).trunc())
-    } else if seconds < 86400.0 {
-        format!("{}h ago", (seconds / 3600.0).trunc())
+    if seconds < 60.0 {
+        return Ok("just now".into());
+    }
+    let minutes = seconds / 60.0;
+    if minutes < 60.0 {
+        return Ok(format!("{:.0}m ago", minutes.trunc()));
+    }
+    let hours = minutes / 60.0;
+    Ok(if hours < 24.0 {
+        format!("{:.0}h ago", hours.trunc())
     } else {
-        format!("{}d ago", (seconds / 86400.0).trunc())
+        format!("{:.0}d ago", (hours / 24.0).trunc())
     })
 }
 pub(super) fn decorate(state: &Profiles, mut profile: Value, now: f64) -> Result<Value, RepoError> {
@@ -185,7 +224,7 @@ fn listing(state: &Profiles) -> Result<Vec<Value>, RepoError> {
         .map_err(io::Error::other)?
         .as_secs_f64();
     let lock = DataLock::transaction(&state.root)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     let mut profiles = state.dashboard.list()?;
     let known = profiles
         .iter()
@@ -209,7 +248,7 @@ fn listing(state: &Profiles) -> Result<Vec<Value>, RepoError> {
     paths.sort();
     let mut engines = Vec::new();
     for path in paths {
-        if path.extension().is_none_or(|extension| extension != "json") {
+        if !crate::storage::paths::json_filename(&path) {
             continue;
         }
         let Some(id) = path
@@ -262,7 +301,7 @@ fn listing(state: &Profiles) -> Result<Vec<Value>, RepoError> {
         .collect()
 }
 async fn list(State(state): State<Arc<Profiles>>) -> Response {
-    match tokio::task::spawn_blocking(move || listing(&state)).await {
+    match super::admission::blocking(move || listing(&state)).await {
         Ok(Ok(profiles)) => Json(profiles).into_response(),
         Ok(Err(error)) => super::profile_errors::storage(error),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),

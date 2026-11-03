@@ -6,8 +6,8 @@ Tauri **desktop shell** that wraps both into a standalone window. This doc
 explains how they fit together.
 
 A parity-gated [Rust/TypeScript migration](migration.md) is in progress.
-`engine-rust` currently implements native domain/persistence seams only; it does
-not replace the running Python CLI/API. The original remains selected until full
+`engine-rust` implements native domain/persistence services and a non-default
+acceptance-only CLI/API entry; it does not replace the selected Python application. The original remains selected until full
 capability, real-platform, performance and rollback acceptance. See the
 [accepted boundary](adr/0001-parity-gated-rust-migration.md).
 
@@ -41,6 +41,28 @@ pick OS ──▶ archetype (devices.py) ──▶ Fingerprint ──▶ validat
                           Chromium persistent context per profile
                           (cookies + localStorage persist)
 ```
+
+### Native migration candidate
+
+The selected application is still the Python engine described below. The
+non-default `engine-rust` candidate now composes native domain/storage/ownership
+services through CLI presentation and HTTP routing. Browser SDK-only operations
+remain in the framed adapter; it does not receive whole application commands.
+The HTTP candidate owns its runtime, scheduler, readiness and cleanup retries;
+its optional dashboard fallback is mounted before shared CORS/token protection.
+Hosted Windows/Linux jobs were refused before startup. An authorized local Windows
+checkpoint initially failed twelve contracts; the repaired tree passed 156 tests
+across 113 non-live native targets and source-oracle drift checks. The later integrated
+Windows tree passed 160 tests across 116 targets, strict lint and formatting. An
+acceptance-only native entry example now matches fifteen JSON and three human CLI
+scenarios plus MCP on Windows/Linux. Twenty-one actual HTTP read/auth/error and
+documentation contracts matched on both platforms. Source-generated Swagger/ReDoc
+HTML and OpenAPI are embedded in Rust; serving them invokes no Python application. Hidden ConPTY/PTY checks exercised vault enable/change/resume,
+Unicode passwords, no echo, Ctrl-C cancellation and damaged-journal refusal before
+prompting. Linux detached jobs and scoped nested SDK receipt cleanup passed narrow
+stand-in checks, including hard leader exit and MCP signal cancellation. Windows
+restrictive outer jobs still refuse detach; complete real SDK, packaging, replay,
+performance and selector/rollback acceptance remain open. See [migration status](migration.md).
 
 ### Modules
 
@@ -172,9 +194,31 @@ overrides remain supported. Older flat Playwright bundles retain their fallback.
 `scripts/smoke-portable.ps1` verifies an assembled folder can open a browser.
 
 All four Python backends are frozen. The standard release includes three browser
-binaries and lets the Cloak wrapper download directly from its vendor. The
-Windows `-IncludeCloakBinary` option additionally packages the official unmodified
-Cloak binary for local/internal use, subject to its separate license.
+binaries; Cloak's proprietary binary is excluded. First vendor acquisition requires
+explicit consent in Engines or through the CLI's exact-offer approval. Browser
+launch suppresses vendor background updates and refuses a missing binary rather
+than silently downloading it. Explicit external binaries remain user-managed.
+The Windows `-IncludeCloakBinary` option is for authorized local/internal use only,
+subject to the vendor's separate license; public publication rejects that binary.
+
+### Signed portable updates
+
+The shell's `updates/` modules own signed discovery, streaming download, safe
+staging, journaled owned-file activation and an external recovery worker.
+`lifecycle.rs` retains engine startup and platform lifetime ownership. The
+React dashboard receives only a per-run exact-origin loopback capability, never
+arbitrary filesystem, command or download destinations. `useUpdates.ts` owns one
+status poller; native code owns after-ready/daily release discovery.
+
+The retained engine reserves actual finite work through `update_admission.py`;
+`update_startup.py` prevents constructor recovery/import mutations while admission
+is closed. `numera_installation.py` holds a shared portable runtime lease across
+data roots. A worker requires exclusive installation access before replacing
+immutable files; profiles/configuration/vault/browser user-data are excluded.
+A durable commit forbids automatic downgrade after work might resume. Interrupted
+rollback stays pending until the restored generation actually restarts and resumes.
+See [protocol, signing trust and acceptance limits](updates.md). These changes
+remain under hosted acceptance and do not select the unfinished Rust application.
 
 The 272MB `chromium_headless_shell` is deliberately **not** shipped: the
 launcher passes `channel="chromium"` for headless runs precisely to avoid it,
@@ -217,7 +261,7 @@ back up or sync.
 
 This is implemented. `engine/numera/server/` exposes the engine over HTTP
 (`numera serve`, default `http://127.0.0.1:8787`), and the dashboard talks to it
-through `dashboard/src/api.js`.
+through `dashboard/src/api.ts`.
 
 **One process, one port.** The engine also *serves the built dashboard itself*,
 so `numera serve` is the whole application — there is no second dev server and
@@ -241,7 +285,7 @@ Three surfaces, one engine:
 The dashboard's own files split by responsibility, and the dependencies point
 one way — `App` → views → primitives → leaf, with no cycles:
 
-    App.jsx         state, routing, and the error boundary. Nothing else.
+    App.tsx         shared state, routing, error boundary and update status owner.
     views/          one file per view (Profiles, Extensions, Engines, Editor,
                     Health, Proxies, Automation, Folders, Settings, plus the
                     bulk modals and the command palette). The Editor's

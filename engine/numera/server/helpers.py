@@ -155,7 +155,8 @@ class HelperManager:
     shutdown.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, root=None) -> None:
+        self.root = root
         self._live: "dict[int, Helper]" = {}
         self._lock = threading.Lock()
         self._closed = False
@@ -360,10 +361,11 @@ class HelperManager:
         leader_gone = helper.proc is None or helper.proc.poll() is not None
         resources_done = True
         if helper.streams is not None:
-            # Preserve a cancellation/join slice rather than spending it all
-            # waiting for EOF from an unaccounted writer.
+            # A lost report cannot be repaired by EOF. With a complete report,
+            # preserve real EOF so a later cleanup can settle retained trees.
             reserve = min(0.1, remaining() / 2.0)
-            helper.output = helper.streams.collect(max(0.0, remaining() - reserve))
+            drain = max(0.0, remaining() - reserve) if report.complete else 0.0
+            helper.output = helper.streams.collect(drain)
             retained = helper.streams.close(remaining())
             resources_done = not retained
             if not helper.output[2] or retained:
@@ -484,7 +486,16 @@ def end_helpers(*, deadline: float = CLEANUP_BUDGET) -> list:
 def run_helper(cli, timeout: float, env=None, manager: HelperManager = None,
                cleanup: float = CLEANUP_BUDGET):
     """Return complete output only after the owned lifecycle has terminated."""
+    from contextlib import nullcontext
+    from ..update_admission import Admission
     manager = manager or default_manager()
+    work = (Admission(manager.root).work('finite helper', settled=lambda: not manager.stragglers())
+            if manager.root is not None else nullcontext())
+    with work:
+        return _run_helper(cli, timeout, env, manager, cleanup)
+
+
+def _run_helper(cli, timeout, env, manager, cleanup):
     helper = manager.admit(cli)
     try:
         child_env = manager.child_env(helper, env)

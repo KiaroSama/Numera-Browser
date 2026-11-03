@@ -29,6 +29,9 @@ dist
 desktop
 scripts
 docs
+!docs/licensing.md
+!docs/browser-notices.txt
+!docs/migration-random-notices.txt
 **/__pycache__
 **/*.pyc
 **/node_modules

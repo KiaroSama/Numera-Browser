@@ -17,7 +17,7 @@ use windows_sys::Win32::{
             JobObjectBasicAccountingInformation, JobObjectExtendedLimitInformation, OpenJobObjectW,
             QueryInformationJobObject, SetInformationJobObject, TerminateJobObject,
         },
-        SystemServices::JOB_OBJECT_QUERY,
+        SystemServices::{JOB_OBJECT_QUERY, JOB_OBJECT_TERMINATE},
         Threading::{OpenThread, ResumeThread, THREAD_SUSPEND_RESUME},
     },
 };
@@ -120,6 +120,45 @@ pub fn named_empty(name: &str) -> io::Result<bool> {
     // SAFETY: OpenJobObjectW returned a new owned CloseHandle-compatible handle.
     let job = Job(unsafe { OwnedHandle::from_raw_handle(handle) }, name.into());
     job.empty()
+}
+
+pub fn settle_named(name: &str, end: std::time::Instant) -> io::Result<bool> {
+    if name.is_empty() || name.contains('\0') {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Stored job name is invalid",
+        ));
+    }
+    let wide: Vec<u16> = name.encode_utf16().chain(Some(0)).collect();
+    // SAFETY: validated NUL-terminated name, no inheritance; retain this exact
+    // kernel object through termination and proof, never reopen by a recycled PID.
+    let handle =
+        unsafe { OpenJobObjectW(JOB_OBJECT_QUERY | JOB_OBJECT_TERMINATE, 0, wide.as_ptr()) };
+    if handle.is_null() {
+        let error = io::Error::last_os_error();
+        return if matches!(error.raw_os_error(), Some(2 | 3)) {
+            Ok(true)
+        } else {
+            Err(error)
+        };
+    }
+    // SAFETY: successful OpenJobObjectW supplies one uniquely owned handle.
+    let job = Job(unsafe { OwnedHandle::from_raw_handle(handle) }, name.into());
+    if !job.empty()? {
+        job.terminate()?;
+    }
+    loop {
+        if job.empty()? {
+            return Ok(true);
+        }
+        if std::time::Instant::now() >= end {
+            return Ok(false);
+        }
+        std::thread::sleep(
+            end.saturating_duration_since(std::time::Instant::now())
+                .min(std::time::Duration::from_millis(20)),
+        );
+    }
 }
 
 pub fn resume(pid: u32) -> io::Result<()> {

@@ -1,70 +1,57 @@
-# Dependabot opens the upgrade PRs; this reads the other direction - it fails a
-# PR that *introduces* a dependency with a known advisory or a denied licence.
-#
-# Two jobs, because the good one does not run here. `dependency-review-action`
-# needs the dependency-graph API, and on a *private* repository that API needs
-# GitHub Advanced Security. Without it the action does not analyse anything and
-# does not report a finding - it exits with "Dependency review is not supported
-# on this repository", which is an account limitation. It was doing that on
-# every pull request, so the check had been red since the day it was added and
-# said nothing about the changes it was supposedly reviewing. A check that is
-# always red is a check nobody reads.
-#
-# So: the real review runs where it can work, and an advisory audit covers this
-# repository in the meantime. Make the repository public, or enable Advanced
-# Security, and the first job starts running on its own.
-name: Dependency review
+name: Dependency verification
 
-on: pull_request
+# Called once by full CI; npm's lockfile audit lives in dashboard.yml.
+on:
+  workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read
-  pull-requests: write   # comment-summary-in-pr needs it to post
 
 jobs:
   review:
-    name: Review dependency changes
+    name: Public pull-request dependency delta
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: github.event.repository.visibility == 'public'
+    if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && github.event.repository.private == false
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/dependency-review-action@v5.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
-          comment-summary-in-pr: on-failure
+          comment-summary-in-pr: never
+          base-ref: main
+          head-ref: ${{ github.sha }}
 
   audit:
-    name: Advisory audit (no Advanced Security)
+    name: Python and Cargo advisory gates
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    if: github.event.repository.visibility != 'public'
+    timeout-minutes: 25
+    env:
+      PYTHONUTF8: "1"
+      HOOKMAKER_MAX_TEST_WORKERS: "2"
+      CARGO_BUILD_JOBS: "2"
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: "26"
-          cache: npm
-          cache-dependency-path: dashboard/package-lock.json
-      - uses: actions/setup-python@v7
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
-
-      # `npm audit` and `pip-audit` read the same advisory data without needing
-      # the dependency-graph API, so they work on a private repository. High and
-      # above fails; anything lower is noise on a desktop app with no untrusted
-      # network surface in its build.
-      - name: Audit the dashboard dependencies
-        run: npm --prefix dashboard ci && npm --prefix dashboard audit --audit-level=high
-
-      - name: Audit the engine dependencies
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+        with:
+          toolchain: 1.99.1
+      - name: Install actual engine extras and the strict audit tool
+        run: python scripts/migration/run_owned.py --wall 300 --idle 90 -- python -m pip install "./engine[api,launch,secure,desktop,dev]" pip-audit==2.10.1
+      - name: Pin all resolved third-party inputs, excluding only the unpublished local distribution
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py audit-requirements --destination build/audit/python-requirements.txt
+      - name: Audit every resolved Python dependency without waiving collection failures
+        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python -m pip_audit --strict --no-deps --disable-pip --requirement build/audit/python-requirements.txt --progress-spinner=off --timeout=15
+      - name: Install the verified stable Cargo advisory tool
+        run: python scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo install cargo-audit --version 0.22.2 --locked
+      - name: Audit both authoritative Cargo lockfiles
         run: |
-          python -m pip install --quiet pip-audit
-          # Audit the resolved third-party requirements, not the unpublished
-          # local distribution (pip-audit --strict rejects even editable locals).
-          python -m pip install --quiet \
-            "fastapi>=0.142.2" "uvicorn>=0.54.0" "playwright>=1.62.0,<1.63" \
-            "cryptography>=50.0.2" "patchright>=1.63.0" \
-            "camoufox[geoip]>=0.5.7" "cloakbrowser[geoip]>=0.5.12" \
-            "pytest>=9.1.1" "pytest-timeout>=2.4.0" "httpx>=0.28.1"
-          pip-audit --strict --progress-spinner=off
+          python scripts/migration/run_owned.py --wall 180 --idle 90 -- cargo audit --file engine-rust/Cargo.lock
+          python scripts/migration/run_owned.py --wall 180 --idle 90 -- cargo audit --file desktop/src-tauri/Cargo.lock

@@ -37,6 +37,10 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 COPY engine/ ./engine/
+COPY LICENSE ./engine/LICENSE
+COPY docs/licensing.md docs/browser-notices.txt docs/migration-random-notices.txt ./engine/numera/legal/docs/
+COPY LICENSE ./engine/numera/legal/LICENSE
+COPY engine-rust/src/http/documentation-assets/NOTICE.md ./engine/numera/legal/engine-rust/src/http/documentation-assets/NOTICE.md
 # The dashboard is served by the engine itself, from inside the package, so it
 # has to land where `dashboard_dir()` looks: numera/web next to the code.
 COPY --from=dashboard /src/dist/ ./engine/numera/web/

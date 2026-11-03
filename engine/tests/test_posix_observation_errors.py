@@ -9,7 +9,7 @@ import pytest
 from numera import posix_session, proctree
 
 pytestmark = pytest.mark.skipif(os.name == "nt", reason="POSIX process-group observation")
-requires_procfs = pytest.mark.skipif(not Path("/proc/self/stat").is_file(),
+requires_procfs = pytest.mark.skipif(os.name != "nt" and not Path("/proc/self/stat").is_file(),
                                      reason="requires Linux procfs")
 
 
@@ -71,7 +71,9 @@ def test_process_table_listing_failure_is_unknown(monkeypatch):
     (1, '123 S 123\n', True),
     (0, 'invalid-row\n', True),
     (0, '123 Z 123\n', False),
+    (0, '123 Z+ 123\n', False),
     (0, '123 S 123\n', True),
+    (0, '123 S 0\n', True),
     (0, '987 S 987\n', False),
     (0, '', True),
 ])
@@ -84,6 +86,84 @@ def test_ps_fallback_checks_exit_and_row_integrity(monkeypatch, code, stdout, ex
     # the requested group is absent.
     pgid = 789 if code else 123
     assert posix_session._group_is_running(pgid) is expected
+
+
+def test_ps_failure_diagnostic_is_bounded_numeric_and_does_not_query_again(monkeypatch, capsys):
+    original = Path.is_dir
+    monkeypatch.setattr(Path, 'is_dir', lambda path: False if path == Path('/proc') else original(path))
+    calls = []
+
+    def query(*args, **kwargs):
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 0, stdout='123 S 456\n', stderr='private fixture text')
+
+    monkeypatch.setattr(subprocess, 'run', query)
+    assert posix_session._group_is_running(123)
+    assert not capsys.readouterr().err, 'ordinary observation must remain silent'
+    posix_session.report_group_failure(123, graceful=True, forced=False, verified=True)
+    output = capsys.readouterr().err
+    assert len(calls) == 1, 'failure diagnostics must not extend the cleanup deadline'
+    assert 'group=123' in output and 'pid=456' in output and 'state_codes=(83,)' in output
+    assert 'graceful_signal=True force_signal=False' in output
+    assert 'private fixture text' not in output
+
+
+def test_ps_failed_query_diagnostic_never_emits_raw_output(monkeypatch, capsys):
+    original = Path.is_dir
+    monkeypatch.setattr(Path, 'is_dir', lambda path: False if path == Path('/proc') else original(path))
+    monkeypatch.setattr(subprocess, 'run', lambda *a, **kw:
+                        subprocess.CompletedProcess(a, 1, stdout='private fixture text', stderr='secret data'))
+    assert posix_session._group_is_running(123)
+    posix_session.report_group_failure(123, graceful=False, forced=False, verified=True)
+    output = capsys.readouterr().err
+    assert 'query_exit=1' in output and 'private fixture' not in output and 'secret data' not in output
+
+
+@pytest.mark.parametrize('refusal,reason', [
+    ('identity', 'ownership_mismatch'), ('own-group', 'caller_group'),
+    (errno.ESRCH, 'signal_errno=3'), (errno.EPERM, 'signal_errno=1'),
+])
+def test_signal_refusal_diagnostic_reuses_the_attempt_without_extra_queries(
+        monkeypatch, capsys, refusal, reason):
+    original = Path.is_dir
+    monkeypatch.setattr(Path, 'is_dir', lambda path: False if path == Path('/proc') else original(path))
+    tree = proctree.Tree(123456789, 7, 123456789, 'pgid')
+    queries, signals = [], []
+
+    def birth(pid):
+        queries.append(pid)
+        return 8 if refusal == 'identity' else 7
+
+    def signal_group(pgid, sig):
+        signals.append((pgid, sig))
+        raise OSError(refusal, 'private fixture text')
+
+    monkeypatch.setattr(proctree, 'started_at', birth)
+    monkeypatch.setattr(os, 'getpgrp', lambda: tree.group if refusal == 'own-group' else 1)
+    monkeypatch.setattr(os, 'killpg', signal_group)
+    assert proctree.signal_tree(tree, force=True) is False
+    assert queries == [tree.pid]
+    assert len(signals) == (0 if isinstance(refusal, str) else 1)
+    assert not capsys.readouterr().err
+    posix_session.report_group_failure(tree.group, graceful=True, forced=False, verified=True)
+    output = capsys.readouterr().err
+    assert reason in output and 'force=True' in output
+    assert 'private fixture text' not in output
+    assert queries == [tree.pid], 'reporting must not repeat the birth query'
+
+
+def test_delivered_group_signal_is_recorded_without_changing_ownership(monkeypatch, capsys):
+    original = Path.is_dir
+    monkeypatch.setattr(Path, 'is_dir', lambda path: False if path == Path('/proc') else original(path))
+    tree = proctree.Tree(123456789, 7, 123456789, 'pgid')
+    calls = []
+    monkeypatch.setattr(proctree, 'started_at', lambda pid: 7)
+    monkeypatch.setattr(os, 'getpgrp', lambda: 1)
+    monkeypatch.setattr(os, 'killpg', lambda *args: calls.append(args))
+    assert proctree.signal_tree(tree, force=True) is True
+    posix_session.report_group_failure(tree.group, graceful=True, forced=True, verified=True)
+    assert 'reason=delivered' in capsys.readouterr().err
+    assert calls == [(tree.group, __import__('signal').SIGKILL)]
 
 
 def test_healthy_running_and_reaped_child_controls():
@@ -119,6 +199,68 @@ def test_end_tree_cannot_report_a_live_child_stopped_from_failed_observation(mon
         if proc.poll() is None:
             proc.kill()
         proc.wait(timeout=3)
+
+
+@pytest.mark.parametrize('platform,error,code,stdout,expected,observations', [
+    ('darwin', errno.EPERM, 0, '123 Z 123\n987 S 987\n', False, 1),
+    ('darwin', errno.EPERM, 0, '123 Z+ 123\n123 Z 456\n', False, 1),
+    ('darwin', errno.EPERM, 0, '123 Z 123\n123 S 456\n', True, 1),
+    ('darwin', errno.EPERM, 0, '123 R<s 123\n', True, 1),
+    ('darwin', errno.EPERM, 1, '987 S 987\n', True, 1),
+    ('darwin', errno.EPERM, 0, 'malformed\n', True, 1),
+    ('darwin', errno.EPERM, 0, '123 ? 123\n', True, 1),
+    ('darwin', errno.EPERM, 0, '', True, 1),
+    ('darwin', errno.EPERM, None, '', True, 1),
+    ('darwin', errno.EIO, 0, '123 Z 123\n', True, 0),
+    ('linux', errno.EPERM, 0, '123 Z 123\n', True, 0),
+    ('darwin', errno.ESRCH, 0, '123 S 123\n', False, 0),
+])
+def test_darwin_denied_probe_requires_complete_zombie_aware_observation(
+        monkeypatch, platform, error, code, stdout, expected, observations):
+    tree = proctree.Tree(123, 7, 123, 'pgid')
+    original = Path.is_dir
+    monkeypatch.setattr(Path, 'is_dir', lambda path: False if path == Path('/proc') else original(path))
+    monkeypatch.setattr(sys, 'platform', platform)
+    monkeypatch.setattr(os, 'getpgrp', lambda: 1)
+    probes, queries = [], []
+
+    def probe(pgid, sig):
+        probes.append((pgid, sig))
+        raise OSError(error, 'injected group probe refusal')
+
+    def query(*args, **kwargs):
+        queries.append((args, kwargs))
+        if code is None:
+            raise subprocess.TimeoutExpired(args[0], 5)
+        return subprocess.CompletedProcess(args, code, stdout=stdout, stderr='private fixture text')
+
+    monkeypatch.setattr(os, 'killpg', probe)
+    monkeypatch.setattr(subprocess, 'run', query)
+    assert proctree.alive_tree(tree) is expected
+    assert probes == [(123, 0)], 'observation must not deliver a termination signal'
+    assert len(queries) == observations
+    if queries:
+        assert queries[0][0][0] == ['ps', '-A', '-o', 'pgid=,state=,pid=']
+        assert queries[0][1]['timeout'] == 5
+
+
+def test_failed_probe_invalidates_a_previous_live_process_sample(monkeypatch, capsys):
+    original = Path.is_dir
+    monkeypatch.setattr(Path, 'is_dir', lambda path: False if path == Path('/proc') else original(path))
+    monkeypatch.setattr(subprocess, 'run', lambda *a, **kw:
+                        subprocess.CompletedProcess(a, 0, stdout='123 R<s 123\n', stderr=''))
+    assert posix_session._group_is_running(123)
+    monkeypatch.setattr(os, 'getpgrp', lambda: 1)
+
+    def probe(*args):
+        raise OSError(errno.EIO, 'private fixture text')
+
+    monkeypatch.setattr(os, 'killpg', probe)
+    assert proctree.alive_tree(proctree.Tree(123, 7, 123, 'pgid'))
+    posix_session.report_group_failure(123, graceful=True, forced=False, verified=True)
+    output = capsys.readouterr().err
+    assert 'probe_errno=5' in output
+    assert 'state_codes=' not in output and 'private fixture text' not in output
 
 
 @pytest.mark.parametrize('error,expected', [(errno.ESRCH, False), (errno.EACCES, True)])

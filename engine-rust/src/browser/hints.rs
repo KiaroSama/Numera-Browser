@@ -12,7 +12,7 @@ pub fn policy(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
             "userAgentMetadata":identity::metadata(fp)?
         }}),
     ];
-    let prefixes = if fp.os == "ios" {
+    let prefixes = if !identity::sends_client_hints(fp) {
         commands.push(json!({"method":"Fetch.enable", "payload":{
             "patterns":[{"urlPattern":"*", "requestStage":"Request"}]
         }}));

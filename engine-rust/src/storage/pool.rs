@@ -1,6 +1,5 @@
 use super::{
     atomic::write_json,
-    config::ConfigStore,
     locks::DataLock,
     repo::{ProfileRepo, RepoError},
 };
@@ -9,7 +8,7 @@ use crate::vault::{
     policy::{VaultState, write_secret},
 };
 use serde_json::{Map, Value};
-use std::{fs, io, path::PathBuf, time::Duration};
+use std::{fs, io, path::PathBuf};
 
 pub struct ProxyPool {
     root: PathBuf,
@@ -31,7 +30,13 @@ impl ProxyPool {
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
             Err(error) => return Err(error.into()),
         };
-        let Some(rows) = serde_json::from_slice::<Value>(&bytes)
+        let text = std::str::from_utf8(&bytes).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Stored proxy pool is not UTF-8; nothing was written",
+            )
+        })?;
+        let Some(rows) = serde_json::from_str::<Value>(text)
             .ok()
             .and_then(|value| value.as_array().cloned())
         else {
@@ -44,7 +49,7 @@ impl ProxyPool {
         }
         Ok(rows)
     }
-    fn decrypted(&self, mut row: Value) -> Value {
+    fn decrypted(&self, mut row: Value) -> Result<Value, RepoError> {
         if let Some(secret) = row["pass"]
             .as_str()
             .filter(|s| !s.is_empty())
@@ -52,38 +57,43 @@ impl ProxyPool {
         {
             row["pass"] = self
                 .repo
-                .readable_secret(Some(&secret))
+                .readable_secret(Some(&secret))?
                 .map_or(Value::Null, Value::String);
         }
-        row
+        Ok(row)
     }
     pub fn list(&self) -> Result<Vec<Value>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
-        Ok(self
-            .stored()?
+        self.stored()?
             .into_iter()
             .map(|row| self.decrypted(row))
-            .collect())
+            .collect()
     }
     pub fn get(&self, id: &str) -> Result<Option<Value>, RepoError> {
         Ok(self.list()?.into_iter().find(|row| row["id"] == id))
     }
     pub fn secret_withheld(&self, id: &str) -> Result<bool, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         let row = self.stored()?.into_iter().find(|row| row["id"] == id);
-        Ok(row.is_some_and(|row| {
-            row["pass"].as_str().is_some_and(|secret| {
-                vault::is_envelope(secret) && self.repo.readable_secret(Some(secret)).is_none()
-            })
-        }))
+        let Some(secret) = row
+            .as_ref()
+            .and_then(|row| row["pass"].as_str())
+            .filter(|secret| vault::is_envelope(secret))
+        else {
+            return Ok(false);
+        };
+        Ok(self.repo.readable_secret(Some(secret))?.is_none())
     }
     fn save(&self, rows: &[Value], stored: &[Value]) -> Result<(), RepoError> {
-        let config = Value::Object(ConfigStore::new(self.root.clone()).read());
-        let descriptor = &config["vault"];
+        let descriptor = if rows.iter().any(|row| row["pass"].is_string()) {
+            self.repo.vault()?.unwrap_or(Value::Null)
+        } else {
+            Value::Null
+        };
         let password = self.repo.password.as_deref().unwrap_or("");
         let salt = descriptor["salt"].as_str().unwrap_or("");
         let state = if descriptor.is_null() {
@@ -133,25 +143,24 @@ impl ProxyPool {
     }
     pub fn add_many(&self, proxies: Vec<Value>) -> Result<Vec<Value>, RepoError> {
         let root = DataLock::transaction(&self.root)?;
-        let _root = root.acquire(Duration::from_secs(30))?;
+        let _root = root.acquire_configured()?;
         self.repo.require_settled()?;
         let file = DataLock::for_file(&self.path())?;
-        let _file = file.acquire(Duration::from_secs(30))?;
+        let _file = file.acquire_configured()?;
         let stored = self.stored()?;
-        let mut rows: Vec<_> = stored
+        let mut rows = stored
             .iter()
             .cloned()
             .map(|row| self.decrypted(row))
-            .collect();
-        let mut seen = stored
-            .iter()
-            .filter(|row| {
-                !row["pass"].as_str().is_some_and(|secret| {
-                    vault::is_envelope(secret) && self.repo.readable_secret(Some(secret)).is_none()
-                })
-            })
-            .map(|row| crate::pool::identity(&self.decrypted(row.clone())))
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
+        let mut seen = Vec::new();
+        for (stored, readable) in stored.iter().zip(&rows) {
+            if stored["pass"].as_str().is_some_and(vault::is_envelope) && readable["pass"].is_null()
+            {
+                continue;
+            }
+            seen.push(crate::pool::identity(readable));
+        }
         let mut added = Vec::new();
         for mut proxy in proxies {
             if !proxy.is_object() {
@@ -196,29 +205,36 @@ impl ProxyPool {
     ) -> Result<Option<Value>, RepoError> {
         let mut patches = Map::new();
         patches.insert(id.into(), Value::Object(changes));
-        Ok(self.update_many(patches)?.into_iter().next())
+        Ok(self.update_records(patches, true)?.into_iter().next())
     }
     pub fn update_many(&self, patches: Map<String, Value>) -> Result<Vec<Value>, RepoError> {
+        self.update_records(patches, false)
+    }
+    fn update_records(
+        &self,
+        patches: Map<String, Value>,
+        keep_empty: bool,
+    ) -> Result<Vec<Value>, RepoError> {
         if patches.is_empty() {
             return Ok(Vec::new());
         }
         let root = DataLock::transaction(&self.root)?;
-        let _root = root.acquire(Duration::from_secs(30))?;
+        let _root = root.acquire_configured()?;
         self.repo.require_settled()?;
         let file = DataLock::for_file(&self.path())?;
-        let _file = file.acquire(Duration::from_secs(30))?;
+        let _file = file.acquire_configured()?;
         let stored = self.stored()?;
-        let mut rows: Vec<_> = stored
+        let mut rows = stored
             .iter()
             .cloned()
             .map(|row| self.decrypted(row))
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
         let mut touched = Vec::new();
         for row in &mut rows {
             if let Some(id) = row["id"].as_str()
                 && let Some(patch) = patches
                     .get(id)
-                    .filter(|patch| crate::conversion::truth(patch))
+                    .filter(|patch| keep_empty || crate::conversion::truth(patch))
             {
                 let patch = patch
                     .as_object()
@@ -236,17 +252,19 @@ impl ProxyPool {
     }
     pub fn delete(&self, id: &str) -> Result<bool, RepoError> {
         let root = DataLock::transaction(&self.root)?;
-        let _root = root.acquire(Duration::from_secs(30))?;
+        let _root = root.acquire_configured()?;
         self.repo.require_settled()?;
         let file = DataLock::for_file(&self.path())?;
-        let _file = file.acquire(Duration::from_secs(30))?;
+        let _file = file.acquire_configured()?;
         let stored = self.stored()?;
-        let kept: Vec<_> = stored
+        let kept = stored
             .iter()
-            .filter(|row| row["id"] != id)
             .cloned()
             .map(|row| self.decrypted(row))
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .filter(|row| row["id"] != id)
+            .collect::<Vec<_>>();
         if kept.len() == stored.len() {
             return Ok(false);
         }

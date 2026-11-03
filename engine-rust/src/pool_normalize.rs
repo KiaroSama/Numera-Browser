@@ -1,6 +1,6 @@
 use crate::{
     conversion::{truth, value_text},
-    pool::decimal_ascii,
+    pool::{trim, whitespace},
     validation::{kind, repr},
 };
 use serde_json::{Value, json};
@@ -98,11 +98,11 @@ pub fn normalize(entry: &Value) -> io::Result<Value> {
     } else {
         String::new()
     };
-    let host = host.trim().trim_matches(['[', ']']);
+    let host = trim(&host).trim_matches(['[', ']']);
     if host.is_empty() {
         return Err(invalid("a proxy needs a host"));
     }
-    if host.chars().any(char::is_whitespace) {
+    if host.chars().any(whitespace) {
         return Err(invalid(format!(
             "{} is not a valid host",
             repr(&Value::String(host.into()))
@@ -110,17 +110,18 @@ pub fn normalize(entry: &Value) -> io::Result<Value> {
     }
     let raw_port = &entry["port"];
     let raw_text = value_text(raw_port);
-    let raw_text = raw_text.trim();
-    let (sign, magnitude) = raw_text.strip_prefix('-').map_or_else(
-        || (1, raw_text.strip_prefix('+').unwrap_or(raw_text)),
-        |magnitude| (-1, magnitude),
-    );
-    let ascii = decimal_ascii(magnitude).filter(|digits| !digits.is_empty());
-    let port = ascii
-        .and_then(|digits| digits.parse::<i128>().ok())
-        .and_then(|port| port.checked_mul(sign));
-    let port = port.ok_or_else(|| invalid(format!("{} is not a valid port", repr(raw_port))))?;
-    if !(1..=65535).contains(&port) {
+    let integer = crate::decimal::integer(trim(&raw_text))
+        .filter(|integer| integer.trim_start_matches('-').len() <= 4300)
+        .ok_or_else(|| invalid(format!("{} is not a valid port", repr(raw_port))))?;
+    let magnitude = integer.trim_start_matches('-').trim_start_matches('0');
+    let port = if magnitude.is_empty() {
+        "0".into()
+    } else if integer.starts_with('-') {
+        format!("-{magnitude}")
+    } else {
+        magnitude.to_owned()
+    };
+    if port.parse::<u16>().ok().filter(|port| *port > 0).is_none() {
         return Err(invalid(format!("port {port} is outside 1-65535")));
     }
     let secret = &entry["pass"];
@@ -130,10 +131,8 @@ pub fn normalize(entry: &Value) -> io::Result<Value> {
             kind(secret)
         )));
     }
-    let country = text(&entry["country"])
-        .unwrap_or_default()
-        .trim()
-        .to_uppercase();
+    let country = text(&entry["country"]).unwrap_or_default();
+    let country = trim(&country).to_uppercase();
     if !country.is_empty()
         && (country.len() != 2 || !country.bytes().all(|c| c.is_ascii_alphabetic()))
     {

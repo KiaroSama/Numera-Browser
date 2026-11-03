@@ -1,0 +1,11 @@
+def native_command(phase: str, root: Path = ROOT) -> list[str]:
+    command = ['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
+               '--locked', '--lib']
+    for path in discover(root)['native']:
+        command.extend(('--test', path.stem))
+    command.append('--no-fail-fast')
+    if phase == 'build':
+        command.append('--no-run')
+    else:
+        command.extend(('--', '--test-threads=2'))
+    return command

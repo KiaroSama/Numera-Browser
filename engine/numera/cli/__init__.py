@@ -95,8 +95,34 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     set_json_mode(getattr(args, "json", False))
+    from contextlib import nullcontext
+    from ..paths import resolve_data_dir
+    from ..update_admission import Admission
+    gate = Admission(resolve_data_dir(args.data_dir))
+    # Server lifetimes remain available for readiness/recovery; each request,
+    # scheduler tick and child command reserves its own finite work instead.
+    work = (nullcontext() if args.command in ('serve', 'mcp') and not args.detach
+            else gate.work('CLI command'))
+    from numera_installation import runtime_lease
     try:
-        store = _open_store(args)
+        with runtime_lease(), work:
+            return _execute(args, argv)
+    except (RuntimeError, OSError) as error:
+        say(_c(str(error), C.RED))
+        return emit({"ok": False, "error": str(error)}, 1)
+
+
+def _execute(args, argv) -> int:
+    try:
+        from contextlib import nullcontext
+        from ..paths import resolve_data_dir
+        from ..update_startup import startup
+        if args.command in ('serve', 'mcp'):
+            args.data_dir = str(resolve_data_dir(args.data_dir))
+        initialize = (startup(args.data_dir, first_import=args.command == 'serve')
+                      if args.command in ('serve', 'mcp') else nullcontext())
+        with initialize:
+            store = _open_store(args)
     except vault.VaultRecoveryRequired as e:
         # Opening the store is where an interrupted migration is finished or
         # refused, and a refusal is not a crash: the message names the password

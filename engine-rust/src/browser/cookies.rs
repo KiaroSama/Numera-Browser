@@ -19,26 +19,12 @@ pub fn write(
     clear: bool,
     activate: impl FnOnce() -> io::Result<Adapter>,
 ) -> io::Result<usize> {
-    validate(cookies)?;
+    preflight(cookies)?;
     if cookies.is_empty() && !clear {
         return Ok(0);
     }
-    let adding = Map::from_iter([("cookies".into(), Value::Array(cookies.to_vec()))]);
-    if !cookies.is_empty() {
-        Adapter::preflight("cookies-add", adding.clone())?;
-    }
     let mut adapter = activate()?;
-    let result: io::Result<usize> = (|| {
-        if clear {
-            let result = adapter.call("cookies-clear", Map::new(), Duration::from_secs(10))?;
-            confirmed(&result, "cleared")?;
-        }
-        if !cookies.is_empty() {
-            let result = adapter.call("cookies-add", adding, Duration::from_secs(10))?;
-            confirmed(&result, "added")?;
-        }
-        Ok(cookies.len())
-    })();
+    let result = write_open(&mut adapter, cookies, clear);
     // SDK failure must not skip native ownership settlement or fabricate success.
     let exit = adapter.close(Duration::from_secs(10))?;
     let count = result?;
@@ -48,6 +34,36 @@ pub fn write(
         ));
     }
     Ok(count)
+}
+
+/// Refuse deterministic payload errors before activating or clearing a browser.
+pub fn preflight(cookies: &[Value]) -> io::Result<()> {
+    validate(cookies)?;
+    if !cookies.is_empty() {
+        Adapter::preflight(
+            "cookies-add",
+            Map::from_iter([("cookies".into(), Value::Array(cookies.to_vec()))]),
+        )?;
+    }
+    Ok(())
+}
+
+/// Apply jar changes inside an already lifecycle-managed browser operation.
+pub fn write_open(adapter: &mut Adapter, cookies: &[Value], clear: bool) -> io::Result<usize> {
+    validate(cookies)?;
+    let adding = Map::from_iter([("cookies".into(), Value::Array(cookies.to_vec()))]);
+    if !cookies.is_empty() {
+        Adapter::preflight("cookies-add", adding.clone())?;
+    }
+    if clear {
+        let result = adapter.call("cookies-clear", Map::new(), Duration::from_secs(10))?;
+        confirmed(&result, "cleared")?;
+    }
+    if !cookies.is_empty() {
+        let result = adapter.call("cookies-add", adding, Duration::from_secs(10))?;
+        confirmed(&result, "added")?;
+    }
+    Ok(cookies.len())
 }
 
 fn confirmed(result: &Value, key: &str) -> io::Result<()> {

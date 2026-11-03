@@ -4,8 +4,22 @@ use numera_core::{
     ownership::{claims, ready::StartupFailed, registry::Registry},
 };
 use serde_json::Map;
-use std::{path::Path, process::Command, time::Duration};
+use std::{
+    path::Path,
+    process::Command,
+    time::{Duration, Instant},
+};
+#[path = "common/browser_logs.rs"]
+mod browser_logs;
 mod common;
+
+fn adapter_logs(root: &Path) -> std::io::Result<String> {
+    let mut text = String::new();
+    for entry in std::fs::read_dir(root.join("logs"))? {
+        text.push_str(&std::fs::read_to_string(entry?.path())?);
+    }
+    Ok(text)
+}
 
 fn adapter(python: &std::ffi::OsStr, logs: &Path) -> Command {
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -62,13 +76,115 @@ fn actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure()
         sdk.finish(Duration::from_secs(5))?;
         drop(sdk);
         assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
-        let logs = std::fs::read_dir(root.join("logs"))?.collect::<Result<Vec<_>, _>>()?;
-        assert_eq!(logs.len(), 1);
-        let log = std::fs::read_to_string(logs[0].path())?;
+        let phases: &[&str] = if invalid {
+            &["browser_spawn", "browser_hello", "browser_settle"]
+        } else {
+            &[
+                "browser_spawn",
+                "browser_hello",
+                "browser_close",
+                "browser_settle",
+            ]
+        };
+        let log = browser_logs::inspect(root, phases)?;
         assert!(log.contains("[INFO] [numera.browser-adapter] Starting"));
-        assert!(log.contains("Finished exit="));
+        assert!(log.contains(if invalid {
+            "Finished exit=1"
+        } else {
+            "Finished exit=0"
+        }));
+        assert!(!log.contains("[WARNING]"));
         temporary.cleanup()?;
     }
+    Ok(())
+}
+#[test]
+fn fixed_adapter_observes_first_page_close_without_inventing_a_new_page()
+-> Result<(), Box<dyn std::error::Error>> {
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
+    let temporary = common::TempDirectory::new("adapter-first-page")?;
+    let root = temporary.path();
+    let script = root.join("sdk_boundary.py");
+    std::fs::write(
+        &script,
+        r#"
+import importlib.util,os,pathlib,sys
+spec=importlib.util.spec_from_file_location('fixed_adapter',os.environ['FIXED_ADAPTER'])
+module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+class Page:
+    def __init__(self): self.close_callback=None
+    def on(self,event,callback):
+        if event=='close': self.close_callback=callback
+    def wait_for_timeout(self,timeout):
+        if self.close_callback is None: raise AssertionError('First-page close event missing')
+        self.close_callback()
+        raise RuntimeError('SDK reports page already closed')
+class Context:
+    def __init__(self): self.pages=[Page()]
+    def on(self,event,callback): pass
+    def close(self): pathlib.Path(os.environ['FIXTURE_CLOSED']).write_text('closed',encoding='utf-8')
+    def new_page(self): raise AssertionError('Closed page was replaced')
+module.available=lambda:{'playwright':{'installed':True}}
+module.open_context=lambda backend,options:(None,Context(),None)
+raise SystemExit(module.main())
+"#,
+    )?;
+    let fixed = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?
+        .join("scripts/browser-adapter/adapter.py");
+    let closed = root.join("closed");
+    let mut command = Command::new(python);
+    command
+        .arg("-u")
+        .arg(script)
+        .env("FIXED_ADAPTER", fixed)
+        .env("FIXTURE_CLOSED", &closed)
+        .env("NUMERA_ADAPTER_FIRST_PAGE", "1")
+        .env("NUMERA_ADAPTER_LOG_DIR", root.join("logs"))
+        .env("PYTHONUTF8", "1");
+    let mut sdk = Adapter::spawn(
+        root,
+        "a",
+        "fixture-host",
+        &mut command,
+        Duration::from_secs(5),
+    )?;
+    let result = (|| -> Result<(), Box<dyn std::error::Error>> {
+        sdk.open(
+            "playwright",
+            Map::from_iter([(
+                "user_data_dir".into(),
+                serde_json::json!(root.join("profile")),
+            )]),
+            Vec::new(),
+            Duration::from_secs(5),
+        )?;
+        let end = Instant::now() + Duration::from_secs(5);
+        loop {
+            if let Some(code) = sdk.settled_exit()? {
+                assert_eq!(
+                    code,
+                    0,
+                    "First-page close became an SDK failure\n{}",
+                    adapter_logs(root)?
+                );
+                break;
+            }
+            if Instant::now() >= end {
+                return Err("First-page close did not finish the adapter".into());
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        assert_eq!(std::fs::read_to_string(&closed)?, "closed");
+        Ok(())
+    })();
+    let cleanup = sdk.finish(Duration::from_secs(5));
+    cleanup?;
+    result?;
+    drop(sdk);
+    assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
+    temporary.cleanup()?;
     Ok(())
 }
 #[test]
@@ -161,6 +277,394 @@ fn acknowledged_close_waits_for_normal_exit_before_releasing_the_owner()
     assert!(!registry.owns("a")?);
     drop(registry);
     temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn fixed_adapter_maps_packaged_camoufox_enum_and_geoip_only_at_sdk_boundary()
+-> Result<(), Box<dyn std::error::Error>> {
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
+    let temporary = common::TempDirectory::new("adapter-package-enum")?;
+    let root = temporary.path();
+    let script = root.join("sdk_boundary.py");
+    let fixed = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?
+        .join("scripts/browser-adapter/adapter.py");
+    std::fs::write(
+        &script,
+        r#"
+import importlib.util,json,os,pathlib,sys,types
+from enum import Enum
+spec=importlib.util.spec_from_file_location('fixed_adapter',os.environ['FIXED_ADAPTER'])
+module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+class DefaultAddons(Enum): UBO='fixture'
+addons=types.ModuleType('camoufox.addons');addons.DefaultAddons=DefaultAddons
+geolocation=types.ModuleType('camoufox.geolocation')
+package=types.ModuleType('camoufox');package.geolocation=geolocation
+class Manager:
+    def __init__(self,**options):
+        checks={
+            'enum':options['exclude_addons']==[DefaultAddons.UBO],
+            'version':options['ff_version']=='152',
+            'geoip':geolocation.GEOIP_DIR==pathlib.Path(os.environ['NUMERA_ADAPTER_GEOIP_DIR']),
+            'mmdb':geolocation.MMDB_DIR==geolocation.GEOIP_DIR/'mmdb',
+            'config':geolocation.GEOIP_CONFIG==geolocation.GEOIP_DIR/'config.yml',
+        }
+        pathlib.Path(os.environ['FIXTURE_OBSERVED']).write_text(json.dumps(checks),encoding='utf-8')
+        assert all(checks.values())
+        pathlib.Path(os.environ['FIXTURE_OBSERVED']).write_text('mapped',encoding='utf-8')
+    def __enter__(self): return Context()
+    def __exit__(self,*args): pass
+class Page:
+    def wait_for_timeout(self,timeout): pass
+class Context:
+    pages=[Page()]
+    def on(self,event,callback): pass
+    def close(self): pass
+api=types.ModuleType('camoufox.sync_api');api.Camoufox=Manager
+sys.modules.update({'camoufox':package,'camoufox.addons':addons,'camoufox.geolocation':geolocation,'camoufox.sync_api':api})
+module.available=lambda:{'camoufox':{'installed':True}}
+sys.exit(module.main())
+"#,
+    )?;
+    let observed = root.join("observed");
+    let mut command = Command::new(python);
+    command
+        .args(["-u", script.to_str().ok_or("Script path nontext")?])
+        .env("FIXED_ADAPTER", fixed)
+        .env("FIXTURE_OBSERVED", &observed)
+        .env("NUMERA_ADAPTER_GEOIP_DIR", root.join("geoip"))
+        .env("NUMERA_ADAPTER_LOG_DIR", root.join("logs"))
+        .env("PYTHONUTF8", "1");
+    let mut sdk = Adapter::spawn(
+        root,
+        "a",
+        "fixture-host",
+        &mut command,
+        Duration::from_secs(5),
+    )?;
+    let result = (|| -> Result<(), Box<dyn std::error::Error>> {
+        let options = serde_json::json!({"user_data_dir":root.join("user-data/a"),"exclude_addons":["UBO"],"ff_version":"152"});
+        sdk.open(
+            "camoufox",
+            options.as_object().cloned().ok_or("Options missing")?,
+            Vec::new(),
+            Duration::from_secs(5),
+        )?;
+        assert_eq!(std::fs::read_to_string(observed)?, "mapped");
+        assert_eq!(
+            sdk.call("close", Map::new(), Duration::from_secs(5))?["closing"],
+            true
+        );
+        Ok(())
+    })();
+    sdk.finish(Duration::from_secs(5))?;
+    if let Err(error) = result {
+        return Err(format!(
+            "{error}\n{}\nSDK mapping checks: {}",
+            adapter_logs(root)?,
+            std::fs::read_to_string(root.join("observed"))
+                .unwrap_or_else(|_| "SDK mapping checks unavailable".into())
+        )
+        .into());
+    }
+    drop(sdk);
+    assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn fixed_adapter_probe_calls_preserve_sdk_args_and_refuse_invalid_deadlines()
+-> Result<(), Box<dyn std::error::Error>> {
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
+    let temporary = common::TempDirectory::new("adapter-probes")?;
+    let root = temporary.path();
+    let script = root.join("sdk_boundary.py");
+    std::fs::write(
+        &script,
+        r#"
+import importlib.util,json,os,pathlib,sys
+spec=importlib.util.spec_from_file_location('fixed_adapter',os.environ['FIXED_ADAPTER'])
+module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+seen=[]
+def record(value):
+    seen.append(value)
+    pathlib.Path(os.environ['FIXTURE_OBSERVED']).write_text(json.dumps(seen),encoding='utf-8')
+class Mouse:
+    def wheel(self,x,y):
+        record({'operation':'wheel','x':x,'y':y})
+        if y==-1: raise RuntimeError('Sensitive SDK detail must not escape')
+    def move(self,x,y,steps): record({'operation':'move','x':x,'y':y,'steps':steps})
+class Page:
+    mouse=Mouse()
+    def wait_for_timeout(self,timeout): pass
+    def route(self,pattern,handler):
+        record({'operation':'route','pattern':pattern})
+        class Route:
+            def fulfill(self,**kwargs): record({'operation':'fulfill',**kwargs})
+        handler(Route())
+    def goto(self,url,**kwargs):
+        record({'operation':'goto','url':url,**kwargs})
+        if url=='https://failure.fixture.test/': raise RuntimeError('Sensitive SDK detail must not escape')
+    def evaluate(self,expression,argument=None):
+        record({'operation':'evaluate','expression':expression,'argument':argument})
+        if expression=='fail': raise RuntimeError('Sensitive SDK detail must not escape')
+        if expression=='nonfinite': return float('nan')
+        return {'argument':argument}
+class Context:
+    def __init__(self): self.pages=[Page()]
+    def on(self,event,callback): pass
+    def new_page(self):
+        record({'operation':'new_page'})
+        page=Page();self.pages.append(page);return page
+    def close(self): record({'operation':'close'})
+module.available=lambda:{'playwright':{'installed':True}}
+module.open_context=lambda backend,options:(None,Context(),None)
+sys.exit(module.main())
+"#,
+    )?;
+    let fixed = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?
+        .join("scripts/browser-adapter/adapter.py");
+    for (index, invalid) in [
+        serde_json::json!(0),
+        serde_json::json!(true),
+        serde_json::json!(45001),
+        serde_json::json!("20"),
+        serde_json::Value::Null,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let observed = root.join(format!("observed-{index}.json"));
+        let mut command = Command::new(&python);
+        command
+            .arg("-u")
+            .arg(&script)
+            .env("FIXED_ADAPTER", &fixed)
+            .env("FIXTURE_OBSERVED", &observed)
+            .env("NUMERA_ADAPTER_LOG_DIR", root.join("logs"))
+            .env("PYTHONUTF8", "1");
+        let mut sdk = Adapter::spawn(
+            root,
+            "a",
+            "fixture-host",
+            &mut command,
+            Duration::from_secs(5),
+        )?;
+        let result = (|| -> Result<(), Box<dyn std::error::Error>> {
+            sdk.open(
+                "playwright",
+                Map::from_iter([(
+                    "user_data_dir".into(),
+                    serde_json::json!(root.join("profile")),
+                )]),
+                Vec::new(),
+                Duration::from_secs(5),
+            )?;
+            if index == 0 {
+                assert_eq!(sdk.call("route", serde_json::json!({"pattern":"**/*","status":200,"content_type":"text/html","body":"<title>fixture</title>"}).as_object().cloned().ok_or("Route missing")?,Duration::from_secs(5))?["routed"],true);
+                for (url, timeout, expected) in [
+                    ("https://ok.fixture.test/", 20000, true),
+                    ("https://failure.fixture.test/", 30000, false),
+                    ("https://warmup.fixture.test/", 45000, true),
+                ] {
+                    let result = sdk.call(
+                        "navigate",
+                        serde_json::json!({"url":url,"timeout_ms":timeout,"tolerate_failure":true})
+                            .as_object()
+                            .cloned()
+                            .ok_or("Navigation missing")?,
+                        Duration::from_secs(5),
+                    )?;
+                    assert_eq!(result["navigated"], expected);
+                }
+                for (fields, expected) in [
+                    (serde_json::json!({"action":"wheel","x":0,"y":200}), true),
+                    (
+                        serde_json::json!({"action":"move","x":50,"y":80,"steps":5}),
+                        true,
+                    ),
+                    (serde_json::json!({"action":"wheel","x":0,"y":-1}), false),
+                ] {
+                    assert_eq!(
+                        sdk.call(
+                            "mouse",
+                            fields.as_object().cloned().ok_or("Mouse fields missing")?,
+                            Duration::from_secs(5)
+                        )?["performed"],
+                        expected
+                    );
+                }
+                for (expression, expected) in [("success", true), ("fail", false)] {
+                    let result = sdk.call("evaluate", serde_json::json!({"expression":expression,"argument":{"n":8},"tolerate_failure":true}).as_object().cloned().ok_or("Evaluation missing")?, Duration::from_secs(5))?;
+                    assert_eq!(result["evaluated"], expected);
+                    assert_eq!(
+                        result["value"],
+                        if expected {
+                            serde_json::json!({"argument":{"n":8}})
+                        } else {
+                            serde_json::Value::Null
+                        }
+                    );
+                }
+            }
+            assert!(sdk.call("navigate", serde_json::json!({"url":"https://ok.fixture.test/","new_page":true,"timeout_ms":invalid,"tolerate_failure":true}).as_object().cloned().ok_or("Invalid navigation missing")?, Duration::from_secs(5)).is_err());
+            Ok(())
+        })();
+        sdk.finish(Duration::from_secs(5))?;
+        result?;
+        let seen: serde_json::Value = serde_json::from_slice(&std::fs::read(observed)?)?;
+        let seen = seen.as_array().ok_or("SDK observations missing")?;
+        assert!(!seen.iter().any(|row| row["operation"] == "new_page"));
+        assert_eq!(
+            seen.last().ok_or("SDK close missing")?["operation"],
+            "close"
+        );
+        if index == 0 {
+            assert_eq!(seen[0]["pattern"], "**/*");
+            assert_eq!(
+                seen[1],
+                serde_json::json!({"operation":"fulfill","status":200,"content_type":"text/html","body":"<title>fixture</title>"})
+            );
+            assert_eq!(seen[2]["timeout"], 20000);
+            assert_eq!(seen[2]["wait_until"], "domcontentloaded");
+            assert_eq!(seen[4]["timeout"], 45000);
+            assert_eq!(
+                seen[5],
+                serde_json::json!({"operation":"wheel","x":0,"y":200})
+            );
+            assert_eq!(
+                seen[6],
+                serde_json::json!({"operation":"move","x":50,"y":80,"steps":5})
+            );
+            assert_eq!(seen.len(), 11);
+        } else {
+            assert_eq!(seen.len(), 1, "Invalid deadline reached the SDK");
+        }
+        assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
+    }
+    let observed = root.join("nonfinite.json");
+    let mut command = Command::new(python);
+    command
+        .arg("-u")
+        .arg(script)
+        .env("FIXED_ADAPTER", fixed)
+        .env("FIXTURE_OBSERVED", &observed)
+        .env("NUMERA_ADAPTER_LOG_DIR", root.join("logs"))
+        .env("PYTHONUTF8", "1");
+    let mut sdk = Adapter::spawn(
+        root,
+        "a",
+        "fixture-host",
+        &mut command,
+        Duration::from_secs(5),
+    )?;
+    let result = (|| -> Result<(), Box<dyn std::error::Error>> {
+        sdk.open(
+            "playwright",
+            Map::from_iter([(
+                "user_data_dir".into(),
+                serde_json::json!(root.join("profile")),
+            )]),
+            Vec::new(),
+            Duration::from_secs(5),
+        )?;
+        assert!(
+            sdk.call(
+                "evaluate",
+                serde_json::json!({"expression":"nonfinite","tolerate_failure":true})
+                    .as_object()
+                    .cloned()
+                    .ok_or("Evaluation missing")?,
+                Duration::from_secs(5)
+            )
+            .is_err(),
+            "Serialization failure was swallowed as an SDK failure"
+        );
+        Ok(())
+    })();
+    sdk.finish(Duration::from_secs(5))?;
+    result?;
+    assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
+    for entry in std::fs::read_dir(root.join("logs"))? {
+        assert!(!std::fs::read_to_string(entry?.path())?.contains("Sensitive SDK detail"));
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn fixed_input_preserves_empty_partial_coalesced_and_bounded_frames()
+-> Result<(), Box<dyn std::error::Error>> {
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
+    let directory = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?
+        .join("scripts/browser-adapter");
+    let mut command = Command::new(python);
+    command
+        .args([
+            "-u",
+            "-c",
+            r#"
+import os,sys
+sys.path.insert(0,os.environ['FIXED_INPUT_DIR'])
+from frame_input import FrameInput
+for chunks,invalid in [([],False),([b'{'],True),([b'{}'],True),
+                       ([b'{',b'}\n{}\n'],False),([b'{}\n'],False),
+                       ([b'x'*17],True),([b'[]\n'],True),([b'\xff\n'],True)]:
+    read,write=os.pipe()
+    with os.fdopen(read,'rb',buffering=0) as stream:
+        try:
+            frames=FrameInput(stream,16)
+            assert frames.poll()==(False,None)
+            for index,chunk in enumerate(chunks):
+                os.write(write,chunk)
+                if len(chunks)==2 and index==0: assert frames.poll()==(False,None)
+            os.close(write);write=None
+            values=[]
+            try:
+                for _ in range(8):
+                    ready,value=frames.poll()
+                    if ready:
+                        if value is None: break
+                        values.append(value)
+                else: raise AssertionError('Frame reader did not reach EOF')
+            except (ValueError,UnicodeDecodeError):
+                assert invalid
+            else:
+                assert not invalid
+                assert values==([{},{}] if len(chunks)==2 else [{}] if chunks else [])
+        finally:
+            if write is not None: os.close(write)
+print('bounded frames verified',flush=True)
+"#,
+        ])
+        .env("FIXED_INPUT_DIR", directory)
+        .env("PYTHONUTF8", "1");
+    let result = numera_core::ownership::capture::run(
+        &mut command,
+        numera_core::ownership::capture::Limits {
+            wall: Duration::from_secs(5),
+            idle: Duration::from_secs(5),
+            bytes: 4096,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        result.exit,
+        0,
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    assert_eq!(
+        String::from_utf8(result.stdout)?.replace("\r\n", "\n"),
+        "bounded frames verified\n"
+    );
     Ok(())
 }
 

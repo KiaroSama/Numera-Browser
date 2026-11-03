@@ -234,15 +234,17 @@ def test_every_engine_starts_its_browser_inside_the_seam():
     """
     from numera import drivers
 
-    source = Path(drivers.__file__).read_text(encoding="utf-8")
+    import inspect
     for backend, call in (("_launch_playwright_like", "sync_playwright().start()"),
                           ("_driver_cloak", "cloakbrowser.launch_persistent_context("),
                           ("_camoufox_session", "cam.__enter__()")):
-        body = source.split(f"def {backend}(")[1].split("\ndef ")[0]
+        body = inspect.getsource(getattr(drivers, backend))
         assert call in body, f"{backend} no longer starts a browser the way this expects"
         # `rindex`, because these functions also *name* their launch call in a
         # comment explaining an older bug; the call itself is the last one.
-        assert body.index("with _own_driver_tree(") < body.rindex(call), \
+        assert min(index for index in (body.find('with _own_driver_tree('),
+                                       body.find('with _d._own_driver_tree('))
+                   if index >= 0) < body.rindex(call), \
             f"{backend} starts its browser outside the tree seam"
 
 

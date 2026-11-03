@@ -34,7 +34,7 @@ pub(crate) fn sites(root: &Path) -> io::Result<Vec<Site>> {
             .collect::<io::Result<Vec<_>>>()?;
         paths.sort();
         for path in paths {
-            if path.extension().is_some_and(|v| v == "json") && path.is_file() {
+            if crate::storage::paths::json_filename(&path) && path.is_file() {
                 found.push(Site {
                     path,
                     node: Some("proxy"),
@@ -113,24 +113,39 @@ pub fn problems(
             .and_then(|bytes| serde_json::from_slice::<Value>(&bytes).ok());
         let Some(data) = data else {
             damaged.push(name.clone());
-            stale_files.insert(name);
+            stale_files.insert(site.path.clone());
             continue;
         };
-        let Some(values) = holders(&data, &site) else {
+        if holders(&data, &site).is_none() {
             damaged.push(name.clone());
-            continue;
+        }
+        // Structural damage does not erase independently readable ciphertext.
+        let records: Vec<&Value> = if site.many && data.is_array() {
+            data.as_array().into_iter().flatten().collect()
+        } else {
+            vec![&data]
         };
-        for value in values {
-            let text = value
-                .as_str()
-                .ok_or_else(|| io::Error::other("Validated secret is not text"))?;
+        for record in records {
+            let Some(holder) = record.as_object().and_then(|record| match site.node {
+                Some(node) => record.get(node)?.as_object(),
+                None => Some(record),
+            }) else {
+                continue;
+            };
+            let Some(text) = holder
+                .get(site.field)
+                .and_then(Value::as_str)
+                .filter(|v| !v.is_empty())
+            else {
+                continue;
+            };
             if !is_envelope(text) {
                 plaintext += 1;
                 plaintext_files.insert(name.clone());
             } else if password.is_some_and(|p| {
                 decrypt(p, descriptor["salt"].as_str().unwrap_or(""), text).is_err()
             }) {
-                stale_files.insert(name.clone());
+                stale_files.insert(site.path.clone());
             }
         }
     }
@@ -170,7 +185,14 @@ pub fn problems(
             detail: format!(
                 "{} file(s) hold secrets this descriptor does not open: {}",
                 stale_files.len(),
-                stale_files.into_iter().collect::<Vec<_>>().join(", ")
+                stale_files
+                    .iter()
+                    .filter_map(|path| path.file_name())
+                    .map(|name| name.to_string_lossy().into_owned())
+                    .collect::<BTreeSet<_>>()
+                    .into_iter()
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ),
         });
     }

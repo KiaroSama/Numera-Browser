@@ -1,6 +1,9 @@
 """Observe original cookie exports using non-sensitive synthetic rows only."""
 from __future__ import annotations
 
+from baseline_source import activate
+activate()
+
 from numera.cookies import dumps, to_netscape
 
 

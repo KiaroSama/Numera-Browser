@@ -10,6 +10,8 @@ import { toast } from "../toast";
 import { ConfirmModal } from "../ui";
 import { T } from "../theme";
 import { ENGINE_META, ENGINE_ORDER } from "../deviceData";
+import type { Updates } from "../useUpdates";
+import { UpdatePanel } from "./UpdatePanel";
 
 /* Named API tokens.
  *
@@ -150,7 +152,7 @@ function ApiTokens({ live }: { live: boolean }) {
   );
 }
 
-function SettingsView({ live, config, engines, defaultEngine, onChangeEngine, palette, toggleTheme, counts }: { live: boolean; config: Config | null; engines: Engines | null; defaultEngine: string | null; onChangeEngine: (name: string) => unknown; palette: string; toggleTheme: () => void; counts: { profiles: number; folders: number; proxies: number } }) {
+function SettingsView({ live, config, engines, defaultEngine, onChangeEngine, palette, toggleTheme, counts, updates }: { updates: Updates; live: boolean; config: Config | null; engines: Engines | null; defaultEngine: string | null; onChangeEngine: (name: string) => unknown; palette: string; toggleTheme: () => void; counts: { profiles: number; folders: number; proxies: number } }) {
   return (
     <div className="ps-scroll">
       <div className="ps-view-head">
@@ -206,6 +208,7 @@ function SettingsView({ live, config, engines, defaultEngine, onChangeEngine, pa
           </div>
         </div>
 
+        <UpdatePanel updates={updates} />
         <ApiTokens live={live} />
 
         <div className="ps-set-card">
@@ -214,7 +217,7 @@ function SettingsView({ live, config, engines, defaultEngine, onChangeEngine, pa
             <div className="ps-set-label">Numera Browser</div>
             <span className="ps-pill" style={{ background: T.violetDim, color: T.lilac }}>{config?.version ? "v" + config.version : "version unknown"}</span>
           </div>
-          <div className="ps-set-note" style={{ marginTop: 6 }}>Self-hosted anti-detect browser &amp; profile manager. {live ? "Engine connected." : "Running in demo mode — start numera serve to go live."}</div>
+          <div className="ps-set-note" style={{ marginTop: 6 }}>Local-first browser-profile manager for authorized testing and automation. {live ? "Engine connected." : "Running in demo mode — start numera serve to go live."}</div>
         </div>
       </div>
     </div>

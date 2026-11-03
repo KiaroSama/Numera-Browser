@@ -7,6 +7,8 @@ use serde_json::{Value, json};
 use std::{fs, path::Path, time::Duration};
 use tower::ServiceExt;
 mod common;
+#[path = "extension_routes_parity/icons.rs"]
+mod icons;
 
 #[test]
 fn installed_extension_http_lists_store_and_manual_resources_without_download()
@@ -85,6 +87,49 @@ fn installed_extension_http_lists_store_and_manual_resources_without_download()
             assert_eq!(body, case["body"], "{}", case["name"]);
             temporary.cleanup()?;
         }
+        let temporary = common::TempDirectory::new("extension-install-route")?;
+        let root = temporary.path();
+        let id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let extension = root.join("extensions").join(id);
+        fs::create_dir_all(&extension)?;
+        fs::write(
+            extension.join("manifest.json"),
+            br#"{"name":"Fixture extension","manifest_version":3,"version":"1"}"#,
+        )?;
+        for add in [true, false] {
+            fs::write(root.join("config.json"), b"{}")?;
+            let response = tokio::time::timeout(
+                Duration::from_secs(5),
+                router(root.into(), "fixture-api").oneshot(
+                    Request::post("/api/extensions/install")
+                        .header("authorization", "Bearer fixture-api")
+                        .header("content-type", "application/json")
+                        .body(Body::from(serde_json::to_vec(
+                            &json!({"id":id,"addToDefaults":add}),
+                        )?))?,
+                ),
+            )
+            .await??;
+            assert_eq!(response.status(), 200);
+            let bytes =
+                tokio::time::timeout(Duration::from_secs(5), to_bytes(response.into_body(), 8192))
+                    .await??;
+            let body: Value = serde_json::from_slice(&bytes)?;
+            assert_eq!(body["id"], id);
+            assert_eq!(body["name"], "Fixture extension");
+            assert_eq!(body["reused"], true);
+            let expected = if add { json!([extension]) } else { json!([]) };
+            assert_eq!(body["default_extensions"], expected);
+            let config: Value = serde_json::from_slice(&fs::read(root.join("config.json"))?)?;
+            assert_eq!(
+                config
+                    .get("default_extensions")
+                    .cloned()
+                    .unwrap_or_else(|| json!([])),
+                expected
+            );
+        }
+        temporary.cleanup()?;
         Ok(())
     })
 }

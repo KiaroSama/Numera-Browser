@@ -13,7 +13,7 @@ use serde_json::{Value, json};
 use std::{
     fs, io,
     path::Path,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 fn read_config(root: &Path) -> Result<Value, RecoveryError> {
@@ -35,11 +35,23 @@ fn read_config(root: &Path) -> Result<Value, RecoveryError> {
     })
 }
 
-fn new_descriptor(password: &str) -> Result<Value, RecoveryError> {
+fn new_descriptor(
+    password: &str,
+    log: Option<&crate::runtime_log::RuntimeLog>,
+) -> Result<Value, RecoveryError> {
     let mut bytes = [0u8; 16];
+    if let Some(log) = log {
+        log.event("INFO", "vault", "Enable salt randomness requested");
+    }
     getrandom::fill(&mut bytes)
         .map_err(|error| refusal(format!("Vault salt randomness unavailable: {error}")))?;
+    if let Some(log) = log {
+        log.event("INFO", "vault", "Enable salt randomness acquired");
+    }
     let salt = STANDARD.encode(bytes);
+    if let Some(log) = log {
+        log.event("INFO", "vault", "Enable verifier encryption started");
+    }
     let verifier =
         encrypt(password, &salt, "numera-vault-ok").map_err(|error| refusal(error.to_string()))?;
     Ok(json!({"salt": salt, "verifier": verifier}))
@@ -71,11 +83,15 @@ pub(crate) fn commit_and_verify(
     config["vault"] = descriptor.clone();
     let path = root.join("config.json");
     let lock = DataLock::for_file(&path)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     write_json(&path, &config)?;
     sync_config(root)?;
     let persisted = read_config(root)?;
-    if persisted["vault"] != *descriptor {
+    let active = &persisted["vault"];
+    if !super::journal::usable_descriptor(active)
+        || active["salt"] != descriptor["salt"]
+        || active["verifier"] != descriptor["verifier"]
+    {
         return Err(refusal(
             "Persisted descriptor disagrees with the verified generation; recovery evidence retained",
         ));
@@ -90,8 +106,11 @@ pub(crate) fn commit_and_verify(
 /// Ordinary enable publishes a journal before any credential mutation. Failure
 /// restores exact bytes and syncs the restored generation before journal removal.
 pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
+    let log = crate::runtime_log::RuntimeLog::file_only(&root.join("logs"), "native-vault-enable");
+    log.event("INFO", "vault", "Enable lock requested");
     let lock = DataLock::transaction(root)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
+    log.event("INFO", "vault", "Enable lock acquired");
     if super::journal::classify(root).0 != JournalState::Absent {
         return Err(refusal(
             "An unresolved vault migration must be recovered before enabling a vault",
@@ -103,8 +122,12 @@ pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
             "A vault is already set up. Use `numera vault change` to rotate the master password.",
         ));
     }
-    let descriptor = new_descriptor(password)?;
+    log.event("INFO", "vault", "Enable config admitted");
+    log.event("INFO", "vault", "Enable descriptor derivation started");
+    let descriptor = new_descriptor(password, Some(&log))?;
+    log.event("INFO", "vault", "Enable descriptor derivation finished");
     begin(root, &descriptor, None)?;
+    log.event("INFO", "vault", "Enable journal published");
     let mut step = Migration::new(root.to_owned());
     let result = (|| {
         let count = step
@@ -118,9 +141,20 @@ pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
             password,
             "`vault enable`",
         )?;
+        log.event("INFO", "vault", "Enable commit verified");
         Ok(count)
     })();
-    finish(root, &mut step, result)
+    let result = finish(root, &mut step, result);
+    log.event(
+        if result.is_ok() { "INFO" } else { "ERROR" },
+        "vault",
+        if result.is_ok() {
+            "Enable completed"
+        } else {
+            "Enable failed"
+        },
+    );
+    result
 }
 
 fn finish(
@@ -150,7 +184,7 @@ pub fn rotate(root: &Path, old_password: &str, password: &str) -> Result<usize, 
         return Err(refusal("the new master password cannot be empty"));
     }
     let lock = DataLock::transaction(root)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     if super::journal::classify(root).0 != JournalState::Absent {
         return Err(refusal(
             "An unresolved vault migration must be recovered before rotating a vault",
@@ -170,7 +204,7 @@ pub fn rotate(root: &Path, old_password: &str, password: &str) -> Result<usize, 
     ) {
         return Err(refusal("that is not the current master password"));
     }
-    let descriptor = new_descriptor(password)?;
+    let descriptor = new_descriptor(password, None)?;
     begin(root, &descriptor, Some(&old))?;
     let mut step = Migration::new(root.to_owned());
     let result = (|| {

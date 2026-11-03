@@ -33,39 +33,38 @@ fn usable(value: Value, default: Value, field: &str, issues: &mut Vec<String>) -
     default
 }
 fn hardware(value: Value, default: i64) -> i64 {
-    value_text(&value)
-        .trim()
-        .parse::<f64>()
-        .ok()
+    crate::browser::cookie_expiry::numeric_text(crate::pool::trim(&value_text(&value)))
         .filter(|number| number.is_finite() && (0.0..=4096.0).contains(number))
         .map_or(default, |number| number.trunc() as i64)
 }
 fn chrome(ua: &str) -> String {
-    let Some(tail) = ua.split_once("Chrome/").map(|(_, tail)| tail) else {
-        return String::new();
-    };
-    let mut parts = Vec::new();
-    for part in tail.split('.').take(4) {
-        let digits = part
-            .chars()
-            .take_while(char::is_ascii_digit)
-            .collect::<String>();
-        if digits.is_empty() {
-            break;
+    for (index, token) in ua.match_indices("Chrome/") {
+        let tail = &ua[index + token.len()..];
+        let mut parts = Vec::new();
+        for part in tail.split('.').take(4) {
+            let digits = part
+                .chars()
+                .take_while(|character| {
+                    crate::pool::decimal_ascii(&character.to_string()).is_some()
+                })
+                .collect::<String>();
+            if digits.is_empty() {
+                break;
+            }
+            let ended = digits.len() != part.len();
+            parts.push(digits);
+            if ended {
+                break;
+            }
         }
-        let ended = digits.len() != part.len();
-        parts.push(digits);
-        if ended {
-            break;
+        if !parts.is_empty() {
+            while parts.len() < 4 {
+                parts.push("0".into());
+            }
+            return parts.join(".");
         }
     }
-    if parts.is_empty() {
-        return String::new();
-    }
-    while parts.len() < 4 {
-        parts.push("0".into());
-    }
-    parts.join(".")
+    String::new()
 }
 fn proxy(record: &Value) -> Result<(Option<Proxy>, Option<Value>), String> {
     let px = first(
@@ -135,6 +134,47 @@ fn proxy(record: &Value) -> Result<(Option<Proxy>, Option<Value>), String> {
 }
 /// Vendor import generation is explicit at this pure seam; HTTP supplies OS entropy.
 pub fn profile(record: &Value, seed: i64, now: f64) -> Result<(Value, Vec<String>), String> {
+    let (_, dashboard, issues) = parse(record, seed, now)?;
+    Ok((dashboard, issues))
+}
+pub fn model(record: &Value, seed: i64, now: f64) -> Result<(Profile, Vec<String>), String> {
+    let (mut model, dashboard, issues) = parse(record, seed, now)?;
+    let mut original = serde_json::to_value(&model).map_err(|error| error.to_string())?;
+    for (field, dashboard_field) in [
+        ("timezone", "timezone"),
+        ("webgl_vendor", "webglVendor"),
+        ("webgl_renderer", "webglRenderer"),
+    ] {
+        original["fingerprint"][field] = dashboard[dashboard_field].clone();
+    }
+    original["notes"] = dashboard["notes"].clone();
+    original["tags"] = dashboard["tags"].clone();
+    if original["proxy"].is_object() {
+        for (field, dashboard_field) in [
+            ("username", "user"),
+            ("password", "pass"),
+            ("country", "country"),
+        ] {
+            let value = &dashboard["proxy"][dashboard_field];
+            if !value.is_null() && !value.is_string() {
+                original["proxy"][field] = value.clone();
+            }
+        }
+    }
+    let problems = validation::profile_problems(&original, "engine record")
+        .map_err(|error| error.to_string())?;
+    if !problems.is_empty() {
+        return Err(problems.join("; "));
+    }
+    model.notes = dashboard["notes"]
+        .as_str()
+        .ok_or("Imported notes are not text")?
+        .into();
+    model.tags =
+        serde_json::from_value(dashboard["tags"].clone()).map_err(|error| error.to_string())?;
+    Ok((model, issues))
+}
+fn parse(record: &Value, seed: i64, now: f64) -> Result<(Profile, Value, Vec<String>), String> {
     let mut issues = Vec::new();
     let ua = first(
         record,
@@ -210,9 +250,8 @@ pub fn profile(record: &Value, seed: i64, now: f64) -> Result<(Value, Vec<String
     let dimensions = resolution
         .split('x')
         .take(2)
-        .map(str::parse::<i64>)
-        .collect::<Result<Vec<_>, _>>()
-        .ok()
+        .map(|part| crate::decimal::integer(part)?.parse::<i64>().ok())
+        .collect::<Option<Vec<_>>>()
         .filter(|parts| parts.len() == 2)
         .unwrap_or_else(|| vec![1920, 1080]);
     fp.screen_width = dimensions[0];
@@ -340,7 +379,7 @@ pub fn profile(record: &Value, seed: i64, now: f64) -> Result<(Value, Vec<String
     if let Some(text) = tags.as_str() {
         tags = json!(
             text.split(',')
-                .map(str::trim)
+                .map(crate::pool::trim)
                 .filter(|tag| !tag.is_empty())
                 .collect::<Vec<_>>()
         );
@@ -350,11 +389,17 @@ pub fn profile(record: &Value, seed: i64, now: f64) -> Result<(Value, Vec<String
     if truth(&group) && !tags.as_array().is_some_and(|tags| tags.contains(&group)) {
         tags.as_array_mut()
             .ok_or("Imported tags are not a list")?
-            .push(value_text(&group).into());
+            .push(
+                group
+                    .as_str()
+                    .map_or_else(|| validation::repr(&group), str::to_owned)
+                    .into(),
+            );
     }
     let notes = first(record, &["notes", "description"], "".into());
     let (proxy, proxy_view) = proxy(record)?;
-    let model=Profile::from_record(&json!({"id":random_hex(6).map_err(|error|error.to_string())?,"name":first(record,&["name","title","profile_name"],"imported profile".into()),"fingerprint":fp,"proxy":proxy,"notes":"","tags":[],"created_at":now,"updated_at":now})).map_err(|error|error.to_string())?;
+    let mut model=Profile::from_record(&json!({"id":random_hex(6).map_err(|error|error.to_string())?,"name":first(record,&["name","title","profile_name"],"imported profile".into()),"fingerprint":fp,"proxy":null,"notes":"","tags":[],"created_at":now,"updated_at":now})).map_err(|error|error.to_string())?;
+    model.proxy = proxy;
     issues.extend(identity::validate(&model.fingerprint).map_err(|error| error.to_string())?);
     let mut dashboard = crate::conversion::to_dashboard(&model);
     if let Some(proxy) = proxy_view
@@ -373,5 +418,5 @@ pub fn profile(record: &Value, seed: i64, now: f64) -> Result<(Value, Vec<String
         .as_object_mut()
         .ok_or("Imported dashboard shape missing")?
         .remove("_new");
-    Ok((dashboard, issues))
+    Ok((model, dashboard, issues))
 }

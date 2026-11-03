@@ -21,6 +21,8 @@ import { FoldersView } from "./views/FoldersView";
 import { SettingsView } from "./views/SettingsView";
 import { BulkModal, SyncModal } from "./views/bulk";
 import { CommandPalette } from "./views/CommandPalette";
+import { useUpdates } from "./useUpdates";
+import { UpdateNotification } from "./views/UpdatePanel";
 
 /* ================================================================== *
  *  Numera — anti-detect browser profile manager
@@ -128,6 +130,7 @@ function LockedScreen({ detail, onUnlock }: { detail: string; onUnlock: () => vo
 const CSS = makeCss();
 
 export default function App() {
+  const updates = useUpdates();
   const [profiles, setProfiles] = useState(seed);
   const [view, setView] = useState("profiles");
   const [folder, setFolder] = useState("All profiles");
@@ -562,6 +565,8 @@ export default function App() {
             </button>
           </div>
 
+          <UpdateNotification updates={updates} onReview={() => setView("settings")} />
+
           {/* Keyed on the view so switching tabs clears a failed one. The sidebar
               and toolbar live outside, so navigation survives a bad profile. */}
           <ErrorBoundary resetKey={view}>
@@ -569,7 +574,7 @@ export default function App() {
             <ProfilesView {...{ filtered, selected, query, setQuery, folder, sel, setSel, toggleSel, allSel, toggleRun, clone, setEditor, setProfiles, setSync, filters, setFilters, allTags, live, refresh, defaultEngine }} />
           )}
           {view === "health" && <HealthView profiles={profiles} live={live} refresh={refresh} setEditor={setEditor} />}
-          {view === "engines" && <EnginesView engines={engines} live={live} />}
+          {view === "engines" && <EnginesView engines={engines} live={live} updates={updates} />}
           {view === "extensions" && (
             <ExtensionsView config={config} live={live} profiles={profiles} refresh={refresh}
                             onSaved={async () => { try { setConfig(await api.getConfig()); } catch { /* offline */ } }} />
@@ -582,7 +587,7 @@ export default function App() {
               onCreate={createFolder} onRename={renameFolder} onDelete={deleteFolder} />
           )}
           {view === "settings" && (
-            <SettingsView live={live} config={config} engines={engines}
+            <SettingsView live={live} config={config} engines={engines} updates={updates}
               defaultEngine={defaultEngine} onChangeEngine={changeDefaultEngine}
               palette={palette} toggleTheme={toggleTheme}
               counts={{ profiles: profiles.length, folders: folderList.length, proxies: proxyCount }} />

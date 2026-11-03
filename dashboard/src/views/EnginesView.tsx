@@ -6,6 +6,9 @@ import { ArrowRight, Blocks, Check, Clipboard, Fingerprint, MonitorSmartphone, S
 import { T } from "../theme";
 import { ENGINE_META, ENGINE_ORDER } from "../deviceData";
 import { SectionHead } from "../ui";
+import type { Updates } from "../useUpdates";
+import { UpdatePanel } from "./UpdatePanel";
+import { CloakAcquisition } from "./CloakAcquisition";
 
 function StatusDot({ state }: { state: "builtin" | "ready" | "missing" | "unknown" }) {
   const map: Record<"builtin" | "ready" | "missing" | "unknown", [string, string]> = {
@@ -57,7 +60,7 @@ function EngineCard({ id, status, delay, featured }: { id: EngineName; status?: 
   );
 }
 
-function EnginesView({ engines, live }: { engines: Engines | null; live: boolean }) {
+function EnginesView({ engines, live, updates }: { engines: Engines | null; live: boolean; updates: Updates }) {
   const recommended = ENGINE_ORDER.filter(k => ENGINE_META[k]!.recommended);
   const others = ENGINE_ORDER.filter(k => !ENGINE_META[k]!.recommended);
   return (
@@ -78,7 +81,9 @@ function EnginesView({ engines, live }: { engines: Engines | null; live: boolean
         </div>
       </div>
 
-      <SectionHead icon={<Star size={13} />} text="Recommended" note="Strongest against modern detection" />
+      <UpdatePanel updates={updates} />
+      <CloakAcquisition live={live} />
+      <SectionHead icon={<Star size={13} />} text="Recommended" note="Choose a backend for your authorized workflow" />
       <div className="ps-eng-grid">
         {recommended.map((k, i) => <EngineCard key={k} id={k} status={engines?.[k]} live={live} delay={i * 60} featured />)}
       </div>

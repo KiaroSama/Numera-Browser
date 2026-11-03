@@ -8,14 +8,37 @@ from run_logging import run_log
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def verify_candidate_target(metadata: dict) -> None:
+    # Cargo metadata is authoritative, including defaults and feature expansion.
+    packages = [item for item in metadata['packages'] if item['name'] == 'numera-core']
+    if len(packages) != 1:
+        raise ValueError('Native candidate package is missing or duplicated')
+    package = packages[0]
+    targets = [item for item in package['targets'] if 'bin' in item['kind']]
+    if (package['features'] != {'default': [], 'native-candidate': []}
+            or len(targets) != 1 or targets[0]['name'] != 'numera-native-candidate'
+            or targets[0].get('required-features') != ['native-candidate']
+            or Path(targets[0]['src_path']).resolve() !=
+                (ROOT / 'engine-rust/examples/native_candidate.rs').resolve()
+            or targets[0]['test']):
+        raise ValueError('Native candidate must be explicit, isolated and disabled by default')
+
+
 def verify() -> None:
-    # A passing pure seam is not a release gate: incomplete source ledger must
-    # still refuse cutover and no replacement application binary is advertised.
+    # A passing candidate is not a release gate: incomplete source coverage
+    # still refuses cutover and the retained product remains selected.
     if not check(ROOT / 'docs' / 'migration-coverage.json'):
         raise ValueError('Partial migration unexpectedly claims readiness')
-    manifest = (ROOT / 'engine-rust' / 'Cargo.toml').read_text(encoding='utf-8')
-    if '[[bin]]' in manifest or (ROOT / 'engine-rust' / 'src' / 'main.rs').exists():
-        raise ValueError('Partial core must not publish replacement application binary')
+    import json
+    import subprocess
+
+    metadata = json.loads(subprocess.run(
+        ['cargo', 'metadata', '--manifest-path', str(ROOT / 'engine-rust/Cargo.toml'),
+         '--locked', '--no-deps', '--format-version', '1'],
+        stdin=subprocess.DEVNULL, capture_output=True, encoding='utf-8', errors='strict',
+        timeout=30, check=True,
+    ).stdout)
+    verify_candidate_target(metadata)
     launcher = (ROOT / 'scripts' / 'build-desktop.ps1').read_text(encoding='utf-8')
     if 'PyInstaller' not in launcher or 'engine_entry.py' not in launcher:
         raise ValueError('Original portable engine path is no longer retained')

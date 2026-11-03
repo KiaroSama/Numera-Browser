@@ -82,22 +82,34 @@ def test_direct_settle_cannot_resolve_an_unstarted_reservation():
         manager.fail_start(helper)
 
 
-def test_end_all_uses_one_budget_across_all_helpers():
+def test_end_all_uses_one_budget_across_all_helpers(monkeypatch):
+    from types import SimpleNamespace
     manager = helpers.HelperManager()
     pending = [manager.admit(('fixture',)) for _ in range(3)]
+    clock = [0.0]
+    attempts = []
+
+    class HeldLock:
+        def acquire(self, *, timeout):
+            attempts.append(timeout)
+            clock[0] += timeout
+            return False
+
     for helper in pending:
         manager.child_env(helper)
         manager.attach(helper, None, None)
-        helper.finish.acquire()
+        helper.finish = HeldLock()
     try:
-        started = time.monotonic()
-        left = manager.end_all(deadline=.08)
-        elapsed = time.monotonic() - started
-        assert len(left) == 3
-        assert elapsed < .17, f'one .08s budget became {elapsed:.3f}s'
+        with monkeypatch.context() as patch:
+            patch.setattr(helpers, 'time', SimpleNamespace(monotonic=lambda: clock[0]))
+            left = manager.end_all(deadline=.08)
+        assert left == pending
+        assert attempts == pytest.approx([.08, 0, 0])
+        assert clock[0] == pytest.approx(.08), 'each helper received a fresh budget'
+        assert {id(helper) for helper in manager.live()} == {id(helper) for helper in pending}
+        assert all(helper.straggler for helper in pending)
     finally:
         for helper in pending:
-            helper.finish.release()
             manager.fail_start(helper)
 
 
@@ -179,6 +191,36 @@ import json,sys,time,threading
 from pathlib import Path
 from numera.server import helpers
 m=helpers.HelperManager();start=time.monotonic()
+phases=[]
+settle=m._settle_locked
+def measured_settle(helper,ends_at):
+    begin=time.monotonic()
+    def measure(name,method):
+        def observed(budget):
+            entered=time.monotonic()
+            row={'phase':name,'budget':budget,'remaining_enter':ends_at-entered}
+            try:
+                return method(budget)
+            finally:
+                finished=time.monotonic()
+                row.update(elapsed=finished-entered,remaining_exit=ends_at-finished)
+                if name=='close':
+                    row['readers']=[{'name':r.thread.name,'ident':r.thread.ident,
+                        'alive':r.thread.is_alive(),'cancel':r.cancel.is_set(),
+                        'eof':r.ended.is_set(),'pipe_closed':r.pipe.closed,
+                        'error':type(r.error).__name__ if r.error else None}
+                        for r in helper.streams.readers]
+                phases.append(row)
+        return observed
+    if helper.streams is not None:
+        for name in ('collect','close'):
+            setattr(helper.streams,name,measure(name,getattr(helper.streams,name)))
+    try:
+        return settle(helper,ends_at)
+    finally:
+        phases.append({'phase':'settle','ends_at':ends_at,
+                       'elapsed':time.monotonic()-begin})
+m._settle_locked=measured_settle
 try:
     helpers.run_helper([sys.executable,'-c',sys.argv[3],sys.argv[1],sys.argv[2],sys.argv[4]],5,manager=m,cleanup=.4)
     result={'error':None}
@@ -186,7 +228,8 @@ except helpers.HelperFailed as e:
     result={'error':type(e).__name__}
 reported=json.loads(Path(sys.argv[1]).read_text())['reported_at']
 result.update(elapsed=time.monotonic()-start,cleanup_elapsed=time.monotonic()-reported,retained=len(m.live()),readers=[t.name for t in threading.enumerate() if t.name.startswith('helper-')])
-Path(sys.argv[5]).write_text(json.dumps(result))
+result['phases']=phases
+Path(sys.argv[5]).write_text(json.dumps(result),encoding='utf-8')
 '''
     worker = subprocess.Popen([sys.executable, '-c', worker_code, str(receipt), damage,
                                helper_code, child_code, str(outcome)], stdout=subprocess.PIPE,
@@ -210,7 +253,118 @@ Path(sys.argv[5]).write_text(json.dumps(result))
     assert observed['elapsed'] < 6.4, observed
     assert observed['cleanup_elapsed'] < 1.0, observed
     assert observed['retained'] == 1, observed
+    if observed['readers']:
+        print(json.dumps({'readers': observed['readers'], 'phases': observed.get('phases', [])},
+                         sort_keys=True), flush=True)
     assert observed['readers'] == [], observed
+
+
+@pytest.mark.parametrize('failure', ['missing', 'malformed', 'utf8', 'tree', 'leader'])
+def test_failed_settlement_preserves_cancellation_budget(monkeypatch, failure):
+    from types import SimpleNamespace
+
+    def check(manager):
+        _assert_failed_settlement_budget(monkeypatch, failure, manager)
+
+    import hashlib
+
+    historical = (Path(__file__).parent / 'fixtures' /
+                  'helper-settlement-before-cancellation.py.txt').read_bytes()
+    assert hashlib.sha256(historical).hexdigest() == \
+        '86e8bb8ade0f8dc57b44c7241ff8f13db7e7bd2b2416d68125e67595dcd17232'
+    namespace = dict(vars(helpers))
+    namespace['time'] = SimpleNamespace(monotonic=lambda: helpers.time.monotonic())
+    exec(compile(historical, 'historical-helper-settlement', 'exec'), namespace)
+    old = helpers.HelperManager()
+    old._settle_locked = namespace['_settle_locked'].__get__(old)
+    if failure not in ('tree', 'leader'):
+        with pytest.raises(AssertionError, match='Failed settlement spent cancellation budget'):
+            check(old)
+    check(helpers.HelperManager())
+
+
+def _assert_failed_settlement_budget(monkeypatch, failure, manager):
+    from types import SimpleNamespace
+
+    helper = manager.admit(('fixture',))
+    manager.child_env(helper)
+    report = helper.units_path
+    if failure == 'missing':
+        report.unlink()
+    elif failure == 'malformed':
+        report.write_text('17\n', encoding='utf-8')
+    elif failure == 'utf8':
+        report.write_bytes(b'\xff')
+    if failure in ('tree', 'leader'):
+        helper.tree = proctree.Tree(pid=123, token=456)
+        helper.proc = SimpleNamespace(poll=lambda: None if failure == 'leader' else 0)
+        monkeypatch.setattr(proctree, 'end_session', lambda *args, **kwargs: 0)
+        monkeypatch.setattr(proctree, 'end_tree', lambda *args, **kwargs: failure != 'tree')
+    writers = []
+    pipes = []
+    clock = [0.0]
+    close_budgets = []
+    drain_joins = []
+    join = threading.Thread.join
+
+    def scheduled_join(thread, timeout=None):
+        if (thread.name.startswith('helper-') and timeout and
+                not all(reader.cancel.is_set() for reader in helper.streams.readers)):
+            drain_joins.append(timeout)
+            if failure not in ('tree', 'leader'):
+                # Model the hosted timed-join overrun, not a successful read or exit.
+                clock[0] += timeout + .125
+                return join(thread, 0)
+        return join(thread, timeout)
+
+    try:
+        for _ in range(2):
+            read_fd, write_fd = os.pipe()
+            writers.append(write_fd)
+            pipes.append(os.fdopen(read_fd, 'rb'))
+        helper.streams = helper_streams.Streams(
+            SimpleNamespace(stdout=pipes[0], stderr=pipes[1]))
+        manager.attach(helper, helper.proc, helper.tree)
+        if failure in ('tree', 'leader'):
+            for writer in writers:
+                os.close(writer)
+            writers.clear()
+            for reader in helper.streams.readers:
+                reader.thread.join(1)
+            assert helper.streams.complete, 'Control did not reach real EOF'
+        close = helper.streams.close
+
+        def observed_close(budget):
+            close_budgets.append(budget)
+            return close(budget)
+
+        helper.streams.close = observed_close
+        with monkeypatch.context() as patch:
+            patch.setattr(helpers, 'time', SimpleNamespace(monotonic=lambda: clock[0]))
+            patch.setattr(threading.Thread, 'join', scheduled_join)
+            assert manager.settle(helper, deadline=.4) is False
+        assert close_budgets == pytest.approx([.4]), (
+            'Failed settlement spent cancellation budget waiting for unprovable EOF')
+        assert helper in manager.live() and helper.state == helpers.STRANDED
+        assert helper.units_path == report and helper.straggler
+        assert all(not reader.thread.is_alive() and reader.pipe.closed
+                   for reader in helper.streams.readers)
+        if failure not in ('tree', 'leader'):
+            assert helper.output == ('', '', False), 'cancellation is not EOF'
+            assert helper.units_problem and not drain_joins
+        else:
+            assert drain_joins, 'Complete reports must retain the ordinary EOF drain'
+            assert helper.output == ('', '', True)
+            assert 'owned processes remain' in helper.straggler
+    finally:
+        for writer in writers:
+            os.close(writer)
+        if helper.streams is not None:
+            helper.streams.close(1)
+        for pipe in pipes:
+            if not pipe.closed:
+                pipe.close()
+        report.unlink(missing_ok=True)
 
 
 @pytest.mark.parametrize('bad', [

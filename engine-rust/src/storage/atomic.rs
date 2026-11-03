@@ -81,7 +81,18 @@ pub fn write_stream(
 }
 
 pub fn write_json(path: &Path, value: &Value) -> io::Result<()> {
-    let bytes = serde_json::to_vec_pretty(value).map_err(io::Error::other)?;
+    let encoded = serde_json::to_string_pretty(value).map_err(io::Error::other)?;
+    let mut bytes = Vec::with_capacity(encoded.len());
+    // Source JSON escapes non-ASCII text; text-mode writes translate structural LF.
+    for character in encoded.chars() {
+        if cfg!(windows) && character == '\n' {
+            bytes.extend_from_slice(b"\r\n");
+        } else if character.is_ascii() && character != '\u{7f}' {
+            bytes.push(character as u8);
+        } else {
+            crate::identity_script::write_ascii_fragment(&mut bytes, &character.to_string())?;
+        }
+    }
     write_bytes(path, &bytes)
 }
 

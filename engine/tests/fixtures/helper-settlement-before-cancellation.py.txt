@@ -1,0 +1,77 @@
+def _settle_locked(self, helper: Helper, ends_at: float) -> bool:
+    """Processes, output and record disposal are one terminal operation."""
+    remaining = lambda: max(0.0, ends_at - time.monotonic())
+    # Leave a portion of the SAME budget for EOF/cancellation and joins.
+    drain_share = min(DRAIN_SHARE, remaining() / 2.0) if helper.streams else 0.0
+    process_end = ends_at - drain_share
+    reasons = []
+    if helper.proc is not None:
+        try:
+            proctree.end_session(helper.proc, helper.tree,
+                                 ends_at=process_end)
+        except Exception as error:
+            reasons.append(f"{type(error).__name__}: {error}")
+
+    report = read_units(helper.units_path)
+    # Retain earlier valid identities if a later read loses some evidence.
+    for tree in report.trees:
+        if tree not in helper.units:
+            helper.units.append(tree)
+    helper.units_problem = report.problem
+    left = []
+    for tree in helper.owned_trees():
+        try:
+            if not proctree.end_tree(tree, ends_at=process_end):
+                left.append(tree)
+        except Exception as error:
+            reasons.append(f"{type(error).__name__}: {error}")
+            left.append(tree)
+    # A group may be empty while its leader has not yet been reaped.
+    leader_gone = helper.proc is None or helper.proc.poll() is not None
+    resources_done = True
+    if helper.streams is not None:
+        # Preserve a cancellation/join slice rather than spending it all
+        # waiting for EOF from an unaccounted writer.
+        reserve = min(0.1, remaining() / 2.0)
+        helper.output = helper.streams.collect(max(0.0, remaining() - reserve))
+        retained = helper.streams.close(remaining())
+        resources_done = not retained
+        if not helper.output[2] or retained:
+            # "still holding a pipe" is the condition's name in this
+            # codebase and what callers and suites match on; the list that
+            # follows is the detail. Both, not one.
+            helper.output_problem = (
+                "output did not reach EOF, or a reader is still holding a "
+                "pipe and could not be disposed: "
+                + ", ".join(helper.streams.unfinished() + retained))
+        else:
+            # A previous join can time out after genuine EOF. Recompute
+            # its verdict from current evidence, not a stale diagnostic.
+            # Read errors and cancellation still make output[2] false.
+            helper.output_problem = None
+    elif helper.proc is not None:
+        # Preparation failed before any pump was started.
+        for pipe in (helper.proc.stdout, helper.proc.stderr):
+            if pipe is not None and not pipe.closed:
+                try:
+                    pipe.close()
+                except OSError as error:
+                    resources_done = False
+                    reasons.append(f"pipe close: {error}")
+
+    if left or not leader_gone or not report.complete or not resources_done or helper.output_problem:
+        helper.state = STRANDED
+        helper.straggler = "; ".join(filter(None, [
+            report.problem, helper.output_problem, *reasons,
+            "owned processes remain" if left or not leader_gone else None]))
+        return False
+    # No release occurs until all process AND stream checks passed.
+    if not _forget_units(helper):
+        helper.state = STRANDED
+        helper.straggler = "the ownership report could not be removed"
+        return False
+    with self._lock:
+        helper.straggler = None
+        helper.state = SETTLED
+        self._live.pop(id(helper), None)
+    return True

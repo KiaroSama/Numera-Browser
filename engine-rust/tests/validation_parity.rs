@@ -1,5 +1,486 @@
 use numera_core::validation::profile_problems;
 use serde_json::Value;
+mod common;
+#[path = "validation_parity/contract.rs"]
+mod contract;
+
+#[test]
+fn packed_screen_integer_grammar_matches_original() -> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{http::profile_fields, ownership::capture};
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("screen-grammar")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import json,sys
+from pathlib import Path
+repository,root=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import write_contract
+from numera.server.routes_profiles import check_fields
+from run_logging import run_log
+with run_log('screen-grammar-oracle',root/'logs') as log:
+    values=['1_920x1_080','١٩٢٠x١٠٨٠','۱۹۲۰x۱۰۸۰','１９２０x１０８０',
+            '𝟙𝟡𝟚𝟘x𝟙𝟘𝟠𝟘','+١_٩٢٠X+١٠٨٠','1920x1080',
+            '+1920x+1080','001920x001080',' 1920 x 1080 ',
+            '\t1920\nx\r1080\t',' 1920 x 1080 ',
+            '1x1','65536x65536','1x65536','65536x1','6_5536x6_5536',
+            '0x1080','1920x0','65537x1080','1920x65537',
+            '-1x1080','1920x-1080','-0x1080','1__920x1080',
+            '_1920x1080','1920_x1080','1920x_1080','1920x1080_',
+            '+x1080','1920x+','+ 1920x1080','1920x1080x1',
+            '1920','x1080','1920x','1.0x1080','1e3x1080',
+            '²x1080','Ⅰx1080','18446744073709551616x1080','',None,17,True,[]]
+    rows=[]
+    for value in values:
+        record={'screen':value}
+        rows.append({'input':record,
+                     'core':write_contract.profile_problems(record,kind=write_contract.DASHBOARD_PATCH),
+                     'http':check_fields(record,where='profile')})
+    log.info('Observed packed screen grammar cases=%s',len(rows))
+    print(json.dumps(rows,ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path()).env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 65536,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(observed.exit, 0, "Original packed screen observer failed");
+    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(cases.len(), 46, "Packed screen observations missing");
+    for case in cases {
+        assert_eq!(
+            serde_json::to_value(profile_problems(&case["input"], "dashboard patch")?)?,
+            case["core"],
+            "Packed screen integer grammar differs: {}",
+            case["input"]
+        );
+        assert_eq!(
+            serde_json::to_value(profile_fields::check(&case["input"], "profile", &[])?)?,
+            case["http"],
+            "HTTP packed screen integer grammar differs: {}",
+            case["input"]
+        );
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn ascii_refusal_representation_matches_original_without_exposing_secret_values()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("ascii-refusal-representation")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera.write_contract import profile_problems,DASHBOARD_PATCH
+from run_logging import run_log
+values=[chr(code) for code in range(128)]
+values += ["'",'"',"'\"",'\\',"a'\"\\\n\t\r\x00z",'x'*35+'\x1b'+'y'*20]
+observed=[]
+with run_log('ascii-refusal-representation-oracle',parent/'logs') as log:
+    for value in values:
+        for name in [[value],{'nested':[value,True,None]}]:
+            record={'name':name,'proxy':{'password':['private-control-'+value],
+                                       'pass':{'private-control':value}}}
+            before=json.dumps(record,ensure_ascii=True)
+            expected=profile_problems(record,kind=DASHBOARD_PATCH)
+            assert json.dumps(record,ensure_ascii=True)==before
+            assert len(expected)==3 and all('private-control' not in error for error in expected)
+            observed.append({'input':record,'expected':expected})
+    log.info('Observed ASCII refusal cases=%s',len(observed))
+    print(json.dumps(observed,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .arg(temporary.path())
+        .env("PYTHONUTF8", "1");
+    let original = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 524288,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(original.exit, 0, "Original refusal observer failed");
+    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    assert_eq!(cases.len(), 268, "ASCII refusal observations missing");
+    for (index, case) in cases.iter().enumerate() {
+        let input = case["input"].clone();
+        let actual = profile_problems(&input, "dashboard patch")?;
+        assert_eq!(
+            serde_json::to_value(actual)?,
+            case["expected"],
+            "ASCII refusal representation differs: case={index}"
+        );
+        assert_eq!(input, case["input"], "Validation changed its input");
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn unicode_representation_matches_original_public_validation_and_argv()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{cli, http::profile_fields, ownership::capture};
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("unicode-representation")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,sys,unicodedata
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import cli,mcp,write_contract
+from numera.server.routes_profiles import check_fields
+from run_logging import run_log
+assert unicodedata.unidata_version=='15.1.0','Frozen Unicode observer version differs'
+points=list(range(256))+[
+    0x300,0x374,0x378,0x61c,0x1680,0x180e,0x2000,0x200b,0x200c,0x200d,
+    0x2028,0x2029,0x202e,0x2060,0x2066,0x2069,0x20ac,0x3000,0xd7ff,
+    0xe000,0xf8ff,0xf900,0xfdcf,0xfdd0,0xfdef,0xfdf0,0xfe0f,0xfeff,
+    0xfffd,0xfffe,0xffff,0x10000,0x1bca0,0x1d173,0x1f40d,0x1f600,
+    0x1fae8,0x1fae9,0x2ebf0,0x31350,0xe0001,0xe0020,0xe007f,0xe0100,
+    0xeffff,0xf0000,0xffffd,0xffffe,0xfffff,0x100000,0x10fffd,0x10fffe,0x10ffff]
+values=[chr(point) for point in points]
+values += ["a'\"\\\n\t\r ‍\U000e0020z",'مرحبا 日本語 🐍',
+           'a'*34+'‍'+'b'*8,'a'*35+' '+'b'*8,
+           'a'*30+'\U000e0020'+'b'*8,'a'*34+'🐍'+'b'*8]
+path,parser,_=next(row for row in mcp._walk(cli.build_parser(),(),{}) if row[0]==('show',))
+rows=[]
+with run_log('unicode-representation-oracle',parent/'logs') as log:
+    for value in values:
+        record={'name':{'nested':[value,True,None],value:'tail'},
+                'proxy':{'password':['private-control-'+value],
+                         'pass':{'private-control':value}}}
+        http={value:None}
+        arguments={'ref':[{'nested':[value,True,None],value:'tail'},value]}
+        before=json.dumps([record,http,arguments],ensure_ascii=True)
+        core=write_contract.profile_problems(record,kind=write_contract.DASHBOARD_PATCH)
+        assert len(core)==3 and all('private-control' not in error for error in core)
+        rows.append({'input':record,'core':core,'http_input':http,
+                     'http':check_fields(http,where='profile'),'arguments':arguments,
+                     'argv':mcp._argv(path,parser,arguments)})
+        assert json.dumps([record,http,arguments],ensure_ascii=True)==before
+    log.info('Observed Unicode representation cases=%s',len(rows))
+    print(json.dumps(rows,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .arg(temporary.path())
+        .env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 2 * 1024 * 1024,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        observed.exit, 0,
+        "Original Unicode representation observer failed"
+    );
+    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(
+        cases.len(),
+        315,
+        "Unicode representation observations missing"
+    );
+    for (index, case) in cases.iter().enumerate() {
+        let input = case["input"].clone();
+        assert_eq!(
+            serde_json::to_value(profile_problems(&input, "dashboard patch")?)?,
+            case["core"],
+            "Unicode representation differs: core case={index}"
+        );
+        assert_eq!(
+            serde_json::to_value(profile_fields::check(&case["http_input"], "profile", &[])?)?,
+            case["http"],
+            "Unicode representation differs: HTTP case={index}"
+        );
+        assert_eq!(
+            serde_json::to_value(cli::reflection::argv(
+                "show",
+                case["arguments"]
+                    .as_object()
+                    .ok_or("Source arguments missing")?
+            )?)?,
+            case["argv"],
+            "Unicode representation differs: argv case={index}"
+        );
+        assert_eq!(input, case["input"], "Validation changed its input");
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn finite_numbers_match_original_validation_and_mcp_representation()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{cli, http::profile_fields, ownership::capture};
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("numeric-representation")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command
+        .args([
+            "-I",
+            "-B",
+            "-c",
+            r#"
+import json,math,struct,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import cli,mcp,write_contract
+from numera.server.routes_profiles import check_fields
+from run_logging import run_log
+texts=['0','1','-1','9007199254740993','18446744073709551616',
+       '-'+'9'*100,'9'*100,'0.0','-0.0','1e0','1E+000','1e-05',
+       '0.000010000000000000001','10000000000000000.0',
+       '1.234567890123456789','1.0000000000000001','-1e-400']
+values=[0.0,-0.0,1.0,-1.0,0.1,1.5,112171935477118.12,
+        181681934355391.62,-581170764721946.2,5.444310685350916e14,
+        2e16+8,1.2999999999999999,math.pi,sys.float_info.max,
+        sys.float_info.min,math.ulp(0.0)]
+for exponent in [-308,-100,-10,-6,-5,-4,-3,0,1,14,15,16,17,100,308]:
+    value=10.0**exponent
+    values.extend([math.nextafter(value,0.0),value,math.nextafter(value,math.inf)])
+state=0x9e3779b97f4a7c15
+for _ in range(256):
+    state=(state*6364136223846793005+1442695040888963407)&((1<<64)-1)
+    value=struct.unpack('>d',state.to_bytes(8,'big'))[0]
+    if math.isfinite(value):
+        values.append(value)
+texts.extend(json.dumps(sign*value) for value in values for sign in (1,-1))
+path,parser,_=next(row for row in mcp._walk(cli.build_parser(),(),{}) if row[0]==('show',))
+rows=[]
+with run_log('numeric-representation-oracle',parent/'logs') as log:
+    for text in texts:
+        value=json.loads(text)
+        assert not isinstance(value,float) or math.isfinite(value)
+        record={'name':value,'notes':{'nested':[value,True,None]},'cores':value,
+                'proxy':{'password':[value],'pass':{'private-control':value}}}
+        arguments={'ref':[value,{'nested':[value,True,None]},text]}
+        before=json.dumps([record,arguments],ensure_ascii=True)
+        rows.append({'text':text,'core':write_contract.profile_problems(
+                         record,kind=write_contract.DASHBOARD_PATCH),
+                     'http':check_fields({'cores':value},where='profile'),
+                     'argv':mcp._argv(path,parser,arguments)})
+        assert json.dumps([record,arguments],ensure_ascii=True)==before
+    assert len(rows)==651
+    log.info('Observed finite numeric representation cases=%s',len(rows))
+    print(json.dumps(rows,ensure_ascii=True))
+"#,
+        ])
+        .arg(repository)
+        .arg(temporary.path())
+        .env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 2 * 1024 * 1024,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        observed.exit, 0,
+        "Original numeric representation observer failed"
+    );
+    let rows: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(
+        rows.len(),
+        651,
+        "Numeric representation observations missing"
+    );
+    for (index, row) in rows.iter().enumerate() {
+        let value: Value =
+            serde_json::from_str(row["text"].as_str().ok_or("Numeric input missing")?)?;
+        let input = serde_json::json!({
+            "name":value,"notes":{"nested":[value,true,null]},"cores":value,
+            "proxy":{"password":[value],"pass":{"private-control":value}}
+        });
+        let before = input.clone();
+        assert_eq!(
+            serde_json::to_value(profile_problems(&input, "dashboard patch")?)?,
+            row["core"],
+            "Numeric representation differs: core case={index}"
+        );
+        assert_eq!(
+            serde_json::to_value(profile_fields::check(
+                &serde_json::json!({"cores":value}),
+                "profile",
+                &[]
+            )?)?,
+            row["http"],
+            "Numeric representation differs: HTTP case={index}"
+        );
+        let arguments = serde_json::json!({"ref":[value,{"nested":[value,true,null]},row["text"]]});
+        assert_eq!(
+            serde_json::to_value(cli::reflection::argv(
+                "show",
+                arguments.as_object().ok_or("Arguments missing")?
+            )?)?,
+            row["argv"],
+            "Numeric representation differs: argv case={index}"
+        );
+        assert_eq!(input, before, "Validation changed its numeric input");
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
+fn permitted_fraction_spellings_match_original_numeric_admission()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{http::profile_fields, ownership::capture, validation};
+    use std::{path::Path, process::Command, time::Duration};
+
+    let temporary = common::TempDirectory::new("fraction-admission")?;
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or("Repository missing")?;
+    let mut command = Command::new(
+        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    );
+    command.args(["-I", "-B", "-c", r#"
+import copy,json,math,sys
+from pathlib import Path
+repository,parent=map(Path,sys.argv[1:])
+sys.path.insert(0,str(repository/'scripts/migration'))
+from baseline_source import activate
+activate()
+from numera import write_contract
+from numera.server.routes_profiles import check_fields
+from run_logging import run_log
+base=json.loads((repository/'engine-rust/tests/fixtures/repo-write.json').read_text(encoding='utf-8'))['cases'][0]['initial']['profiles']
+texts=['0.25','0.250','25e-2','250E-3','0.25000000000000001',
+       '2.5000000000000001e-1','0.5','0.50','5e-1','500E-3',
+       '0.50000000000000001','5.0000000000000001e-1']
+for value in (0.25,0.5):
+    for neighbor in (math.nextafter(value,0.0),value,math.nextafter(value,math.inf)):
+        texts.extend(json.dumps(sign*neighbor) for sign in (1,-1))
+texts += ['0','0.0','-0.0','1','1.0','10e-1','1024','1024.0',
+          '1025','1025.0','-1','-1.0','0.125','0.75','1e-400',
+          '18446744073709551616','9'*100,'true','false','null','"0.25"','[]','{}']
+rows=[]
+with run_log('fraction-admission-oracle',parent/'logs') as log:
+    for text in texts:
+        value=json.loads(text)
+        record=copy.deepcopy(base)
+        record['fingerprint']['device_memory']=value
+        patch={'memory':value}
+        before=json.dumps([record,patch],ensure_ascii=True)
+        rows.append({'text':text,
+                     'engine':write_contract.profile_problems(record,kind=write_contract.ENGINE_RECORD),
+                     'patch':write_contract.profile_problems(patch,kind=write_contract.DASHBOARD_PATCH),
+                     'flat':([str(error)] if (error:=write_contract.flat_number_problem('memory',value,'profile')) else []),
+                     'http':check_fields(patch,where='profile')})
+        assert json.dumps([record,patch],ensure_ascii=True)==before
+    assert len(rows)==47
+    assert all(not row['patch'] and not row['http'] for row in rows[:12])
+    log.info('Observed fractional numeric admission cases=%s',len(rows))
+    print(json.dumps(rows,ensure_ascii=True))
+"#]).arg(repository).arg(temporary.path()).env("PYTHONUTF8", "1");
+    let observed = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 2 * 1024 * 1024,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        observed.exit, 0,
+        "Original fractional admission observer failed"
+    );
+    let rows: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    assert_eq!(rows.len(), 47, "Fractional admission observations missing");
+    let fixture: Value = serde_json::from_str(include_str!("fixtures/repo-write.json"))?;
+    let base = &fixture["cases"][0]["initial"]["profiles"];
+    for (index, row) in rows.iter().enumerate() {
+        let value: Value = serde_json::from_str(row["text"].as_str().ok_or("Input missing")?)?;
+        let mut record = base.clone();
+        record["fingerprint"]["device_memory"] = value.clone();
+        let patch = serde_json::json!({"memory": value});
+        let before = (record.clone(), patch.clone());
+        for (label, actual) in [
+            ("engine", profile_problems(&record, "engine record")?),
+            ("patch", profile_problems(&patch, "dashboard patch")?),
+            ("flat", validation::flat_number_problems(&patch)?),
+            ("http", profile_fields::check(&patch, "profile", &[])?),
+        ] {
+            assert_eq!(
+                serde_json::to_value(actual)?,
+                row[label],
+                "Fraction numeric admission differs: {label} case={index}"
+            );
+        }
+        assert_eq!(
+            (record, patch),
+            before,
+            "Numeric validation changed its input"
+        );
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
 
 #[test]
 fn uncoerced_write_validation_matches_source() -> Result<(), Box<dyn std::error::Error>> {

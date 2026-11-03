@@ -52,8 +52,8 @@ def launch_options(engine: str, data_dir=None) -> dict:
             geolocation.GEOIP_CONFIG = database / 'config.yml'
     entry = manifest.get(engine)
     if entry is None:
-        # Distributable builds include the Cloak wrapper; its vendor downloads
-        # the binary directly to the end user's machine on first use.
+        # The proprietary binary is excluded from public builds. The separate
+        # acquisition route requires consent before any vendor download.
         if engine == 'cloak':
             return {}
         raise FileNotFoundError(f'The portable bundle has no {engine} browser')

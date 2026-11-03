@@ -16,11 +16,11 @@ jobs:
       PYTHONUTF8: "1"
       HOOKMAKER_MAX_TEST_WORKERS: "2"
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13.15"
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "26"
           cache: npm
@@ -38,13 +38,34 @@ jobs:
       # actual suite in both full CI and the manual maintenance checkpoint.
       - name: Tests
         working-directory: dashboard
-        run: python ../scripts/migration/run_owned.py --wall 300 --idle 90 -- npm test -- --maxWorkers=2
+        run: python ../scripts/migration/run_owned.py --wall 300 --idle 90 -- npm test -- --maxWorkers=2 --reporter=default --reporter=json --outputFile=../build/dashboard-results.json
+      - name: Reject undiscovered, skipped or unimplemented dashboard tests
+        if: always()
+        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py report --tier dashboard --report build/dashboard-results.json
       - name: Strict TypeScript
         working-directory: dashboard
         run: python ../scripts/migration/run_owned.py --wall 120 --idle 60 -- npm run typecheck
       - name: Lint
         working-directory: dashboard
         run: python ../scripts/migration/run_owned.py --wall 120 --idle 60 -- npm run lint
-      - name: Build
+      - name: Build once after the explicit strict type gate
         working-directory: dashboard
-        run: python ../scripts/migration/run_owned.py --wall 180 --idle 60 -- npm run build
+        run: python ../scripts/migration/run_owned.py --wall 180 --idle 60 -- npx --no-install vite build
+      - name: Bind dashboard artifact to the verified source
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          package = json.loads(Path("dashboard/package.json").read_text(encoding="utf-8"))
+          metadata = {"source_sha": os.environ["SOURCE_SHA"], "version": package["version"]}
+          Path("dashboard/dist/ci-source.json").write_text(json.dumps(metadata) + "\n", encoding="utf-8")
+          PY
+      - name: Preserve the exact dashboard used by packages and API tests
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dashboard-dist
+          path: dashboard/dist/
+          if-no-files-found: error
+          retention-days: 1

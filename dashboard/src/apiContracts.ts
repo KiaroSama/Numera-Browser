@@ -67,6 +67,8 @@ export const profiles = array(profile);
 export const proxies = array(shape({ ...proxyFields, id: text }));
 export const config = shape({ root: optional(text), version: optional(text), folders: optional(strings), default_engine: optional(text), default_extensions: optional(strings), proxyCount: optional(number) });
 export const engines: Decoder<Engines> = value => Object.fromEntries(Object.entries(record(value)).map(([key, installed]) => [key, boolean(installed)]));
+export const cloakOffer = shape({ engine: text, available: boolean, installed: boolean, offer_id: nullable(text),
+  sdk: optional(text), version: optional(text), platform: optional(text), keyed: optional(boolean), reason: nullable(text), notice: optional(text) });
 const grade = shape({ grade: optional(text), score: number, passed: optional(number), total: optional(number) });
 export const probe = shape({ before: optional(grade), after: optional(grade), grade: optional(text), score: optional(number), passed: optional(number), total: optional(number), checks: optional(array(shape({ name: text, ok: boolean, detail: optional(text) }))), changed: optional(strings), os: optional(text), ip: optional(text), city: optional(nullable(text)), country: optional(nullable(text)), latencyMs: optional(number), ja3Hash: optional(nullable(text)), ja4: optional(nullable(text)), countries: optional(strings), resolvers: optional(array(json)), error: optional(text), profile: optional(profile) });
 export const schedule = shape({ id: text, profileId: text, everyHours: number, minutes: number, preset: text, enabled: optional(boolean) });

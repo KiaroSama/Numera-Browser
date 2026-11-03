@@ -1,4 +1,8 @@
+#[cfg(not(target_os = "macos"))]
 use std::io;
+
+#[cfg(target_os = "macos")]
+pub use super::macos::{alive, started_at};
 
 /// None means absent; an error is unknown, never authority to signal a PID.
 #[cfg(target_os = "linux")]
@@ -152,7 +156,7 @@ pub fn alive(pid: u32, token: Option<u64>) -> io::Result<bool> {
     Err(error)
 }
 
-#[cfg(not(any(windows, target_os = "linux")))]
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
 pub fn alive(_pid: u32, _token: Option<u64>) -> io::Result<bool> {
     Err(io::Error::new(
         io::ErrorKind::Unsupported,
@@ -160,7 +164,7 @@ pub fn alive(_pid: u32, _token: Option<u64>) -> io::Result<bool> {
     ))
 }
 
-#[cfg(not(any(windows, target_os = "linux")))]
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
 pub fn started_at(pid: u32) -> io::Result<Option<u64>> {
     let _ = pid;
     Err(io::Error::new(

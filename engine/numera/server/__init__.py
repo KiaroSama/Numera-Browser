@@ -148,17 +148,19 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
 
     from ..scheduler import ScheduleStore, due_schedules, next_run_at
 
-    engine_store = ProfileStore(data_dir, password=password)
-    dash = DashboardStore(engine_store.root, engine_store)
-    pool = ProxyPool(engine_store.root, engine_store)
-    tokens = TokenStore(engine_store.root)
-    # A data root whose tokens were minted before the policy marker existed is
-    # protected only for as long as those tokens are readable. Writing the
-    # marker now - before a single request can be served, and so before
-    # anything can delete or corrupt that file - is what makes an upgraded
-    # installation as durable as a new one.
-    tokens.adopt()
-    sched = ScheduleStore(engine_store.root)
+    from ..paths import resolve_data_dir
+    from ..update_startup import startup
+    root = resolve_data_dir(data_dir)
+    with startup(root) as recovery:
+        engine_store = ProfileStore(root, password=password)
+        dash = DashboardStore(engine_store.root, engine_store)
+        pool = ProxyPool(engine_store.root, engine_store)
+        tokens = TokenStore(engine_store.root)
+        # Adoption mutates policy, so ordinary initialization reserves it before
+        # any request is served. Recovery preflight requires adoption already done.
+        if not recovery:
+            tokens.adopt()
+        sched = ScheduleStore(engine_store.root)
     # Reachable for tests and introspection: whether this app's store is
     # unlocked is otherwise invisible from outside, and that is exactly the
     # thing that was silently wrong.
@@ -212,6 +214,8 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         run_shutdown()
 
     app = FastAPI(title="Numera Browser API", version=__version__, lifespan=lifespan)
+    from . import routes_updates
+    routes_updates.configure_admission(app, engine_store.root)
     app.state.add_shutdown = shutdown_hooks.append
     app.state.run_shutdown = run_shutdown
 
@@ -268,7 +272,7 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         # One public endpoint, deliberately. The desktop shell polls it to know
         # the engine is up, and a 401 there meant an authenticated engine could
         # never be reached - not even to show the screen that asks for a token.
-        if request.url.path.rstrip("/") == "/api/ready":
+        if request.url.path.rstrip("/") in ("/api/ready", "/api/updates/prepare", "/api/updates/quiesce", "/api/updates/resume"):
             return await call_next(request)
         if not auth_required():
             return await call_next(request)
@@ -290,7 +294,13 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
             sent.encode("utf-8", "surrogateescape"),
             api_token.encode("utf-8", "surrogateescape"))
         if not ok:
-            ok = tokens.verify(sent) is not None
+            from .routes_updates import verify_named_token
+            from ..update_admission import UpdateBusy
+            try:
+                ok = await verify_named_token(app.state.update_admission, tokens, sent)
+            except UpdateBusy:
+                from fastapi.responses import JSONResponse
+                return JSONResponse({'detail': 'An update has closed work admission'}, status_code=409)
         if not ok:
             from fastapi.responses import JSONResponse
             return JSONResponse({"detail": "invalid or missing API token"}, status_code=401)
@@ -468,7 +478,8 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
         if kind not in KINDS:
             raise ValueError(f"unknown child kind {kind!r}; "
                              f"known: {', '.join(KINDS)}")
-        with _spawn_lock(pid):
+        from ..update_admission import Admission
+        with Admission(engine_store.root).work('browser startup'), _spawn_lock(pid):
             ours = running.get(pid)
             if ours is not None and _settled(ours) is None:
                 return None
@@ -556,6 +567,7 @@ def create_app(data_dir: Optional[str] = None, start_scheduler: bool = True,
     routes_proxies.register(app, ctx)
     routes_schedules.register(app, ctx)
 
+    routes_updates.register(app, engine_store)
     _mount_dashboard(app)   # must be last: its catch-all would shadow /api/*
     for _name, _store in app_state_stores.items():
         setattr(app.state, _name, _store)
@@ -595,103 +607,4 @@ def _register_domain_errors(app) -> None:
         return JSONResponse({"detail": str(exc)}, status_code=423)
 
 
-# `""` is deliberately NOT here. An empty host binds every interface - the exact
-# case this guard exists to refuse - and listing it as loopback waved
-# `--host ""` through as if it were localhost.
-LOOPBACK = {"127.0.0.1", "localhost", "::1", "0:0:0:0:0:0:0:1"}
-
-
-def _refuse_insecure_bind(host: str, root) -> "Optional[str]":
-    """Why this bind must not happen, or None if it may.
-
-    The API creates profiles, launches browsers and exports cookies. It is only
-    safe unauthenticated because nothing outside the machine can reach it, so
-    the moment it stops being loopback it needs a credential. Returns the
-    message rather than raising, so the CLI and the tests can use the same rule.
-    """
-    import os as _os
-
-    from .stores import TokenStore as _TokenStore
-
-    if str(host).strip().lower() in LOOPBACK:
-        return None
-    if (_os.environ.get("NUMERA_API_TOKEN") or "").strip():
-        return None
-    try:
-        if _TokenStore(root).list():
-            return None
-    except Exception:  # noqa: BLE001 - an unreadable store is not a credential
-        pass
-    if (_os.environ.get("NUMERA_ALLOW_INSECURE_BIND") or "").strip():
-        return None
-    return (
-        f"Refusing to serve on {host} without authentication.\n"
-        f"  This API can create profiles, launch browsers and export cookies, and\n"
-        f"  on a non-loopback address anything that can reach the port can use it.\n"
-        f"  Fix it with either:\n"
-        f"    numera token create \"<what it is for>\"   (recommended)\n"
-        f"    set NUMERA_API_TOKEN=<secret>\n"
-        f"  Then set NUMERA_ALLOWED_ORIGINS if a browser page will call it.\n"
-        f"  To bind anyway - only when something else in front already\n"
-        f"  authenticates - set NUMERA_ALLOW_INSECURE_BIND=1."
-    )
-
-
-def serve(host: str = "127.0.0.1", port: int = 8787, data_dir: Optional[str] = None,
-          verbose: bool = False, password: Optional[str] = None):
-    """Start the API server (blocking).
-
-    `password` carries the caller's already-unlocked vault into the app; see
-    `create_app`.
-    """
-    _require_fastapi()
-    import uvicorn
-
-    from .. import firstrun, logs
-    from ..paths import resolve_data_dir, watch_parent
-
-    root = resolve_data_dir(data_dir)
-    # Normalise before the guard so an explicitly empty host is judged as what
-    # it actually does - bind everything - rather than skipped as loopback.
-    host = (host or "").strip() or "127.0.0.1"
-    refusal = _refuse_insecure_bind(host, root)
-    if refusal:
-        raise SystemExit(refusal)
-    log_path = logs.setup(root, verbose=verbose)
-    log = logs.get("serve")
-
-    # Before anything opens the store: carry an older install's profiles across.
-    imported = firstrun.run_if_needed(root)
-    if imported:
-        log.info("first run: imported from %s - copied %s, skipped %s, %d profile(s)",
-                 imported["source"], imported["copied"] or "nothing",
-                 imported["skipped"] or "nothing", imported["profiles"])
-        for problem in imported["failed"]:
-            log.warning("first-run import problem: %s", problem)
-        if imported["copied"]:
-            print(f"  Imported {imported['profiles']} profile(s) from {imported['source']}")
-
-    app = create_app(str(root), password=password)
-
-    # The desktop shell sets NUMERA_PARENT_PID. Without this, a force-killed
-    # shell on macOS left the engine serving on its port, and the next launch
-    # started a second engine against the same portable data root.
-    #
-    # Armed after the app exists so it can take the browsers with it: the
-    # default `on_gone` is a bare `os._exit`, which skips the lifespan and left
-    # every launched browser orphaned. Nothing before this point has started
-    # one, or bound the port, so the window it gives up is empty.
-    def shell_is_gone():
-        try:
-            app.state.run_shutdown()
-        finally:
-            os._exit(0)
-
-    watch_parent(on_gone=shell_is_gone)
-
-    where = "the dashboard and API" if dashboard_dir() else "the API"
-    print(f"Numera Browser: {where} on http://{host}:{port}  (data: {root})")
-    if log_path:
-        print(f"  log: {log_path}")
-    log.info("listening on %s:%s", host, port)
-    uvicorn.run(app, host=host, port=port, log_level="debug" if verbose else "info")
+from .runtime import LOOPBACK, _refuse_insecure_bind, serve  # noqa: E402,F401

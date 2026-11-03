@@ -40,7 +40,7 @@ fn remove(state: &Profiles, id: &str) -> Result<bool, RepoError> {
     Ok(true)
 }
 pub(super) async fn single(State(state): State<Arc<Profiles>>, Path(id): Path<String>) -> Response {
-    match tokio::task::spawn_blocking(move || remove(&state, &id)).await {
+    match super::admission::blocking(move || remove(&state, &id)).await {
         Ok(Ok(true)) => Json(json!({"ok":true})).into_response(),
         Ok(Ok(false)) => profile_errors::detail(StatusCode::NOT_FOUND, "profile not found"),
         Ok(Err(error)) => profile_errors::storage(error),
@@ -73,7 +73,7 @@ pub(super) async fn bulk(
     State(state): State<Arc<Profiles>>,
     ObjectBody(body): ObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || remove_many(&state, body)).await {
+    match super::admission::blocking(move || remove_many(&state, body)).await {
         Ok(response) => response,
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),
     }

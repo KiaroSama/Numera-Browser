@@ -180,6 +180,7 @@ def test_cloak_releases_everything_when_startup_fails_after_the_context(
     fake.__spec__ = importlib.machinery.ModuleSpec("cloakbrowser", None)
     fake.launch_persistent_context = lambda **kwargs: context
     monkeypatch.setitem(sys.modules, "cloakbrowser", fake)
+    monkeypatch.setattr('numera.cloak_acquisition.launch_options', lambda: {})
     monkeypatch.setattr(drivers, "_browser_proxy",
                         lambda profile: ({"server": "http://127.0.0.1:1"}, relay))
     monkeypatch.setattr(drivers, "_opened", lambda: opened.append(True))

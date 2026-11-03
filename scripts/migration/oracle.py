@@ -14,9 +14,9 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-BASELINE = '13b6d9c6973281fe123353eaec05b29d65781a2d'
-sys.path.insert(0, str(ROOT / 'engine'))
+WORKSPACE = Path(__file__).resolve().parents[2]
+from baseline_source import BASELINE, activate  # noqa: E402
+ROOT = activate()
 from numera.fingerprint import generate, ua_metadata, client_hint_headers, validate  # noqa: E402
 from numera import devices  # noqa: E402
 from numera.models import Fingerprint, Profile, Proxy  # noqa: E402
@@ -96,12 +96,12 @@ def document(seam: str = 'models') -> dict:
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'browser-resources':
         from browser_resource_cases import cases
-        result.update(seam='browser-resource-preparation', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='browser-resource-preparation', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         name = 'engine/numera/launch_options.py'
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'browser-admission':
         from browser_admission_cases import cases
-        result.update(seam='browser-post-lease-admission', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='browser-post-lease-admission', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/drivers.py', 'engine/numera/repo.py', 'engine/numera/vault.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'browser-options':
@@ -116,32 +116,32 @@ def document(seam: str = 'models') -> dict:
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'profile-http-delete':
         from profile_delete_cases import cases
-        result.update(seam='http-profile-deletes', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-profile-deletes', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/routes_profiles.py', 'engine/numera/repo.py', 'engine/numera/server/stores.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'ready':
         from ready_cases import cases
-        result.update(seam='session-ready-handshake', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='session-ready-handshake', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         name = 'engine/numera/handshake.py'
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'profile-http-import':
         from profile_http_import_cases import cases
-        result.update(seam='http-profile-imports', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-profile-imports', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/routes_profiles.py', 'engine/numera/importers.py', 'engine/numera/convert.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'profile-batch':
         from profile_batch_cases import cases
-        result.update(seam='http-profile-batches', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-profile-batches', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/routes_profiles.py', 'engine/numera/server/stores.py', 'engine/numera/write_contract.py', 'engine/numera/convert.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'profile-overview':
         from profile_overview_cases import cases
-        result.update(seam='http-profile-overviews', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-profile-overviews', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/routes_profiles.py', 'engine/numera/collision.py', 'engine/numera/convert.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'profile-write':
         from profile_write_cases import cases
-        result.update(seam='http-profile-writes', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-profile-writes', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/routes_profiles.py', 'engine/numera/server/stores.py', 'engine/numera/write_contract.py', 'engine/numera/convert.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'http-fields':
@@ -151,120 +151,120 @@ def document(seam: str = 'models') -> dict:
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'profile-read':
         from profile_read_cases import cases
-        result.update(seam='http-profile-read', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-profile-read', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/routes_profiles.py', 'engine/numera/server/__init__.py', 'engine/numera/write_contract.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'fingerprint-routes':
         from fingerprint_route_cases import cases
-        result.update(seam='http-fingerprint-validation', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-fingerprint-validation', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/routes_profiles.py', 'engine/numera/convert.py', 'engine/numera/fingerprint.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'proxy-routes':
         from proxy_route_cases import cases
-        result.update(seam='http-proxy-persistence', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-proxy-persistence', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/routes_proxies.py', 'engine/numera/proxypool.py', 'engine/numera/server/stores.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'extension-routes':
         from extension_route_cases import cases
-        result.update(seam='http-installed-extensions', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-installed-extensions', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/routes_config.py', 'engine/numera/webstore.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'config-routes':
         from config_route_cases import cases
-        result.update(seam='http-settings-routes', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-settings-routes', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/routes_config.py', 'engine/numera/config_store.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'application-routes':
         from application_route_cases import cases
-        result.update(seam='http-application-composition', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-application-composition', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/__init__.py', 'engine/numera/server/stores.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'schedule-routes':
         from schedule_route_cases import cases
-        result.update(seam='http-schedule-routes', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-schedule-routes', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/routes_schedules.py', 'engine/numera/scheduler.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'folder-routes':
         from folder_route_cases import cases
-        result.update(seam='http-folder-transactions', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-folder-transactions', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/routes_config.py', 'engine/numera/folders.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'token-routes':
         from token_route_cases import cases
-        result.update(seam='http-token-routes', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-token-routes', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/routes_config.py', 'engine/numera/server/stores.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'diagnostic-routes':
         from diagnostic_route_cases import cases
-        result.update(seam='http-diagnostic-routes', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-diagnostic-routes', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/__init__.py', 'engine/numera/server/routes_config.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'cors':
         from cors_cases import cases
         from importlib.metadata import version
-        result.update(seam='http-cors-requests', source_dependencies={name: version(name) for name in ('fastapi', 'starlette')}, cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-cors-requests', source_dependencies={name: version(name) for name in ('fastapi', 'starlette')}, cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         result['source_hashes']['engine/numera/server/__init__.py'] = hashlib.sha256((ROOT / 'engine/numera/server/__init__.py').read_bytes()).hexdigest()
     elif seam == 'bind-policy':
         from bind_policy_cases import cases
-        result.update(seam='http-bind-policy', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='http-bind-policy', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/__init__.py', 'engine/numera/server/stores.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'schedule-write':
         from schedule_write_cases import cases
-        result.update(seam='schedule-write-validation', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='schedule-write-validation', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/scheduler.py', 'engine/numera/warmup.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'schedule-store':
         from schedule_store_cases import cases
-        result.update(seam='schedule-occurrence-bookkeeping', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='schedule-occurrence-bookkeeping', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         result['source_hashes']['engine/numera/scheduler.py'] = hashlib.sha256((ROOT / 'engine/numera/scheduler.py').read_bytes()).hexdigest()
     elif seam == 'dashboard-revision':
         from dashboard_revision_cases import cases
-        result.update(seam='dashboard-revision-coercion', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='dashboard-revision-coercion', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         result['source_hashes']['engine/numera/server/stores.py'] = hashlib.sha256((ROOT / 'engine/numera/server/stores.py').read_bytes()).hexdigest()
     elif seam == 'dashboard-meta':
         from dashboard_meta_cases import cases
-        result.update(seam='dashboard-metadata-delete', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='dashboard-metadata-delete', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/stores.py', 'engine/numera/repo.py', 'engine/numera/paths.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'dashboard-batch':
         from dashboard_batch_cases import cases
-        result.update(seam='dashboard-batch-transaction', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='dashboard-batch-transaction', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/stores.py', 'engine/numera/server/convert.py', 'engine/numera/repo.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'dashboard-vault':
         from dashboard_vault_cases import cases
-        result.update(seam='dashboard-vault-intent', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='dashboard-vault-intent', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/stores.py', 'engine/numera/vault.py', 'engine/numera/repo.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'dashboard-store':
         from dashboard_store_cases import cases
-        result.update(seam='dashboard-dual-store', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='dashboard-dual-store', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/stores.py', 'engine/numera/server/convert.py', 'engine/numera/repo.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'request-auth':
         from request_auth_cases import cases
-        result.update(seam='request-auth-boundary', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='request-auth-boundary', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/__init__.py', 'engine/numera/server/stores.py', 'engine/numera/server/auth_policy.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'token-create':
         from token_create_cases import cases
-        result.update(seam='named-token-create', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='named-token-create', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         name = 'engine/numera/server/stores.py'
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'token-store':
         from token_store_cases import cases
-        result.update(seam='sticky-token-store', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='sticky-token-store', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/stores.py', 'engine/numera/server/auth_policy.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'extension-install':
         from extension_install_cases import cases
-        result.update(seam='extension-install-mutation', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='extension-install-mutation', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         name = 'engine/numera/webstore.py'
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'extension-packages':
         from extension_package_cases import cases
-        result.update(seam='extension-crx-extraction', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='extension-crx-extraction', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/webstore.py', 'engine/numera/paths.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'extension-ids':
@@ -274,37 +274,37 @@ def document(seam: str = 'models') -> dict:
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'extension-resources':
         from extension_resource_cases import cases
-        result.update(seam='extension-manifest-resources', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='extension-manifest-resources', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/webstore.py', 'engine/numera/paths.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'profile-restore':
         from profile_restore_cases import cases
-        result.update(seam='staged-profile-restore', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='staged-profile-restore', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/archive.py', 'engine/numera/store.py', 'engine/numera/repo.py', 'engine/numera/paths.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'profile-backup':
         from profile_backup_cases import cases
-        result.update(seam='lease-aware-profile-backup', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='lease-aware-profile-backup', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/archive.py', 'engine/numera/store.py', 'engine/numera/sessions.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'profile-import':
         from profile_import_cases import cases
-        result.update(seam='dual-store-profile-import', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='dual-store-profile-import', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/archive.py', 'engine/numera/store.py', 'engine/numera/repo.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'profile-export':
         from profile_export_cases import cases
-        result.update(seam='credential-aware-profile-export', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='credential-aware-profile-export', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/archive.py', 'engine/numera/store.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'pool-vault':
         from pool_vault_cases import cases
-        result.update(seam='proxy-pool-vault', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='proxy-pool-vault', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/server/stores.py', 'engine/numera/vault.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'pool-store':
         from pool_store_cases import cases
-        result.update(seam='proxy-pool-mutation', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='proxy-pool-mutation', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         name = 'engine/numera/server/stores.py'
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'pool-normalize':
@@ -319,77 +319,77 @@ def document(seam: str = 'models') -> dict:
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'first-run':
         from first_run_cases import cases
-        result.update(seam='first-run-copy-merge', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='first-run-copy-merge', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         name = 'engine/numera/firstrun.py'
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'data-root':
         from data_root_cases import cases
-        result.update(seam='data-root-precedence', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='data-root-precedence', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         name = 'engine/numera/paths.py'
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'repo-delete':
         from repo_delete_cases import cases
-        result.update(seam='dual-store-delete', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='dual-store-delete', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/repo.py', 'engine/numera/store.py', 'engine/numera/sessions.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'repo-lookup':
         from repo_lookup_cases import cases
-        result.update(seam='dual-store-lookup', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='dual-store-lookup', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/repo.py', 'engine/numera/store.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'repo-batch':
         from repo_batch_cases import cases
-        result.update(seam='dual-store-batch', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='dual-store-batch', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/repo.py', 'engine/numera/store.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'folders':
         from folder_cases import cases
-        result.update(seam='folder-transactions', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='folder-transactions', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         name = 'engine/numera/folders.py'
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'rotation-recovery':
         from rotation_recovery_cases import cases
-        result.update(seam='interrupted-vault-rotation', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='interrupted-vault-rotation', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/vault.py', 'engine/numera/vault_recovery.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'vault-rotate':
         from vault_rotate_cases import cases
-        result.update(seam='ordinary-vault-rotation', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='ordinary-vault-rotation', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/store.py', 'engine/numera/vault.py', 'engine/numera/vault_recovery.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'vault-enable':
         from vault_enable_cases import cases
-        result.update(seam='ordinary-vault-enable', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='ordinary-vault-enable', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/store.py', 'engine/numera/vault.py', 'engine/numera/vault_recovery.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'claims':
         from claim_cases import cases
-        result.update(seam='durable-claim-uncertainty', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='durable-claim-uncertainty', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/sessions.py', 'engine/numera/proctree.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'recovery':
         from recovery_cases import cases
-        result.update(seam='interrupted-vault-enable', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='interrupted-vault-enable', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/vault_recovery.py', 'engine/numera/vault.py', 'engine/numera/vault_active_descriptor.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'migration':
         from migration_cases import cases
-        result.update(seam='secret-file-migration', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='secret-file-migration', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         name = 'engine/numera/vault.py'
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'repo-write':
         from repo_write_cases import cases
-        result.update(seam='dual-store-write', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='dual-store-write', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/repo.py', 'engine/numera/store.py', 'engine/numera/vault.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'completion':
         from completion_cases import cases
-        result.update(seam='authenticated-vault-completion', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='authenticated-vault-completion', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/vault_recovery.py', 'engine/numera/vault.py', 'engine/numera/vault_problems.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'repo':
         from repo_cases import cases
-        result.update(seam='dual-store-reconciliation', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='dual-store-reconciliation', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         for name in ('engine/numera/repo.py', 'engine/numera/convert.py', 'engine/numera/store.py'):
             result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'secrets':
@@ -399,7 +399,7 @@ def document(seam: str = 'models') -> dict:
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'config':
         from config_cases import cases
-        result.update(seam='config-read-merge', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='config-read-merge', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         name = 'engine/numera/config_store.py'
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'paths':
@@ -409,7 +409,7 @@ def document(seam: str = 'models') -> dict:
         result['source_hashes'][name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     elif seam == 'journal':
         from journal_cases import cases
-        result.update(seam='vault-journal-classification', cases=cases(ROOT / '.ci-work' / 'migration-temp'))
+        result.update(seam='vault-journal-classification', cases=cases(WORKSPACE / '.ci-work' / 'migration-temp'))
         result['source_hashes'].update({name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
                                        for name in ('engine/numera/vault_recovery.py', 'engine/numera/vault_active_descriptor.py')})
     elif seam == 'conversion':
@@ -464,7 +464,7 @@ def main(argv=None) -> int:
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--seam', choices=('models', 'devices', 'generation', 'identity', 'validation', 'field-policy', 'vault', 'conversion', 'journal', 'paths', 'config', 'secrets', 'repo', 'completion', 'repo-write', 'migration', 'recovery', 'claims', 'vault-enable', 'vault-rotate', 'rotation-recovery', 'folders', 'repo-batch', 'repo-lookup', 'repo-delete', 'data-root', 'first-run', 'pool-parse', 'pool-digits', 'pool-normalize', 'pool-store', 'pool-vault', 'profile-export', 'profile-import', 'profile-backup', 'profile-restore', 'extension-resources', 'extension-ids', 'extension-packages', 'extension-install', 'token-store', 'token-create', 'request-auth', 'dashboard-store', 'dashboard-vault', 'dashboard-batch', 'dashboard-meta', 'dashboard-revision', 'schedule-store', 'schedule-write', 'bind-policy', 'cors', 'diagnostic-routes', 'token-routes', 'folder-routes', 'schedule-routes', 'application-routes', 'config-routes', 'extension-routes', 'proxy-routes', 'fingerprint-routes', 'profile-read', 'http-fields', 'profile-write', 'profile-overview', 'profile-batch', 'profile-http-import', 'ready', 'profile-http-delete', 'init-script', 'browser-options', 'browser-admission', 'browser-resources', 'browser-ip', 'browser-hints', 'browser-startup'), default='models')
     parser.add_argument('--check', action='store_true')
-    parser.add_argument('--log-dir', type=Path, default=ROOT / 'scripts' / 'logs')
+    parser.add_argument('--log-dir', type=Path, default=WORKSPACE / 'scripts' / 'logs')
     args = parser.parse_args(argv)
     started = time.monotonic()
     try:

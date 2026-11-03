@@ -57,7 +57,7 @@ fn backup_carries_complete_profile_and_session_or_refuses_before_output()
                 let mut members = Map::new();
                 for index in 0..zip.len() {
                     let mut file = zip.by_index(index)?;
-                    let name = file.name().to_owned();
+                    let name = file.name()?.into_owned();
                     let mut bytes = Vec::new();
                     file.read_to_end(&mut bytes)?;
                     let value = if name == "profile.json" {

@@ -21,6 +21,21 @@ pub struct OwnedTree {
 impl OwnedTree {
     /// Capability is withheld until the child belongs to its own kernel tree.
     pub fn spawn(command: &mut Command) -> io::Result<Self> {
+        let attempt = super::unit_report::begin_spawn()?;
+        // Failed creation can be uncertain after the OS accepted a child. Leave
+        // the intent pending rather than inventing a zero-unit cancellation.
+        let mut tree = Self::spawn_tree(command)?;
+        if let Err(error) = super::unit_report::record(&tree.record(), attempt.as_deref()) {
+            if tree.settle(Duration::from_secs(5)).is_ok() {
+                super::unit_report::cancel_spawn(attempt.as_deref())?;
+            } else {
+                super::capture::retain_tree(tree);
+            }
+            return Err(error);
+        }
+        Ok(tree)
+    }
+    fn spawn_tree(command: &mut Command) -> io::Result<Self> {
         #[cfg(windows)]
         {
             use std::os::windows::process::CommandExt;
@@ -178,10 +193,24 @@ pub fn record_empty(record: &serde_json::Value) -> io::Result<bool> {
     }
 }
 
+#[cfg(all(test, target_os = "linux"))]
+std::thread_local! {
+    static PROCFS_ROOT: std::cell::RefCell<std::path::PathBuf> =
+        std::cell::RefCell::new(std::path::PathBuf::from("/proc"));
+}
+
+#[cfg(all(test, target_os = "linux"))]
+#[path = "procfs_tests.rs"]
+mod tests;
+
 #[cfg(target_os = "linux")]
 fn group_empty(group: i32) -> io::Result<bool> {
+    #[cfg(test)]
+    let root = PROCFS_ROOT.with(|root| root.borrow().clone());
+    #[cfg(not(test))]
+    let root = std::path::Path::new("/proc");
     let mut unknown = false;
-    for entry in std::fs::read_dir("/proc")? {
+    for entry in std::fs::read_dir(root)? {
         let entry = entry?;
         if entry
             .file_name()
@@ -207,8 +236,10 @@ fn group_empty(group: i32) -> io::Result<bool> {
             unknown = true;
             continue;
         }
-        if fields[2].parse::<i32>().ok() == Some(group) && fields[0] != "Z" {
-            return Ok(false);
+        match fields[2].parse::<i32>() {
+            Ok(member_group) if member_group == group && fields[0] != "Z" => return Ok(false),
+            Ok(_) => {}
+            Err(_) => unknown = true,
         }
     }
     if unknown {
@@ -218,7 +249,10 @@ fn group_empty(group: i32) -> io::Result<bool> {
     }
     Ok(true)
 }
-#[cfg(all(unix, not(target_os = "linux")))]
+#[cfg(target_os = "macos")]
+use super::macos::group_empty;
+
+#[cfg(all(unix, not(any(target_os = "linux", target_os = "macos"))))]
 fn group_empty(_group: i32) -> io::Result<bool> {
     Err(io::Error::new(
         io::ErrorKind::Unsupported,

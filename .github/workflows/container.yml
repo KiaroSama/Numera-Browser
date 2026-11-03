@@ -1,0 +1,74 @@
+name: Container verification
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: utf-8
+  HOOKMAKER_MAX_TEST_WORKERS: "2"
+  CARGO_BUILD_JOBS: "2"
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
+
+jobs:
+  docker:
+    name: Container image and bundled-browser integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Build the image
+        run: python scripts/migration/run_owned.py --wall 1200 --idle 150 -- docker build --pull --no-cache -t numera-browser:ci .
+      - name: The container serves, authenticates and stores
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          token="ci-$RANDOM"
+          docker run -d --name numera-ci -e NUMERA_API_TOKEN="$token" -p 18787:8787 numera-browser:ci
+          ready=""
+          for _ in $(seq 1 60); do
+            if curl -sf --max-time 3 -H "Authorization: Bearer $token" http://127.0.0.1:18787/api/health -o "$RUNNER_TEMP/health.json"; then
+              ready=1; break
+            fi
+            docker inspect -f '{{.State.Running}}' numera-ci | grep -q true || break
+            sleep 1
+          done
+          if [ -z "$ready" ]; then
+            echo "The container never answered /api/health"; docker logs numera-ci; exit 1
+          fi
+          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:18787/api/health)"
+          [ "$code" = "401" ] || { echo "Unauthenticated request got $code, not 401"; exit 1; }
+          curl -sf --max-time 10 -X POST -H "Authorization: Bearer $token" -H "Content-Type: application/json" -d '{"name":"ci-smoke"}' http://127.0.0.1:18787/api/profiles > /dev/null
+          curl -sf --max-time 10 -H "Authorization: Bearer $token" http://127.0.0.1:18787/api/profiles | grep -q ci-smoke
+          docker run --rm --entrypoint python numera-browser:ci -c "import cryptography, numera; print(numera.__version__, cryptography.__version__)"
+      - name: The container launches its bundled Chromium
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 60s \
+            docker run --rm --init --network none --shm-size=1g -i \
+              --name "numera-browser-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+              --entrypoint python numera-browser:ci - \
+              < scripts/smoke_container_browser.py
+      - name: Remove an interrupted browser smoke container
+        if: always()
+        run: |
+          name="numera-browser-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          if docker container inspect "$name" >/dev/null 2>&1; then docker rm -f "$name"; fi
+          if docker container inspect "$name" >/dev/null 2>&1; then exit 1; fi
+      - name: Container logs on failure
+        if: failure()
+        run: |
+          if docker container inspect numera-ci >/dev/null 2>&1; then docker logs numera-ci; fi
+      - name: Stop the container and verify absence
+        if: always()
+        run: |
+          if docker container inspect numera-ci >/dev/null 2>&1; then docker rm -f numera-ci; fi
+          if docker container inspect numera-ci >/dev/null 2>&1; then exit 1; fi

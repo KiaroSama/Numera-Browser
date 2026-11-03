@@ -28,8 +28,9 @@
     "active": true,
     "targets": ["nsis"],
     "icon": ["icons/icon.ico"],
-    "copyright": "Numera",
+    "publisher": "KiaroSama",
+    "copyright": "KiaroSama",
     "category": "DeveloperTool",
-    "shortDescription": "Anti-detect browser profile manager"
+    "shortDescription": "Local-first browser-profile manager for authorized testing and automation"
   }
 }
