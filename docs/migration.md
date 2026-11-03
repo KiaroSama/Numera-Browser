@@ -7,12 +7,12 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — November 3, 2026
 
-Checkpoint `f7637f8` ran in manual hosted batch
-[41612084953](https://github.com/KiaroSama/Numera-Browser/actions/runs/41612084953). Linux passed 94 historical proofs, including the old advisory-count failure and fixed-byte restoration. All four original-derived permission/count cases, strict lint, current native contracts and five CLI/HTTP time-and-memory comparisons passed; these do not establish full platform parity.
+Checkpoint `a071ff7` ran in manual hosted batch
+[41622536316](https://github.com/KiaroSama/Numera-Browser/actions/runs/41622536316). Linux passed 94 historical proofs, including the old advisory-count failure and fixed-byte restoration. All four original-derived permission/count cases, strict lint, current native contracts and five CLI/HTTP time-and-memory comparisons passed; these do not establish full platform parity.
 All three desktop shell contract jobs passed. Prior occupied recovery-file tests remain narrow evidence, not updater activation or native-signing acceptance.
 All eight Windows/Linux SDK legs passed source/native functional tests and relocated execution; the supported Ubuntu 24.04 pin resolved Camoufox's earlier pre-SDK host refusal.
-All eight measured browser performance gates remain unaccepted: four latency ranges passed and four overlapped; all eight memory ranges overlapped. Separate unmeasured Windows observations do not identify a removable allocation or alter acceptance.
-Windows passed 46 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached. The unproved historical-only codegen16 experiment is removed to restore configured incremental partitioning; hosted verification is pending, without a speedup claim.
+All eight measured browser performance gates remain unaccepted: five latency ranges passed and three overlapped; all eight memory ranges overlapped. Separate unmeasured Windows observations do not identify a removable allocation or alter acceptance.
+Windows completed 48 historical proofs before diagnostic-cache sanitization failed after 747.896 seconds, within the unchanged 900-second ceiling; current acceptance was not reached. The unproved historical-only codegen16 experiment was removed, but neither a repeatable speedup nor the cache failure's cause is established. Cleanup diagnostics now project only a fixed cause category and bounded numeric error codes.
 The earlier batch's 61 complete archive-to-artifact receipt intervals totaled 9.21 seconds versus 672.13 seconds before their archive markers. This localizes observed delay before archive assembly, not exclusively to LLVM or incremental copying; all source proofs, timing/privacy diagnostics, budgets and current/release profiles remain.
 Manual merges remain fail-fast. Final advisory profile-count scanning now preserves completed copy results on scan errors, matching Python 3.13 glob. The earlier six-case copytree error/retry comparison also passed on Linux; full platform/error compatibility and generic logging remain incomplete.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration

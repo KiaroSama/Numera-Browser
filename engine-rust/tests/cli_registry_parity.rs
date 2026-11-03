@@ -3,6 +3,8 @@ use std::{path::Path, process::Command, time::Duration};
 mod common;
 #[path = "cli_registry_parity/variadic.rs"]
 mod variadic;
+#[path = "cli_registry_parity/version.rs"]
+mod version;
 
 #[test]
 fn integer_options_preserve_original_digit_bound_before_zero_normalization()

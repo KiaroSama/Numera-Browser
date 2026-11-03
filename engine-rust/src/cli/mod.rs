@@ -10,6 +10,7 @@ mod bulk_commands;
 pub mod cookie_commands;
 pub mod cookie_output;
 mod definitions;
+mod display_tokens;
 pub mod extension_commands;
 pub mod extension_output;
 mod fleet_commands;
@@ -43,6 +44,13 @@ use definitions::{command, option};
 pub fn registry() -> Command {
     let mut root = command("numera", "Browser fingerprint & profile manager.")
         .version(env!("CARGO_PKG_VERSION"))
+        .disable_version_flag(true)
+        .arg(
+            Arg::new("version")
+                .long("version")
+                .action(clap::ArgAction::Version)
+                .help("show program's version number and exit"),
+        )
         .disable_help_subcommand(true)
         .subcommand_required(true)
         .arg(option(
@@ -78,7 +86,16 @@ where
     let arguments =
         option_tokens::normalize(&command, arguments.into_iter().map(Into::into).collect());
     let (arguments, extras) = positional_tokens::normalize(&command, arguments);
-    let matches = command.try_get_matches_from_mut(arguments)?;
+    let matches = match command.try_get_matches_from_mut(arguments.clone()) {
+        Err(error)
+            if error.kind() == clap::error::ErrorKind::UnknownArgument
+                && error.get(clap::error::ContextKind::InvalidArg)
+                    == Some(&clap::error::ContextValue::String("-V".into())) =>
+        {
+            return Err(display_tokens::after_unknown(&command, &arguments).unwrap_or(error));
+        }
+        result => result?,
+    };
     if extras {
         return Err(command.error(
             clap::error::ErrorKind::UnknownArgument,

@@ -238,7 +238,10 @@ def test_generated_compiler_cache_preserves_diagnostics_and_refuses_uncertainty(
         if damage == 'cleanup-error':
             monkeypatch.setattr(Path, 'open', original_open)
         assert output.read_bytes() == payload
-        assert any('status=cache-cleanup-failed' in row for row in capture.rows)
+        cause = {'malformed': 'json', 'oversized': 'bytes', 'linked': 'ownership',
+                 'cleanup-error': 'os'}[damage]
+        assert any(f'status=cache-cleanup-failed cause={cause} errno=0 winerror=0' in row
+                   for row in capture.rows)
     else:
         with module.compiler_phase(tmp_path, 0, logger, enabled=True):
             pass
@@ -249,12 +252,32 @@ def test_generated_compiler_cache_preserves_diagnostics_and_refuses_uncertainty(
 
 
 @pytest.mark.parametrize('failure', [False, True])
-def test_cache_cleanup_keeps_original_proof_error(tmp_path, monkeypatch, failure):
+@pytest.mark.parametrize('cause,codes,expected', [
+    ('os', (13, 5), (13, 5)),
+    ('os', (-1, 2**32), (0, 0)),
+    ('os', (True, 'private code'), (0, 0)),
+    ('os', (None, None), (0, 0)),
+    ('os', (2**32 - 1, 2**32 - 1), (4294967295, 4294967295)),
+    ('encoding', (0, 0), (0, 0)),
+    ('validation', (0, 0), (0, 0)),
+    ('recursion', (0, 0), (0, 0)),
+])
+def test_cache_cleanup_keeps_original_proof_error(tmp_path, monkeypatch, failure, cause, codes, expected):
     module = load()
+    monkeypatch.setenv('RUSTC_LOG', 'private-existing-filter')
+    prior = {key: value for key, value in module.os.environ.items() if key.startswith('RUSTC_LOG')}
     logger = logging.Logger('compiler-cache-error-fixture', level=logging.INFO)
     capture = Capture()
     logger.addHandler(capture)
-    monkeypatch.setattr(module, 'sanitize_cache', lambda *args: (_ for _ in ()).throw(OSError('private')))
+    untouched = logging.Filter()
+    logger.addFilter(untouched)
+    error = {'os': OSError('private diagnostic path'),
+             'encoding': UnicodeDecodeError('utf-8', b'private\xff', 7, 8, 'private'),
+             'validation': ValueError('private diagnostic payload'),
+             'recursion': RecursionError('private diagnostic payload')}[cause]
+    if cause == 'os':
+        error.errno, error.winerror = codes
+    monkeypatch.setattr(module, 'sanitize_cache', lambda *args: (_ for _ in ()).throw(error))
     original = TimeoutError('original proof timeout')
     with pytest.raises(TimeoutError if failure else RuntimeError) as caught:
         with module.compiler_phase(tmp_path, 0, logger, enabled=True):
@@ -262,7 +285,13 @@ def test_cache_cleanup_keeps_original_proof_error(tmp_path, monkeypatch, failure
                 raise original
     if failure:
         assert caught.value is original
-    assert logger.filters == [] and any('status=cache-cleanup-failed' in row for row in capture.rows)
+    else:
+        assert str(caught.value) == 'Compiler diagnostic cache could not be sanitized'
+    assert logger.filters == [untouched]
+    assert {key: value for key, value in module.os.environ.items() if key.startswith('RUSTC_LOG')} == prior
+    status = (f'Historical compiler index=0 status=cache-cleanup-failed cause={cause} '
+              f'errno={expected[0]} winerror={expected[1]}')
+    assert status in capture.rows
     assert all('private' not in row for row in capture.rows)
 
 

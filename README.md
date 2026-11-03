@@ -201,8 +201,10 @@ set of run logs; see [engine/README.md](engine/README.md) for its exact controls
 Desktop/update and build tooling keep their own lifecycle diagnostics. The native
 candidate records fixed vault-enable phases in `logs/native-vault-enable_*_UTC.log`
 (with collision suffixes); these diagnostic-only logs never fall back to console
-output or extend command-capture idle deadlines. Missing logs mean unavailable
-evidence, not completion; no automatic retention is configured for them.
+output or extend command-capture idle deadlines. On creating a log, the native
+runtime prunes the oldest matching runs per component toward a 20-file limit,
+ordered by modification time. Active or linked files are preserved; pruning
+failures can leave extra logs. Missing logs mean unavailable evidence, not completion.
 Other logging initialization failures produce a safe console fallback rather than
 pretending a log exists. Review logs before sharing them: redaction is a safety measure, not
 permission to publish raw cookies, tokens or profile data.

@@ -242,6 +242,32 @@ class Projection(logging.Filter):
         return 'complete' if self.markers == 1 and self.end is not None else 'unavailable'
 
 
+def cleanup_cause(error):
+    if isinstance(error, OSError):
+        code = lambda value: value if type(value) is int and 0 <= value <= 2**32 - 1 else 0
+        return 'os', code(error.errno), code(getattr(error, 'winerror', None))
+    if isinstance(error, UnicodeError):
+        return 'encoding', 0, 0
+    if isinstance(error, json.JSONDecodeError):
+        return 'json', 0, 0
+    if isinstance(error, RecursionError):
+        return 'recursion', 0, 0
+    causes = {
+        'Compiler cache ownership is uncertain': 'ownership',
+        'Compiler cache readback differs': 'readback',
+        'Compiler cache identity changed': 'identity',
+        'Compiler cache directory bound exceeded': 'directories',
+        'Compiler cache member bound exceeded': 'members',
+        'Compiler cache file bound exceeded': 'files',
+        'Compiler cache byte bound exceeded': 'bytes',
+        'Compiler cache size changed': 'size',
+        'Compiler cache line bound exceeded': 'line',
+        'Duplicate compiler field': 'duplicate',
+        'Invalid compiler number': 'number',
+    }
+    return causes.get(str(error), 'validation'), 0, 0
+
+
 @contextmanager
 def compiler_phase(root, index, logger, *, enabled, seen=None):
     if not enabled:
@@ -259,10 +285,12 @@ def compiler_phase(root, index, logger, *, enabled, seen=None):
     finally:
         failed = sys.exc_info()[0] is not None
         cleanup_failed, removed = False, 0
+        cause, errno, winerror = 'none', 0, 0
         try:
             removed = sanitize_cache(root, {} if seen is None else seen)
-        except (OSError, ValueError, RecursionError):
+        except (OSError, ValueError, RecursionError) as error:
             cleanup_failed = True
+            cause, errno, winerror = cleanup_cause(error)
         finally:
             logger.removeFilter(projection)
             for key in list(os.environ):
@@ -270,7 +298,8 @@ def compiler_phase(root, index, logger, *, enabled, seen=None):
                     os.environ.pop(key)
             os.environ.update(previous)
         if cleanup_failed:
-            logger.error('Historical compiler index=%s status=cache-cleanup-failed', index)
+            logger.error('Historical compiler index=%s status=cache-cleanup-failed cause=%s errno=%s winerror=%s',
+                         index, cause, errno, winerror)
         logger.info('Historical compiler index=%s status=%s '
                     'coverage=receipt-interval-not-exclusive-compiler cache_records_removed=%s',
                     index, projection.status(), removed)

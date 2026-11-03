@@ -464,4 +464,12 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/storage/first_run.rs':
                   '81ebc1b78e948ce3c23a275db4b69e15c2555c6c7f2938b5d1a80b447f8669f8'},
     },
+    {
+        'target': 'cli_registry_parity',
+        'test': 'version::version_flag_matches_original_root_scope_and_value_admission',
+        'symptom': 'CLI version flag admission differs',
+        'commit': 'a071ff7f2ceb55cd7ed9f05198692e9ac19bcb17',
+        'files': {'engine-rust/src/cli/mod.rs':
+                  '6d6cfccdbed4a0ebf60ed438d17f0ab5d5e688813a61162287e360d4feb4150a'},
+    },
 )
