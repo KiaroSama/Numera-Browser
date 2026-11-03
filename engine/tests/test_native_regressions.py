@@ -64,7 +64,7 @@ def load():
     from unittest.mock import patch
 
     dependencies = {'native_settings_history': helper}
-    for name in ('native_regression_cases', 'native_current_history', 'native_history_resources'):
+    for name in ('native_regression_cases', 'native_current_history', 'native_history_resources', 'native_history_phase'):
         dependency = importlib.util.spec_from_file_location(name, ROOT / 'scripts/ci' / (name + '.py'))
         loaded = importlib.util.module_from_spec(dependency)
         dependency.loader.exec_module(loaded)
@@ -638,7 +638,8 @@ def test_historical_runner_restores_source_and_environment(
         assert command[command.index('--config') + 1] == 'profile.dev.package.numera-core.opt-level=0'
         assert command.count('--config') == (2 if override else 1)
         selection = ['--lib'] if target == 'lib' else ['--test', target]
-        assert command[command.index('--config') + 2:command.index('--')] == ['--timings', *override, *selection]
+        diagnostics = ['--message-format=json'] if platform == 'win32' else []
+        assert command[command.index('--config') + 2:command.index('--')] == ['--timings', *override, *diagnostics, *selection]
         assert os.environ['NUMERA_ORACLE_SOURCE_ROOT'] == str(tmp_path / 'original')
         assert os.environ['PYTHONDONTWRITEBYTECODE'] == '1'
         assert os.environ['CARGO_INCREMENTAL'] == '1'

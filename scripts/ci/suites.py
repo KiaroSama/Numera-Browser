@@ -262,6 +262,14 @@ def check_native_acceptance_order(steps: list[dict]) -> None:
             raise ValueError('Independent native functional acceptance must precede performance')
 
 
+def check_native_compiler_cache(steps: list[dict]) -> None:
+    caches = [step for step in steps if step.get('uses', '').startswith('Swatinem/rust-cache@')]
+    if (len(caches) != 1
+            or caches[0].get('with') != {'workspaces': 'engine-rust',
+                                       'save-if': "${{ runner.os != 'Windows' }}"}):
+        raise ValueError('Historical compiler diagnostics must not enter Windows caches')
+
+
 def check_desktop_contracts(workflows: dict) -> None:
     jobs = workflows['ci']['jobs']
     caller = {'needs': 'coverage', 'uses': './.github/workflows/desktop-contracts.yml'}
@@ -378,6 +386,7 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
         if any(fragment not in text for fragment in fragments):
             raise ValueError(f'Missing suite command in CI tier: {job}')
     check_native_acceptance_order(jobs['rust-core']['steps'])
+    check_native_compiler_cache(jobs['rust-core']['steps'])
     for workflow_name in ('ci', 'dashboard', 'build-desktop', 'desktop-contracts', 'container',
                           'codeql', 'dependency-review', 'migration-profile'):
         for name, job in workflows[workflow_name]['jobs'].items():

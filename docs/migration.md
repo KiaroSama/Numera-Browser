@@ -7,19 +7,19 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — November 3, 2026
 
-Checkpoint `12a76ec` ran in manual hosted batch
-[41449810680](https://github.com/KiaroSama/Numera-Browser/actions/runs/41449810680). Linux passed 91 historical proofs and current contracts, including five-path first-run access timestamps; all five CLI/HTTP latency and memory comparisons passed.
+Checkpoint `73cb60a` ran in manual hosted batch
+[41530950735](https://github.com/KiaroSama/Numera-Browser/actions/runs/41530950735). Linux passed 92 historical proofs and current contracts, including 54 container-text profile/roundtrip comparisons; all five CLI/HTTP latency and memory comparisons passed.
 The prior batch proved occupied recovery-file preservation on all three desktop platforms, including exact old-source failure/restoration on Linux/macOS. This is not updater activation or native-signing acceptance.
 All eight Windows/Linux SDK legs passed source/native functional tests and relocated execution; the supported Ubuntu 24.04 pin resolved Camoufox's earlier pre-SDK host refusal.
 All eight measured browser performance gates remain unaccepted: three latency ranges passed and five overlapped; all eight memory ranges overlapped. Separate unmeasured Windows observations do not identify a removable allocation or alter acceptance.
 Windows completed 50 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached.
-The historical-only line-table experiment added metadata over CI's existing debug=0 baseline; removing it did not establish complete Windows acceptance. Earlier resource observations and 17 passing controls are diagnostic evidence, not a controlled speedup or a resolved compiler bottleneck.
+The historical-only line-table experiment added metadata over CI's existing debug=0 baseline; removing it did not establish complete Windows acceptance. A prepared Windows-only archive-phase diagnostic projects numeric receipts, sanitizes Cargo replay output and prevents cache publication; it is not yet hosted-verified or a compiler speedup.
 Earlier Linux log-root, nine-case entry comparison and detached/server acceptance passed; generic logging and full first-run compatibility remain incomplete.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
 and current acceptance, including read warnings, delete recovery and Linux process-group uncertainty.
 Native macOS identity/group tests pass after two exact historical failures/restoration, four locale/timezone
 source-token comparisons and real descendant/claim settlement.
-CodeQL and required verification still fail; signing and publication stay gated.
+CodeQL and required verification still fail; the current macOS desktop job was cancelled before any steps, with no established cause. Signing and publication stay gated.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.
@@ -244,7 +244,7 @@ performance or rollback acceptance.
   storage also remains an explicitly documented limitation. Signing requires a
   successful independent CodeQL verdict for the exact SHA, in addition to
   successful scanner jobs; missing or failed verdicts block publication.
-- ASCII controls, 315 Unicode, 651 finite-number and 47 fraction-admission comparisons passed on Linux; Windows remains blocked by historical compilation. Five-path first-run access-time comparisons passed on Linux after exact old-source failure/restoration. Container text conversion now reuses that formatter; 54 full-profile/roundtrip comparisons are prepared, not yet hosted-verified.
+- ASCII controls, 315 Unicode, 651 finite-number and 47 fraction-admission comparisons passed on Linux; Windows remains blocked by historical compilation. Five-path first-run access-time comparisons passed on Linux after exact old-source failure/restoration. Container text conversion reuses that formatter; all 54 full-profile/roundtrip comparisons passed on Linux after exact old-source failure/restoration, with Windows still blocked.
   Smaller Rust errors retain detached ownership, and existing Cloak executable handoff passed. The
   SDK adapter still refuses missing selections instead of acquiring during launch.
   The existing Cloak CLI capability map, temporary-path fixture and deterministic

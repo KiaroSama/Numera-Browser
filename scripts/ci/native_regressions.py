@@ -13,6 +13,7 @@ import tempfile
 
 from native_current_history import CURRENT_CALLER_REGRESSIONS
 from native_history_resources import measure
+from native_history_phase import compiler_phase
 from native_regression_cases import REGRESSIONS
 
 
@@ -172,7 +173,7 @@ def prove(root: Path, original: Path, logger, *, cases: tuple | None = None) -> 
     keys = (ENVIRONMENT, 'PYTHONDONTWRITEBYTECODE', 'CARGO_INCREMENTAL')
     previous = {key: os.environ.get(key) for key in keys}
     # Immutable source bytes are shared only within this invocation, never proof verdicts.
-    inputs = {}
+    inputs, compiler_caches = {}, {}
     # Historical Windows builds reduce incremental artifact fan-out. Inherit CI's
     # existing debug setting instead of adding metadata; current profiles are unchanged.
     codegen = (['--config', 'profile.dev.package.numera-core.codegen-units=16']
@@ -198,13 +199,14 @@ def prove(root: Path, original: Path, logger, *, cases: tuple | None = None) -> 
                                         'profile.dev.package.numera-core.opt-level=0', '--timings', *codegen,
                                         *target, '--no-run'],
                                        stdin=subprocess.DEVNULL, check=True)
-                    command = ['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
-                               '--locked', '--offline', '--config',
-                               'profile.dev.package.numera-core.opt-level=0', '--timings', *codegen,
-                               *target, '--', case['test'],
-                               '--exact', '--test-threads=1', '--color=never']
-                    code = run(command, 180, 90, logger)
-                evidence.verify(code)
+                    with compiler_phase(root, index, logger, enabled=sys.platform == 'win32', seen=compiler_caches) as diagnostics:
+                        command = ['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
+                                   '--locked', '--offline', '--config',
+                                   'profile.dev.package.numera-core.opt-level=0', '--timings', *codegen,
+                                   *diagnostics, *target, '--', case['test'],
+                                   '--exact', '--test-threads=1', '--color=never']
+                        code = run(command, 180, 90, logger)
+                        evidence.verify(code)
             finally:
                 logger.removeHandler(evidence)
                 evidence.close()

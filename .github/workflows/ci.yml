@@ -433,6 +433,8 @@ jobs:
       - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
           workspaces: engine-rust
+          # Interrupted compiler tracing must not be saved by the post action.
+          save-if: ${{ runner.os != 'Windows' }}
       - name: Source inventory and oracle drift
         run: python scripts/migration/run_owned.py --wall 180 --idle 90 -- python scripts/migration/verify_oracles.py
       - name: Native formatting
