@@ -198,7 +198,7 @@ def test_history_timings_preserve_previous_reports_and_refuse_uncertain_paths(tm
 def test_directory_metadata_history_retains_exact_prior_source_and_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[31]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'first_run_parity',
         'test': 'imported_new_directories_preserve_original_metadata_without_replacing_existing_modes',
@@ -207,14 +207,14 @@ def test_directory_metadata_history_retains_exact_prior_source_and_assertion():
         'files': {'engine-rust/src/storage/first_run.rs':
                   '6a9afa7356a02b123d13ebf8d5742a67e4d6e2bf8abff0d1cb8f2459a94c5670'},
     }
-    assert module.REGRESSIONS[-19] == case
+    assert module.REGRESSIONS[-20] == case
 
 
 @pytest.mark.timeout(10)
 def test_cli_integer_history_retains_exact_prior_source_and_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[32]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'cli_registry_parity',
         'test': 'integer_options_preserve_original_digit_bound_before_zero_normalization',
@@ -223,14 +223,14 @@ def test_cli_integer_history_retains_exact_prior_source_and_assertion():
         'files': {'engine-rust/src/cli/definitions.rs':
                   '62577821c1120e9518a30277bb165d4e77c103ef5803c06157a2a4bc4922c4a7'},
     }
-    assert module.REGRESSIONS[-18] == case
+    assert module.REGRESSIONS[-19] == case
 
 
 @pytest.mark.timeout(10)
 def test_hint_peer_disconnect_history_retains_compile_compatible_source_and_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[33]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'browser_hints_parity',
         'test': 'hint_response_peer_disconnects_preserve_other_io_failures',
@@ -239,14 +239,14 @@ def test_hint_peer_disconnect_history_retains_compile_compatible_source_and_asse
         'files': {'engine-rust/tests/common/hint_site.rs':
                   '4dcfdaa91e4079186c5b7c9268ad50efa06c7f6f5782170c4af8fa2172a879ae'},
     }
-    assert module.REGRESSIONS[-17] == case
+    assert module.REGRESSIONS[-18] == case
 
 
 @pytest.mark.timeout(10)
 def test_cli_option_token_history_retains_prior_parser_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[34]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'cli_registry_parity',
         'test': 'separate_option_values_match_original_token_classification',
@@ -255,14 +255,14 @@ def test_cli_option_token_history_retains_prior_parser_and_named_assertion():
         'files': {'engine-rust/src/cli/mod.rs':
                   'c534342a6f7db08b99641bd52e02e729d3abb68a1e78257b0c502c077479fcd8'},
     }
-    assert module.REGRESSIONS[-16] == case
+    assert module.REGRESSIONS[-17] == case
 
 
 @pytest.mark.timeout(10)
 def test_fifo_import_history_retains_exact_blocking_source_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[35]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'first_run_failure',
         'test': 'fifo_import_matches_original_refusal_continuation_and_retry',
@@ -272,14 +272,14 @@ def test_fifo_import_history_retains_exact_blocking_source_and_named_assertion()
         'files': {'engine-rust/src/storage/first_run.rs':
                   'ae6dcc19e630d1b110837c55f4726fe300309470772945a6904a634692f59b43'},
     }
-    assert module.REGRESSIONS[-15] == case
+    assert module.REGRESSIONS[-16] == case
 
 
 @pytest.mark.timeout(10)
 def test_import_attribute_history_retains_exact_prior_source_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[36]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'first_run_metadata_parity',
         'test': 'imported_attributes_match_original_without_replacing_destination_metadata',
@@ -289,14 +289,14 @@ def test_import_attribute_history_retains_exact_prior_source_and_named_assertion
         'files': {'engine-rust/src/storage/first_run.rs':
                   'fe024803ade4378889782ce206386660c92a790bde9d1d24ca0451080cb470d4'},
     }
-    assert module.REGRESSIONS[-14] == case
+    assert module.REGRESSIONS[-15] == case
 
 
 @pytest.mark.timeout(10)
 def test_cli_positional_history_retains_prior_parser_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[37]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'cli_registry_parity',
         'test': 'positional_values_preserve_original_admission_and_option_boundaries',
@@ -305,14 +305,14 @@ def test_cli_positional_history_retains_prior_parser_and_named_assertion():
         'files': {'engine-rust/src/cli/mod.rs':
                   '43b939bcaeb5acef515b2b22cef85f85842a1667547c17811fca17102935aba5'},
     }
-    assert module.REGRESSIONS[-13] == case
+    assert module.REGRESSIONS[-14] == case
 
 
 @pytest.mark.timeout(10)
 def test_short_help_history_retains_prior_normalizer_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[38]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'cli_registry_parity',
         'test': 'short_help_preserves_original_explicit_tail_admission',
@@ -321,14 +321,14 @@ def test_short_help_history_retains_prior_normalizer_and_named_assertion():
         'files': {'engine-rust/src/cli/option_tokens.rs':
                   'dd7ca91090c4cdbfb2e2c17f5f9108432595f3bd28e7356708b4284d938634da'},
     }
-    assert module.REGRESSIONS[-12] == case
+    assert module.REGRESSIONS[-13] == case
 
 
 @pytest.mark.timeout(10)
 def test_variadic_history_retains_coherent_prior_parser_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[39]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'cli_registry_parity',
         'test': 'variadic::variadic_positionals_preserve_original_option_separated_runs',
@@ -339,14 +339,14 @@ def test_variadic_history_retains_coherent_prior_parser_and_named_assertion():
                   'engine-rust/src/cli/positional_tokens.rs':
                   'cfe23726c81a6a2f04c827c6dc68f4da68bfcc00cffce2c84bec95847d63b093'},
     }
-    assert module.REGRESSIONS[-11] == case
+    assert module.REGRESSIONS[-12] == case
 
 
 @pytest.mark.timeout(10)
 def test_log_retention_history_retains_prior_sink_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[40]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'logging_parity',
         'test': 'retention::run_retention_matches_original_mtime_order_and_namespace',
@@ -355,14 +355,14 @@ def test_log_retention_history_retains_prior_sink_and_named_assertion():
         'files': {'engine-rust/src/runtime_log.rs':
                   '78db62948c0519ffadbcf154574caac10078bee0577c6269a0161e4191743590'},
     }
-    assert module.REGRESSIONS[-10] == case
+    assert module.REGRESSIONS[-11] == case
 
 
 @pytest.mark.timeout(10)
 def test_nested_copy_history_retains_prior_importer_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[41]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'first_run_parity',
         'test': 'nested_copy::new_subtrees_preserve_original_nested_lock_entries',
@@ -371,14 +371,14 @@ def test_nested_copy_history_retains_prior_importer_and_named_assertion():
         'files': {'engine-rust/src/storage/first_run.rs':
                   'a7e702675adb3f12e7495d625d0cb06aa400c594d4997526f8027b6dbb578f73'},
     }
-    assert module.REGRESSIONS[-9] == case
+    assert module.REGRESSIONS[-10] == case
 
 
 @pytest.mark.timeout(10)
 def test_unicode_representation_history_retains_prior_formatter_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[42]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'validation_parity',
         'test': 'unicode_representation_matches_original_public_validation_and_argv',
@@ -387,14 +387,14 @@ def test_unicode_representation_history_retains_prior_formatter_and_named_assert
         'files': {'engine-rust/src/validation.rs':
                   '5397a1882c0a5cdf867e4d21a353322da76129db2d982fe6093c4eeb9c7d0591'},
     }
-    assert module.REGRESSIONS[-8] == case
+    assert module.REGRESSIONS[-9] == case
 
 
 @pytest.mark.timeout(10)
 def test_numeric_representation_history_retains_prior_formatter_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[43]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'validation_parity',
         'test': 'finite_numbers_match_original_validation_and_mcp_representation',
@@ -403,14 +403,14 @@ def test_numeric_representation_history_retains_prior_formatter_and_named_assert
         'files': {'engine-rust/src/validation.rs':
                   '01a2a4718ff2792ffd80ab5f130261007409ed58e3aea1ffaf28d8eae3327158'},
     }
-    assert module.REGRESSIONS[-7] == case
+    assert module.REGRESSIONS[-8] == case
 
 
 @pytest.mark.timeout(10)
 def test_fraction_admission_history_retains_prior_comparison_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[44]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'validation_parity',
         'test': 'permitted_fraction_spellings_match_original_numeric_admission',
@@ -419,14 +419,14 @@ def test_fraction_admission_history_retains_prior_comparison_and_named_assertion
         'files': {'engine-rust/src/validation.rs':
                   'd67e56a33198c01e40b4e2fe0ddcfbb4429dd83c4de45c4972e65ed21b486066'},
     }
-    assert module.REGRESSIONS[-6] == case
+    assert module.REGRESSIONS[-7] == case
 
 
 @pytest.mark.timeout(10)
 def test_import_access_time_history_retains_prior_snapshot_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[45]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'first_run_metadata_parity',
         'test': 'direct_copy_access_times_match_original_without_changing_copytree_snapshots',
@@ -436,14 +436,14 @@ def test_import_access_time_history_retains_prior_snapshot_and_named_assertion()
         'files': {'engine-rust/src/storage/first_run.rs':
                   '7f07dcc91641071ebb5e5576c3e0bcf3186400fd9e0d199f227231503a2ea002'},
     }
-    assert module.REGRESSIONS[-5] == case
+    assert module.REGRESSIONS[-6] == case
 
 
 @pytest.mark.timeout(10)
 def test_container_conversion_history_retains_prior_formatter_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[46]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'conversion_parity',
         'test': 'container_text_conversion_matches_original_profiles_and_roundtrips',
@@ -452,14 +452,14 @@ def test_container_conversion_history_retains_prior_formatter_and_named_assertio
         'files': {'engine-rust/src/conversion.rs':
                   'c52af49700c56939aa482ba1c155aed5b861258e7404cf4c5069df70e65ceef4'},
     }
-    assert module.REGRESSIONS[-4] == case
+    assert module.REGRESSIONS[-5] == case
 
 
 @pytest.mark.timeout(10)
 def test_copytree_error_history_retains_prior_importer_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[47]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'first_run_failure',
         'test': 'copytree_errors::new_subtree_errors_match_original_continuation_summaries_and_retry',
@@ -469,14 +469,14 @@ def test_copytree_error_history_retains_prior_importer_and_named_assertion():
         'files': {'engine-rust/src/storage/first_run.rs':
                   '6e865c0e82abea1c6cdb7ad793d5bc2eab39c05bedc37cfbd311d92854e5da1b'},
     }
-    assert module.REGRESSIONS[-3] == case
+    assert module.REGRESSIONS[-4] == case
 
 
 @pytest.mark.timeout(10)
 def test_import_profile_count_history_retains_prior_scan_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[48]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'first_run_failure',
         'test': 'profile_count::advisory_profile_count_matches_original_when_destination_scan_is_denied',
@@ -486,14 +486,14 @@ def test_import_profile_count_history_retains_prior_scan_and_named_assertion():
         'files': {'engine-rust/src/storage/first_run.rs':
                   '81ebc1b78e948ce3c23a275db4b69e15c2555c6c7f2938b5d1a80b447f8669f8'},
     }
-    assert module.REGRESSIONS[-2] == case
+    assert module.REGRESSIONS[-3] == case
 
 
 @pytest.mark.timeout(10)
 def test_version_flag_history_retains_exact_prior_registry_and_named_assertion():
     module = load()
     case = module.CURRENT_CALLER_REGRESSIONS[49]
-    assert len(module.CURRENT_CALLER_REGRESSIONS) == 50
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
     assert case == {
         'target': 'cli_registry_parity',
         'test': 'version::version_flag_matches_original_root_scope_and_value_admission',
@@ -501,5 +501,21 @@ def test_version_flag_history_retains_exact_prior_registry_and_named_assertion()
         'commit': 'a071ff7f2ceb55cd7ed9f05198692e9ac19bcb17',
         'files': {'engine-rust/src/cli/mod.rs':
                   '6d6cfccdbed4a0ebf60ed438d17f0ab5d5e688813a61162287e360d4feb4150a'},
+    }
+    assert module.REGRESSIONS[-2] == case
+
+
+@pytest.mark.timeout(10)
+def test_deferred_display_history_retains_prior_registry_and_named_assertion():
+    module = load()
+    case = module.CURRENT_CALLER_REGRESSIONS[50]
+    assert len(module.CURRENT_CALLER_REGRESSIONS) == 51
+    assert case == {
+        'target': 'cli_registry_parity',
+        'test': 'version::version_flag_matches_original_root_scope_and_value_admission',
+        'symptom': 'CLI version flag admission differs',
+        'commit': '77cab4fb18ac3dcace76a34bc54c13d3239a70ed',
+        'files': {'engine-rust/src/cli/mod.rs':
+                  '1a838cce524b7b46713ea101e3b45160b3f34a979b44ed3e89a2ec7a058000cb'},
     }
     assert module.REGRESSIONS[-1] == case

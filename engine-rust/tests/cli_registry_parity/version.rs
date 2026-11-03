@@ -62,6 +62,24 @@ for prefix,option,valid in [(['create','fixture'],'seed','2'),
                             (['create','fixture'],'os','linux')]:
     for value in ['invalid',valid]:
         argvs.append(['-V',*prefix,'--'+option+'='+value,'--help'])
+for unknown in ['--unknown','--unknown=fixture','-x']:
+    for tail in [['--help'],['--version'],['list','--help'],['jobs','--help']]:
+        argvs.append([unknown,*tail])
+argvs.extend([
+    ['--unknown','list'],['--unknown','jobs'],['--unknown','unknown','--help'],
+    ['--unknown','--password','--help'],
+    ['--password','--unknown','--help'],['--data-dir','--unknown','--help'],
+    ['--unknown','--password','-x','list','--help'],
+    ['--unknown','create','--os=invalid','--help'],
+    ['--unknown','create','--seed=invalid','--help'],
+    ['--unknown','warmup','fixture','--minutes=invalid','--help'],
+    ['--unknown','--','--help'],['list','--unknown','--help'],
+    ['show','fixture','extra','--help'],['delete','fixture','-yx','--help'],
+    ['delete','fixture','-y=fixture','--help'],['delete','fixture','-yh=fixture'],
+    ['--password=--unknown','list'],['list','--tag=--unknown'],
+    ['--unknown','--version=fixture','--help'],
+    ['--unknown','config','--default=fixture','--help'],
+])
 if sys.platform!='win32':
     argvs.extend([['-V',os.fsdecode(b'--unknown=\xff'),'--version'],
                  ['-V','--password',os.fsdecode(b'\xff'),'--version'],
@@ -86,9 +104,14 @@ for argv in argvs:
         else:
             assert output.getvalue().startswith('numera ')
             row['version']=output.getvalue()
-    for name in ('seed','minutes','os'):
-        if 'argument --'+name+':' in error_output.getvalue():
+    for name in ('seed','minutes','os','password','data-dir','tag','version'):
+        if ('-V' not in argv or name in ('seed','minutes','os')) and 'argument --'+name+':' in error_output.getvalue():
             row['invalid_option']='--'+name
+    if '-V' not in argv:
+        if 'ambiguous option: --default=fixture' in error_output.getvalue():
+            row['invalid_option']='--default'
+        if 'argument -y/--yes:' in error_output.getvalue():
+            row['invalid_option']='--yes'
     if any(any(0xd800<=ord(c)<=0xdfff for c in arg) for arg in argv):
         row['argv']=[list(os.fsencode(arg)) for arg in argv]
     rows.append(row)
@@ -110,7 +133,7 @@ print(json.dumps(rows,ensure_ascii=True))
     let rows: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
     assert_eq!(
         rows.len(),
-        if cfg!(unix) { 85 } else { 82 },
+        if cfg!(unix) { 117 } else { 114 },
         "Version flag observations missing"
     );
     let mut registry = cli::registry();

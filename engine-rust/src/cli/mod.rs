@@ -87,11 +87,7 @@ where
         option_tokens::normalize(&command, arguments.into_iter().map(Into::into).collect());
     let (arguments, extras) = positional_tokens::normalize(&command, arguments);
     let matches = match command.try_get_matches_from_mut(arguments.clone()) {
-        Err(error)
-            if error.kind() == clap::error::ErrorKind::UnknownArgument
-                && error.get(clap::error::ContextKind::InvalidArg)
-                    == Some(&clap::error::ContextValue::String("-V".into())) =>
-        {
+        Err(error) if error.kind() == clap::error::ErrorKind::UnknownArgument => {
             return Err(display_tokens::after_unknown(&command, &arguments).unwrap_or(error));
         }
         result => result?,

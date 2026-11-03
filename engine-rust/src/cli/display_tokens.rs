@@ -1,7 +1,7 @@
 use clap::{Arg, ArgAction, Command};
 use std::ffi::OsString;
 
-// Called only after an unknown -V error. argparse defers unknown options but
+// Called only after an unknown-argument error. argparse defers unknown options but
 // executes displays before final extra/required-argument checks. Earlier value
 // errors still win; this path never returns executable ArgMatches.
 pub(super) fn after_unknown(command: &Command, arguments: &[OsString]) -> Option<clap::Error> {
@@ -26,18 +26,21 @@ pub(super) fn after_unknown(command: &Command, arguments: &[OsString]) -> Option
                         value
                     } else {
                         index += 1;
-                        native = arguments.get(index)?.to_string_lossy();
+                        let Some(argument) = arguments.get(index) else {
+                            return valid_value(current, arg, None).err();
+                        };
+                        native = argument.to_string_lossy();
                         if !super::option_tokens::is_value(current, &native) {
-                            return None;
+                            return valid_value(current, arg, None).err();
                         }
                         native.as_ref()
                     };
-                    if let Err(error) = valid_value(current, arg, value) {
+                    if let Err(error) = valid_value(current, arg, Some(value)) {
                         return Some(error);
                     }
                 } else {
                     if attached.is_some() {
-                        return None;
+                        return syntax_error(current, text.as_ref());
                     }
                     if let Some(display) = display(current, arg.get_action(), false) {
                         return Some(display);
@@ -50,7 +53,7 @@ pub(super) fn after_unknown(command: &Command, arguments: &[OsString]) -> Option
                 .count()
                 > 1
             {
-                return None;
+                return syntax_error(current, text.as_ref());
             }
         } else if text.starts_with('-') && !value_like {
             let mut queued = None;
@@ -67,7 +70,9 @@ pub(super) fn after_unknown(command: &Command, arguments: &[OsString]) -> Option
                 }
                 let rest = &shorts[offset + short.len_utf8()..];
                 if rest.starts_with(['=', '-']) {
-                    return None;
+                    let long = arg.get_long()?;
+                    let value = rest.strip_prefix('=').unwrap_or(rest);
+                    return syntax_error(current, &format!("--{long}={value}"));
                 }
                 if queued.is_none() {
                     queued = display(current, arg.get_action(), true);
@@ -90,7 +95,7 @@ fn takes_value(arg: &Arg) -> bool {
         .is_none_or(|range| range.max_values() > 0)
 }
 
-fn valid_value(command: &Command, arg: &Arg, value: &str) -> Result<(), clap::Error> {
+fn valid_value(command: &Command, arg: &Arg, value: Option<&str>) -> Result<(), clap::Error> {
     // Reuse actual integer/float/choice validation without requiring unrelated
     // command arguments. Its diagnostic takes precedence over deferred extras.
     let long = arg.get_long().expect("A long option was selected");
@@ -100,9 +105,19 @@ fn valid_value(command: &Command, arg: &Arg, value: &str) -> Result<(), clap::Er
         .arg(arg.clone().required(false))
         .try_get_matches_from([
             OsString::from("value-check"),
-            format!("--{long}={value}").into(),
+            value
+                .map_or_else(|| format!("--{long}"), |value| format!("--{long}={value}"))
+                .into(),
         ])
         .map(|_| ())
+}
+
+fn syntax_error(command: &Command, argument: &str) -> Option<clap::Error> {
+    command
+        .clone()
+        .try_get_matches_from(["numera", argument])
+        .err()
+        .filter(|error| error.exit_code() != 0)
 }
 
 fn display(command: &Command, action: &ArgAction, short: bool) -> Option<clap::Error> {

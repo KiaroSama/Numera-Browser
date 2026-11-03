@@ -251,6 +251,43 @@ def test_generated_compiler_cache_preserves_diagnostics_and_refuses_uncertainty(
     assert logger.filters == [] and all('private' not in row for row in capture.rows)
 
 
+@pytest.mark.parametrize('kind', ['scoped', 'warning', 'foreign', 'malformed'])
+def test_large_cached_trace_only_removes_the_exact_scoped_info(tmp_path, kind):
+    module = load()
+    directory = tmp_path / 'engine-rust/target/debug/.fingerprint/numera-core-0123456789abcdef'
+    directory.mkdir(parents=True)
+    output = directory / 'output-lib-numera_core'
+    diagnostic = b'{"message":"required diagnostic","level":"warning"}\r\n'
+    event = trace(tmp_path, tmp_path / 'private.rlib')['message']
+    event['fields']['message'] = 'private payload ' + 'x' * module.LINE_BYTES
+    if kind == 'warning':
+        event['level'] = 'WARN'
+    elif kind == 'foreign':
+        event['target'] = 'unrelated::compiler'
+    raw = json.dumps(event).encode('utf-8') + b'\n'
+    if kind == 'malformed':
+        raw = raw[:-2] + b'\n'
+    assert module.LINE_BYTES < len(raw) < module.CACHE_BYTES
+    output.write_bytes(diagnostic + raw)
+    logger = logging.Logger('compiler-large-cache-fixture', level=logging.INFO)
+    capture = Capture()
+    logger.addHandler(capture)
+    seen = {}
+    if kind == 'scoped':
+        with module.compiler_phase(tmp_path, 0, logger, enabled=True, seen=seen):
+            pass
+        assert output.read_bytes() == diagnostic
+        assert any('cache_records_removed=1' in row for row in capture.rows)
+        assert output in seen
+    else:
+        with pytest.raises(RuntimeError, match='Compiler diagnostic cache could not be sanitized'):
+            with module.compiler_phase(tmp_path, 0, logger, enabled=True, seen=seen):
+                pass
+        assert output.read_bytes() == diagnostic + raw and seen == {}
+    assert logger.filters == [] and all('private' not in row for row in capture.rows)
+    assert {entry.name for entry in directory.iterdir()} == {output.name}
+
+
 @pytest.mark.parametrize('failure', [False, True])
 @pytest.mark.parametrize('cause,codes,expected', [
     ('os', (13, 5), (13, 5)),

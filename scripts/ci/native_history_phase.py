@@ -113,14 +113,16 @@ def sanitize_cache(root, seen):
                         raise ValueError('Compiler cache size changed')
                     kept, count = [], 0
                     for line in raw.splitlines(keepends=True):
-                        if len(line) > LINE_BYTES:
-                            raise ValueError('Compiler cache line bound exceeded')
                         text = line.decode('utf-8', errors='strict')
                         event = decode(text) if text.lstrip().startswith('{') else None
                         if (isinstance(event, dict) and event.get('target') == TARGET
                                 and event.get('level') == 'INFO'):
+                            # Linker argv can exceed the projection's line limit;
+                            # the complete cache is already byte-bounded above.
                             count += 1
                         else:
+                            if len(line) > LINE_BYTES:
+                                raise ValueError('Compiler cache line bound exceeded')
                             kept.append(line)
                     if count:
                         replace_cache(path, b''.join(kept), before)
