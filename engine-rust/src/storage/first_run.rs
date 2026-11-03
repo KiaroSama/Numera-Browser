@@ -1,4 +1,7 @@
+#[path = "first_run_errors.rs"]
+mod errors;
 use super::locks::DataLock;
+use errors::CopyFailures;
 use serde::Serialize;
 use std::{
     fs::{self, File, FileTimes, OpenOptions},
@@ -30,25 +33,23 @@ pub struct Summary {
 }
 
 fn copy_file(source: &Path, destination: &Path, merging: bool) -> io::Result<()> {
-    let metadata = fs::metadata(source)?;
+    let metadata = fs::metadata(source).map_err(|error| errors::at(error, source))?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::FileTypeExt;
         // Match copy2's refusal before opening a pipe can block the importer.
         if metadata.file_type().is_fifo() {
-            return Err(io::Error::other(format!(
-                "`{}` is a named pipe",
-                source.display()
-            )));
+            return Err(errors::pipe(source));
         }
     }
-    let mut input = File::open(source)?;
+    let mut input = File::open(source).map_err(|error| errors::at(error, source))?;
     // Exclusive creation is the final no-overwrite boundary, even if another
     // file-only writer does not participate in the root transaction.
     let mut output = OpenOptions::new()
         .write(true)
         .create_new(true)
-        .open(destination)?;
+        .open(destination)
+        .map_err(|error| errors::at(error, destination))?;
     let result = (|| {
         io::copy(&mut input, &mut output)?;
         // Direct copy2 re-stats after reading; copytree reuses DirEntry's cache.
@@ -56,16 +57,19 @@ fn copy_file(source: &Path, destination: &Path, merging: bool) -> io::Result<()>
         let metadata = if merging { input.metadata()? } else { metadata };
         #[cfg(not(unix))]
         let _ = merging;
-        output.set_times(
-            FileTimes::new()
-                .set_accessed(metadata.accessed()?)
-                .set_modified(metadata.modified()?),
-        )?;
+        output
+            .set_times(
+                FileTimes::new()
+                    .set_accessed(metadata.accessed()?)
+                    .set_modified(metadata.modified()?),
+            )
+            .map_err(|error| errors::at(error, destination))?;
         #[cfg(target_os = "linux")]
         super::first_run_xattrs::copy(&input, &output)?;
         output.sync_all()?;
         drop(output);
         fs::set_permissions(destination, metadata.permissions())
+            .map_err(|error| errors::at(error, destination))
     })();
     if result.is_err() {
         // This function created the file; a partial copy cannot become the
@@ -79,21 +83,56 @@ fn copy_file(source: &Path, destination: &Path, merging: bool) -> io::Result<()>
     result
 }
 
+fn copy_directory_metadata(source: &Path, destination: &Path) -> io::Result<()> {
+    let metadata = fs::metadata(source).map_err(|error| errors::at(error, source))?;
+    fs::set_times(
+        destination,
+        FileTimes::new()
+            .set_accessed(metadata.accessed()?)
+            .set_modified(metadata.modified()?),
+    )
+    .map_err(|error| errors::at(error, destination))?;
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        let open = |path: &Path| {
+            File::options()
+                .read(true)
+                .custom_flags(libc::O_NOFOLLOW | libc::O_DIRECTORY)
+                .open(path)
+                .map_err(|error| errors::at(error, path))
+        };
+        super::first_run_xattrs::copy(&open(source)?, &open(destination)?)?;
+    }
+    fs::set_permissions(destination, metadata.permissions())
+        .map_err(|error| errors::at(error, destination))
+}
+
 fn merge_dir(
     source: &Path,
     destination: &Path,
     depth: usize,
     merging: bool,
+    source_entry: bool,
 ) -> io::Result<(usize, usize)> {
     if depth > 128 {
         return Err(io::Error::other(
             "First-run source nesting exceeds the safe copy limit",
         ));
     }
-    fs::create_dir_all(destination)?;
-    let mut entries = fs::read_dir(source)?.collect::<Result<Vec<_>, _>>()?;
-    entries.sort_by_key(|entry| entry.file_name());
+    if merging {
+        fs::create_dir_all(destination).map_err(|error| errors::at(error, destination))?;
+    }
+    let entries = fs::read_dir(source)
+        .and_then(|entries| entries.collect::<Result<Vec<_>, _>>())
+        .map_err(|error| errors::at(error, source))?;
+    if !merging {
+        // copytree enumerates before creating a new destination. A failed
+        // source read must not turn the next retry into a manual merge.
+        fs::create_dir_all(destination).map_err(|error| errors::at(error, destination))?;
+    }
     let (mut added, mut kept) = (0, 0);
+    let mut failures = CopyFailures::default();
     for entry in entries {
         let name = entry.file_name();
         // The original merge skips its own locks, but copytree retains every
@@ -107,53 +146,53 @@ fn merge_dir(
             ));
         }
         let path = entry.path();
-        if entry.file_type()?.is_symlink() {
-            return Err(io::Error::other(
-                "First-run source contains a symbolic link; copy requires explicit handling",
-            ));
-        }
         let target = destination.join(name);
-        if target.try_exists()? {
-            if fs::symlink_metadata(&target)?.is_symlink() {
+        let result = (|| -> io::Result<()> {
+            if entry.file_type()?.is_symlink() {
                 return Err(io::Error::other(
-                    "First-run destination contains a symbolic link; it was not modified",
+                    "First-run source contains a symbolic link; copy requires explicit handling",
                 ));
             }
-            if path.is_dir() {
-                let (a, k) = merge_dir(&path, &target, depth + 1, merging)?;
-                added += a;
-                kept += k;
+            if target.try_exists()? {
+                if fs::symlink_metadata(&target)?.is_symlink() {
+                    return Err(io::Error::other(
+                        "First-run destination contains a symbolic link; it was not modified",
+                    ));
+                }
+                if path.is_dir() {
+                    let (a, k) = merge_dir(&path, &target, depth + 1, merging, !merging)?;
+                    added += a;
+                    kept += k;
+                } else {
+                    kept += 1;
+                }
+            } else if path.is_dir() {
+                merge_dir(&path, &target, depth + 1, false, !merging)?;
+                added += 1;
             } else {
-                kept += 1;
+                copy_file(&path, &target, merging)?;
+                added += 1;
             }
-        } else if path.is_dir() {
-            merge_dir(&path, &target, depth + 1, false)?;
-            // copytree applies metadata after children, only for a new subtree.
-            let metadata = fs::metadata(&path)?;
-            fs::set_times(
-                &target,
-                FileTimes::new()
-                    .set_accessed(metadata.accessed()?)
-                    .set_modified(metadata.modified()?),
-            )?;
-            #[cfg(target_os = "linux")]
-            {
-                use std::os::unix::fs::OpenOptionsExt;
-                let open = |path: &Path| {
-                    File::options()
-                        .read(true)
-                        .custom_flags(libc::O_NOFOLLOW | libc::O_DIRECTORY)
-                        .open(path)
-                };
-                super::first_run_xattrs::copy(&open(&path)?, &open(&target)?)?;
+            Ok(())
+        })();
+        if let Err(error) = result {
+            if merging {
+                return Err(error);
             }
-            fs::set_permissions(&target, metadata.permissions())?;
-            added += 1;
-        } else {
-            copy_file(&path, &target, merging)?;
-            added += 1;
+            failures.push(&path, &target, error);
         }
     }
+    if !merging {
+        // copytree applies metadata after every child, even when some failed.
+        if let Err(error) = copy_directory_metadata(source, destination) {
+            // CPython copytree suppresses native Windows copystat failures,
+            // not application policy errors or failures while copying bytes.
+            if !cfg!(windows) || !errors::native(&error) {
+                failures.metadata(source, destination, source_entry, error);
+            }
+        }
+    }
+    failures.finish()?;
     Ok((added, kept))
 }
 
@@ -175,7 +214,7 @@ pub fn import_from(source: &Path, destination: &Path) -> io::Result<Summary> {
                 return Err(io::Error::other("First-run source item is a symbolic link"));
             }
             if src.is_dir() {
-                let (added, kept) = merge_dir(&src, &dst, 0, true)?;
+                let (added, kept) = merge_dir(&src, &dst, 0, true, false)?;
                 if added > 0 {
                     summary.copied.push(format!("{name} ({added})"));
                 }

@@ -7,19 +7,19 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — November 3, 2026
 
-Checkpoint `73cb60a` ran in manual hosted batch
-[41530950735](https://github.com/KiaroSama/Numera-Browser/actions/runs/41530950735). Linux passed 92 historical proofs and current contracts, including 54 container-text profile/roundtrip comparisons; all five CLI/HTTP latency and memory comparisons passed.
-The prior batch proved occupied recovery-file preservation on all three desktop platforms, including exact old-source failure/restoration on Linux/macOS. This is not updater activation or native-signing acceptance.
+Checkpoint `da41e44` ran in manual hosted batch
+[41567047738](https://github.com/KiaroSama/Numera-Browser/actions/runs/41567047738). Linux passed 92 historical proofs and current contracts, including 54 container-text profile/roundtrip comparisons; all five CLI/HTTP latency and memory comparisons passed.
+All three desktop contract jobs passed, retaining occupied recovery-file preservation and prior exact old-source failure/restoration on Linux/macOS. This is not updater activation or native-signing acceptance.
 All eight Windows/Linux SDK legs passed source/native functional tests and relocated execution; the supported Ubuntu 24.04 pin resolved Camoufox's earlier pre-SDK host refusal.
-All eight measured browser performance gates remain unaccepted: three latency ranges passed and five overlapped; all eight memory ranges overlapped. Separate unmeasured Windows observations do not identify a removable allocation or alter acceptance.
-Windows completed 50 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached.
-The historical-only line-table experiment added metadata over CI's existing debug=0 baseline; removing it did not establish complete Windows acceptance. A prepared Windows-only archive-phase diagnostic projects numeric receipts, sanitizes Cargo replay output and prevents cache publication; it is not yet hosted-verified or a compiler speedup.
-Earlier Linux log-root, nine-case entry comparison and detached/server acceptance passed; generic logging and full first-run compatibility remain incomplete.
+All eight measured browser performance gates remain unaccepted: four latency ranges passed and four overlapped; all eight memory ranges overlapped. Separate unmeasured Windows observations do not identify a removable allocation or alter acceptance.
+Windows stopped after one historical proof because compiler-cache identity compared incompatible path/descriptor timestamps; current acceptance was not reached. The preceding batch reached 50 proofs before the unchanged 900-second ceiling.
+The scoped diagnostic observed one 136.36-ms archive-to-artifact receipt interval, not exclusive compiler time or a speedup. A common Windows birthtime identity correction and eight controls are prepared, not hosted-verified; atomic filtering and restore-only cache publication protection remain.
+First-run copytree failure aggregation/healthy-sibling continuation and six original-derived error/retry cases are prepared, not executed. Manual merges remain fail-fast; full platform/error compatibility and generic logging remain incomplete.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
 and current acceptance, including read warnings, delete recovery and Linux process-group uncertainty.
 Native macOS identity/group tests pass after two exact historical failures/restoration, four locale/timezone
 source-token comparisons and real descendant/claim settlement.
-CodeQL and required verification still fail; the current macOS desktop job was cancelled before any steps, with no established cause. Signing and publication stay gated.
+CodeQL and required verification still fail. The preceding macOS cancellation did not recur; its cause remains unknown. Signing and publication stay gated.
 Shared-store HTTP/CLI replay and original-server restart passed on both systems with
 18 complete, clean units each. The shared-executor correction preserves caller environments
 and separately owned detached lifetimes; entry main explicitly forwards its outer receipt.

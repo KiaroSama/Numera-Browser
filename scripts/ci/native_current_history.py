@@ -446,4 +446,13 @@ CURRENT_CALLER_REGRESSIONS = (
         'files': {'engine-rust/src/conversion.rs':
                   'c52af49700c56939aa482ba1c155aed5b861258e7404cf4c5069df70e65ceef4'},
     },
+    {
+        'target': 'first_run_failure',
+        'test': 'copytree_errors::new_subtree_errors_match_original_continuation_summaries_and_retry',
+        'symptom': 'First-run copytree failure aggregation differs',
+        'commit': 'da41e44368222813bb929cf579fd915baeeea7b1',
+        'platform': 'linux',
+        'files': {'engine-rust/src/storage/first_run.rs':
+                  '6e865c0e82abea1c6cdb7ad793d5bc2eab39c05bedc37cfbd311d92854e5da1b'},
+    },
 )

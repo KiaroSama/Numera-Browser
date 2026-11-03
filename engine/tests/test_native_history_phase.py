@@ -394,3 +394,44 @@ def test_returned_invalid_proof_takes_precedence_over_cache_cleanup(tmp_path, mo
     with pytest.raises(ValueError, match='Historical native regression did not fail at its required production assertion'):
         module.prove(tmp_path, tmp_path / 'original', logger)
     assert source.read_bytes() == b'fixed' and logger.filters == [] and logger.handlers == []
+
+
+@pytest.mark.parametrize('platform', ['win32', 'linux'])
+@pytest.mark.parametrize('damage', [None, 'inode', 'change-time', 'legacy'])
+def test_cache_identity_respects_platform_stat_contract(tmp_path, monkeypatch, platform, damage):
+    module = load()
+    monkeypatch.setattr(module, 'sys', SimpleNamespace(platform=platform, exc_info=__import__('sys').exc_info))
+    directory = tmp_path / 'engine-rust/target/debug/.fingerprint/numera-core-0123456789abcdef'
+    directory.mkdir(parents=True)
+    path = directory / 'output-lib-numera_core'
+    diagnostic = b'{"level":"warning","message":"required diagnostic"}\n'
+    raw = json.dumps(trace(tmp_path, tmp_path / 'private.rlib')['message']).encode('utf-8') + b'\n'
+    path.write_bytes(diagnostic + raw)
+    actual_lstat, actual_fstat = Path.lstat, module.os.fstat
+
+    def record(details, descriptor=False):
+        values = {key: getattr(details, key) for key in (
+            'st_dev', 'st_ino', 'st_size', 'st_mtime_ns', 'st_nlink', 'st_mode')}
+        values['st_file_attributes'] = getattr(details, 'st_file_attributes', 0)
+        if damage != 'legacy':
+            values['st_birthtime_ns'] = 100
+        values['st_ctime_ns'] = 200 if descriptor and platform == 'win32' and damage != 'legacy' else 100
+        if descriptor and damage == 'inode':
+            values['st_ino'] += 1
+        if descriptor and damage == 'change-time' and platform != 'win32':
+            values['st_ctime_ns'] += 1
+        return SimpleNamespace(**values)
+
+    monkeypatch.setattr(Path, 'lstat', lambda file: record(actual_lstat(file)))
+    monkeypatch.setattr(module.os, 'fstat', lambda fd: record(actual_fstat(fd), descriptor=True))
+    logger = logging.Logger('compiler-platform-stat-fixture', level=logging.INFO)
+    if damage == 'inode' or damage == 'change-time' and platform != 'win32':
+        with pytest.raises(RuntimeError, match='Compiler diagnostic cache could not be sanitized'):
+            with module.compiler_phase(tmp_path, 0, logger, enabled=True):
+                pass
+        assert path.read_bytes() == diagnostic + raw
+    else:
+        with module.compiler_phase(tmp_path, 0, logger, enabled=True):
+            pass
+        assert path.read_bytes() == diagnostic
+    assert logger.filters == []

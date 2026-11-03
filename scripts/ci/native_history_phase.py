@@ -43,8 +43,12 @@ def regular(path, *, directory=False):
 
 
 def cache_identity(details):
+    # Windows path stat retains creation-time ctime, while fstat reports change
+    # time. Both expose the same birthtime; Unix retains its change-time guard.
+    timestamp = (getattr(details, 'st_birthtime_ns', details.st_ctime_ns)
+                 if sys.platform == 'win32' else details.st_ctime_ns)
     return (details.st_dev, details.st_ino, details.st_size, details.st_mtime_ns,
-            details.st_ctime_ns, details.st_nlink)
+            timestamp, details.st_nlink)
 
 
 def replace_cache(path, raw, before):

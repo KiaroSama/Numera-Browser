@@ -3,6 +3,9 @@ use std::{fs, path::PathBuf};
 
 #[cfg(unix)]
 mod common;
+#[cfg(unix)]
+#[path = "first_run_failure/copytree_errors.rs"]
+mod copytree_errors;
 
 #[cfg(unix)]
 #[test]
