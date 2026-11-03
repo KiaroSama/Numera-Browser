@@ -174,10 +174,6 @@ def prove(root: Path, original: Path, logger, *, cases: tuple | None = None) -> 
     previous = {key: os.environ.get(key) for key in keys}
     # Immutable source bytes are shared only within this invocation, never proof verdicts.
     inputs, compiler_caches = {}, {}
-    # Historical Windows builds reduce incremental artifact fan-out. Inherit CI's
-    # existing debug setting instead of adding metadata; current profiles are unchanged.
-    codegen = (['--config', 'profile.dev.package.numera-core.codegen-units=16']
-               if sys.platform == 'win32' else [])
     # rust-cache disables this for cross-job caches; these source swaps share one build tree.
     os.environ.update({ENVIRONMENT: str(original), 'PYTHONDONTWRITEBYTECODE': '1',
                        'CARGO_INCREMENTAL': '1'})
@@ -196,13 +192,13 @@ def prove(root: Path, original: Path, logger, *, cases: tuple | None = None) -> 
                         # Cold dependency compilation belongs to the outer build budget.
                         subprocess.run(['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
                                         '--locked', '--offline', '--config',
-                                        'profile.dev.package.numera-core.opt-level=0', '--timings', *codegen,
+                                        'profile.dev.package.numera-core.opt-level=0', '--timings',
                                         *target, '--no-run'],
                                        stdin=subprocess.DEVNULL, check=True)
                     with compiler_phase(root, index, logger, enabled=sys.platform == 'win32', seen=compiler_caches) as diagnostics:
                         command = ['cargo', 'test', '--manifest-path', str(root / 'engine-rust/Cargo.toml'),
                                    '--locked', '--offline', '--config',
-                                   'profile.dev.package.numera-core.opt-level=0', '--timings', *codegen,
+                                   'profile.dev.package.numera-core.opt-level=0', '--timings',
                                    *diagnostics, *target, '--', case['test'],
                                    '--exact', '--test-threads=1', '--color=never']
                         code = run(command, 180, 90, logger)

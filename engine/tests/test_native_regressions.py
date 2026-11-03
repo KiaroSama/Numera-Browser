@@ -598,8 +598,6 @@ def test_historical_runner_restores_source_and_environment(
     excluded = dict(case, platform='linux' if platform == 'win32' else 'win32',
                     commit='excluded-source-must-not-be-read')
     selected = dict(case, platform=platform)
-    override = (['--config', 'profile.dev.package.numera-core.codegen-units=16']
-                if platform == 'win32' else [])
     monkeypatch.setattr(module, 'sys', SimpleNamespace(platform=platform))
     monkeypatch.setattr(module, 'REGRESSIONS',
                         (excluded, selected, case) if damage is None else (excluded, selected))
@@ -636,10 +634,10 @@ def test_historical_runner_restores_source_and_environment(
         assert command[-4:] == [case['test'], '--exact', '--test-threads=1', '--color=never']
         assert '--locked' in command and '--offline' in command
         assert command[command.index('--config') + 1] == 'profile.dev.package.numera-core.opt-level=0'
-        assert command.count('--config') == (2 if override else 1)
+        assert command.count('--config') == 1
         selection = ['--lib'] if target == 'lib' else ['--test', target]
         diagnostics = ['--message-format=json'] if platform == 'win32' else []
-        assert command[command.index('--config') + 2:command.index('--')] == ['--timings', *override, *diagnostics, *selection]
+        assert command[command.index('--config') + 2:command.index('--')] == ['--timings', *diagnostics, *selection]
         assert os.environ['NUMERA_ORACLE_SOURCE_ROOT'] == str(tmp_path / 'original')
         assert os.environ['PYTHONDONTWRITEBYTECODE'] == '1'
         assert os.environ['CARGO_INCREMENTAL'] == '1'
@@ -660,7 +658,7 @@ def test_historical_runner_restores_source_and_environment(
         assert companion.read_bytes() == old_test
         assert command == ['cargo', 'test', '--manifest-path', str(tmp_path / 'engine-rust/Cargo.toml'),
                            '--locked', '--offline', '--config',
-                           'profile.dev.package.numera-core.opt-level=0', '--timings', *override,
+                           'profile.dev.package.numera-core.opt-level=0', '--timings',
                            *(['--lib'] if target == 'lib' else ['--test', target]), '--no-run']
         assert options == {'stdin': module.subprocess.DEVNULL, 'check': True}
         warmups.append(command)

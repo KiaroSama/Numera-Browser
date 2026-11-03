@@ -7,14 +7,14 @@ Passing library or narrow entrypoint tests does not certify a finished migration
 
 ## Current integration status — November 3, 2026
 
-Checkpoint `c2615a4` ran in manual hosted batch
-[41597309574](https://github.com/KiaroSama/Numera-Browser/actions/runs/41597309574). Linux passed 93 historical proofs, including the old copytree failure and fixed-byte restoration. Strict lint and current native contracts passed; all six original-derived copytree error/retry cases passed within the three-test first-run target's 0.42 seconds.
-All three desktop shell contract jobs passed after the octal permission-literal correction. Prior occupied recovery-file tests remain narrow evidence, not updater activation or native-signing acceptance.
+Checkpoint `f7637f8` ran in manual hosted batch
+[41612084953](https://github.com/KiaroSama/Numera-Browser/actions/runs/41612084953). Linux passed 94 historical proofs, including the old advisory-count failure and fixed-byte restoration. All four original-derived permission/count cases, strict lint, current native contracts and five CLI/HTTP time-and-memory comparisons passed; these do not establish full platform parity.
+All three desktop shell contract jobs passed. Prior occupied recovery-file tests remain narrow evidence, not updater activation or native-signing acceptance.
 All eight Windows/Linux SDK legs passed source/native functional tests and relocated execution; the supported Ubuntu 24.04 pin resolved Camoufox's earlier pre-SDK host refusal.
-All eight measured browser performance gates remain unaccepted: five latency ranges passed and three overlapped; all eight memory ranges overlapped. Separate unmeasured Windows observations do not identify a removable allocation or alter acceptance.
-Windows passed 50 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached. All 49 compiler-diagnostic controls previously passed on Windows in 0.68 seconds; the cache-identity repair remains, without a speedup claim.
-The previous batch's 61 complete archive-to-artifact receipt intervals totaled 9.21 seconds versus 672.13 seconds before their archive markers. This localizes the observed delay before archive assembly, not exclusively to LLVM, incremental copying or a measured speedup; cache privacy protections remain.
-Manual merges remain fail-fast. Final advisory profile-count scanning now preserves completed copy results on scan errors, matching Python 3.13 glob; four new original-derived permission/count cases await hosted execution. Full platform/error compatibility and generic logging remain incomplete.
+All eight measured browser performance gates remain unaccepted: four latency ranges passed and four overlapped; all eight memory ranges overlapped. Separate unmeasured Windows observations do not identify a removable allocation or alter acceptance.
+Windows passed 46 historical proofs before the unchanged 900-second ceiling; current acceptance was not reached. The unproved historical-only codegen16 experiment is removed to restore configured incremental partitioning; hosted verification is pending, without a speedup claim.
+The earlier batch's 61 complete archive-to-artifact receipt intervals totaled 9.21 seconds versus 672.13 seconds before their archive markers. This localizes observed delay before archive assembly, not exclusively to LLVM or incremental copying; all source proofs, timing/privacy diagnostics, budgets and current/release profiles remain.
+Manual merges remain fail-fast. Final advisory profile-count scanning now preserves completed copy results on scan errors, matching Python 3.13 glob. The earlier six-case copytree error/retry comparison also passed on Linux; full platform/error compatibility and generic logging remain incomplete.
 The previous `2775fa3` batch proved 73 Windows and 72 Linux historical defects before restoration
 and current acceptance, including read warnings, delete recovery and Linux process-group uncertainty.
 Native macOS identity/group tests pass after two exact historical failures/restoration, four locale/timezone
