@@ -43,7 +43,7 @@ fn new_subtree_errors_match_original_continuation_summaries_and_retry()
             let attempt = || -> Result<_, Box<dyn std::error::Error>> {
                 use std::os::unix::fs::PermissionsExt;
                 for name in &denied {
-                    fs::set_permissions(source.join(name), fs::Permissions::from_mode(0))?;
+                    fs::set_permissions(source.join(name), fs::Permissions::from_mode(0o0))?;
                 }
                 let result = run_if_needed(destination, &[source.to_owned()]);
                 for name in &denied {
