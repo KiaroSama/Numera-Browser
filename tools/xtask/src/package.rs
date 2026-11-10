@@ -9,7 +9,7 @@ use std::{
     path::Path,
     process::Command,
 };
-use zip::{CompressionMethod, ZipWriter, write::SimpleFileOptions};
+use zip::{CompressionMethod, System, ZipWriter, write::SimpleFileOptions};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BuildIdentity {
@@ -135,7 +135,11 @@ fn write_inner(
         .create_new(true)
         .open(output.join(&archive_name))?;
     let mut archive = ZipWriter::new(file);
-    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+    // DOS creator records discard explicit Unix execute bits when read back.
+    // Keep the portable archive's permission vocabulary independent of its host.
+    let options = SimpleFileOptions::default()
+        .system(System::Unix)
+        .compression_method(CompressionMethod::Deflated);
     archive.start_file(binary_name, options.unix_permissions(0o755))?;
     std::io::copy(&mut File::open(executable)?, &mut archive)?;
     for (path, name) in [
@@ -306,6 +310,9 @@ mod tests {
             assert_eq!(bytes, b"exact executable bytes");
             assert_eq!(binary.unix_mode().map(|mode| mode & 0o777), Some(0o755));
             drop(binary);
+            let notice = archive.by_name("README.txt")?;
+            assert_eq!(notice.unix_mode().map(|mode| mode & 0o777), Some(0o644));
+            drop(notice);
             let mut info = String::new();
             archive.by_name("build.json")?.read_to_string(&mut info)?;
             let info: Value = serde_json::from_str(&info)?;
