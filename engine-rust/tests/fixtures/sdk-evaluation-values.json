@@ -1,0 +1,448 @@
+{
+  "schema": 1,
+  "source_url": "https://github.com/microsoft/playwright-python/blob/v1.65.0/playwright/_impl/protocol/serializers.py",
+  "source_sha256": "5b4ff004a2244e5c5483b150e93637ff44f1be1bf4f16e24a06c3927d4d0146c",
+  "cases": [
+    {
+      "name": "special-undefined",
+      "raw": {
+        "v": "undefined"
+      },
+      "ok": true,
+      "value": null,
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": null}}"
+    },
+    {
+      "name": "special-null",
+      "raw": {
+        "v": "null"
+      },
+      "ok": true,
+      "value": null,
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": null}}"
+    },
+    {
+      "name": "special--0",
+      "raw": {
+        "v": "-0"
+      },
+      "ok": true,
+      "value": -0.0,
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": -0.0}}"
+    },
+    {
+      "name": "special-NaN",
+      "raw": {
+        "v": "NaN"
+      },
+      "ok": false
+    },
+    {
+      "name": "special-Infinity",
+      "raw": {
+        "v": "Infinity"
+      },
+      "ok": false
+    },
+    {
+      "name": "special--Infinity",
+      "raw": {
+        "v": "-Infinity"
+      },
+      "ok": false
+    },
+    {
+      "name": "special-invalid",
+      "raw": {
+        "v": "invalid"
+      },
+      "ok": false
+    },
+    {
+      "name": "number",
+      "raw": {
+        "n": 1.25
+      },
+      "ok": true,
+      "value": 1.25,
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": 1.25}}"
+    },
+    {
+      "name": "small-number",
+      "raw": {
+        "n": 1e-05
+      },
+      "ok": true,
+      "value": 1e-05,
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": 1e-05}}"
+    },
+    {
+      "name": "large-number",
+      "raw": {
+        "n": 1.5e+25
+      },
+      "ok": true,
+      "value": 1.5e+25,
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": 1.5e+25}}"
+    },
+    {
+      "name": "string",
+      "raw": {
+        "s": "synthetic-فارسی-🦊"
+      },
+      "ok": true,
+      "value": "synthetic-فارسی-🦊",
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": \"synthetic-\\u0641\\u0627\\u0631\\u0633\\u06cc-\\ud83e\\udd8a\\u007f\"}}"
+    },
+    {
+      "name": "boolean",
+      "raw": {
+        "b": true
+      },
+      "ok": true,
+      "value": true,
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": true}}"
+    },
+    {
+      "name": "bigint",
+      "raw": {
+        "bi": "18446744073709551616"
+      },
+      "ok": true,
+      "value": 18446744073709551616,
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": 18446744073709551616}}"
+    },
+    {
+      "name": "negative-bigint",
+      "raw": {
+        "bi": "-123456789012345678901234567890"
+      },
+      "ok": true,
+      "value": -123456789012345678901234567890,
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": -123456789012345678901234567890}}"
+    },
+    {
+      "name": "date",
+      "raw": {
+        "d": "2026-11-10T00:00:00.000Z"
+      },
+      "ok": false
+    },
+    {
+      "name": "error",
+      "raw": {
+        "e": {
+          "m": "synthetic",
+          "n": "Error",
+          "s": "synthetic-stack"
+        }
+      },
+      "ok": false
+    },
+    {
+      "name": "function",
+      "raw": {
+        "fn": "synthetic"
+      },
+      "ok": false
+    },
+    {
+      "name": "handle",
+      "raw": {
+        "h": 0
+      },
+      "ok": false
+    },
+    {
+      "name": "url",
+      "raw": {
+        "u": "https://fixture.test/a/b;params?query=1#fragment"
+      },
+      "ok": true,
+      "value": [
+        "https",
+        "fixture.test",
+        "/a/b",
+        "params",
+        "query=1",
+        "fragment"
+      ],
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": [\"https\", \"fixture.test\", \"/a/b\", \"params\", \"query=1\", \"fragment\"]}}"
+    },
+    {
+      "name": "regex",
+      "raw": {
+        "r": {
+          "p": "ab+c",
+          "f": "i"
+        }
+      },
+      "ok": false
+    },
+    {
+      "name": "js-only-regex",
+      "raw": {
+        "r": {
+          "p": "(?<named>x)",
+          "f": ""
+        }
+      },
+      "ok": true,
+      "value": {
+        "r": {
+          "p": "(?<named>x)",
+          "f": ""
+        }
+      },
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": {\"r\": {\"p\": \"(?<named>x)\", \"f\": \"\"}}}}"
+    },
+    {
+      "name": "cycle",
+      "raw": {
+        "a": [
+          {
+            "ref": 1
+          }
+        ],
+        "id": 1
+      },
+      "ok": false
+    },
+    {
+      "name": "shared",
+      "raw": {
+        "a": [
+          {
+            "o": [
+              {
+                "k": "answer",
+                "v": {
+                  "n": 42
+                }
+              }
+            ],
+            "id": 2
+          },
+          {
+            "ref": 2
+          }
+        ],
+        "id": 1
+      },
+      "ok": true,
+      "value": [
+        {
+          "answer": 42
+        },
+        {
+          "answer": 42
+        }
+      ],
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": [{\"answer\": 42}, {\"answer\": 42}]}}"
+    },
+    {
+      "name": "unknown-ref",
+      "raw": {
+        "ref": 42
+      },
+      "ok": true,
+      "value": null,
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": null}}"
+    },
+    {
+      "name": "typed-i8",
+      "raw": {
+        "ta": {
+          "k": "i8",
+          "b": "gH8="
+        }
+      },
+      "ok": true,
+      "value": [
+        -128,
+        127
+      ],
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": [-128, 127]}}"
+    },
+    {
+      "name": "typed-ui8",
+      "raw": {
+        "ta": {
+          "k": "ui8",
+          "b": "AP8="
+        }
+      },
+      "ok": true,
+      "value": [
+        0,
+        255
+      ],
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": [0, 255]}}"
+    },
+    {
+      "name": "typed-ui8c",
+      "raw": {
+        "ta": {
+          "k": "ui8c",
+          "b": "AP8="
+        }
+      },
+      "ok": true,
+      "value": [
+        0,
+        255
+      ],
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": [0, 255]}}"
+    },
+    {
+      "name": "typed-i16",
+      "raw": {
+        "ta": {
+          "k": "i16",
+          "b": "AID/fw=="
+        }
+      },
+      "ok": true,
+      "value": [
+        -32768,
+        32767
+      ],
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": [-32768, 32767]}}"
+    },
+    {
+      "name": "typed-ui16",
+      "raw": {
+        "ta": {
+          "k": "ui16",
+          "b": "AAD//w=="
+        }
+      },
+      "ok": true,
+      "value": [
+        0,
+        65535
+      ],
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": [0, 65535]}}"
+    },
+    {
+      "name": "typed-i32",
+      "raw": {
+        "ta": {
+          "k": "i32",
+          "b": "AAAAgP///38="
+        }
+      },
+      "ok": true,
+      "value": [
+        -2147483648,
+        2147483647
+      ],
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": [-2147483648, 2147483647]}}"
+    },
+    {
+      "name": "typed-ui32",
+      "raw": {
+        "ta": {
+          "k": "ui32",
+          "b": "AAAAAP////8="
+        }
+      },
+      "ok": true,
+      "value": [
+        0,
+        4294967295
+      ],
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": [0, 4294967295]}}"
+    },
+    {
+      "name": "typed-bi64",
+      "raw": {
+        "ta": {
+          "k": "bi64",
+          "b": "AAAAAAAAAID/////////fw=="
+        }
+      },
+      "ok": true,
+      "value": [
+        -9223372036854775808,
+        9223372036854775807
+      ],
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": [-9223372036854775808, 9223372036854775807]}}"
+    },
+    {
+      "name": "typed-bui64",
+      "raw": {
+        "ta": {
+          "k": "bui64",
+          "b": "AAAAAAAAAAD//////////w=="
+        }
+      },
+      "ok": true,
+      "value": [
+        0,
+        18446744073709551615
+      ],
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": [0, 18446744073709551615]}}"
+    },
+    {
+      "name": "typed-f32",
+      "raw": {
+        "ta": {
+          "k": "f32",
+          "b": "AAAAPgAAAIA="
+        }
+      },
+      "ok": true,
+      "value": [
+        0.125,
+        -0.0
+      ],
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": [0.125, -0.0]}}"
+    },
+    {
+      "name": "typed-f64",
+      "raw": {
+        "ta": {
+          "k": "f64",
+          "b": "AAAAAAAAwD8AAAAAAAAAgA=="
+        }
+      },
+      "ok": true,
+      "value": [
+        0.125,
+        -0.0
+      ],
+      "wire": "{\"protocol\": 1, \"id\": 1, \"ok\": true, \"result\": {\"evaluated\": true, \"value\": [0.125, -0.0]}}"
+    },
+    {
+      "name": "typed-f32-nan",
+      "raw": {
+        "ta": {
+          "k": "f32",
+          "b": "AADAfw=="
+        }
+      },
+      "ok": false
+    },
+    {
+      "name": "typed-f64-infinity",
+      "raw": {
+        "ta": {
+          "k": "f64",
+          "b": "AAAAAAAA8H8="
+        }
+      },
+      "ok": false
+    },
+    {
+      "name": "partial-typed",
+      "raw": {
+        "ta": {
+          "k": "f64",
+          "b": "AA=="
+        }
+      },
+      "ok": false
+    }
+  ]
+}

@@ -108,6 +108,13 @@ policy on existing/new pages, navigation, routes, evaluation, mouse input and
 cookie operations. Cookie objects keep vendor fields including partition keys.
 Close is acknowledged after context and driver cleanup. Vendor error payloads,
 credentials and evaluated source are never returned or logged as diagnostics.
+Evaluation values use a native codec: BigInt remains an integer, all typed-array
+kinds preserve their values, shared references expand under a frame budget, and
+non-finite/cyclic/non-JSON results fail. ASCII escaping, numeric formatting and
+bounded response construction preserve the source wire boundary. The existing
+SDK protocol test additionally checks 38 frozen source values/encodings; the
+existing live test checks large integers, shared objects, 64-bit typed arrays and
+URL tuples on real Playwright/Patchright contexts.
 
 SDK acquisition remains explicit. `NUMERA_PLAYWRIGHT_DRIVER` and
 `NUMERA_PATCHRIGHT_DRIVER` point to separate vendor driver directories, each

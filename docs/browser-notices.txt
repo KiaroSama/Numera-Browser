@@ -242,3 +242,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+SDK evaluation protocol semantics
+Copyright (c) Microsoft Corporation. Apache-2.0.
+Source: https://github.com/microsoft/playwright-python/blob/v1.65.0/playwright/_impl/protocol/serializers.py
+Numera uses a modified native Rust codec for its bounded JSON protocol.
+The Apache-2.0 license text above applies.

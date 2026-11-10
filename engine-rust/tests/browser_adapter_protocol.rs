@@ -48,6 +48,52 @@ fn adapter(logs: &Path) -> std::io::Result<Command> {
 #[test]
 fn actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure()
 -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(feature = "native-browser")]
+    {
+        let document: serde_json::Value =
+            serde_json::from_str(include_str!("fixtures/sdk-evaluation-values.json"))?;
+        let cases = document["cases"]
+            .as_array()
+            .ok_or("SDK value cases missing")?;
+        assert_eq!(cases.len(), 38);
+        for case in cases {
+            let result = numera_core::browser::sdk::values::decode(&case["raw"]);
+            if case["ok"] == true {
+                let result = result?;
+                assert_eq!(result, case["value"], "SDK value {}", case["name"]);
+                let envelope = serde_json::json!({"protocol":1,"id":1,"ok":true,"result":{"evaluated":true,"value":result}});
+                let wire = numera_core::browser::sdk::values::encode(&envelope)?;
+                assert!(wire.is_ascii());
+                assert_eq!(
+                    String::from_utf8(wire)?,
+                    case["wire"].as_str().ok_or("Source wire missing")?,
+                    "SDK encoding {}",
+                    case["name"]
+                );
+            } else {
+                assert!(
+                    result.is_err(),
+                    "Unrepresentable SDK value {} was accepted",
+                    case["name"]
+                );
+            }
+        }
+        let valid = serde_json::Value::String("x".repeat(1_048_576 - 3));
+        assert_eq!(
+            numera_core::browser::sdk::values::encode(&valid)?.len(),
+            1_048_575
+        );
+        let excessive = serde_json::Value::String("x".repeat(1_048_576 - 2));
+        assert!(numera_core::browser::sdk::values::encode(&excessive).is_err());
+        let mut shared = serde_json::json!({"a":[{"s":"x"}],"id":1});
+        for id in 2..25 {
+            shared = serde_json::json!({"a":[shared,{"ref":id-1}],"id":id});
+        }
+        assert!(
+            numera_core::browser::sdk::values::decode(&shared).is_err(),
+            "Reference expansion exceeded the frame budget"
+        );
+    }
     for invalid in [false, true] {
         let temporary = common::TempDirectory::new("browser-adapter-protocol")?;
         let root = temporary.path();
