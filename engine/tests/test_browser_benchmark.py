@@ -426,6 +426,30 @@ def test_browser_workflow_requires_original_history_before_acceptance(monkeypatc
     else:
         assert coverage.check_workflows()['python'] > 0
 
+    # Keep the same reported workflow cases while covering the native SDK
+    # checks too: compilation success must not hide unbuildable test targets.
+    candidate_path = ROOT / '.github/workflows/rust-candidate.yml'
+    candidate = yaml.safe_load(read_text(candidate_path, encoding='utf-8'))
+    native_steps = candidate['jobs']['tooling']['steps']
+    required = next(step for step in native_steps if 'cargo clippy' in step.get('run', '')
+                    and '--features native-browser --all-targets' in step['run'])
+    if damage == 'missing':
+        native_steps.remove(required)
+    elif damage == 'duplicate':
+        native_steps.append(dict(required))
+    elif damage == 'conditional':
+        required['if'] = 'false'
+    elif damage:
+        required['continue-on-error'] = True
+    candidate_text = yaml.safe_dump(candidate)
+    monkeypatch.setattr(Path, 'read_text', lambda selected, *args, **kwargs:
+                        candidate_text if selected == candidate_path else read_text(selected, *args, **kwargs))
+    if damage:
+        with pytest.raises(ValueError, match='Native Rust checks'):
+            coverage.check_workflows()
+    else:
+        assert coverage.check_workflows()['native'] > 0
+
 
 @pytest.mark.parametrize('damage', ['unoptimized', 'missing', 'softened', 'skipped', 'artifact', 'order'])
 def test_browser_workflow_guard_rejects_missing_or_softened_measurement(monkeypatch, damage):
