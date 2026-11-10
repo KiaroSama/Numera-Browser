@@ -1,0 +1,97 @@
+name: Rust candidate builds
+
+# Build the Rust executable on every push and PR, independently of the retained
+# application's slower acceptance gates. A successful build is not full CI.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-candidate-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_BUILD_JOBS: "2"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  tooling:
+    name: Rust build tooling
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: tools/xtask
+      - name: Formatting
+        run: cargo fmt --manifest-path tools/xtask/Cargo.toml --all --check
+      - name: Strict lint
+        run: cargo clippy --manifest-path tools/xtask/Cargo.toml --locked --all-targets -- -D warnings
+      - name: Artifact identity and refusal contracts
+        run: cargo test --manifest-path tools/xtask/Cargo.toml --locked
+
+  build:
+    name: Build Rust candidate (${{ matrix.platform }})
+    # No needs: a test/coverage failure must not suppress compilation.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runner: ubuntu-24.04
+          - platform: windows
+            runner: windows-2025
+          - platform: macos
+            runner: macos-15
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: |
+            engine-rust
+            tools/xtask
+      - name: Build, inspect and package the exact native executable
+        id: candidate
+        run: cargo xtask build-candidate build/rust-candidate
+      - name: Verify build tooling on the native host
+        if: always()
+        run: cargo test --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Preserve candidate, matching tracked source and checksums
+        if: steps.candidate.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rust-candidate-${{ matrix.platform }}-${{ github.sha }}
+          path: build/rust-candidate/*
+          if-no-files-found: error
+          retention-days: 7
+
+  required:
+    name: Required Rust builds
+    if: always()
+    needs: [tooling, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: All native platforms and tooling passed
+        env:
+          TOOLING_RESULT: ${{ needs.tooling.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: test "$TOOLING_RESULT" = success && test "$BUILD_RESULT" = success

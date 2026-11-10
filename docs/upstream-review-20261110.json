@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "reviewed_on": "2026-11-10",
+  "releases": [
+    {
+      "repository": "microsoft/playwright",
+      "tag": "v1.65.0",
+      "published_at": "2026-11-05T18:25:45Z",
+      "url": "https://github.com/microsoft/playwright/releases/tag/v1.65.0",
+      "reviewed": true,
+      "integration": "pending compatibility and four-backend acceptance; no automatic browser replacement"
+    },
+    {
+      "repository": "Kaliiiiiiiiii-Vinyzu/patchright",
+      "tag": "v1.64.1",
+      "published_at": "2026-10-15T13:33:38Z",
+      "url": "https://github.com/Kaliiiiiiiiii-Vinyzu/patchright/releases/tag/v1.64.1",
+      "reviewed": true,
+      "integration": "pending compatibility and four-backend acceptance; no automatic browser replacement"
+    },
+    {
+      "repository": "daijro/camoufox",
+      "tag": "v158.0.1-beta.41",
+      "published_at": "2026-10-29T22:14:10Z",
+      "url": "https://github.com/daijro/camoufox/releases/tag/v158.0.1-beta.41",
+      "reviewed": true,
+      "integration": "pending compatibility and four-backend acceptance; no automatic browser replacement"
+    },
+    {
+      "repository": "CloakHQ/CloakBrowser",
+      "tag": "chromium-v156.0.8078.47.1-pro",
+      "published_at": "2026-11-03T18:16:17Z",
+      "url": "https://github.com/CloakHQ/CloakBrowser/releases/tag/chromium-v156.0.8078.47.1-pro",
+      "reviewed": true,
+      "integration": "pending compatibility and four-backend acceptance; no automatic browser replacement"
+    }
+  ],
+  "compatibility_notes": {
+    "playwright": "Release changes proxy-auth scope, RFC 6265 cookie matching, navigation/action behavior and removes Node.js 20 from tested runtimes. A wrapper version must match its browser build.",
+    "patchright": "v1.64.1 follows the matching upstream Playwright release; do not mix its driver with a different protocol version.",
+    "camoufox": "The new release pairs the library and browser, reorganizes the repository into browser/python/typescript, changes GeoIP defaults, and fixes proxy credential encoding, virtual-display cleanup and default addon acquisition. Validate complete cleanup and bundled resources.",
+    "cloak": "The newest stable browser is proprietary and requires an applicable license. Wrapper 0.7.0 changes license fallback/seat release and native geometry, and adds the fingerprint max-touch-points flag. No binary redistribution or license change is implied by this review."
+  }
+}

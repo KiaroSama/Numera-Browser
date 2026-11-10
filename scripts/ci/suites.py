@@ -354,11 +354,39 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
     workflows = {}
     for path in (root / '.github/workflows').glob('*.yml'):
         workflows[path.stem] = yaml.load(path.read_text(encoding='utf-8'), Loader=UniqueLoader)
-    for workflow in workflows.values():
+    for workflow_name, workflow in workflows.items():
         events = workflow.get('on', workflow.get(True, {}))
         events = {events} if isinstance(events, str) else set(events)
-        if not events or events - {'workflow_dispatch', 'workflow_call'}:
+        allowed = ({'push', 'pull_request', 'workflow_dispatch'} if workflow_name == 'rust-candidate'
+                   else {'workflow_dispatch', 'workflow_call'})
+        if not events or events - allowed:
             raise ValueError('CI workflows must start only from an explicit manual root')
+    candidate = workflows['rust-candidate']
+    candidate_events = candidate.get('on', candidate.get(True, {}))
+    candidate_jobs = candidate.get('jobs', {})
+    candidate_build = candidate_jobs.get('build', {})
+    candidate_steps = candidate_build.get('steps', [])
+    candidate_commands = [step for step in candidate_steps
+                          if step.get('run') == 'cargo xtask build-candidate build/rust-candidate']
+    if (set(candidate_events) != {'push', 'pull_request', 'workflow_dispatch'}
+            or any(value is not None for value in candidate_events.values())
+            or candidate.get('permissions') != {'contents': 'read'}
+            or 'secrets.' in json.dumps(candidate)
+            or set(candidate_jobs) != {'tooling', 'build', 'required'}
+            or candidate_build.get('needs') or candidate_build.get('if')
+            or candidate_build.get('strategy') != {'fail-fast': False, 'matrix': {'include': [
+                {'platform': 'linux', 'runner': 'ubuntu-24.04'},
+                {'platform': 'windows', 'runner': 'windows-2025'},
+                {'platform': 'macos', 'runner': 'macos-15'}]}}
+            or candidate_build.get('runs-on') != '${{ matrix.runner }}'
+            or candidate_build.get('timeout-minutes') != 30
+            or len(candidate_commands) != 1 or candidate_commands[0].get('if')
+            or candidate_commands[0].get('continue-on-error')
+            or any('cargo test' in step.get('run', '')
+                   for step in candidate_steps[:candidate_steps.index(candidate_commands[0])])
+            or candidate_jobs['required'].get('if') != 'always()'
+            or set(candidate_jobs['required'].get('needs', [])) != {'tooling', 'build'}):
+        raise ValueError('Automatic Rust candidate builds must retain all platforms and no signing inputs')
     jobs = workflows['ci']['jobs']
     expected = {'coverage', 'secrets', 'engine', 'engine-windows', 'engine-macos', 'engine-live',
                 'browser', 'rust-core', 'docker', 'dashboard', 'codeql', 'dependencies', 'desktop-contracts', 'distribution'}
@@ -387,7 +415,7 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
             raise ValueError(f'Missing suite command in CI tier: {job}')
     check_native_acceptance_order(jobs['rust-core']['steps'])
     check_native_compiler_cache(jobs['rust-core']['steps'])
-    for workflow_name in ('ci', 'dashboard', 'build-desktop', 'desktop-contracts', 'container',
+    for workflow_name in ('ci', 'dashboard', 'build-desktop', 'desktop-contracts', 'container', 'rust-candidate',
                           'codeql', 'dependency-review', 'migration-profile'):
         for name, job in workflows[workflow_name]['jobs'].items():
             if job.get('continue-on-error') or 'self-hosted' in str(job.get('runs-on', '')):

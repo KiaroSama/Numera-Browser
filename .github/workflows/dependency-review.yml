@@ -51,7 +51,8 @@ jobs:
         run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python -m pip_audit --strict --no-deps --disable-pip --requirement build/audit/python-requirements.txt --progress-spinner=off --timeout=15
       - name: Install the verified stable Cargo advisory tool
         run: python scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo install cargo-audit --version 0.22.2 --locked
-      - name: Audit both authoritative Cargo lockfiles
+      - name: Audit every authoritative Cargo lockfile
         run: |
           python scripts/migration/run_owned.py --wall 180 --idle 90 -- cargo audit --file engine-rust/Cargo.lock
           python scripts/migration/run_owned.py --wall 180 --idle 90 -- cargo audit --file desktop/src-tauri/Cargo.lock
+          python scripts/migration/run_owned.py --wall 180 --idle 90 -- cargo audit --file tools/xtask/Cargo.lock

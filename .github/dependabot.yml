@@ -49,6 +49,12 @@ updates:
       interval: daily
     labels: [dependencies, engine]
 
+  - package-ecosystem: cargo
+    directory: /tools/xtask
+    schedule:
+      interval: daily
+    labels: [dependencies, ci]
+
   - package-ecosystem: docker
     directory: /
     schedule:
