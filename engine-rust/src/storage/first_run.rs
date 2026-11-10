@@ -51,6 +51,27 @@ fn copy_file(source: &Path, destination: &Path, merging: bool) -> io::Result<()>
         .open(destination)
         .map_err(|error| errors::at(error, destination))?;
     let result = (|| {
+        #[cfg(target_os = "linux")]
+        {
+            use io::{Read, Write};
+            // io::copy may use copy_file_range or a filesystem clone. Those
+            // paths can leave source atime unchanged on Linux, unlike the
+            // original copy2 read/sendfile path. Real bounded reads preserve
+            // the observable access-time policy without changing source times
+            // explicitly or requiring write access to the source.
+            let mut buffer = [0u8; 65536];
+            loop {
+                let read = match input.read(&mut buffer) {
+                    Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
+                    result => result?,
+                };
+                if read == 0 {
+                    break;
+                }
+                output.write_all(&buffer[..read])?;
+            }
+        }
+        #[cfg(not(target_os = "linux"))]
         io::copy(&mut input, &mut output)?;
         // Direct copy2 re-stats after reading; copytree reuses DirEntry's cache.
         #[cfg(unix)]

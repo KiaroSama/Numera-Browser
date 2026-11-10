@@ -10,7 +10,8 @@
       "head_sha": "b9d7edef10322b0cca56a15d7eaeabb08ab67299",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 74,
@@ -18,7 +19,8 @@
       "head_sha": "d14570f6d537fbf265a5319fba589ee10257894a",
       "disposition": "close as unaccepted update; carry compatibility work in the integration PR",
       "reason": "The container image cannot be upgraded independently of the pinned Playwright client and bundled-browser smoke contract; track the paired update in the integration PR.",
-      "ancestor_of_integration": false
+      "ancestor_of_integration": false,
+      "pr_state": "closed"
     },
     {
       "pr": 73,
@@ -26,7 +28,8 @@
       "head_sha": "de95a1d506b2265a2d9b5c7fa002aff5b5f1dd86",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 72,
@@ -34,7 +37,8 @@
       "head_sha": "8ae8cf1beb4bcece70b1f92ea9c0cf2fa64b0242",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 71,
@@ -42,7 +46,8 @@
       "head_sha": "8818e5b24360719fd7ebe5ccd81db21f3effd048",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 70,
@@ -50,7 +55,8 @@
       "head_sha": "6778869ab90258ac600238a9ca46caa5d9b8b39a",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 68,
@@ -58,7 +64,8 @@
       "head_sha": "dd069087dbbabedd5fbf7b8a99efb5a408f0a67d",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 66,
@@ -66,7 +73,8 @@
       "head_sha": "3333d6574ac99750c98c94594cf6e636e278cf4f",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 65,
@@ -74,7 +82,8 @@
       "head_sha": "9f14a400fb8e86e02f9d13d77d77e93185bc3666",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 64,
@@ -82,7 +91,8 @@
       "head_sha": "a6fe410c1ea8280a5af0c1b524cce87f5112bcaf",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 63,
@@ -90,7 +100,8 @@
       "head_sha": "468348d9181ba6a6f5e6df922f2decb63b8f6b9b",
       "disposition": "close as unaccepted update; carry compatibility work in the integration PR",
       "reason": "A broad Playwright range change alone does not update the paired driver/browser/container contract; retain the tested selected runtime until the adapter port and paired acceptance.",
-      "ancestor_of_integration": false
+      "ancestor_of_integration": false,
+      "pr_state": "closed"
     },
     {
       "pr": 61,
@@ -98,7 +109,8 @@
       "head_sha": "51d4827d37d20bb4156185fb2c14cc386afbb161",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 59,
@@ -106,7 +118,8 @@
       "head_sha": "e83786e9df648496adffd9cb1db935adbc1cd2e3",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 56,
@@ -114,7 +127,8 @@
       "head_sha": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 55,
@@ -122,7 +136,8 @@
       "head_sha": "5a3b8ff58f61d60480b38290a40610af66694447",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 54,
@@ -130,7 +145,8 @@
       "head_sha": "471dd712c0667f47afe3c1df5c998ec9dc6a3847",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 52,
@@ -138,7 +154,8 @@
       "head_sha": "fd02043c2d0d297e9b10a163ee6e17e67821e42e",
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
-      "ancestor_of_integration": true
+      "ancestor_of_integration": true,
+      "pr_state": "closed"
     },
     {
       "pr": 49,
@@ -146,7 +163,9 @@
       "head_sha": "8824b176a4c2efd80fb0f51d858de726213c99c2",
       "disposition": "close as unaccepted update; carry compatibility work in the integration PR",
       "reason": "TypeScript 7.0.2 is outside the installed typescript-eslint 8.71.2 peer range (>=4.8.4 <6.1.0); retain supported compiler during the UI rewrite.",
-      "ancestor_of_integration": false
+      "ancestor_of_integration": false,
+      "pr_state": "closed"
     }
-  ]
+  ],
+  "integration_pr": "https://github.com/KiaroSama/Numera-Browser/pull/76"
 }
