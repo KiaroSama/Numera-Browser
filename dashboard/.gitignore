@@ -1,6 +1,6 @@
-node_modules/
 dist/
-.vite/
+target/
+.dist-rust-pending/
 
 # Hook Maker: local/private files (auto-managed)
 /.ai/

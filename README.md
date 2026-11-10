@@ -15,16 +15,14 @@ workflows you are authorized to run.
 [![License: noncommercial](https://img.shields.io/badge/License-noncommercial-d04a9a)](LICENSE)
 [![Version: 0.36.0](https://img.shields.io/badge/Version-0.36.0-blue)](CHANGELOG.md)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776ab)](engine/pyproject.toml)
-[![Node: supported branches](https://img.shields.io/badge/Node-22%20%7C%2024%20%7C%2026-339933)](dashboard/package.json)
 [![Rust shell: 1.90+](https://img.shields.io/badge/Rust%20shell-1.90%2B-dea584)](desktop/src-tauri/Cargo.toml)
 [![Rust core: 1.99.1](https://img.shields.io/badge/Rust%20core-1.99.1-dea584)](engine-rust/Cargo.toml)
 
 [![Desktop build targets](https://img.shields.io/badge/Targets-Windows%20x64%20%7C%20Linux%20x64%20%7C%20macOS%20ARM64-555)](.github/workflows/build-desktop.yml)
 [![Documentation](https://img.shields.io/badge/Docs-setup%20%26%20usage-4c9a2a)](docs/setup.md)
-[![React: 19](https://img.shields.io/badge/React-19-61dafb)](dashboard/package.json)
+[![Dashboard: Rust + WebAssembly](https://img.shields.io/badge/Dashboard-Rust%20%2B%20WebAssembly-654ff0)](dashboard/Cargo.toml)
 [![Tauri: 2](https://img.shields.io/badge/Tauri-2-24c8d8)](desktop/src-tauri/Cargo.toml)
 [![HTTP API: FastAPI](https://img.shields.io/badge/API-FastAPI-009688)](engine/pyproject.toml)
-[![TypeScript: strict](https://img.shields.io/badge/TypeScript-strict-3178c6)](dashboard/tsconfig.json)
 [![Browser: Playwright](https://img.shields.io/badge/Browser-Playwright-45ba4b)](Dockerfile)
 [![Support donations](https://img.shields.io/badge/Support-donations-d04a9a)](#donate)
 
@@ -43,7 +41,9 @@ test migration and complete application distributions remain in progress; the
 candidate build badge is separate from full application acceptance.
 The candidate also includes a Rust browser worker for Playwright and Patchright,
 validated with real browsers without Python. It still requires external vendor
-Node/SDK resources; Camoufox/Cloak and the dashboard remain to be migrated.
+Node/SDK resources; Camoufox/Cloak remain to be migrated. The dashboard now uses
+Rust and WebAssembly. Its 195 original cases retain 26 suites: 71 native unit
+cases and 124 cases executed in Chromium, with no ignored or duplicate cases.
 
 ## What it does
 
@@ -93,9 +93,10 @@ badge is not evidence that the latest tree has passed or an asset has shipped.
 
 ### Source installation
 
-Use Python **3.10+** and a Node version supported by the manifest
-(`^22.22.2 || ^24.15.0 || >=26.0.0`). From a checkout, create/activate a virtual
-environment as shown in [setup](docs/setup.md#from-source), then:
+The retained backend uses Python **3.10+** during the engine cutover. The dashboard
+uses Rust, the `wasm32-unknown-unknown` target and wasm-bindgen CLI **0.2.129**.
+Create/activate the backend environment as shown in
+[setup](docs/setup.md#from-source), then:
 
 ```bash
 python -m pip install -e "./engine[api,launch]"
@@ -106,11 +107,12 @@ python -m playwright install chromium
 ```
 
 ```bash
-npm --prefix dashboard ci
+rustup target add wasm32-unknown-unknown
+cargo install wasm-bindgen-cli --version 0.2.129 --locked
 ```
 
 ```bash
-npm --prefix dashboard run build
+cargo run --manifest-path dashboard/Cargo.toml --locked --bin dashboard-build
 ```
 
 ```bash
@@ -118,7 +120,8 @@ python -m numera serve --port 8787
 ```
 
 Open <http://127.0.0.1:8787>. For frontend development, keep the engine running and
-use `npm --prefix dashboard run dev` in a second terminal; Vite proxies `/api` to
+use `cargo run --manifest-path dashboard/Cargo.toml --locked --bin dashboard-dev`
+in a second terminal; the Rust development server proxies `/api` to
 port 8787. Without the API the dashboard shows clearly labelled **demo data**.
 
 Detailed platform prerequisites, alternative browser setup, Docker, headless
@@ -226,7 +229,7 @@ permission to publish raw cookies, tokens or profile data.
 |---|---|
 | `engine/` | Retained Python application: storage, CLI, HTTP API, MCP and browser orchestration. |
 | `engine-rust/` | Non-default native application candidate and parity/ownership acceptance work. |
-| `dashboard/` | React + strict TypeScript dashboard. |
+| `dashboard/` | Rust/WebAssembly dashboard, native unit and real browser interaction tests. |
 | `desktop/` | Tauri window, owned engine lifecycle and portable updater. |
 | `scripts/` | Bounded verification, provenance, browser bundling, signing and distribution tools. |
 
