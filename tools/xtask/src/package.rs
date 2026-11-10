@@ -163,12 +163,18 @@ fn write_inner(
     archive.finish()?.sync_all()?;
 
     let source_name = format!("numera-source-{}.zip", identity.source_sha);
-    let source = output.canonicalize()?.join(&source_name);
+    // Open the destination through Rust and pass its handle to Git. Windows
+    // canonicalization adds a verbatim \\?\ prefix that Git for Windows parses
+    // as //?/D:/... and rejects when it receives it as an --output argument.
+    let source = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(output.join(&source_name))?;
     let status = Command::new("git")
-        .args(["archive", "--format=zip", "--output"])
-        .arg(&source)
+        .args(["archive", "--format=zip"])
         .arg(&identity.source_sha)
         .current_dir(root)
+        .stdout(source)
         .status()?;
     if !status.success() {
         return Err("matching tracked source archive failed".into());

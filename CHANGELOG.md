@@ -10,6 +10,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   tool verifies Cargo artifact provenance and compiled identity, then packages
   executable/source ZIPs with notices and SHA-256 checksums. These candidates
   do not complete runtime selection, test migration or desktop distributions.
+- Pass the source archive destination to Git as an open file handle, preserving
+  native Windows paths without Git's incompatible verbatim-path parsing.
 
 - Begin a parity-gated native Rust domain library with source-generated identity,
   model, validation, conversion and vault fixtures; keep the current Python
