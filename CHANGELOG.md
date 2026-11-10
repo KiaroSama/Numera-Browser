@@ -4,6 +4,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+- Preserve SDK evaluation integers, typed arrays, shared references and URL
+  tuples; refuse non-finite/cyclic/non-JSON results instead of coercing them to
+  null or text. Bound response encoding and reference expansion, retain ASCII
+  wire escaping and source numeric formatting, and acknowledge encoding failure
+  through the existing SDK error envelope. Existing tests gain 38 frozen source
+  value/encoding cases and real-browser value assertions without new test IDs.
 - Port Camoufox's pinned fpgen model sampling to Rust, with archive/member/data
   integrity checks, bounded Bayesian sampling and streaming value decoding.
   Extend the existing browser-policy checks with 18 frozen upstream posteriors,

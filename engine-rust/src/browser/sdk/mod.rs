@@ -4,8 +4,9 @@ mod driver;
 pub mod fingerprint;
 mod options;
 mod policy;
+pub mod values;
 
-use super::adapter::{MAX_FRAME, PROTOCOL, frame};
+use super::adapter::{PROTOCOL, frame};
 use crate::{native_input::Input, runtime_log::RuntimeLog};
 use driver::{Driver, Installation};
 use playwright_rs::protocol::MouseOptions;
@@ -37,6 +38,24 @@ fn boolean(request: &Value, key: &str) -> playwright_rs::Result<bool> {
         .get(key)
         .map_or(Ok(false), |value| value.as_bool().ok_or_else(invalid))
 }
+
+async fn evaluate_raw(
+    page: &Page,
+    expression: &str,
+    argument: &Value,
+    main_world: bool,
+) -> playwright_rs::Result<Value> {
+    let frame = page.main_frame().await?;
+    let mut parameters = json!({"expression":expression,"arg":playwright_rs::protocol::serialize_argument(argument)});
+    if main_world {
+        parameters["isolatedContext"] = false.into();
+    }
+    let response: Value = frame
+        .channel()
+        .send("evaluateExpression", parameters)
+        .await?;
+    Ok(response["value"].clone())
+}
 fn operation(request: &Value) -> &'static str {
     match request["operation"].as_str() {
         Some("hello") => "hello",
@@ -60,14 +79,8 @@ fn send(output: &mut impl Write, id: u64, result: Result<Value, &'static str>) -
             json!({"protocol":PROTOCOL,"id":id,"ok":false,"error":{"kind":kind,"type":"NativeSdkError"}})
         }
     };
-    let mut bytes = serde_json::to_vec(&value)?;
+    let mut bytes = values::encode(&value)?;
     bytes.push(b'\n');
-    if bytes.len() > MAX_FRAME {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "SDK response exceeds limit",
-        ));
-    }
     output.write_all(&bytes)?;
     output.flush()
 }
@@ -246,29 +259,18 @@ impl Worker {
             "evaluate" => {
                 let expression = text(request, "expression")?;
                 let tolerate = boolean(request, "tolerate_failure")?;
-                let result = page
-                    .evaluate::<Value, Value>(expression, Some(&request["argument"]))
-                    .await;
+                let result = evaluate_raw(page, expression, &request["argument"], false).await;
                 match result {
-                    Ok(value) => Ok(json!({"evaluated":true,"value":value})),
+                    Ok(value) => Ok(json!({"evaluated":true,"value":values::decode(&value)?})),
                     Err(_) if tolerate => Ok(json!({"evaluated":false,"value":null})),
                     Err(error) => Err(error),
                 }
             }
             "inspect" => {
                 let expression = "async () => ({userAgent:navigator.userAgent,platform:navigator.platform,locale:navigator.language,languages:Array.from(navigator.languages),cores:navigator.hardwareConcurrency,width:innerWidth,height:innerHeight,userAgentData:navigator.userAgentData?await navigator.userAgentData.getHighEntropyValues(['platformVersion','architecture','bitness','model','uaFullVersion','fullVersionList','wow64']):null})";
-                if self.patchright {
-                    // Patchright evaluates in its utility world by default;
-                    // identity inspection must observe the page's main world.
-                    let frame = page.main_frame().await?;
-                    let response: Value = frame.channel().send("evaluateExpression", json!({
-                        "expression":expression, "arg":playwright_rs::protocol::serialize_null(),
-                        "isolatedContext":false,
-                    })).await?;
-                    Ok(playwright_rs::protocol::parse_result(&response["value"]))
-                } else {
-                    page.evaluate::<Value, Value>(expression, None).await
-                }
+                // Patchright identity probes must observe the page's main world.
+                let raw = evaluate_raw(page, expression, &Value::Null, self.patchright).await?;
+                Ok(values::decode(&raw)?)
             }
             // Preserve vendor cookie fields (including partition keys) instead
             // of projecting them through the binding's smaller Cookie struct.
@@ -366,7 +368,13 @@ async fn run() -> io::Result<()> {
             match result {
                 Ok(value) => {
                     if label == "open" { log.event("INFO", "numera.browser-adapter", "Persistent context opened"); }
-                    send(&mut output, id, Ok(value))?;
+                    if let Err(error) = send(&mut output, id, Ok(value)) {
+                        if error.kind() == io::ErrorKind::InvalidData {
+                            log.event("ERROR", "numera.browser-adapter", "SDK response encoding failed");
+                            send(&mut output, id, Err("sdk"))?;
+                        }
+                        return Err(error);
+                    }
                 }
                 Err(_) => {
                     log.event("ERROR", "numera.browser-adapter", "SDK operation failed");

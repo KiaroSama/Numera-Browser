@@ -209,6 +209,39 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
                 true
             );
             let view = adapter.call("inspect", Map::new(), Duration::from_secs(10))?;
+            for (expression, expected) in [
+                (
+                    "() => 18446744073709551616n",
+                    serde_json::from_str::<Value>("18446744073709551616")?,
+                ),
+                (
+                    "() => { const value = {answer:42}; return [value,value]; }",
+                    json!([{"answer":42},{"answer":42}]),
+                ),
+                (
+                    "() => new BigInt64Array([-1n,9223372036854775807n])",
+                    json!([-1, 9223372036854775807i64]),
+                ),
+                (
+                    "() => new URL('https://fixture.test/a/b;params?query=1#fragment')",
+                    json!([
+                        "https",
+                        "fixture.test",
+                        "/a/b",
+                        "params",
+                        "query=1",
+                        "fragment"
+                    ]),
+                ),
+            ] {
+                let result = adapter.call(
+                    "evaluate",
+                    Map::from_iter([("expression".into(), expression.into())]),
+                    Duration::from_secs(10),
+                )?;
+                assert_eq!(result["evaluated"], true);
+                assert_eq!(result["value"], expected, "Live SDK value: {expression}");
+            }
             if uses_page_script {
                 assert_page(&view, &fingerprint, &case["config"], false);
             }
