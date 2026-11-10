@@ -12,6 +12,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   do not complete runtime selection, test migration or desktop distributions.
 - Pass the source archive destination to Git as an open file handle, preserving
   native Windows paths without Git's incompatible verbatim-path parsing.
+- Give portable ZIP entries an explicit Unix creator format so Windows builds
+  preserve executable and notice permissions when archives move between systems.
 - Copy first-run files through bounded reads on Linux so filesystem copy offload
   cannot skip source access-time updates required by the original copy policy.
   Existing destination bytes and copytree metadata snapshots remain preserved.
