@@ -87,8 +87,9 @@ fn hash(path: &Path) -> Result<String, Box<dyn Error>> {
 
 const NOTICE: &str = "Numera Browser native acceptance candidate\n\n\
 This archive is a CLI/HTTP/MCP acceptance executable, not a complete desktop\n\
-distribution or an accepted Rust-only runtime. Browser operations still require\n\
-the SDK adapter and its external interpreter/SDK/browser prerequisites. The web\n\
+distribution or an accepted Rust-only runtime. The included Rust browser runtime\n\
+supports Playwright and Patchright with explicitly provisioned vendor Node/SDK\n\
+and browser resources. Camoufox and Cloak still require migration. The web\n\
 dashboard is not included. Do not replace a production installation with this\n\
 candidate. Passing compilation does not certify migration or release acceptance.\n\n\
 The matching tracked source archive and SHA256SUMS accompany this archive.\n\
@@ -98,13 +99,14 @@ pub fn write(
     root: &Path,
     output: &Path,
     executable: &Path,
+    browser: &Path,
     identity: BuildIdentity,
 ) -> Result<(), Box<dyn Error>> {
     if let Some(parent) = output.parent() {
         fs::create_dir_all(parent)?;
     }
     fs::create_dir(output)?;
-    let result = write_inner(root, output, executable, &identity);
+    let result = write_inner(root, output, executable, browser, &identity);
     if result.is_err() {
         // This directory was exclusively created above; never remove an existing output.
         if let Err(error) = fs::remove_dir_all(output) {
@@ -118,6 +120,7 @@ fn write_inner(
     root: &Path,
     output: &Path,
     executable: &Path,
+    browser: &Path,
     identity: &BuildIdentity,
 ) -> Result<(), Box<dyn Error>> {
     let stem = format!(
@@ -142,6 +145,15 @@ fn write_inner(
         .compression_method(CompressionMethod::Deflated);
     archive.start_file(binary_name, options.unix_permissions(0o755))?;
     std::io::copy(&mut File::open(executable)?, &mut archive)?;
+    archive.start_file(
+        if identity.platform == "windows" {
+            "numera-browser-runtime.exe"
+        } else {
+            "numera-browser-runtime"
+        },
+        options.unix_permissions(0o755),
+    )?;
+    std::io::copy(&mut File::open(browser)?, &mut archive)?;
     for (path, name) in [
         ("LICENSE", "LICENSE"),
         ("docs/browser-notices.txt", "browser-notices.txt"),
@@ -161,7 +173,8 @@ fn write_inner(
         &serde_json::json!({
             "schema":1, "identity":identity, "binary_sha256":hash(executable)?,
             "application_runtime":"native-candidate", "migration_complete":false,
-            "browser_adapter_included":false, "dashboard_included":false
+            "browser_adapter_included":true, "browser_runtime_sha256":hash(browser)?,
+            "native_browser_backends":["playwright","patchright"], "dashboard_included":false
         }),
     )?;
     archive.finish()?.sync_all()?;
@@ -287,18 +300,21 @@ mod tests {
         let sha = String::from_utf8(head.stdout)?.trim().to_owned();
         let executable = root.join("untracked-executable");
         fs::write(&executable, b"exact executable bytes")?;
+        let browser = root.join("untracked-browser-runtime");
+        fs::write(&browser, b"distinct browser runtime bytes")?;
         for os in ["linux", "windows", "macos"] {
             let output = root.join(format!("output-{os}"));
             write(
                 root,
                 &output,
                 &executable,
+                &browser,
                 BuildIdentity::parse(&sha, "42", os, "x86_64")?,
             )?;
             let mut archive = zip::ZipArchive::new(File::open(
                 output.join(format!("numera-native-candidate-{os}-x86_64.zip")),
             )?)?;
-            assert_eq!(archive.len(), 6);
+            assert_eq!(archive.len(), 7);
             let name = if os == "windows" {
                 "numera-native-candidate.exe"
             } else {
@@ -310,6 +326,16 @@ mod tests {
             assert_eq!(bytes, b"exact executable bytes");
             assert_eq!(binary.unix_mode().map(|mode| mode & 0o777), Some(0o755));
             drop(binary);
+            let mut runtime = archive.by_name(if os == "windows" {
+                "numera-browser-runtime.exe"
+            } else {
+                "numera-browser-runtime"
+            })?;
+            let mut bytes = Vec::new();
+            runtime.read_to_end(&mut bytes)?;
+            assert_eq!(bytes, b"distinct browser runtime bytes");
+            assert_eq!(runtime.unix_mode().map(|mode| mode & 0o777), Some(0o755));
+            drop(runtime);
             let notice = archive.by_name("README.txt")?;
             assert_eq!(notice.unix_mode().map(|mode| mode & 0o777), Some(0o644));
             drop(notice);
@@ -318,6 +344,8 @@ mod tests {
             let info: Value = serde_json::from_str(&info)?;
             assert_eq!(info["identity"]["source_sha"], sha);
             assert_eq!(info["binary_sha256"], hash(&executable)?);
+            assert_eq!(info["browser_runtime_sha256"], hash(&browser)?);
+            assert_eq!(info["browser_adapter_included"], true);
             assert_eq!(info["migration_complete"], false);
             let source =
                 zip::ZipArchive::new(File::open(output.join(format!("numera-source-{sha}.zip")))?)?;
@@ -339,6 +367,7 @@ mod tests {
                     root,
                     &output,
                     &executable,
+                    &browser,
                     BuildIdentity::parse(&sha, "42", os, "x86_64")?
                 )
                 .is_err()
@@ -358,6 +387,7 @@ mod tests {
             write(
                 &temporary.0,
                 &output,
+                &executable,
                 &executable,
                 BuildIdentity::parse(&"a".repeat(40), "42", "linux", "x86_64")?
             )

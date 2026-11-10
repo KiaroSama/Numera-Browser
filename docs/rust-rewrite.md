@@ -8,8 +8,9 @@ merged until the complete rewrite and its acceptance checks pass.
 ## Current boundary
 
 The native CLI, HTTP and MCP application code already exists in `engine-rust`.
-The selected product still uses Python, the browser SDK adapter still runs
-Python, and the dashboard still uses TypeScript/React. The desktop shell and
+The selected product still uses Python and the dashboard still uses
+TypeScript/React. A Rust SDK worker now implements the Playwright/Patchright
+protocol; Camoufox and Cloak still use the retained Python path. The desktop shell and
 the existing CI orchestration also contain non-Rust code. These dependencies
 must be replaced; changing language badges or excluding files from language
 statistics does not complete that work.
@@ -39,16 +40,16 @@ cargo xtask build-candidate build/rust-candidate
 ```
 
 It requires a clean checkout and the exact `GITHUB_SHA` and `GITHUB_RUN_ID`.
-Cargo's successful artifact record identifies the executable; the tool executes
-its `--build-info` and verifies the compiled source, generation, product and
-version before packaging. Each platform uploads the executable ZIP, its matching
+Cargo's successful artifact records identify both native executables; the tool
+executes their `--build-info` and verifies the compiled source, generation,
+product, version and browser-worker component before packaging. Each platform uploads the executable ZIP, its matching
 tracked Git source ZIP and SHA-256 checksums. Outputs are new directories; an
 existing build cannot be overwritten. Package tests exercise real ZIP contents,
 permissions, checksums, tracked-source scope and failed-build cleanup.
 
 These are acceptance candidates. They are not complete desktop distributions,
-do not include the browser adapter or dashboard, and do not establish a
-Python-free runtime. Their embedded notices and metadata state those limits.
+include the Rust browser worker but exclude vendor SDK/browser resources and the
+dashboard. They do not establish a complete Rust-only application. Their embedded notices and metadata state those limits.
 No signing input, publishing step, main update or merge is involved.
 
 ## Linux first-run copy correction
@@ -87,7 +88,55 @@ Numera's admitted launch options. The binding must not be adopted through that
 entry point without an equivalent controlled transport and regression coverage.
 The reviewed packaged source is
 <https://docs.rs/crate/playwright-rs/0.20.1/source/src/protocol/browser_type.rs>.
-This review did not replace the Python adapter or certify the other SDK wrappers.
+The Rust worker uses the public protocol connection directly, with its own child
+ownership and launch parameters. It does not call that launcher, install the
+binding's terminal/signal handlers, or detach the Node driver from Numera's owner.
+
+### Native SDK worker
+
+```text
+cargo build --manifest-path engine-rust/Cargo.toml --locked --features native-browser --bin numera-browser-runtime
+```
+
+`NUMERA_BROWSER_RUNTIME` explicitly selects that executable. Candidate packages
+also discover it beside the application executable. During migration an explicit
+legacy `.py` adapter can still be selected; the product has not switched runtimes.
+
+The worker retains the bounded version-1 JSON protocol, cancellable stdin owner,
+operation-state checks, persistent contexts, initialization scripts, CDP identity
+policy on existing/new pages, navigation, routes, evaluation, mouse input and
+cookie operations. Cookie objects keep vendor fields including partition keys.
+Close is acknowledged after context and driver cleanup. Vendor error payloads,
+credentials and evaluated source are never returned or logged as diagnostics.
+
+SDK acquisition remains explicit. `NUMERA_PLAYWRIGHT_DRIVER` and
+`NUMERA_PATCHRIGHT_DRIVER` point to separate vendor driver directories, each
+containing `node` (`node.exe` on Windows), `package/cli.js` and
+`package/package.json`. Alternatively `NUMERA_BROWSER_DRIVERS` contains directories
+named `playwright` and `patchright` with that layout. The vendor driver is Node
+code, not a Rust implementation; it is an external SDK dependency and is not
+hidden in this repository or included in candidate ZIPs. Browser revisions must
+match their own driver. Cargo cannot download drivers as a build side effect.
+
+On local Linux, the existing live acceptance test passed with Playwright 1.64.0,
+Playwright 1.65.0 and Patchright 1.64.1. Each run exercised the existing five
+identity profiles, initial/new-page wire hints, cookie persistence and isolation,
+HTTP launch/stop and controlled foreground CLI closure. The oracle interpreter
+was deliberately set to a nonexistent path; these operations did not invoke
+Python. Existing protocol-inertness/cleanup coverage also passed against the Rust
+worker. Test identities and assertion counts were retained.
+
+Cloak's upstream wrapper 0.7.2 (2026-11-10) caps Playwright below 1.65. The native
+driver admission keeps that backend-specific cap. Specialized Cloak/Camoufox
+preparation is not admitted by the worker yet: their metadata remains unavailable
+rather than claiming that a driver alone constitutes a working backend. The
+current Camoufox source also changed fingerprint-model pinning, identity and
+geometry rules; adopting an older Rust facade without porting those rules would
+not incorporate its current behavior.
+
+Repository topics `cargo`, `cross-platform` and `mcp` were saved through the
+user-authorized TinyFish Default profile and verified separately through GitHub's
+API. Existing language topics remain until their code is replaced.
 
 ## Branch consolidation
 

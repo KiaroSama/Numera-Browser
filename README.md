@@ -41,6 +41,9 @@ checkpoint in a separate unmerged PR. Native CLI/HTTP/MCP candidates now build
 automatically on Linux, Windows and macOS. The full rewrite, interpreter removal,
 test migration and complete application distributions remain in progress; the
 candidate build badge is separate from full application acceptance.
+The candidate also includes a Rust browser worker for Playwright and Patchright,
+validated with real browsers without Python. It still requires external vendor
+Node/SDK resources; Camoufox/Cloak and the dashboard remain to be migrated.
 
 ## What it does
 

@@ -39,6 +39,46 @@
     "playwright": "Release changes proxy-auth scope, RFC 6265 cookie matching, navigation/action behavior and removes Node.js 20 from tested runtimes. A wrapper version must match its browser build.",
     "patchright": "v1.64.1 follows the matching upstream Playwright release; do not mix its driver with a different protocol version.",
     "camoufox": "The new release pairs the library and browser, reorganizes the repository into browser/python/typescript, changes GeoIP defaults, and fixes proxy credential encoding, virtual-display cleanup and default addon acquisition. Validate complete cleanup and bundled resources.",
-    "cloak": "The newest stable browser is proprietary and requires an applicable license. Wrapper 0.7.0 changes license fallback/seat release and native geometry, and adds the fingerprint max-touch-points flag. No binary redistribution or license change is implied by this review."
+    "cloak": "The newest stable browser is proprietary and requires an applicable license. Wrapper 0.7.0 changes license fallback/seat release and native geometry, and adds the fingerprint max-touch-points flag. No binary redistribution or license change is implied by this review. Wrapper 0.7.2, released on the review date, caps Playwright below 1.65 due to private API changes; native driver admission retains this backend-specific cap."
+  },
+  "source_heads": [
+    {
+      "repository": "CloakHQ/CloakBrowser",
+      "commit": "1a145dbb90a26d6dd223c7642cb49fb9c850f22c",
+      "changes_reviewed": [
+        "0.7.2 Playwright compatibility cap",
+        "persistent fingerprint seed",
+        "0.7 native window geometry",
+        "max-touch-points and license cleanup"
+      ]
+    },
+    {
+      "repository": "daijro/camoufox",
+      "commit": "079a6ce8249bab98063e5ac9241e3879a3e6578d",
+      "changes_reviewed": [
+        "pinned fpgen model archive/member digests",
+        "browser version and bundled-addon pairing",
+        "identity salt and geometry coherence",
+        "OffscreenCanvas WebGL2 preference consistency"
+      ]
+    }
+  ],
+  "native_sdk_validation": {
+    "platform": "linux",
+    "test": "engine-rust/tests/browser_adapter_live.rs::selected_sdk_opens_real_persistent_context_in_native_owned_tree",
+    "oracle_interpreter": "nonexistent path",
+    "passed_driver_versions": {
+      "playwright": [
+        "1.64.0",
+        "1.65.0"
+      ],
+      "patchright": [
+        "1.64.1"
+      ]
+    },
+    "specialized_native_preparation_pending": [
+      "camoufox",
+      "cloak"
+    ]
   }
 }

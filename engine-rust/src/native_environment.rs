@@ -26,9 +26,21 @@ impl Environment {
         let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
             .map(PathBuf::from)
             .ok_or_else(|| io::Error::other("Home directory unavailable"))?;
-        let adapter = std::env::var_os("NUMERA_BROWSER_ADAPTER")
+        let adapter = std::env::var_os("NUMERA_BROWSER_RUNTIME")
+            .or_else(|| std::env::var_os("NUMERA_BROWSER_ADAPTER"))
             .map(PathBuf::from)
-            .unwrap_or_else(|| app.join("scripts/browser-adapter/adapter.py"));
+            .unwrap_or_else(|| {
+                let native = app.join(if cfg!(windows) {
+                    "numera-browser-runtime.exe"
+                } else {
+                    "numera-browser-runtime"
+                });
+                if native.is_file() {
+                    native
+                } else {
+                    app.join("scripts/browser-adapter/adapter.py")
+                }
+            });
         let python = std::env::var_os("NUMERA_SDK_PYTHON")
             .map(PathBuf::from)
             .unwrap_or_else(|| {
@@ -83,10 +95,20 @@ impl Environment {
                 .map(|name| (name.into(), false))
                 .collect());
         }
-        let mut command = Command::new(&self.browser.python);
-        command.args(["-I", "-B", "-u", "-c", "import importlib.util,json,sys; s=importlib.util.spec_from_file_location('sdk_metadata',sys.argv[1]); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); data=m.available(); addons=[];\nif sys.argv[2]=='1' and data['camoufox']['installed']:\n from camoufox.addons import DefaultAddons\n addons=[v.name for v in DefaultAddons]\nprint(json.dumps({'backends':data,'default_addons':addons}),flush=True)"])
+        let mut command = if self.browser.native_sdk() {
+            let mut command = self.browser.sdk_command();
+            command.arg("--metadata");
+            command
+        } else {
+            let mut command = Command::new(&self.browser.python);
+            command.args(["-I", "-B", "-u", "-c", "import importlib.util,json,sys; s=importlib.util.spec_from_file_location('sdk_metadata',sys.argv[1]); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); data=m.available(); addons=[];\nif sys.argv[2]=='1' and data['camoufox']['installed']:\n from camoufox.addons import DefaultAddons\n addons=[v.name for v in DefaultAddons]\nprint(json.dumps({'backends':data,'default_addons':addons}),flush=True)"])
             .arg(&self.browser.adapter).arg(if addons { "1" } else { "0" })
-            .env_remove("NUMERA_PASSWORD").env_remove("NUMERA_API_TOKEN");
+            ;
+            command
+        };
+        command
+            .env_remove("NUMERA_PASSWORD")
+            .env_remove("NUMERA_API_TOKEN");
         let result = capture::run(
             &mut command,
             capture::Limits {

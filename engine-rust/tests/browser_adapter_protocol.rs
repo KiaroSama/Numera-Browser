@@ -21,13 +21,24 @@ fn adapter_logs(root: &Path) -> std::io::Result<String> {
     Ok(text)
 }
 
-fn adapter(python: &std::ffi::OsStr, logs: &Path) -> Command {
+fn adapter(logs: &Path) -> std::io::Result<Command> {
+    let native = std::env::var_os("NUMERA_BROWSER_RUNTIME");
+    #[cfg(feature = "native-browser")]
+    let native =
+        native.or_else(|| option_env!("CARGO_BIN_EXE_numera-browser-runtime").map(Into::into));
+    if let Some(executable) = native {
+        let mut command = Command::new(executable);
+        command.env("NUMERA_ADAPTER_LOG_DIR", logs);
+        return Ok(command);
+    }
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON")
+        .ok_or_else(|| std::io::Error::other("Legacy SDK fixture interpreter required"))?;
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .expect("Repository exists")
         .join("scripts/browser-adapter/adapter.py");
     let mut command = Command::new(python);
-    command
+    Ok(command)
         .arg("-u")
         .arg(script)
         .env("NUMERA_ADAPTER_LOG_DIR", logs)
@@ -37,11 +48,10 @@ fn adapter(python: &std::ffi::OsStr, logs: &Path) -> Command {
 #[test]
 fn actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     for invalid in [false, true] {
         let temporary = common::TempDirectory::new("browser-adapter-protocol")?;
         let root = temporary.path();
-        let mut command = adapter(&python, &root.join("logs"));
+        let mut command = adapter(&root.join("logs"))?;
         let mut sdk = Adapter::spawn(
             root,
             "a",
@@ -190,7 +200,6 @@ raise SystemExit(module.main())
 #[test]
 fn registry_retains_sdk_transport_and_closes_only_its_admitted_session()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("browser-registry-protocol")?;
     let root = temporary.path();
     std::fs::create_dir_all(root.join("profiles"))?;
@@ -208,7 +217,7 @@ fn registry_retains_sdk_transport_and_closes_only_its_admitted_session()
     };
     assert!(registry.open_browser("a", "fixture", |session, current| {
         assert_eq!(current.id, "a");
-        let mut command = adapter(&python, &root.join("logs"));
+        let mut command = adapter(&root.join("logs")).map_err(failure)?;
         Adapter::spawn_admitted(session, &mut command, Duration::from_secs(5)).map_err(failure)
     })?);
     assert!(registry.owns("a")?);

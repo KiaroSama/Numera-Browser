@@ -12,8 +12,8 @@ use std::{
     time::Duration,
 };
 
-const MAX_FRAME: usize = 1_048_576;
-const PROTOCOL: u64 = 1;
+pub(crate) const MAX_FRAME: usize = 1_048_576;
+pub(crate) const PROTOCOL: u64 = 1;
 /// The native owner acquires the lease and claim before any SDK operation.
 /// Requests carry only effective SDK options, never a source-engine command.
 struct PendingWrite {
@@ -31,7 +31,7 @@ pub struct Adapter {
     relay: Option<crate::network::relay::Relay>,
     log: Option<RuntimeLog>,
 }
-fn frame(reader: &mut impl BufRead) -> io::Result<Option<Value>> {
+pub(crate) fn frame(reader: &mut impl BufRead) -> io::Result<Option<Value>> {
     let mut bytes = Vec::new();
     loop {
         let (count, end, eof) = {

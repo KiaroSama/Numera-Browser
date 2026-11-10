@@ -4,6 +4,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+- Add a Rust SDK subprocess for Playwright/Patchright with bounded protocol I/O,
+  cancellable stdin, persistent profiles, page identity policy, routes, mouse
+  input, evaluation, full cookie objects and owned driver cleanup. Native builds
+  package both executables after checking their independent Cargo records and
+  matching compiled identities. Real-browser acceptance passes for Playwright
+  1.64/1.65 and Patchright 1.64.1 without Python; vendor Node/SDK resources remain
+  external. Camoufox, Cloak and complete application cutover remain pending.
+- Review CloakBrowser 0.7.2's Playwright compatibility cap and current Camoufox
+  fingerprint-model/geometry changes. Update repository topics through the
+  authorized saved GitHub profile, retaining language topics until cutover.
 - Continue the native checkpoint on a separate Rust rewrite integration branch.
   Record the source test baseline, review current upstream browser releases and
   add automatic Linux, Windows and macOS native candidate builds. A Rust build
