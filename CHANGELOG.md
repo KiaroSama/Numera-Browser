@@ -4,6 +4,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+- Port Camoufox's pinned fpgen model sampling to Rust, with archive/member/data
+  integrity checks, bounded Bayesian sampling and streaming value decoding.
+  Extend the existing browser-policy checks with 18 frozen upstream posteriors,
+  generation and model-tampering checks, preserving reported test counts. Full
+  native Camoufox launch preparation remains in progress.
 - Add a Rust SDK subprocess for Playwright/Patchright with bounded protocol I/O,
   cancellable stdin, persistent profiles, page identity policy, routes, mouse
   input, evaluation, full cookie objects and owned driver cleanup. Native builds

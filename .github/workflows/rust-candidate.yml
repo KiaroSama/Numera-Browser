@@ -52,6 +52,8 @@ jobs:
         run: cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser --test browser_adapter_protocol actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure -- --exact
       - name: Rust SDK registry ownership and shutdown
         run: cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser --test browser_adapter_protocol registry_retains_sdk_transport_and_closes_only_its_admitted_session -- --exact
+      - name: Browser identity policy and pinned model integrity
+        run: cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser --test browser_hints_parity
 
   build:
     name: Build Rust candidate (${{ matrix.platform }})

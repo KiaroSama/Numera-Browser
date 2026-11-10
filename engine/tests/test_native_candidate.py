@@ -31,7 +31,7 @@ def test_candidate_target_is_explicit_and_not_part_of_default_builds():
     browser = {'name': 'numera-browser-runtime', 'kind': ['bin'],
                'src_path': str(ROOT / 'engine-rust/src/bin/browser_runtime.rs'),
                'required-features': ['native-browser'], 'test': False}
-    features = {'default': [], 'native-candidate': [], 'native-browser': ['dep:playwright-rs']}
+    features = {'default': [], 'native-candidate': [], 'native-browser': ['dep:playwright-rs', 'dep:ruzstd']}
     package = {'name': 'numera-core', 'features': features, 'targets': [target, browser]}
     gate.verify_candidate_target({'packages': [package]})
     for changed in (

@@ -20,7 +20,7 @@ def verify_candidate_target(metadata: dict) -> None:
         'numera-browser-runtime': ('native-browser', 'src/bin/browser_runtime.rs'),
     }
     if (package['features'] != {'default': [], 'native-candidate': [],
-                               'native-browser': ['dep:playwright-rs']}
+                               'native-browser': ['dep:playwright-rs', 'dep:ruzstd']}
             or len(targets) != len(expected) or {target['name'] for target in targets} != set(expected)
             or any(target.get('required-features') != [expected[target['name']][0]]
                    or Path(target['src_path']).resolve() !=
