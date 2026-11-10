@@ -51,6 +51,17 @@ do not include the browser adapter or dashboard, and do not establish a
 Python-free runtime. Their embedded notices and metadata state those limits.
 No signing input, publishing step, main update or merge is involved.
 
+## Linux first-run copy correction
+
+The unchanged five-path access-time regression failed on the integration tree:
+Rust's file-copy offload left source access times unchanged on this filesystem,
+while the frozen Python implementation performed reads. Linux first-run imports
+now copy through a bounded 64 KiB buffer. Direct copies still read metadata after
+copying, and new copytree subtrees retain their pre-read metadata snapshots.
+Source bytes, existing destinations, permissions, extended attributes and failure
+cleanup remain covered by the same 11 first-run tests. Large-import throughput
+has not been benchmarked for this correction.
+
 ## Acceptance still required
 
 1. Replace the Python SDK adapter and remove application interpreter dependencies
@@ -63,8 +74,8 @@ No signing input, publishing step, main update or merge is involved.
    proxy and lifecycle regressions; see `upstream-review-20261110.json`.
 5. Verify full application distributions on Linux, Windows and macOS. Passing
    these candidate compilation jobs alone is insufficient.
-6. Finish the disposition recorded in `rust-branch-disposition.json`, update all documentation and
-   repository topics to the final implementation, and obtain green full CI on
+6. Update all documentation and repository topics to the final implementation,
+   and obtain green full CI on
    the final head. Keep the PR unmerged.
 
 ## Rust SDK compatibility review
@@ -77,3 +88,11 @@ entry point without an equivalent controlled transport and regression coverage.
 The reviewed packaged source is
 <https://docs.rs/crate/playwright-rs/0.20.1/source/src/protocol/browser_type.rs>.
 This review did not replace the Python adapter or certify the other SDK wrappers.
+
+## Branch consolidation
+
+All 18 previously open PRs are closed with a link to integration PR #76. The
+complete #56 checkpoint and 14 dependency heads are ancestors of this branch;
+three incompatible or incomplete upgrades were declined with explicit reasons.
+`rust-branch-disposition.json` records every head SHA and disposition. Branch
+references remain recoverable and main was not merged or updated.
