@@ -17,12 +17,14 @@ concurrency:
 env:
   CARGO_BUILD_JOBS: "2"
   CARGO_TERM_COLOR: always
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
 
 jobs:
   tooling:
     name: Rust build tooling
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -33,13 +35,23 @@ jobs:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
         with:
-          workspaces: tools/xtask
+          workspaces: |
+            engine-rust
+            tools/xtask
       - name: Formatting
         run: cargo fmt --manifest-path tools/xtask/Cargo.toml --all --check
+      - name: Native application and SDK formatting
+        run: cargo fmt --manifest-path engine-rust/Cargo.toml --all --check
       - name: Strict lint
         run: cargo clippy --manifest-path tools/xtask/Cargo.toml --locked --all-targets -- -D warnings
       - name: Artifact identity and refusal contracts
         run: cargo test --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Compile and lint every native Rust test target
+        run: cargo clippy --manifest-path engine-rust/Cargo.toml --locked --features native-browser --all-targets -- -D warnings
+      - name: Rust SDK protocol inertness and failure cleanup
+        run: cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser --test browser_adapter_protocol actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure -- --exact
+      - name: Rust SDK registry ownership and shutdown
+        run: cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser --test browser_adapter_protocol registry_retains_sdk_transport_and_closes_only_its_admitted_session -- --exact
 
   build:
     name: Build Rust candidate (${{ matrix.platform }})

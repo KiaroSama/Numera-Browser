@@ -368,6 +368,17 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
     candidate_steps = candidate_build.get('steps', [])
     candidate_commands = [step for step in candidate_steps
                           if step.get('run') == 'cargo xtask build-candidate build/rust-candidate']
+    native_checks = (
+        'cargo fmt --manifest-path engine-rust/Cargo.toml --all --check',
+        'cargo clippy --manifest-path engine-rust/Cargo.toml --locked --features native-browser --all-targets -- -D warnings',
+        'cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser --test browser_adapter_protocol actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure -- --exact',
+        'cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser --test browser_adapter_protocol registry_retains_sdk_transport_and_closes_only_its_admitted_session -- --exact',
+    )
+    for command in native_checks:
+        matches = [step for step in candidate_jobs.get('tooling', {}).get('steps', [])
+                   if step.get('run') == command]
+        if len(matches) != 1 or matches[0].get('if') or matches[0].get('continue-on-error'):
+            raise ValueError('Native Rust checks must compile all tests and require SDK ownership contracts')
     if (set(candidate_events) != {'push', 'pull_request', 'workflow_dispatch'}
             or any(value is not None for value in candidate_events.values())
             or candidate.get('permissions') != {'contents': 'read'}

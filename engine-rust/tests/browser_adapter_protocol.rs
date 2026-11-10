@@ -38,12 +38,12 @@ fn adapter(logs: &Path) -> std::io::Result<Command> {
         .expect("Repository exists")
         .join("scripts/browser-adapter/adapter.py");
     let mut command = Command::new(python);
-    Ok(command)
+    command
         .arg("-u")
         .arg(script)
         .env("NUMERA_ADAPTER_LOG_DIR", logs)
         .env("PYTHONUTF8", "1");
-    command
+    Ok(command)
 }
 #[test]
 fn actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure()
