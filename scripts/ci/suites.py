@@ -373,6 +373,7 @@ def check_workflows(root: Path = ROOT) -> dict[str, int]:
         'cargo clippy --manifest-path engine-rust/Cargo.toml --locked --features native-browser --all-targets -- -D warnings',
         'cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser --test browser_adapter_protocol actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure -- --exact',
         'cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser --test browser_adapter_protocol registry_retains_sdk_transport_and_closes_only_its_admitted_session -- --exact',
+        'cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser --test browser_hints_parity',
     )
     for command in native_checks:
         matches = [step for step in candidate_jobs.get('tooling', {}).get('steps', [])

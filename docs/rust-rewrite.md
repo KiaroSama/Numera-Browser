@@ -134,6 +134,17 @@ current Camoufox source also changed fingerprint-model pinning, identity and
 geometry rules; adopting an older Rust facade without porting those rules would
 not incorporate its current behavior.
 
+The Camoufox fingerprint-model component is now native Rust. It verifies the
+exact `model-2/2026` archive, all three compressed members and the decompressed
+value-data digest. A bounded beam preserves the upstream Bayesian posterior;
+streaming value lookups avoid loading the full 202 MiB value file into memory.
+The existing two browser-policy tests retain their identities and assertion
+coverage, and additionally verify 18 frozen source posteriors across Firefox on
+Windows/macOS/Linux, actual fingerprint generation and refusal of modified or
+truncated archives. CI runs this target with `native-browser` enabled, without
+Python. The pinned archive is a source-test fixture; candidate runtime ZIPs do
+not include it. This component does not yet admit Camoufox context launch.
+
 Repository topics `cargo`, `cross-platform` and `mcp` were saved through the
 user-authorized TinyFish Default profile and verified separately through GitHub's
 API. Existing language topics remain until their code is replaced.

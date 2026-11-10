@@ -1,5 +1,7 @@
 use numera_core::{browser::hints, models::Fingerprint};
 use serde_json::Value;
+#[cfg(feature = "native-browser")]
+mod common;
 #[path = "common/hint_site.rs"]
 mod hint_site;
 
@@ -137,5 +139,89 @@ fn cdp_hint_commands_and_new_page_policy_match_original() -> Result<(), Box<dyn 
             }
         );
     }
+    #[cfg(feature = "native-browser")]
+    camoufox_model_posteriors_match_pinned_source()?;
+    Ok(())
+}
+
+#[cfg(feature = "native-browser")]
+fn camoufox_model_posteriors_match_pinned_source() -> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::browser::sdk::fingerprint::Model;
+    use std::{
+        collections::{BTreeMap, BTreeSet},
+        path::Path,
+    };
+    let archive =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/camoufox-model-2-2026.zip");
+    let model = Model::open(&archive)?;
+    let rows: Value =
+        serde_json::from_str(include_str!("fixtures/camoufox-model-posteriors.json"))?;
+    assert_eq!(
+        rows["source_commit"],
+        "fc7e489687821f691bae9308d73e294497d015fb"
+    );
+    assert_eq!(
+        rows["model_sha256"],
+        "6530b8322cdaa4ec042921c8d9a0369a0e6e0269ba636c01a7203e4a2f109936"
+    );
+    let rows = rows["cases"]
+        .as_array()
+        .ok_or("Model posterior cases missing")?;
+    assert_eq!(rows.len(), 18);
+    for row in rows {
+        let mut evidence = BTreeMap::new();
+        for (node, values) in row["evidence"].as_object().ok_or("Evidence missing")? {
+            let values = values
+                .as_array()
+                .ok_or("Evidence values missing")?
+                .iter()
+                .map(|value| {
+                    value
+                        .as_u64()
+                        .and_then(|v| u32::try_from(v).ok())
+                        .ok_or("Invalid value index")
+                })
+                .collect::<Result<BTreeSet<_>, _>>()?;
+            evidence.insert(node.parse::<usize>()?, values);
+        }
+        let actual = model.trace(
+            row["target"].as_u64().ok_or("Target missing")? as usize,
+            &evidence,
+        )?;
+        let expected = row["expected"]
+            .as_object()
+            .ok_or("Expected posterior missing")?;
+        assert_eq!(actual.len(), expected.len());
+        for (id, probability) in actual {
+            let expected = expected[&id.to_string()]
+                .as_f64()
+                .ok_or("Invalid posterior probability")?;
+            assert!(
+                (probability - expected).abs() < 1e-12,
+                "Posterior differs for value {id}"
+            );
+        }
+    }
+    let generated = model.generate(&BTreeMap::from([
+        ("browser".into(), "Firefox".into()),
+        ("os".into(), "Windows".into()),
+    ]))?;
+    assert_eq!(generated["browser"], "Firefox");
+    assert_eq!(generated["os"], "Windows");
+    assert!(
+        generated["navigator"]["userAgent"]
+            .as_str()
+            .is_some_and(|value| value.contains("Firefox/"))
+    );
+
+    let temporary = common::TempDirectory::new("camoufox-model-integrity")?;
+    let copy = temporary.path().join("model.zip");
+    let mut bytes = std::fs::read(&archive)?;
+    bytes[100] ^= 1;
+    std::fs::write(&copy, &bytes)?;
+    assert!(Model::open(&copy).is_err(), "Modified model was admitted");
+    std::fs::write(&copy, &bytes[..100])?;
+    assert!(Model::open(&copy).is_err(), "Truncated model was admitted");
+    temporary.cleanup()?;
     Ok(())
 }

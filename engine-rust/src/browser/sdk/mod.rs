@@ -1,6 +1,7 @@
 //! SDK-only subprocess in Rust. Application state, consent, leases and browser
 //! selection remain in the native owner. Stdout contains bounded JSON frames.
 mod driver;
+pub mod fingerprint;
 mod options;
 mod policy;
 
