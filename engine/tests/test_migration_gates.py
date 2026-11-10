@@ -630,9 +630,11 @@ def test_linux_temp_root_fits_chromium_socket_and_keeps_windows_contained(monkey
         helper.temporary_parent(long_root, {**hosted, 'RUNNER_TEMP': '/' + 'x' * 100}, 'linux')
 
 
-def test_owned_temp_is_unique_and_cleanup_removes_only_its_run(tmp_path, monkeypatch):
+def test_owned_temp_is_unique_and_cleanup_removes_only_its_run(tmp_path, tmp_path_factory, monkeypatch):
     helper = load('run_owned')
-    root = tmp_path / 'project with spaces'
+    # This case exercises real socket binding, unique runs and cleanup. Keep
+    # its checkout short; the preceding test owns overlong-root rejection.
+    root = tmp_path_factory.mktemp('p p')
     monkeypatch.setattr(helper, 'ROOT', root)
     created = []
     create = helper.create_temporary
