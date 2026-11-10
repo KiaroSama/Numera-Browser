@@ -15,12 +15,17 @@ def verify_candidate_target(metadata: dict) -> None:
         raise ValueError('Native candidate package is missing or duplicated')
     package = packages[0]
     targets = [item for item in package['targets'] if 'bin' in item['kind']]
-    if (package['features'] != {'default': [], 'native-candidate': []}
-            or len(targets) != 1 or targets[0]['name'] != 'numera-native-candidate'
-            or targets[0].get('required-features') != ['native-candidate']
-            or Path(targets[0]['src_path']).resolve() !=
-                (ROOT / 'engine-rust/examples/native_candidate.rs').resolve()
-            or targets[0]['test']):
+    expected = {
+        'numera-native-candidate': ('native-candidate', 'examples/native_candidate.rs'),
+        'numera-browser-runtime': ('native-browser', 'src/bin/browser_runtime.rs'),
+    }
+    if (package['features'] != {'default': [], 'native-candidate': [],
+                               'native-browser': ['dep:playwright-rs']}
+            or len(targets) != len(expected) or {target['name'] for target in targets} != set(expected)
+            or any(target.get('required-features') != [expected[target['name']][0]]
+                   or Path(target['src_path']).resolve() !=
+                       (ROOT / 'engine-rust' / expected[target['name']][1]).resolve()
+                   or target['test'] for target in targets)):
         raise ValueError('Native candidate must be explicit, isolated and disabled by default')
 
 

@@ -66,9 +66,11 @@ fn build_candidate(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
             "--locked",
             "--release",
             "--features",
-            "native-candidate",
+            "native-candidate,native-browser",
             "--bin",
             "numera-native-candidate",
+            "--bin",
+            "numera-browser-runtime",
             "--message-format=json",
         ])
         .current_dir(root)
@@ -78,14 +80,24 @@ fn build_candidate(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
     if !built.status.success() {
         return Err("native candidate compilation failed".into());
     }
-    let executable = compiler_artifact(&built.stdout)?;
+    let executable = compiler_artifact(&built.stdout, "numera-native-candidate")?;
+    let browser = compiler_artifact(&built.stdout, "numera-browser-runtime")?;
     let reported = Command::new(&executable).arg("--build-info").output()?;
     if !reported.status.success() {
         return Err("built candidate refused its identity".into());
     }
     let info: Value = serde_json::from_slice(&reported.stdout)?;
     identity.verify(&info)?;
-    package::write(root, output, &executable, identity)?;
+    let reported = Command::new(&browser).arg("--build-info").output()?;
+    if !reported.status.success() {
+        return Err("built browser runtime refused its identity".into());
+    }
+    let info: Value = serde_json::from_slice(&reported.stdout)?;
+    identity.verify(&info)?;
+    if info["component"] != "browser-runtime" {
+        return Err("browser runtime component is incorrect".into());
+    }
+    package::write(root, output, &executable, &browser, identity)?;
     println!(
         "Built and packaged native acceptance candidate at {}",
         output.display()
@@ -93,7 +105,7 @@ fn build_candidate(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn compiler_artifact(messages: &[u8]) -> Result<PathBuf, Box<dyn Error>> {
+fn compiler_artifact(messages: &[u8], name: &str) -> Result<PathBuf, Box<dyn Error>> {
     let mut artifacts = Vec::new();
     let mut finished = None;
     for line in messages
@@ -103,7 +115,7 @@ fn compiler_artifact(messages: &[u8]) -> Result<PathBuf, Box<dyn Error>> {
         let value: Value = serde_json::from_slice(line)?;
         match value["reason"].as_str() {
             Some("compiler-artifact")
-                if value["target"]["name"] == "numera-native-candidate"
+                if value["target"]["name"] == name
                     && value["target"]["kind"]
                         .as_array()
                         .is_some_and(|kinds| kinds.iter().any(|k| k == "bin")) =>
@@ -122,7 +134,9 @@ fn compiler_artifact(messages: &[u8]) -> Result<PathBuf, Box<dyn Error>> {
         }
     }
     if finished != Some(true) || artifacts.len() != 1 || !artifacts[0].is_file() {
-        return Err("Cargo did not produce exactly one successful candidate executable".into());
+        return Err(
+            format!("Cargo did not produce exactly one successful {name} executable").into(),
+        );
     }
     Ok(artifacts.remove(0))
 }
@@ -137,7 +151,7 @@ mod tests {
             b"{\"reason\":\"build-finished\",\"success\":true}",
             b"{\"reason\":\"build-finished\",\"success\":true}\n{\"reason\":\"build-finished\",\"success\":true}",
             b"not json"] {
-            assert!(compiler_artifact(messages).is_err());
+            assert!(compiler_artifact(messages, "numera-native-candidate").is_err());
         }
     }
 
@@ -148,13 +162,38 @@ mod tests {
         let artifact = serde_json::json!({"reason":"compiler-artifact", "target":{"name":"numera-native-candidate","kind":["bin"]}, "executable":executable});
         let finished = serde_json::json!({"reason":"build-finished","success":true});
         let messages = format!("{artifact}\n{finished}\n");
-        assert_eq!(compiler_artifact(messages.as_bytes())?, executable);
+        assert_eq!(
+            compiler_artifact(messages.as_bytes(), "numera-native-candidate")?,
+            executable
+        );
+        assert!(compiler_artifact(messages.as_bytes(), "numera-browser-runtime").is_err());
+        let mut browser = artifact.clone();
+        browser["target"]["name"] = "numera-browser-runtime".into();
+        let combined = format!("{artifact}\n{browser}\n{finished}\n");
+        assert_eq!(
+            compiler_artifact(combined.as_bytes(), "numera-browser-runtime")?,
+            executable
+        );
+        assert_eq!(
+            compiler_artifact(combined.as_bytes(), "numera-native-candidate")?,
+            executable
+        );
         assert!(
-            compiler_artifact(format!("{artifact}\n{artifact}\n{finished}").as_bytes()).is_err()
+            compiler_artifact(
+                format!("{artifact}\n{artifact}\n{finished}").as_bytes(),
+                "numera-native-candidate"
+            )
+            .is_err()
         );
         let mut example = artifact.clone();
         example["target"]["kind"] = serde_json::json!(["example"]);
-        assert!(compiler_artifact(format!("{example}\n{finished}").as_bytes()).is_err());
+        assert!(
+            compiler_artifact(
+                format!("{example}\n{finished}").as_bytes(),
+                "numera-native-candidate"
+            )
+            .is_err()
+        );
         Ok(())
     }
 }

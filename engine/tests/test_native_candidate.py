@@ -28,14 +28,21 @@ def test_candidate_target_is_explicit_and_not_part_of_default_builds():
     target = {'name': 'numera-native-candidate', 'kind': ['bin'],
               'src_path': str(ROOT / 'engine-rust/examples/native_candidate.rs'),
               'required-features': ['native-candidate'], 'test': False}
-    package = {'name': 'numera-core', 'features': {'default': [], 'native-candidate': []},
-               'targets': [target]}
+    browser = {'name': 'numera-browser-runtime', 'kind': ['bin'],
+               'src_path': str(ROOT / 'engine-rust/src/bin/browser_runtime.rs'),
+               'required-features': ['native-browser'], 'test': False}
+    features = {'default': [], 'native-candidate': [], 'native-browser': ['dep:playwright-rs']}
+    package = {'name': 'numera-core', 'features': features, 'targets': [target, browser]}
     gate.verify_candidate_target({'packages': [package]})
     for changed in (
-        {**package, 'features': {'default': ['native-candidate'], 'native-candidate': []}},
-        {**package, 'targets': [{**target, 'required-features': []}]},
-        {**package, 'targets': [target, {**target, 'name': 'unexpected'}]},
-        {**package, 'targets': [{**target, 'src_path': str(ROOT / 'engine-rust/src/main.rs')}]},
+        {**package, 'features': {**features, 'default': ['native-candidate']}},
+        {**package, 'features': {**features, 'default': ['native-browser']}},
+        {**package, 'targets': [{**target, 'required-features': []}, browser]},
+        {**package, 'targets': [target, {**target, 'name': 'unexpected'}, browser]},
+        {**package, 'targets': [{**target, 'src_path': str(ROOT / 'engine-rust/src/main.rs')}, browser]},
+        {**package, 'targets': [target]},
+        {**package, 'targets': [target, {**browser, 'required-features': []}]},
+        {**package, 'targets': [target, {**browser, 'test': True}]},
     ):
         with pytest.raises(ValueError, match='candidate'):
             gate.verify_candidate_target({'packages': [changed]})

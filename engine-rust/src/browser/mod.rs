@@ -18,6 +18,8 @@ pub mod probe_grades;
 pub mod probes;
 pub mod resources;
 pub mod runtime;
+#[cfg(feature = "native-browser")]
+pub mod sdk;
 pub mod startup;
 pub mod trust_grades;
 pub mod trust_probe;

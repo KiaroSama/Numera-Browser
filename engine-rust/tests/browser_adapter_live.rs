@@ -115,7 +115,13 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
 -> Result<(), Box<dyn std::error::Error>> {
     let backend = std::env::var("NUMERA_NATIVE_LIVE_ENGINE")
         .map_err(|_| "Selected live backend is required")?;
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
+    let native = std::env::var_os("NUMERA_BROWSER_RUNTIME");
+    let python = std::env::var_os("NUMERA_ORACLE_PYTHON")
+        .or_else(|| native.clone())
+        .ok_or("SDK runtime required")?;
+    let script = native.map(std::path::PathBuf::from).unwrap_or_else(|| {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../scripts/browser-adapter/adapter.py")
+    });
     let uses_page_script = matches!(backend.as_str(), "playwright" | "patchright");
     let document: Value = serde_json::from_str(include_str!("fixtures/init-script.json"))?;
     let cases = document["cases"]
@@ -136,16 +142,17 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         eprintln!("Browser stage: profile {}", fingerprint.os);
         let temporary = common::TempDirectory::new("native-browser-live")?;
         let root = temporary.path();
-        let script = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .ok_or("Repository missing")?
-            .join("scripts/browser-adapter/adapter.py");
-        let mut command = Command::new(&python);
-        command
-            .arg("-u")
-            .arg(script)
-            .env("NUMERA_ADAPTER_LOG_DIR", root.join("logs"))
-            .env("PYTHONUTF8", "1");
+        let mut command = if script
+            .extension()
+            .is_some_and(|extension| extension == "py")
+        {
+            let mut command = Command::new(&python);
+            command.arg("-u").arg(&script).env("PYTHONUTF8", "1");
+            command
+        } else {
+            Command::new(&script)
+        };
+        command.env("NUMERA_ADAPTER_LOG_DIR", root.join("logs"));
         let profile = Profile::from_record(&json!({
             "id":"a", "name":"fixture", "engine":backend,
             "created_at":1000.0, "updated_at":1000.0, "fingerprint":case["input"],
@@ -404,10 +411,7 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
     let registry = Arc::new(Registry::new(root.into(), "fixture-host".into(), None)?);
     let browser = BrowserRuntime {
         python: python.clone().into(),
-        adapter: Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .ok_or("Repository missing")?
-            .join("scripts/browser-adapter/adapter.py"),
+        adapter: script,
         cwd: root.into(),
         home: root.into(),
         logs: root.join("logs"),

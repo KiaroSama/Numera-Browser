@@ -68,7 +68,7 @@ jobs:
           workspaces: |
             engine-rust
             tools/xtask
-      - name: Build, inspect and package the exact native executable
+      - name: Build, inspect and package the native application and SDK runtime
         id: candidate
         run: cargo xtask build-candidate build/rust-candidate
       - name: Verify build tooling on the native host

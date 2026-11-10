@@ -30,6 +30,22 @@ pub struct Runtime {
     pub deployment: Option<Deployment>,
 }
 impl Runtime {
+    /// The explicit native executable uses the same bounded SDK protocol.
+    /// Legacy `.py` fixtures remain selectable during case-by-case migration.
+    pub(crate) fn sdk_command(&self) -> Command {
+        if !self.native_sdk() {
+            let mut command = Command::new(&self.python);
+            command.arg("-u").arg(&self.adapter).env("PYTHONUTF8", "1");
+            command
+        } else {
+            Command::new(&self.adapter)
+        }
+    }
+    pub(crate) fn native_sdk(&self) -> bool {
+        self.adapter
+            .extension()
+            .is_none_or(|extension| extension != "py")
+    }
     pub fn open(
         &self,
         session: Session,
@@ -115,7 +131,7 @@ impl Runtime {
         now: f64,
         resources: super::bundled::Resources,
     ) -> Result<Adapter, StartupFailed> {
-        let mut command = Command::new(&self.python);
+        let mut command = self.sdk_command();
         command.env_remove("NUMERA_ADAPTER_GEOIP_DIR");
         command.envs(resources.environment);
         if let Some(geoip) = resources.geoip {
@@ -124,10 +140,7 @@ impl Runtime {
         let mut binary_options = resources.options;
         binary_options.extend(self.binary_options.clone());
         command
-            .arg("-u")
-            .arg(&self.adapter)
             .current_dir(&self.cwd)
-            .env("PYTHONUTF8", "1")
             .env("NUMERA_ADAPTER_LOG_DIR", &self.logs)
             .env(
                 "NUMERA_ADAPTER_FIRST_PAGE",
