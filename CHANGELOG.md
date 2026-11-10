@@ -4,6 +4,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+- Continue the native checkpoint on a separate Rust rewrite integration branch.
+  Record the source test baseline, review current upstream browser releases and
+  add automatic Linux, Windows and macOS native candidate builds. A Rust build
+  tool verifies Cargo artifact provenance and compiled identity, then packages
+  executable/source ZIPs with notices and SHA-256 checksums. These candidates
+  do not complete runtime selection, test migration or desktop distributions.
+
 - Begin a parity-gated native Rust domain library with source-generated identity,
   model, validation, conversion and vault fixtures; keep the current Python
   application selected until the complete migration is verified.

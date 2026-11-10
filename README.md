@@ -11,11 +11,13 @@ web dashboard or CLI. Choose Playwright, Patchright, Camoufox or CloakBrowser fo
 workflows you are authorized to run.
 
 [![CI](https://github.com/KiaroSama/Numera-Browser/actions/workflows/ci.yml/badge.svg?branch=main&event=workflow_dispatch)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/ci.yml)
+[![Rust candidate builds](https://github.com/KiaroSama/Numera-Browser/actions/workflows/rust-candidate.yml/badge.svg?branch=rewrite%2Frust-complete-20261110)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/rust-candidate.yml)
 [![License: noncommercial](https://img.shields.io/badge/License-noncommercial-d04a9a)](LICENSE)
 [![Version: 0.36.0](https://img.shields.io/badge/Version-0.36.0-blue)](CHANGELOG.md)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776ab)](engine/pyproject.toml)
 [![Node: supported branches](https://img.shields.io/badge/Node-22%20%7C%2024%20%7C%2026-339933)](dashboard/package.json)
 [![Rust shell: 1.90+](https://img.shields.io/badge/Rust%20shell-1.90%2B-dea584)](desktop/src-tauri/Cargo.toml)
+[![Rust core: 1.99.1](https://img.shields.io/badge/Rust%20core-1.99.1-dea584)](engine-rust/Cargo.toml)
 
 [![Desktop build targets](https://img.shields.io/badge/Targets-Windows%20x64%20%7C%20Linux%20x64%20%7C%20macOS%20ARM64-555)](.github/workflows/build-desktop.yml)
 [![Documentation](https://img.shields.io/badge/Docs-setup%20%26%20usage-4c9a2a)](docs/setup.md)
@@ -33,6 +35,12 @@ workflows you are authorized to run.
 ![Numera Browser dashboard](docs/screenshot-dashboard.png)
 
 </div>
+
+The [Rust rewrite integration](docs/rust-rewrite.md) continues the native runtime
+checkpoint in a separate unmerged PR. Native CLI/HTTP/MCP candidates now build
+automatically on Linux, Windows and macOS. The full rewrite, interpreter removal,
+test migration and complete application distributions remain in progress; the
+candidate build badge is separate from full application acceptance.
 
 ## What it does
 
