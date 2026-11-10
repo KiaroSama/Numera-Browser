@@ -13,10 +13,10 @@
       rel="stylesheet"
     />
     <style>
-      /* The pre-paint background, before React or the app stylesheet exist.
+      /* The pre-paint background, before WebAssembly or the app stylesheet exist.
          It has to be a token or the light theme leaves a dark page behind the
          app - the hardcoded value that used to live here could never follow a
-         theme switch. Repeated from theme.js on purpose: this must work with
+         theme switch. Repeated from app.css on purpose: this must work with
          no JS at all, so it cannot read from the bundle. */
       :root { --boot-bg: #191d24; color-scheme: dark; }
       :root[data-theme="light"] { --boot-bg: #eef0f4; color-scheme: light; }
@@ -25,6 +25,8 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <link rel="stylesheet" href="/assets/app.css" />
+    <!-- Generated wasm-bindgen bootstrap; application behavior lives in Rust. -->
+    <script type="module">import init from "/assets/numera_dashboard.js"; await init();</script>
   </body>
 </html>

@@ -8,8 +8,9 @@ merged until the complete rewrite and its acceptance checks pass.
 ## Current boundary
 
 The native CLI, HTTP and MCP application code already exists in `engine-rust`.
-The selected product still uses Python and the dashboard still uses
-TypeScript/React. A Rust SDK worker now implements the Playwright/Patchright
+The selected backend still uses Python. The dashboard now uses Rust/WebAssembly;
+TypeScript/React were removed after all 195 original cases passed, with 71 native
+unit cases and 124 real Chromium cases across the same 26 suites. A Rust SDK worker now implements the Playwright/Patchright
 protocol; Camoufox and Cloak still use the retained Python path. The desktop shell and
 the existing CI orchestration also contain non-Rust code. These dependencies
 must be replaced; changing language badges or excluding files from language
