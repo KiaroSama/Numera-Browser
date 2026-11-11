@@ -33,7 +33,7 @@ launch = ["playwright>=1.62.0"]
 api = ["fastapi>=0.142.2", "uvicorn>=0.54.0"]
 secure = ["cryptography>=50.0.2"]
 # Camoufox currently requires the shared Playwright client below 1.63.
-desktop = ["playwright>=1.62.0,<1.63", "patchright>=1.63.0", "camoufox[geoip]>=0.5.7", "cloakbrowser[geoip]>=0.5.12"]
+desktop = ["playwright>=1.62.0,<1.65", "patchright>=1.63.0", "camoufox[geoip]>=0.5.7", "cloakbrowser[geoip]>=0.5.12"]
 dev = ["pytest>=9.1.1", "pytest-timeout>=2.4.0", "cryptography>=50.0.2", "httpx>=0.28.1"]
 
 [project.scripts]
