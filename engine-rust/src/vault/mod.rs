@@ -1,11 +1,13 @@
 //! Original Fernet envelope compatibility; recovery/journal acceptance is separate.
 pub mod completion;
-mod durability;
+pub mod durability;
 pub mod journal;
 pub mod migration;
 pub mod policy;
 pub mod recovery;
 mod rotation_recovery;
+#[cfg(feature = "test-support")]
+pub mod testing;
 pub mod transaction;
 use base64::{
     Engine, alphabet,
@@ -110,6 +112,9 @@ fn cipher(password: &str, salt: &str, rounds: u32) -> Result<Fernet, VaultError>
         return Ok(cipher);
     }
     let bytes = decode_original_base64(salt, false)?;
+    #[cfg(feature = "test-support")]
+    testing::event("before-key-derivation", std::path::Path::new(salt))
+        .map_err(|error| VaultError(error.to_string()))?;
     let mut key = pbkdf2_hmac_array::<Sha256, 32>(password.as_bytes(), &bytes, rounds);
     let encoded = URL_SAFE.encode(key);
     key.fill(0);
@@ -216,6 +221,8 @@ pub fn decrypt(password: &str, salt: &str, value: &str) -> Result<String, VaultE
 }
 
 pub fn encrypt(password: &str, salt: &str, plaintext: &str) -> Result<String, VaultError> {
+    #[cfg(feature = "test-support")]
+    testing::event("encrypt", std::path::Path::new("")).map_err(|e| VaultError(e.to_string()))?;
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(|_| VaultError("system clock precedes Unix epoch".into()))?;

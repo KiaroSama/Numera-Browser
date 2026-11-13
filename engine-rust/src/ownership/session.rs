@@ -41,6 +41,10 @@ impl Session {
                 "This profile remains owned by a busy or unverifiable session; stop or repair it before opening",
             ));
         }
+        #[cfg(feature = "test-support")]
+        if let Some(result) = super::test_support::admitted(root, id) {
+            result?;
+        }
         Ok(Self {
             root: root.into(),
             id: id.into(),
@@ -171,6 +175,9 @@ impl Session {
     }
 
     pub fn finish_with_status(&mut self, budget: Duration) -> io::Result<Option<i32>> {
+        let deadline = std::time::Instant::now()
+            .checked_add(budget)
+            .ok_or_else(|| io::Error::other("Invalid session cleanup budget"))?;
         let Some(tree) = self.tree.as_mut() else {
             if let Some(admission) = &mut self.admission {
                 admission.release()?;
@@ -178,13 +185,13 @@ impl Session {
             }
             return Ok(None);
         };
-        tree.settle(budget)?;
+        tree.settle(deadline.saturating_duration_since(std::time::Instant::now()))?;
         let code = tree
             .child_mut()
             .try_wait()?
             .map(|status| status.code().unwrap_or(-1));
         if let Some(claim) = &self.claim
-            && !claims::release(&self.root, &self.id, claim, tree)?
+            && !claims::release_before(&self.root, &self.id, claim, tree, deadline)?
         {
             return Err(io::Error::other(
                 "Session tree is empty but its claim could not be released; ownership remains unverified",
@@ -203,10 +210,16 @@ impl Session {
 impl Drop for Session {
     fn drop(&mut self) {
         // A failed cleanup leaves both durable owners, never an invented free slot.
-        if self.finish(Duration::from_secs(2)).is_err()
-            && let Some(admission) = &mut self.admission
-        {
-            admission.retain();
+        if self.finish(Duration::from_secs(2)).is_err() {
+            if let Some(admission) = &mut self.admission {
+                admission.retain();
+            }
+            // Keep the original kernel owner as well as its durable claim.
+            // In particular, a retained Windows Job must not be replaced by
+            // reopening a PID or a name after its last owned handle is lost.
+            if let Some(tree) = self.tree.take() {
+                super::capture::retain_tree(tree);
+            }
         }
     }
 }

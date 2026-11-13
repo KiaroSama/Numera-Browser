@@ -1,13 +1,19 @@
 use numera_core::{
-    browser::{adapter::Adapter, runtime::Runtime},
+    browser::runtime::Runtime,
     cli::{self, application::Application},
     ownership::{claims, registry::Registry},
     storage::repo::ProfileRepo,
 };
 use serde_json::{Value, json};
-use std::{path::Path, process::Command, time::Duration};
+use std::{path::Path, time::Duration};
 #[path = "support/alignment_versions.rs"]
 mod alignment_versions;
+use numera_core as core;
+#[path = "common/browser_fixture.rs"]
+#[allow(dead_code)]
+mod browser_fixture;
+#[path = "cli_characterization/mod.rs"]
+mod cli_characterization;
 mod common;
 #[path = "support/probe_output.rs"]
 mod probe_output;
@@ -15,39 +21,10 @@ mod probe_output;
 #[test]
 fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("cli-cookie-parity")?;
     let root = temporary.path();
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(&python);
-    command.args(["-u","-c",r#"
-import json,os,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from cli_cookie_cases import cases
-from probe_cases import cases as probe_cases, alignment_cases
-from cli_probe_output_cases import cases as human_probes
-probes=probe_cases();alignment=alignment_cases(os.path.join(os.environ['FIXTURE_ROOT'],'alignment'))
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(os.environ['FIXTURE_ROOT']),'probes':probes,'alignment':alignment,'humanProbes':human_probes(probes,alignment),'humanCookies':cases(os.path.join(os.environ['FIXTURE_ROOT'],'human-cookies'),human=True)}}),flush=True)
-"#]).env("PYTHONUTF8","1").env("FIXTURE_ROOT",root.join("source"))
-        .env("PYTHONPATH",std::env::join_paths([repository.join("scripts/migration"),repository.join("engine")])?);
-    let mut source = Adapter::spawn(
-        root,
-        "oracle",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = source.call(
-        "observe-cookie-cli",
-        Default::default(),
-        Duration::from_secs(30),
-    )?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
+    let document = cli_characterization::load("cli_cookie_parity", &root.join("source"))?;
+
     probe_output::compare(&document["humanProbes"])?;
     let native = root.join("native");
     let repo = ProfileRepo::open(native.clone(), None, None)?;
@@ -73,28 +50,13 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
         native.join("sdk-cookies.json"),
         serde_json::to_vec(read_rows)?,
     )?;
-    let adapter = native.join("sdk.py");
-    std::fs::write(
-        &adapter,
-        r#"
-import json,pathlib,sys
-seen=[]
-for line in sys.stdin:
-    request=json.loads(line);op=request['operation'];seen.append(op)
-    if op=='hello': result={'backends':{'playwright':{'installed':True}}}
-    elif op=='open': result={'opened':True,'backend':request['backend']}
-    elif op=='cookies-read': result={'cookies':json.loads(pathlib.Path(__file__).with_name('sdk-cookies.json').read_text(encoding='utf-8'))}
-    elif op=='cookies-clear': result={'cleared':True}
-    elif op=='cookies-add': result={'added':True}
-    else: result={'closing':True}
-    pathlib.Path(__file__).with_suffix('.seen').write_text(json.dumps(seen),encoding='utf-8')
-    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-    if op=='close':break
-"#,
+    let adapter = browser_fixture::executable(
+        &native.join("sdk"),
+        "cli-cookie",
+        json!({"cookies_file":native.join("sdk-cookies.json")}),
     )?;
     let sessions = Registry::new(native.clone(), "fixture-host".into(), None)?;
     let browser = Runtime {
-        python: python.into(),
         adapter,
         cwd: native.clone(),
         home: native.clone(),
@@ -243,42 +205,37 @@ for line in sys.stdin:
         assert_eq!(actual, case["expected"], "Original probe grade {index}");
     }
     let observation = native.join("probe-observation.json");
-    let script = native.join("probe-adapter.py");
+    let script = browser_fixture::executable(
+        &native.join("probe-adapter"),
+        "cli-probe",
+        json!({"case_file":observation,"store":native}),
+    )?;
+    // The historical peer advertised an installed Cloak. Stage a real native
+    // executable at the owned cache boundary so that claim remains true through
+    // the production acquisition guard, without asking it to download anything.
+    let platform = match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("linux", "x86_64") => "linux-x64",
+        ("linux", "aarch64") => "linux-arm64",
+        ("macos", "x86_64") => "darwin-x64",
+        ("macos", "aarch64") => "darwin-arm64",
+        ("windows", "x86_64") => "windows-x64",
+        _ => return Err("Cloak fixture platform unsupported".into()),
+    };
+    let cache = native.join("browser-cache/cloak");
+    let binary = cache
+        .join("chromium-140.0.7339.0-pro")
+        .join(if cfg!(windows) {
+            "chrome.exe"
+        } else if cfg!(target_os = "macos") {
+            "Chromium.app/Contents/MacOS/Chromium"
+        } else {
+            "chrome"
+        });
+    std::fs::create_dir_all(binary.parent().ok_or("Cloak fixture parent missing")?)?;
+    std::fs::copy(&script, &binary)?;
     std::fs::write(
-        &script,
-        r#"
-import json,pathlib,sys
-seen=[];index=-1
-case=json.loads(pathlib.Path(__file__).with_name('probe-observation.json').read_text(encoding='utf-8'))
-for line in sys.stdin:
-    request=json.loads(line);op=request['operation'];seen.append(request)
-    if op=='hello': result={'backends':{engine:{'installed':True} for engine in ['playwright','camoufox','cloak']}}
-    elif op=='open': result={'opened':True,'backend':request['backend']}
-    elif op=='route': result={'routed':True}
-    elif op=='navigate':
-        index+=1
-        result={'navigated':case.get('attempts',[{}]*3)[index].get('navigate',True)}
-    elif op=='evaluate':
-        if case.get('alignment') and request['expression'].startswith('(fonts)'):
-            for directory in ['profiles','dashboard']:
-                path=pathlib.Path(__file__).with_name(directory).joinpath('fixture.json')
-                current=json.loads(path.read_text(encoding='utf-8'))
-                current['notes']='edited during probe'
-                path.write_text(json.dumps(current),encoding='utf-8')
-            attempt={'value':case['observation']['fontsRendered']}
-        elif 'observations' in case:
-            expression=request['expression']
-            kind='info' if 'async (urls)' in expression else 'ice' if 'RTCPeerConnection' in expression else 'dns' if 'idUrl' in expression else 'tls'
-            attempt={'evaluate':False} if case['observations'].get('ipFailed') else {'value':case['observations'][kind]}
-        else:
-            attempt=case['attempts'][index] if 'attempts' in case else {'value':case['observation']}
-        result={'evaluated':attempt.get('evaluate',True),'value':attempt.get('value')}
-    elif op=='close': result={'closing':True}
-    else: raise AssertionError('Unexpected native probe operation')
-    pathlib.Path(__file__).with_suffix('.seen').write_text(json.dumps(seen),encoding='utf-8')
-    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-    if op=='close': break
-"#,
+        cache.join(format!("latest_pro_version_{platform}")),
+        b"140.0.7339.0\n",
     )?;
     let browser = Runtime {
         adapter: script.clone(),

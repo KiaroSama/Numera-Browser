@@ -6,70 +6,13 @@ mod common;
 #[test]
 fn public_resume_returns_the_authenticated_store_or_preserves_recovery_evidence()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::{ownership::capture, storage::repo::ProfileRepo};
-    use std::{path::Path, process::Command, time::Duration};
+    use numera_core::storage::repo::ProfileRepo;
 
     let temporary = common::TempDirectory::new("vault-store-resume")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import copy,json,os,sys
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-os.environ.pop('NUMERA_PASSWORD',None)
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.store import ProfileStore
-from numera.vault import decrypt_for_read
-from run_logging import run_log
-cases=json.loads((repository/'engine-rust/tests/fixtures/rotation-recovery.json').read_text(encoding='utf-8'))['cases']
-observed=[]
-with run_log('vault-store-resume-oracle',parent/'logs') as log:
-    for index,case in enumerate(cases):
-        root=parent/str(index);root.mkdir(parents=True)
-        files={'proxies.json':copy.deepcopy(case['pool']),'config.json':case['config'],
-               'vault-migration.json':case['journal']}
-        for name,value in files.items():(root/name).write_text(json.dumps(value),encoding='utf-8')
-        session=root/'user-data'/'kept'/'session.bin';session.parent.mkdir(parents=True)
-        session.write_bytes(b'\x00\xff\r\n')
-        before={name:(root/name).read_bytes() for name in files}
-        old=case['old_password'] or '';new=case['password']
-        try:
-            store=ProfileStore.resume_vault(root,old,new)
-            result={'enabled':store.vault_enabled(),'unlocked':store.unlocked(),
-                    'values':[decrypt_for_read(store,row.get('pass')) for row in
-                              json.loads((root/'proxies.json').read_text(encoding='utf-8'))]}
-            error=None
-        except (RuntimeError,ValueError) as exc: result,error=None,str(exc)
-        after={name:(root/name).read_bytes() if (root/name).exists() else None for name in files}
-        if error is not None:assert after==before,'Original refused resume changed bytes'
-        assert session.read_bytes()==b'\x00\xff\r\n'
-        observed.append({'files':files,'old':old,'new':new,'result':result,'error':error,
-                         'config':json.loads(after['config.json']),
-                         'journal':after['vault-migration.json'] is not None,
-                         'unchanged':{name:raw==after[name] for name,raw in before.items()}})
-    log.info('Observed public vault resume cases=%s',len(observed))
-    print(json.dumps(observed,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("source"));
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 131072,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(
-        original.exit, 0,
-        "Original public vault resume observer failed"
-    );
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/public_resume_returns_the_authenticated_store_or_preserves_recovery_evidence.json"
+    ))?;
     assert_eq!(cases.len(), 10);
     for (index, case) in cases.iter().enumerate() {
         let root = temporary.path().join(format!("native-resume-{index}"));
@@ -156,84 +99,11 @@ with run_log('vault-store-resume-oracle',parent/'logs') as log:
 #[test]
 fn committed_rotation_metadata_matches_original_without_rewriting_generation()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::ownership::capture;
-    use std::{path::Path, process::Command, time::Duration};
-
     let temporary = common::TempDirectory::new("rotation-metadata")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import copy,json,sys
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.vault_recovery import recover
-from numera.paths import write_json
-from run_logging import run_log
-cases=json.loads((repository/'engine-rust/tests/fixtures/rotation-recovery.json').read_text(encoding='utf-8'))['cases']
-base=cases[2];inputs=[]
-for metadata in [{'future':{'format':3}}, {}, {'extra':None}, {'label':'α فارسی'}]:
-    case=copy.deepcopy(base);case['config']['vault'].update(metadata);inputs.append(case)
-for change in ['verifier','missing-verifier','salt','stale','no-key','wrong-key']:
-    case=copy.deepcopy(base)
-    if change=='verifier':case['config']['vault']['verifier']='enc:v9:fixture'
-    elif change=='missing-verifier':case['config']['vault'].pop('verifier')
-    elif change=='salt':case['config']['vault']['salt']=cases[0]['journal']['old']['salt']
-    elif change=='stale':case['pool']=cases[1]['pool']
-    elif change=='no-key':case['password']=None
-    elif change=='wrong-key':case['password']='fixture-wrong-master'
-    inputs.append(case)
-observed=[]
-with run_log('rotation-metadata-oracle',parent/'logs') as log:
-    for index,case in enumerate(inputs):
-        root=parent/str(index);root.mkdir(parents=True)
-        token=case['pool'][0]['pass']
-        files={'config.json':case['config'],'vault-migration.json':case['journal'],
-               'proxies.json':case['pool'],'profiles/a.json':{'proxy':{'password':token}},
-               'dashboard/a.json':{'proxy':{'pass':token}}}
-        before={}
-        for name,value in files.items():
-            path=root/name;path.parent.mkdir(parents=True,exist_ok=True)
-            raw=json.dumps(value).encode('utf-8');path.write_bytes(raw);before[name]=raw
-        marker=root/'user-data/kept/session.bin';marker.parent.mkdir(parents=True)
-        marker.write_bytes(b'\x00\xff\r\n')
-        attempts=[]
-        for _ in range(2):
-            try:
-                result=recover(root,lambda:json.loads((root/'config.json').read_text(encoding='utf-8')),
-                               lambda value:write_json(root/'config.json',value),password=case['password'])
-                error=None;codes=[];role=None
-            except RuntimeError as exc:
-                result,error,codes,role=None,str(exc),sorted(getattr(exc,'codes',set())),getattr(exc,'role',None)
-            unchanged={name:(root/name).exists() and (root/name).read_bytes()==raw for name,raw in before.items()}
-            assert all(kept for name,kept in unchanged.items() if name!='vault-migration.json')
-            assert marker.read_bytes()==b'\x00\xff\r\n'
-            attempts.append({'result':result,'error':error,'codes':codes,'role':role,
-                             'unchanged':unchanged,'journal':(root/'vault-migration.json').exists()})
-        observed.append({'files':files,'password':case['password'],'attempts':attempts})
-    log.info('Observed committed rotation metadata cases=%s',len(observed))
-    print(json.dumps(observed,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("source"));
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 131072,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(
-        original.exit, 0,
-        "Original rotation metadata observer failed"
-    );
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/committed_rotation_metadata_matches_original_without_rewriting_generation.json"
+    ))?;
     assert_eq!(cases.len(), 10);
     for (index, case) in cases.iter().enumerate() {
         let root = temporary.path().join(format!("native-{index}"));

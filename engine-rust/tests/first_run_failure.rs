@@ -9,6 +9,9 @@ mod copytree_errors;
 #[cfg(unix)]
 #[path = "first_run_failure/profile_count.rs"]
 mod profile_count;
+#[cfg(unix)]
+#[path = "first_run_parity/support.rs"]
+mod support;
 
 #[cfg(unix)]
 #[test]
@@ -16,7 +19,7 @@ fn fifo_import_matches_original_refusal_continuation_and_retry()
 -> Result<(), Box<dyn std::error::Error>> {
     use numera_core::ownership::capture;
     use serde_json::Value;
-    use std::{path::Path, process::Command, time::Duration};
+    use std::{process::Command, time::Duration};
 
     const TEST: &str = "fifo_import_matches_original_refusal_continuation_and_retry";
     if let Some(document) = std::env::var_os("NUMERA_FIFO_IMPORT_FIXTURE") {
@@ -58,79 +61,37 @@ fn fifo_import_matches_original_refusal_continuation_and_retry()
         return Ok(());
     }
     let temporary = common::TempDirectory::new("fifo-import")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import json,os,shutil,stat,sys
-from pathlib import Path
-from unittest.mock import patch
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import firstrun
-from run_logging import run_log
-
-def prepare(source,destination,pipe,kept):
-    (source/'profiles').mkdir(parents=True)
-    destination.mkdir(parents=True)
-    (source/'schedules.json').write_bytes(b'independent')
-    os.mkfifo(source/pipe)
-    if kept:
-        target=destination/pipe
-        target.parent.mkdir(parents=True,exist_ok=True)
-        target.write_bytes(b'destination wins')
-
-with run_log('fifo-import-oracle',root/'logs') as log:
-    rows=[]
-    for pipe in ['profiles/pipe.json','tokens.json']:
-        for kept in [False,True]:
-            case=root/'cases'/str(len(rows))
-            source,destination=case/'source 日本語',case/'destination with spaces'
-            prepare(source,destination,pipe,kept)
-            with patch('numera.firstrun.legacy_dirs',return_value=[source]):
-                first=firstrun.run_if_needed(destination)
-                marked=(destination/'.imported').exists()
-                assert bool(first['failed']) is not kept
-                assert marked is kept
-                assert (destination/'schedules.json').read_bytes()==b'independent'
-                assert stat.S_ISFIFO((source/pipe).stat().st_mode)
-                (source/pipe).unlink()
-                (source/pipe).write_bytes(b'retried')
-                again=firstrun.run_if_needed(destination)
-                assert (destination/'.imported').is_file()
-                written=list((destination/pipe).read_bytes())
-            rows.append({'source':str(source),'destination':str(destination),'pipe':pipe,
-                         'first':first,'marked':marked,'again':again,'written':written})
-            shutil.rmtree(case)
-            prepare(source,destination,pipe,kept)
-    log.info('Observed FIFO refusal and retry cases=%s',len(rows))
-print(json.dumps(rows,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .arg(temporary.path());
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = support::load(
+        include_str!(
+            "fixtures/characterization/fifo_import_matches_original_refusal_continuation_and_retry.json"
+        ),
+        temporary.path(),
+    )?;
+    assert_eq!(cases.len(), 4, "FIFO import observations missing");
+    let document = temporary.path().join("observations.json");
+    for case in &cases {
+        let source = std::path::Path::new(case["source"].as_str().ok_or("Source missing")?);
+        let destination =
+            std::path::Path::new(case["destination"].as_str().ok_or("Destination missing")?);
+        fs::create_dir_all(source.join("profiles"))?;
+        fs::create_dir_all(destination)?;
+        fs::write(source.join("schedules.json"), b"independent")?;
+        let pipe = case["pipe"].as_str().ok_or("Pipe missing")?;
+        fifo(&source.join(pipe))?;
+        if case["marked"] == true {
+            let target = destination.join(pipe);
+            fs::create_dir_all(target.parent().ok_or("Parent missing")?)?;
+            fs::write(target, b"destination wins")?;
+        }
+    }
+    fs::write(&document, serde_json::to_vec(&cases)?)?;
     let limits = || capture::Limits {
         wall: Duration::from_secs(10),
         idle: Duration::from_secs(8),
         bytes: 65536,
         cleanup: Duration::from_secs(5),
     };
-    let original = capture::run(&mut command, limits())?;
-    assert_eq!(original.exit, 0, "Original FIFO import observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
-    assert_eq!(cases.len(), 4, "FIFO import observations missing");
-    let document = temporary.path().join("observations.json");
-    fs::write(&document, original.stdout)?;
     let mut command = Command::new(std::env::current_exe()?);
     command
         .args(["--exact", TEST, "--nocapture", "--test-threads=1"])
@@ -197,4 +158,18 @@ fn failed_first_run_remains_retryable_and_never_overwrites_the_obstruction()
     })();
     fs::remove_dir_all(root)?;
     result
+}
+
+#[cfg(unix)]
+#[allow(unsafe_code)]
+fn fifo(path: &std::path::Path) -> std::io::Result<()> {
+    use std::os::unix::ffi::OsStrExt;
+    let path =
+        std::ffi::CString::new(path.as_os_str().as_bytes()).map_err(std::io::Error::other)?;
+    // SAFETY: NUL-terminated owned path; the file is created only in this test's root.
+    if unsafe { libc::mkfifo(path.as_ptr(), 0o600) } == 0 {
+        Ok(())
+    } else {
+        Err(std::io::Error::last_os_error())
+    }
 }

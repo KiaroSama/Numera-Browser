@@ -2,10 +2,12 @@ use axum::{
     body::{Body, to_bytes},
     http::Request,
 };
-use numera_core::{browser::adapter::Adapter, http::proxy_routes::router};
+use numera_core::http::proxy_routes::router;
 use serde_json::Value;
-use std::{fs, path::Path, process::Command, time::Duration};
+use std::{fs, time::Duration};
 use tower::ServiceExt;
+#[path = "cli_characterization/mod.rs"]
+mod cli_characterization;
 mod common;
 #[path = "common/proxy_relay.rs"]
 mod proxy_relay;
@@ -14,34 +16,11 @@ mod proxy_relay;
 fn proxy_http_archive_and_assignment_preserve_original_stores_and_refusals()
 -> Result<(), Box<dyn std::error::Error>> {
     let source_root = common::TempDirectory::new("proxy-assignment-source")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
-    let mut command = Command::new(python);
-    command.args(["-u", "-c", r#"
-import json,os,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from proxy_assignment_cases import cases,address_cases,relay_cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(os.environ['FIXTURE_ROOT']),'addresses':address_cases(),'relays':relay_cases()}}),flush=True)
-"#]).env("PYTHONUTF8", "1").env("FIXTURE_ROOT", source_root.path().join("source"))
-        .env("PYTHONPATH", std::env::join_paths([repository.join("scripts/migration"), repository.join("engine")])?);
-    let mut source = Adapter::spawn(
-        source_root.path(),
-        "oracle",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
+    let document = cli_characterization::load(
+        "proxy_assignment_parity",
+        &source_root.path().join("source"),
     )?;
-    let document = source.call(
-        "observe-proxy-assignment",
-        Default::default(),
-        Duration::from_secs(30),
-    )?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
+
     source_root.cleanup()?;
     let addresses = document["addresses"]
         .as_array()

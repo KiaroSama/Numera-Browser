@@ -7,62 +7,67 @@ on:
 permissions:
   contents: read
 
+env:
+  CARGO_BUILD_JOBS: "2"
+  CARGO_INCREMENTAL: "0"
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
+
 jobs:
   dashboard:
-    name: Dashboard build and tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      PYTHONUTF8: "1"
-      HOOKMAKER_MAX_TEST_WORKERS: "2"
+    name: Rust dashboard and real browser contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.13.15"
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          node-version: "26"
-          cache: npm
-          cache-dependency-path: dashboard/package-lock.json
-      - name: Install (from the lockfile)
-        working-directory: dashboard
-        run: python ../scripts/migration/run_owned.py --wall 300 --idle 90 -- npm ci
-      - name: Dependency consistency
-        working-directory: dashboard
-        run: python ../scripts/migration/run_owned.py --wall 60 --idle 30 -- npm ls --all
-      - name: Advisory audit
-        working-directory: dashboard
-        run: python ../scripts/migration/run_owned.py --wall 120 --idle 60 -- npm audit --audit-level=high
-      # Bundling cannot catch auth-lockout or dev-proxy regressions. Keep the
-      # actual suite in both full CI and the manual maintenance checkpoint.
-      - name: Tests
-        working-directory: dashboard
-        run: python ../scripts/migration/run_owned.py --wall 300 --idle 90 -- npm test -- --maxWorkers=2 --reporter=default --reporter=json --outputFile=../build/dashboard-results.json
-      - name: Reject undiscovered, skipped or unimplemented dashboard tests
-        if: always()
-        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py report --tier dashboard --report build/dashboard-results.json
-      - name: Strict TypeScript
-        working-directory: dashboard
-        run: python ../scripts/migration/run_owned.py --wall 120 --idle 60 -- npm run typecheck
-      - name: Lint
-        working-directory: dashboard
-        run: python ../scripts/migration/run_owned.py --wall 120 --idle 60 -- npm run lint
-      - name: Build once after the explicit strict type gate
-        working-directory: dashboard
-        run: python ../scripts/migration/run_owned.py --wall 180 --idle 60 -- npx --no-install vite build
-      - name: Bind dashboard artifact to the verified source
-        env:
-          SOURCE_SHA: ${{ github.sha }}
+          toolchain: 1.99.1
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: |
+            dashboard
+            engine-rust
+            tools/xtask
+      - name: Provision the exact Rust WASM packaging and test runner
+        run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Compile native verification tooling
+        run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Formatting and native lint
         run: |
-          python - <<'PY'
-          import json, os
-          from pathlib import Path
-          package = json.loads(Path("dashboard/package.json").read_text(encoding="utf-8"))
-          metadata = {"source_sha": os.environ["SOURCE_SHA"], "version": package["version"]}
-          Path("dashboard/dist/ci-source.json").write_text(json.dumps(metadata) + "\n", encoding="utf-8")
-          PY
-      - name: Preserve the exact dashboard used by packages and API tests
+          cargo xtask ci owned --wall 60 --idle 30 -- cargo fmt --manifest-path dashboard/Cargo.toml --all --check
+          cargo xtask ci owned --wall 600 --idle 120 -- cargo clippy --manifest-path dashboard/Cargo.toml --locked --all-targets -- -D warnings
+      - name: Compile and lint the actual browser target
+        run: cargo xtask ci owned --wall 600 --idle 120 -- cargo clippy --manifest-path dashboard/Cargo.toml --locked --all-targets --target wasm32-unknown-unknown -- -D warnings
+      - name: Require all 71 native dashboard source cases
+        run: cargo xtask ci counted-tests 71 build/dashboard-native.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --lib -- --test-threads=2 --color=never
+      - name: Select the hosted native WebDriver
+        run: |
+          set -euo pipefail
+          driver="$(command -v chromedriver || true)"
+          if [ -z "$driver" ] && [ -n "${CHROMEWEBDRIVER:-}" ]; then driver="$CHROMEWEBDRIVER/chromedriver"; fi
+          test -x "$driver"
+          echo "CHROMEDRIVER=$driver" >> "$GITHUB_ENV"
+      - name: Require all 124 actual Chromium WASM source cases
+        env:
+          CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
+          WASM_BINDGEN_TEST_WEBDRIVER_JSON: dashboard/tests/webdriver.json
+        run: cargo xtask ci counted-wasm-tests 124 build/dashboard-wasm.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --lib --target wasm32-unknown-unknown -- --color=never
+      - name: Build and bind the dashboard to this exact source
+        run: cargo xtask ci owned --wall 600 --idle 120 -- cargo run --manifest-path dashboard/Cargo.toml --locked --bin dashboard-build
+      - name: Preserve exact source dashboard and test evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dashboard-test-evidence
+          path: build/dashboard-*.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve the dashboard consumed by native product builds
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dashboard-dist

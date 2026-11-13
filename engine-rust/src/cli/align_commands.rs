@@ -28,15 +28,11 @@ impl Align<'_> {
         time: f64,
         output: &mut super::output::Output<impl std::io::Write, impl std::io::Write>,
     ) -> Result<Outcome, RepoError> {
-        let mut outcome = self.run_started(reference, engine, time, |profile| {
+        let outcome = self.run_started(reference, engine, time, |profile| {
             super::probe_output::start(output, "align", &profile.name, None)?;
             Ok(())
         })?;
-        super::probe_output::render(output, "align", reference, &outcome.payload)?;
-        if output.json_mode() && outcome.payload.get("after").is_some() {
-            outcome.exit = 0;
-        }
-        Ok(outcome)
+        complete_report(output, reference, outcome)
     }
     fn run_started(
         &self,
@@ -106,4 +102,17 @@ impl Align<'_> {
             }}),
         })
     }
+}
+
+/// Complete a browser report through the same human/automation output policy.
+pub fn complete_report(
+    output: &mut super::output::Output<impl std::io::Write, impl std::io::Write>,
+    reference: &str,
+    mut outcome: Outcome,
+) -> Result<Outcome, RepoError> {
+    super::probe_output::render(output, "align", reference, &outcome.payload)?;
+    if output.json_mode() && outcome.payload.get("after").is_some() {
+        outcome.exit = 0;
+    }
+    Ok(outcome)
 }

@@ -1,0 +1,517 @@
+[
+  {
+    "text": "0.25",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "0.250",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "25e-2",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "250E-3",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "0.25000000000000001",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "2.5000000000000001e-1",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "0.5",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "0.50",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "5e-1",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "500E-3",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "0.50000000000000001",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "5.0000000000000001e-1",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "0.24999999999999997",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a whole number (or one of 0.25, 0.5), got 0.24999999999999997. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.24999999999999997. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.24999999999999997. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.24999999999999997. Nothing was written."
+    ]
+  },
+  {
+    "text": "-0.24999999999999997",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a whole number (or one of 0.25, 0.5), got -0.24999999999999997. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.24999999999999997. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.24999999999999997. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.24999999999999997. Nothing was written."
+    ]
+  },
+  {
+    "text": "0.25",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "-0.25",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a whole number (or one of 0.25, 0.5), got -0.25. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.25. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.25. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.25. Nothing was written."
+    ]
+  },
+  {
+    "text": "0.25000000000000006",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a whole number (or one of 0.25, 0.5), got 0.25000000000000006. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.25000000000000006. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.25000000000000006. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.25000000000000006. Nothing was written."
+    ]
+  },
+  {
+    "text": "-0.25000000000000006",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a whole number (or one of 0.25, 0.5), got -0.25000000000000006. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.25000000000000006. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.25000000000000006. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.25000000000000006. Nothing was written."
+    ]
+  },
+  {
+    "text": "0.49999999999999994",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a whole number (or one of 0.25, 0.5), got 0.49999999999999994. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.49999999999999994. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.49999999999999994. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.49999999999999994. Nothing was written."
+    ]
+  },
+  {
+    "text": "-0.49999999999999994",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a whole number (or one of 0.25, 0.5), got -0.49999999999999994. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.49999999999999994. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.49999999999999994. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.49999999999999994. Nothing was written."
+    ]
+  },
+  {
+    "text": "0.5",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "-0.5",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a whole number (or one of 0.25, 0.5), got -0.5. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.5. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.5. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.5. Nothing was written."
+    ]
+  },
+  {
+    "text": "0.5000000000000001",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a whole number (or one of 0.25, 0.5), got 0.5000000000000001. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.5000000000000001. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.5000000000000001. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.5000000000000001. Nothing was written."
+    ]
+  },
+  {
+    "text": "-0.5000000000000001",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a whole number (or one of 0.25, 0.5), got -0.5000000000000001. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.5000000000000001. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.5000000000000001. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got -0.5000000000000001. Nothing was written."
+    ]
+  },
+  {
+    "text": "0",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "0.0",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "-0.0",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "1",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "1.0",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "10e-1",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "1024",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "1024.0",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "1025",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be between 0 and 1024, got 1025. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be between 0 and 1024, got 1025. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be between 0 and 1024, got 1025. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be between 0 and 1024, got 1025. Nothing was written."
+    ]
+  },
+  {
+    "text": "1025.0",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be between 0 and 1024, got 1025.0. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be between 0 and 1024, got 1025.0. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be between 0 and 1024, got 1025.0. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be between 0 and 1024, got 1025.0. Nothing was written."
+    ]
+  },
+  {
+    "text": "-1",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be between 0 and 1024, got -1. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be between 0 and 1024, got -1. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be between 0 and 1024, got -1. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be between 0 and 1024, got -1. Nothing was written."
+    ]
+  },
+  {
+    "text": "-1.0",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be between 0 and 1024, got -1.0. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be between 0 and 1024, got -1.0. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be between 0 and 1024, got -1.0. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be between 0 and 1024, got -1.0. Nothing was written."
+    ]
+  },
+  {
+    "text": "0.125",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a whole number (or one of 0.25, 0.5), got 0.125. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.125. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.125. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.125. Nothing was written."
+    ]
+  },
+  {
+    "text": "0.75",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a whole number (or one of 0.25, 0.5), got 0.75. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.75. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.75. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be a whole number (or one of 0.25, 0.5), got 0.75. Nothing was written."
+    ]
+  },
+  {
+    "text": "1e-400",
+    "engine": [],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "18446744073709551616",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be between 0 and 1024, got 18446744073709551616. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be between 0 and 1024, got 18446744073709551616. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be between 0 and 1024, got 18446744073709551616. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be between 0 and 1024, got 18446744073709551616. Nothing was written."
+    ]
+  },
+  {
+    "text": "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be between 0 and 1024, got 9999999999999999999999999999999999999999. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be between 0 and 1024, got 9999999999999999999999999999999999999999. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be between 0 and 1024, got 9999999999999999999999999999999999999999. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be between 0 and 1024, got 9999999999999999999999999999999999999999. Nothing was written."
+    ]
+  },
+  {
+    "text": "true",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a number, not bool. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a number, not bool. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a number, not bool. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be int or float, got bool"
+    ]
+  },
+  {
+    "text": "false",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a number, not bool. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a number, not bool. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a number, not bool. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be int or float, got bool"
+    ]
+  },
+  {
+    "text": "null",
+    "engine": [
+      "profile: 'fingerprint.device_memory' is required. Nothing was written."
+    ],
+    "patch": [],
+    "flat": [],
+    "http": []
+  },
+  {
+    "text": "\"0.25\"",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a number, not str. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a number, not str. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a number, not str. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be int or float, got str"
+    ]
+  },
+  {
+    "text": "[]",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a number, not list. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a number, not list. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a number, not list. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be int or float, got list"
+    ]
+  },
+  {
+    "text": "{}",
+    "engine": [
+      "profile: 'fingerprint.device_memory' must be a number, not dict. Nothing was written."
+    ],
+    "patch": [
+      "profile: 'memory' must be a number, not dict. Nothing was written."
+    ],
+    "flat": [
+      "profile: 'memory' must be a number, not dict. Nothing was written."
+    ],
+    "http": [
+      "profile: 'memory' must be int or float, got dict"
+    ]
+  }
+]

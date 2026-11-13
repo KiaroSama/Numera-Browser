@@ -1,11 +1,10 @@
-//! Deployment discovery for the native candidate, never source-engine forwarding.
+//! Deployment discovery for the native application and browser worker.
 use crate::{browser::runtime::Runtime, ownership::capture};
 use serde_json::Value;
 use std::{
     collections::BTreeMap,
     io,
     path::{Path, PathBuf},
-    process::Command,
     time::Duration,
 };
 
@@ -30,24 +29,10 @@ impl Environment {
             .or_else(|| std::env::var_os("NUMERA_BROWSER_ADAPTER"))
             .map(PathBuf::from)
             .unwrap_or_else(|| {
-                let native = app.join(if cfg!(windows) {
+                app.join(if cfg!(windows) {
                     "numera-browser-runtime.exe"
                 } else {
                     "numera-browser-runtime"
-                });
-                if native.is_file() {
-                    native
-                } else {
-                    app.join("scripts/browser-adapter/adapter.py")
-                }
-            });
-        let python = std::env::var_os("NUMERA_SDK_PYTHON")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| {
-                PathBuf::from(if cfg!(windows) {
-                    "python.exe"
-                } else {
-                    "python3"
                 })
             });
         let logs = std::env::var_os("NUMERA_LOG_DIR")
@@ -61,7 +46,6 @@ impl Environment {
             cwd: cwd.clone(),
             host,
             browser: Runtime {
-                python,
                 adapter,
                 cwd,
                 home,
@@ -88,24 +72,18 @@ impl Environment {
     pub fn installed(&mut self) -> Result<BTreeMap<String, bool>, capture::Failure> {
         self.metadata(false)
     }
-    pub fn metadata(&mut self, addons: bool) -> Result<BTreeMap<String, bool>, capture::Failure> {
+    pub fn metadata(
+        &mut self,
+        addons_requested: bool,
+    ) -> Result<BTreeMap<String, bool>, capture::Failure> {
         if !self.browser.adapter.is_file() {
             return Ok(["playwright", "patchright", "camoufox", "cloak"]
                 .into_iter()
                 .map(|name| (name.into(), false))
                 .collect());
         }
-        let mut command = if self.browser.native_sdk() {
-            let mut command = self.browser.sdk_command();
-            command.arg("--metadata");
-            command
-        } else {
-            let mut command = Command::new(&self.browser.python);
-            command.args(["-I", "-B", "-u", "-c", "import importlib.util,json,sys; s=importlib.util.spec_from_file_location('sdk_metadata',sys.argv[1]); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); data=m.available(); addons=[];\nif sys.argv[2]=='1' and data['camoufox']['installed']:\n from camoufox.addons import DefaultAddons\n addons=[v.name for v in DefaultAddons]\nprint(json.dumps({'backends':data,'default_addons':addons}),flush=True)"])
-            .arg(&self.browser.adapter).arg(if addons { "1" } else { "0" })
-            ;
-            command
-        };
+        let mut command = self.browser.sdk_command();
+        command.arg("--metadata");
         command
             .env_remove("NUMERA_PASSWORD")
             .env_remove("NUMERA_API_TOKEN");
@@ -141,7 +119,11 @@ impl Environment {
             })
             .collect::<io::Result<Vec<_>>>()?;
         if let Some(deployment) = self.browser.deployment.as_mut() {
-            deployment.default_addons = addons;
+            deployment.default_addons = if addons_requested && installed["camoufox"] {
+                addons
+            } else {
+                Vec::new()
+            };
         }
         Ok(installed)
     }

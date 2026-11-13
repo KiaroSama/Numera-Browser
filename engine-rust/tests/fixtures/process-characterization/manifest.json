@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+  "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+  "observer_source": "engine-rust/tests/ownership_tree_parity.rs",
+  "observer_sha256": "feef7a00330b1bdaef06c4cf7fa021d175dbe6ac7f459ed5d26675b6b193f14f",
+  "source_query": "scripts/migration/claim_fixture.py",
+  "source_query_sha256": "a19bd86be3265f756c3d4efe818bf85d16be6a89438a8649b08387a4b60513d0",
+  "runtime": "CPython 3.13.15",
+  "observation": "The unchanged retained native integration test ran against the original sessions API and asserted both states on an actual live then settled native owned tree. /tmp/numera-original-claim-observer.log: 1passed,0failed,0ignored on Linux. The replacement runs an independent Rust claim consumer against the same actual OS lifecycle and compares these retained source outcomes.",
+  "file": "claim-states.json",
+  "bytes": 33,
+  "sha256": "47e21313aed5d348aaf27e11f6284ec80dd4437b7052d0472f005cb64f974618"
+}

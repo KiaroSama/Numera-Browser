@@ -36,6 +36,9 @@ impl RequestAuth {
         alternate: Option<&str>,
         now: f64,
     ) -> io::Result<bool> {
+        if super::update_routes::private_path(path) {
+            return Ok(false);
+        }
         if method == "OPTIONS"
             || !path.starts_with("/api/")
             || path.trim_end_matches('/') == "/api/ready"

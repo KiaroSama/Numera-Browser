@@ -1,6 +1,4 @@
-use numera_core::{browser::adapter::Adapter, cli};
-use std::{path::Path, process::Command, time::Duration};
-mod common;
+use numera_core::cli;
 #[path = "cli_registry_parity/variadic.rs"]
 mod variadic;
 #[path = "cli_registry_parity/version.rs"]
@@ -9,64 +7,12 @@ mod version;
 #[test]
 fn integer_options_preserve_original_digit_bound_before_zero_normalization()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::ownership::capture;
     use serde_json::Value;
 
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import contextlib,io,json,sys
-from pathlib import Path
-repository=Path(sys.argv[1])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.cli.parser import build_parser
-assert sys.get_int_max_str_digits()==4300,'Original integer digit limit differs'
-parser=build_parser()
-options=[(['create','fixture'],'seed'),(['bulk-create','--count=2'],'seed'),
-         (['bulk-create'],'count'),(['bulk-create','--count=2'],'start'),
-         (['bulk-create','--count=2'],'pad'),(['jobs','show','fixture'],'lines'),
-         (['serve'],'port'),(['attach','fixture'],'port')]
-inputs=['0','9'*4300,'-'+'9'*4300,'+'+'0'*4299+'1',
-        '1_'*4299+'1','١'*4300,'9'*4301,'0'*4301,
-        '-'+'0'*4300+'1','1_'*4300+'1','١'*4301,'1__2']
-rows=[]
-for prefix,option in options:
-    for text in inputs:
-        argv=[*prefix,'--'+option+'='+text]
-        with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
-            try:
-                values=vars(parser.parse_args(argv))
-                values.pop('func',None)
-                rows.append({'argv':argv,'exit':0,'values':values})
-            except SystemExit as error:
-                rows.append({'argv':argv,'exit':error.code})
-print(json.dumps(rows,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .env("PYTHONUTF8", "1");
-    let observed = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(20),
-            idle: Duration::from_secs(15),
-            bytes: 4 * 1024 * 1024,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(observed.exit, 0, "Original integer option observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    // Frozen execution of the immutable source; native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/integer_options_preserve_original_digit_bound_before_zero_normalization.json"
+    ))?;
     assert_eq!(cases.len(), 96, "Integer option observations missing");
     let mut registry = cli::registry();
     registry.build();
@@ -100,82 +46,12 @@ print(json.dumps(rows,ensure_ascii=True))
 #[test]
 fn separate_option_values_match_original_token_classification()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::ownership::capture;
     use serde_json::Value;
 
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut original = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    original
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import contextlib,io,json,sys
-from pathlib import Path
-repository=Path(sys.argv[1])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.cli.parser import build_parser
-parser=build_parser()
-options=[(['create','fixture'],'seed'),(['bulk-create','--count=2'],'seed'),
-         (['bulk-create'],'count'),(['bulk-create','--count=2'],'start'),
-         (['bulk-create','--count=2'],'pad'),(['jobs','show','fixture'],'lines'),
-         (['serve'],'port'),(['attach','fixture'],'port'),
-         (['warmup','fixture'],'minutes'),(['schedule','add','fixture'],'every'),
-         (['schedule','add','fixture','--every=1'],'minutes'),
-         (['schedule','set','fixture'],'every'),(['schedule','set','fixture'],'minutes'),
-         (['edit','fixture'],'notes'),(['warmup','fixture'],'site')]
-inputs=['-١٢','-1','-.5','-.٥','-١.٥','-1e2','-1.','-1_2','-','--',
-        '- value','--unknown value','-١٢\n','-١٢\r','0','+1.5',
-        '--json','--minutes=2 value','-h value']
-argvs=[]
-for prefix,option in options:
-    for text in inputs:
-        argvs.extend(([*prefix,'--'+option,text],[*prefix,'--'+option+'='+text]))
-argvs.extend([
-    ['--data-dir','-١٢','list'],['--password','- value','list'],
-    ['create','fixture','--se','-١٢'],['create','fixture','--co','-١٢'],
-    ['create','fixture','--notes','--co=two words'],
-    ['edit','fixture','--notes','-١٢','--notes','last'],
-    ['warmup','fixture','--site','-١٢','--site','-.٥'],
-    ['schedule','add','--json','fixture','--every','-.٥'],
-    ['--','edit','fixture','--notes','-١٢'],
-    ['edit','fixture','--','--notes','-١٢'],
-    ['create','--seed','-١٢','fixture','--json'],
-    ['create','fixture','--notes','--json','tail'],
-    ['--password','--','list','health'],
-    ['--data-dir','--','list','health'],
-])
-rows=[]
-for argv in argvs:
-    with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
-        try:
-            values=vars(parser.parse_args(argv));values.pop('func',None)
-            rows.append({'argv':argv,'exit':0,'values':values})
-        except SystemExit as error:
-            rows.append({'argv':argv,'exit':error.code})
-print(json.dumps(rows,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .env("PYTHONUTF8", "1");
-    let observed = capture::run(
-        &mut original,
-        capture::Limits {
-            wall: Duration::from_secs(20),
-            idle: Duration::from_secs(15),
-            bytes: 1024 * 1024,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(observed.exit, 0, "Original option token observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    // Frozen execution of the immutable source; native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/separate_option_values_match_original_token_classification.json"
+    ))?;
     assert_eq!(cases.len(), 584, "Option token observations missing");
     let mut registry = cli::registry();
     registry.build();
@@ -208,98 +84,12 @@ print(json.dumps(rows,ensure_ascii=True))
 #[test]
 fn positional_values_preserve_original_admission_and_option_boundaries()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::ownership::capture;
     use serde_json::Value;
 
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut original = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    original
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import argparse,contextlib,io,json,sys
-from pathlib import Path
-repository=Path(sys.argv[1])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.cli.parser import build_parser
-parser=build_parser()
-inputs=['-١٢','-.٥','-1','-.5','-١.٥','-١٢\n','- value','--unknown value',
-        '-','value with spaces','--json','-y value','--unknown','-1e2','-1_2','-١٢\r']
-argvs=[]
-occurrences=0
-def visit(command,path):
-    global occurrences
-    actions=[a for a in command._actions if not a.option_strings
-             and not isinstance(a,argparse._SubParsersAction)]
-    if actions:
-        required=[a.option_strings[0]+'=1' for a in command._actions
-                  if a.option_strings and a.required]
-        for index,action in enumerate(actions):
-            occurrences+=1
-            for text in inputs:
-                values=['fixture']*len(actions);values[index]=text
-                argvs.extend([path+required+values,path+required+values+['--json'],
-                              path+required+['--json']+values,
-                              path+required+['--']+values])
-    for action in command._actions:
-        if isinstance(action,argparse._SubParsersAction):
-            for name,child in action.choices.items():visit(child,path+[name])
-visit(parser,[])
-argvs.extend([
-    ['delete','-١٢','other','-y','--json'],
-    ['delete','--json','-١٢','other','-y'],
-    ['delete','-١٢','--json','other'],
-    ['pool','remove','-١٢','--json','other'],
-    ['pool','archive','-١٢','other','--restore','--json'],
-    ['pool','export','--file=-١٢','-١٢','other','--json'],
-    ['pool','export','-١٢','--file=fixture','other'],
-    ['apply','--notes=-١٢','-١٢','other','--json','-y'],
-    ['apply','-١٢','--json','other'],
-    ['apply','--json','-١٢','--','other'],
-    ['apply','--json','-١٢','--','--'],
-    ['export','-١٢','--json','--unknown value'],
-    ['folder','rename','-١٢','--json','-.٥'],
-    ['create','--seed=-١٢','-١٢','--notes=two words','--json'],
-    ['warmup','-١٢','--site=-١٢','--site=last','--json'],
-    ['show','-١٢','--json=bad'],['show','-١٢','--unknown'],
-    ['show','-١٢','--j'],['show','-١٢','--password=fixture'],
-    ['show','-١٢','-jh'],['show','-١٢','--json','--json'],
-    ['show','--','-١٢','--json'],['show','-١٢','--','--json'],
-    ['--data-dir=fixture','show','-١٢','--json'],
-    ['--','show','-١٢','--json'],['--password','--','show','-١٢'],
-    ['schedule','add','--every=-.٥','-١٢','--json'],
-])
-rows=[]
-for argv in argvs:
-    with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
-        try:
-            values=vars(parser.parse_args(argv));values.pop('func',None)
-            rows.append({'argv':argv,'exit':0,'values':values})
-        except SystemExit as error:rows.append({'argv':argv,'exit':error.code})
-print(json.dumps({'occurrences':occurrences,'rows':rows},ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .env("PYTHONUTF8", "1");
-    let observed = capture::run(
-        &mut original,
-        capture::Limits {
-            wall: Duration::from_secs(20),
-            idle: Duration::from_secs(15),
-            bytes: 2 * 1024 * 1024,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(observed.exit, 0, "Original positional observer failed");
-    let document: Value = serde_json::from_slice(&observed.stdout)?;
+    // Frozen execution of the immutable source; native assertions below remain live.
+    let document: Value = serde_json::from_str(include_str!(
+        "fixtures/characterization/positional_values_preserve_original_admission_and_option_boundaries.json"
+    ))?;
     let occurrences = document["occurrences"]
         .as_u64()
         .ok_or("Occurrences missing")?;
@@ -362,76 +152,12 @@ print(json.dumps({'occurrences':occurrences,'rows':rows},ensure_ascii=True))
 #[test]
 fn short_help_preserves_original_explicit_tail_admission() -> Result<(), Box<dyn std::error::Error>>
 {
-    use numera_core::ownership::capture;
     use serde_json::Value;
 
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut original = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    original
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import argparse,contextlib,io,json,sys
-from pathlib import Path
-repository=Path(sys.argv[1])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.cli.parser import build_parser
-parser=build_parser()
-inputs=['-h=','-h=bad','-h-','-h--help','-hh=','-hh-',
-        '-h','-hh','-h value','-hx','-hxy=','--help=bad']
-argvs=[]
-scopes=0
-def visit(command,path):
-    global scopes
-    scopes+=1
-    argvs.extend(path+[text] for text in inputs)
-    for action in command._actions:
-        if isinstance(action,argparse._SubParsersAction):
-            for name,child in action.choices.items():visit(child,path+[name])
-visit(parser,[])
-argvs.extend([
-    ['delete','-hy='],['delete','-yh='],['delete','-hyy-'],
-    ['delete','-hyy'],['delete','-yhh'],['delete','-hyx='],
-    ['show','--help','-h='],['show','-h','-h='],
-    ['show','--unknown','-h='],['show','--json=bad','-h='],
-    ['show','--password=fixture','-h='],['unknown','-h='],
-    ['--password','--','show','-h='],['--password=-h=','show','--json','fixture'],
-    ['edit','--notes=-h=','fixture','--json'],
-    ['edit','--notes','-h=','fixture'],['show','--','-h='],
-    ['--','show','-h='],['show','-١٢','-h='],
-    ['show','-١٢','-h'],['--data-dir=-h=','show','-hh'],
-])
-rows=[]
-for argv in argvs:
-    with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
-        try:
-            values=vars(parser.parse_args(argv));values.pop('func',None)
-            rows.append({'argv':argv,'exit':0,'values':values})
-        except SystemExit as error:rows.append({'argv':argv,'exit':error.code})
-print(json.dumps({'scopes':scopes,'rows':rows},ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .env("PYTHONUTF8", "1");
-    let observed = capture::run(
-        &mut original,
-        capture::Limits {
-            wall: Duration::from_secs(20),
-            idle: Duration::from_secs(15),
-            bytes: 2 * 1024 * 1024,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(observed.exit, 0, "Original short-help observer failed");
-    let document: Value = serde_json::from_slice(&observed.stdout)?;
+    // Frozen execution of the immutable source; native assertions below remain live.
+    let document: Value = serde_json::from_str(include_str!(
+        "fixtures/characterization/short_help_preserves_original_explicit_tail_admission.json"
+    ))?;
     let scopes = document["scopes"]
         .as_u64()
         .ok_or("Command scopes missing")?;
@@ -469,49 +195,9 @@ print(json.dumps({'scopes':scopes,'rows':rows},ensure_ascii=True))
 #[test]
 fn command_registry_matches_original_schemas_arguments_and_parse_views()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
-    let root = common::TempDirectory::new("cli-registry-source")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(python);
-    command
-        .args([
-            "-u",
-            "-c",
-            r#"
-import json,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from cli_registry_cases import cases,output_cases
-result=cases();result['output']=output_cases()
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-"#,
-        ])
-        .env("PYTHONUTF8", "1")
-        .env(
-            "PYTHONPATH",
-            std::env::join_paths([
-                repository.join("scripts/migration"),
-                repository.join("engine"),
-            ])?,
-        );
-    let mut source = Adapter::spawn(
-        root.path(),
-        "a",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = source.call(
-        "observe-registry",
-        Default::default(),
-        Duration::from_secs(30),
-    )?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
-    root.cleanup()?;
+    let document: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/characterization/command_registry_matches_original_schemas_arguments_and_parse_views.json"
+    ))?;
     let tools = cli::reflection::tools();
     assert!(!tools.is_empty());
     assert_eq!(serde_json::to_value(&tools)?, document["tools"]);

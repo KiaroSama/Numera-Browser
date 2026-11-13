@@ -10,16 +10,17 @@ fn metadata_discovery_uses_sdk_only_adapter_and_rejects_malformed_receipts()
 -> Result<(), Box<dyn std::error::Error>> {
     let temporary = common::TempDirectory::new("native metadata α")?;
     let root = temporary.path().to_owned();
-    let adapter = root.join("adapter.py");
+    let adapter = root.join(if cfg!(windows) {
+        "metadata-fixture.exe"
+    } else {
+        "metadata-fixture"
+    });
     let mut environment = Environment {
         app: root.clone(),
         home: root.clone(),
         cwd: root.clone(),
         host: "fixture-host".into(),
         browser: Runtime {
-            python: std::env::var_os("NUMERA_ORACLE_PYTHON")
-                .ok_or("Fixture interpreter missing")?
-                .into(),
             adapter: adapter.clone(),
             cwd: root.clone(),
             home: root.clone(),
@@ -34,14 +35,12 @@ fn metadata_discovery_uses_sdk_only_adapter_and_rejects_malformed_receipts()
             }),
         },
     };
-    let mut host = std::process::Command::new(&environment.browser.python);
-    host.args([
-        "-I",
-        "-c",
-        "import platform,sys; sys.stdout.buffer.write(platform.node().encode('utf-8'))",
-    ])
-    .env_remove("COMPUTERNAME")
-    .env_remove("HOSTNAME");
+    let mut host = std::process::Command::new(if cfg!(windows) {
+        "hostname.exe"
+    } else {
+        "hostname"
+    });
+    host.env_remove("COMPUTERNAME").env_remove("HOSTNAME");
     let source = numera_core::ownership::capture::run(
         &mut host,
         numera_core::ownership::capture::Limits {
@@ -52,25 +51,62 @@ fn metadata_discovery_uses_sdk_only_adapter_and_rejects_malformed_receipts()
         },
     )?;
     assert_eq!(source.exit, 0);
-    assert_eq!(numera_core::native_host::name()?.as_bytes(), source.stdout);
+    assert_eq!(
+        numera_core::native_host::name()?,
+        String::from_utf8(source.stdout)?.trim()
+    );
     let absent = environment.installed()?;
     assert_eq!(absent.len(), 4);
     assert!(absent.values().all(|present| !present));
+    let fixture_source = root.join("metadata_fixture.rs");
     fs::write(
-        &adapter,
+        &fixture_source,
         r#"
-import os
-assert 'NUMERA_PASSWORD' not in os.environ
-assert 'NUMERA_API_TOKEN' not in os.environ
-def available():
-    return {name: {'installed': name == 'playwright'} for name in ('playwright','patchright','camoufox','cloak')}
-def main():
-    raise AssertionError('Application or browser was launched by metadata')
+use std::io::{self, Write, Read};
+fn main() -> io::Result<()> {
+    assert_eq!(std::env::args().skip(1).collect::<Vec<_>>(), ["--metadata"]);
+    assert!(std::env::var_os("NUMERA_PASSWORD").is_none());
+    assert!(std::env::var_os("NUMERA_API_TOKEN").is_none());
+    let config = std::env::current_exe()?.with_extension("json");
+    let mut bytes = Vec::new();
+    std::fs::File::open(config)?.take(65537).read_to_end(&mut bytes)?;
+    assert!(bytes.len() <= 65536);
+    io::stdout().write_all(&bytes)
+}
 "#,
     )?;
+    let mut compile =
+        std::process::Command::new(std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into()));
+    compile
+        .args([
+            "--edition=2024",
+            "-Cdebuginfo=0",
+            "--crate-name=numera_metadata_fixture",
+        ])
+        .arg(&fixture_source)
+        .arg("-o")
+        .arg(&adapter);
+    let compiled = numera_core::ownership::capture::run(
+        &mut compile,
+        numera_core::ownership::capture::Limits {
+            wall: std::time::Duration::from_secs(30),
+            idle: std::time::Duration::from_secs(20),
+            bytes: 65536,
+            cleanup: std::time::Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        compiled.exit,
+        0,
+        "Metadata fixture compilation failed: {}",
+        String::from_utf8_lossy(&compiled.stderr)
+    );
+    let receipt = adapter.with_extension("json");
+    fs::write(&receipt, br#"{"backends":{"playwright":{"installed":true},"patchright":{"installed":false},"camoufox":{"installed":false},"cloak":{"installed":false}},"default_addons":["UBO"]}"#)?;
     let installed = environment.installed()?;
     assert!(installed["playwright"]);
     assert!(!installed["camoufox"]);
+    assert!(!environment.metadata(true)?["camoufox"]);
     assert!(
         !root.join("__pycache__").exists(),
         "SDK metadata wrote bytecode into runtime inputs"
@@ -84,17 +120,7 @@ def main():
             .default_addons
             .is_empty()
     );
-    fs::write(
-        &adapter,
-        r#"
-import enum,sys,types
-addons=types.ModuleType('camoufox.addons')
-addons.DefaultAddons=enum.Enum('DefaultAddons', ['UBO','FIXTURE'])
-sys.modules['camoufox.addons']=addons
-def available():
-    return {name: {'installed': name == 'camoufox'} for name in ('playwright','patchright','camoufox','cloak')}
-"#,
-    )?;
+    fs::write(&receipt, br#"{"backends":{"playwright":{"installed":false},"patchright":{"installed":false},"camoufox":{"installed":true},"cloak":{"installed":false}},"default_addons":["UBO","FIXTURE"]}"#)?;
     assert!(environment.installed()?["camoufox"]);
     assert!(
         environment
@@ -116,8 +142,8 @@ def available():
         ["UBO", "FIXTURE"]
     );
     fs::write(
-        &adapter,
-        "def available():\n return {'playwright': {'installed': 'not-a-boolean'}}\n",
+        &receipt,
+        br#"{"backends":{"playwright":{"installed":"not-a-boolean"}}}"#,
     )?;
     let failure = environment
         .installed()

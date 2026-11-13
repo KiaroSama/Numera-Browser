@@ -1,0 +1,18 @@
+[package]
+name = "numera-lifecycle-tests"
+version = "0.36.0"
+edition = "2021"
+publish = false
+license-file = "../../../LICENSE"
+
+# This harness compiles the production lifecycle source and its original tests
+# without linking the WebKit/GTK desktop stack. Only the two Tauri/update APIs
+# outside the tested lifecycle behavior are inert type stubs.
+[dependencies]
+libc = "0.2.191"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+  "Win32_Foundation", "Win32_System_JobObjects", "Win32_System_Threading",
+  "Win32_Security", "Win32_Storage_FileSystem",
+] }

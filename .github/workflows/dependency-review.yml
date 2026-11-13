@@ -1,6 +1,5 @@
 name: Dependency verification
 
-# Called once by full CI; npm's lockfile audit lives in dashboard.yml.
 on:
   workflow_call:
   workflow_dispatch:
@@ -11,14 +10,14 @@ permissions:
 jobs:
   review:
     name: Public pull-request dependency delta
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
-    if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && github.event.repository.private == false
+    if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && github.event.repository.private == false
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
         with:
           fail-on-severity: high
           comment-summary-in-pr: never
@@ -26,33 +25,31 @@ jobs:
           head-ref: ${{ github.sha }}
 
   audit:
-    name: Python and Cargo advisory gates
-    runs-on: ubuntu-latest
+    name: Every authoritative Rust advisory gate
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
-      PYTHONUTF8: "1"
-      HOOKMAKER_MAX_TEST_WORKERS: "2"
       CARGO_BUILD_JOBS: "2"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.14"
-      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
           toolchain: 1.99.1
-      - name: Install actual engine extras and the strict audit tool
-        run: python scripts/migration/run_owned.py --wall 300 --idle 90 -- python -m pip install "./engine[api,launch,secure,desktop,dev]" pip-audit==2.10.1
-      - name: Pin all resolved third-party inputs, excluding only the unpublished local distribution
-        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/ci/suites.py audit-requirements --destination build/audit/python-requirements.txt
-      - name: Audit every resolved Python dependency without waiving collection failures
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python -m pip_audit --strict --no-deps --disable-pip --requirement build/audit/python-requirements.txt --progress-spinner=off --timeout=15
-      - name: Install the verified stable Cargo advisory tool
-        run: python scripts/migration/run_owned.py --wall 900 --idle 300 -- cargo install cargo-audit --version 0.22.2 --locked
-      - name: Audit every authoritative Cargo lockfile
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: tools/xtask
+      - name: Install the pinned native advisory tool
+        run: cargo install cargo-audit --version 0.22.2 --locked
+      - name: Compile bounded verification tooling
+        run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Audit all product, UI, desktop and tooling lockfiles
         run: |
-          python scripts/migration/run_owned.py --wall 180 --idle 90 -- cargo audit --file engine-rust/Cargo.lock
-          python scripts/migration/run_owned.py --wall 180 --idle 90 -- cargo audit --file desktop/src-tauri/Cargo.lock
-          python scripts/migration/run_owned.py --wall 180 --idle 90 -- cargo audit --file tools/xtask/Cargo.lock
+          cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file engine-rust/Cargo.lock
+          cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file dashboard/Cargo.lock
+          cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file desktop/src-tauri/Cargo.lock
+          cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file tools/xtask/Cargo.lock
+          cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file tools/xtask/lifecycle-tests/Cargo.lock

@@ -224,7 +224,7 @@ impl JobStore {
     ) -> Result<Value, SpawnFailure> {
         reap_completed()?;
         check_cancelled(&mut cancelled)?;
-        if !cfg!(any(windows, target_os = "linux")) {
+        if !cfg!(any(windows, target_os = "linux", target_os = "macos")) {
             return Err(unsupported().into());
         }
         let executable = options.executable.canonicalize()?;
@@ -297,10 +297,12 @@ impl JobStore {
         #[cfg(windows)]
         {
             use std::os::windows::process::CommandExt;
-            // Breakaway denial is an explicit refusal, never an unowned fallback.
-            command.creation_flags(0x0100_0000 | 0x0000_0008);
+            // Windows 8+ supports nested Jobs. Inherit the caller's outer Job
+            // so desktop/CI shutdown still owns the supervisor; its command
+            // gets a separate nested Job below. No breakaway or unowned retry.
+            command.creation_flags(0x0000_0008 | 0x0000_0200);
         }
-        #[cfg(target_os = "linux")]
+        #[cfg(unix)]
         {
             use std::os::unix::process::CommandExt;
             command.process_group(0);

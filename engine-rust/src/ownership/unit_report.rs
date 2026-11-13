@@ -160,9 +160,18 @@ pub fn read(path: &Path) -> io::Result<Report> {
     read_scoped(path, None)
 }
 pub fn read_scoped(path: &Path, scope: Option<&str>) -> io::Result<Report> {
+    read_scoped_deadline(path, scope, None)
+}
+fn read_scoped_deadline(
+    path: &Path,
+    scope: Option<&str>,
+    deadline: Option<Instant>,
+) -> io::Result<Report> {
     let path = validate(path)?;
     let lock = DataLock::for_file(&path)?;
-    let _guard = lock.acquire(Duration::from_secs(5))?;
+    let _guard = lock.acquire(deadline.map_or(Duration::from_secs(5), |deadline| {
+        deadline.saturating_duration_since(Instant::now())
+    }))?;
     let mut bytes = Vec::new();
     fs::File::open(&path)?
         .take(LIMIT + 1)
@@ -275,7 +284,14 @@ pub fn empty(path: &Path) -> io::Result<bool> {
     empty_scoped(path, None)
 }
 pub fn empty_scoped(path: &Path, scope: Option<&str>) -> io::Result<bool> {
-    let report = read_scoped(path, scope)?;
+    empty_scoped_deadline(path, scope, None)
+}
+fn empty_scoped_deadline(
+    path: &Path,
+    scope: Option<&str>,
+    deadline: Option<Instant>,
+) -> io::Result<bool> {
+    let report = read_scoped_deadline(path, scope, deadline)?;
     if !report.complete {
         return Ok(false);
     }
@@ -290,16 +306,48 @@ pub fn settle(path: &Path, budget: Duration) -> io::Result<bool> {
     settle_scoped(path, budget, None)
 }
 pub fn settle_scoped(path: &Path, budget: Duration, scope: Option<&str>) -> io::Result<bool> {
+    settle_with(path, budget, scope, super::recorded_tree::settle)
+}
+/// Stop every known owned unit, then reread the receipt. A producer's cleanup
+/// can publish a separately grouped SDK; its late record remains part of this
+/// same bounded proof. Damaged/pending unchanged evidence is never retried into
+/// a fabricated empty success.
+pub fn settle_with(
+    path: &Path,
+    budget: Duration,
+    scope: Option<&str>,
+    mut settle: impl FnMut(&Value, Duration) -> io::Result<bool>,
+) -> io::Result<bool> {
     let end = Instant::now()
         .checked_add(budget)
         .ok_or_else(|| io::Error::other("Invalid ownership cleanup budget"))?;
-    let report = read_scoped(path, scope)?;
-    for tree in report.trees {
-        if !super::recorded_tree::settle(&tree, end.saturating_duration_since(Instant::now()))? {
+    let mut report = read_scoped_deadline(path, scope, Some(end))?;
+    loop {
+        if Instant::now() >= end {
             return Ok(false);
         }
+        for tree in &report.trees {
+            if !settle(tree, end.saturating_duration_since(Instant::now()))? {
+                return Ok(false);
+            }
+        }
+        let latest = read_scoped_deadline(path, scope, Some(end))?;
+        if latest.trees != report.trees {
+            report = latest;
+            continue;
+        }
+        if !latest.complete {
+            return Ok(false);
+        }
+        if empty_scoped_deadline(path, scope, Some(end))? {
+            return Ok(true);
+        }
+        let reread = read_scoped_deadline(path, scope, Some(end))?;
+        if reread.trees == latest.trees {
+            return Ok(false);
+        }
+        report = reread;
     }
-    empty_scoped(path, scope)
 }
 
 #[cfg(test)]

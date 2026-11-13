@@ -80,7 +80,7 @@ pub fn build(
     if !["playwright", "patchright", "camoufox", "cloak"].contains(&backend) {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
-            "Unknown browser backend",
+            "Unknown engine",
         ));
     }
     let proxy = match &profile.proxy {

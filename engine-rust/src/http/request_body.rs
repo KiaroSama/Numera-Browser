@@ -51,7 +51,7 @@ async fn extract_object<S: Send + Sync>(
         Value::Null
     } else if json_media {
         let text = super::json_encoding::decode(&bytes).map_err(|_| parsing_failure())?;
-        serde_json::from_str(&text).map_err(|_| invalid_json(&text))?
+        super::json_extended::parse(&text).map_err(|_| invalid_json(&text))?
     } else {
         let text = std::str::from_utf8(&bytes).map_err(|_| parsing_failure())?;
         return Err(Box::new(invalid_dictionary(Value::String(text.to_owned()))));

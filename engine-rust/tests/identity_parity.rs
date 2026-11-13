@@ -3,70 +3,49 @@ use numera_core::{
     identity::{self, headers, metadata, validate},
     identity_script,
     models::Fingerprint,
-    ownership::capture,
 };
 use serde_json::{Value, json};
-use std::{path::Path, process::Command, time::Duration};
-mod common;
 
 #[test]
 fn shared_identity_helpers_match_original_versions_platforms_and_consumers()
 -> Result<(), Box<dyn std::error::Error>> {
-    let temporary = common::TempDirectory::new("shared-identity-helpers")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import copy,json,os,sys
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-os.environ.pop('NUMERA_PASSWORD',None)
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import fingerprint as identity
-from numera.models import Fingerprint
-from numera.stealth import build_init_script
-from run_logging import run_log
-base=json.loads((repository/'engine-rust/tests/fixtures/identity.json').read_text(encoding='utf-8'))['cases'][0]['input']
-versions=['','128','128.1','128.1.2','128.1.2.3','128.1.2.3.4','.','...','.1.2.3','128.','00128.01.02.03','alpha.beta', ' v128 ', '128"quoted']
-rows=[]
-with run_log('shared-identity-helpers-oracle',parent/'logs') as log:
-    variants=[]
-    for system in ('windows','macos','linux','android','ios','iOS','unknown'):
-        for version in versions:
-            variants.append({**base,'os':system,'chrome_version':version})
-    for system in ('windows','macos','android','ios','unknown'):
-        for renderer in ('Apple M3','apple m3','Intel',''):
-            variants.append({**base,'os':system,'webgl_renderer':renderer,'ch_platform':'""','os_version':'unknown-release','device_model':'custom model','is_mobile':True})
-    for platform in ('','"','"""Windows""',' "Linux" ', 'custom platform'):
-        variants.append({**base,'ch_platform':platform})
-    for record in variants:
-        before=copy.deepcopy(record);fp=Fingerprint.from_dict(record)
-        script=build_init_script(fp)
-        config=json.loads(script.split('  const cfg = ',1)[1].split(';\n',1)[0])
-        rows.append({'input':record,'brands':identity.ua_brands(fp),'header':identity.sec_ch_ua(fp),
-                     'sends':identity.sends_client_hints(fp),'full':identity._full_version(fp),
-                     'metadata':identity.ua_metadata(fp),'headers':identity.client_hint_headers(fp),
-                     'config':config})
-        assert record==before,'Original identity helpers changed input'
-    log.info('Observed shared identity cases=%s',len(rows))
-    print(json.dumps(rows,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("source")).env("PYTHONUTF8", "1");
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 1048576,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(original.exit, 0, "Original identity helper observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    use sha2::Digest;
+    let manifest: Value =
+        serde_json::from_str(include_str!("fixtures/characterization/manifest.json"))?;
+    let mut names = std::collections::BTreeSet::new();
+    for row in manifest["cases"]
+        .as_array()
+        .ok_or("Characterization manifest missing")?
+    {
+        let name = row["fixture"]
+            .as_str()
+            .ok_or("Characterization fixture name missing")?;
+        assert!(name.ends_with(".json") && !name.contains(['/', '\\']) && names.insert(name));
+        let bytes = std::fs::read(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures/characterization")
+                .join(name),
+        )?;
+        let digest: String = sha2::Sha256::digest(bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        assert_eq!(
+            digest, row["fixture_sha256"],
+            "Frozen source observation bytes changed: {name}"
+        );
+        assert!(matches!(
+            row["source_commit"].as_str(),
+            Some(
+                "13b6d9c6973281fe123353eaec05b29d65781a2d"
+                    | "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd"
+            )
+        ));
+    }
+    // Frozen execution of the immutable source; native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/shared_identity_helpers_match_original_versions_platforms_and_consumers.json"
+    ))?;
     assert_eq!(cases.len(), 123, "Shared identity observations missing");
     for (index, case) in cases.iter().enumerate() {
         let input = case["input"].clone();
@@ -134,7 +113,6 @@ with run_log('shared-identity-helpers-oracle',parent/'logs') as log:
             "Native identity input changed: {index}"
         );
     }
-    temporary.cleanup()?;
     Ok(())
 }
 

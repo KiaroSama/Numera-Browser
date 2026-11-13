@@ -2,114 +2,20 @@ use numera_core::{
     cli::{self, profile_commands::Profiles},
     fingerprint::{GenerateOptions, generate},
     models::Profile,
-    ownership::capture,
     storage::{config::ConfigStore, repo::ProfileRepo},
 };
 use serde_json::{Number, Value, json};
-use std::{collections::BTreeMap, fs, path::Path, process::Command, time::Duration};
+use std::{collections::BTreeMap, fs};
 mod common;
 
 #[test]
 fn complete_integer_seed_identities_and_commands_match_original()
 -> Result<(), Box<dyn std::error::Error>> {
     let temporary = common::TempDirectory::new("integer-seed")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import contextlib,copy,io,json,sys
-from pathlib import Path
-from unittest.mock import patch
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.fingerprint import generate
-from numera.models import Profile
-from numera.store import ProfileStore
-from numera.cli import profiles as handlers
-from numera.cli.parser import build_parser
-from numera.cli.out import set_json_mode
-from numera.write_contract import WriteRefused
-from numera.convert import to_dashboard_profile,to_engine_profile
-from numera.collision import find_collisions
-from numera.stealth import build_init_script
-from run_logging import run_log
-seeds=[0,1,-1,2**32-1,2**32,2**53,2**53+1,2**63-1,2**63,
-       -2**63-1,2**64,2**200+2**97+17,-(2**200+2**97+17)]
-with run_log('integer-seed-oracle',root/'logs') as log:
-    rows=[]
-    parser=build_parser()
-    for index,seed in enumerate(seeds):
-        for verb in ('bulk-create','create'):
-            store=ProfileStore(root/f'{index}-{verb}')
-            config=store.root/'config.json'
-            config.write_text('{"default_engine":"camoufox","extra":{"keep":true}}',encoding='utf-8')
-            before=config.read_bytes()
-            argv=([verb,'Fixture'] if verb=='create' else [verb,'--count','2'])
-            argv+=['--seed',str(seed),'--os','windows','--locale','en-US','--engine','playwright','--json']
-            args=parser.parse_args(argv)
-            ids=iter(('fixture0','fixture1'))
-            def profile(**kwargs):
-                return Profile(**kwargs,id=next(ids),created_at=1000.0,updated_at=1000.0)
-            stream=io.StringIO()
-            set_json_mode(True)
-            error=None
-            code=None
-            with contextlib.redirect_stdout(stream),patch.object(handlers,'Profile',side_effect=profile), \
-                    patch('numera.bulk.Profile',side_effect=profile), \
-                    patch('numera.drivers.is_installed',return_value=True),patch('time.time',return_value=1000.0):
-                try:
-                    code=args.func(args,store)
-                except WriteRefused as refused:
-                    error={'type':type(refused).__name__,'message':str(refused)}
-            records={kind:[json.loads(path.read_text(encoding='utf-8'))
-                           for path in sorted((store.root/kind).glob('*.json'))]
-                     for kind in ('profiles','dashboard')}
-            rows.append({'argv':argv,'exit':code,'error':error,
-                         'payload':json.loads(stream.getvalue()) if stream.getvalue() else None,
-                         'records':records,'config':json.loads(config.read_text(encoding='utf-8')),
-                         'configUnchanged':config.read_bytes()==before})
-    # This limit change is observer transport only, AFTER all real CLI parsing.
-    # The >624-word case exercises pure generation, not the CLI's digit limit.
-    sys.set_int_max_str_digits(0)
-    identities=[]
-    for seed in seeds+[2**20000+42]:
-        fp=generate(seed=seed,os='windows',locale='en-US')
-        profile=Profile(id='fixture0',name='Fixture',fingerprint=fp,created_at=1000.0,updated_at=1000.0)
-        twin=copy.deepcopy(profile)
-        twin.id='fixture1'
-        twin.fingerprint.seed=seed+1
-        same=copy.deepcopy(profile)
-        same.id='fixture1'
-        dash=to_dashboard_profile(profile)
-        script=build_init_script(fp)
-        encoded=script.split('  const cfg = ',1)[1].split(';\n',1)[0]
-        with patch('numera.convert.Profile',side_effect=lambda **kwargs: Profile(
-                **kwargs,created_at=1000.0,updated_at=1000.0)):
-            converted=to_engine_profile(dash).to_dict()
-        identities.append({'seed':seed,'fingerprint':fp.to_dict(),'profile':profile.to_dict(),
-                           'dashboard':dash,'converted':converted,
-                           'config':json.loads(encoded),'collisions':find_collisions([profile,twin]),
-                           'identical':find_collisions([profile,same])})
-    log.info('Observed integer identities=%s commands=%s',len(identities),len(rows))
-    print(json.dumps({'identities':identities,'commands':rows},ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("original"))
-        .env("PYTHONUTF8", "1");
-    let observed = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 1_048_576,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(observed.exit, 0, "Original integer-seed observer failed");
-    let document: Value = serde_json::from_slice(&observed.stdout)?;
+    // Frozen execution of the immutable source; native assertions below remain live.
+    let document: Value = serde_json::from_str(include_str!(
+        "fixtures/characterization/complete_integer_seed_identities_and_commands_match_original.json"
+    ))?;
     let installed = BTreeMap::from([("playwright".into(), true)]);
     let mut registry = cli::registry();
     registry.build();

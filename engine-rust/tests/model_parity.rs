@@ -42,78 +42,14 @@ fn models_and_proxy_intent_match_source_oracle() -> Result<(), Box<dyn std::erro
 #[test]
 fn optional_proxy_reads_match_original_without_rewriting_storage()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::{ownership::capture, storage::repo::ProfileRepo};
-    use std::{fs, path::Path, process::Command, time::Duration};
+    use numera_core::storage::repo::ProfileRepo;
+    use std::fs;
 
     let temporary = common::TempDirectory::new("optional proxy α")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Source interpreter required")?,
-    );
-    command
-        .args([
-            "-I",
-            "-c",
-            r#"
-import json,sys
-from pathlib import Path
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.fingerprint import generate
-from numera.models import Profile
-from numera.store import ProfileStore
-from run_logging import run_log
-with run_log('optional-proxy-oracle',root/'logs') as log:
-    variants=[('missing',None),('null',None),('false',False),('integer-zero',0),
-              ('float-zero',0.0),('negative-zero',-0.0),('empty-string',''),
-              ('empty-list',[]),('empty-map',{}),
-              ('valid',{'server':'http://127.0.0.1:8080'}),
-              ('true',True),('nonzero',1),('text','invalid'),
-              ('nonempty-list',[0]),('invalid-map',{'unexpected':True})]
-    fingerprint=generate(seed=42,os='windows').to_dict()
-    store=ProfileStore(root)
-    observed=[]
-    for index,(name,proxy) in enumerate(variants):
-        record={'id':f'fixture{index:02d}','name':name,'fingerprint':fingerprint,
-                'created_at':1700000000.0,'updated_at':1700000001.0}
-        if name!='missing':
-            record['proxy']=proxy
-        path=root/'profiles'/f"{record['id']}.json"
-        path.write_text(json.dumps(record,ensure_ascii=True),encoding='utf-8')
-        before=path.read_bytes()
-        row={'name':name,'input':record}
-        for key,read in [('model',lambda:Profile.from_dict(record)),
-                         ('stored',lambda:store.get(record['id']))]:
-            try:
-                row[key]=read().to_dict()
-                row[key+'_error']=False
-            except (TypeError,AttributeError):
-                row[key]=None
-                row[key+'_error']=True
-        row['unchanged']=path.read_bytes()==before
-        observed.append(row)
-    log.info('Observed optional proxy cases=%s',len(observed))
-    print(json.dumps(observed,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .arg(temporary.path().join("original"))
-        .env("PYTHONUTF8", "1");
-    let captured = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 131072,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(captured.exit, 0, "Original optional-proxy observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&captured.stdout)?;
+    // Immutable original observation; native operations and full assertions remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/native-storage-characterization/optional_proxy_reads_match_original_without_rewriting_storage.json"
+    ))?;
     assert_eq!(cases.len(), 15, "Original proxy observations missing");
     let root = temporary.path().join("native");
     fs::create_dir_all(root.join("profiles"))?;

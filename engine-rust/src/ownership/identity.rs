@@ -2,11 +2,29 @@
 use std::io;
 
 #[cfg(target_os = "macos")]
-pub use super::macos::{alive, started_at};
+pub fn started_at(pid: u32) -> std::io::Result<Option<u64>> {
+    #[cfg(feature = "test-support")]
+    if let Some(result) = super::test_support::birth(pid) {
+        return result;
+    }
+    super::macos::started_at(pid)
+}
+#[cfg(target_os = "macos")]
+pub fn alive(pid: u32, token: Option<u64>) -> std::io::Result<bool> {
+    #[cfg(feature = "test-support")]
+    if let Some(result) = super::test_support::alive(pid, token) {
+        return result;
+    }
+    super::macos::alive(pid, token)
+}
 
 /// None means absent; an error is unknown, never authority to signal a PID.
 #[cfg(target_os = "linux")]
 pub fn started_at(pid: u32) -> io::Result<Option<u64>> {
+    #[cfg(feature = "test-support")]
+    if let Some(result) = super::test_support::birth(pid) {
+        return result;
+    }
     let text = match std::fs::read_to_string(format!("/proc/{pid}/stat")) {
         Ok(value) => value,
         Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(None),
@@ -27,6 +45,10 @@ pub fn started_at(pid: u32) -> io::Result<Option<u64>> {
 #[cfg(windows)]
 #[allow(unsafe_code)]
 pub fn started_at(pid: u32) -> io::Result<Option<u64>> {
+    #[cfg(feature = "test-support")]
+    if let Some(result) = super::test_support::birth(pid) {
+        return result;
+    }
     use windows_sys::Win32::{
         Foundation::{CloseHandle, ERROR_INVALID_PARAMETER, FILETIME},
         System::Threading::{GetProcessTimes, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION},
@@ -67,6 +89,10 @@ pub fn started_at(pid: u32) -> io::Result<Option<u64>> {
 #[cfg(windows)]
 #[allow(unsafe_code)]
 pub fn alive(pid: u32, token: Option<u64>) -> io::Result<bool> {
+    #[cfg(feature = "test-support")]
+    if let Some(result) = super::test_support::alive(pid, token) {
+        return result;
+    }
     use windows_sys::Win32::{
         Foundation::{
             CloseHandle, ERROR_INVALID_PARAMETER, FILETIME, WAIT_FAILED, WAIT_OBJECT_0,
@@ -135,6 +161,10 @@ pub fn alive(pid: u32, token: Option<u64>) -> io::Result<bool> {
 #[cfg(target_os = "linux")]
 #[allow(unsafe_code)]
 pub fn alive(pid: u32, token: Option<u64>) -> io::Result<bool> {
+    #[cfg(feature = "test-support")]
+    if let Some(result) = super::test_support::alive(pid, token) {
+        return result;
+    }
     if pid == 0 {
         return Ok(false);
     }

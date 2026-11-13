@@ -18,6 +18,19 @@ pub struct PreparedLaunch<'a> {
     pub binary_options: Map<String, Value>,
 }
 
+fn failed_startup(adapter: &mut Adapter, error: io::Error) -> StartupFailed {
+    match adapter.finish(Duration::from_secs(10)) {
+        Ok(()) => StartupFailed {
+            kind: "failed".into(),
+            message: error.to_string(),
+        },
+        Err(cleanup) => StartupFailed {
+            kind: "unsettled".into(),
+            message: format!("{error}; browser startup cleanup failed: {cleanup}"),
+        },
+    }
+}
+
 /// Compose native decisions after admission. Network/resource discovery must
 /// supply actual observations, never move into the SDK adapter as fallbacks.
 pub fn open(
@@ -51,20 +64,10 @@ pub fn open(
     } else {
         extensions::paths(&profile.extensions, launch.cwd, launch.home).map_err(failure)?
     };
-    let relay = if launch.relay.is_none()
-        && profile.proxy.as_ref().is_some_and(|proxy| {
-            let options = proxy.to_playwright();
-            options.get("username").is_some() || options.get("password").is_some()
-        }) {
-        Some(
-            crate::network::relay::Relay::start(
-                profile
-                    .proxy
-                    .as_ref()
-                    .ok_or_else(|| failure(io::Error::other("Proxy vanished")))?,
-            )
-            .map_err(failure)?,
-        )
+    let relay = if launch.relay.is_none() {
+        crate::network::relay::proxy_transport(profile.proxy.as_ref())
+            .map_err(failure)?
+            .1
     } else {
         None
     };
@@ -132,12 +135,10 @@ pub fn open(
         policy,
         Duration::from_secs(90),
     ) {
-        adapter.finish(Duration::from_secs(10)).map_err(failure)?;
-        return Err(failure(error));
+        return Err(failed_startup(&mut adapter, error));
     }
     if let Err(error) = startup::navigate(&mut adapter, &profile.startup_urls) {
-        adapter.finish(Duration::from_secs(10)).map_err(failure)?;
-        return Err(failure(error));
+        return Err(failed_startup(&mut adapter, error));
     }
     Ok(adapter)
 }

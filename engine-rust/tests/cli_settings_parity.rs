@@ -1,47 +1,21 @@
-use numera_core::{
-    browser::adapter::Adapter,
-    cli::{self, application::Application},
-};
+use numera_core::cli::{self, application::Application};
 use serde_json::{Value, json};
-use std::{collections::BTreeMap, path::Path, process::Command, time::Duration};
+use std::{collections::BTreeMap, path::Path, time::Duration};
+#[path = "cli_characterization/mod.rs"]
+mod cli_characterization;
 mod common;
+#[path = "cli_settings_parity/named_home.rs"]
+mod named_home;
 #[path = "cli_settings_parity/strict_settings.rs"]
 mod strict_settings;
 
 #[test]
 fn settings_folder_token_and_schedule_services_match_original_verdicts()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("cli-settings-parity")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(python);
-    command.args(["-u","-c",r#"
-import json,os,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from cli_settings_cases import cases,human_cases
-from cli_automation_output_cases import cases as automation_output
-from cli_extension_output_cases import cases as extension_output
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(os.environ['FIXTURE_ROOT']),'human':human_cases(os.environ['FIXTURE_ROOT']),'automation':automation_output(os.environ['FIXTURE_ROOT']),'extensions':extension_output(os.path.join(os.environ['FIXTURE_ROOT'],'human-extensions'))}}),flush=True)
-"#]).env("PYTHONUTF8","1").env("FIXTURE_ROOT",temporary.path().join("source"))
-        .env("PYTHONPATH",std::env::join_paths([repository.join("scripts/migration"),repository.join("engine")])?);
-    let mut source = Adapter::spawn(
-        temporary.path(),
-        "oracle",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = source.call(
-        "observe-settings-cli",
-        Default::default(),
-        Duration::from_secs(30),
-    )?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
+    let document =
+        cli_characterization::load("cli_settings_parity", &temporary.path().join("source"))?;
+
     let root = temporary.path().join("native");
     let repo = cli::application::open_store(&root, &serde_json::Map::new(), None)?;
     let fingerprint =
@@ -311,6 +285,7 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
         assert!(stderr.is_empty());
         assert!(sessions.shutdown(Duration::from_secs(5)).is_empty());
     }
+    named_home::check(&temporary.path().join("named-home-control"))?;
     temporary.cleanup()?;
     Ok(())
 }

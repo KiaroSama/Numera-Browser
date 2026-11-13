@@ -5,7 +5,6 @@ use std::sync::{atomic::Ordering, mpsc};
 #[test]
 fn background_stop_timeout_retains_worker_then_settles_only_its_schedule()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("background-browser")?;
     let root = temporary.path();
     let repo = crate::storage::repo::ProfileRepo::new(root.into(), None);
@@ -33,21 +32,10 @@ fn background_stop_timeout_retains_worker_then_settles_only_its_schedule()
         Kind::ScheduledWarmup,
         Some(first_id.into()),
         |session, _| {
-            let mut command = Command::new(&python);
-            command
-                .args([
-                    "-u",
-                    "-c",
-                    r#"
-import json,sys
-for line in sys.stdin:
-    request=json.loads(line)
-    result={'closing':True} if request['operation']=='close' else {}
-    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-    if request['operation']=='close': break
-"#,
-                ])
-                .env("PYTHONUTF8", "1");
+            let mut command = ownership_process::command("rpc").map_err(|error| StartupFailed {
+                kind: "failed".into(),
+                message: error.to_string(),
+            })?;
             Adapter::spawn_admitted(session, &mut command, Duration::from_secs(5)).map_err(
                 |error| StartupFailed {
                     kind: "failed".into(),
@@ -124,7 +112,6 @@ for line in sys.stdin:
 #[test]
 fn scheduled_commit_failure_settles_same_owner_under_its_admission_decision()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("background-commit")?;
     let root = temporary.path();
     let repo = crate::storage::repo::ProfileRepo::new(root.into(), None);
@@ -147,21 +134,10 @@ fn scheduled_commit_failure_settles_same_owner_under_its_admission_decision()
             schedule: Some("schedule".into()),
         },
         |session, _| {
-            let mut command = Command::new(&python);
-            command
-                .args([
-                    "-u",
-                    "-c",
-                    r#"
-import json,sys
-for line in sys.stdin:
-    request=json.loads(line)
-    result={'closing':True} if request['operation']=='close' else {}
-    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-    if request['operation']=='close': break
-"#,
-                ])
-                .env("PYTHONUTF8", "1");
+            let mut command = ownership_process::command("rpc").map_err(|error| StartupFailed {
+                kind: "failed".into(),
+                message: error.to_string(),
+            })?;
             Adapter::spawn_admitted(session, &mut command, Duration::from_secs(5)).map_err(
                 |error| StartupFailed {
                     kind: "failed".into(),
@@ -209,3 +185,7 @@ for line in sys.stdin:
     temporary.cleanup()?;
     Ok(())
 }
+
+use crate as core;
+#[path = "../../tests/common/ownership_process.rs"]
+mod ownership_process;

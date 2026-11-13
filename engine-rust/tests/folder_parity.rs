@@ -13,64 +13,10 @@ fn json_filename_selection_matches_original_storage_consumers()
     use std::{path::Path, process::Command, time::Duration};
 
     let temporary = common::TempDirectory::new("json-filename-selection")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import json,os,sys
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-os.environ.pop('NUMERA_PASSWORD',None)
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import folders,firstrun
-from numera.store import ProfileStore
-from numera.server.stores import DashboardStore
-from numera.vault_recovery import completion_problems
-from run_logging import run_log
-names=['.json','a.json','b.JSON','c.JsOn','.hidden.json','double.json.json',
-       'near.jsonx','nojson','not.json.bak','long.j'+chr(0x17f)+'on']
-descriptor=json.loads((repository/'engine-rust/tests/fixtures/completion.json').read_text(encoding='utf-8'))['cases'][1]['descriptor']
-rows=[]
-with run_log('json-filename-oracle',parent/'logs') as log:
-    for operation in ['folders','rename','dashboard','first-run','completion']:
-        for name in names:
-            root=parent/str(len(rows))
-            root.mkdir(parents=True)
-            record={'id':'fixture','name':'fixture','folder':'source','_created':1,'future':['α',True]}
-            if operation=='completion':record['proxy']={'pass':'plain-fixture'}
-            inputs={'dashboard/'+name:json.dumps(record,ensure_ascii=True).encode('utf-8')}
-            if operation=='first-run':inputs={'profiles/'+name:b'{}'}
-            for relative,raw in inputs.items():
-                path=root/relative;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(raw)
-            if operation=='folders':result=folders.listing(root)
-            elif operation=='rename':result=folders.rename(root,'source','target')
-            elif operation=='dashboard':result=DashboardStore(root,ProfileStore(root)).list()
-            elif operation=='first-run':result=firstrun.import_from(root,root/'destination')['profiles']
-            else:result=[p._asdict() for p in completion_problems(root,descriptor,None)]
-            after={relative:(root/relative).read_bytes() for relative in inputs}
-            rows.append({'operation':operation,'filename':name,
-                         'inputs':{relative:list(raw) for relative,raw in inputs.items()},
-                         'result':result,'after':{relative:json.loads(raw) for relative,raw in after.items()},
-                         'unchanged':{relative:raw==inputs[relative] for relative,raw in after.items()}})
-    log.info('Observed JSON filename selection cases=%s',len(rows))
-    print(json.dumps({'descriptor':descriptor,'cases':rows},ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("source"));
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 131072,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(original.exit, 0, "Original filename observer failed");
-    let observed: Value = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let observed: Value = serde_json::from_str(include_str!(
+        "fixtures/characterization/json_filename_selection_matches_original_storage_consumers.json"
+    ))?;
     let cases = observed["cases"]
         .as_array()
         .ok_or("Filename cases missing")?;
@@ -130,78 +76,10 @@ fn malformed_folder_text_refuses_without_replacing_source_bytes()
     use std::{path::Path, process::Command, time::Duration};
 
     let temporary = common::TempDirectory::new("folder-text")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import json,sys
-from pathlib import Path
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import folders
-from run_logging import run_log
-
-def parsed(raw):
-    try:
-        return json.loads(raw.decode('utf-8'))
-    except (UnicodeDecodeError,json.JSONDecodeError):
-        return None
-
-with run_log('folder-text-oracle',root/'logs') as log:
-    initial={'dashboard-config.json':{'folders':['source','alpha'],'future':'α'},
-             'dashboard/a.json':{'id':'a','folder':'source','future':[7]},
-             'dashboard/b.json':{'id':'b','folder':'alpha'}}
-    rows=[]
-    for location in ['dashboard-config.json','dashboard/b.json']:
-        valid=dict(initial[location],future='日本語')
-        for payload in [b'\xff',b'{"future":"\xc3("}',b'{"future":"\xe2\x82',
-                        b'{broken',json.dumps(valid,ensure_ascii=False).encode('utf-8')]:
-            for operation,args in [('listing',[]),('create',['new']),
-                                   ('rename',['source','target']),('delete',['source'])]:
-                case=root/'source'/str(len(rows))
-                (case/'dashboard').mkdir(parents=True)
-                inputs={name:json.dumps(value).encode('utf-8') for name,value in initial.items()}
-                inputs[location]=payload
-                for name,raw in inputs.items():
-                    (case/name).write_bytes(raw)
-                try:
-                    result,error=getattr(folders,operation)(case,*args),None
-                except (UnicodeDecodeError,ValueError) as exc:
-                    result,error=None,type(exc).__name__
-                after={name:(case/name).read_bytes() for name in inputs}
-                rows.append({'operation':operation,'args':args,'location':location,
-                             'inputs':{name:raw.hex() for name,raw in inputs.items()},
-                             'result':result,'error':error,
-                             'written':{name:parsed(raw) for name,raw in after.items()},
-                             'unchanged':{name:raw==after[name] for name,raw in inputs.items()}})
-    log.info('Observed folder text cases=%s',len(rows))
-    print(json.dumps(rows,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .arg(temporary.path())
-        .env("PYTHONUTF8", "1");
-    let observed = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(observed.exit, 0, "Original folder text observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/malformed_folder_text_refuses_without_replacing_source_bytes.json"
+    ))?;
     assert_eq!(cases.len(), 40, "Folder text observations missing");
     for (index, case) in cases.iter().enumerate() {
         let root = temporary.path().join("native").join(index.to_string());
@@ -266,80 +144,10 @@ fn folder_name_whitespace_matches_original_operations() -> Result<(), Box<dyn st
     use std::{path::Path, process::Command, time::Duration};
 
     let temporary = common::TempDirectory::new("folder-whitespace")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import json,sys
-from pathlib import Path
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import folders
-from run_logging import run_log
-with run_log('folder-whitespace-oracle',root/'logs') as log:
-    meta={'folders':['source','alpha'],'renamed':{'before':'source'},'future':{'kept':'α'}}
-    profiles={'a.json':{'id':'a','folder':'source','future':[7]},
-              'b.json':{'id':'b','folder':'alpha'}}
-    rows=[]
-    for marker in map(chr,[0x1c,0x1d,0x1e,0x1f,0x85,0xa0,
-                           0x2003,0x202f,0x3000,0x1b,0x200b,0xfeff]):
-        variants=[('create',[marker+'new'+marker]),('create',[marker]),
-                  ('create',['inner'+marker+'name']),
-                  ('rename',[marker+'source'+marker,'target']),
-                  ('rename',['source',marker+'target'+marker]),
-                  ('delete',[marker+'source'+marker]),
-                  ('delete',['source',marker+'target'+marker]),
-                  ('delete',['source',marker])]
-        for operation,args in variants:
-            case=root/'source'/str(len(rows))
-            (case/'dashboard').mkdir(parents=True)
-            (case/'dashboard-config.json').write_text(json.dumps(meta),encoding='utf-8')
-            for name,data in profiles.items():
-                (case/'dashboard'/name).write_text(json.dumps(data),encoding='utf-8')
-            paths={'dashboard-config.json':case/'dashboard-config.json',
-                   **{name:case/'dashboard'/name for name in profiles}}
-            before={name:path.read_bytes() for name,path in paths.items()}
-            try:
-                result,error=getattr(folders,operation)(case,*args),None
-            except ValueError as exc:
-                result,error=None,str(exc)
-            rows.append({'operation':operation,'args':args,'meta':meta,'profiles':profiles,
-                         'result':result,'error':error,
-                         'written':{name:json.loads(path.read_text(encoding='utf-8'))
-                                    for name,path in paths.items()},
-                         'unchanged':{name:before[name]==path.read_bytes()
-                                      for name,path in paths.items()}})
-    log.info('Observed folder whitespace cases=%s',len(rows))
-    print(json.dumps(rows,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .arg(temporary.path())
-        .env("PYTHONUTF8", "1");
-    let observed = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(
-        observed.exit, 0,
-        "Original folder whitespace observer failed"
-    );
-    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/folder_name_whitespace_matches_original_operations.json"
+    ))?;
     assert_eq!(cases.len(), 96, "Folder whitespace observations missing");
     for (index, case) in cases.iter().enumerate() {
         let root = temporary.path().join("native").join(index.to_string());

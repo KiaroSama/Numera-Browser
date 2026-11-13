@@ -32,6 +32,8 @@ pub fn write_stream(
     path: &Path,
     write: impl FnOnce(&mut fs::File) -> io::Result<()>,
 ) -> io::Result<()> {
+    #[cfg(feature = "test-support")]
+    crate::vault::testing::event("before-atomic-write", path)?;
     let parent = path
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())
@@ -47,14 +49,22 @@ pub fn write_stream(
             use std::os::unix::fs::OpenOptionsExt;
             options.mode(0o600);
         }
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("before-temporary-create", &tmp)?;
         let mut file = options.open(&tmp)?;
         owned = true;
         write(&mut file)?;
         file.sync_all()?;
         drop(file);
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("before-atomic-replace", path)?;
         for attempt in 0..5 {
             match fs::rename(&tmp, path) {
-                Ok(()) => return Ok(()),
+                Ok(()) => {
+                    #[cfg(feature = "test-support")]
+                    crate::vault::testing::event("after-atomic-write", path)?;
+                    return Ok(());
+                }
                 Err(error) if error.kind() == io::ErrorKind::PermissionDenied && attempt < 4 => {
                     std::thread::sleep(Duration::from_millis(20 * (attempt + 1)));
                 }
@@ -96,6 +106,34 @@ pub fn write_json(path: &Path, value: &Value) -> io::Result<()> {
     write_bytes(path, &bytes)
 }
 
+/// A write failed and one or more exact byte restorations also failed.
+/// The primary cause and every failed path remain available to callers.
+#[derive(Debug)]
+pub struct RollbackFailed {
+    pub cause: io::Error,
+    pub failures: Vec<(PathBuf, io::Error)>,
+}
+impl std::fmt::Display for RollbackFailed {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "{}; {} file(s) could not be restored: {}",
+            self.cause,
+            self.failures.len(),
+            self.failures
+                .iter()
+                .map(|(path, error)| format!("{} ({error})", path.display()))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+}
+impl std::error::Error for RollbackFailed {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.cause)
+    }
+}
+
 /// Snapshot bytes, never a decoded approximation, so failed changes are reversible.
 #[derive(Default)]
 pub struct Batch {
@@ -113,11 +151,28 @@ impl Batch {
     }
     pub fn write(&mut self, path: &Path, value: &Value) -> io::Result<()> {
         self.remember(path)?;
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("before-batch-write", path)?;
         write_json(path, value)
+    }
+    /// Attempt every pending restoration. A clean rollback returns the original
+    /// failure unchanged; an incomplete rollback keeps both causes structured.
+    pub fn fail(&mut self, cause: io::Error) -> io::Error {
+        let failures = self.rollback();
+        if failures.is_empty() {
+            cause
+        } else {
+            io::Error::other(RollbackFailed { cause, failures })
+        }
     }
     pub fn rollback(&mut self) -> Vec<(PathBuf, io::Error)> {
         let mut failures = Vec::new();
         for (path, bytes) in self.undo.drain(..).rev() {
+            #[cfg(feature = "test-support")]
+            if let Err(error) = crate::vault::testing::event("before-restore", &path) {
+                failures.push((path, error));
+                continue;
+            }
             let result = match bytes {
                 Some(bytes) => write_bytes(&path, &bytes),
                 None => match fs::remove_file(&path) {

@@ -12,8 +12,12 @@ pub struct Units {
     path: Option<PathBuf>,
     scope: String,
     owned: bool,
+    producer: Option<serde_json::Value>,
 }
 impl Units {
+    pub fn pending(&self) -> bool {
+        self.path.is_some()
+    }
     pub fn new(root: &Path, command: &mut Command) -> io::Result<Self> {
         let mut nonce = [0u8; 16];
         getrandom::fill(&mut nonce)
@@ -38,12 +42,20 @@ impl Units {
             path: Some(path),
             scope,
             owned,
+            producer: None,
         })
     }
     pub fn settle(&mut self, budget: Duration) -> io::Result<()> {
         let Some(path) = &self.path else {
             return Ok(());
         };
+        if let Some(producer) = &self.producer
+            && !super::recorded_tree::empty(producer)?
+        {
+            return Err(io::Error::other(
+                "Captured producer is not proved empty; its receipt remains owned",
+            ));
+        }
         // A borrowed parent report must retain every other live/pending scope.
         // The unfiltered supervisor sees all scopes, including this call's SDKs.
         let scope = (!self.owned).then_some(self.scope.as_str());
@@ -53,10 +65,90 @@ impl Units {
             ));
         }
         if self.owned {
+            #[cfg(feature = "test-support")]
+            crate::vault::testing::event("before-capture-report-remove", path)?;
             fs::remove_file(path)?;
         }
         self.path = None;
+        self.producer = None;
         Ok(())
+    }
+
+    /// Settle reported SDK trees as soon as the producer tree ends, before waiting
+    /// for EOF from writers those SDKs may have inherited. A live producer is
+    /// ended first so it cannot add another ownership transfer after proof.
+    pub fn run(
+        &mut self,
+        command: &mut Command,
+        limits: super::capture::Limits,
+        cancelled: impl FnMut() -> bool,
+    ) -> Result<super::capture::Output, super::capture::Failure> {
+        self.run_observed(command, limits, cancelled, |_, _| {})
+    }
+    pub fn run_observed(
+        &mut self,
+        command: &mut Command,
+        limits: super::capture::Limits,
+        cancelled: impl FnMut() -> bool,
+        observe: impl FnMut(super::capture::Observation, &super::tree::OwnedTree),
+    ) -> Result<super::capture::Output, super::capture::Failure> {
+        self.run_observed_streamed(command, limits, cancelled, observe, |_, _| {})
+    }
+    pub fn run_observed_streamed(
+        &mut self,
+        command: &mut Command,
+        limits: super::capture::Limits,
+        mut cancelled: impl FnMut() -> bool,
+        observe: impl FnMut(super::capture::Observation, &super::tree::OwnedTree),
+        on_chunk: impl FnMut(usize, &[u8]),
+    ) -> Result<super::capture::Output, super::capture::Failure> {
+        use std::cell::Cell;
+        if self.path.is_none() {
+            return Err(io::Error::other("Capture receipt was already settled").into());
+        }
+        if let Some(producer) = &self.producer
+            && !super::recorded_tree::empty(producer)?
+        {
+            return Err(io::Error::other("Capture still owns an unsettled producer").into());
+        }
+        let failed = Cell::new(false);
+        let mut receipt_error = None;
+        let mut attempted = false;
+        let cleanup = limits.cleanup;
+        let captured = super::capture::run_observed_then(
+            command,
+            limits,
+            || cancelled() || failed.get(),
+            observe,
+            |settled, tree, remaining| {
+                let mut record = tree.record();
+                record["pidToken"] = record["token"].take();
+                self.producer = Some(record);
+                attempted = true;
+                let settlement = if settled {
+                    self.settle(remaining)
+                } else {
+                    Err(io::Error::other(
+                        "Captured producer cleanup remains unverified; its receipt is retained",
+                    ))
+                };
+                if let Err(error) = settlement {
+                    receipt_error = Some(error);
+                    failed.set(true);
+                }
+            },
+            on_chunk,
+        );
+        if !attempted && let Err(error) = self.settle(cleanup) {
+            receipt_error = Some(error);
+        }
+        if let Some(error) = receipt_error {
+            return Err(match captured {
+                Err(failure) => failure.context(error),
+                Ok(_) => error.into(),
+            });
+        }
+        captured
     }
 }
 fn retained() -> &'static Mutex<Vec<Units>> {
@@ -74,6 +166,7 @@ impl Drop for Units {
                         path: Some(path),
                         scope: self.scope.clone(),
                         owned: self.owned,
+                        producer: self.producer.take(),
                     });
             }
             eprintln!("Captured nested ownership remains retained in its receipt");

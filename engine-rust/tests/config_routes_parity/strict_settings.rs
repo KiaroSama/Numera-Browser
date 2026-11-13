@@ -1,83 +1,16 @@
 use super::{BTreeMap, Body, Duration, Request, ServiceExt, Value, common, fs, to_bytes};
-use numera_core::{
-    http::application,
-    ownership::{capture, registry::Registry},
-};
+use numera_core::{http::application, ownership::registry::Registry};
 use serde_json::json;
-use std::{path::Path, process::Command, sync::Arc};
+use std::sync::Arc;
 
 #[test]
 fn settings_http_preserves_original_text_refusals_and_short_circuits()
 -> Result<(), Box<dyn std::error::Error>> {
     let temporary = common::TempDirectory::new("strict-settings-http")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import json,os,sys
-from pathlib import Path
-from unittest.mock import patch
-repository,parent=map(Path,sys.argv[1:])
-os.environ.pop('NUMERA_PASSWORD',None)
-os.environ['NUMERA_API_TOKEN']='fixture-api'
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from fastapi.testclient import TestClient
-from numera.server import create_app
-from run_logging import run_log
-operations=[('GET','/api/config',None),('GET','/api/engines',None),
-            ('GET','/api/extensions/installed',None),
-            ('PUT','/api/config',{'unknown':True}),
-            ('POST','/api/profiles/fixture/attach',None),
-            ('POST','/api/profiles',{'unknown':True})]
-# Invalid text is distinct from malformed JSON and nonobject fallbacks.
-settings=[bytes([255]),bytes([0xc3,0x28]),bytes([0xe2,0x82]),b'{}',b'{broken',b'[]',None]
-available={'camoufox':False,'cloak':False,'patchright':False,'playwright':True}
-profile={'id':'fixture','name':'Fixture','engine':'camoufox'}
-observed=[]
-with run_log('strict-settings-http-oracle',parent/'logs') as log:
-    for method,url,body in operations:
-        for raw in settings:
-            root=parent/str(len(observed));root.mkdir(parents=True)
-            app=create_app(str(root),start_scheduler=False)
-            path=root/'config.json'
-            if raw is not None:path.write_bytes(raw)
-            stored=root/'dashboard/fixture.json'
-            stored.write_text(json.dumps(profile),encoding='utf-8')
-            before=stored.read_bytes()
-            with patch('numera.drivers.available',return_value=available), \
-                    patch('numera.drivers.is_installed',side_effect=lambda name:available.get(name,False)), \
-                    TestClient(app,raise_server_exceptions=False) as client:
-                response=client.request(method,url,json=body,headers={'Authorization':'Bearer fixture-api'})
-            try:result=response.json()
-            except ValueError:result=response.text
-            if isinstance(result,dict) and 'root' in result:
-                assert result['root']==str(root.resolve());result['root']='fixture-root'
-            assert (path.read_bytes() if path.exists() else None)==raw
-            assert stored.read_bytes()==before
-            observed.append({'method':method,'url':url,'body':body,
-                'raw':list(raw) if raw is not None else None,'status':response.status_code,'result':result})
-    log.info('Observed strict settings HTTP cases=%s',len(observed))
-    print(json.dumps(observed,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("source"));
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(
-        original.exit, 0,
-        "Original strict settings HTTP observer failed"
-    );
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "../fixtures/characterization/settings_http_preserves_original_text_refusals_and_short_circuits.json"
+    ))?;
     assert_eq!(cases.len(), 42);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()

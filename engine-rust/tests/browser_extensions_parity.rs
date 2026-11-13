@@ -1,6 +1,5 @@
 use numera_core::{
     browser::{
-        adapter::Adapter,
         extensions,
         launch::{self, PreparedLaunch},
     },
@@ -8,13 +7,16 @@ use numera_core::{
     ownership::session::Session,
 };
 use serde_json::{Map, Value, json};
-use std::{path::Path, process::Command, time::Duration};
+use std::{path::Path, time::Duration};
 mod common;
+use numera_core as core;
+#[allow(dead_code)]
+#[path = "common/browser_fixture.rs"]
+mod fixture;
 
 #[test]
 fn native_extension_paths_preserve_original_order_home_and_directory_filter()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("extension-launch-paths")?;
     let root = temporary.path().to_owned();
     let cwd = root.join("working");
@@ -63,52 +65,25 @@ fn native_extension_paths_preserve_original_order_home_and_directory_filter()
         "id":"a", "name":"fixture", "fingerprint":fixture["cases"][0]["input"],
         "extensions":entries,
     }))?;
-    let script = r#"
-import json, sys
-from baseline_source import activate
-activate()
-from numera.launch_options import _extension_args
-from numera.models import Profile
-for line in sys.stdin:
-    request = json.loads(line)
-    result = {} if request['operation'] == 'hello' else {'flags':_extension_args(Profile.from_dict(request['profile']))}
-    print(json.dumps({'protocol':1, 'id':request['id'], 'ok':True, 'result':result}), flush=True)
-"#;
-    let mut command = Command::new(&python);
-    command
-        .args(["-u", "-c", script])
-        .current_dir(&cwd)
-        .env("HOME", &home)
-        .env("USERPROFILE", &home)
-        .env("PYTHONUTF8", "1");
-    let engine = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?
-        .join("engine");
-    command.env(
-        "PYTHONPATH",
-        std::env::join_paths([
-            engine
-                .parent()
-                .ok_or("Repository missing")?
-                .join("scripts/migration"),
-            engine,
-        ])?,
-    );
-    let mut source = Adapter::spawn(
-        &root,
-        "a",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let expected = source.call(
-        "extension-flags",
-        Map::from_iter([("profile".into(), serde_json::to_value(&profile)?)]),
-        Duration::from_secs(5),
-    )?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
+    let mut expected = fixture::oracle("extension-paths")?;
+    let canonical = root.canonicalize()?;
+    let root_text = canonical.to_str().ok_or("Fixture root nontext")?;
+    let root_text = root_text.strip_prefix(r"\\?\").unwrap_or(root_text);
+    let extra = expected["windows_additional_drive_relative_path"]
+        .as_str()
+        .ok_or("Frozen Windows extra missing")?
+        .to_owned();
+    for flag in expected["flags"]
+        .as_array_mut()
+        .ok_or("Frozen extension flags missing")?
+    {
+        let mut text = flag.as_str().ok_or("Frozen flag not text")?.to_owned();
+        if cfg!(windows) {
+            text.push(',');
+            text.push_str(&extra);
+        }
+        *flag = text.replace("$ROOT", root_text).into();
+    }
     let paths = extensions::paths(&entries, &cwd, &home)?;
     assert_eq!(paths.len(), if cfg!(windows) { 6 } else { 5 });
     #[cfg(windows)]
@@ -119,23 +94,7 @@ for line in sys.stdin:
     assert_eq!(paths[0], paths[2]);
     assert_eq!(paths[0], paths[4]);
     let capture = root.join("open.json");
-    let script = r#"
-import json, os, pathlib, sys
-for line in sys.stdin:
-    request = json.loads(line)
-    if request['operation'] == 'hello':
-        result = {'backends':{'playwright':{'installed':True}}}
-    elif request['operation'] == 'open':
-        pathlib.Path(os.environ['FIXTURE_CAPTURE']).write_text(json.dumps(request), encoding='utf-8')
-        result = {'opened':True, 'backend':'playwright'}
-    else:
-        raise ValueError('Unexpected operation')
-    print(json.dumps({'protocol':1, 'id':request['id'], 'ok':True, 'result':result}), flush=True)
-"#;
-    let mut command = Command::new(&python);
-    command
-        .args(["-u", "-c", script])
-        .env("FIXTURE_CAPTURE", &capture);
+    let mut command = fixture::command(&root, "capture", json!({"capture":capture}))?;
     let session = Session::admit(&root, "a", "fixture-host")?;
     let mut adapter = launch::open(
         session,
@@ -180,30 +139,7 @@ fn portable_backend_selection_matches_original_bundle_options_and_overrides()
 -> Result<(), Box<dyn std::error::Error>> {
     use numera_core::browser::bundled;
     let temporary = common::TempDirectory::new("bundled-resources")?;
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(python);
-    command.args(["-u", "-c", r#"
-import json,os,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from bundled_cases import cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(os.environ['FIXTURE_ROOT'])}}),flush=True)
-"#]).env("PYTHONUTF8","1").env("FIXTURE_ROOT",temporary.path().join("source"))
-        .env("PYTHONPATH",std::env::join_paths([repository.join("engine"),repository.join("scripts/migration")])?);
-    let mut source = Adapter::spawn(
-        temporary.path(),
-        "oracle",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let observations = source.call("bundled-options", Map::new(), Duration::from_secs(15))?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
+    let observations = fixture::oracle("bundled")?;
     let cases = observations["cases"]
         .as_array()
         .ok_or("Bundle cases missing")?;
@@ -295,23 +231,12 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
             )?;
             assert_eq!(std::fs::read(&cache)?, b"vendor-refreshed");
             let capture = root.join("packaged-open.json");
-            let script = root.join("capture-sdk.py");
-            std::fs::write(
-                &script,
-                r#"
-import json,os,pathlib,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'backends':{'camoufox':{'installed':True}}}}),flush=True)
-request=json.loads(sys.stdin.readline())
-pathlib.Path(os.environ['FIXTURE_CAPTURE']).write_text(json.dumps({'frame':request,'geoip':os.environ.get('NUMERA_ADAPTER_GEOIP_DIR')}),encoding='utf-8')
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'opened':True,'backend':'camoufox'}}),flush=True)
-sys.stdin.readline()
-"#,
+            let script = fixture::executable(
+                &root.join("capture-sdk"),
+                "capture",
+                json!({"capture":capture,"capture_environment":true}),
             )?;
             let runtime = numera_core::browser::runtime::Runtime {
-                python: std::env::var_os("NUMERA_ORACLE_PYTHON")
-                    .ok_or("Fixture interpreter missing")?
-                    .into(),
                 adapter: script,
                 cwd: root.clone(),
                 home: root.clone(),
@@ -331,12 +256,6 @@ sys.stdin.readline()
                 &json!({"id":"packaged","name":"fixture","engine":"camoufox","fingerprint":fingerprint["cases"][0]["input"]}),
             )?;
             let session = Session::admit(&data, "packaged", "fixture-host")?;
-            // Capture location is part of the owned script, never a global environment mutation.
-            let code = std::fs::read_to_string(&runtime.adapter)?.replace(
-                "os.environ['FIXTURE_CAPTURE']",
-                &serde_json::to_string(capture.to_str().ok_or("Capture path nontext")?)?,
-            );
-            std::fs::write(&runtime.adapter, code)?;
             let mut adapter = runtime.open_lifetime(session, profile, true, false, 1000.0)?;
             adapter.finish(Duration::from_secs(5))?;
             drop(adapter);

@@ -1,0 +1,136 @@
+{
+  "cases": [
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 200,
+      "body": "<!doctype html><title>Numera fixture</title>",
+      "type": "text/html; charset=utf-8"
+    },
+    {
+      "method": "GET",
+      "path": "/proxies",
+      "status": 200,
+      "body": "<!doctype html><title>Numera fixture</title>",
+      "type": "text/html; charset=utf-8"
+    },
+    {
+      "method": "GET",
+      "path": "/favicon.svg",
+      "status": 200,
+      "body": "<svg/>",
+      "type": "image/svg+xml"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/index.js",
+      "status": 200,
+      "body": "export default 1;",
+      "type": "text/javascript; charset=utf-8"
+    },
+    {
+      "method": "GET",
+      "path": "/assets/missing.js",
+      "status": 404,
+      "body": "{\"detail\":\"Not Found\"}",
+      "type": "application/json"
+    },
+    {
+      "method": "GET",
+      "path": "/hello.txt",
+      "status": 200,
+      "body": "Hello fixture",
+      "type": "text/plain; charset=utf-8"
+    },
+    {
+      "method": "GET",
+      "path": "/api/missing",
+      "status": 404,
+      "body": "{\"detail\":\"no such API endpoint\"}",
+      "type": "application/json"
+    },
+    {
+      "method": "POST",
+      "path": "/proxies",
+      "status": 405,
+      "body": "{\"detail\":\"Method Not Allowed\"}",
+      "type": "application/json"
+    },
+    {
+      "method": "GET",
+      "path": "/assets",
+      "status": 200,
+      "body": "<!doctype html><title>Numera fixture</title>",
+      "type": "text/html; charset=utf-8"
+    },
+    {
+      "method": "HEAD",
+      "path": "/proxies",
+      "status": 405,
+      "body": "",
+      "type": "application/json"
+    },
+    {
+      "method": "HEAD",
+      "path": "/favicon.svg",
+      "status": 405,
+      "body": "",
+      "type": "application/json"
+    },
+    {
+      "method": "HEAD",
+      "path": "/assets/index.js",
+      "status": 200,
+      "body": "",
+      "type": "text/javascript; charset=utf-8"
+    },
+    {
+      "method": "HEAD",
+      "path": "/assets/missing.js",
+      "status": 404,
+      "body": "",
+      "type": "application/json"
+    },
+    {
+      "method": "HEAD",
+      "path": "/api/missing",
+      "status": 405,
+      "body": "",
+      "type": "application/json"
+    }
+  ],
+  "authenticated": [
+    {
+      "method": "GET",
+      "path": "/api/missing",
+      "authorized": false,
+      "status": 401,
+      "body": "{\"detail\":\"invalid or missing API token\"}",
+      "type": "application/json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/missing",
+      "authorized": true,
+      "status": 404,
+      "body": "{\"detail\":\"no such API endpoint\"}",
+      "type": "application/json"
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "authorized": false,
+      "status": 200,
+      "body": "<!doctype html><title>Numera fixture</title>",
+      "type": "text/html; charset=utf-8"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ready",
+      "authorized": false,
+      "status": 200,
+      "body": "{\"ok\":true,\"service\":\"numera-browser\",\"version\":\"0.36.0\",\"authRequired\":true}",
+      "type": "application/json"
+    }
+  ]
+}

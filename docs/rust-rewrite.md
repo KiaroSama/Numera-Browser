@@ -1,166 +1,108 @@
-# Rust rewrite integration
+# Rust rewrite and verification
 
-The integration branch starts at `3bf1d839fd33e42a10b982bd8607a7052ea7c4cd`
-from `migration/native-runtime-checkpoint-20261012` (PR #56). It includes that
-branch's full history. Main is not changed and this integration must not be
-merged until the complete rewrite and its acceptance checks pass.
+[PR #76](https://github.com/KiaroSama/Numera-Browser/pull/76) continues the complete
+history of native checkpoint `3bf1d839fd33e42a10b982bd8607a7052ea7c4cd`
+from `migration/native-runtime-checkpoint-20261012`. It remains open and unmerged;
+`main` has not been advanced by this work.
 
-## Current boundary
+## Implementation
 
-The native CLI, HTTP and MCP application code already exists in `engine-rust`.
-The selected backend still uses Python. The dashboard now uses Rust/WebAssembly;
-TypeScript/React were removed after all 195 original cases passed, with 71 native
-unit cases and 124 real Chromium cases across the same 26 suites. A Rust SDK worker now implements the Playwright/Patchright
-protocol; Camoufox and Cloak still use the retained Python path. The desktop shell and
-the existing CI orchestration also contain non-Rust code. These dependencies
-must be replaced; changing language badges or excluding files from language
-statistics does not complete that work.
+Rust implements the native CLI, MCP, Axum API, compatible storage/vault behavior,
+owned process lifecycle, browser preparation, Rust/WASM dashboard, Tauri desktop
+integration and build/verification tools. The native product binaries are
+`numera-engine` and `numera-browser-runtime`. The older acceptance candidate remains
+a separate supplemental build rather than evidence of a complete distribution.
 
-`docs/rust-test-baseline.json` records the 3,418 Python test identities collected
-on Linux and all 195 dashboard assertions in 26 suites at the reference head.
-Collection is not an execution result. OS applicability, live-browser scenarios,
-negative controls, fault injection and subprocess ownership checks must survive
-the port. A Rust test containing a loop of many fixtures does not automatically
-replace the same number of independently reported source tests. The existing
-source and Rust suites are retained until a case-by-case replacement is verified.
+The dashboard retains **195 cases in 26 suites**: 71 native cases and 124
+WebAssembly cases executed in Chromium. Application browser preparation supports
+Playwright, Patchright, Camoufox and Cloak. Native workers use explicitly acquired
+vendor Node transports and vendor browser engines. Those external dependencies
+are not rewritten Chromium/Firefox/Node implementations; generated browser
+scripts and WASM bindings remain runtime assets.
 
-The original 907-row capability ledger remains in `migration-coverage.json`.
-Its pending entries have not been relabeled as accepted.
+[Current upstream review](upstream-review-20261113.json) distinguishes stable
+artifacts from source-only changes. Driver/browser generations remain separate.
+Camoufox includes native fingerprint-model, identity, geometry, locale, GeoIP,
+font and WebGL preparation. CPU features require declared support in the selected
+browser's properties; an older executable is not credited with unreleased engine
+features. Cloak retains license, acquisition consent and exclusive seed behavior;
+its proprietary binary is excluded from public bundles.
 
-## Automatic native builds
+## Maintained suites
 
-`rust-candidate.yml` runs on every push and pull request, with independent Linux,
-Windows and macOS jobs. Compilation has no dependency on test or coverage jobs;
-matrix failures do not cancel another platform. These checks supplement the full
-verification workflow, which still has outstanding migration acceptance gates.
+`rust-test-baseline.json` freezes the original collection, its identities and test
+kinds. The counts are **3,418 backend/tooling source cases**, **195 dashboard
+cases**, and **294 preexisting native cases**, including a separately executed
+live-browser case. Platform-only cases retain their applicability.
 
-The build tool is Rust:
+Each `source-*-test-map.json` maps an individual source case to an individually
+reported Rust case, its original kind and platform. Mapping is not an execution
+result. Parameter matrices retain individual cases; adding a fixture loop does
+not create additional counted tests. Negative controls, real subprocesses,
+concurrency, filesystem failures and cleanup assertions remain executable.
 
-```text
-cargo xtask build-candidate build/rust-candidate
-```
+Historical observations use immutable source commit
+`13b6d9c6973281fe123353eaec05b29d65781a2d`, with file hashes and separate manifests.
+A verified two-row path-normalization change uses the selected `3bf1d8` checkpoint
+and is identified separately. Frozen JSON contains inputs and observations rather
+than interpreter programs. Dynamic browser/process assertions use native Rust
+fixtures, independent OS observations and actual production code.
 
-It requires a clean checkout and the exact `GITHUB_SHA` and `GITHUB_RUN_ID`.
-Cargo's successful artifact records identify both native executables; the tool
-executes their `--build-info` and verifies the compiled source, generation,
-product, version and browser-worker component before packaging. Each platform uploads the executable ZIP, its matching
-tracked Git source ZIP and SHA-256 checksums. Outputs are new directories; an
-existing build cannot be overwritten. Package tests exercise real ZIP contents,
-permissions, checksums, tracked-source scope and failed-build cleanup.
+The 907-symbol `migration-coverage.json` inventory is historical source evidence.
+Its old pending rows are not retroactively labeled accepted. Current Rust
+occurrence inventories use the Rust AST and identify duplicate symbol occurrences
+separately. They complement behavioral tests rather than establish feature parity
+by symbol count.
 
-These are acceptance candidates. They are not complete desktop distributions,
-include the Rust browser worker but exclude vendor SDK/browser resources and the
-dashboard. They do not establish a complete Rust-only application. Their embedded notices and metadata state those limits.
-No signing input, publishing step, main update or merge is involved.
+## Build and resource provenance
 
-## Linux first-run copy correction
+[Native CI](../.github/workflows/native-ci.yml) starts independent Linux, Windows
+and macOS product builds on pushes and pull requests. The real application and
+worker compile before test gates; a failed test job does not cancel compilation
+on another platform. Full-product builds include WASM, Tauri installers and
+portable server archives.
 
-The unchanged five-path access-time regression failed on the integration tree:
-Rust's file-copy offload left source access times unchanged on this filesystem,
-while the frozen Python implementation performed reads. Linux first-run imports
-now copy through a bounded 64 KiB buffer. Direct copies still read metadata after
-copying, and new copytree subtrees retain their pre-read metadata snapshots.
-Source bytes, existing destinations, permissions, extended attributes and failure
-cleanup remain covered by the same 11 first-run tests. Large-import throughput
-has not been benchmarked for this correction.
+`cargo xtask provision-resources` explicitly acquires pinned vendor transports,
+matching browsers, GeoIP data, notices and GPL/MPL corresponding source.
+`prepare-resources` inventories already acquired bytes without downloading them.
+Neither ordinary Cargo compilation nor browser launch silently acquires a vendor
+SDK or proprietary browser.
 
-## Acceptance still required
+`cargo xtask build-product` requires a clean checkout and an exact source SHA and
+build generation. It verifies Cargo's actual artifact records and each component's
+compiled identity, then packages the dashboard, engine, worker, resources,
+notices, exact tracked source and checksums. Existing output directories are
+refused. See [build tooling](../tools/xtask/README.md).
 
-1. Replace the Python SDK adapter and remove application interpreter dependencies
-   while retaining all four supported browser backends and owned-tree cleanup.
-2. Port the dashboard and desktop integration to Rust and preserve their user
-   features, rendered interaction tests and updater behavior.
-3. Port every source test and CI helper, retaining case counts, test types,
-   assertions, platform applicability and failure checks.
-4. Integrate compatible upstream browser updates with browser, persistence,
-   proxy and lifecycle regressions; see `upstream-review-20261110.json`.
-5. Verify full application distributions on Linux, Windows and macOS. Passing
-   these candidate compilation jobs alone is insufficient.
-6. Update all documentation and repository topics to the final implementation,
-   and obtain green full CI on
-   the final head. Keep the PR unmerged.
+Windows executable version resources and Authenticode signing are implemented in
+Rust using explicit certificate input, ephemeral key import, pinned certificate
+verification and tampered-file rejection. CI uses a public synthetic fixture to
+exercise that path; it does not authorize owner signing or establish public
+publisher trust. Default CI distributions are unsigned review artifacts.
 
-## Rust SDK compatibility review
+## Current acceptance boundary
 
-`playwright-rs` 0.20.1 was inspected as an adapter replacement. Its persistent
-context launcher adds CI-specific Chromium arguments on Windows, including
-`--disable-web-security` and a site-isolation override. These are absent from
-Numera's admitted launch options. The binding must not be adopted through that
-entry point without an equivalent controlled transport and regression coverage.
-The reviewed packaged source is
-<https://docs.rs/crate/playwright-rs/0.20.1/source/src/protocol/browser_type.rs>.
-The Rust worker uses the public protocol connection directly, with its own child
-ownership and launch parameters. It does not call that launcher, install the
-binding's terminal/signal handlers, or detach the Node driver from Numera's owner.
+Local Linux evidence includes real Playwright and Patchright browser acceptance,
+and the released Camoufox158 acceptance with native preparation. The managed test
+environment requires an isolated writable browser home; its sandbox exception is
+limited to that local test and is not added to the product. Full licensed Cloak
+acceptance remains a required CI tier.
 
-### Native SDK worker
+The source-suite ports and interpreter retirement are being verified as one
+integration. Per-suite maps record successful runs and outstanding work. The
+remaining ownership race checks, complete product packaging, actual Windows
+signing fixture execution and final exact-head full CI must pass before this
+rewrite is described as finished. An ancestor's green candidate matrix is not
+latest-head product acceptance.
 
-```text
-cargo build --manifest-path engine-rust/Cargo.toml --locked --features native-browser --bin numera-browser-runtime
-```
+Performance compares the genuine `3bf1d8` native application checkpoint with the
+current native product, using the same current Rust SDK transport and resources.
+The checkpoint has exactly two reviewed transport bridges; receipts pin their
+original Git blobs, before/after hashes, patch hash and SDK hash. This comparison
+is labeled native-checkpoint-to-native-product. It is not a Python performance or
+rollback measurement, and a candidate is never compared with itself.
 
-`NUMERA_BROWSER_RUNTIME` explicitly selects that executable. Candidate packages
-also discover it beside the application executable. During migration an explicit
-legacy `.py` adapter can still be selected; the product has not switched runtimes.
-
-The worker retains the bounded version-1 JSON protocol, cancellable stdin owner,
-operation-state checks, persistent contexts, initialization scripts, CDP identity
-policy on existing/new pages, navigation, routes, evaluation, mouse input and
-cookie operations. Cookie objects keep vendor fields including partition keys.
-Close is acknowledged after context and driver cleanup. Vendor error payloads,
-credentials and evaluated source are never returned or logged as diagnostics.
-Evaluation values use a native codec: BigInt remains an integer, all typed-array
-kinds preserve their values, shared references expand under a frame budget, and
-non-finite/cyclic/non-JSON results fail. ASCII escaping, numeric formatting and
-bounded response construction preserve the source wire boundary. The existing
-SDK protocol test additionally checks 38 frozen source values/encodings; the
-existing live test checks large integers, shared objects, 64-bit typed arrays and
-URL tuples on real Playwright/Patchright contexts.
-
-SDK acquisition remains explicit. `NUMERA_PLAYWRIGHT_DRIVER` and
-`NUMERA_PATCHRIGHT_DRIVER` point to separate vendor driver directories, each
-containing `node` (`node.exe` on Windows), `package/cli.js` and
-`package/package.json`. Alternatively `NUMERA_BROWSER_DRIVERS` contains directories
-named `playwright` and `patchright` with that layout. The vendor driver is Node
-code, not a Rust implementation; it is an external SDK dependency and is not
-hidden in this repository or included in candidate ZIPs. Browser revisions must
-match their own driver. Cargo cannot download drivers as a build side effect.
-
-On local Linux, the existing live acceptance test passed with Playwright 1.64.0,
-Playwright 1.65.0 and Patchright 1.64.1. Each run exercised the existing five
-identity profiles, initial/new-page wire hints, cookie persistence and isolation,
-HTTP launch/stop and controlled foreground CLI closure. The oracle interpreter
-was deliberately set to a nonexistent path; these operations did not invoke
-Python. Existing protocol-inertness/cleanup coverage also passed against the Rust
-worker. Test identities and assertion counts were retained.
-
-Cloak's upstream wrapper 0.7.2 (2026-11-10) caps Playwright below 1.65. The native
-driver admission keeps that backend-specific cap. Specialized Cloak/Camoufox
-preparation is not admitted by the worker yet: their metadata remains unavailable
-rather than claiming that a driver alone constitutes a working backend. The
-current Camoufox source also changed fingerprint-model pinning, identity and
-geometry rules; adopting an older Rust facade without porting those rules would
-not incorporate its current behavior.
-
-The Camoufox fingerprint-model component is now native Rust. It verifies the
-exact `model-2/2026` archive, all three compressed members and the decompressed
-value-data digest. A bounded beam preserves the upstream Bayesian posterior;
-streaming value lookups avoid loading the full 202 MiB value file into memory.
-The existing two browser-policy tests retain their identities and assertion
-coverage, and additionally verify 18 frozen source posteriors across Firefox on
-Windows/macOS/Linux, actual fingerprint generation and refusal of modified or
-truncated archives. CI runs this target with `native-browser` enabled, without
-Python. The pinned archive is a source-test fixture; candidate runtime ZIPs do
-not include it. This component does not yet admit Camoufox context launch.
-
-Repository topics `cargo`, `cross-platform` and `mcp` were saved through the
-user-authorized TinyFish Default profile and verified separately through GitHub's
-API. Existing language topics remain until their code is replaced.
-
-## Branch consolidation
-
-All 18 previously open PRs are closed with a link to integration PR #76. The
-complete #56 checkpoint and 14 dependency heads are ancestors of this branch;
-three incompatible or incomplete upgrades were declined with explicit reasons.
-`rust-branch-disposition.json` records every head SHA and disposition. Branch
-references remain recoverable and main was not merged or updated.
+[Branch dispositions](rust-branch-disposition.json) record integrated and declined
+prior work. Documentation and topic cleanup follow the actual language cutover.
+No release, merge or `main` update is authorized by a passing test or generated
+artifact.

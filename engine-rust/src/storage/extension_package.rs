@@ -49,24 +49,10 @@ fn zip_bytes(data: &[u8], crx: bool) -> io::Result<&[u8]> {
 
 fn contained_target(base: &Path, member: &str) -> io::Result<PathBuf> {
     let target = member_path(base, member)?;
-    let mut ancestor = target.as_path();
-    loop {
-        match fs::symlink_metadata(ancestor) {
-            Ok(_) => {
-                if !fs::canonicalize(ancestor)?.starts_with(base) {
-                    return Err(io::Error::other(
-                        "Archive member resolves outside the folder",
-                    ));
-                }
-                break;
-            }
-            Err(error) if error.kind() == io::ErrorKind::NotFound => {
-                ancestor = ancestor
-                    .parent()
-                    .ok_or_else(|| io::Error::other("Archive path has no containing directory"))?;
-            }
-            Err(error) => return Err(error),
-        }
+    if !super::locks::resolved(&target)?.starts_with(base) {
+        return Err(io::Error::other(
+            "Archive member resolves outside the folder",
+        ));
     }
     Ok(target)
 }
@@ -76,13 +62,10 @@ fn contained_target(base: &Path, member: &str) -> io::Result<PathBuf> {
 pub fn unpack(data: &[u8], destination: &Path, crx: bool) -> io::Result<()> {
     let bytes = zip_bytes(data, crx)?;
     let mut archive = ZipArchive::new(Cursor::new(bytes)).map_err(invalid_zip)?;
-    let base = fs::canonicalize(destination)?;
+    let base = super::locks::resolved(destination)?;
     let mut targets = Vec::new();
     for index in 0..archive.len() {
         let file = archive.by_index(index).map_err(invalid_zip)?;
-        if file.is_dir() {
-            continue;
-        }
         if file
             .unix_mode()
             .is_some_and(|mode| mode & 0o170000 == 0o120000)
@@ -97,9 +80,17 @@ pub fn unpack(data: &[u8], destination: &Path, crx: bool) -> io::Result<()> {
                 "refusing archive member outside the folder: {error}"
             ))
         })?;
-        targets.push((index, target));
+        targets.push((index, target, file.is_dir()));
     }
-    for (index, target) in targets {
+    if targets.is_empty() {
+        return Ok(());
+    }
+    fs::create_dir_all(&base)?;
+    for (index, target, directory) in targets {
+        if directory {
+            fs::create_dir_all(target)?;
+            continue;
+        }
         let mut input = archive.by_index(index).map_err(invalid_zip)?;
         fs::create_dir_all(
             target

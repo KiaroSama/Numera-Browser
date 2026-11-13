@@ -14,31 +14,13 @@ mod common;
 #[test]
 fn documentation_routes_match_source_without_sdk_or_api_unlock()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::ownership::capture::{self, Limits};
     let temporary = common::TempDirectory::new("documentation routes")?;
     let repository = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .ok_or("Repository missing")?;
-    let mut source = std::process::Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Source interpreter required")?,
-    );
-    source.args(["-c", "import json,os; from pathlib import Path; from documentation_cases import cases; print(json.dumps(cases(Path(os.environ['FIXTURE_ROOT']))))"])
-        .env("FIXTURE_ROOT", temporary.path())
-        .env("PYTHONPATH", std::env::join_paths([
-            repository.join("scripts/migration"), repository.join("engine")
-        ])?)
-        .env("PYTHONUTF8", "1");
-    let captured = capture::run(
-        &mut source,
-        Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 131072,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(captured.exit, 0);
-    let cases: Vec<Value> = serde_json::from_slice(&captured.stdout)?;
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/native-misc-characterization/documentation_routes.json"
+    ))?;
     assert_eq!(cases.len(), 12);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_time()

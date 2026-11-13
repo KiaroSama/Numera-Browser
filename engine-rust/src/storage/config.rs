@@ -83,6 +83,8 @@ impl ConfigStore {
         if let Some(cached) = cache.as_ref().filter(|cached| cached.key == key) {
             return Ok(cached.values.clone());
         }
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("json-read", &path)?;
         let bytes = match fs::read(path) {
             Ok(bytes) => bytes,
             Err(_) => return Ok(Map::new()),

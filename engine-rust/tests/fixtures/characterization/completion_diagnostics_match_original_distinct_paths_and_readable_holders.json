@@ -1,0 +1,869 @@
+[
+  {
+    "files": {
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v9:fixture"
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v9:fixture"
+        }
+      }
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "fixture-completion-master",
+    "expected": [
+      {
+        "code": "wrong_generation",
+        "detail": "2 file(s) hold secrets this descriptor does not open: a.json"
+      }
+    ]
+  },
+  {
+    "files": {
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v9:fixture"
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v9:fixture"
+        }
+      }
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": null,
+    "expected": [
+      {
+        "code": "no_password",
+        "detail": "no master password was supplied, so whether the stored secrets open with this descriptor cannot be established"
+      }
+    ]
+  },
+  {
+    "files": {
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v9:fixture"
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v9:fixture"
+        }
+      }
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "wrong-fixture-master",
+    "expected": [
+      {
+        "code": "verifier_mismatch",
+        "detail": "the descriptor's verifier does not open with this password, so the descriptor does not describe this data"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        42,
+        {
+          "pass": "enc:v9:fixture"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "fixture-completion-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "wrong_generation",
+        "detail": "1 file(s) hold secrets this descriptor does not open: proxies.json"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        42,
+        {
+          "pass": "enc:v9:fixture"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": null,
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "no_password",
+        "detail": "no master password was supplied, so whether the stored secrets open with this descriptor cannot be established"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        42,
+        {
+          "pass": "enc:v9:fixture"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "wrong-fixture-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "verifier_mismatch",
+        "detail": "the descriptor's verifier does not open with this password, so the descriptor does not describe this data"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "enc:v9:fixture"
+        },
+        42
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "fixture-completion-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "wrong_generation",
+        "detail": "1 file(s) hold secrets this descriptor does not open: proxies.json"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "enc:v9:fixture"
+        },
+        42
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": null,
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "no_password",
+        "detail": "no master password was supplied, so whether the stored secrets open with this descriptor cannot be established"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "enc:v9:fixture"
+        },
+        42
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "wrong-fixture-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "verifier_mismatch",
+        "detail": "the descriptor's verifier does not open with this password, so the descriptor does not describe this data"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": {
+        "pass": "enc:v9:fixture"
+      }
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "fixture-completion-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "wrong_generation",
+        "detail": "1 file(s) hold secrets this descriptor does not open: proxies.json"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": {
+        "pass": "enc:v9:fixture"
+      }
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": null,
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "no_password",
+        "detail": "no master password was supplied, so whether the stored secrets open with this descriptor cannot be established"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": {
+        "pass": "enc:v9:fixture"
+      }
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "wrong-fixture-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "verifier_mismatch",
+        "detail": "the descriptor's verifier does not open with this password, so the descriptor does not describe this data"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        42,
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD4n-joriB9uN5wmZ8rIQZRFJyCrkYtgcMpaSPt7Og7QOQ5-Px6RY6mhOnn3VzB6hqQ=="
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "fixture-completion-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        42,
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD4n-joriB9uN5wmZ8rIQZRFJyCrkYtgcMpaSPt7Og7QOQ5-Px6RY6mhOnn3VzB6hqQ=="
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": null,
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "no_password",
+        "detail": "no master password was supplied, so whether the stored secrets open with this descriptor cannot be established"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        42,
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD4n-joriB9uN5wmZ8rIQZRFJyCrkYtgcMpaSPt7Og7QOQ5-Px6RY6mhOnn3VzB6hqQ=="
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "wrong-fixture-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "verifier_mismatch",
+        "detail": "the descriptor's verifier does not open with this password, so the descriptor does not describe this data"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": 42
+        },
+        {
+          "pass": "enc:v9:fixture"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "fixture-completion-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "wrong_generation",
+        "detail": "1 file(s) hold secrets this descriptor does not open: proxies.json"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": 42
+        },
+        {
+          "pass": "enc:v9:fixture"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": null,
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "no_password",
+        "detail": "no master password was supplied, so whether the stored secrets open with this descriptor cannot be established"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": 42
+        },
+        {
+          "pass": "enc:v9:fixture"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "wrong-fixture-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "verifier_mismatch",
+        "detail": "the descriptor's verifier does not open with this password, so the descriptor does not describe this data"
+      }
+    ]
+  },
+  {
+    "files": {
+      "profiles/a.json": [],
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v9:fixture"
+        }
+      }
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "fixture-completion-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: a.json"
+      },
+      {
+        "code": "wrong_generation",
+        "detail": "1 file(s) hold secrets this descriptor does not open: a.json"
+      }
+    ]
+  },
+  {
+    "files": {
+      "profiles/a.json": [],
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v9:fixture"
+        }
+      }
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": null,
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: a.json"
+      },
+      {
+        "code": "no_password",
+        "detail": "no master password was supplied, so whether the stored secrets open with this descriptor cannot be established"
+      }
+    ]
+  },
+  {
+    "files": {
+      "profiles/a.json": [],
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v9:fixture"
+        }
+      }
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "wrong-fixture-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: a.json"
+      },
+      {
+        "code": "verifier_mismatch",
+        "detail": "the descriptor's verifier does not open with this password, so the descriptor does not describe this data"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "plain"
+        },
+        {
+          "pass": "enc:v9:fixture"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "fixture-completion-master",
+    "expected": [
+      {
+        "code": "plaintext_left",
+        "detail": "1 credential(s) are still unencrypted in proxies.json"
+      },
+      {
+        "code": "wrong_generation",
+        "detail": "1 file(s) hold secrets this descriptor does not open: proxies.json"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "plain"
+        },
+        {
+          "pass": "enc:v9:fixture"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": null,
+    "expected": [
+      {
+        "code": "plaintext_left",
+        "detail": "1 credential(s) are still unencrypted in proxies.json"
+      },
+      {
+        "code": "no_password",
+        "detail": "no master password was supplied, so whether the stored secrets open with this descriptor cannot be established"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "plain"
+        },
+        {
+          "pass": "enc:v9:fixture"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "wrong-fixture-master",
+    "expected": [
+      {
+        "code": "plaintext_left",
+        "detail": "1 credential(s) are still unencrypted in proxies.json"
+      },
+      {
+        "code": "verifier_mismatch",
+        "detail": "the descriptor's verifier does not open with this password, so the descriptor does not describe this data"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        42,
+        {
+          "pass": "plain"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "fixture-completion-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        42,
+        {
+          "pass": "plain"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": null,
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "no_password",
+        "detail": "no master password was supplied, so whether the stored secrets open with this descriptor cannot be established"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        42,
+        {
+          "pass": "plain"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "wrong-fixture-master",
+    "expected": [
+      {
+        "code": "unreadable_files",
+        "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+      },
+      {
+        "code": "verifier_mismatch",
+        "detail": "the descriptor's verifier does not open with this password, so the descriptor does not describe this data"
+      }
+    ]
+  },
+  {
+    "files": {
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v9:fixture"
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v9:fixture"
+        }
+      },
+      "proxies.json": [
+        {
+          "pass": "enc:v9:fixture"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "fixture-completion-master",
+    "expected": [
+      {
+        "code": "wrong_generation",
+        "detail": "3 file(s) hold secrets this descriptor does not open: a.json, proxies.json"
+      }
+    ]
+  },
+  {
+    "files": {
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v9:fixture"
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v9:fixture"
+        }
+      },
+      "proxies.json": [
+        {
+          "pass": "enc:v9:fixture"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": null,
+    "expected": [
+      {
+        "code": "no_password",
+        "detail": "no master password was supplied, so whether the stored secrets open with this descriptor cannot be established"
+      }
+    ]
+  },
+  {
+    "files": {
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v9:fixture"
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v9:fixture"
+        }
+      },
+      "proxies.json": [
+        {
+          "pass": "enc:v9:fixture"
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "wrong-fixture-master",
+    "expected": [
+      {
+        "code": "verifier_mismatch",
+        "detail": "the descriptor's verifier does not open with this password, so the descriptor does not describe this data"
+      }
+    ]
+  },
+  {
+    "files": {
+      "profiles/a.json": {
+        "proxy": null
+      },
+      "proxies.json": []
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "fixture-completion-master",
+    "expected": []
+  },
+  {
+    "files": {
+      "profiles/a.json": {
+        "proxy": null
+      },
+      "proxies.json": []
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": null,
+    "expected": [
+      {
+        "code": "no_password",
+        "detail": "no master password was supplied, so whether the stored secrets open with this descriptor cannot be established"
+      }
+    ]
+  },
+  {
+    "files": {
+      "profiles/a.json": {
+        "proxy": null
+      },
+      "proxies.json": []
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "wrong-fixture-master",
+    "expected": [
+      {
+        "code": "verifier_mismatch",
+        "detail": "the descriptor's verifier does not open with this password, so the descriptor does not describe this data"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD4n-joriB9uN5wmZ8rIQZRFJyCrkYtgcMpaSPt7Og7QOQ5-Px6RY6mhOnn3VzB6hqQ=="
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "fixture-completion-master",
+    "expected": []
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD4n-joriB9uN5wmZ8rIQZRFJyCrkYtgcMpaSPt7Og7QOQ5-Px6RY6mhOnn3VzB6hqQ=="
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": null,
+    "expected": [
+      {
+        "code": "no_password",
+        "detail": "no master password was supplied, so whether the stored secrets open with this descriptor cannot be established"
+      }
+    ]
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD4n-joriB9uN5wmZ8rIQZRFJyCrkYtgcMpaSPt7Og7QOQ5-Px6RY6mhOnn3VzB6hqQ=="
+        }
+      ]
+    },
+    "descriptor": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODygc_LT6igJc9VTsV1WpW6BoyVVZfmulcRfTc3DPRPLPYLt6jH0yrDS1aAR741-xXw=="
+    },
+    "password": "wrong-fixture-master",
+    "expected": [
+      {
+        "code": "verifier_mismatch",
+        "detail": "the descriptor's verifier does not open with this password, so the descriptor does not describe this data"
+      }
+    ]
+  }
+]

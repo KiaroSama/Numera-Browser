@@ -7,68 +7,44 @@ permissions:
   contents: read
 
 env:
-  PYTHONUTF8: "1"
-  PYTHONIOENCODING: utf-8
-  HOOKMAKER_MAX_TEST_WORKERS: "2"
   CARGO_BUILD_JOBS: "2"
+  CARGO_INCREMENTAL: "0"
   CARGO_PROFILE_DEV_DEBUG: "0"
   CARGO_PROFILE_TEST_DEBUG: "0"
+  NUMERA_MAX_TEST_WORKERS: "2"
 
 jobs:
   docker:
-    name: Container image and bundled-browser integration
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    name: Native container and offline bundled Chromium
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          python-version: "3.14"
-      - name: Build the image
-        run: python scripts/migration/run_owned.py --wall 1200 --idle 150 -- docker build --pull --no-cache -t numera-browser:ci .
-      - name: The container serves, authenticates and stores
-        timeout-minutes: 3
-        run: |
-          set -euo pipefail
-          token="ci-$RANDOM"
-          docker run -d --name numera-ci -e NUMERA_API_TOKEN="$token" -p 18787:8787 numera-browser:ci
-          ready=""
-          for _ in $(seq 1 60); do
-            if curl -sf --max-time 3 -H "Authorization: Bearer $token" http://127.0.0.1:18787/api/health -o "$RUNNER_TEMP/health.json"; then
-              ready=1; break
-            fi
-            docker inspect -f '{{.State.Running}}' numera-ci | grep -q true || break
-            sleep 1
-          done
-          if [ -z "$ready" ]; then
-            echo "The container never answered /api/health"; docker logs numera-ci; exit 1
-          fi
-          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:18787/api/health)"
-          [ "$code" = "401" ] || { echo "Unauthenticated request got $code, not 401"; exit 1; }
-          curl -sf --max-time 10 -X POST -H "Authorization: Bearer $token" -H "Content-Type: application/json" -d '{"name":"ci-smoke"}' http://127.0.0.1:18787/api/profiles > /dev/null
-          curl -sf --max-time 10 -H "Authorization: Bearer $token" http://127.0.0.1:18787/api/profiles | grep -q ci-smoke
-          docker run --rm --entrypoint python numera-browser:ci -c "import cryptography, numera; print(numera.__version__, cryptography.__version__)"
-      - name: The container launches its bundled Chromium
-        timeout-minutes: 2
-        run: |
-          set -euo pipefail
-          timeout --signal=TERM --kill-after=5s 60s \
-            docker run --rm --init --network none --shm-size=1g -i \
-              --name "numera-browser-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
-              --entrypoint python numera-browser:ci - \
-              < scripts/smoke_container_browser.py
-      - name: Remove an interrupted browser smoke container
-        if: always()
-        run: |
-          name="numera-browser-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          if docker container inspect "$name" >/dev/null 2>&1; then docker rm -f "$name"; fi
-          if docker container inspect "$name" >/dev/null 2>&1; then exit 1; fi
-      - name: Container logs on failure
-        if: failure()
-        run: |
-          if docker container inspect numera-ci >/dev/null 2>&1; then docker logs numera-ci; fi
-      - name: Stop the container and verify absence
-        if: always()
-        run: |
-          if docker container inspect numera-ci >/dev/null 2>&1; then docker rm -f numera-ci; fi
-          if docker container inspect numera-ci >/dev/null 2>&1; then exit 1; fi
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: |
+            engine-rust
+            dashboard
+            tools/xtask
+      - name: Compile the native finite owner
+        run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Provision the exact Rust WASM packaging tool
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Explicitly acquire and hash reviewed vendor resources
+        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "$RUNNER_TEMP/numera-container-resources"
+      - name: Build the native server and Rust dashboard from the exact source
+        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask build-product build/container --resources "$RUNNER_TEMP/numera-container-resources" --server-only
+      - name: Validate the actual generated Docker copy context
+        run: cargo xtask ci owned --wall 60 --idle 30 -- cargo xtask ci container-context
+      - name: Build the image from the verified native installation
+        run: cargo xtask ci owned --wall 1200 --idle 150 -- docker build --pull --no-cache -t numera-browser:ci .
+      - name: Require native health, authentication and persistent profile writes
+        run: cargo xtask ci owned --wall 180 --idle 90 -- cargo xtask ci container-api numera-browser:ci
+      - name: Require the real image browser without network or host cache
+        run: cargo xtask ci owned --wall 120 --idle 60 -- cargo xtask ci container-browser numera-browser:ci 1.65.0

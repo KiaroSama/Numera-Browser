@@ -1,0 +1,938 @@
+[
+  {
+    "argv": [
+      "engines"
+    ],
+    "raw": [
+      255
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "engines"
+    ],
+    "raw": [
+      195,
+      40
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "engines"
+    ],
+    "raw": [
+      226,
+      130
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "engines"
+    ],
+    "raw": [
+      123,
+      125
+    ],
+    "exit": 0,
+    "payload": {
+      "engines": {
+        "camoufox": false,
+        "cloak": false,
+        "patchright": false,
+        "playwright": true
+      },
+      "default": "playwright"
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "engines"
+    ],
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "exit": 0,
+    "payload": {
+      "engines": {
+        "camoufox": false,
+        "cloak": false,
+        "patchright": false,
+        "playwright": true
+      },
+      "default": "playwright"
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "engines"
+    ],
+    "raw": [
+      91,
+      93
+    ],
+    "exit": 0,
+    "payload": {
+      "engines": {
+        "camoufox": false,
+        "cloak": false,
+        "patchright": false,
+        "playwright": true
+      },
+      "default": "playwright"
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "engines"
+    ],
+    "raw": null,
+    "exit": 0,
+    "payload": {
+      "engines": {
+        "camoufox": false,
+        "cloak": false,
+        "patchright": false,
+        "playwright": true
+      },
+      "default": "playwright"
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "default-engine"
+    ],
+    "raw": [
+      255
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "default-engine"
+    ],
+    "raw": [
+      195,
+      40
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "default-engine"
+    ],
+    "raw": [
+      226,
+      130
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "default-engine"
+    ],
+    "raw": [
+      123,
+      125
+    ],
+    "exit": 0,
+    "payload": {
+      "default_engine": "playwright"
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "default-engine"
+    ],
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "exit": 0,
+    "payload": {
+      "default_engine": "playwright"
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "default-engine"
+    ],
+    "raw": [
+      91,
+      93
+    ],
+    "exit": 0,
+    "payload": {
+      "default_engine": "playwright"
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "default-engine"
+    ],
+    "raw": null,
+    "exit": 0,
+    "payload": {
+      "default_engine": "playwright"
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "default-engine",
+      "invalid"
+    ],
+    "raw": [
+      255
+    ],
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "default-engine",
+      "invalid"
+    ],
+    "raw": [
+      195,
+      40
+    ],
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "default-engine",
+      "invalid"
+    ],
+    "raw": [
+      226,
+      130
+    ],
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "default-engine",
+      "invalid"
+    ],
+    "raw": [
+      123,
+      125
+    ],
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "default-engine",
+      "invalid"
+    ],
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "default-engine",
+      "invalid"
+    ],
+    "raw": [
+      91,
+      93
+    ],
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "default-engine",
+      "invalid"
+    ],
+    "raw": null,
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "config"
+    ],
+    "raw": [
+      255
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "config"
+    ],
+    "raw": [
+      195,
+      40
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "config"
+    ],
+    "raw": [
+      226,
+      130
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "config"
+    ],
+    "raw": [
+      123,
+      125
+    ],
+    "exit": 0,
+    "payload": {
+      "default_engine": "playwright",
+      "default_extensions": [],
+      "headless_launch": false,
+      "root": "fixture-root",
+      "version": "0.36.0"
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "config"
+    ],
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "exit": 0,
+    "payload": {
+      "default_engine": "playwright",
+      "default_extensions": [],
+      "headless_launch": false,
+      "root": "fixture-root",
+      "version": "0.36.0"
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "config"
+    ],
+    "raw": [
+      91,
+      93
+    ],
+    "exit": 0,
+    "payload": {
+      "default_engine": "playwright",
+      "default_extensions": [],
+      "headless_launch": false,
+      "root": "fixture-root",
+      "version": "0.36.0"
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "config"
+    ],
+    "raw": null,
+    "exit": 0,
+    "payload": {
+      "default_engine": "playwright",
+      "default_extensions": [],
+      "headless_launch": false,
+      "root": "fixture-root",
+      "version": "0.36.0"
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "config",
+      "--default-engine",
+      "invalid"
+    ],
+    "raw": [
+      255
+    ],
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "config",
+      "--default-engine",
+      "invalid"
+    ],
+    "raw": [
+      195,
+      40
+    ],
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "config",
+      "--default-engine",
+      "invalid"
+    ],
+    "raw": [
+      226,
+      130
+    ],
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "config",
+      "--default-engine",
+      "invalid"
+    ],
+    "raw": [
+      123,
+      125
+    ],
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "config",
+      "--default-engine",
+      "invalid"
+    ],
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "config",
+      "--default-engine",
+      "invalid"
+    ],
+    "raw": [
+      91,
+      93
+    ],
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "config",
+      "--default-engine",
+      "invalid"
+    ],
+    "raw": null,
+    "exit": 1,
+    "payload": {
+      "ok": false,
+      "error": "unknown engine 'invalid'",
+      "known": [
+        "camoufox",
+        "cloak",
+        "patchright",
+        "playwright"
+      ]
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "ext",
+      "default-list"
+    ],
+    "raw": [
+      255
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "ext",
+      "default-list"
+    ],
+    "raw": [
+      195,
+      40
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "ext",
+      "default-list"
+    ],
+    "raw": [
+      226,
+      130
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "ext",
+      "default-list"
+    ],
+    "raw": [
+      123,
+      125
+    ],
+    "exit": 0,
+    "payload": {
+      "extensions": []
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "ext",
+      "default-list"
+    ],
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "exit": 0,
+    "payload": {
+      "extensions": []
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "ext",
+      "default-list"
+    ],
+    "raw": [
+      91,
+      93
+    ],
+    "exit": 0,
+    "payload": {
+      "extensions": []
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "ext",
+      "default-list"
+    ],
+    "raw": null,
+    "exit": 0,
+    "payload": {
+      "extensions": []
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "vault",
+      "status"
+    ],
+    "raw": [
+      255
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "vault",
+      "status"
+    ],
+    "raw": [
+      195,
+      40
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "vault",
+      "status"
+    ],
+    "raw": [
+      226,
+      130
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "UnicodeDecodeError"
+  },
+  {
+    "argv": [
+      "vault",
+      "status"
+    ],
+    "raw": [
+      123,
+      125
+    ],
+    "exit": 0,
+    "payload": {
+      "enabled": false,
+      "unlocked": null,
+      "backend": true
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "vault",
+      "status"
+    ],
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "exit": 0,
+    "payload": {
+      "enabled": false,
+      "unlocked": null,
+      "backend": true
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "vault",
+      "status"
+    ],
+    "raw": [
+      91,
+      93
+    ],
+    "exit": 0,
+    "payload": {
+      "enabled": false,
+      "unlocked": null,
+      "backend": true
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "vault",
+      "status"
+    ],
+    "raw": null,
+    "exit": 0,
+    "payload": {
+      "enabled": false,
+      "unlocked": null,
+      "backend": true
+    },
+    "error": null
+  },
+  {
+    "argv": [
+      "vault",
+      "enable"
+    ],
+    "raw": [
+      255
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "this needs a master password \u2014 pass --password or set NUMERA_PASSWORD (a --json run never prompts)"
+  },
+  {
+    "argv": [
+      "vault",
+      "enable"
+    ],
+    "raw": [
+      195,
+      40
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "this needs a master password \u2014 pass --password or set NUMERA_PASSWORD (a --json run never prompts)"
+  },
+  {
+    "argv": [
+      "vault",
+      "enable"
+    ],
+    "raw": [
+      226,
+      130
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "this needs a master password \u2014 pass --password or set NUMERA_PASSWORD (a --json run never prompts)"
+  },
+  {
+    "argv": [
+      "vault",
+      "enable"
+    ],
+    "raw": [
+      123,
+      125
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "this needs a master password \u2014 pass --password or set NUMERA_PASSWORD (a --json run never prompts)"
+  },
+  {
+    "argv": [
+      "vault",
+      "enable"
+    ],
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "this needs a master password \u2014 pass --password or set NUMERA_PASSWORD (a --json run never prompts)"
+  },
+  {
+    "argv": [
+      "vault",
+      "enable"
+    ],
+    "raw": [
+      91,
+      93
+    ],
+    "exit": null,
+    "payload": null,
+    "error": "this needs a master password \u2014 pass --password or set NUMERA_PASSWORD (a --json run never prompts)"
+  },
+  {
+    "argv": [
+      "vault",
+      "enable"
+    ],
+    "raw": null,
+    "exit": null,
+    "payload": null,
+    "error": "this needs a master password \u2014 pass --password or set NUMERA_PASSWORD (a --json run never prompts)"
+  }
+]

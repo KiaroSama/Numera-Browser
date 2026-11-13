@@ -218,64 +218,11 @@ fn respond(
 #[test]
 fn proxy_echo_boundaries_match_original_through_transport() -> Result<(), Box<dyn std::error::Error>>
 {
-    use crate::ownership::capture;
     use serde_json::{Value, json};
-    use std::{path::Path, process::Command};
-
     let temporary = crate::common::TempDirectory::new("proxy-echo")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import io,json,sys
-from pathlib import Path
-from types import SimpleNamespace
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import proxypool
-from run_logging import run_log
-whitespace=[9,10,11,12,13,28,29,30,31,32,133,160,5760,8192,8193,8194,8195,8196,8197,8198,8199,8200,8201,8202,8232,8233,8239,8287,12288]
-bodies=[(chr(code)+value+chr(code)).encode('utf-8') for code in whitespace
-        for value in ('','192.0.2.9','{"ip":"192.0.2.9","country_code":"DE","city":"Fixture"}')]
-bodies += [b'{"ip":"","query":"192.0.2.8","IPv4":"192.0.2.6","country_code":"","country":"DE","countryCode":"FR"}',
-           b'{"IPv4":"192.0.2.7","countryCode":"DE","city":0}', b'{"ip":7,"country":false}',
-           b'{"ip":true,"country":["DE"]}', b'{"ip":""}', b'{}', b'{invalid}',
-           b'\xff192.0.2.9', b'192.0.2.9\xe2\x82', b'\x00192.0.2.9\x00',
-           '192.0.2.9\u001cinside'.encode('utf-8'), (chr(0x200b)+'192.0.2.9'+chr(0x200b)).encode('utf-8')]
-proxypool.time=SimpleNamespace(time=lambda:1000.0)
-rows=[]
-class Opener:
-    def __init__(self,body):self.body,self.calls=body,[]
-    def open(self,url,timeout):
-        assert url in proxypool._ECHO and timeout==2.0
-        self.calls.append(url)
-        return io.BytesIO(self.body)
-with run_log('proxy-echo-oracle',root/'logs') as log:
-    for body in bodies:
-        opener=Opener(body)
-        result=proxypool._ask_echo(opener,2.0,1000.0)
-        if result['ok']:assert result.pop('latencyMs')==0
-        assert opener.calls==list(proxypool._ECHO[:1] if result['ok'] else proxypool._ECHO)
-        rows.append({'body':list(body),'result':result})
-    log.info('Observed proxy echo cases=%s',len(rows))
-    print(json.dumps(rows,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path()).env("PYTHONUTF8", "1");
-    let observed = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(observed.exit, 0, "Original proxy echo observer failed");
-    let rows: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    let rows: Vec<Value> = serde_json::from_str(include_str!(
+        "../../tests/fixtures/network-characterization/proxy-echo.json"
+    ))?;
     assert_eq!(rows.len(), 99, "Proxy echo observations missing");
     let responses = rows
         .iter()

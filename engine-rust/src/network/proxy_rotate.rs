@@ -46,6 +46,13 @@ fn parse(text: &str) -> io::Result<Url> {
 }
 
 fn pin(url: &Url, addresses: &[IpAddr]) -> io::Result<IpAddr> {
+    pin_with(url, addresses, public_ip::is_global)
+}
+fn pin_with(
+    url: &Url,
+    addresses: &[IpAddr],
+    allowed: impl Fn(IpAddr) -> bool,
+) -> io::Result<IpAddr> {
     let host = url
         .host_str()
         .unwrap_or("")
@@ -55,7 +62,7 @@ fn pin(url: &Url, addresses: &[IpAddr]) -> io::Result<IpAddr> {
         return Err(io::Error::other(format!("{host} does not resolve")));
     }
     for address in addresses {
-        if !public_ip::is_global(*address) {
+        if !allowed(*address) {
             return Err(io::Error::new(
                 io::ErrorKind::PermissionDenied,
                 format!(
@@ -217,41 +224,75 @@ where
     .map_err(|_| io::Error::new(io::ErrorKind::TimedOut, "Control-plane deadline exceeded"))?
 }
 
-pub async fn rotate(proxy: &Value, budget: Duration) -> Value {
+fn refused(error: impl Into<String>) -> Value {
+    json!({"ok":null,"rotated":false,"error":error.into()})
+}
+async fn rotate_service<Resolve, Resolved, Clock, Control, Controlled, Check, Checked>(
+    proxy: &Value,
+    budget: Duration,
+    resolve: Resolve,
+    now: Clock,
+    control: Control,
+    check: Check,
+) -> Value
+where
+    Resolve: FnOnce(String) -> Resolved,
+    Resolved: std::future::Future<Output = io::Result<(Url, IpAddr)>>,
+    Clock: FnOnce() -> io::Result<f64>,
+    Control: FnOnce(Url, IpAddr, Duration) -> Controlled,
+    Controlled: std::future::Future<Output = io::Result<String>>,
+    Check: FnOnce() -> Checked,
+    Checked: std::future::Future<Output = Value>,
+{
     let text = proxy["rotateUrl"].as_str().unwrap_or("").trim();
-    let refused = |error: String| json!({"ok":null,"rotated":false,"error":error});
     if text.is_empty() {
-        return refused("no change-IP URL is set for this proxy".into());
+        return refused("no change-IP URL is set for this proxy");
     }
-    let dns = match SystemDns::new(budget) {
-        Ok(dns) => dns,
+    let (url, address) = match resolve(text.to_owned()).await {
+        Ok(value) => value,
         Err(error) => return refused(error.to_string()),
     };
-    let (url, address) = match destination(text, &dns).await {
-        Ok(destination) => destination,
+    let now = match now() {
+        Ok(now) => now,
         Err(error) => return refused(error.to_string()),
-    };
-    let now = match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(now) => now.as_secs_f64(),
-        Err(_) => return refused("System clock precedes Unix epoch".into()),
     };
     match cooldown(proxy, now) {
         Ok(Some(error)) => return refused(error),
         Err(error) => return refused(error.to_string()),
         Ok(None) => {}
     }
-    let body = match control(url, address, &dns, budget).await {
+    let body = match control(url, address, budget).await {
         Ok(body) => body,
         Err(error) => {
             return json!({"ok":false,"rotated":false,"attempted":true,
             "error":error.to_string().lines().next().unwrap_or("").chars().take(180).collect::<String>()});
         }
     };
-    verified(
-        proxy_check::check(proxy, budget).await,
-        proxy["lastCheck"]["ip"].clone(),
-        &body,
+    verified(check().await, proxy["lastCheck"]["ip"].clone(), &body)
+}
+pub async fn rotate(proxy: &Value, budget: Duration) -> Value {
+    if proxy["rotateUrl"].as_str().unwrap_or("").trim().is_empty() {
+        return refused("no change-IP URL is set for this proxy");
+    }
+    let dns = match SystemDns::new(budget) {
+        Ok(dns) => dns,
+        Err(error) => return refused(error.to_string()),
+    };
+    let dns = &dns;
+    rotate_service(
+        proxy,
+        budget,
+        |text| async move { destination(&text, dns).await },
+        || {
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|now| now.as_secs_f64())
+                .map_err(|_| io::Error::other("System clock precedes Unix epoch"))
+        },
+        |url, address, budget| control(url, address, dns, budget),
+        || proxy_check::check(proxy, budget),
     )
+    .await
 }
 
 pub fn rotate_sync(proxy: &Value, budget: Duration) -> io::Result<Value> {
@@ -321,5 +362,48 @@ mod tests {
             false
         );
         Ok(())
+    }
+}
+
+#[cfg(feature = "test-support")]
+pub mod testing {
+    use super::*;
+    pub fn public_destination(text: &str, addresses: &[IpAddr]) -> io::Result<(Url, IpAddr)> {
+        let url = super::parse(text)?;
+        let address = super::pin(&url, addresses)?;
+        Ok((url, address))
+    }
+    pub fn local_destination(text: &str, addresses: &[IpAddr]) -> io::Result<(Url, IpAddr)> {
+        let url = super::parse(text)?;
+        let address = super::pin_with(&url, addresses, |ip| ip.is_loopback())?;
+        Ok((url, address))
+    }
+    pub async fn rotate_at(proxy: &Value, now: f64, checked: Value, budget: Duration) -> Value {
+        let address = IpAddr::from([127, 0, 0, 1]);
+        super::rotate_service(
+            proxy,
+            budget,
+            |text| async move { local_destination(&text, &[address]) },
+            || Ok(now),
+            |url, address, budget| {
+                super::control_with(url, address, budget, move |next| async move {
+                    local_destination(next.as_str(), &[address])
+                })
+            },
+            || async { checked },
+        )
+        .await
+    }
+    pub async fn control_at<F, Fut>(
+        url: Url,
+        address: IpAddr,
+        budget: Duration,
+        resolve: F,
+    ) -> io::Result<String>
+    where
+        F: FnMut(Url) -> Fut,
+        Fut: std::future::Future<Output = io::Result<(Url, IpAddr)>>,
+    {
+        super::control_with(url, address, budget, resolve).await
     }
 }

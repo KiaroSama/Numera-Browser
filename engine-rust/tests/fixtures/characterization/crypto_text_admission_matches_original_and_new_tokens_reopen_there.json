@@ -1,0 +1,1482 @@
+[
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": " \nAAECAwQFBgcICQoLDA0ODw==\t",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "!AAECAwQF\u0000BgcICQoLDA0ODw==?",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw=====",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAw=QFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Incorrect padding",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw=",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Incorrect padding",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==A",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Incorrect padding",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "string argument should contain only ASCII characters",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODx==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1: \ngAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==\t",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:!gAAAAABl\u0000U_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==?",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w=====",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:==gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAA=BlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w=",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU/EAAAECAwQFBgcICQoLDA0OD+i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv+fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==A",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EABAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "xxxxxxxgAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "\u00e9\u6f22\ud83d\ude42xxxxgAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==:ignored",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v9:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "this secret was written by a newer version (v9) than this engine understands",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v01:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "this secret was written by a newer version (v01) than this engine understands",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAA\u00e9BlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'ascii' codec can't encode character '\\xe9' in position 5: ordinal not in range(128)",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAA\u6f22\ud83d\ude42lU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'ascii' codec can't encode characters in position 5-6: ordinal not in range(128)",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD-i5VBFUbYyOxW54exKVS2ncQqRhkaqG6ohpBErLv-fk3oupXg9lQWY1x3dKbXtt8w==",
+    "password": "wrong-fixture-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": " \nAAECAwQFBgcICQoLDA0ODw==\t",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "!AAECAwQF\u0000BgcICQoLDA0ODw==?",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw=====",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAw=QFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Incorrect padding",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw=",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Incorrect padding",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==A",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Incorrect padding",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "string argument should contain only ASCII characters",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODx==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1: \ngAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==\t",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:!gAAAAABl\u0000U_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==?",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g=====",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:==gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAA=BlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g=",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU/EAAAECAwQFBgcICQoLDA0OD8dLM0/5d5L6IHpOawQZ05u9tNsnt7U9T+TYyweeDsrQmIpxJ+L+n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==A",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EABAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "xxxxxxxgAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "\u00e9\u6f22\ud83d\ude42xxxxgAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==:ignored",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v9:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "this secret was written by a newer version (v9) than this engine understands",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v01:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "this secret was written by a newer version (v01) than this engine understands",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAA\u00e9BlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'ascii' codec can't encode character '\\xe9' in position 5: ordinal not in range(128)",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAA\u6f22\ud83d\ude42lU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'ascii' codec can't encode characters in position 5-6: ordinal not in range(128)",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD8dLM0_5d5L6IHpOawQZ05u9tNsnt7U9T-TYyweeDsrQmIpxJ-L-n71Ev1wa8c908g==",
+    "password": "wrong-fixture-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": " \nAAECAwQFBgcICQoLDA0ODw==\t",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "!AAECAwQF\u0000BgcICQoLDA0ODw==?",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw=====",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAw=QFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Incorrect padding",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw=",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Incorrect padding",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==A",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Incorrect padding",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "string argument should contain only ASCII characters",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODx==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2: \ngAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==\t",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:!gAAAAABl\u0000U_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==?",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg=====",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:==gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAA=BlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg=",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU/EAAAECAwQFBgcICQoLDA0OD2O/TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP/N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==A",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EABAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "xxxxxxxgAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "\u00e9\u6f22\ud83d\ude42xxxxgAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": "fixture-value",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==:ignored",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v9:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "this secret was written by a newer version (v9) than this engine understands",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v01:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "this secret was written by a newer version (v01) than this engine understands",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAA\u00e9BlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'ascii' codec can't encode character '\\xe9' in position 5: ordinal not in range(128)",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAA\u6f22\ud83d\ude42lU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'ascii' codec can't encode characters in position 5-6: ordinal not in range(128)",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2O_TAwNE5xbLFlFcsY5hydDkKyDK0RifkfnU6P0ppfyP_N1AMbnYMJoG4IOeA0lUg==",
+    "password": "wrong-fixture-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": " \nAAECAwQFBgcICQoLDA0ODw==\t",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "!AAECAwQF\u0000BgcICQoLDA0ODw==?",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw=====",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAw=QFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Incorrect padding",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw=",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Incorrect padding",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==A",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Incorrect padding",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "string argument should contain only ASCII characters",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODx==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2: \ngAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==\t",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:!gAAAAABl\u0000U_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==?",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow=====",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:==gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAA=BlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow=",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU/EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==A",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EABAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "xxxxxxxgAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "\u00e9\u6f22\ud83d\ude42xxxxgAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": "numera-vault-ok",
+    "error": null,
+    "check": true
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==:ignored",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v9:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "this secret was written by a newer version (v9) than this engine understands",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v01:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "this secret was written by a newer version (v01) than this engine understands",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAA\u00e9BlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'ascii' codec can't encode character '\\xe9' in position 5: ordinal not in range(128)",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAA\u6f22\ud83d\ude42lU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'ascii' codec can't encode characters in position 5-6: ordinal not in range(128)",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "wrong-fixture-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "A",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Invalid base64-encoded string: number of data characters (1) cannot be 1 more than a multiple of 4",
+    "check": false
+  },
+  {
+    "salt": "=",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "!",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AA",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Incorrect padding",
+    "check": false
+  },
+  {
+    "salt": "A=",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Invalid base64-encoded string: number of data characters (1) cannot be 1 more than a multiple of 4",
+    "check": false
+  },
+  {
+    "salt": "A!",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Invalid base64-encoded string: number of data characters (1) cannot be 1 more than a multiple of 4",
+    "check": false
+  },
+  {
+    "salt": "=A",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Invalid base64-encoded string: number of data characters (1) cannot be 1 more than a multiple of 4",
+    "check": false
+  },
+  {
+    "salt": "==",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "=!",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "!A",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "Invalid base64-encoded string: number of data characters (1) cannot be 1 more than a multiple of 4",
+    "check": false
+  },
+  {
+    "salt": "!=",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "!!",
+    "value": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD3csK0mj8ZWnpyJGvCMJ1OTo63qNYEDWmNzigl1Hwt3o4gkgIE0TzTeV2nOCUfZkow==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "wrong master password",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZB_udd5PnnQcgOqIRx2CkB-OorWnJTPcks30Y3gvY_7RUBcDt-Vr2MNhXjJisyfmyDjItj0co7SeIYGcgQZMVIQ==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZ9YjoE-NBF_VvOyE-44PbYiVeTEKzVlV-wnIOCSgSiy8TkKVXzW7hVNF8pYHjJJkM7gnsZP2E7JqUnAkOR-hfkw==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0x80 in position 0: invalid start byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZaeuQGbklk7ND-RNFJSS9Os5qNii-y-Lrd3qdxl7O73dgGDzHi2hWsCg08YnrsmvxV6yQaFnWyTxKNDsK7EMYPA==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xc0 in position 0: invalid start byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZsuGglMQVP8k15wvHZtOb_vdFlpVkYVUKQ2d25iPDhyoJTKLsVwEHCIz39fbxhzDTgQlo175aa8qhRx56xDFe4w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xf5 in position 0: invalid start byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZqO4ldegrmUl7DzRGO93Ad7RGpC6bhaL1L9VK3fKSknqTQNH3Dg-AyNcFrE5kKhjvYe2CjHgEDBKQf_wgZv2ZfA==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xc2 in position 0: unexpected end of data",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZU4dHgLFdTNgS5QN_pqG-4IfSPLlSaJwdtbVdr64VEgo15MxhyEd3vKmGtoJE0xLBcU-vF9wABBYDwMJybdB5ig==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode bytes in position 0-1: unexpected end of data",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZ3zBSHSTuhzrTiI17txWK997vSIQFP_H5PzSWwcelxMisEfpU0VqodUTvM7HDDo6fnppM4YnzlSeBYf00ZKWN3A==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode bytes in position 0-2: unexpected end of data",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZNchuPtOVHBZABTlHI7fq0MAGRza921CguCKRECyRlSD15FF8FPzMd0D6F51mp3zB9Q_1yInKFXOR-99AwbLHGA==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xed in position 0: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZZqNyuaBRFfJz-T80eije8IjpOcRuf6n7YPHdb_Q3ihaC_wLYT7AWn4coMWVM95y8_Y7Xnjnd_lj9eimgt-QWdQ==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xc2 in position 0: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZbDHfbvmZjU53o00BpgJoSWazRogAGHU6oN1vcgN7ZcmmtfbF31sQzN0qPWkF3dutQYRmlP974fpAT1EOJRd8Fg==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZyJP2b5c0F-yHg7OZPobW_QTvhSB9IHHEKBLrbKIFuCr1AwcQ0SVVBgInEzV6n8Fs1RSARDRt2BCRSd0Bf-dD3A==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode bytes in position 0-2: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZA2jw9lihCqaxT4FqoryHl_UTPzvxEW-XmEFwx_0615wfyvQnjkfKL2U1Xj5lHooUX6bNxAZar8pZxpil75XtdA==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xe0 in position 0: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZXXXtRG1yqB8_44KKg7uX46tpJ_PNWbr9b9i66EuvLYOHLcbwyWsoEgT8psJ-BmYJ-j0kqAFPwSJ_G-FHNvHV4Q==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xed in position 0: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZnAmjvS8uocxd5_KfD6wn-t4s0kcR3gUn8gtGEyzFAEZXvsDMWP54bgf90TdQlwQXZOEVqLk81AoB06x9cVslTw==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xf0 in position 0: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZxUfcT-YGpzeyeDVVLgRc-N8SsFF4bxoCXxbD7qcE1z1J3Fcx5mRj6pY05Mgh7hpiy3kMc4jegCVzMM6KDkMTCw==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xf4 in position 0: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZ1_59OgeTMwuXi0Iupq7slgSh9kkRL6Nzr0X6-0RWqCCAKQEWsu0O6YVDd1cAfIktUpmdjo1DhzVI-LnWDQ6vJw==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xff in position 3: invalid start byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZGScH7pze9vNPZt2xqkySULP8-YHzSEz-as6JNCYjwkt9ArB6DxHN4Vb2clX2aFdRFE-ZkcnR1t_vaqibSzOMog==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode bytes in position 2-3: unexpected end of data",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZ-CU2JxVRFZ0t6AdNLRyeCZGY2ORpZe2UvseVjbXPCa2_I0uV916qmVwHBlyGYmKP0MRS9ZoDh6I6bjpicFG3eQ==",
+    "password": "fixture-only-password",
+    "result": "",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZM3V3f028db17by4xEWcxjVnjImZy7S-v9Iro3bvHChrbc529hoWrtWW5sVoPT9JyGQN0xENZB7wLSl5maBm33Q==",
+    "password": "fixture-only-password",
+    "result": "\u0000",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v1:gAAAAABq86kZNZ_3SJ0irEtPCSttwny5YSft4bzI7P_BTyaaRBtmt5dTZKuqTH0oTqOiFUui9pyru-LudEM9XDJjCIq8LukFxJjC2TZYJQ_6d_zjoH6SN4Y=",
+    "password": "fixture-only-password",
+    "result": "Unicode \u03b1 \u0641\u0627\u0631\u0633\u06cc",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZQGe1OOdz3XP1vUxsV-ba8lThPj4OGfEd7aRxo182kz46UzOSPwjbfHoefe0YpI8YnDYfwYYbuf7jUqn4l1x9Ng==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZSzaskpx9TjrWq9AmP6XJqsglQDK0TSzXneFbLxSLZrCp4N9pix7laxijGtFxlYoqTyo3E9GIaT7WSOAVHjX0zA==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0x80 in position 0: invalid start byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZzvEp-5WbAax2tAff16PtOTEHoXn91NBvx8O60CdZKWnRdx2Gbi6jYZEkArk2fe-L9QzfO2vfwsOrr42vA97SZQ==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xc0 in position 0: invalid start byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZeSAOA7YuuB_5KBBz9EdihfHoHKFeDl2p7mWlg-5DGhaGco1grOrVdljo2cu6d-dan1fin6QJEjFjsisdH6NzYg==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xf5 in position 0: invalid start byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZNr90GjREgaa2SgsLj4NdDjY4jtZVloJHnm-fxPfujtuqW-vWoa--oPJwD6-pCSF5F2OB4_38fchglrJNXKpTWQ==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xc2 in position 0: unexpected end of data",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZXJExnwOrdJ5aQHxn3GlJlvDKniT2t21oNMt5GwpqVhjedWPfq8zlk_w-P2p34hK6KQOcB_UPbP8sF2l3y5FyDw==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode bytes in position 0-1: unexpected end of data",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZmGEiznxD53Qj4Z0mbGK6NQjniKnVGc7yrD2fPldv5wzyrwEVCFmCwqFlYvnepLjo1PdTTjHVP8y3OOS3xYSVfQ==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode bytes in position 0-2: unexpected end of data",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZfip3zIDDcLD6qkGyQkXfTkRD3Qz7bUm_f0mnkufFSbQq6Zv2TOY5_MkHo-VO3zZhopwiiEzSH_ouw15VHOR1qA==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xed in position 0: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZb1Iikyc8MwQZIrM3eWlKNlU1EqOUx1c3uqo7EF-BuaIqbtCAAmReKwWL-DIIl7Ffc4fN3XlGTvXoCr9H8xpyLw==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xc2 in position 0: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZCVmjdgLDdYqG4g2oKn-_JbooHGnHuuwZ0zSjtOk3LxsLa_OnhNJwm3LiK9V_qx_6-cFAb4dN44BURQjm6fqzaQ==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZOffXT15M4AeDRY5nveZnKPEFc9C7k0Sys8qCxp3CAeoDMDNMInb8nyEjxz_DZd_oV5SDSvmJHQNJP33_h9i4EQ==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode bytes in position 0-2: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZ34PHkJfBn_8qWIhxXxgKA0iqaYnN515IU3QeYslfycmxVo3O6_RvNGYu4Z02YKZEQqhpye3mZE8WWTypUcBekw==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xe0 in position 0: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZSSniK5m7yaQ0dAIyPh4GTUImbLVlSnTXNTyfTEAeLvb_89K7dtn39S8zhPR2cjcb-xInl9sZDfiHkh6G3AkmQQ==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xed in position 0: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZ8hvWubo_I1RkO27vEK-_FPwScLZh_4lXKq01zbvOgBMBO75_PnsqFuK2r6XfeGGfbbySGjERhNt7yocaov0m5Q==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xf0 in position 0: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZ5RHKcNormGttQBTN1px-X8bi3nkv_5Q-9TG4A0zlzqFNVv82hc0IDlzdi2mL_82z1BKvl0TM8oQ0En_eGw517w==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xf4 in position 0: invalid continuation byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZhd0xh2AVBZNOHoTusCWaR80bF3uL_-kxg423wALoUoOkFRPU_0Q6S1NMSJa8mnmxASH3ymrkhWB1fHpyMaby0g==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode byte 0xff in position 3: invalid start byte",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZXVHBWJXjV1G0U0OMGHTbG1UYC9-pR2OZ3q94ADBLfRwCPGR5amK3Alxj1DFZ5c9PMNmFV_0niEkoXeC8vPZhrw==",
+    "password": "fixture-only-password",
+    "result": null,
+    "error": "'utf-8' codec can't decode bytes in position 2-3: unexpected end of data",
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZ0O02f3uksD-gMvouDNUb1C-nX-STpkV4N01OcVnejDZSnDofbkY4IqcMisI-syfuL84ymDQCDPf6AQisnA2H_g==",
+    "password": "fixture-only-password",
+    "result": "",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZ0pnkYJKv-9_-Q_4E12NRNwDL4BmqonSvcS4NeYNoe_3sbA-xbQet98nYPYE8dXzzv9QfycSTsmlTcrGiU5qE2g==",
+    "password": "fixture-only-password",
+    "result": "\u0000",
+    "error": null,
+    "check": false
+  },
+  {
+    "salt": "AAECAwQFBgcICQoLDA0ODw==",
+    "value": "enc:v2:gAAAAABq86kZPPUe4vfvoXeoBaI5AWgxCIwx7xe7PIJ2r1R5Dk1oyDmQvhB6A6ofrtn-L86N7OAEu2_4mFHst61GO-0txH1P7KdCDXsqNlOewvsdRc1eOVY=",
+    "password": "fixture-only-password",
+    "result": "Unicode \u03b1 \u0641\u0627\u0631\u0633\u06cc",
+    "error": null,
+    "check": false
+  }
+]

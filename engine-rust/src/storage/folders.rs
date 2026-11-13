@@ -186,17 +186,7 @@ impl Folders {
         let mut batch = Batch::default();
         match update(&mut batch) {
             Ok(names) => Ok(names),
-            Err(error) => {
-                let failures = batch.rollback();
-                if failures.is_empty() {
-                    Err(error)
-                } else {
-                    Err(io::Error::other(format!(
-                        "Folder transaction failed: {error}; {} file(s) could not be restored",
-                        failures.len()
-                    )))
-                }
-            }
+            Err(error) => Err(batch.fail(error)),
         }
     }
     pub fn create(&self, name: &str) -> io::Result<Vec<String>> {

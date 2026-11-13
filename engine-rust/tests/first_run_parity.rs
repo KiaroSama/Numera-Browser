@@ -36,94 +36,30 @@ fn files(
 mod common;
 #[path = "first_run_parity/nested_copy.rs"]
 mod nested_copy;
+#[path = "first_run_parity/support.rs"]
+mod support;
 
 #[test]
 fn complete_first_run_summaries_match_original_paths_and_copy_results()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::{ownership::capture, storage::first_run::import_from};
-    use std::{process::Command, time::Duration};
+    use numera_core::storage::first_run::import_from;
 
     let temporary = common::TempDirectory::new("first-run-summary")?;
     let inputs: PathBuf = temporary.path().components().collect();
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command
-        .args([
-            "-I", "-B", "-c", r#"
-import json,sys
-from pathlib import Path
-from unittest.mock import patch
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import firstrun
-from run_logging import run_log
-
-with run_log('first-run-summary-oracle',root/'logs') as log:
-    rows=[]
-    source_files={'profiles/a.json':b'{"name":"source"}',
-                  'user-data/a/state.bin':bytes([0,255,10,13]),
-                  'tokens.json':b'{"fixture":true}'}
-    for operation in ['import_from','run_if_needed']:
-        for variant in ['new','overlap','empty','marked']:
-            case=root/'cases'/str(len(rows))
-            source,destination=case/'source 日本語',case/'destination with spaces'
-            destination.mkdir(parents=True)
-            before={} if variant=='empty' else source_files
-            initial=({'profiles/a.json':b'{"name":"destination"}',
-                      'tokens.json':b'{"destination":true}'} if variant=='overlap' else {})
-            if variant=='marked':
-                initial['.imported']=b'existing marker\n'
-            for base,entries in [(source,before),(destination,initial)]:
-                for name,raw in entries.items():
-                    path=base/name
-                    path.parent.mkdir(parents=True,exist_ok=True)
-                    path.write_bytes(raw)
-            with patch('numera.firstrun.legacy_dirs',return_value=[source]):
-                call=(lambda:firstrun.import_from(source,destination)) if operation=='import_from' else (lambda:firstrun.run_if_needed(destination))
-                result=call()
-                again=call()
-            written={path.relative_to(destination).as_posix():list(path.read_bytes())
-                     for path in sorted(destination.rglob('*'))
-                     if path.is_file() and '.locks' not in path.relative_to(destination).parts
-                     and path.name!='.imported'}
-            rows.append({'operation':operation,'variant':variant,
-                         'source':{name:list(raw) for name,raw in before.items()},
-                         'initial':{name:list(raw) for name,raw in initial.items()},
-                         'result':result,'again':again,'written':written,
-                         'marker_present':(destination/'.imported').exists(),
-                         'source_unchanged':all((source/name).read_bytes()==raw for name,raw in before.items())})
-    log.info('Observed complete first-run summaries cases=%s',len(rows))
-    print(json.dumps(rows,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .arg(&inputs)
-        .env("PYTHONUTF8", "1");
-    let observed = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 65536,
-            cleanup: Duration::from_secs(5),
-        },
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = support::load(
+        include_str!(
+            "fixtures/characterization/complete_first_run_summaries_match_original_paths_and_copy_results.json"
+        ),
+        &inputs,
     )?;
-    assert_eq!(
-        observed.exit, 0,
-        "Original first-run summary observer failed"
-    );
-    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
     assert_eq!(cases.len(), 8, "First-run summary observations missing");
     for (index, case) in cases.iter().enumerate() {
         let root = inputs.join("cases").join(index.to_string());
         // Recreate the same input paths, not normalized expected results.
-        fs::remove_dir_all(&root)?;
+        if root.exists() {
+            fs::remove_dir_all(&root)?;
+        }
         let source = root.join("source 日本語");
         let destination = root.join("destination with spaces");
         fs::create_dir_all(&destination)?;
@@ -189,87 +125,23 @@ with run_log('first-run-summary-oracle',root/'logs') as log:
 #[test]
 fn legacy_discovery_preserves_original_order_and_never_marks_denied_sources_complete()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::ownership::capture;
-    use std::{io, process::Command, time::Duration};
+    use std::io;
 
     let temporary = common::TempDirectory::new("legacy discovery α")?;
     let inputs: PathBuf = temporary.path().components().collect();
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut original = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    original.args(["-I", "-B", "-c", r#"
-import json,os,subprocess,sys
-from pathlib import Path
-from unittest.mock import patch
-repository,parent=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import firstrun
-rows=[]
-for index,variant in enumerate(('denied-only','denied-first','none','missing','empty','profiles-first','proxies-first','self')):
-    root=parent/str(index)
-    destination=root/'destination'
-    destination.mkdir(parents=True)
-    (destination/'untouched.bin').write_bytes(b'preserved destination')
-    first,second=root/'first',root/'second'
-    if variant not in ('none','missing','empty','self'):
-        if variant=='proxies-first':
-            first.mkdir();(first/'proxies.json').write_bytes(b'[]')
-        else:
-            (first/'profiles').mkdir(parents=True)
-            (first/'profiles/a.json').write_bytes(b'{"name":"first"}')
-    if variant=='empty':first.mkdir()
-    if variant not in ('denied-only','none'):
-        (second/'profiles').mkdir(parents=True)
-        (second/'profiles/b.json').write_bytes(b'{"name":"second"}')
-    candidates=([destination,second] if variant=='self' else [first,second])
-    def access(denied):
-        if os.name=='nt':
-            args=['/deny','*S-1-1-0:(OI)(CI)(RD,REA,RA)'] if denied else ['/remove:d','*S-1-1-0']
-            subprocess.run(['icacls',str(first),*args],check=True,timeout=5,
-                           stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        else:first.chmod(0 if denied else 0o700)
-    denied=variant.startswith('denied')
-    result=None;refused=False
-    try:
-        if denied:access(True)
-        with patch('numera.firstrun.legacy_dirs',return_value=candidates):
-            try:result=firstrun.run_if_needed(destination)
-            except PermissionError:refused=True
-    finally:
-        if denied:access(False)
-    assert refused==denied,'Original fixture did not cause the expected discovery refusal'
-    marker=destination/'.imported'
-    before=list(marker.read_bytes()) if marker.exists() else None
-    assert (before is None) if denied else (before is not None)
-    with patch('numera.firstrun.legacy_dirs',return_value=candidates):
-        retry=firstrun.run_if_needed(destination)
-    rows.append(dict(variant=variant,result=result,refused=refused,marker=before,
-                     retry=retry,retried_marker=list(marker.read_bytes())))
-print(json.dumps(rows,ensure_ascii=True))
-"#]).arg(repository).arg(&inputs);
-    let observed = capture::run(
-        &mut original,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 131072,
-            cleanup: Duration::from_secs(5),
-        },
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = support::load(
+        include_str!(
+            "fixtures/characterization/legacy_discovery_preserves_original_order_and_never_marks_denied_sources_complete.json"
+        ),
+        &inputs,
     )?;
-    assert_eq!(
-        observed.exit, 0,
-        "Original legacy discovery observer failed"
-    );
-    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
     assert_eq!(cases.len(), 8, "Legacy discovery observations missing");
     for (index, case) in cases.iter().enumerate() {
         let root = inputs.join(index.to_string());
-        fs::remove_dir_all(&root)?;
+        if root.exists() {
+            fs::remove_dir_all(&root)?;
+        }
         let destination = root.join("destination");
         fs::create_dir_all(&destination)?;
         fs::write(destination.join("untouched.bin"), b"preserved destination")?;
@@ -391,78 +263,25 @@ print(json.dumps(rows,ensure_ascii=True))
 #[test]
 fn imported_new_directories_preserve_original_metadata_without_replacing_existing_modes()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::{ownership::capture, storage::first_run::import_from};
-    use std::{process::Command, time::Duration};
+    use numera_core::storage::first_run::import_from;
+    use std::time::Duration;
 
     let temporary = common::TempDirectory::new("first-run directory metadata")?;
     let inputs: PathBuf = temporary.path().components().collect();
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command
-        .args(["-I", "-B", "-c", r#"
-import json,os,stat,sys
-from pathlib import Path
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import firstrun
-from run_logging import run_log
-
-with run_log('first-run-directory-oracle',root/'logs') as log:
-    rows=[]
-    for variant in ['new','existing','mixed']:
-        case=root/'cases'/variant
-        source,destination=case/'source',case/'destination'
-        source.joinpath('profiles/a/nested').mkdir(parents=True)
-        destination.joinpath('profiles').mkdir(parents=True)
-        source.joinpath('profiles/a/state.bin').write_bytes(bytes([0,255,10]))
-        source.joinpath('profiles/a/nested/deep.bin').write_bytes(b'deep')
-        initial=['profiles/a','profiles/a/nested'] if variant=='existing' else ['profiles/a'] if variant=='mixed' else []
-        for name in initial:
-            destination.joinpath(name).mkdir(parents=True,exist_ok=True)
-        for base,names,stamp,mode in [(source,['profiles/a','profiles/a/nested'],1600000000,0o750),
-                                     (destination,initial,1500000000,0o700)]:
-            for index,name in enumerate(names):
-                path=base/name
-                path.chmod(mode)
-                os.utime(path,ns=((stamp+index)*10**9,(stamp+index)*10**9))
-        result=firstrun.import_from(source,destination)
-        metadata={}
-        for name in ['profiles/a','profiles/a/nested']:
-            value=(destination/name).stat()
-            metadata[name]={'modified':value.st_mtime_ns,
-                            'mode':stat.S_IMODE(value.st_mode) if os.name!='nt' else None}
-        rows.append({'variant':variant,'result':result,'metadata':metadata})
-    log.info('Observed directory metadata cases=%s',len(rows))
-    print(json.dumps(rows,ensure_ascii=True))
-"#])
-        .arg(repository)
-        .arg(&inputs)
-        .env("PYTHONUTF8", "1");
-    let observed = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(20),
-            idle: Duration::from_secs(15),
-            bytes: 65536,
-            cleanup: Duration::from_secs(5),
-        },
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = support::load(
+        include_str!(
+            "fixtures/characterization/imported_new_directories_preserve_original_metadata_without_replacing_existing_modes.json"
+        ),
+        &inputs,
     )?;
-    assert_eq!(
-        observed.exit, 0,
-        "Original directory metadata observer failed"
-    );
-    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
     assert_eq!(cases.len(), 3, "Directory metadata observations missing");
     for case in cases {
         let variant = case["variant"].as_str().ok_or("Variant missing")?;
         let root = inputs.join("cases").join(variant);
-        fs::remove_dir_all(&root)?;
+        if root.exists() {
+            fs::remove_dir_all(&root)?;
+        }
         let source = root.join("source");
         let destination = root.join("destination");
         fs::create_dir_all(source.join("profiles/a/nested"))?;

@@ -7,7 +7,7 @@ use crate::{
 use serde_json::{Map, Value, json};
 use std::{io, path::Path, process::Command, time::Duration};
 
-fn prepare(
+pub fn child_command(
     executable: &Path,
     root: Option<&Path>,
     password: Option<&str>,
@@ -23,7 +23,10 @@ fn prepare(
         .env_remove("NUMERA_NATIVE_JOB_GATE")
         .env_remove("NUMERA_JOB_FILE")
         .env_remove("NUMERA_TREE")
-        .env_remove("NUMERA_READY_FILE");
+        .env_remove("NUMERA_READY_FILE")
+        .env_remove("NUMERA_UPDATE_TOKEN")
+        .env_remove("NUMERA_UPDATE_TICKET")
+        .env_remove("NUMERA_UPDATE_ACTIVATION");
     if let Some(password) = password.filter(|value| !value.is_empty()) {
         command.env("NUMERA_PASSWORD", password);
     }
@@ -77,29 +80,30 @@ pub fn call_controlled(
         })
         .transpose()?
     };
-    let mut command = prepare(executable, root, password, argv);
+    let mut command = child_command(executable, root, password, argv);
     let mut units = root
         .map(|root| crate::ownership::capture_units::Units::new(root, &mut command))
         .transpose()?;
-    let captured = capture::run_controlled(
-        &mut command,
-        Limits {
-            wall: Duration::from_secs(mcp::CALL_TIMEOUT_SECONDS),
-            idle: Duration::from_secs(mcp::CALL_TIMEOUT_SECONDS),
-            bytes: mcp::MAX_FRAME,
-            cleanup: Duration::from_secs(10),
-        },
-        cancelled,
-    );
-    // The leader's tree may be empty while separately-owned SDK trees remain.
-    // Settle their durable receipts before returning a cancellation or result.
-    if let Some(units) = &mut units
-        && let Err(error) = units.settle(Duration::from_secs(10))
+    let limits = Limits {
+        wall: Duration::from_secs(mcp::CALL_TIMEOUT_SECONDS),
+        idle: Duration::from_secs(mcp::CALL_TIMEOUT_SECONDS),
+        bytes: mcp::MAX_FRAME,
+        cleanup: Duration::from_secs(10),
+    };
+    let captured = match &mut units {
+        Some(units) => units.run(&mut command, limits, cancelled),
+        None => capture::run_controlled(&mut command, limits, cancelled),
+    };
+    if units
+        .as_ref()
+        .is_some_and(crate::ownership::capture_units::Units::pending)
     {
         if let Some(admission) = &mut admission {
             admission.retain();
         }
-        return Err(error.into());
+        return Err(captured.err().unwrap_or_else(|| {
+            io::Error::other("Captured nested ownership remains incomplete").into()
+        }));
     }
     let output = match captured {
         Ok(output) => output,
@@ -259,7 +263,7 @@ mod tests {
     #[test]
     fn unlock_inherits_without_an_explicit_nonempty_override() {
         for password in [None, Some("")] {
-            let command = prepare(
+            let command = child_command(
                 Path::new("native-fixture"),
                 None,
                 password,
@@ -270,7 +274,7 @@ mod tests {
                 "Inherited unlock was overridden"
             );
         }
-        let command = prepare(
+        let command = child_command(
             Path::new("native-fixture"),
             None,
             Some("synthetic-fixture"),

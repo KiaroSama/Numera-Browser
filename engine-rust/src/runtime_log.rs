@@ -49,6 +49,16 @@ pub struct RuntimeLog {
     verbose: bool,
 }
 impl RuntimeLog {
+    /// Recovery startup must preserve the closed data root byte for byte.
+    /// Keep safe diagnostics on stderr without opening or pruning log files.
+    pub(crate) fn without_file() -> Self {
+        Self {
+            file: Mutex::new(None),
+            path: None,
+            console_fallback: true,
+            verbose: false,
+        }
+    }
     pub(crate) fn directory(root: &Path) -> PathBuf {
         std::env::var_os("NUMERA_LOG_DIR")
             .map(PathBuf::from)
@@ -352,3 +362,6 @@ mod tests {
         Ok(())
     }
 }
+
+/// Apply the same credential policy as every runtime message handler.
+pub use crate::log_redaction::redact;

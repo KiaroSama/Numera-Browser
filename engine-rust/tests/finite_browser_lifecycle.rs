@@ -6,16 +6,18 @@ use numera_core::{
 use serde_json::json;
 use std::{
     io,
-    process::Command,
     sync::{Arc, mpsc},
     time::Duration,
 };
 mod common;
+use numera_core as core;
+#[allow(dead_code)]
+#[path = "common/browser_fixture.rs"]
+mod fixture;
 
 #[test]
 fn adapter_lifecycle_timings_cover_the_same_pipe_and_settlement_without_public_output()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("browser-timing")?;
     for mode in ["logged", "unavailable", "disabled", "invalid-frame"] {
         let root = temporary.path().join(mode);
@@ -24,29 +26,8 @@ fn adapter_lifecycle_timings_cover_the_same_pipe_and_settlement_without_public_o
         if mode == "unavailable" {
             std::fs::write(&logs, b"retained")?;
         }
-        let mut command = Command::new(&python);
-        command
-            .args([
-                "-I",
-                "-S",
-                "-u",
-                "-c",
-                r#"
-import json,sys
-for line in sys.stdin:
-    request=json.loads(line)
-    op=request['operation']
-    if sys.argv[1]=='invalid-frame' and op=='open':
-        print('not-json',flush=True)
-        break
-    result=({'backends':{'playwright':{'installed':True}}} if op=='hello' else
-            {'opened':True,'backend':'playwright'} if op=='open' else
-            {'cookies':[]} if op=='cookies-read' else {'closing':True})
-    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-    if op=='close': break
-"#,
-            ])
-            .arg(mode);
+        let mut command =
+            fixture::command(&root, "lifecycle", json!({"invalid":mode=="invalid-frame"}))?;
         if mode == "disabled" {
             command.env_remove("NUMERA_ADAPTER_LOG_DIR");
         } else {
@@ -153,7 +134,6 @@ for line in sys.stdin:
 #[test]
 fn shutdown_joins_finite_operations_and_refuses_later_activation()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("finite-browser-lifecycle")?;
     let root = temporary.path();
     let repo = ProfileRepo::new(root.into(), None);
@@ -171,27 +151,13 @@ fn shutdown_joins_finite_operations_and_refuses_later_activation()
     let (release_tx, release_rx) = mpsc::sync_channel(1);
     let (ended_tx, ended_rx) = mpsc::sync_channel(1);
     let active = registry.clone();
+    let fixture_command = fixture::command(root, "rpc", json!({}))?;
     let worker = std::thread::spawn(move || {
         let result = active.with_finite_browser(
             "a",
             "Fixture",
             |session, _| {
-                let mut command = Command::new(python);
-                command
-                    .args([
-                        "-u",
-                        "-c",
-                        r#"
-import json,sys
-for line in sys.stdin:
-    request=json.loads(line)
-    op=request['operation']
-    result={'cookies':[]} if op=='cookies-read' else {'closing':True} if op=='close' else {}
-    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-    if op=='close': break
-"#,
-                    ])
-                    .env("PYTHONUTF8", "1");
+                let mut command = fixture_command;
                 Adapter::spawn_admitted(session, &mut command, Duration::from_secs(5)).map_err(
                     |error| StartupFailed {
                         kind: "failed".into(),

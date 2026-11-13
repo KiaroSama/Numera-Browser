@@ -109,6 +109,14 @@ impl Model {
     pub fn open(path: &Path) -> io::Result<Self> {
         let mut bytes = Vec::new();
         File::open(path)?.take(1_564_572).read_to_end(&mut bytes)?;
+        Self::from_bytes(bytes)
+    }
+    /// The admitted model is application data, provisioned at build time. A
+    /// launch never needs to download a model or write into a user's home.
+    pub fn embedded() -> io::Result<Self> {
+        Self::from_bytes(include_bytes!("fingerprint-data/model-2-2026.zip").to_vec())
+    }
+    fn from_bytes(bytes: Vec<u8>) -> io::Result<Self> {
         if bytes.len() != 1_564_571 || hex(Sha256::digest(&bytes)) != ARCHIVE_SHA {
             return Err(bad());
         }
@@ -228,7 +236,10 @@ impl Model {
         })
     }
 
-    fn values(&self, ids: impl IntoIterator<Item = u32>) -> io::Result<HashMap<u32, Value>> {
+    pub(crate) fn values(
+        &self,
+        ids: impl IntoIterator<Item = u32>,
+    ) -> io::Result<HashMap<u32, Value>> {
         let mut wanted = ids
             .into_iter()
             .collect::<HashSet<_>>()
@@ -276,6 +287,12 @@ impl Model {
             return Err(bad());
         }
         Ok(result)
+    }
+    pub fn node_index(&self, name: &str) -> io::Result<usize> {
+        self.nodes
+            .iter()
+            .position(|node| node.name.eq_ignore_ascii_case(name))
+            .ok_or_else(bad)
     }
     pub fn evidence(
         &self,

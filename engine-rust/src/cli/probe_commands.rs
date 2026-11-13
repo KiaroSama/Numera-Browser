@@ -29,7 +29,7 @@ impl Probes<'_> {
         now: f64,
         output: &mut super::output::Output<impl std::io::Write, impl std::io::Write>,
     ) -> Result<Outcome, RepoError> {
-        let mut outcome = self.run_started(reference, engine, operation, now, |profile| {
+        let outcome = self.run_started(reference, engine, operation, now, |profile| {
             super::probe_output::start(
                 output,
                 operation,
@@ -38,11 +38,7 @@ impl Probes<'_> {
             )?;
             Ok(())
         })?;
-        super::probe_output::render(output, operation, reference, &outcome.payload)?;
-        if operation == "trust" && output.json_mode() && outcome.payload.get("score").is_some() {
-            outcome.exit = 0;
-        }
-        Ok(outcome)
+        complete_report(output, operation, reference, outcome)
     }
     fn run_started(
         &self,
@@ -136,4 +132,18 @@ impl Probes<'_> {
             payload: result,
         })
     }
+}
+
+/// Complete a browser report through the same human/automation output policy.
+pub fn complete_report(
+    output: &mut super::output::Output<impl std::io::Write, impl std::io::Write>,
+    operation: &str,
+    reference: &str,
+    mut outcome: Outcome,
+) -> Result<Outcome, RepoError> {
+    super::probe_output::render(output, operation, reference, &outcome.payload)?;
+    if operation == "trust" && output.json_mode() && outcome.payload.get("score").is_some() {
+        outcome.exit = 0;
+    }
+    Ok(outcome)
 }

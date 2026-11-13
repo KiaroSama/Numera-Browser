@@ -63,6 +63,11 @@ fn health_view(state: &Profiles) -> Result<Value, RepoError> {
         let id = record["id"]
             .as_str()
             .ok_or_else(|| RepoError::Io(io::Error::other("Stored profile ID is not text")))?;
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event(
+            "health-profile-conversion",
+            &state.root.join("dashboard").join(format!("{id}.json")),
+        )?;
         engines.insert(id.to_owned(), to_engine(record, now).ok());
     }
     let profiles = engines.values().flatten().cloned().collect::<Vec<_>>();

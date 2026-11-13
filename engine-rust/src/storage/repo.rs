@@ -196,6 +196,8 @@ impl ProfileRepo {
         id_path(&self.root.join(kind), id, ".json").map_err(|e| RepoError::Message(e.to_string()))
     }
     pub(crate) fn raw(path: &Path) -> io::Result<Option<Value>> {
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("json-read", path)?;
         let bytes = match fs::read(path) {
             Ok(bytes) => bytes,
             Err(_) => return Ok(None),
@@ -210,7 +212,7 @@ impl ProfileRepo {
                 ),
             )
         })?;
-        Ok(serde_json::from_str(text).ok())
+        Ok(crate::http::json_extended::parse(text).ok())
     }
     fn secret(value: &Value, key: &str) -> Option<String> {
         value["proxy"][key].as_str().map(str::to_owned)
@@ -351,6 +353,8 @@ impl ProfileRepo {
         let lock = DataLock::transaction(&self.root)?;
         let _guard = lock.acquire_configured()?;
         self.require_settled()?;
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("before-profile-materialize", &self.path(id, "dashboard")?)?;
         let Some(dash) = Self::raw(&self.path(id, "dashboard")?)? else {
             return Ok(None);
         };

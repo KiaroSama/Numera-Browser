@@ -26,7 +26,10 @@ pub(super) fn primary() -> Vec<Command> {
             leaf("stop", "Terminate a job and anything it started").arg(positional("id", "")),
             leaf("clear", "Forget the jobs that have finished"),
         ]),
-        leaf("engines", "List available launch engines"),
+        leaf("engines", "List available launch engines")
+            .arg(flag("cloak_offer", "cloak-offer", "Show the local Cloak acquisition target without downloading"))
+            .arg(option("acquire_cloak", "acquire-cloak", "Acquire only the exact Cloak offer previously shown"))
+            .arg(flag("approve", "approve", "Explicitly approve this exact browser acquisition")),
         leaf("default-engine", "Show or set the engine used for new profiles")
             .arg(positional("name", "Engine to make default (omit to show the current one)").required(false).num_args(0..=1)),
         leaf("config", "Show or change settings (the dashboard's /api/config)")

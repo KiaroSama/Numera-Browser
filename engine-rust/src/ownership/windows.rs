@@ -1,7 +1,7 @@
 #![allow(unsafe_code)]
 use std::{
     io, mem,
-    os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle},
+    os::windows::io::{AsHandle, AsRawHandle, BorrowedHandle, FromRawHandle, OwnedHandle},
     process::Child,
     ptr,
 };
@@ -32,10 +32,17 @@ fn job_name() -> io::Result<String> {
     ))
 }
 impl Job {
+    pub(crate) fn handle(&self) -> BorrowedHandle<'_> {
+        self.0.as_handle()
+    }
     pub fn name(&self) -> &str {
         &self.1
     }
     pub fn new() -> io::Result<Self> {
+        #[cfg(feature = "test-support")]
+        if let Some(result) = super::test_support::job_create() {
+            result?;
+        }
         // SAFETY: private unique name permits durable local queries; handle
         // stays non-inheritable and kill-on-close ends this owner's descendants.
         let name = job_name()?;
@@ -65,6 +72,10 @@ impl Job {
         Ok(job)
     }
     pub fn assign(&self, child: &Child) -> io::Result<()> {
+        #[cfg(feature = "test-support")]
+        if let Some(result) = super::test_support::job_assign(child.id()) {
+            result?;
+        }
         // SAFETY: both handles are live and the child is still suspended.
         if unsafe {
             AssignProcessToJobObject(self.0.as_raw_handle(), child.as_raw_handle() as HANDLE)
@@ -75,6 +86,10 @@ impl Job {
         Ok(())
     }
     pub fn empty(&self) -> io::Result<bool> {
+        #[cfg(feature = "test-support")]
+        if let Some(result) = super::test_support::job_query() {
+            result?;
+        }
         // SAFETY: POD output initialized, exact type/size for accounting class.
         let mut info: JOBOBJECT_BASIC_ACCOUNTING_INFORMATION = unsafe { mem::zeroed() };
         if unsafe {
@@ -90,6 +105,24 @@ impl Job {
             return Err(io::Error::last_os_error());
         }
         Ok(info.ActiveProcesses == 0)
+    }
+    pub fn peak_memory(&self) -> io::Result<u64> {
+        // SAFETY: retain this job handle after child reaping; the kernel keeps
+        // lifetime peak commit for this exact job, rather than a sampled RSS.
+        let mut info: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = unsafe { mem::zeroed() };
+        if unsafe {
+            QueryInformationJobObject(
+                self.0.as_raw_handle(),
+                JobObjectExtendedLimitInformation,
+                ptr::addr_of_mut!(info).cast(),
+                mem::size_of_val(&info) as u32,
+                ptr::null_mut(),
+            )
+        } == 0
+        {
+            return Err(io::Error::last_os_error());
+        }
+        u64::try_from(info.PeakJobMemoryUsed).map_err(io::Error::other)
     }
     pub fn terminate(&self) -> io::Result<()> {
         // SAFETY: this job contains only the tree this owner spawned.
@@ -122,7 +155,7 @@ pub fn named_empty(name: &str) -> io::Result<bool> {
     job.empty()
 }
 
-pub fn settle_named(name: &str, end: std::time::Instant) -> io::Result<bool> {
+pub fn settle_named(name: &str, end: std::time::Instant, pid: Option<u32>) -> io::Result<bool> {
     if name.is_empty() || name.contains('\0') {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
@@ -144,11 +177,31 @@ pub fn settle_named(name: &str, end: std::time::Instant) -> io::Result<bool> {
     }
     // SAFETY: successful OpenJobObjectW supplies one uniquely owned handle.
     let job = Job(unsafe { OwnedHandle::from_raw_handle(handle) }, name.into());
-    if !job.empty()? {
+    let empty = || -> io::Result<bool> {
+        #[cfg(feature = "test-support")]
+        if let Some(pid) = pid.and_then(|pid| i32::try_from(pid).ok())
+            && let Some(result) = super::test_support::group_empty(pid)
+        {
+            return result;
+        }
+        job.empty()
+    };
+    #[cfg(not(feature = "test-support"))]
+    let _ = pid;
+    if !empty()? {
+        #[cfg(feature = "test-support")]
+        match pid
+            .and_then(|pid| i32::try_from(pid).ok())
+            .and_then(|pid| super::test_support::signal(-pid, true))
+        {
+            Some(result) => result?,
+            None => job.terminate()?,
+        }
+        #[cfg(not(feature = "test-support"))]
         job.terminate()?;
     }
     loop {
-        if job.empty()? {
+        if empty()? {
             return Ok(true);
         }
         if std::time::Instant::now() >= end {

@@ -132,14 +132,32 @@ impl PythonRandom {
     }
 
     pub(crate) fn sample_indices(&mut self, n: usize, k: usize) -> Vec<usize> {
-        let mut pool: Vec<usize> = (0..n).collect();
+        debug_assert!(k <= n);
         let mut selected = Vec::with_capacity(k);
-        // Existing desktop font samples always take all but at most six entries:
-        // CPython selects its pool-swap branch for these concrete catalog sizes.
-        for i in 0..k {
-            let j = self.below(n - i);
-            selected.push(pool[j]);
-            pool[j] = pool[n - i - 1];
+        let mut set_size = 21;
+        if k > 5 {
+            let mut power = 4usize;
+            while power < k * 3 {
+                power *= 4;
+            }
+            set_size += power;
+        }
+        if n <= set_size {
+            let mut pool: Vec<usize> = (0..n).collect();
+            for i in 0..k {
+                let j = self.below(n - i);
+                selected.push(pool[j]);
+                pool[j] = pool[n - i - 1];
+            }
+        } else {
+            let mut seen = std::collections::HashSet::new();
+            for _ in 0..k {
+                let mut j = self.below(n);
+                while !seen.insert(j) {
+                    j = self.below(n);
+                }
+                selected.push(j);
+            }
         }
         selected
     }

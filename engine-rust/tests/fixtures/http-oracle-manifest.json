@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "scope": "Historical native HTTP/MCP/job/import/logging characterization; no runtime interpreter dependency. Existing native case identities/assertions are retained.",
+  "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+  "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+  "source_trees": {
+    "engine/numera": "25cd7f34689e4a1688c426fdb7d4a6c4b898998e",
+    "engine/tests": "ec1a33ab13ca6ee1dd6e7c629de4118ab848c82a"
+  },
+  "runtime": "CPython 3.13.15",
+  "fixtures": [
+    {
+      "file": "engine-rust/tests/fixtures/http-characterization/launch-http.json",
+      "bytes": 7088,
+      "sha256": "6d6b6a3b0b7610d5d5e30be414e2ee869a3271155c8c6e6c241947df40376b13",
+      "observer_source": "engine-rust/tests/launch_http_parity.rs",
+      "observer_sha256": "2d22dcecfae2e2bc356e12497bef664f83a8dee3fdcbba362126d217110b7c98",
+      "path_normalization": "Owned temporary root -> @ORACLE_ROOT@; tests materialize paths under their own current temporary root.",
+      "observer_module": "scripts/migration/launch_http_cases.py",
+      "observer_module_sha256": "bcdc6dee5032751d6883f00f7ad717112b35bb32d4aace05d26c118513544bf4"
+    },
+    {
+      "file": "engine-rust/tests/fixtures/http-characterization/cookie-http.json",
+      "bytes": 40151,
+      "sha256": "e30349f2c8f96a636c87aca23fe5c7235a2319f15139aecb0d94f872d09d606c",
+      "observer_source": "engine-rust/tests/cookie_http_parity.rs",
+      "observer_sha256": "0ed0195c08da1284c4ab2e4f4b555b88b90db7c899ddff76f698c5c92df3b1e3",
+      "path_normalization": "Owned temporary root -> @ORACLE_ROOT@; tests materialize paths under their own current temporary root.",
+      "observer_module": "scripts/migration/cookie_http_cases.py",
+      "observer_module_sha256": "e6f90f0fd979aece0982bc8d1cd1519ef4a3567b499649b04a64cae9f2a8bcbe"
+    },
+    {
+      "file": "engine-rust/tests/fixtures/http-characterization/stop-http.json",
+      "bytes": 801,
+      "sha256": "7ff71b156e5cf90643a44a362a1fc39030f5234e5e1aaacdf0cb84b569afd2a8",
+      "observer_source": "engine-rust/tests/session_stop_http.rs",
+      "observer_sha256": "f4c3faecfbb11b7afc1abee05059e775e9f1d4659c758fbb0931c887fc6e89d5",
+      "path_normalization": "Owned temporary root -> @ORACLE_ROOT@; tests materialize paths under their own current temporary root.",
+      "observer_module": "scripts/migration/session_stop_cases.py",
+      "observer_module_sha256": "ed9ea4678163d34c9200e1bc5fb911a6c68e09b3cbd4677e6365ad986723ee17"
+    },
+    {
+      "file": "engine-rust/tests/fixtures/http-characterization/mcp.json",
+      "bytes": 3352,
+      "sha256": "52fa7f1c7ee8d69f173205810e5fd3af65dbc3dc7aebf879df572856c48dd29c",
+      "observer_source": "engine-rust/tests/mcp_parity.rs",
+      "observer_sha256": "32ff49d35e29b96090bb29b305bbf374dd26cc24a71795b8c6d03e1fbed4dc0f",
+      "path_normalization": "Owned temporary root -> @ORACLE_ROOT@; tests materialize paths under their own current temporary root.",
+      "observer_module": "scripts/migration/mcp_cases.py",
+      "observer_module_sha256": "57db006bee1e98c115b75a3e91545207bc5e8cffe528fcc4264fd5cd38bb1cd5"
+    },
+    {
+      "file": "engine-rust/tests/fixtures/http-characterization/job.json",
+      "bytes": 7059,
+      "sha256": "2bf94a3c5447566a6435883793c0a0b9564f0aa2bf5e42395a1f40d68b041ba6",
+      "observer_source": "engine-rust/tests/job_parity.rs",
+      "observer_sha256": "cb36e9090e9b10f2be8b3ab7fae1a594f06b09b0bfee08bbfabb1f2434d0c6eb",
+      "path_normalization": "Owned temporary root -> @ORACLE_ROOT@; tests materialize paths under their own current temporary root.",
+      "observer_module": "scripts/migration/job_cases.py",
+      "observer_module_sha256": "4bc99d7119260583e50ea2cdbb3e21b340e46f8b0c24ea8b3a30d0aeade1e3df"
+    },
+    {
+      "file": "engine-rust/tests/fixtures/http-characterization/import-tags.json",
+      "bytes": 123530,
+      "sha256": "17bbed94df38eeb77f102bd7f67cd4278289d630ee58893c21e6f858a0e3d199",
+      "observer_source": "engine-rust/tests/profile_http_import_parity/tags.rs",
+      "observer_sha256": "bb2f41e3d58340a02d6bda2e857b1b080fdc4775564c065e4f5f80ec3a2bbd3a",
+      "path_normalization": "Owned temporary root -> @ORACLE_ROOT@; tests materialize paths under their own current temporary root."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/http-characterization/import-refusals.json",
+      "bytes": 12306,
+      "sha256": "2f51e0713db16988fecb60f83ba6e0fcdc9c6fa5594859ea8b4e1cf2f2553185",
+      "observer_source": "engine-rust/tests/profile_http_import_parity/tags.rs",
+      "observer_sha256": "bb2f41e3d58340a02d6bda2e857b1b080fdc4775564c065e4f5f80ec3a2bbd3a",
+      "path_normalization": "Owned temporary root -> @ORACLE_ROOT@; tests materialize paths under their own current temporary root."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/http-characterization/log-verbosity.json",
+      "bytes": 13,
+      "sha256": "a7c1bd00c0035f7014093a133cbda58d8365aa9fd46344373dd11e081692acd7",
+      "observer_source": "engine-rust/tests/logging_parity.rs",
+      "observer_sha256": "8e787c7d3b5da6bdcb2dfcf5780119db7dde9d381aa0a835da7a02a7fd28f448",
+      "path_normalization": "Owned temporary root -> @ORACLE_ROOT@; tests materialize paths under their own current temporary root."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/http-characterization/log-retention.json",
+      "bytes": 501,
+      "sha256": "e0d0fc2731ec74499877e26a792adb41bc5fd002f7fcd4249dcf7430c9f5cf29",
+      "observer_source": "engine-rust/tests/logging_parity/retention.rs",
+      "observer_sha256": "dd49da877a3ff38443bdd713bd4a0e322d54439a4fb1a07691d57c994644de22",
+      "path_normalization": "Owned temporary root -> @ORACLE_ROOT@; tests materialize paths under their own current temporary root."
+    }
+  ]
+}

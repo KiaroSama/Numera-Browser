@@ -1,5 +1,4 @@
 //! A single raw stdin owner: no blocking reader thread can survive cancellation.
-#[cfg(windows)]
 use std::time::Duration;
 use std::{
     io::{self, Read},
@@ -12,17 +11,62 @@ use std::{
 pub struct Input<R> {
     stream: R,
     cancelled: Arc<AtomicBool>,
+    wait: Duration,
+    #[cfg(feature = "test-support")]
+    observer: Option<Arc<dyn ReadObserver>>,
     #[cfg(windows)]
     console_ready: bool,
 }
+/// An explicit observer of the real input boundary. Product builds contain no
+/// observer storage or callbacks. Observations never expose input bytes.
+#[cfg(feature = "test-support")]
+pub trait ReadObserver: Send + Sync {
+    fn waiting(&self, wait: Duration);
+    fn read(&self, count: usize, contains_newline: bool);
+}
 impl<R> Input<R> {
     pub fn new(stream: R, cancelled: Arc<AtomicBool>) -> Self {
-        Self {
+        Self::with_wait(stream, cancelled, Duration::from_millis(25))
+            .expect("Fixed native input polling interval is valid")
+    }
+    /// Select a bounded readiness polling interval before touching the stream.
+    /// Zero performs an immediate readiness check; cancellation remains owned by
+    /// the same reader. No caller can widen the 25 ms cancellation ceiling.
+    pub fn with_wait(stream: R, cancelled: Arc<AtomicBool>, wait: Duration) -> io::Result<Self> {
+        if wait > Duration::from_millis(25) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Native input wait exceeds 25 ms",
+            ));
+        }
+        Ok(Self {
             stream,
             cancelled,
+            wait,
+            #[cfg(feature = "test-support")]
+            observer: None,
             #[cfg(windows)]
             console_ready: false,
+        })
+    }
+    #[cfg(feature = "test-support")]
+    pub fn with_observer(mut self, observer: Arc<dyn ReadObserver>) -> Self {
+        self.observer = Some(observer);
+        self
+    }
+    fn observed_wait(&self) {
+        #[cfg(feature = "test-support")]
+        if let Some(observer) = &self.observer {
+            observer.waiting(self.wait);
         }
+    }
+    fn observed_read(&self, bytes: &[u8]) {
+        #[cfg(feature = "test-support")]
+        if let Some(observer) = &self.observer {
+            observer.read(bytes.len(), bytes.contains(&b'\n'));
+        }
+        #[cfg(not(feature = "test-support"))]
+        let _ = bytes;
     }
     pub fn into_inner(self) -> R {
         self.stream
@@ -72,6 +116,7 @@ impl<R: std::os::windows::io::AsRawHandle + Read> Read for Input<R> {
                     "Native input cancelled",
                 ));
             }
+            self.observed_wait();
             if console {
                 if !self.console_ready {
                     let mut available = 0;
@@ -80,7 +125,7 @@ impl<R: std::os::windows::io::AsRawHandle + Read> Read for Input<R> {
                         return Err(io::Error::last_os_error());
                     }
                     if available == 0 {
-                        std::thread::park_timeout(Duration::from_millis(25));
+                        std::thread::park_timeout(self.wait);
                         continue;
                     }
                     if available > 65536 {
@@ -135,12 +180,13 @@ impl<R: std::os::windows::io::AsRawHandle + Read> Read for Input<R> {
                                 return Err(io::Error::last_os_error());
                             }
                         }
-                        std::thread::park_timeout(Duration::from_millis(25));
+                        std::thread::park_timeout(self.wait);
                         continue;
                     }
                 }
                 // The stdlib performs the console UTF-16/UTF-8 conversion and buffering.
                 let count = self.stream.read(&mut bytes[..1])?;
+                self.observed_read(&bytes[..count]);
                 if count == 0 || bytes[0] == b'\n' {
                     self.console_ready = false;
                 }
@@ -170,7 +216,7 @@ impl<R: std::os::windows::io::AsRawHandle + Read> Read for Input<R> {
                     };
                 }
                 if available == 0 {
-                    std::thread::park_timeout(Duration::from_millis(25));
+                    std::thread::park_timeout(self.wait);
                     continue;
                 }
                 count = count.min(available);
@@ -189,6 +235,7 @@ impl<R: std::os::windows::io::AsRawHandle + Read> Read for Input<R> {
                 )
             };
             if ok != 0 {
+                self.observed_read(&bytes[..read as usize]);
                 return Ok(read as usize);
             }
             let error = io::Error::last_os_error();
@@ -215,6 +262,7 @@ impl<R: std::os::fd::AsRawFd> Read for Input<R> {
                     "Native input cancelled",
                 ));
             }
+            self.observed_wait();
             let mut descriptor = libc::pollfd {
                 fd,
                 events: libc::POLLIN,
@@ -222,7 +270,13 @@ impl<R: std::os::fd::AsRawFd> Read for Input<R> {
             };
             // SAFETY: one initialized pollfd and a finite timeout; stream retains fd.
             #[allow(unsafe_code)]
-            let ready = unsafe { libc::poll(&mut descriptor, 1, 25) };
+            let ready = unsafe {
+                libc::poll(
+                    &mut descriptor,
+                    1,
+                    self.wait.as_nanos().div_ceil(1_000_000) as i32,
+                )
+            };
             if ready < 0 {
                 let error = io::Error::last_os_error();
                 if error.kind() == io::ErrorKind::Interrupted {
@@ -241,6 +295,7 @@ impl<R: std::os::fd::AsRawFd> Read for Input<R> {
             #[allow(unsafe_code)]
             let count = unsafe { libc::read(fd, bytes.as_mut_ptr().cast(), bytes.len()) };
             if count >= 0 {
+                self.observed_read(&bytes[..count as usize]);
                 return Ok(count as usize);
             }
             let error = io::Error::last_os_error();

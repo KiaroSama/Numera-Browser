@@ -25,6 +25,8 @@ impl ProxyPool {
         self.root.join("proxies.json")
     }
     fn stored(&self) -> Result<Vec<Value>, RepoError> {
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("json-read", &self.path())?;
         let bytes = match fs::read(self.path()) {
             Ok(bytes) => bytes,
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),

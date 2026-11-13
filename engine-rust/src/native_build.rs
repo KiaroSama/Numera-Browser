@@ -25,7 +25,8 @@ fn record(source: Option<&str>, generation: Option<&str>) -> io::Result<Value> {
     Ok(json!({
         "schema":1,"owner":"KiaroSama","product":"Numera Browser",
         "version":env!("CARGO_PKG_VERSION"),"source_sha":source,"generation":generation,
-        "application_runtime":"native-candidate","acceptance":true
+        "application_runtime":if cfg!(feature = "native-product") { "native" } else { "native-candidate" },
+        "acceptance":!cfg!(feature = "native-product")
     }))
 }
 

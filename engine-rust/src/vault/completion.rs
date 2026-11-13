@@ -13,14 +13,14 @@ pub struct Problem {
     pub detail: String,
 }
 
-pub(crate) struct Site {
+pub struct Site {
     pub path: PathBuf,
     pub node: Option<&'static str>,
     pub field: &'static str,
     pub many: bool,
 }
 
-pub(crate) fn sites(root: &Path) -> io::Result<Vec<Site>> {
+pub fn sites(root: &Path) -> io::Result<Vec<Site>> {
     let mut found = Vec::new();
     for (folder, field) in [("profiles", "password"), ("dashboard", "pass")] {
         let directory = root.join(folder);
@@ -56,7 +56,7 @@ pub(crate) fn sites(root: &Path) -> io::Result<Vec<Site>> {
     Ok(found)
 }
 
-pub(crate) fn holders<'a>(data: &'a Value, site: &Site) -> Option<Vec<&'a Value>> {
+pub fn holders<'a>(data: &'a Value, site: &Site) -> Option<Vec<&'a Value>> {
     let records: Vec<&Value> = if site.many {
         data.as_array()?.iter().collect()
     } else {

@@ -6,69 +6,13 @@ mod common;
 #[test]
 fn schedule_text_admission_matches_original_without_replacing_bytes()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::{ownership::capture, storage::repo::RepoError};
-    use std::{path::Path, process::Command, time::Duration};
+    use numera_core::storage::repo::RepoError;
 
     let temporary = common::TempDirectory::new("schedule-text-admission")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import json,sys,uuid
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.scheduler import ScheduleStore
-from run_logging import run_log
-uuid.uuid4=lambda:uuid.UUID('a'*32)
-entry={'id':'fixture','profileId':'profile','everyHours':1,'minutes':5,
-       'preset':'general','enabled':True,'lastRun':None,'createdAt':0,
-       'future':{'kept':['日本語',True]}}
-raws=[bytes([255]),bytes([0xc3,0x28]),bytes([0xe2,0x82]),b'[]',b'{broken',None,
-      json.dumps([entry]).encode('utf-8')]
-operations=['list','get','add','update','delete','claim','release','record']
-jobs=[(operation,raw) for operation in operations for raw in raws]
-jobs += [('invalid-update',raw) for raw in raws[:3]]
-observed=[]
-with run_log('schedule-text-admission-oracle',parent/'logs') as log:
-    for operation,raw in jobs:
-        root=parent/str(len(observed));root.mkdir(parents=True)
-        store=ScheduleStore(root)
-        if raw is not None:store.path.write_bytes(raw)
-        try:
-            if operation=='list':result=store.list()
-            elif operation=='get':result=store.get('fixture')
-            elif operation=='add':result=store.add(profile_id='added-profile',every_hours=1,now=1000.0)
-            elif operation=='update':result=store.update('fixture',{'enabled':False})
-            elif operation=='delete':result=store.delete('fixture')
-            elif operation=='claim':result=store.claim_due('fixture','fixture-worker',1000.0)
-            elif operation=='release':result=store.release('fixture')
-            elif operation=='record':result=store.record('fixture',lastRun=1000.0,lastOutcome='done')
-            else:result=store.update('fixture',{'everyHours':-1})
-            error=None
-        except (UnicodeDecodeError,ValueError) as exc:result,error=None,type(exc).__name__
-        after=store.path.read_bytes() if store.path.exists() else None
-        observed.append({'operation':operation,'raw':list(raw) if raw is not None else None,
-                         'result':result,'error':error,'after':list(after) if after is not None else None})
-    log.info('Observed schedule text cases=%s',len(observed))
-    print(json.dumps(observed,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("source"));
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(original.exit, 0, "Original schedule text observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/schedule_text_admission_matches_original_without_replacing_bytes.json"
+    ))?;
     assert_eq!(cases.len(), 59, "Schedule text observations missing");
     for (index, case) in cases.iter().enumerate() {
         let root = temporary.path().join(format!("native-{index}"));
@@ -164,70 +108,13 @@ with run_log('schedule-text-admission-oracle',parent/'logs') as log:
 #[test]
 fn mark_run_matches_original_result_claim_clearing_and_exact_bytes()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::{ownership::capture, storage::repo::RepoError};
-    use std::{path::Path, process::Command, time::Duration};
+    use numera_core::storage::repo::RepoError;
 
     let temporary = common::TempDirectory::new("schedule-mark-run")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import json,sys
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.scheduler import ScheduleStore
-from run_logging import run_log
-base={'id':'fixture','profileId':'profile','everyHours':1,'minutes':5,
-      'preset':'general','enabled':True,'lastRun':None,'createdAt':0,
-      'claimedBy':'fixture-worker','claimedAt':123,
-      'lastOutcome':'retained','future':{'kept':['日本語',True]}}
-rows=[[],[base],[{**base,'claimedBy':None,'claimedAt':None}],
-      [base,{**base,'id':'other','lastRun':42}],
-      [base,{**base,'future':{'second':True}}]]
-raws=[json.dumps(value).encode('utf-8') for value in rows]
-raws += [b'{broken',None,bytes([255]),bytes([0xe2,0x82])]
-observed=[]
-with run_log('schedule-mark-run-oracle',parent/'logs') as log:
-    for raw in raws:
-        for sid in ['fixture','missing']:
-            for when in [0.0,1000.5]:
-                root=parent/str(len(observed));root.mkdir(parents=True)
-                store=ScheduleStore(root)
-                if raw is not None:store.path.write_bytes(raw)
-                try:result,error=store.mark_run(sid,when),None
-                except UnicodeDecodeError as exc:result,error=None,type(exc).__name__
-                after=store.path.read_bytes() if store.path.exists() else None
-                observed.append({'raw':list(raw) if raw is not None else None,
-                                 'id':sid,'when':when,'result':result,'error':error,
-                                 'after':list(after) if after is not None else None})
-    log.info('Observed public mark-run cases=%s',len(observed))
-    print(json.dumps(observed,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .arg(temporary.path().join("source"));
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(original.exit, 0, "Original mark-run observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/mark_run_matches_original_result_claim_clearing_and_exact_bytes.json"
+    ))?;
     assert_eq!(cases.len(), 36, "Public mark-run observations missing");
     for (index, case) in cases.iter().enumerate() {
         let root = temporary.path().join(format!("native-{index}"));

@@ -1,50 +1,34 @@
-# Everything the image builds for itself, plus everything that must never be
-# copied into a layer. A .dockerignore miss is not just a slow build: the build
-# context is sent to the daemon and baked into the image's history.
+# Send only the native distribution and the container definitions to the daemon.
+**
+!Dockerfile
+!docker-compose.yml
+!build/
+!build/container/
+!build/container/Numera Browser/
+!build/container/Numera Browser/engine/
+!build/container/Numera Browser/engine/**
+
+# Never admit application state or development credentials within a bundle.
 .git
-.github
 .ai
-.claude
-.kiro
-.codex
-.cursor
-.agents
-.cline
-.codebase-memory
-.playwright-mcp
-AGENTS.md
-CLAUDE.md
-reference.md
-data
-logs
-.env
-.env.*
 .ignoreme
 **/.ignoreme
 secrets.md
-explain-AI.md
+.venv
 graphify-out
-build
-dist
-desktop
-scripts
-docs
-!docs/licensing.md
-!docs/browser-notices.txt
-!docs/migration-random-notices.txt
+**/.git
+**/.ai
+**/.agents
+**/.codex
+**/.claude
+**/.kiro
+**/.cursor
+**/.env
+**/.env.*
+**/data
+**/logs
+**/user-data
+**/vault-migration.json
+**/vault-rotation.json
 **/__pycache__
 **/*.pyc
-**/node_modules
-dashboard/dist
-.venv
-venv
-*.egg-info
-engine/build
-.pytest_cache
-.pytest-audit-temp
-.ci-runner-win
-.ci-work
-.ci-cache
-.specify
-specs
-plans

@@ -1,4 +1,5 @@
 //! HTTP policy adapters; the full router is not yet a selectable application.
+pub mod acquisition_routes;
 mod admission;
 pub mod application;
 mod attach_routes;
@@ -15,6 +16,7 @@ pub mod fingerprint_routes;
 pub mod folder_routes;
 mod json_diagnostics;
 mod json_encoding;
+pub mod json_extended;
 mod launch_routes;
 pub mod middleware;
 mod probe_routes;
@@ -39,4 +41,5 @@ mod session_routes;
 pub mod token_errors;
 pub mod token_routes;
 pub mod tokens;
+mod update_routes;
 mod warmup_routes;

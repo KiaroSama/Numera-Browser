@@ -1,45 +1,21 @@
 use numera_core::{
-    browser::adapter::Adapter,
     cli::{self, application::Application},
     fingerprint::{GenerateOptions, generate},
     models::Profile,
     storage::repo::ProfileRepo,
 };
 use serde_json::{Value, json};
-use std::{collections::BTreeMap, path::Path, process::Command, time::Duration};
+use std::{collections::BTreeMap, time::Duration};
+#[path = "cli_characterization/mod.rs"]
+mod cli_characterization;
 mod common;
 
 #[test]
 fn shared_pool_cli_guards_and_assignment_match_original() -> Result<(), Box<dyn std::error::Error>>
 {
     let temporary = common::TempDirectory::new("cli-pool")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
-    let mut command = Command::new(python);
-    command.args(["-u","-c",r#"
-import json,os,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from cli_pool_cases import cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(os.environ['FIXTURE_ROOT']),'human':sum([cases(os.path.join(os.environ['FIXTURE_ROOT'],'human-'+str(tty)),human=True,tty=tty) for tty in [False,True]],[])}}),flush=True)
-"#]).env("PYTHONUTF8","1").env("FIXTURE_ROOT",temporary.path().join("source")).env("PYTHONPATH",std::env::join_paths([repository.join("scripts/migration"),repository.join("engine")])?);
-    let mut source = Adapter::spawn(
-        temporary.path(),
-        "oracle",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = source.call(
-        "observe-pool-cli",
-        Default::default(),
-        Duration::from_secs(30),
-    )?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
+    let document = cli_characterization::load("cli_pool_parity", &temporary.path().join("source"))?;
+
     let root = temporary.path().join("native");
     let repo = ProfileRepo::open(root.clone(), None, None)?;
     let fingerprint = generate(GenerateOptions {

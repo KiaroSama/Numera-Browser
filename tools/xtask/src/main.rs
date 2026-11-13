@@ -1,6 +1,11 @@
 //! Rust build/packaging commands. Candidate artifacts do not select a runtime.
 mod package;
+mod product;
+mod resources;
 
+use numera_xtask::artifact_identity;
+#[cfg(test)]
+use numera_xtask::provision;
 use serde_json::Value;
 use std::{
     env,
@@ -28,12 +33,42 @@ fn run() -> Result<(), Box<dyn Error>> {
     match args.next().as_deref().and_then(|arg| arg.to_str()) {
         Some("build-candidate") => {
             let output = args.next().ok_or("output directory required")?;
-            if args.next().is_some() {
+            if args.next().is_some_and(|value| value != "--release") || args.next().is_some() {
                 return Err("unexpected build argument".into());
             }
             build_candidate(&root(), Path::new(&output))
         }
-        _ => Err("usage: cargo xtask build-candidate <new-output-directory>".into()),
+        Some("build-product") => product::build(&root(), product::Options::parse(args)?),
+        Some("ci") => numera_xtask::ci::run(&root(), args).map_err(|error| error as Box<dyn Error>),
+        Some("prepare-resources") => {
+            let directory = args
+                .next()
+                .ok_or("provisioned resource directory required")?;
+            let offers = args.next().ok_or("source-offers JSON file required")?;
+            if args.next().is_some() {
+                return Err("unexpected resource preparation argument".into());
+            }
+            resources::prepare(Path::new(&directory), Path::new(&offers))
+        }
+        Some("provision-resources") => {
+            let destination = args
+                .next()
+                .ok_or("new provisioned resource directory required")?;
+            if args.next().is_some() {
+                return Err("unexpected provision argument".into());
+            }
+            let destination = Path::new(&destination);
+            let offers = numera_xtask::provision::run(destination)
+                .map_err(|error| error as Box<dyn Error>)?;
+            resources::prepare(destination, &offers)
+        }
+        _ => Err(concat!(
+            "usage: cargo xtask build-candidate <new-output-directory>\n",
+            "       cargo xtask build-product <new-output-directory> --resources <directory> ",
+            "[--server-only] [--bundles <none|comma-separated-native-targets>]",
+            "\n       cargo xtask prepare-resources <provisioned-directory> <source-offers.json>"
+        )
+        .into()),
     }
 }
 
@@ -43,6 +78,26 @@ fn build_candidate(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
         return Err("output directory must not already exist".into());
     }
     let identity = package::BuildIdentity::from_environment()?;
+    let metadata = numera_xtask::ci::capture(
+        Command::new("cargo")
+            .args([
+                "metadata",
+                "--manifest-path",
+                "engine-rust/Cargo.toml",
+                "--no-deps",
+                "--format-version=1",
+            ])
+            .current_dir(root),
+        std::time::Duration::from_secs(30),
+        std::time::Duration::from_secs(30),
+        1024 * 1024,
+    )
+    .map_err(|error| error as Box<dyn Error>)?;
+    if metadata.exit != 0 {
+        return Err("candidate Cargo target discovery failed".into());
+    }
+    numera_xtask::ci::candidate::targets(&serde_json::from_slice(&metadata.stdout)?, root)
+        .map_err(|error| error as Box<dyn Error>)?;
     let head = Command::new("git")
         .args(["rev-parse", "HEAD"])
         .current_dir(root)
@@ -65,6 +120,7 @@ fn build_candidate(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
             "engine-rust/Cargo.toml",
             "--locked",
             "--release",
+            "--no-default-features",
             "--features",
             "native-candidate,native-browser",
             "--bin",
@@ -81,6 +137,11 @@ fn build_candidate(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
         return Err("native candidate compilation failed".into());
     }
     let executable = compiler_artifact(&built.stdout, "numera-native-candidate")?;
+    let approved = numera_xtask::ci::candidate::artifact(root, &built.stdout, true)
+        .map_err(|error| error as Box<dyn Error>)?;
+    if executable != approved {
+        return Err("candidate compiler evidence is inconsistent".into());
+    }
     let browser = compiler_artifact(&built.stdout, "numera-browser-runtime")?;
     let reported = Command::new(&executable).arg("--build-info").output()?;
     if !reported.status.success() {
@@ -106,39 +167,7 @@ fn build_candidate(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
 }
 
 fn compiler_artifact(messages: &[u8], name: &str) -> Result<PathBuf, Box<dyn Error>> {
-    let mut artifacts = Vec::new();
-    let mut finished = None;
-    for line in messages
-        .split(|byte| *byte == b'\n')
-        .filter(|line| !line.is_empty())
-    {
-        let value: Value = serde_json::from_slice(line)?;
-        match value["reason"].as_str() {
-            Some("compiler-artifact")
-                if value["target"]["name"] == name
-                    && value["target"]["kind"]
-                        .as_array()
-                        .is_some_and(|kinds| kinds.iter().any(|k| k == "bin")) =>
-            {
-                if let Some(path) = value["executable"].as_str() {
-                    artifacts.push(PathBuf::from(path));
-                }
-            }
-            Some("build-finished") => {
-                if finished.is_some() {
-                    return Err("duplicate Cargo completion record".into());
-                }
-                finished = value["success"].as_bool();
-            }
-            _ => {}
-        }
-    }
-    if finished != Some(true) || artifacts.len() != 1 || !artifacts[0].is_file() {
-        return Err(
-            format!("Cargo did not produce exactly one successful {name} executable").into(),
-        );
-    }
-    Ok(artifacts.remove(0))
+    artifact_identity::compiler_artifact(messages, name)
 }
 
 #[cfg(test)]

@@ -44,6 +44,26 @@ pub fn router(root: PathBuf, environment: &str, host: &str) -> io::Result<Router
         auth,
     ))
 }
+/// Use an explicit request clock while exercising the complete HTTP listing path.
+/// This observer exists only in the native test-support build.
+#[cfg(feature = "test-support")]
+pub fn router_with_clock(
+    root: PathBuf,
+    environment: &str,
+    host: &str,
+    now: f64,
+) -> io::Result<Router> {
+    if !now.is_finite() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Request clock must be finite",
+        ));
+    }
+    Ok(router(root, environment, host)?.layer(axum::Extension(ListingClock(now))))
+}
+#[cfg(feature = "test-support")]
+#[derive(Clone, Copy)]
+struct ListingClock(f64);
 pub(crate) fn routes(
     root: PathBuf,
     password: Option<String>,
@@ -218,11 +238,23 @@ pub(super) fn decorate(state: &Profiles, mut profile: Value, now: f64) -> Result
     profile["lastActive"] = label.into();
     Ok(profile)
 }
-fn listing(state: &Profiles) -> Result<Vec<Value>, RepoError> {
-    let now = SystemTime::now()
+fn current_time() -> io::Result<f64> {
+    Ok(SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(io::Error::other)?
-        .as_secs_f64();
+        .as_secs_f64())
+}
+fn listing(
+    state: &Profiles,
+    #[cfg(feature = "test-support")] clock: Option<f64>,
+) -> Result<Vec<Value>, RepoError> {
+    #[cfg(feature = "test-support")]
+    let now = match clock {
+        Some(now) => now,
+        None => current_time()?,
+    };
+    #[cfg(not(feature = "test-support"))]
+    let now = current_time()?;
     let lock = DataLock::transaction(&state.root)?;
     let _guard = lock.acquire_configured()?;
     let mut profiles = state.dashboard.list()?;
@@ -231,6 +263,27 @@ fn listing(state: &Profiles) -> Result<Vec<Value>, RepoError> {
         .filter_map(|profile| profile["id"].as_str())
         .map(str::to_owned)
         .collect::<std::collections::BTreeSet<_>>();
+    // Reconcile known dashboard rows through repository authority as well as
+    // adopting engine-only rows below. An HTTP read is the same union read as
+    // the CLI; a changed shared field must repair its stored engine twin.
+    for id in &known {
+        let engine = ProfileRepo::raw(&state.engine.path(id, "profiles")?)?;
+        let dashboard = ProfileRepo::raw(&state.engine.path(id, "dashboard")?)?;
+        if let Some(dashboard) = dashboard
+            && (engine.as_ref().is_none_or(|engine| !truth(engine))
+                || state.engine.read_disagrees(
+                    engine.as_ref().unwrap_or(&Value::Null),
+                    &dashboard,
+                    now,
+                )?)
+        {
+            match state.engine.materialize(id, now) {
+                Ok(_) | Err(RepoError::InvalidRecord(_)) => {}
+                Err(RepoError::Diverged(message)) => eprintln!("RuntimeWarning: {message}"),
+                Err(error) => return Err(error),
+            }
+        }
+    }
     let entries = match std::fs::read_dir(state.root.join("profiles")) {
         Ok(entries) => entries,
         Err(error) if error.kind() == io::ErrorKind::NotFound => {
@@ -259,7 +312,7 @@ fn listing(state: &Profiles) -> Result<Vec<Value>, RepoError> {
             continue;
         };
         // Source union listing first creates the missing twin, then the HTTP
-        // batch sees that revision. Do not materialize dashboard-known records.
+        // batch sees that revision. Known records were reconciled above.
         if !known.contains(id) {
             match state.engine.adopt(id, now) {
                 Ok(_) => {}
@@ -300,8 +353,19 @@ fn listing(state: &Profiles) -> Result<Vec<Value>, RepoError> {
         .map(|profile| decorate(state, readable(profile)?, now))
         .collect()
 }
-async fn list(State(state): State<Arc<Profiles>>) -> Response {
-    match super::admission::blocking(move || listing(&state)).await {
+async fn list(
+    State(state): State<Arc<Profiles>>,
+    #[cfg(feature = "test-support")] clock: Option<axum::Extension<ListingClock>>,
+) -> Response {
+    match super::admission::blocking(move || {
+        listing(
+            &state,
+            #[cfg(feature = "test-support")]
+            clock.map(|value| value.0.0),
+        )
+    })
+    .await
+    {
         Ok(Ok(profiles)) => Json(profiles).into_response(),
         Ok(Err(error)) => super::profile_errors::storage(error),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),

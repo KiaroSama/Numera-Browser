@@ -21,6 +21,8 @@ pub struct Installed {
 }
 
 fn json(path: &Path) -> io::Result<Option<Value>> {
+    #[cfg(feature = "test-support")]
+    crate::vault::testing::event("before-extension-json-read", path)?;
     let bytes = match fs::read(path) {
         Ok(bytes) => bytes,
         Err(_) => return Ok(None),

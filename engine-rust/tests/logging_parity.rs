@@ -2,6 +2,9 @@ use numera_core::{ownership::capture, runtime_log::RuntimeLog};
 use serde::Deserialize;
 use std::{fs, path::Path, process::Command, time::Duration};
 mod common;
+#[allow(dead_code)]
+#[path = "common/http_fixture.rs"]
+mod http_fixture;
 #[path = "logging_parity/retention.rs"]
 mod retention;
 
@@ -35,89 +38,10 @@ fn runtime_messages_match_original_redaction_at_file_and_fallback_sinks()
         return Ok(());
     }
     let temporary = common::TempDirectory::new("redacted log α")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut original = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    original
-        .args([
-            "-I", "-B", "-c",
-            r#"
-import json,logging,sys,unicodedata
-from pathlib import Path
-repository=Path(sys.argv[1])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import logs
-assert unicodedata.unidata_version=='15.1.0','Original Unicode generation differs'
-inputs=[
-    '', 'ordinary profile on 127.0.0.1:8787',
-    'http://fixture-user:synthetic-value@gw.invalid:3128',
-    'Authorization: Bearer fixture-token tail password=also-synthetic',
-    'Proxy-Authorization = Basic fixture-value', 'Bearer abcdefg',
-    'Bearer abcdefgh', 'Basic abcdefghi/path', 'Bearer İıſKabcd',
-    'token=one password=two api-key=three',
-    'password="quoted-value"', "password='quoted-value'",
-    'password="unclosed-value', "password='unclosed-value",
-    'password="has spaces"', "password='has spaces'",
-    'password=""', "password=''", 'password="first\'second"',
-    'http://u:p@h http://u:p:q@h', 'http://u:@h http://:p@h',
-    'Authorization:\n Bearer synthetic-value\nordinary',
-    'Authorization: value\rsecond\nordinary',
-    'password=one\npassword=two', 'token=İıſK',
-]
-for key in ('pass','password','passwd','pwd','token','secret','api_key','apikey','api-key'):
-    for spelling in (key,key.upper(),key.replace('s','ſ').replace('k','K').replace('i','İ'),key.replace('i','ı')):
-        for quote in ('',"'",'"'):
-            inputs.append(f'{quote}{spelling}{quote} = {quote}synthetic-value{quote}')
-for separator in map(chr,(9,10,13,11,12,0x1c,0x1d,0x1e,0x1f,0x85,0xa0,
-                          0x1680,0x2003,0x2028,0x2029,0x202f,0x205f,0x3000,0x200b)):
-    inputs.extend((f'Bearer{separator}abcdefgh',f'password{separator}={separator}fixture',
-                   f'http://user:{separator}value@host',f'Authorization:{separator}fixture'))
-# Transition neighbours cover the frozen word predicate, including post-15.1
-# assignments and Python/Rust differences for marks and connector punctuation.
-scalars={0,0x10ffff,0x130,0x131,0x17f,0x212a,0x1c89,0x10d40}
-previous=False
-for scalar in range(0x110000):
-    if 0xd800<=scalar<=0xdfff:continue
-    character=chr(scalar)
-    word=character.isalnum() or character=='_'
-    if word!=previous:
-        scalars.update(x for x in (scalar-1,scalar,scalar+1)
-                       if 0<=x<=0x10ffff and not 0xd800<=x<=0xdfff)
-    previous=word
-for scalar in sorted(scalars):
-    character=chr(scalar)
-    inputs.append(f'{character}token=fixture')
-    inputs.append(f'password{character}=fixture')
-inputs=list(dict.fromkeys(inputs))
-rows=[dict(input=text,expected=logs.redact(text)) for text in inputs]
-# Formatting is completed before the native string sink; numeric values must
-# survive while the original handler also scrubs string arguments.
-for message,args in [('imported %d profiles, %.1f MB',(3,1.5)),
-                     ('upstream %s failed',('http://user:synthetic-value@host',))]:
-    record=logging.LogRecord('numera.fixture',logging.INFO,'fixture',1,message,args,None)
-    assert logs.RedactingFilter().filter(record)
-    rows.append(dict(input=message%args,expected=record.getMessage()))
-print(json.dumps(rows,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .env("PYTHONUTF8", "1");
-    let observed = capture::run(
-        &mut original,
-        capture::Limits {
-            wall: Duration::from_secs(10),
-            idle: Duration::from_secs(10),
-            bytes: 4 * 1024 * 1024,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(observed.exit, 0, "Original redaction observer failed");
-    let observations: Vec<Observation> = serde_json::from_slice(&observed.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let observations: Vec<Observation> = serde_json::from_str(include_str!(
+        "fixtures/characterization/runtime_messages_match_original_redaction_at_file_and_fallback_sinks.json"
+    ))?;
     assert!(
         observations.len() > 4000,
         "Redaction boundary corpus missing"
@@ -141,7 +65,12 @@ print(json.dumps(rows,ensure_ascii=True))
     let blocker = temporary.path().join("unavailable");
     fs::write(&blocker, b"retained")?;
     let record = temporary.path().join("messages.json");
-    fs::write(&record, &observed.stdout)?;
+    fs::write(
+        &record,
+        include_bytes!(
+            "fixtures/characterization/runtime_messages_match_original_redaction_at_file_and_fallback_sinks.json"
+        ),
+    )?;
     for directory in [&blocker, &temporary.path().join("error logs")] {
         let unavailable = directory == &blocker;
         let level = if unavailable { "WARNING" } else { "ERROR" };
@@ -222,7 +151,6 @@ fn server_scheduler_errors_reach_the_runtime_file_without_starting_an_sdk()
         host: "fixture-host".into(),
         installed: Default::default(),
         browser: Runtime {
-            python: root.join("never-start-python"),
             adapter: root.join("never-start-sdk"),
             cwd: root.into(),
             home: root.into(),
@@ -301,7 +229,6 @@ fn serve_verbose_matches_original_debug_admission_through_cli_dispatch()
             cwd: root.into(),
             host: "fixture-host".into(),
             browser: numera_core::browser::runtime::Runtime {
-                python: root.join("never-start-python"),
                 adapter: root.join("absent-sdk"),
                 cwd: root.into(),
                 home: root.into(),
@@ -371,54 +298,7 @@ fn serve_verbose_matches_original_debug_admission_through_cli_dispatch()
         return Ok(());
     }
     let temporary = common::TempDirectory::new("verbose logs α")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut original = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    original
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import json,logging,sys
-from pathlib import Path
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import logs
-rows=[]
-for verbose in (False,True):
-    directory=root/str(verbose)
-    path=logs.setup(directory,verbose=verbose)
-    assert path is not None
-    logger=logs.get('fixture')
-    logger.debug('Router prepared')
-    logger.info('Readiness published')
-    for handler in list(logs.get().handlers):
-        handler.flush();handler.close();logs.get().removeHandler(handler)
-    text=path.read_text(encoding='utf-8')
-    assert 'Readiness published' in text
-    rows.append('Router prepared' in text)
-print(json.dumps(rows))
-"#,
-        ])
-        .arg(repository)
-        .arg(temporary.path());
-    let output = capture::run(
-        &mut original,
-        capture::Limits {
-            wall: Duration::from_secs(10),
-            idle: Duration::from_secs(10),
-            bytes: 65536,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(output.exit, 0, "Original log verbosity observer failed");
-    let expected: Vec<bool> = serde_json::from_slice(&output.stdout)?;
+    let expected: Vec<bool> = serde_json::from_value(http_fixture::oracle("log-verbosity")?)?;
     assert_eq!(
         expected,
         [false, true],

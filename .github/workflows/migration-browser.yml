@@ -1,66 +1,74 @@
-name: Migration browser SDK seam
-
+name: Native browser SDK seam
 on:
   workflow_dispatch:
     inputs:
       scope:
-        description: Full SDK matrix or isolated Windows diagnosis
+        description: Full real SDK matrix or isolated Windows diagnosis
         type: choice
         default: all
         options: [all, windows-camoufox, windows-playwright]
-
 permissions:
   contents: read
-
+env:
+  CARGO_BUILD_JOBS: "2"
+  CARGO_INCREMENTAL: "0"
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
 jobs:
-  browser:
-    timeout-minutes: 20
+  dashboard:
+    uses: ./.github/workflows/dashboard.yml
+  live:
+    name: Required real SDK (${{ matrix.os }}, ${{ matrix.engine }})
+    needs: dashboard
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       max-parallel: 2
       matrix:
-        os: ${{ fromJSON(inputs.scope != 'all' && '["windows-latest"]' || '["ubuntu-latest","windows-latest"]') }}
+        os: ${{ fromJSON(inputs.scope != 'all' && '["windows-latest"]' || '["ubuntu-24.04","windows-latest"]') }}
         engine: ${{ fromJSON(inputs.scope == 'windows-camoufox' && '["camoufox"]' || inputs.scope == 'windows-playwright' && '["playwright"]' || '["playwright","patchright","camoufox","cloak"]') }}
-    runs-on: ${{ matrix.os }}
     env:
-      CARGO_BUILD_JOBS: "2"
-      NUMERA_NATIVE_LIVE_ENGINE: ${{ matrix.engine }}
-      SDK_PACKAGE: ${{ fromJSON('{"playwright":"playwright==1.62.0","patchright":"patchright==1.63.0","camoufox":"camoufox[geoip]==0.5.7","cloak":"cloakbrowser==0.5.12"}')[matrix.engine] }}
-      CLOAKBROWSER_VERSION: "146.0.7680.177.5"
-      CLOAKBROWSER_AUTO_UPDATE: "false"
+      CLOAKBROWSER_VERSION: "156.0.8078.47.1"
+      CLOAKBROWSER_LICENSE_KEY: ${{ matrix.engine == 'cloak' && secrets.CLOAKBROWSER_LICENSE_KEY || '' }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          python-version: "3.13.15"
-      - name: Install selected SDK and test owner
-        run: python -m pip install -e "engine[api,dev]" "${{ env.SDK_PACKAGE }}" "playwright==1.62.0"
-      - name: Install Chromium system dependencies
-        if: runner.os == 'Linux' && matrix.engine != 'camoufox'
-        run: python -m playwright install-deps chromium
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: |
+            engine-rust
+            tools/xtask
+      - name: Install Linux browser runtime libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgtk-3-0t64 libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 libnss3 libasound2t64 libgbm1 libxt6 libxtst6 libdbus-glib-1-2
+      - name: Compile real application and browser worker
+        run: cargo build --manifest-path engine-rust/Cargo.toml --locked --release --no-default-features --features native-product,native-browser --bin numera-engine --bin numera-browser-runtime
+      - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Explicitly provision reviewed drivers and matching browsers
+        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "${{ runner.temp }}/numera-live-resources"
       - name: Install Firefox system dependencies
         if: runner.os == 'Linux' && matrix.engine == 'camoufox'
-        run: python -m playwright install-deps firefox
-      - name: Install Chromium
-        if: matrix.engine == 'playwright' || matrix.engine == 'patchright'
-        run: python -m ${{ matrix.engine }} install chromium
-      - name: Fetch Camoufox
-        if: matrix.engine == 'camoufox'
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python -m camoufox fetch
-      - name: Verify Camoufox binary prerequisite
-        if: matrix.engine == 'camoufox'
-        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- python scripts/live_engine.py prepare --engine camoufox
-      - name: Fetch pinned official Cloak binary
-        if: matrix.engine == 'cloak'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- python scripts/live_engine.py prepare --engine cloak --fetch --export-native
-      - uses: Swatinem/rust-cache@v2
+          NUMERA_TEST_ENGINE: camoufox
+        run: cargo xtask ci owned --wall 300 --idle 120 -- cargo xtask ci camoufox-runtime "${{ runner.temp }}/numera-live-resources"
+      - name: Require the selected backend and its exact consent-controlled resources
+        run: cargo xtask ci owned --wall 1200 --idle 180 -- cargo xtask ci prepare-live "engine-rust/target/release/numera-browser-runtime${{ runner.os == 'Windows' && '.exe' || '' }}" "engine-rust/target/release/numera-engine${{ runner.os == 'Windows' && '.exe' || '' }}" "${{ runner.temp }}/numera-live-resources" "${{ matrix.engine }}" "${{ runner.temp }}/numera-live-data" "${{ github.env }}"
+      - name: Require native SDK, independent application acceptance and native checkpoint comparison
+        uses: ./.github/actions/native-candidate-acceptance
         with:
-          workspaces: engine-rust
-      - name: Real SDK context and native-owned cleanup
-        run: >-
-          python scripts/migration/run_owned.py --wall 600 --idle 150 --
-          cargo test --manifest-path engine-rust/Cargo.toml --locked
-          --test browser_adapter_live -- --ignored --test-threads=1 --nocapture
+          engine: ${{ matrix.engine }}
+      - name: Preserve complete selected backend evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-live-${{ matrix.os }}-${{ matrix.engine }}-${{ github.sha }}
+          path: build/live-*.log
+          if-no-files-found: error

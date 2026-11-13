@@ -1,7 +1,7 @@
 name: Rust candidate builds
 
-# Build the Rust executable on every push and PR, independently of the retained
-# application's slower acceptance gates. A successful build is not full CI.
+# Supplement the full native product matrix with independent candidate builds.
+# A successful candidate build is not full application acceptance.
 on:
   push:
   pull_request:
@@ -29,6 +29,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
           toolchain: 1.99.1
@@ -47,11 +48,11 @@ jobs:
       - name: Artifact identity and refusal contracts
         run: cargo test --manifest-path tools/xtask/Cargo.toml --locked
       - name: Compile and lint every native Rust test target
-        run: cargo clippy --manifest-path engine-rust/Cargo.toml --locked --features native-browser --all-targets -- -D warnings
+        run: cargo clippy --manifest-path engine-rust/Cargo.toml --locked --features native-browser,test-support --all-targets -- -D warnings
       - name: Rust SDK protocol inertness and failure cleanup
-        run: cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser --test browser_adapter_protocol actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure -- --exact
+        run: cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser,test-support --test browser_adapter_protocol actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure -- --exact
       - name: Rust SDK registry ownership and shutdown
-        run: cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser --test browser_adapter_protocol registry_retains_sdk_transport_and_closes_only_its_admitted_session -- --exact
+        run: cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser,test-support --test browser_adapter_protocol registry_retains_sdk_transport_and_closes_only_its_admitted_session -- --exact
       - name: Browser identity policy and pinned model integrity
         run: cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser --test browser_hints_parity
 
@@ -74,6 +75,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
           toolchain: 1.99.1

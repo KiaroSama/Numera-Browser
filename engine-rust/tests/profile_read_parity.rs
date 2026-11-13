@@ -18,15 +18,11 @@ mod read_view;
 #[test]
 fn relative_activity_http_matches_original_without_rewriting_storage()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::ownership::capture;
     use serde_json::json;
-    use std::{path::Path, process::Command};
 
     let temporary = common::TempDirectory::new("relative-activity")?;
-    let clock = || -> Result<f64, Box<dyn std::error::Error>> {
-        Ok(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs_f64())
-    };
-    let anchor = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+    let anchor = 1_800_000_000_u64;
+    let clock = || -> Result<f64, Box<dyn std::error::Error>> { Ok(anchor as f64) };
     // Integer records retain exact JSON values across both serializers.
     let wide = |number: f64| serde_json::from_str::<Value>(&format!("{number:.0}"));
     let cases = [
@@ -71,7 +67,13 @@ fn relative_activity_http_matches_original_without_rewriting_storage()
             let stored = serde_json::to_vec_pretty(&record)?;
             let path = root.join("dashboard/a.json");
             fs::write(&path, &stored)?;
-            let app = router(root, "fixture-api", "fixture-host")?;
+            let app = numera_core::http::profile_routes::router_with_clock(
+                root,
+                "fixture-api",
+                "fixture-host",
+                anchor as f64,
+            )?;
+            let wall_started = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs_f64();
             let started = clock()?;
             let response = tokio::time::timeout(
                 Duration::from_secs(5),
@@ -87,6 +89,11 @@ fn relative_activity_http_matches_original_without_rewriting_storage()
                 tokio::time::timeout(Duration::from_secs(5), to_bytes(response.into_body(), 8192))
                     .await??;
             let ended = clock()?;
+            let wall_ended = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs_f64();
+            assert!(
+                wall_ended >= wall_started,
+                "Activity request wall clock moved backwards"
+            );
             assert!(ended >= started, "Activity request clock moved backwards");
             assert_eq!(
                 fs::read(&path)?,
@@ -104,59 +111,32 @@ fn relative_activity_http_matches_original_without_rewriting_storage()
     })?;
     let input = temporary.path().join("observations.json");
     fs::write(&input, serde_json::to_vec(&observed)?)?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    // Immutable original observation; native operations and full assertions remain live.
+    let expected: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/native-storage-characterization/relative_activity_http_matches_original_without_rewriting_storage.json"
+    ))?;
+    let original_inputs: Value = serde_json::from_str(include_str!(
+        "fixtures/native-storage-characterization/relative_activity_http_matches_original_without_rewriting_storage.inputs.json"
+    ))?;
+    let request_inputs = observed
+        .iter()
+        .map(|row| {
+            json!({
+                "name":row["name"], "record":row["record"],
+                "started":row["started"], "ended":row["ended"],
+            })
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        json!(request_inputs),
+        original_inputs,
+        "Original activity matrix changed"
     );
-    command.args(["-I", "-B", "-c", r#"
-import json,os,sys,tempfile
-from pathlib import Path
-from unittest.mock import patch
-repository,parent,input_file=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from fastapi.testclient import TestClient
-from numera.server import create_app
-from run_logging import run_log
-rows=json.loads(input_file.read_text(encoding='utf-8'))
-expected=[]
-with run_log('relative-activity-oracle',parent/'logs') as log:
-    with patch.dict(os.environ,{'NUMERA_API_TOKEN':'fixture-api','NUMERA_ALLOWED_ORIGINS':''}):
-        with tempfile.TemporaryDirectory(prefix='activity-',dir=parent) as directory:
-            root=Path(directory)
-            app=create_app(data_dir=directory,start_scheduler=False)
-            path=root/'dashboard/a.json'
-            path.parent.mkdir(exist_ok=True)
-            with TestClient(app,raise_server_exceptions=False) as client:
-                for row in rows:
-                    stored=json.dumps(row['record'],ensure_ascii=True).encode('utf-8')
-                    path.write_bytes(stored)
-                    endpoints=[]
-                    for now in (row['started'],row['ended']):
-                        with patch('numera.convert.time.time',return_value=now):
-                            response=client.get('/api/profiles',headers={'authorization':'Bearer fixture-api'})
-                        body=response.json() if response.headers.get('content-type','').startswith('application/json') else response.text
-                        endpoints.append({'status':response.status_code,'body':body})
-                        assert path.read_bytes()==stored,'Original activity read rewrote stored bytes'
-                    assert endpoints[0]==endpoints[1],'Unstable activity request clock interval: '+row['name']
-                    expected.append(endpoints[0])
-    log.info('Observed stable activity HTTP cases=%s',len(expected))
-    print(json.dumps(expected,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("source")).arg(input);
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 131072,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(original.exit, 0, "Original activity HTTP observer failed");
-    let expected: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    assert_eq!(
+        fs::read(&input)?,
+        serde_json::to_vec(&observed)?,
+        "Activity read changed inputs"
+    );
     assert_eq!(expected.len(), 24, "Activity HTTP observations missing");
     assert_eq!(observed.len(), expected.len());
     for (actual, expected) in observed.iter().zip(expected) {

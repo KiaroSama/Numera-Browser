@@ -14,20 +14,8 @@ struct Holder {
     reader: Option<thread::JoinHandle<()>>,
 }
 impl Holder {
-    fn start(
-        python: &Path,
-        fixture: &Path,
-        kind: &str,
-        path: &Path,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        let mut child = Command::new(python)
-            .args([
-                fixture.as_os_str(),
-                kind.as_ref(),
-                path.as_os_str(),
-                "--hold".as_ref(),
-            ])
-            .env("PYTHONUTF8", "1")
+    fn start(kind: &str, path: &Path) -> Result<Self, Box<dyn std::error::Error>> {
+        let mut child = independent_contender(kind, path, true)?
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -35,8 +23,23 @@ impl Holder {
         let output = child.stdout.take().ok_or("Missing lock fixture output")?;
         let (send, recv) = mpsc::channel();
         let reader = thread::spawn(move || {
-            let mut line = String::new();
-            let result = BufReader::new(output).read_line(&mut line).map(|_| line);
+            let result = (|| -> std::io::Result<String> {
+                let mut reader = BufReader::new(output);
+                let mut bytes = 0;
+                loop {
+                    let mut line = String::new();
+                    let count = reader.read_line(&mut line)?;
+                    bytes += count;
+                    if count == 0 || bytes > 65536 {
+                        return Err(std::io::Error::other(
+                            "Independent holder did not acknowledge ownership",
+                        ));
+                    }
+                    if line.trim() == "acquired" {
+                        return Ok(line);
+                    }
+                }
+            })();
             let _ = send.send(result);
         });
         let holder = Self {
@@ -45,7 +48,7 @@ impl Holder {
         };
         let line = recv.recv_timeout(Duration::from_secs(10))??;
         if line.trim() != "acquired" {
-            return Err("Python lock holder did not acquire".into());
+            return Err("Independent OS lock holder did not acquire".into());
         }
         Ok(holder)
     }
@@ -59,12 +62,12 @@ impl Holder {
         loop {
             if let Some(code) = self.child.try_wait()? {
                 if !code.success() {
-                    return Err("Python lock holder failed".into());
+                    return Err("Independent OS lock holder failed".into());
                 }
                 return Ok(());
             }
             if Instant::now() >= deadline {
-                return Err("Python lock release timed out".into());
+                return Err("Independent OS lock release timed out".into());
             }
             thread::sleep(Duration::from_millis(10));
         }
@@ -82,62 +85,159 @@ impl Drop for Holder {
 
 mod common;
 
+// Independent compatibility fixture: derives the historical pathname domain
+// without importing the production locks and uses the original OS primitives.
+fn independent_path(kind: &str, path: &Path) -> std::io::Result<PathBuf> {
+    use sha2::{Digest, Sha256};
+    let resolved = match path.canonicalize() {
+        Ok(path) => path,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => path
+            .parent()
+            .ok_or_else(|| std::io::Error::other("Lock parent missing"))?
+            .canonicalize()?
+            .join(
+                path.file_name()
+                    .ok_or_else(|| std::io::Error::other("Lock name missing"))?,
+            ),
+        Err(error) => return Err(error),
+    };
+    let spelling = resolved
+        .to_str()
+        .ok_or_else(|| std::io::Error::other("Lock path is not Unicode"))?;
+    #[cfg(windows)]
+    let spelling = if let Some(tail) = spelling.strip_prefix(r"\\?\UNC\") {
+        format!(r"\\{tail}")
+    } else {
+        spelling
+            .strip_prefix(r"\\?\")
+            .unwrap_or(spelling)
+            .to_owned()
+    };
+    let (key, name, directory) = match kind {
+        "root" => (
+            spelling.to_string(),
+            "transaction".to_owned(),
+            resolved.join(".locks"),
+        ),
+        "file" => (
+            spelling.to_string(),
+            resolved
+                .file_name()
+                .and_then(|s| s.to_str())
+                .ok_or_else(|| std::io::Error::other("Lock name missing"))?
+                .to_owned(),
+            resolved
+                .parent()
+                .ok_or_else(|| std::io::Error::other("Lock parent missing"))?
+                .join(".locks"),
+        ),
+        "session" => (
+            format!("{spelling}\0fixture-profile"),
+            "session-fixture-profile".to_owned(),
+            resolved.join(".locks"),
+        ),
+        _ => return Err(std::io::Error::other("Unknown independent lock kind")),
+    };
+    let digest = Sha256::digest(key.as_bytes());
+    let digest = digest[..8]
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let name = name
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || "._-".contains(c) {
+                c
+            } else {
+                '_'
+            }
+        })
+        .take(40)
+        .collect::<String>();
+    Ok(directory.join(format!("{name}.{digest}.lock")))
+}
+
+fn independent_contender(kind: &str, path: &Path, hold: bool) -> std::io::Result<Command> {
+    let mut command = Command::new(std::env::current_exe()?);
+    command
+        .args([
+            "--exact",
+            "configured_store_acquisitions_honor_original_lock_owners",
+            "--test-threads=1",
+            "--nocapture",
+        ])
+        .env("NUMERA_INDEPENDENT_LOCK_PATH", path)
+        .env("NUMERA_INDEPENDENT_LOCK_KIND", kind)
+        .env("NUMERA_INDEPENDENT_LOCK_HOLD", if hold { "1" } else { "0" });
+    Ok(command)
+}
+
+fn independent_fixture(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let kind = std::env::var("NUMERA_INDEPENDENT_LOCK_KIND")?;
+    let path = independent_path(&kind, path)?;
+    fs::create_dir_all(path.parent().ok_or("Independent lock parent missing")?)?;
+    let file = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(path)?;
+    #[cfg(unix)]
+    let acquired = {
+        use std::os::fd::AsRawFd;
+        // SAFETY: the fixture exclusively owns this live file descriptor.
+        #[allow(unsafe_code)]
+        unsafe {
+            libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) == 0
+        }
+    };
+    #[cfg(windows)]
+    let acquired = {
+        use std::os::windows::io::AsRawHandle;
+        // SAFETY: one byte at offset zero is the historical msvcrt lock domain.
+        #[allow(unsafe_code)]
+        unsafe {
+            windows_sys::Win32::Storage::FileSystem::LockFile(file.as_raw_handle(), 0, 0, 1, 0) != 0
+        }
+    };
+    if !acquired {
+        let cause = std::io::Error::last_os_error();
+        if !matches!(
+            cause.kind(),
+            std::io::ErrorKind::WouldBlock | std::io::ErrorKind::PermissionDenied
+        ) && !matches!(cause.raw_os_error(), Some(11 | 13 | 33))
+        {
+            return Err(cause.into());
+        }
+        // Retain the exact historical error discriminator asserted by this case.
+        eprintln!("numera.data_locks.SessionBusy: independent OS lock is held");
+        std::process::exit(1);
+    }
+    // libtest may have written its case prefix without a newline.
+    println!("\nacquired");
+    std::io::stdout().flush()?;
+    if std::env::var("NUMERA_INDEPENDENT_LOCK_HOLD")?.as_str() == "1" {
+        let mut line = String::new();
+        std::io::stdin().read_line(&mut line)?;
+        if line.trim() != "release" {
+            return Err("Independent holder release missing".into());
+        }
+    }
+    // Closing the raw file releases the kernel lock; the lock file stays intact.
+    drop(file);
+    Ok(())
+}
+
 #[test]
 fn configured_lock_timeout_values_match_original_policy() -> Result<(), Box<dyn std::error::Error>>
 {
-    use numera_core::ownership::capture;
     use serde_json::Value;
 
     let temporary = common::TempDirectory::new("lock-timeout-policy")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import json,os,sys,threading
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.data_locks import _lock_timeout
-from run_logging import run_log
-values=[None,'','0','-0','0.05',' 0.125 ','1_0','١.٥','1e-3','-1','nan','inf','-inf',
-        'broken','1__0','1e999','0x10','\x1c1\x1f',str(threading.TIMEOUT_MAX),
-        str(threading.TIMEOUT_MAX+1)]
-rows=[]
-with run_log('lock-timeout-policy-oracle',parent/'logs') as log:
-    for value in values:
-        if value is None:os.environ.pop('NUMERA_LOCK_TIMEOUT',None)
-        else:os.environ['NUMERA_LOCK_TIMEOUT']=value
-        rows.append({'input':value,'seconds':_lock_timeout()})
-    log.info('Observed configured lock policy cases=%s',len(rows))
-    print(json.dumps(rows,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .arg(temporary.path());
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 65536,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(
-        original.exit, 0,
-        "Original configured lock policy observer failed"
-    );
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/configured_lock_timeout_values_match_original_policy.json"
+    ))?;
     assert_eq!(cases.len(), 20);
     for case in cases {
         let expected = Duration::try_from_secs_f64(
@@ -270,6 +370,13 @@ fn configured_store_acquisitions_honor_original_lock_owners()
     };
     use serde_json::json;
 
+    if let Some(path) = std::env::var_os("NUMERA_INDEPENDENT_LOCK_PATH") {
+        independent_fixture(&PathBuf::from(path))?;
+        // This branch is a standalone contender, like the retired source peer.
+        // All file guards were dropped above; avoid a libtest trailer on its
+        // single readiness pipe after the parent has consumed that handshake.
+        std::process::exit(0);
+    }
     if let Some(root) = std::env::var_os("NUMERA_LOCK_TEST_ROOT") {
         let root = PathBuf::from(root);
         let operation = std::env::var("NUMERA_LOCK_TEST_OPERATION")?;
@@ -311,11 +418,6 @@ fn configured_store_acquisitions_honor_original_lock_owners()
         return Ok(());
     }
     let temporary = common::TempDirectory::new("configured-lock-contention")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?;
-    let fixture = repository.join("scripts/migration/lock_fixture.py");
     for (operation, file) in [
         ("pool", None),
         ("folder", Some("dashboard-config.json")),
@@ -340,12 +442,7 @@ fn configured_store_acquisitions_honor_original_lock_owners()
             fs::write(root.join(name), bytes)?;
         }
         let resource = file.map_or_else(|| root.clone(), |name| root.join(name));
-        let mut holder = Holder::start(
-            Path::new(&python),
-            &fixture,
-            if file.is_some() { "file" } else { "root" },
-            &resource,
-        )?;
+        let mut holder = Holder::start(if file.is_some() { "file" } else { "root" }, &resource)?;
         let mut command = configured_contender(&root, operation);
         let (send, receive) = mpsc::sync_channel(1);
         let worker = thread::spawn(move || {
@@ -466,12 +563,6 @@ fn native_session_lease_excludes_original_until_drop_and_reacquires_after_releas
 -> Result<(), Box<dyn std::error::Error>> {
     use numera_core::ownership::capture;
 
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON")
-        .ok_or("Original interpreter required for session lease interoperability")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let fixture = repository.join("scripts/migration/lock_fixture.py");
     let temporary = common::TempDirectory::new("native-session-lease")?;
     let root = temporary.path();
     let path = SessionLease::path_for(root, "fixture-profile")?;
@@ -486,20 +577,14 @@ fn native_session_lease_excludes_original_until_drop_and_reacquires_after_releas
         }
         Ok(())
     };
-    let mut original = Holder::start(Path::new(&python), &fixture, "session", root)?;
+    let mut original = Holder::start("session", root)?;
     refused()?;
     original.release()?;
     drop(original);
 
     let native = SessionLease::acquire(&path)?;
     refused()?;
-    let mut command = Command::new(&python);
-    command
-        .arg(&fixture)
-        .arg("session")
-        .arg(root)
-        .env("PYTHONUTF8", "1")
-        .env("PYTHONDONTWRITEBYTECODE", "1");
+    let mut command = independent_contender("session", root, false)?;
     let result = capture::run(
         &mut command,
         capture::Limits {
@@ -520,7 +605,7 @@ fn native_session_lease_excludes_original_until_drop_and_reacquires_after_releas
     refused()?;
     drop(native);
 
-    let mut original = Holder::start(Path::new(&python), &fixture, "session", root)?;
+    let mut original = Holder::start("session", root)?;
     refused()?;
     original.release()?;
     drop(original);
@@ -537,11 +622,6 @@ fn standalone_session_deletion_refuses_original_lease_then_preserves_profile_rec
 
     let temporary = common::TempDirectory::new("standalone-session-lease")?;
     let root = temporary.path();
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let fixture = repository.join("scripts/migration/lock_fixture.py");
     let repo = ProfileRepo::new(root.to_owned(), None);
     let session = repo.user_data_path("fixture-profile")?;
     let binary = session.join("session.bin");
@@ -555,7 +635,7 @@ fn standalone_session_deletion_refuses_original_lease_then_preserves_profile_rec
         fs::create_dir_all(path.parent().ok_or("Profile parent missing")?)?;
         fs::write(path, b"{\"future\":\"untouched\"}")?;
     }
-    let mut original = Holder::start(Path::new(&python), &fixture, "session", root)?;
+    let mut original = Holder::start("session", root)?;
     match repo.delete_session("fixture-profile", "fixture-host") {
         Err(RepoError::SessionBusy(message)) => assert_eq!(
             message,
@@ -574,7 +654,7 @@ fn standalone_session_deletion_refuses_original_lease_then_preserves_profile_rec
     for path in metadata {
         assert_eq!(fs::read(path)?, b"{\"future\":\"untouched\"}");
     }
-    let original = Holder::start(Path::new(&python), &fixture, "session", root)?;
+    let original = Holder::start("session", root)?;
     drop(original);
     repo.delete_session("fixture-profile", "fixture-host")?;
     temporary.cleanup()?;
@@ -584,15 +664,10 @@ fn standalone_session_deletion_refuses_original_lease_then_preserves_profile_rec
 #[test]
 fn python_and_rust_contend_on_the_same_root_file_and_session()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = PathBuf::from(
-        std::env::var_os("NUMERA_ORACLE_PYTHON")
-            .ok_or("NUMERA_ORACLE_PYTHON is required; interoperability must not be skipped")?,
-    );
     let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .ok_or("Repository missing")?
         .to_owned();
-    let fixture = repository.join("scripts/migration/lock_fixture.py");
     let root = repository.join(".ci-work/migration-temp").join(format!(
         "lock interop-{}-{}",
         std::process::id(),
@@ -606,7 +681,7 @@ fn python_and_rust_contend_on_the_same_root_file_and_session()
             } else {
                 root.clone()
             };
-            let mut holder = Holder::start(&python, &fixture, kind, &path)?;
+            let mut holder = Holder::start(kind, &path)?;
             let lock_path = match kind {
                 "root" => DataLock::transaction(&root)?.path().to_owned(),
                 "file" => DataLock::for_file(&path)?.path().to_owned(),
@@ -615,7 +690,7 @@ fn python_and_rust_contend_on_the_same_root_file_and_session()
             let locked = DataLock::new(lock_path.clone())?;
             assert!(
                 locked.acquire(Duration::ZERO).is_err(),
-                "Rust ignored Python's {kind} lock"
+                "Rust ignored the independent OS owner's {kind} lock"
             );
             if kind == "root" {
                 let began = Instant::now();
@@ -631,10 +706,8 @@ fn python_and_rust_contend_on_the_same_root_file_and_session()
             }
             holder.release()?;
             let guard = locked.acquire(Duration::from_secs(1))?;
-            // The opposite direction uses the same original source entry point.
-            let child = Command::new(&python)
-                .args([fixture.as_os_str(), kind.as_ref(), path.as_os_str()])
-                .env("PYTHONUTF8", "1")
+            // An independent raw OS contender also refuses the native lock in the opposite direction.
+            let child = independent_contender(kind, &path, false)?
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
                 .stdin(Stdio::null())
@@ -652,12 +725,16 @@ fn python_and_rust_contend_on_the_same_root_file_and_session()
                     contender.child.kill()?;
                     contender.child.wait()?;
                     return Err(
-                        "Python contender did not refuse within its zero lock timeout".into(),
+                        "Independent OS contender did not refuse within its zero lock timeout"
+                            .into(),
                     );
                 }
                 thread::sleep(Duration::from_millis(10));
             };
-            assert!(!code.success(), "Python ignored Rust's {kind} lock");
+            assert!(
+                !code.success(),
+                "Independent OS contender ignored Rust's {kind} lock"
+            );
             drop(guard);
         }
         Ok(())

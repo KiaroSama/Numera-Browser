@@ -3,49 +3,28 @@ use axum::{
     http::Request,
 };
 use numera_core::{
-    browser::{adapter::Adapter, runtime::Runtime},
+    browser::runtime::Runtime,
     http::application::{SessionApplication, router_with_browser},
     ownership::{claims, registry::Registry},
 };
 use serde_json::{Value, json};
-use std::{collections::BTreeMap, path::Path, process::Command, sync::Arc, time::Duration};
+use std::{collections::BTreeMap, sync::Arc, time::Duration};
 use tower::ServiceExt;
 mod common;
+use numera_core as core;
+#[allow(dead_code)]
+#[path = "common/browser_fixture.rs"]
+mod fixture;
+#[allow(dead_code)]
+#[path = "common/http_fixture.rs"]
+mod http_fixture;
 #[path = "launch_http_parity/scheduler_rows.rs"]
 mod scheduler_rows;
 
 #[test]
 fn launch_optional_body_and_refusals_match_original_before_native_activation()
 -> Result<(), Box<dyn std::error::Error>> {
-    let source_root = common::TempDirectory::new("launch-http-source")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
-    let mut command = Command::new(&python);
-    command.args(["-u","-c",r#"
-import json,os,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from launch_http_cases import cases, attach_cases, attach_success, warmup_cases, scheduler_cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(os.environ['FIXTURE_ROOT']),'attach':attach_cases(os.environ['FIXTURE_ROOT']),'attached':attach_success(os.environ['FIXTURE_ROOT']),'warmup':warmup_cases(os.environ['FIXTURE_ROOT']),'scheduler':scheduler_cases(os.environ['FIXTURE_ROOT'])}}),flush=True)
-"#]).env("PYTHONUTF8","1").env("FIXTURE_ROOT",source_root.path().join("source")).env("PYTHONPATH",std::env::join_paths([repository.join("scripts/migration"),repository.join("engine")])?);
-    let mut source = Adapter::spawn(
-        source_root.path(),
-        "oracle",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = source.call(
-        "observe-launch-http",
-        Default::default(),
-        Duration::from_secs(30),
-    )?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
-    source_root.cleanup()?;
+    let document = http_fixture::oracle("launch-http")?;
     let cases = document["cases"]
         .as_array()
         .ok_or("Launch HTTP cases missing")?;
@@ -67,25 +46,13 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
                 serde_json::to_vec(&json!({"id":"a","name":"Fixture","seed":42}))?,
             )?;
         }
-        let adapter = root.join("sdk.py");
-        std::fs::write(
-            &adapter,
-            r#"
-import json,pathlib,sys
-for line in sys.stdin:
-    request=json.loads(line);op=request['operation']
-    if op=='hello': result={'backends':{'playwright':{'installed':True}}}
-    elif op=='open':
-        result={'opened':True,'backend':request['backend']}
-        pathlib.Path(__file__).with_suffix('.headless').write_text(json.dumps(request['options']['headless']),encoding='utf-8')
-    else: result={'closing':True}
-    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-    if op=='close': break
-"#,
+        let adapter = fixture::executable(
+            &root.join("sdk"),
+            "rpc",
+            json!({"headless_capture":root.join("sdk.headless")}),
         )?;
         let sessions = Arc::new(Registry::new(root.into(), "fixture-host".into(), None)?);
         let browser = Runtime {
-            python: python.clone().into(),
             adapter,
             cwd: root.into(),
             home: root.into(),
@@ -187,8 +154,7 @@ for line in sys.stdin:
                     sessions: sessions.clone(),
                 },
                 Some(Runtime {
-                    python: python.clone().into(),
-                    adapter: root.join("must-not-start.py"),
+                    adapter: root.join("must-not-start-sdk"),
                     cwd: root.into(),
                     home: root.into(),
                     logs: root.join("logs"),
@@ -234,19 +200,13 @@ for line in sys.stdin:
         result?;
         temporary.cleanup()?;
     }
-    warmup_http(
-        &runtime,
-        &python,
-        &document["warmup"],
-        &document["scheduler"],
-    )?;
-    attached_lifetime(&runtime, &python, &document["attached"])?;
+    warmup_http(&runtime, &document["warmup"], &document["scheduler"])?;
+    attached_lifetime(&runtime, &document["attached"])?;
     Ok(())
 }
 
 fn warmup_http(
     runtime: &tokio::runtime::Runtime,
-    python: &std::ffi::OsStr,
     cases: &Value,
     scheduled: &Value,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -266,25 +226,10 @@ fn warmup_http(
             std::fs::create_dir_all(root.join("sessions"))?;
             std::fs::write(root.join("sessions/a.json"), claim)?;
         }
-        let script = root.join("sdk.py");
-        std::fs::write(
-            &script,
-            r#"
-import json,pathlib,sys
-for line in sys.stdin:
-    request=json.loads(line);op=request['operation']
-    if op=='hello': result={'backends':{'playwright':{'installed':True}}}
-    elif op=='open':
-        pathlib.Path(__file__).with_suffix('.open').write_text(json.dumps(request),encoding='utf-8')
-        result={'opened':True,'backend':request['backend']}
-    elif op=='navigate': result={'navigated':True}
-    elif op=='mouse': result={'performed':True}
-    elif op=='evaluate': result={'evaluated':True,'value':[]}
-    elif op=='close': result={'closing':True}
-    else: raise AssertionError('Unexpected warmup operation')
-    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-    if op=='close': break
-"#,
+        let script = fixture::executable(
+            &root.join("sdk"),
+            "rpc",
+            json!({"capture":root.join("sdk.open"),"evaluation":[]}),
         )?;
         let sessions = Arc::new(Registry::new(root.into(), "fixture-host".into(), None)?);
         let result = runtime.block_on(async {
@@ -299,7 +244,6 @@ for line in sys.stdin:
                     sessions: sessions.clone(),
                 },
                 Some(Runtime {
-                    python: python.into(),
                     adapter: script.clone(),
                     cwd: root.into(),
                     home: root.into(),
@@ -385,7 +329,6 @@ for line in sys.stdin:
                         "fixture-host".into(),
                         sessions.clone(),
                         Runtime {
-                            python: python.into(),
                             adapter: script.clone(),
                             cwd: root.into(),
                             home: root.into(),
@@ -445,7 +388,6 @@ for line in sys.stdin:
 
 fn attached_lifetime(
     runtime: &tokio::runtime::Runtime,
-    python: &std::ffi::OsStr,
     expected: &Value,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let temporary = common::TempDirectory::new("attach-http-lifetime")?;
@@ -457,49 +399,10 @@ fn attached_lifetime(
             "id":"a","name":"Fixture","seed":42,"engine":"playwright"
         }))?,
     )?;
-    let script = root.join("sdk.py");
-    std::fs::write(
-        &script,
-        r#"
-import json,os,pathlib,socket,sys,threading
-server=None;worker=None;stop=threading.Event();seen=[];queries=[]
-def serve():
-    while not stop.is_set():
-        try: client,address=server.accept()
-        except socket.timeout: continue
-        except OSError: return
-        with client:
-            client.settimeout(1)
-            request=client.recv(4096)
-            if b'/json/version' not in request: raise AssertionError('Wrong CDP request')
-            queries.append(True)
-            pathlib.Path(__file__).with_suffix('.queries').write_text(json.dumps(len(queries)),encoding='utf-8')
-            port=server.getsockname()[1]
-            body=json.dumps({'Browser':'Fixture Chromium','webSocketDebuggerUrl':f'ws://127.0.0.1:{port}/devtools/browser/fixture'}).encode('utf-8')
-            client.sendall(b'HTTP/1.1 200 OK\r\nContent-Length: '+str(len(body)).encode('ascii')+b'\r\nConnection: close\r\n\r\n'+body)
-try:
-    for line in sys.stdin:
-        request=json.loads(line);op=request['operation'];seen.append(op)
-        if op=='hello': result={'backends':{'playwright':{'installed':True}}}
-        elif op=='open':
-            flag=next(arg for arg in request['options']['args'] if arg.startswith('--remote-debugging-port='))
-            port=int(flag.split('=',1)[1]);server=socket.socket();server.bind(('127.0.0.1',port));server.listen();server.settimeout(.1)
-            worker=threading.Thread(target=serve);worker.start()
-            pathlib.Path(__file__).with_suffix('.open').write_text(json.dumps({'request':request,'first':os.environ['NUMERA_ADAPTER_FIRST_PAGE']}),encoding='utf-8')
-            result={'opened':True,'backend':request['backend']}
-        elif op=='close':
-            stop.set();server.close();worker.join(timeout=2)
-            if worker.is_alive(): raise RuntimeError('CDP worker failed to finish')
-            result={'closing':True}
-        else: raise AssertionError('Unexpected operation')
-        pathlib.Path(__file__).with_suffix('.seen').write_text(json.dumps(seen),encoding='utf-8')
-        print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-        if op=='close': break
-finally:
-    stop.set()
-    if server: server.close()
-    if worker: worker.join(timeout=2)
-"#,
+    let script = fixture::executable(
+        &root.join("sdk"),
+        "attach",
+        json!({"capture_with_first":true,"queries":root.join("sdk.queries"),"trace_operations":true}),
     )?;
     let sessions = Arc::new(Registry::new(root.into(), "fixture-host".into(), None)?);
     let result = runtime.block_on(async {
@@ -514,7 +417,6 @@ finally:
                 sessions: sessions.clone(),
             },
             Some(Runtime {
-                python: python.into(),
                 adapter: script.clone(),
                 cwd: root.into(),
                 home: root.into(),

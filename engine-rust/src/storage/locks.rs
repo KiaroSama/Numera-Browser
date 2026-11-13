@@ -215,6 +215,10 @@ impl DataLock {
             state.owner = Some(owner);
             drop(state);
             let acquired = (|| {
+                #[cfg(feature = "test-support")]
+                if let Some(result) = crate::ownership::test_support::before_os_lock(&self.path) {
+                    result?;
+                }
                 let file = open_lock(&self.path)?;
                 loop {
                     match file.try_lock() {
@@ -302,5 +306,14 @@ impl SessionLease {
             TryLockError::Error(error) => error,
         })?;
         Ok(Self { _file: file })
+    }
+}
+
+impl Drop for SessionLease {
+    fn drop(&mut self) {
+        // Release this owner's flock before closing its descriptor. A concurrent
+        // fork can briefly hold a CLOEXEC copy until exec; close alone would
+        // leave that unrelated child holding the old open-file description.
+        let _ = self._file.unlock();
     }
 }

@@ -1,7 +1,9 @@
-//! Native application-domain migration; not yet a replacement executable.
+//! Native Numera application, persistence, browser preparation and ownership.
+pub mod benchmark_http;
 pub mod browser;
 pub mod bulk;
 pub mod cli;
+pub mod cloak_acquisition;
 pub mod collision;
 #[cfg(test)]
 #[path = "../tests/common/mod.rs"]
@@ -15,6 +17,7 @@ pub mod identity;
 pub mod identity_script;
 pub mod import_format;
 pub mod importers;
+pub mod installation;
 mod job_control;
 mod job_output;
 mod job_spawn;
@@ -34,6 +37,7 @@ pub mod native_input;
 mod native_null_input;
 pub mod native_password;
 pub mod native_stdio;
+pub mod native_windows_sign;
 pub mod network;
 pub mod ownership;
 pub mod pool;
@@ -46,3 +50,5 @@ pub mod storage;
 pub mod validation;
 pub mod vault;
 pub mod write_contract;
+
+pub mod installation_gate;

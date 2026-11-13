@@ -5,58 +5,13 @@ mod common;
 #[test]
 fn envelope_classification_matches_original_unicode_and_prefix_contracts()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::{
-        ownership::capture,
-        vault::policy::{self, VaultState},
-    };
-    use std::{path::Path, process::Command, time::Duration};
+    use numera_core::vault::policy::{self, VaultState};
 
     let temporary = common::TempDirectory::new("envelope-classification")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import json,sys
-from pathlib import Path
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.crypto import is_envelope,is_supported_envelope
-from run_logging import run_log
-with run_log('envelope-classification-oracle',root/'logs') as log:
-    catalog=json.loads((repository/'engine-rust/src/pool_digit_ranges.json').read_text(encoding='utf-8'))
-    ranges=catalog['decimal_ranges']
-    values=['enc:v١:opaque','enc:v1:','enc:v2:invalid','enc:v9:',
-            'enc:v01:','enc:v0:','enc:v12:\n','enc:v:', 'enc:v1',
-            'enc:v1x:', 'enc:v-1:', 'enc:v+1:', 'enc:v1.0:',
-            'ENC:v1:', ' enc:v1:', '\nenc:v1:', 'enc:v1\n:',
-            'enc:v²:', 'enc:v½:', 'enc:vⅠ:',
-            'enc:v1٢:', 'enc:v1:\u0000', 'plain','']
-    scalars=set()
-    for first,last in ranges:
-        scalars.update(range(first,last+1))
-        scalars.update(c for c in (first-1,last+1) if 0<=c<=0x10ffff)
-    values+=['enc:v'+chr(c)+':opaque' for c in sorted(scalars)]
-    rows=[{'value':value,'envelope':is_envelope(value),
-           'supported':is_supported_envelope(value)} for value in values]
-    log.info('Observed envelope classification cases=%s',len(rows))
-    print(json.dumps(rows,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path()).env("PYTHONUTF8", "1");
-    let observed = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(observed.exit, 0, "Original envelope observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/envelope_classification_matches_original_unicode_and_prefix_contracts.json"
+    ))?;
     assert_eq!(cases.len(), 832, "Unicode envelope observations missing");
     for case in cases {
         let value = case["value"].as_str().ok_or("Envelope input missing")?;
@@ -96,83 +51,10 @@ fn crypto_text_admission_matches_original_and_new_tokens_reopen_there()
     use std::{fs, path::Path, process::Command, time::Duration};
 
     let temporary = common::TempDirectory::new("crypto-text-admission")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import itertools,json,sys
-from pathlib import Path
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import crypto
-from run_logging import run_log
-fixtures=json.loads((repository/'engine-rust/tests/fixtures/vault.json').read_text(encoding='utf-8'))['cases']
-salt=fixtures[0]['salt'];password=fixtures[0]['password']
-rows=[];inputs=[]
-def observe(salt,value,key=password):
-    inputs.append((key,salt,value))
-with run_log('crypto-text-admission-oracle',root/'logs') as log:
-    for case in [fixtures[2],fixtures[6],fixtures[10],fixtures[14]]:
-        token=case['token'];prefix,body=token.rsplit(':',1)
-        for candidate in [salt,' \n'+salt+'\t','!'+salt[:8]+'\x00'+salt[8:]+'?',
-                          salt+'===','=='+salt,salt[:6]+'='+salt[6:],
-                          salt.rstrip('='),salt[:-1],salt+'A',salt+'é',
-                          salt[:-3]+'x==',salt[:-3]+'w==']:
-            observe(candidate,token)
-        for candidate in [body,' \n'+body+'\t','!'+body[:8]+'\x00'+body[8:]+'?',
-                          body+'===','=='+body,body[:6]+'='+body[6:],body.rstrip('='),
-                          body[:-1],body.replace('-','+').replace('_','/'),body+'A',
-                          body[:12]+('A' if body[12]!='A' else 'B')+body[13:]]:
-            observe(salt,prefix+':'+candidate)
-        for candidate in ['xxxxxxx'+body,'é漢🙂xxxx'+body,'enc:'+body,'',
-                          prefix+':'+body+':ignored','enc:v9:'+body,'enc:v01:'+body]:
-            observe(salt,candidate)
-        for candidate in [body[:5]+'é'+body[6:],body[:5]+'漢🙂'+body[7:]]:
-            observe(salt,prefix+':'+candidate)
-        observe(salt,token,'wrong-fixture-password')
-    # Short malformed salts cover padding grammar without a large KDF matrix.
-    verifier=fixtures[14]['token']
-    for length in range(3):
-        for symbols in itertools.product('A=!',repeat=length):
-            candidate=''.join(symbols)
-            observe(candidate,verifier)
-    # Authenticated bytes can still be invalid UTF-8; preserve that refusal.
-    payloads=[b'\xff',b'\x80',b'\xc0\xaf',b'\xf5\x80\x80\x80',
-              b'\xc2',b'\xe2\x82',b'\xf0\x9f\x92',b'\xed\xa0',
-              b'\xc2A',b'\xe2\x82A',b'\xf0\x9f\x92A',
-              b'\xe0\x80\x80',b'\xed\xa0\x80',b'\xf0\x80\x80\x80',
-              b'\xf4\x90\x80\x80',b'abc\xff','α'.encode()+b'\xe2\x82',
-              b'',b'\x00','Unicode α فارسی'.encode()]
-    for version,rounds in crypto.ROUNDS_BY_VERSION.items():
-        cipher=crypto._fernet(password,salt,rounds)
-        for payload in payloads:
-            observe(salt,'enc:'+version+':'+cipher.encrypt(payload).decode('ascii'))
-    # Keep each raw KDF key adjacent; restore original observation order afterward.
-    for index,(key,salt,value) in sorted(enumerate(inputs),key=lambda row:(row[1][0],row[1][1])):
-        try:result,error=crypto.decrypt(key,salt,value),None
-        except (RuntimeError,ValueError) as exc:result,error=None,str(exc)
-        rows.append((index,{'salt':salt,'value':value,'password':key,'result':result,'error':error,
-                            'check':crypto.check_password(key,salt,value)}))
-    rows=[row for _,row in sorted(rows)]
-    log.info('Observed crypto text cases=%s',len(rows))
-    print(json.dumps(rows,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("source"));
-    let observed = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(observed.exit, 0, "Original crypto text observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/crypto_text_admission_matches_original_and_new_tokens_reopen_there.json"
+    ))?;
     assert_eq!(cases.len(), 185, "Crypto text observations missing");
     let mut order: Vec<_> = cases.iter().enumerate().collect();
     order.sort_by(|(_, a), (_, b)| {
@@ -208,34 +90,70 @@ with run_log('crypto-text-admission-oracle',root/'logs') as log:
         .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
     let input = temporary.path().join("native-tokens.json");
     fs::write(&input, serde_json::to_vec(&rows)?)?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
+    // Compile an isolated standard Fernet reader; it has no product crate
+    // dependency and authenticates the actual fresh ciphertext in another
+    // owned native process, preserving the original interoperability check.
+    let dependencies = std::env::current_exe()?
+        .parent()
+        .ok_or("Test dependency directory missing")?
+        .to_owned();
+    let mut compiler = Command::new(std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into()));
+    let reader = temporary.path().join(if cfg!(windows) {
+        "native-token-reader.exe"
+    } else {
+        "native-token-reader"
+    });
+    compiler
+        .arg("--edition=2024")
+        .arg("--crate-name=native_token_reader")
+        .arg("-Cdebuginfo=0")
+        .arg("-Copt-level=2")
+        .arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/vault_parity/token_reader.rs"))
+        .arg("-L")
+        .arg(format!("dependency={}", dependencies.display()))
+        .arg("-o")
+        .arg(&reader);
+    for name in ["serde_json", "base64", "pbkdf2", "aes"] {
+        let mut libraries = fs::read_dir(&dependencies)?
+            .map(|entry| entry.map(|entry| entry.path()))
+            .collect::<Result<Vec<_>, _>>()?;
+        libraries.retain(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|file| {
+                    file.starts_with(&format!("lib{name}-")) && file.ends_with(".rlib")
+                })
+        });
+        libraries.sort_by_key(|path| {
+            fs::metadata(path)
+                .and_then(|metadata| metadata.modified())
+                .ok()
+        });
+        compiler.arg("--extern").arg(format!(
+            "{name}={}",
+            libraries
+                .last()
+                .ok_or("Native reader dependency missing")?
+                .display()
+        ));
+    }
+    let compiled = capture::run(
+        &mut compiler,
+        capture::Limits {
+            wall: Duration::from_secs(45),
+            idle: Duration::from_secs(30),
+            bytes: 65536,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
+    assert_eq!(
+        compiled.exit,
+        0,
+        "Native authenticated reader compilation failed: {}",
+        String::from_utf8_lossy(&compiled.stderr)
     );
-    command
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import json,sys
-from pathlib import Path
-repository,path,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import crypto
-from run_logging import run_log
-rows=json.loads(path.read_text(encoding='utf-8'))
-with run_log('native-token-reopen-oracle',root/'logs') as log:
-    for row in rows:
-        assert crypto.decrypt(row['password'],row['salt'],row['token'])==row['expected']
-    log.info('Authenticated native token readback cases=%s',len(rows))
-    print(len(rows))
-"#,
-        ])
-        .arg(repository)
-        .arg(input)
-        .arg(temporary.path().join("reopen"));
+    let mut command = Command::new(reader);
+    command.arg(&input);
     let reopened = capture::run(
         &mut command,
         capture::Limits {

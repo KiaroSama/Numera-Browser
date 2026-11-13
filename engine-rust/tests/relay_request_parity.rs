@@ -1,15 +1,12 @@
-use numera_core::{network::relay::Relay, ownership::capture, proxy::Proxy};
+use numera_core::{network::relay::Relay, proxy::Proxy};
 use serde_json::{Value, json};
 use std::{
     io::{self, Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
-    path::Path,
-    process::Command,
     sync::mpsc,
     thread::{self, JoinHandle},
     time::{Duration, Instant},
 };
-mod common;
 #[path = "relay_request_parity/handshake.rs"]
 mod handshake;
 
@@ -126,60 +123,9 @@ fn bytes(value: &Value) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 #[test]
 fn socks_origin_requests_preserve_original_target_bytes() -> Result<(), Box<dyn std::error::Error>>
 {
-    let temporary = common::TempDirectory::new("relay-request-original")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import json,sys
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.relay import _origin_request_line,_rebuild_head
-from run_logging import run_log
-paths=[b'/first/../second',b'/first/./second',b'/%2e%2E/item',b'/a/.%2e/item',
- b'/plain',b'/a//b///c',b'/%2f/%2F/%41',b'/a;b?x=1&x=2&encoded=%2f',
- b'/caf\xe9?q=\xff',b'/plain#fragment',b'',b'?x=1',b'/?',b'/path?',
- b'/path?x=1#fragment',b'/path#fragment?not-query',b'/a\\b?x=\\y',
- b'/a?question=?&empty=&plus=+',b'/path%zz?unchanged=%zz']
-rows=[]
-with run_log('relay-request-oracle',parent/'logs'):
- for path in paths:
-  line=b'GET http://destination.invalid:8080'+path+b' HTTP/1.1'
-  head=line+b'\r\nHost: destination.invalid:8080\r\nProxy-Authorization: Basic must-not-forward\r\nProxy-Connection: keep-alive\r\nConnection: keep-alive\r\nX-Fixture: retained\r\nKeep-Alive: timeout=5'
-  rows.append({'request':list(head+b'\r\n\r\n'),
-   'expected':list(_rebuild_head(head,_origin_request_line(line),None,True))})
-print(json.dumps(rows))
-"#]).arg(repository).arg(temporary.path());
-    let observed = match capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(20),
-            idle: Duration::from_secs(15),
-            bytes: 131072,
-            cleanup: Duration::from_secs(5),
-        },
-    ) {
-        Ok(observed) => observed,
-        Err(mut failure) => {
-            if failure.settle(Duration::from_secs(5)).is_err() {
-                std::mem::forget(temporary);
-            }
-            return Err(failure.into());
-        }
-    };
-    assert_eq!(
-        observed.exit,
-        0,
-        "Original relay observation failed: {}",
-        String::from_utf8_lossy(&observed.stderr)
-    );
-    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/network-characterization/relay-request.json"
+    ))?;
     assert_eq!(cases.len(), 19);
     let mut upstream = Upstream::start(cases.len())?;
     let proxy = Proxy::from_record(
@@ -212,6 +158,5 @@ print(json.dumps(rows))
     outcome?;
     closed?;
     settled?;
-    temporary.cleanup()?;
     Ok(())
 }

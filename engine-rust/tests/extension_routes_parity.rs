@@ -6,6 +6,8 @@ use numera_core::http::extension_routes::router;
 use serde_json::{Value, json};
 use std::{fs, path::Path, time::Duration};
 use tower::ServiceExt;
+#[path = "network_characterization/mod.rs"]
+mod characterization;
 mod common;
 #[path = "extension_routes_parity/icons.rs"]
 mod icons;

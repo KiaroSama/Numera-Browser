@@ -1,6 +1,6 @@
 use numera_core::{ownership::capture, storage::repo::ProfileRepo};
 use serde_json::Value;
-use std::{fs, path::Path, process::Command, time::Duration};
+use std::{fs, process::Command, time::Duration};
 
 const TEST: &str =
     "read_warnings::read_repair_warnings_match_original_without_changing_read_results";
@@ -61,76 +61,26 @@ fn read_repair_warnings_match_original_without_changing_read_results()
     }
 
     let temporary = crate::common::TempDirectory::new("read-repair-warnings")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import copy,json,os,sys,warnings
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-os.environ.pop('NUMERA_PASSWORD',None)
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.models import Profile
-from numera.repo import ProfileRepo
-from numera.store import ProfileStore
-from run_logging import run_log
-fixture=json.loads((repository/'engine-rust/tests/fixtures/repo.json').read_text(encoding='utf-8'))['cases']
-rows=[]
-with run_log('read-repair-warnings-oracle',parent/'logs') as log:
-    for operation in ('resolve','find','list','coherent','get'):
-        for mode in ('healthy','proxy-omitted','password-conflict','invalid-dashboard'):
-            source=fixture[2 if mode=='proxy-omitted' else 3 if mode=='password-conflict' else 0]
-            files={'profiles/fixture00001.json':copy.deepcopy(source['engine']),
-                   'dashboard/fixture00001.json':copy.deepcopy(source['dashboard']),'config.json':{}}
-            if mode=='invalid-dashboard':files['dashboard/fixture00001.json']['proxy']['type']='UNSUPPORTED'
-            root=parent/str(len(rows));store=ProfileStore(root)
-            for name,value in files.items():
-                path=root/name;path.parent.mkdir(parents=True,exist_ok=True)
-                path.write_text(json.dumps(value),encoding='utf-8')
-            before={name:(root/name).read_bytes() for name in files}
-            with warnings.catch_warnings(record=True) as caught:
-                warnings.simplefilter('always',RuntimeWarning)
-                try:
-                    if operation=='resolve':result=store.resolve('fixture00001')
-                    elif operation=='find':result=store.find_by_name('fixture')
-                    elif operation=='list':result=store.list()
-                    elif operation=='coherent':result=ProfileRepo(store).coherent('fixture00001')
-                    else:result=store.get('fixture00001')
-                    result=([p.to_dict() for p in result] if isinstance(result,list)
-                            else result.to_dict() if isinstance(result,Profile) else result)
-                    error=None
-                except (RuntimeError,KeyError,TypeError,ValueError) as exc:result,error=None,str(exc)
-            assert all((root/name).read_bytes()==raw for name,raw in before.items()),'Original warning changed inputs'
-            observed=[{'category':warning.category.__name__,'message':str(warning.message)} for warning in caught]
-            expected=operation in ('resolve','find','list') and mode in ('proxy-omitted','password-conflict')
-            assert len(observed)==int(expected),'Original read warning seam was not exercised'
-            rows.append({'operation':operation,'mode':mode,'files':files,
-                         'result':result,'error':error,'warnings':observed})
-    log.info('Observed read repair warning cases=%s',len(rows))
-print(json.dumps(rows))
-"#]).arg(repository).arg(temporary.path().join("original"));
-    let limits = || capture::Limits {
-        wall: Duration::from_secs(30),
-        idle: Duration::from_secs(20),
-        bytes: 1_048_576,
-        cleanup: Duration::from_secs(5),
-    };
-    let original = capture::run(&mut command, limits())?;
-    assert_eq!(original.exit, 0, "Original read-warning observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "../fixtures/characterization/read_repair_warnings_match_original_without_changing_read_results.json"
+    ))?;
     assert_eq!(cases.len(), 20, "Read-warning observations missing");
     let document = temporary.path().join("observations.json");
-    fs::write(&document, &original.stdout)?;
+    fs::write(&document, serde_json::to_vec(&cases)?)?;
     let mut command = Command::new(std::env::current_exe()?);
     command
         .args(["--exact", TEST, "--nocapture", "--test-threads=1"])
         .env("NUMERA_READ_WARNING_FIXTURE", &document);
-    let native = capture::run(&mut command, limits())?;
+    let native = capture::run(
+        &mut command,
+        capture::Limits {
+            wall: Duration::from_secs(30),
+            idle: Duration::from_secs(20),
+            bytes: 1_048_576,
+            cleanup: Duration::from_secs(5),
+        },
+    )?;
     assert_eq!(native.exit, 0, "Native read-warning observer failed");
     let stdout = String::from_utf8(native.stdout)?;
     assert!(

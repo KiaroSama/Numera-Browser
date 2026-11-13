@@ -1,10 +1,4 @@
 use numera_core::ownership::identity::{alive, started_at};
-use std::{
-    path::PathBuf,
-    process::{Command, Stdio},
-    thread,
-    time::{Duration, Instant},
-};
 
 #[test]
 fn native_birth_token_matches_original_runtime_for_the_same_live_process()
@@ -17,40 +11,40 @@ fn native_birth_token_matches_original_runtime_for_the_same_live_process()
         "Reused PID identity accepted"
     );
     assert!(!alive(0, None)?);
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Source interpreter required")?;
-    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?
-        .join("scripts/migration/identity_fixture.py");
-    let mut child = Command::new(python)
-        .arg(fixture)
-        .arg(pid.to_string())
-        .env("PYTHONUTF8", "1")
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()?;
-    let deadline = Instant::now() + Duration::from_secs(10);
-    loop {
-        if child.try_wait()?.is_some() {
-            break;
-        }
-        if Instant::now() >= deadline {
-            child.kill()?;
-            child.wait()?;
-            return Err("Source birth query timed out".into());
-        }
-        thread::sleep(Duration::from_millis(10));
-    }
-    let output = child.wait_with_output()?;
-    assert!(
-        output.status.success(),
-        "Source process identity query failed"
-    );
-    let source = String::from_utf8(output.stdout)?.trim().parse::<u64>()?;
+    let mut child = ownership_process::command("identity")?;
+    child.arg(pid.to_string());
+    let output = numera_core::ownership::capture::run(
+        &mut child,
+        numera_core::ownership::capture::Limits {
+            wall: std::time::Duration::from_secs(10),
+            idle: std::time::Duration::from_secs(10),
+            bytes: 4096,
+            cleanup: std::time::Duration::from_secs(3),
+        },
+    )?;
+    assert_eq!(output.exit, 0, "Independent kernel birth query failed");
+    let source: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+    #[cfg(target_os = "macos")]
+    let source = {
+        use sha2::Digest;
+        let line = source["lstart"]
+            .as_str()
+            .ok_or("process birth text absent")?;
+        let digest = sha2::Sha256::digest(line.as_bytes());
+        digest[..6]
+            .iter()
+            .fold(0u64, |value, byte| (value << 8) | u64::from(*byte))
+    };
+    #[cfg(not(target_os = "macos"))]
+    let source = source["token"]
+        .as_u64()
+        .ok_or("process birth token absent")?;
     assert_eq!(
         token, source,
         "A reused PID must be distinguished by the same birth token"
     );
     Ok(())
 }
+use numera_core as core;
+#[path = "common/ownership_process.rs"]
+mod ownership_process;

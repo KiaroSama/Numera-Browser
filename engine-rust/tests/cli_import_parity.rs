@@ -1,44 +1,21 @@
 use numera_core::{
-    browser::adapter::Adapter,
     cli::{self, profile_commands::Profiles},
     import_format,
     storage::{config::ConfigStore, repo::ProfileRepo},
 };
 use serde_json::Value;
-use std::{collections::BTreeMap, path::Path, process::Command, time::Duration};
+use std::collections::BTreeMap;
+#[path = "cli_characterization/mod.rs"]
+mod cli_characterization;
 mod common;
 
 #[test]
 fn vendor_cli_import_preserves_generated_identity_secret_intent_and_skip_policy()
 -> Result<(), Box<dyn std::error::Error>> {
     let temporary = common::TempDirectory::new("cli-import")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
-    let mut command = Command::new(python);
-    command.args(["-u","-c",r#"
-import json,os,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from cli_import_cases import cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(os.environ['FIXTURE_ROOT'])}}),flush=True)
-"#]).env("PYTHONUTF8","1").env("FIXTURE_ROOT",temporary.path().join("source")).env("PYTHONPATH",std::env::join_paths([repository.join("scripts/migration"),repository.join("engine")])?);
-    let mut source = Adapter::spawn(
-        temporary.path(),
-        "oracle",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = source.call(
-        "observe-import-cli",
-        Default::default(),
-        Duration::from_secs(30),
-    )?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
+    let document =
+        cli_characterization::load("cli_import_parity", &temporary.path().join("source"))?;
+
     let root = temporary.path().join("native");
     let repo = ProfileRepo::open(root.clone(), None, None)?;
     let config = ConfigStore::new(root.clone());

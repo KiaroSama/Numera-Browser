@@ -26,6 +26,9 @@ async fn require_token(
 ) -> Response {
     let method = request.method().as_str().to_owned();
     let path = request.uri().path().to_owned();
+    if super::update_routes::private_path(&path) {
+        return next.run(request).await;
+    }
     let authorization = request
         .headers()
         .get("authorization")

@@ -10,25 +10,24 @@ use std::{
     fs,
     io::{BufRead, BufReader},
     path::PathBuf,
-    process::{Command, Stdio},
+    process::Stdio,
     sync::mpsc,
     thread,
     time::Duration,
 };
+
+use numera_core as core;
+#[allow(dead_code)]
+#[path = "common/ownership_process.rs"]
+mod fixture;
 
 #[test]
 fn a_live_migration_is_not_recovered_until_its_exact_owner_is_gone()
 -> Result<(), Box<dyn std::error::Error>> {
     let fixture: Value = serde_json::from_str(include_str!("fixtures/recovery.json"))?;
     let mut journal = fixture["cases"][1]["journal"].clone();
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Source interpreter required")?;
-    let mut command = Command::new(python);
+    let mut command = fixture::command("wait")?;
     command
-        .args([
-            "-u",
-            "-c",
-            "import threading; print('ready',flush=True); threading.Event().wait()",
-        ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null());

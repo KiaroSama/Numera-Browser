@@ -4,7 +4,6 @@ use crate::common;
 #[test]
 fn attachment_readiness_holds_the_admission_decision_and_settles_failed_owner()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("attachment-decision")?;
     let root = temporary.path();
     let repo = crate::storage::repo::ProfileRepo::new(root.into(), None);
@@ -18,21 +17,10 @@ fn attachment_readiness_holds_the_admission_decision_and_settles_failed_owner()
     )?;
     let registry = Registry::new(root.into(), "fixture-host".into(), None)?;
     let activate = |session, _: Profile| {
-        let mut command = Command::new(&python);
-        command
-            .args([
-                "-u",
-                "-c",
-                r#"
-import json,sys
-for line in sys.stdin:
-    request=json.loads(line)
-    result={'closing':True} if request['operation']=='close' else {}
-    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-    if request['operation']=='close': break
-"#,
-            ])
-            .env("PYTHONUTF8", "1");
+        let mut command = ownership_process::command("rpc").map_err(|error| StartupFailed {
+            kind: "failed".into(),
+            message: error.to_string(),
+        })?;
         Adapter::spawn_admitted(session, &mut command, Duration::from_secs(5)).map_err(|error| {
             StartupFailed {
                 kind: "failed".into(),
@@ -82,3 +70,7 @@ for line in sys.stdin:
     temporary.cleanup()?;
     Ok(())
 }
+
+use crate as core;
+#[path = "../../tests/common/ownership_process.rs"]
+mod ownership_process;

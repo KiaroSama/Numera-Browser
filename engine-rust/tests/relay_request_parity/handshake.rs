@@ -1,11 +1,9 @@
-use numera_core::{network::relay::Relay, ownership::capture, proxy::Proxy};
+use numera_core::{network::relay::Relay, proxy::Proxy};
 use serde_json::{Value, json};
 use std::{
     collections::{BTreeMap, btree_map::Entry},
     io::{self, Read, Write},
     net::{Shutdown, TcpListener, TcpStream},
-    path::Path,
-    process::Command,
     sync::mpsc,
     thread::{self, JoinHandle},
     time::{Duration, Instant},
@@ -121,78 +119,9 @@ impl Drop for Peer {
 #[test]
 fn socks_handshake_failures_preserve_original_diagnostics_and_wire()
 -> Result<(), Box<dyn std::error::Error>> {
-    let temporary = super::common::TempDirectory::new("relay-handshake-original")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import json,sys
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.relay import _socks4_connect,_socks5_connect
-from run_logging import run_log
-class Socket:
- def __init__(self,reply):self.reply,self.events=reply,[]
- def sendall(self,data):self.events.append({'send':list(data)})
- def recv(self,count):
-  part,self.reply=self.reply[:min(count,1)],self.reply[min(count,1):]
-  self.events.append({'recv':list(part)})
-  return part
-cases=[]
-def add(name,kind,reply,user=None,password=None):
- sock=Socket(reply)
- error=None
- try:
-  if kind=='socks4':_socks4_connect(sock,'destination.invalid',8080,user)
-  else:_socks5_connect(sock,'destination.invalid',8080,user,password)
- except Exception as failure:error=str(failure)
- cases.append({'name':name,'kind':kind,'user':user,'password':password,'events':sock.events,'error':error})
-bound=b'\x00\x5a'+b'\x00'*6
-for length in range(8):add('socks4-eof-'+str(length),'socks4',bound[:length],'tenant')
-for code in (90,91,92,93,94):add('socks4-reply-'+str(code),'socks4',bytes([0,code])+b'\x00'*6,'tenant')
-add('socks4-version','socks4',b'\x04\x5a'+b'\x00'*6)
-for user in (None,'','tenant','é','u'*255,'u'*256):add('socks4-user-'+str(len(cases)),'socks4',bound,user)
-reply=b'\x05\x00\x05\x00\x00\x01'+b'\x00'*6
-for length in range(len(reply)):add('socks5-eof-'+str(length),'socks5',reply[:length])
-for atyp,address in ((1,b'\x00'*4),(4,b'\x00'*16),(3,b'\x04name')):
- add('socks5-address-'+str(atyp),'socks5',bytes([5,0,5,0,0,atyp])+address+b'\x00\x00')
-for code in range(1,10):add('socks5-refusal-'+str(code),'socks5',bytes([5,0,5,code,0,1]))
-for version,method in ((4,0),(5,255),(5,1),(5,3)):add('socks5-method-'+str(method),'socks5',bytes([version,method]))
-for user,password in ((None,None),('',''),('tenant','synthetic'),('é','密'),('u'*255,'p'*255),('u'*256,''),('u','p'*256)):
- add('socks5-auth-'+str(len(cases)),'socks5',b'\x05\x02\x01\x00'+reply[2:],user,password)
-for suffix in (b'',b'\x01',b'\x01\x01'):
- add('socks5-auth-refusal-'+str(len(cases)),'socks5',b'\x05\x02'+suffix,'tenant','synthetic')
-for atyp,address in ((4,b'\x00'*15),(3,b''),(3,b'\x04nam'),(3,b'\x04name\x00')):
- add('socks5-bound-eof-'+str(len(cases)),'socks5',bytes([5,0,5,0,0,atyp])+address)
-add('socks5-unknown-address','socks5',b'\x05\x00\x05\x00\x00\x09')
-with run_log('relay-handshake-oracle',parent/'logs'):
- print(json.dumps(cases,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path());
-    let observed = match capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(20),
-            idle: Duration::from_secs(15),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    ) {
-        Ok(observed) => observed,
-        Err(mut failure) => {
-            if failure.settle(Duration::from_secs(5)).is_err() {
-                std::mem::forget(temporary);
-            }
-            return Err(failure.into());
-        }
-    };
-    assert_eq!(observed.exit, 0, "Original SOCKS handshake observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "../fixtures/network-characterization/relay-handshake.json"
+    ))?;
     assert_eq!(cases.len(), 63, "Handshake observation coverage changed");
     let listener = TcpListener::bind("127.0.0.1:0")?;
     listener.set_nonblocking(true)?;
@@ -244,7 +173,17 @@ with run_log('relay-handshake-oracle',parent/'logs'):
                     case["name"]
                 );
             } else {
-                assert_eq!(response, b"HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: 40\r\nConnection: close\r\n\r\nrelay could not reach the upstream proxy");
+                // The current source contract adds the precise handshake reason to the
+                // baseline's generic 502 body. Wire and diagnostic observations stay frozen.
+                let body = format!(
+                    "relay could not reach the upstream proxy: {}",
+                    case["error"].as_str().ok_or("Handshake reason missing")?
+                );
+                let expected = format!(
+                    "HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    body.len()
+                );
+                assert_eq!(response, expected.as_bytes());
             }
             assert_eq!(
                 relay.last_error().as_deref(),
@@ -280,6 +219,5 @@ with run_log('relay-handshake-oracle',parent/'logs'):
             "Closed relay listener survived"
         );
     }
-    temporary.cleanup()?;
     Ok(())
 }

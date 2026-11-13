@@ -1,6 +1,7 @@
-use numera_core::{browser::adapter::Adapter, bulk, models::Profile};
+use numera_core::{bulk, models::Profile};
 use serde_json::{Value, json};
-use std::{path::Path, process::Command, time::Duration};
+#[path = "cli_characterization/mod.rs"]
+mod cli_characterization;
 mod common;
 #[path = "bulk_parity/selection.rs"]
 mod selection;
@@ -15,43 +16,9 @@ fn strings(value: &Value) -> Vec<String> {
 
 #[test]
 fn bulk_generation_patch_and_selection_match_original() -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let root = common::TempDirectory::new("bulk-source")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(python);
-    command
-        .args([
-            "-u",
-            "-c",
-            r#"
-import json,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from bulk_cases import cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':cases()}),flush=True)
-"#,
-        ])
-        .env("PYTHONUTF8", "1")
-        .env(
-            "PYTHONPATH",
-            std::env::join_paths([
-                repository.join("scripts/migration"),
-                repository.join("engine"),
-            ])?,
-        );
-    let mut source = Adapter::spawn(
-        root.path(),
-        "a",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = source.call("observe-bulk", Default::default(), Duration::from_secs(30))?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
+    let document = cli_characterization::load("bulk_parity", root.path())?;
+
     root.cleanup()?;
     for case in document["generation"]
         .as_array()

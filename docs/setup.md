@@ -22,119 +22,112 @@ Playwright, Patchright and Camoufox resources are bundled as compatible SDK/brow
 3. Launch it from **Profiles**. Close or stop the session before editing resources that require exclusive profile ownership.
 4. Open **Settings → Software updates** to check, review a target, approve its download and separately approve installation/restart. See [update safety](updates.md).
 
-`playwright` is the initial default. Explicit engine choices on profile creation or engine-changing edits can update the persisted default; an unrelated notes edit does not. Use Settings or `numera default-engine` to set it deliberately.
+`playwright` is the initial default. Explicit engine choices on profile creation or engine-changing edits can update the persisted default; an unrelated notes edit does not. Use Settings or `numera-engine default-engine` to set it deliberately.
 
 ### Data and backups
 
-The portable shell resolves data beside its installation when writable, with explicit configuration taking precedence. **Settings → Storage** shows the actual root: use that location, not a guessed folder. Preserve the entire data root for a full backup; profile exports contain configuration, not necessarily browser sessions. `numera backup`/`restore` handle an individual profile and its session.
+The portable shell resolves data beside its installation when writable, with explicit configuration taking precedence. **Settings → Storage** shows the actual root: use that location, not a guessed folder. Preserve the entire data root for a full backup; profile exports contain configuration, not necessarily browser sessions. `numera-engine backup`/`restore` handle an individual profile and its session.
 
 Stop owned sessions before copying live browser storage. Protect backups like credentials: cookies, proxy credentials and API-token records can grant access. Do not put them into Git, release artifacts or public support attachments. Updates preserve mutable data and external browser overrides; application rollback is not a guarantee that a newer browser's database can be opened by an older browser.
 
 ## From source
 
-Requirements: Python **3.10+**; a supported Node branch satisfying [dashboard/package.json](../dashboard/package.json) (currently `^22.22.2 || ^24.15.0 || >=26.0.0`); and the browser/system prerequisites for the selected backend. Rust is unnecessary for the retained Python server. Desktop shell compilation requires Rust **1.90+** and Tauri's platform prerequisites.
+Requirements: Rust **1.99.1** (pinned by `rust-toolchain.toml`), the
+`wasm32-unknown-unknown` target, and `wasm-bindgen-cli` **0.2.129**. Desktop builds
+also require Tauri **2.12.4** and the platform's WebView development libraries.
+The application and its build tools use Cargo. Browser SDKs include their own
+vendor Node executable; a separate Python or Node installation is unnecessary.
 
 From the repository root:
 
-```bash
-git clone https://github.com/KiaroSama/Numera-Browser.git
+```sh
+rustup target add wasm32-unknown-unknown
+cargo install wasm-bindgen-cli --version 0.2.129 --locked
+cargo run --manifest-path dashboard/Cargo.toml --locked --bin dashboard-build
+cargo build --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser --bins
+cargo run --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser --bin numera-engine -- serve --port 8787
 ```
 
-```bash
-cd Numera-Browser
+Open <http://127.0.0.1:8787>. This supports profile management before installing a
+browser. Launching requires that backend's complete, matching vendor resources.
+A reported installed SDK still needs its matching browser before launching.
+
+### Explicit browser resources
+
+```sh
+cargo xtask provision-resources build/vendor-resources
 ```
 
-```bash
-python -m venv .venv
+This explicitly downloads reviewed platform artifacts with pinned SHA-256 hashes,
+extracts only vendor SDK transports, installs each matching browser into its own
+cache and inventories licenses/corresponding source. It includes Playwright,
+Patchright and Camoufox browsers. Cloak's SDK transport is included; its proprietary
+browser requires separate authorized vendor access. Cargo compilation never
+silently invokes this acquisition command.
+
+For a source run, set `NUMERA_APP_DIR` to the absolute `build/vendor-resources`
+path, `NUMERA_BROWSER_DRIVERS` to its `drivers` directory and
+`NUMERA_BROWSER_RUNTIME` to the absolute native worker built under
+`engine-rust/target/debug/` (with `.exe` on Windows). Run the same engine command
+above. Keep resources under this checkout so dashboard discovery can locate
+`dashboard/dist`, or place the built dashboard in the selected application
+location's `web/` directory. Complete product bundles configure this layout.
+
+Driver pins are Playwright **1.65.0**, Patchright **1.64.1**, Camoufox's Playwright
+transport **1.62.0**, and Cloak's Playwright transport **1.65.0**. Camoufox uses
+browser **158.0.1-beta.41**, uBlock Origin **1.75.4** and the reviewed GeoIP data.
+See [current upstream review](upstream-review-20261113.json) for release/source
+compatibility limits. New source-only browser features are not assumed to exist
+in an older packaged engine.
+
+### Dashboard development
+
+Keep the engine running in one terminal, then start the Rust development server:
+
+```sh
+cargo run --manifest-path dashboard/Cargo.toml --locked --bin dashboard-dev
 ```
 
-Activate on Windows PowerShell:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-Or on Linux/macOS:
-
-```bash
-. .venv/bin/activate
-```
-
-Install the API and Playwright backend into that environment:
-
-```bash
-python -m pip install -e "./engine[api,launch]"
-```
-
-```bash
-python -m playwright install chromium
-```
-
-For another backend, follow its own prerequisites in [engine/README.md](../engine/README.md); installing Playwright's Chromium does not install Patchright's separate Chromium or Camoufox's Firefox.
-
-### Dashboard and engine
-
-Install the locked frontend dependencies:
-
-```bash
-npm --prefix dashboard ci
-```
-
-Build the dashboard so the source engine can serve `dashboard/dist`:
-
-```bash
-npm --prefix dashboard run build
-```
-
-Start the retained engine; it stays on loopback by default:
-
-```bash
-python -m numera serve --port 8787
-```
-
-Open <http://127.0.0.1:8787>. For frontend development, leave that engine running and start Vite in another terminal:
-
-```bash
-npm --prefix dashboard run dev
-```
-
-Vite uses <http://localhost:5173> and proxies `/api` to loopback port 8787. A standalone dashboard without the API enters demo mode. A locked API prompts for its token instead of presenting demo profiles as live data.
+It serves the local frontend and proxies `/api` to loopback port 8787. A standalone
+dashboard distinguishes demo data from a live API connection. An authenticated
+API prompts for a token rather than exposing live data as a demo.
 
 ### CLI examples
 
-```bash
-python -m numera create qa-profile --os windows --locale en-US --engine playwright
+The extracted server bundle exposes `numera-engine` directly; the desktop bundle
+keeps it under `engine/`. Add `.exe` on Windows. From source, append these arguments
+to the Cargo `numera-engine` invocation shown above.
+
+```sh
+numera-engine create qa-profile --os windows --locale en-US --engine playwright
+numera-engine list --json
+numera-engine launch qa-profile
+numera-engine --help
 ```
 
-```bash
-python -m numera list --json
-```
-
-```bash
-python -m numera launch qa-profile
-```
-
-```bash
-python -m numera --help
-```
-
-Use only profiles/accounts and targets you are authorized to operate. Profile consistency checks are diagnostics, not proof of anonymity or permission to bypass a site's controls.
+The [CLI and MCP guide](agents.md) describes JSON automation. Profile consistency
+checks are diagnostics; browser capabilities still differ by backend.
 
 ## Server and Docker
 
-The same retained engine can run without the desktop shell. Wheel builds do not bundle browser binaries. Select required extras at installation, install the matching browser, and configure headless launching on a machine without a display.
+Use a complete native server package without the desktop WebView dependency.
+For a container build, prepare the actual native server distribution first:
 
-[Docker Compose](../docker-compose.yml) builds the application with Playwright's matched runtime, persists `/data` in the `numera-data` volume, reserves browser shared memory, and publishes **only** `127.0.0.1:8787`. Before starting, set `NUMERA_API_TOKEN` in your private local environment or ignored `.env`; generate it with an approved secret manager and never paste the value into an issue, command transcript or repository.
-
-```bash
+```sh
+cargo xtask build-product build/container --resources build/vendor-resources --server-only
 docker compose up -d --build
-```
-
-```bash
 docker compose logs --tail 100
 ```
 
-Do not delete the named volume to upgrade the container. Source/container updates use the reviewed checkout/image deployment process, not the portable updater.
+`build-product` requires a clean checkout and explicit build identity; see
+[build tooling](../tools/xtask/README.md). The Dockerfile consumes these verified
+native bytes and checks the installation inventory before starting. It runs as
+a non-root user, persists `/data`, reserves browser shared memory and publishes
+only `127.0.0.1:8787` by default. Set `NUMERA_API_TOKEN` in your private deployment
+environment or ignored `.env`; keep that value out of source and support logs.
+
+Do not delete the named data volume to upgrade. Containers and source checkouts
+use their reviewed deployment process rather than the portable updater.
 
 ## Configuration and access
 
@@ -150,16 +143,27 @@ Keep the API on localhost. For remote access use an authenticated tunnel or a re
 
 ## Logs and troubleshooting
 
-The retained engine writes UTF-8 run logs under the actual data root's `logs/`. Check [engine logging](../engine/README.md) for exact controls. Logs use UTC timestamps and severity/component fields; file logging is diagnostic, console output is concise. Review/redact a log before attaching it to an issue. The retained engine prunes its oldest run logs to a bounded retained set; preserve a diagnostic copy privately when investigating an unresolved failure.
+The native engine writes UTF-8 run logs under the actual data root's `logs/`. Check [engine logging](../engine-rust/README.md) for exact controls. Logs use UTC timestamps and severity/component fields; file logging is diagnostic, console output is concise. Review/redact a log before attaching it to an issue. The native engine prunes its oldest run logs to a bounded retained set; preserve a diagnostic copy privately when investigating an unresolved failure.
 
 | Symptom | Check |
 |---|---|
 | Demo mode | Start the API, verify its port, then reload. |
-| `numera` not found | Activate the environment or use `python -m numera`. |
-| Browser executable missing | Install the selected SDK's matching browser, or use a complete portable bundle. |
+| `numera-engine` not found | Use the full extracted binary path or the Cargo invocation above. |
+| Browser executable missing | Explicitly provision the selected SDK's matching browser, or use a complete portable bundle. |
 | Update unavailable | Check the signed portable identity, supported platform, network, permissions and current update status. Do not bypass signature checks. |
 | Busy/deferred update | Finish active sessions/jobs and review again; uncertain ownership must not be force-cleared. |
 
 ## Building distributions
 
-Maintainers use the manually initiated [CI workflow](../.github/workflows/ci.yml) for one exact reviewed SHA. It runs blocking validation and native builds, then permits signed publication on trusted `main`. The workflow is the reproducible release path; a source checkout alone is not a signed downloadable build. See [updates](updates.md), [licensing](licensing.md) and [migration status](migration.md). Local build scripts remain source tools, not a claim that an unsigned output is a completed release.
+[Native CI](../.github/workflows/native-ci.yml) runs automatic independent
+Linux, Windows and macOS compilation and full-product builds. Portable server
+archives and desktop installer formats are produced with Rust tooling. Default
+installers are Linux AppImage/deb, Windows MSI/NSIS and macOS app/DMG. Each native
+platform builds its own artifacts; an operating-system target badge is not a
+claim that every older OS is supported.
+
+Unsigned CI artifacts are review outputs. A completed signed release requires its
+separate trusted release gates. No release or merge is part of
+[PR #76](https://github.com/KiaroSama/Numera-Browser/pull/76). See
+[build contracts](../tools/xtask/README.md), [licensing](licensing.md) and
+[rewrite verification](rust-rewrite.md).

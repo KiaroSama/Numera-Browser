@@ -4,6 +4,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+- Port the current Camoufox font, media-device and speech-voice catalogs and
+  seeded selection algorithms to Rust. Check their original data digests and
+  360 frozen upstream draws in the existing browser-policy test. Preserve both
+  branches of the source random-sampling algorithm and existing test identities.
 - Preserve SDK evaluation integers, typed arrays, shared references and URL
   tuples; refuse non-finite/cyclic/non-JSON results instead of coercing them to
   null or text. Bound response encoding and reference expansion, retain ASCII

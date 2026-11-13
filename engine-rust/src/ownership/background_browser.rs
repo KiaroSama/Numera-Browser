@@ -91,20 +91,23 @@ impl Background {
                 let cleanup = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     adapter.close(Duration::from_secs(10))
                 }));
-                let error = match cleanup {
-                    Ok(Err(error)) => Some(error),
-                    Ok(Ok(Some(0))) => None,
-                    Ok(Ok(_)) => Some(io::Error::other(
-                        "Background browser did not close successfully",
-                    )),
-                    Err(_) => Some(io::Error::other(
-                        "Background browser cleanup panicked; owner retained",
-                    )),
+                let (code, error) = match cleanup {
+                    Ok(Err(error)) => (1, Some(error)),
+                    Ok(Ok(Some(0))) => (code, None),
+                    // Nonzero is a completed failed operation. The close
+                    // method proved the tree empty before returning a code.
+                    Ok(Ok(exit)) => (exit.unwrap_or(-1), None),
+                    Err(_) => (
+                        1,
+                        Some(io::Error::other(
+                            "Background browser cleanup panicked; owner retained",
+                        )),
+                    ),
                 };
                 if let Err(error) = result {
                     eprintln!("Background browser operation failed: {error}");
                 }
-                (adapter, if error.is_some() { 1 } else { code }, error)
+                (adapter, code, error)
             })?;
         let owner = adapter
             .take()
@@ -141,13 +144,16 @@ impl Background {
         if !self.collect()? {
             return Ok(None);
         }
-        let Some((_, code, error)) = &self.pending else {
+        let Some((adapter, code, error)) = &mut self.pending else {
             return Err(io::Error::other(
                 "Background browser worker result is missing",
             ));
         };
         if error.is_some() {
-            return Ok(None);
+            if adapter.finish(Duration::ZERO).is_err() {
+                return Ok(None);
+            }
+            *error = None;
         }
         Ok(Some(*code))
     }
