@@ -666,7 +666,7 @@ mod tests {
             )?;
             let proxy = crate::proxy::Proxy::from_record(&json!({"server":"http://127.0.0.1:9","username":"fixture","password":null,"country":null}),false).map_err(io::Error::other)?;
             let relay = crate::network::relay::Relay::start(&proxy)?;
-            let address = reqwest::Url::parse(&relay.url()).map_err(io::Error::other)?;
+            let address = reqwest::Url::parse(&relay.url()?).map_err(io::Error::other)?;
             let address = std::net::SocketAddr::new(
                 "127.0.0.1".parse().map_err(io::Error::other)?,
                 address

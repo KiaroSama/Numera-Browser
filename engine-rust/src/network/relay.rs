@@ -98,7 +98,10 @@ pub fn proxy_transport(
         return Ok((Some(options), None));
     }
     let relay = Relay::start(proxy)?;
-    Ok((Some(serde_json::json!({"server":relay.url()})), Some(relay)))
+    Ok((
+        Some(serde_json::json!({"server":relay.url()?})),
+        Some(relay),
+    ))
 }
 impl Relay {
     pub fn start(proxy: &Proxy) -> io::Result<Self> {
@@ -249,8 +252,18 @@ impl Relay {
     pub fn last_error(&self) -> Option<String> {
         self.last_error.lock().ok().and_then(|last| last.clone())
     }
-    pub fn url(&self) -> String {
-        format!("http://{}", self.address)
+    pub fn port(&self) -> io::Result<u16> {
+        if self.stop.is_none() {
+            return Err(io::Error::new(
+                io::ErrorKind::NotConnected,
+                "the relay is not running",
+            ));
+        }
+        Ok(self.address.port())
+    }
+    pub fn url(&self) -> io::Result<String> {
+        self.port()?;
+        Ok(format!("http://{}", self.address))
     }
     pub fn close(&mut self, budget: Duration) -> io::Result<()> {
         if self.worker.is_none() {
@@ -353,6 +366,20 @@ mod tests {
             .close(Duration::ZERO)
             .expect_err("Unreleased worker reported settled");
         let retained = relay.worker.is_some();
+        assert_eq!(
+            relay
+                .port()
+                .expect_err("Closing relay exposed its port")
+                .kind(),
+            io::ErrorKind::NotConnected
+        );
+        assert_eq!(
+            relay
+                .url()
+                .expect_err("Closing relay exposed its URL")
+                .to_string(),
+            "the relay is not running"
+        );
         release.send(()).map_err(io::Error::other)?;
         relay.close(Duration::from_secs(2))?;
         assert_eq!(error.kind(), io::ErrorKind::TimedOut);

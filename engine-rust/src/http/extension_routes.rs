@@ -134,8 +134,8 @@ fn icon_path(root: &std::path::Path, text: &str) -> Result<PathBuf, Box<Response
     let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
         .map(PathBuf::from)
         .ok_or_else(failure)?;
-    let wanted =
-        resolved(&expand_home(std::path::Path::new(text), &home)).map_err(|_| failure())?;
+    let expanded = expand_home(std::path::Path::new(text), &home).map_err(|_| failure())?;
+    let wanted = resolved(&expanded).map_err(|_| failure())?;
     let mut known = extensions::installed(root)
         .map_err(|_| failure())?
         .into_iter()
@@ -148,10 +148,9 @@ fn icon_path(root: &std::path::Path, text: &str) -> Result<PathBuf, Box<Response
     {
         let text = value_text(&entry);
         if !text.contains("://") {
-            known.insert(
-                resolved(&expand_home(std::path::Path::new(&text), &home))
-                    .map_err(|_| failure())?,
-            );
+            let expanded =
+                expand_home(std::path::Path::new(&text), &home).map_err(|_| failure())?;
+            known.insert(resolved(&expanded).map_err(|_| failure())?);
         }
     }
     if !known.contains(&wanted) {

@@ -564,7 +564,10 @@ async fn exit_ip(proxy: Option<&Value>) -> io::Result<IpAddr> {
             );
         }
     }
-    let local = relay.as_ref().map(|relay| json!({"server":relay.url()}));
+    let local = relay
+        .as_ref()
+        .map(|relay| relay.url().map(|url| json!({"server":url})))
+        .transpose()?;
     let result = async {
         echo(&echo_client(local.as_ref().or(proxy))?, &ECHO, false)
             .await

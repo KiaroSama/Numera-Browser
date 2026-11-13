@@ -101,7 +101,11 @@ fn open_selected(
     } else {
         None
     };
-    let relay_url = relay.as_ref().map(crate::network::relay::Relay::url);
+    let relay_url = relay
+        .as_ref()
+        .map(crate::network::relay::Relay::url)
+        .transpose()
+        .map_err(failure)?;
     let user_data_dir = path
         .to_str()
         .ok_or_else(|| failure(io::Error::other("Profile path is not Unicode")))?;

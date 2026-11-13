@@ -245,6 +245,7 @@ pub fn prove_cases_with_cleanup(
             if warmed.insert(case.target.clone()) {
                 let output = execute(true, case, &mut proof_command(root, case, true, platform))?;
                 if output.command.exit != 0 {
+                    retain_compile_failure(root, case, &output.command)?;
                     return fail(
                         "Historical source must compile before named semantic failure proof",
                     );
@@ -292,6 +293,31 @@ pub fn prove_cases_with_cleanup(
         swap.restore()?;
         result?;
     }
+    Ok(())
+}
+
+fn retain_compile_failure(root: &Path, case: &Case, output: &super::capture::Output) -> Result<()> {
+    let path = root.join("build/history").join(format!(
+        "compile-{}.log",
+        super::sha(format!("{}:{}", case.target, case.test).as_bytes())
+    ));
+    let (stdout, stderr) =
+        super::evidence::retain_test_diagnostics(&path, &output.stdout, &output.stderr)?;
+    for (name, text) in [("stdout", stdout), ("stderr", stderr)] {
+        let mut first = text.len().saturating_sub(16 * 1024);
+        while !text.is_char_boundary(first) {
+            first += 1;
+        }
+        eprintln!(
+            "Historical compile {name} (exit={}):\n{}",
+            output.exit,
+            &text[first..]
+        );
+    }
+    eprintln!(
+        "Retained historical compile diagnostics: {}",
+        path.display()
+    );
     Ok(())
 }
 
@@ -560,6 +586,7 @@ pub fn prove_case(root: &Path, case: &Case) -> Result<()> {
             8 * 1024 * 1024,
         )?;
         if compiled.exit != 0 {
+            retain_compile_failure(root, case, &compiled)?;
             return fail("Historical source must compile before named semantic failure proof");
         }
         let output = capture(

@@ -19,6 +19,17 @@ fn complete(temp: &Temp, source: &Value) -> ci::Result<Value> {
     }
     Ok(ledger)
 }
+fn historical_metadata(test: &str, expected: &str) -> TestResult {
+    let map = ci::decode(&fs::read(root().join("docs/source-ci-test-map.json"))?)?;
+    let row = map["cases"]
+        .as_array()
+        .ok_or("Cases missing")?
+        .iter()
+        .find(|row| row["rust_test"] == test)
+        .ok_or("Historical characterization metadata missing")?;
+    assert_eq!(row["historical_program_sha256"], expected);
+    Ok(())
+}
 source_test!(
     migration_baseline_provenance,
     "tests/test_migration_gates.py::test_repaired_baseline_is_reachable_without_changing_fixture_provenance",
@@ -74,6 +85,10 @@ source_test!(
     migration_occurrences,
     "tests/test_migration_gates.py::test_inventory_keeps_alternative_definitions_independently_addressable",
     {
+        historical_metadata(
+            "migration::migration_occurrences",
+            "22de18dea172c6f67a991fa53ed47dfeaae220f1a139a39f93f5f9f76c274314",
+        )?;
         let result = occurrence_fixture()?;
         assert_eq!(
             result["files"][0]["symbols"],
@@ -104,13 +119,6 @@ source_test!(
             assert_eq!(row["status"], "pending");
             assert!(row["target"].is_null() && row["test"].is_null());
         }
-        let historical = fs::read(
-            root().join("engine/tests/fixtures/migration-inventory-before-occurrences.py.txt"),
-        )?;
-        assert_eq!(
-            ci::sha(&historical),
-            "22de18dea172c6f67a991fa53ed47dfeaae220f1a139a39f93f5f9f76c274314"
-        );
         let unique = ids.iter().map(Value::to_string).collect::<BTreeSet<_>>();
         assert_eq!(unique.len(), ids.len());
         let collapsed = ids
@@ -120,6 +128,31 @@ source_test!(
         assert!(
             collapsed.len() < ids.len(),
             "Guard would not detect the historical occurrence collapse"
+        );
+        // Reproduce the old collapse as a mutation of the real Rust inventory,
+        // then require the production coverage gate to report every lost ID.
+        let temp = Temp::new("collapsed Rust occurrences")?;
+        let mut mutant = complete(&temp, &result)?;
+        for row in mutant["capabilities"].as_array_mut().expect("capabilities") {
+            row["id"] = json!(
+                row["id"]
+                    .as_str()
+                    .expect("id")
+                    .split('#')
+                    .next()
+                    .expect("base")
+            );
+        }
+        assert_eq!(
+            migration::coverage(&temp.0, &result, &mutant)?,
+            vec![
+                "Duplicate capability: source.rs::take",
+                "Duplicate capability: source.rs::take",
+                "Duplicate capability: source.rs::read.pipe",
+                "Missing capability: source.rs::take#2",
+                "Missing capability: source.rs::take#3",
+                "Missing capability: source.rs::read.pipe#2",
+            ]
         );
         Ok(())
     }
@@ -161,6 +194,7 @@ source_test!(
     }
 );
 fn exact_inventory_controls() -> TestResult {
+    browser_compiler_controls()?;
     let baseline = ci::decode(&fs::read(root().join("docs/rust-test-baseline.json"))?)?;
     let mut paths = fs::read_dir(root().join("docs"))?
         .map(|entry| entry.map(|entry| entry.path()))
@@ -216,6 +250,128 @@ fn exact_inventory_controls() -> TestResult {
     ] {
         assert!(ci::coverage_inventory::validate_expected_output(&expected, &damaged, 0).is_err());
     }
+    Ok(())
+}
+fn browser_compiler_controls() -> TestResult {
+    let native = ci::workflow::parse(&fs::read_to_string(
+        root().join(".github/workflows/native-ci.yml"),
+    )?)?;
+    let advisory = ci::workflow::parse(&fs::read_to_string(
+        root().join(".github/workflows/dependency-review.yml"),
+    )?)?;
+    ci::workflow::browser_page_compiler(&native, &advisory)?;
+    let candidate = ci::workflow::parse(&fs::read_to_string(
+        root().join(".github/workflows/rust-candidate.yml"),
+    )?)?;
+    for document in [&native, &candidate] {
+        ci::workflow::branch_concurrency(document)?;
+        for damage in ["event", "repository", "disabled"] {
+            let mut changed = document.clone();
+            match damage {
+                "event" => {
+                    changed["concurrency"]["group"] =
+                        json!("${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}")
+                }
+                "repository" => {
+                    changed["concurrency"]["group"] =
+                        json!("${{ github.workflow }}-${{ github.head_ref || github.ref_name }}")
+                }
+                _ => changed["concurrency"]["cancel-in-progress"] = json!(false),
+            }
+            assert!(
+                ci::workflow::branch_concurrency(&changed).is_err(),
+                "{damage}"
+            );
+        }
+    }
+    let dependencies =
+        ci::workflow::parse(&fs::read_to_string(root().join(".github/dependabot.yml"))?)?;
+    ci::workflow::dependency_updates(&dependencies)?;
+    for damage in ["missing", "duplicate", "pip", "npm"] {
+        let mut changed = dependencies.clone();
+        let updates = changed["updates"].as_array_mut().expect("updates");
+        match damage {
+            "missing" => {
+                updates.pop();
+            }
+            "duplicate" => updates.push(updates[0].clone()),
+            other => updates[0]["package-ecosystem"] = json!(other),
+        }
+        assert!(
+            ci::workflow::dependency_updates(&changed).is_err(),
+            "{damage}"
+        );
+    }
+    let check = ci::workflow::step_once(
+        &native["jobs"]["static"]["steps"],
+        "--bin browser-page-build -- --check",
+        true,
+    )?;
+    for damage in [
+        "missing",
+        "conditional",
+        "softened",
+        "stale",
+        "target",
+        "archive",
+        "binary",
+    ] {
+        let mut changed = native.clone();
+        let lane = &mut changed["jobs"]["static"];
+        match damage {
+            "missing" => {
+                lane["steps"].as_array_mut().expect("steps").remove(check);
+            }
+            "conditional" => lane["steps"][check]["if"] = json!("false"),
+            "softened" => lane["steps"][check]["continue-on-error"] = json!(true),
+            "stale" => {
+                lane["steps"][check]["run"] = json!(
+                    lane["steps"][check]["run"]
+                        .as_str()
+                        .expect("run")
+                        .replace("--check", "--release")
+                )
+            }
+            "target" => lane["steps"][1]["with"]["targets"] = json!("x86_64-unknown-linux-gnu"),
+            _ => {
+                let setup = ci::workflow::step_once(
+                    &lane["steps"],
+                    "binaryen-version_133-x86_64-linux.tar.gz",
+                    true,
+                )?;
+                let pin = if damage == "archive" {
+                    "2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489"
+                } else {
+                    "52597efec0ad2416f8b5c245864960e775b8ffc94c751cc0b016c4b4986d3bcb"
+                };
+                lane["steps"][setup]["run"] = json!(
+                    lane["steps"][setup]["run"]
+                        .as_str()
+                        .expect("run")
+                        .replace(pin, &"0".repeat(64))
+                );
+            }
+        }
+        assert!(
+            ci::workflow::browser_page_compiler(&changed, &advisory).is_err(),
+            "{damage}"
+        );
+    }
+    let mut missing = advisory.clone();
+    let steps = missing["jobs"]["audit"]["steps"]
+        .as_array_mut()
+        .expect("audit steps");
+    for step in steps {
+        if let Some(run) = step["run"].as_str() {
+            step["run"] = json!(
+                run.lines()
+                    .filter(|line| !line.contains("browser-page-rust/Cargo.lock"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            );
+        }
+    }
+    assert!(ci::workflow::browser_page_compiler(&native, &missing).is_err());
     Ok(())
 }
 source_test!(
@@ -447,13 +603,11 @@ source_test!(
     migration_natural_deadline,
     "tests/test_migration_gates.py::test_benchmark_requires_natural_settlement_inside_the_original_deadline",
     {
-        let historical = fs::read(
-            root().join("engine/tests/fixtures/benchmark-sample-before-settlement.py.txt"),
+        historical_metadata(
+            "migration::migration_natural_deadline",
+            "e9e65689ecff7dd714e7e1f349c442c02f4ad4992c77532d58c45a7bd2f2aaa1",
         )?;
-        assert_eq!(
-            ci::sha(&historical),
-            "e9e65689ecff7dd714e7e1f349c442c02f4ad4992c77532d58c45a7bd2f2aaa1"
-        );
+        natural_settlement_mutant()?;
         for mode in ["transient", "active", "unknown", "expired", "late"] {
             let mut host = Natural {
                 clock: 0,
@@ -503,6 +657,68 @@ source_test!(
         Ok(())
     }
 );
+fn natural_settlement_mutant() -> TestResult {
+    // Mutate the actual shipped Rust function to accept a sample without
+    // observing whether the retained descendant tree settled naturally.
+    let current = fs::read_to_string(root().join("tools/xtask/src/ci/browser_benchmark.rs"))?;
+    let start = current
+        .find("pub fn observe(")
+        .ok_or("Observer function missing")?;
+    let end = current[start..]
+        .find("\npub fn positive_samples(")
+        .ok_or("Observer function boundary missing")?
+        + start;
+    let current = &current[start..end];
+    let query = "let empty = host.natural(deadline)?;";
+    assert_eq!(current.matches(query).count(), 1);
+    let mutant = current.replacen(query, "let empty = true;", 1);
+    let source = format!(
+        r#"
+use numera_xtask::ci::{{Result,fail,browser_benchmark::{{Observer,Sample}}}};
+use serde_json::{{Value,json}};
+use std::time::Duration;
+{mutant}
+#[derive(Default)] struct Host {{ clock:u64, queries:usize, peak:bool, cleanup:usize, reaped:bool, closed:bool }}
+impl Observer for Host {{
+ fn register(&mut self)->Result<()>{{Ok(())}}
+ fn ticks(&mut self)->u64{{self.clock}}
+ fn spawn(&mut self)->Result<()>{{Ok(())}}
+ fn communicate(&mut self,_:u64)->Result<Value>{{Ok(json!({{"complete":true}}))}}
+ fn natural(&mut self,_:u64)->Result<bool>{{self.queries+=1;Ok(false)}}
+ fn pause(&mut self)->Result<()>{{self.clock+=10_000_000;Ok(())}}
+ fn peak(&mut self)->Result<(String,u64)>{{self.peak=true;Ok(("peak-job-committed-bytes".into(),1234))}}
+ fn cleanup(&mut self)->Result<()>{{self.cleanup+=1;Ok(())}}
+ fn reap(&mut self)->Result<()>{{self.reaped=true;Ok(())}}
+ fn close(&mut self)->Result<()>{{self.closed=true;Ok(())}}
+}}
+fn main() {{
+ let mut broken=Host::default();
+ let sample=observe(&mut broken,Duration::from_secs(15)).expect("mutant accepts live descendants");
+ assert_eq!(sample.elapsed_ns,0);assert_eq!(broken.queries,0);assert!(broken.peak);
+ assert_eq!(broken.cleanup,1);assert!(broken.reaped&&broken.closed);
+ let mut fixed=Host::default();
+ assert!(numera_xtask::ci::browser_benchmark::observe(&mut fixed,Duration::from_secs(15)).is_err());
+ assert!(fixed.queries>0);assert!(!fixed.peak);assert_eq!(fixed.cleanup,1);
+ assert!(fixed.reaped&&fixed.closed);
+}}
+"#
+    );
+    let temp = Temp::new("Rust natural-settlement mutant")?;
+    let binary = compile(&temp, &source)?;
+    let result = ci::capture(
+        &mut Command::new(binary),
+        Duration::from_secs(5),
+        Duration::from_secs(5),
+        65536,
+    )?;
+    assert_eq!(
+        result.exit,
+        0,
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    Ok(())
+}
 fn compile(temp: &Temp, source: &str) -> ci::Result<PathBuf> {
     let file = temp.write("fixture.rs", source.as_bytes())?;
     let output = temp
@@ -514,16 +730,19 @@ fn compile(temp: &Temp, source: &str) -> ci::Result<PathBuf> {
         .arg(file)
         .arg("-o")
         .arg(&output);
-    if source.contains("numera_core::") {
-        let deps = std::env::current_exe()?
-            .parent()
-            .ok_or("Test dependency directory missing")?
-            .to_owned();
+    let deps = std::env::current_exe()?
+        .parent()
+        .ok_or("Test dependency directory missing")?
+        .to_owned();
+    for dependency in ["numera_core", "numera_xtask", "serde_json"] {
+        if !source.contains(&format!("{dependency}::")) {
+            continue;
+        }
         command
             .arg("--extern")
             .arg(format!(
-                "numera_core={}",
-                super::camoufox_runtime::linked_rlib(&deps, "numera_core")?.display()
+                "{dependency}={}",
+                super::camoufox_runtime::linked_rlib(&deps, dependency)?.display()
             ))
             .arg("-L")
             .arg(format!("dependency={}", deps.display()));

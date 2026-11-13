@@ -4,6 +4,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+- Select the Rust CLI, MCP, Axum API and native browser worker as the application
+  runtime, and replace the dashboard with Rust/WASM while retaining its 195
+  cases. Port all 3,418 backend/tooling source test identities and preserve the
+  original platform-specific native inventories. Compile the real application
+  on Linux, Windows and macOS in CI; complete acceptance remains tied to the
+  exact current PR revision.
 - Port the current Camoufox font, media-device and speech-voice catalogs and
   seeded selection algorithms to Rust. Check their original data digests and
   360 frozen upstream draws in the existing browser-policy test. Preserve both
@@ -17,15 +23,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Port Camoufox's pinned fpgen model sampling to Rust, with archive/member/data
   integrity checks, bounded Bayesian sampling and streaming value decoding.
   Extend the existing browser-policy checks with 18 frozen upstream posteriors,
-  generation and model-tampering checks, preserving reported test counts. Full
-  native Camoufox launch preparation remains in progress.
+  generation and model-tampering checks, preserving reported test counts. Native
+  Camoufox preparation is exercised by policy and real-browser acceptance.
 - Add a Rust SDK subprocess for Playwright/Patchright with bounded protocol I/O,
   cancellable stdin, persistent profiles, page identity policy, routes, mouse
   input, evaluation, full cookie objects and owned driver cleanup. Native builds
   package both executables after checking their independent Cargo records and
   matching compiled identities. Real-browser acceptance passes for Playwright
   1.64/1.65 and Patchright 1.64.1 without Python; vendor Node/SDK resources remain
-  external. Camoufox, Cloak and complete application cutover remain pending.
+  external. The native application is now selected by default; complete product
+  distribution acceptance remains tied to current CI.
 - Review CloakBrowser 0.7.2's Playwright compatibility cap and current Camoufox
   fingerprint-model/geometry changes. Update repository topics through the
   authorized saved GitHub profile, retaining language topics until cutover.

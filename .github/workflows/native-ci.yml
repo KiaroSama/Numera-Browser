@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 env:
   CARGO_BUILD_JOBS: "2"
   CARGO_INCREMENTAL: "0"
@@ -53,7 +57,13 @@ jobs:
         run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
       - name: Verify real Windows native signing with an ephemeral fixture certificate
         if: runner.os == 'Windows'
-        run: cargo xtask ci counted-tests 1 build/windows-native-signing.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_ci release_identity::c000_both_freezers_embed_identity_and_windows_uses_approved_icon -- --exact --test-threads=1 --color=never
+        shell: bash
+        run: |
+          set -euo pipefail
+          directory="$RUNNER_TEMP/numera-ci-owner"
+          mkdir "$directory"
+          cp tools/xtask/target/debug/numera-xtask.exe "$directory/numera-xtask.exe"
+          "$directory/numera-xtask.exe" ci counted-tests 1 build/windows-native-signing.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_ci release_identity::c000_both_freezers_embed_identity_and_windows_uses_approved_icon -- --exact --test-threads=1 --color=never
       - name: Preserve the actual Windows native signing test report
         if: always() && runner.os == 'Windows'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -118,16 +128,37 @@ jobs:
         with:
           toolchain: 1.99.1
           components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
         with:
           workspaces: |
             engine-rust
             tools/xtask
+            browser-page-rust
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
       - run: cargo xtask ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path engine-rust/Cargo.toml --all --check
       - run: cargo xtask ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path tools/xtask/Cargo.toml --all --check
       - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --all-targets --features native-product,native-browser,test-support -- -D warnings
       - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path tools/xtask/Cargo.toml --locked --all-targets -- -D warnings
+      - name: Check authored browser Rust formatting
+        run: cargo xtask ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path browser-page-rust/Cargo.toml --all --check
+      - name: Check the browser page compiler host binary
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- -D warnings
+      - name: Check the actual browser WASM library
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --release --target wasm32-unknown-unknown --lib -- -D warnings
+      - name: Install the exact browser binding compiler
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Acquire the checksum-verified official Binaryen compiler
+        run: |
+          set -euo pipefail
+          directory="$RUNNER_TEMP/numera-binaryen-133"
+          mkdir "$directory"
+          curl --fail --location --proto '=https' --proto-redir '=https' --connect-timeout 10 --max-time 120 https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz --output "$directory/download.tar.gz"
+          echo "2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489  $directory/download.tar.gz" | sha256sum --check --strict
+          tar -xzf "$directory/download.tar.gz" -C "$directory" binaryen-version_133/bin/wasm2js
+          echo "52597efec0ad2416f8b5c245864960e775b8ffc94c751cc0b016c4b4986d3bcb  $directory/binaryen-version_133/bin/wasm2js" | sha256sum --check --strict
+      - name: Recompile and verify committed browser code and source receipt
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo run --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- --check --wasm2js "$RUNNER_TEMP/numera-binaryen-133/binaryen-version_133/bin/wasm2js"
       - run: cargo xtask ci counted-tests 6 build/xtask-unit.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --bin numera-xtask -- --test-threads=2 --color=never
       - run: cargo xtask ci counted-tests 643 build/source-ci.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_ci -- --test-threads=2 --color=never
       - run: cargo xtask ci counted-tests 123 build/source-acceptance.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_acceptance -- --test-threads=2 --color=never
@@ -240,7 +271,17 @@ jobs:
           save-if: false
           cache-workspace-crates: false
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Fetch the independently pinned native dependency graph before offline historical mutation
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo fetch --manifest-path engine-rust/Cargo.toml --locked
       - run: cargo xtask ci owned --wall 3600 --idle 300 -- cargo xtask ci native-history
+      - name: Preserve actual historical compiler diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-history-diagnostics-${{ github.sha }}
+          path: build/history/
+          if-no-files-found: warn
+          retention-days: 7
 
   secrets:
     name: Redacted tracked-content and history secret gate

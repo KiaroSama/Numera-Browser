@@ -388,7 +388,7 @@ fn proof(platform: &str, failure: bool, invalid: bool) -> TestResult {
         },
     );
     assert_eq!(calls, ["cold", "proof"]);
-    assert_eq!(fs::read(source)?, b"fixed");
+    assert_eq!(fs::read(&source)?, b"fixed");
     assert!(!phase::active());
     assert_eq!(cleanup_calls, if platform == "win32" { 2 } else { 0 });
     if failure {
@@ -406,6 +406,44 @@ fn proof(platform: &str, failure: bool, invalid: bool) -> TestResult {
         );
     } else {
         result?;
+    }
+    if platform == "linux" && !failure && !invalid {
+        let synthetic = "q".repeat(1000);
+        let refused = history::prove_cases_with(
+            &tmp.0,
+            std::slice::from_ref(&case),
+            platform,
+            &mut inputs,
+            |compile, _, _| {
+                assert!(
+                    compile,
+                    "A compiler failure must prevent semantic execution"
+                );
+                Ok(ci::owned::Output {
+                    command: capture::Output {
+                        exit: 101,
+                        stdout: Vec::new(),
+                        stderr: format!("error: independent native dependency is unavailable offline\ntoken={synthetic}\n").into_bytes(),
+                    },
+                    memory: Value::Null,
+                })
+            },
+        );
+        assert!(
+            refused
+                .expect_err("Compilation must precede semantic proof")
+                .to_string()
+                .contains("Historical source must compile")
+        );
+        let path = tmp.0.join("build/history").join(format!(
+            "compile-{}.stderr.log",
+            ci::sha(format!("{}:{}", case.target, case.test).as_bytes())
+        ));
+        let diagnostic = fs::read_to_string(path)?;
+        assert!(diagnostic.contains("independent native dependency"));
+        assert!(diagnostic.contains("[REDACTED]"));
+        assert!(!diagnostic.contains(&synthetic));
+        assert_eq!(fs::read(&source)?, b"fixed");
     }
     if invalid {
         let poisoned = history::prove_cases_with(

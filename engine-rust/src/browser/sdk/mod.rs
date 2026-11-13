@@ -413,9 +413,11 @@ impl Worker {
                 }
             }
             "inspect" => {
-                let expression = "async () => ({userAgent:navigator.userAgent,platform:navigator.platform,locale:navigator.language,languages:Array.from(navigator.languages),cores:navigator.hardwareConcurrency,width:innerWidth,height:innerHeight,userAgentData:navigator.userAgentData?await navigator.userAgentData.getHighEntropyValues(['platformVersion','architecture','bitness','model','uaFullVersion','fullVersionList','wow64']):null})";
+                let expression = crate::page_runtime::expression(
+                    crate::page_runtime::Program::InspectIdentity,
+                );
                 // Patchright identity probes must observe the page's main world.
-                let raw = evaluate_raw(page, expression, &Value::Null, self.patchright).await?;
+                let raw = evaluate_raw(page, &expression, &Value::Null, self.patchright).await?;
                 Ok(values::decode(&raw)?)
             }
             // Preserve vendor cookie fields (including partition keys) instead

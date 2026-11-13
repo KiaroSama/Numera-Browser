@@ -111,11 +111,11 @@ pub(crate) async fn check_at(proxy: &Value, budget: Duration, endpoints: &[&str]
         None
     };
     let selected = if let Some(relay) = &relay {
-        let url = match Url::parse(&relay.url()) {
-            Ok(url) => url,
-            Err(_) => return json!({"ok":false,"error":"Native relay URL is invalid"}),
+        let port = match relay.port() {
+            Ok(port) => port,
+            Err(error) => return json!({"ok":false,"error":error.to_string()}),
         };
-        json!({"type":"HTTP","host":"127.0.0.1","port":url.port().unwrap_or(0)})
+        json!({"type":"HTTP","host":"127.0.0.1","port":port})
     } else {
         proxy.clone()
     };

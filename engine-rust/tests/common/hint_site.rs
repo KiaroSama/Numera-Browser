@@ -69,7 +69,9 @@ pub(super) fn respond(stream: &mut impl Write, path: &str) -> io::Result<()> {
     let body = if let Some(prefix) = path.strip_suffix("/first") {
         format!("{document}<script src=\"{prefix}/resource\"></script>")
     } else if path.ends_with("/resource") {
-        String::new()
+        // This external script runs under the response's strict policy, before
+        // any test-side evaluate call can inspect or repair the page.
+        "globalThis.firstIdentity={platform:navigator.platform,cores:navigator.hardwareConcurrency,languages:Array.from(navigator.languages),frozen:Object.isFrozen(navigator.languages),webdriver:navigator.webdriver,dpr:devicePixelRatio,mask:Function.prototype.toString.call(Object.getOwnPropertyDescriptor(Navigator.prototype,'platform').get)};globalThis.identityCsp={};try{eval('1+1');identityCsp.eval=false}catch(e){identityCsp.eval=true}try{new Function('return 1')();identityCsp.func=false}catch(e){identityCsp.func=true}try{new WebAssembly.Module(new Uint8Array([0,97,115,109,1,0,0,0]));identityCsp.wasm=false}catch(e){identityCsp.wasm=true}".to_owned()
     } else {
         document.to_owned()
     };
@@ -81,7 +83,7 @@ pub(super) fn respond(stream: &mut impl Write, path: &str) -> io::Result<()> {
     let result = (|| {
         write!(
             stream,
-            "HTTP/1.1 200 OK\r\nContent-Type: {content_type}; charset=utf-8\r\nContent-Length: {}\r\nAccept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Model, Sec-CH-UA-Full-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-WoW64\r\nConnection: close\r\n\r\n{}",
+            "HTTP/1.1 200 OK\r\nContent-Type: {content_type}; charset=utf-8\r\nContent-Length: {}\r\nContent-Security-Policy: default-src 'none'; script-src 'self'; object-src 'none'\r\nAccept-CH: Sec-CH-UA-Platform-Version, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Model, Sec-CH-UA-Full-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-WoW64\r\nConnection: close\r\n\r\n{}",
             body.len(),
             body
         )?;

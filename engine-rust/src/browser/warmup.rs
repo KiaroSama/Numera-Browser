@@ -1,4 +1,5 @@
 use super::{adapter::Adapter, probes};
+use crate::page_runtime::{self, Program};
 use crate::python_random::PythonRandom;
 use serde_json::{Map, Value, json};
 use std::{
@@ -6,8 +7,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub const HOST: &str = "() => location.host";
-pub const LINKS: &str = "(host) => [...document.querySelectorAll('a[href]')]\n                 .map(a => a.href)\n                 .filter(h => h.startsWith('http') && new URL(h).host === host)\n                 .slice(0, 40)";
+pub const HOST: Program = Program::LocationHost;
+pub const LINKS: Program = Program::InternalLinks;
 
 /// Time and entropy are injectable only at the native control boundary; the SDK
 /// never decides destinations, actions, budgets or application outcomes.
@@ -110,10 +111,11 @@ fn browse(adapter: &mut Adapter, control: &mut impl Control, seconds: f64) -> io
     Ok(())
 }
 fn follow(adapter: &mut Adapter, control: &mut impl Control) -> io::Result<bool> {
-    let Some(host) = probes::observation(adapter, HOST, Value::Null)? else {
+    let Some(host) = probes::observation(adapter, &page_runtime::expression(HOST), Value::Null)?
+    else {
         return Ok(false);
     };
-    let Some(links) = probes::observation(adapter, LINKS, host)? else {
+    let Some(links) = probes::observation(adapter, &page_runtime::expression(LINKS), host)? else {
         return Ok(false);
     };
     let Some(links) = links.as_array().filter(|values| !values.is_empty()) else {

@@ -29,7 +29,7 @@ pub fn write_secret(
     }
     if value.is_empty() {
         if stored.is_some_and(|value| !value.is_empty()) && state == VaultState::Locked {
-            return Err(VaultError("the vault is locked, so this proxy password cannot be cleared: unlock first, so that what is being removed is something you can see".into()));
+            return Err(VaultError::message("the vault is locked, so this proxy password cannot be cleared: unlock first, so that what is being removed is something you can see".into()));
         }
         return Ok(Some(String::new()));
     }
@@ -37,7 +37,7 @@ pub fn write_secret(
         return Ok(Some(value.into()));
     }
     if state == VaultState::Locked {
-        return Err(VaultError("the vault is locked, so this proxy password cannot be stored safely - set NUMERA_PASSWORD or pass --password first".into()));
+        return Err(VaultError::message("the vault is locked, so this proxy password cannot be stored safely - set NUMERA_PASSWORD or pass --password first".into()));
     }
     seal(value).map(Some)
 }

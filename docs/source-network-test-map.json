@@ -1863,7 +1863,8 @@
       "case_type": "standard",
       "assertion_family": "mode_reaches_the_init_script",
       "original_fixtures": [],
-      "platform": "all source-applicable platforms; no native OS skips"
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Parses the actual delivered canonical configuration and verifies the shared Rust mode selector used by the generated browser runtime for altered, disabled and real modes."
     },
     {
       "python_id": "tests/test_webrtc.py::test_real_mode_leaves_webrtc_alone",
@@ -1875,7 +1876,7 @@
       "assertion_family": "real_mode_leaves_webrtc_alone",
       "original_fixtures": [],
       "platform": "all source-applicable platforms; no native OS skips",
-      "adaptation": "Preserves the original generated-script guard assertions against the production native identity-script builder; source itself does not execute a browser in these cases."
+      "adaptation": "Verifies real mode through the actual shared Rust selector that returns before listener/SDP wrapping, plus immutable original null/end-event observations. Actual browser descriptors and event behavior remain independently checked by the existing live browser case."
     },
     {
       "python_id": "tests/test_webrtc.py::test_candidate_filter_keeps_private_and_mdns",
@@ -1887,7 +1888,7 @@
       "assertion_family": "candidate_filter_keeps_private_and_mdns",
       "original_fixtures": [],
       "platform": "all source-applicable platforms; no native OS skips",
-      "adaptation": "Preserves the original generated-script guard assertions against the production native identity-script builder; source itself does not execute a browser in these cases."
+      "adaptation": "Executes the same pure Rust rules compiled into the browser runtime against55 candidate and9 SDP observations frozen from immutable13b source behavior; covers private IPv4/IPv6 boundaries, mDNS, malformed candidates and CR/LF semantics rather than authored JavaScript text."
     },
     {
       "python_id": "tests/test_webrtc.py::test_dashboard_choice_survives_the_round_trip",

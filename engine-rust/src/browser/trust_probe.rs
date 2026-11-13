@@ -1,5 +1,6 @@
 use super::{adapter::Adapter, probes, trust_grades};
 use crate::models::Fingerprint;
+use crate::page_runtime::{self, Program};
 use serde_json::{Map, Value, json};
 use std::{io, time::Duration};
 
@@ -38,12 +39,16 @@ pub fn observe_fonts(
     if navigation["navigated"] != true {
         return Err(io::Error::other("Offline probe page not confirmed"));
     }
-    let mut seen = probes::observation(adapter,include_str!("trust_probe.js"),json!({
+    let mut seen = probes::observation(adapter,&page_runtime::expression(Program::Trust),json!({
         "knownFont":fp.fonts.first().map_or("Arial",String::as_str),"alienFont":trust_grades::ALIEN_FONT,
     }))?.ok_or_else(|| io::Error::other("Browser trust evaluation failed"))?;
     if !candidates.is_empty() {
-        let fonts = probes::observation(adapter, include_str!("font_probe.js"), json!(candidates))?
-            .ok_or_else(|| io::Error::other("Browser font evaluation failed"))?;
+        let fonts = probes::observation(
+            adapter,
+            &page_runtime::expression(Program::Font),
+            json!(candidates),
+        )?
+        .ok_or_else(|| io::Error::other("Browser font evaluation failed"))?;
         seen.as_object_mut()
             .ok_or_else(|| io::Error::other("Trust observation is not an object"))?
             .insert("fontsRendered".into(), fonts);

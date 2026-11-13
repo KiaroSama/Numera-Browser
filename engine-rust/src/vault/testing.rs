@@ -5,11 +5,14 @@ use std::{
     io,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
+    time::Duration,
 };
 #[derive(Clone, Debug)]
 pub struct Event {
     pub operation: &'static str,
     pub path: PathBuf,
+    /// The real requested delay, when the observed operation would wait.
+    pub delay: Option<Duration>,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Action {
@@ -65,6 +68,9 @@ pub fn with_observer<R>(
     )
 }
 pub(crate) fn event(operation: &'static str, path: &Path) -> io::Result<Action> {
+    observe(operation, path, None)
+}
+fn observe(operation: &'static str, path: &Path, delay: Option<Duration>) -> io::Result<Action> {
     let observer = OBSERVER.with(|slot| slot.borrow().clone());
     // A callback may perform another real operation (for example, the edit
     // that races a pending delete). Suppress only this observer while it runs
@@ -77,10 +83,20 @@ pub(crate) fn event(operation: &'static str, path: &Path) -> io::Result<Action> 
                 .map_err(|_| io::Error::other("Test observer lock poisoned"))?(&Event {
                 operation,
                 path: path.to_owned(),
+                delay,
             })
         }
         None => Ok(Action::Continue),
     })
+}
+
+/// Observe the requested production delay. Skip supplies an explicit scoped
+/// fake clock; ordinary observers and product-equivalent execution really wait.
+pub(crate) fn wait(operation: &'static str, path: &Path, delay: Duration) -> io::Result<()> {
+    if observe(operation, path, Some(delay))? != Action::Skip {
+        std::thread::sleep(delay);
+    }
+    Ok(())
 }
 
 /// Override physical-path results at the actual containment boundary. Returning

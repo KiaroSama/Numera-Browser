@@ -15,6 +15,7 @@ pub mod fingerprint;
 pub mod http;
 pub mod identity;
 pub mod identity_script;
+pub mod page_runtime;
 pub mod import_format;
 pub mod importers;
 pub mod installation;

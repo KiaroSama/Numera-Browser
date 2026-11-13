@@ -21,6 +21,8 @@ mod browser_logs;
 mod common;
 #[path = "common/hint_site.rs"]
 mod hint_site;
+#[path = "common/identity_live.rs"]
+mod identity_live;
 
 fn assert_page(view: &Value, fingerprint: &Fingerprint, config: &Value, secure: bool) {
     assert_eq!(view["platform"], fingerprint.platform);
@@ -260,6 +262,13 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
                             )?["navigated"],
                             true
                         );
+                        if suffix == "/first" {
+                            eprintln!("Browser stage: strict CSP document-start identity");
+                            identity_live::verify(&mut adapter, &case["config"])?;
+                            if !new_page && fingerprint.os == "windows" {
+                                identity_live::memory_growth(&mut adapter)?;
+                            }
+                        }
                     }
                     eprintln!("Browser stage: wire assertions");
                     assert_wire(&site, prefix, &case["config"])?;

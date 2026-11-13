@@ -67,6 +67,7 @@ pub fn bounded_jobs(workflow: &Value) -> Result<()> {
     Ok(())
 }
 pub fn native_automatic(workflow: &Value) -> Result<()> {
+    branch_concurrency(workflow)?;
     let events = workflow["on"]
         .as_object()
         .ok_or("Automatic CI triggers must be explicit")?
@@ -115,6 +116,54 @@ pub fn native_automatic(workflow: &Value) -> Result<()> {
         .collect::<BTreeSet<_>>();
     required_jobs(&workflow["jobs"], &expected)
 }
+pub fn branch_concurrency(workflow: &Value) -> Result<()> {
+    if workflow["concurrency"]
+        != serde_json::json!({
+            "group":"${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}",
+            "cancel-in-progress":true
+        })
+    {
+        return fail(
+            "Native verification must replace obsolete runs of the same workflow and source branch",
+        );
+    }
+    Ok(())
+}
+pub fn dependency_updates(document: &Value) -> Result<()> {
+    let updates = document["updates"]
+        .as_array()
+        .ok_or("Dependency update inventory missing")?;
+    let expected = BTreeSet::from([
+        ("cargo", "/engine-rust"),
+        ("cargo", "/dashboard"),
+        ("cargo", "/browser-page-rust"),
+        ("cargo", "/desktop/src-tauri"),
+        ("cargo", "/tools/xtask"),
+        ("cargo", "/tools/xtask/lifecycle-tests"),
+        ("cargo", "/tools/security-scan"),
+        ("github-actions", "/"),
+        ("docker", "/"),
+    ]);
+    let actual = updates
+        .iter()
+        .map(|row| {
+            Ok((
+                row["package-ecosystem"]
+                    .as_str()
+                    .ok_or("Dependency ecosystem missing")?,
+                row["directory"]
+                    .as_str()
+                    .ok_or("Dependency directory missing")?,
+            ))
+        })
+        .collect::<Result<BTreeSet<_>>>()?;
+    if document["version"] != 2 || actual != expected || actual.len() != updates.len() {
+        return fail(
+            "Dependency updates must cover all seven Cargo crates, Actions and Docker exactly once",
+        );
+    }
+    Ok(())
+}
 pub fn step_once(steps: &Value, fragment: &str, required: bool) -> Result<usize> {
     let matches = steps
         .as_array()
@@ -148,12 +197,85 @@ pub fn ordered(steps: &Value, earlier: &[&str], later: &str) -> Result<()> {
     }
     Ok(())
 }
+/// Keep compiler-produced page programs reproducible without moving compiler
+/// or network dependencies into ordinary native application builds.
+pub fn browser_page_compiler(native: &Value, advisory: &Value) -> Result<()> {
+    let lane = &native["jobs"]["static"];
+    if lane["runs-on"] != "ubuntu-24.04" || lane.get("if").is_some() {
+        return fail("Browser compiler freshness requires the unconditional reviewed Linux host");
+    }
+    let steps = &lane["steps"];
+    let toolchain = step_once(
+        steps,
+        "dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249",
+        true,
+    )?;
+    let configuration = &steps[toolchain]["with"];
+    if configuration["toolchain"] != "1.99.1"
+        || configuration["targets"] != "wasm32-unknown-unknown"
+        || configuration["components"] != "rustfmt, clippy"
+    {
+        return fail("Browser compiler target, Rust version or strict checks changed");
+    }
+    let commands = [
+        "cargo xtask ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path browser-page-rust/Cargo.toml --all --check",
+        "cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- -D warnings",
+        "cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --release --target wasm32-unknown-unknown --lib -- -D warnings",
+        "cargo xtask ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked",
+        "cargo xtask ci owned --wall 900 --idle 300 -- cargo run --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- --check --wasm2js \"$RUNNER_TEMP/numera-binaryen-133/binaryen-version_133/bin/wasm2js\"",
+    ];
+    let mut last = toolchain;
+    for command in commands {
+        let index = step_once(steps, command, true)?;
+        if steps[index]["run"].as_str() != Some(command) || index <= last {
+            return fail("Browser compiler checks must remain exact, bounded and ordered");
+        }
+        last = index;
+    }
+    let setup = step_once(steps, "binaryen-version_133-x86_64-linux.tar.gz", true)?;
+    let expected = concat!(
+        "set -euo pipefail\n",
+        "directory=\"$RUNNER_TEMP/numera-binaryen-133\"\n",
+        "mkdir \"$directory\"\n",
+        "curl --fail --location --proto '=https' --proto-redir '=https' --connect-timeout 10 --max-time 120 https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz --output \"$directory/download.tar.gz\"\n",
+        "echo \"2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489  $directory/download.tar.gz\" | sha256sum --check --strict\n",
+        "tar -xzf \"$directory/download.tar.gz\" -C \"$directory\" binaryen-version_133/bin/wasm2js\n",
+        "echo \"52597efec0ad2416f8b5c245864960e775b8ffc94c751cc0b016c4b4986d3bcb  $directory/binaryen-version_133/bin/wasm2js\" | sha256sum --check --strict"
+    );
+    if steps[setup]["run"].as_str().map(str::trim) != Some(expected)
+        || setup <= toolchain
+        || setup >= last
+    {
+        return fail(
+            "Browser compiler must use both reviewed upstream checksums before regeneration",
+        );
+    }
+    let audit = &advisory["jobs"]["audit"]["steps"];
+    for path in [
+        "engine-rust/Cargo.lock",
+        "dashboard/Cargo.lock",
+        "desktop/src-tauri/Cargo.lock",
+        "tools/xtask/Cargo.lock",
+        "tools/xtask/lifecycle-tests/Cargo.lock",
+        "tools/security-scan/Cargo.lock",
+        "browser-page-rust/Cargo.lock",
+    ] {
+        step_once(audit, &format!("cargo audit --file {path}"), true)?;
+    }
+    Ok(())
+}
 pub fn coverage(root: &Path) -> Result<()> {
     super::coverage_inventory::validate(root)?;
     let native = parse(&fs::read_to_string(
         root.join(".github/workflows/native-ci.yml"),
     )?)?;
     native_automatic(&native)?;
+    browser_page_compiler(
+        &native,
+        &parse(&fs::read_to_string(
+            root.join(".github/workflows/dependency-review.yml"),
+        )?)?,
+    )?;
     let mut documents = serde_json::Map::new();
     for name in [
         "ci",
@@ -176,6 +298,10 @@ pub fn coverage(root: &Path) -> Result<()> {
     let rust = parse(&fs::read_to_string(
         root.join(".github/workflows/rust-candidate.yml"),
     )?)?;
+    branch_concurrency(&rust)?;
+    dependency_updates(&parse(&fs::read_to_string(
+        root.join(".github/dependabot.yml"),
+    )?)?)?;
     super::browser_benchmark::workflow_history(&native, &rust)?;
     let action = parse(&fs::read_to_string(
         root.join(".github/actions/native-candidate-acceptance/action.yml"),

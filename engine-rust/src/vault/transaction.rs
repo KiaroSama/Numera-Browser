@@ -5,7 +5,7 @@ use super::{
     encrypt,
     journal::JournalState,
     migration::Migration,
-    recovery::{RecoveryError, incomplete_for, refusal},
+    recovery::{RecoveryError, caused_refusal, incomplete_for, refusal},
 };
 use crate::storage::{atomic::write_json, locks::DataLock};
 use base64::{Engine, engine::general_purpose::STANDARD};
@@ -36,6 +36,7 @@ fn read_config(root: &Path) -> Result<Value, RecoveryError> {
 }
 
 fn new_descriptor(
+    root: &Path,
     password: &str,
     log: Option<&crate::runtime_log::RuntimeLog>,
 ) -> Result<Value, RecoveryError> {
@@ -43,8 +44,15 @@ fn new_descriptor(
     if let Some(log) = log {
         log.event("INFO", "vault", "Enable salt randomness requested");
     }
-    getrandom::fill(&mut bytes)
-        .map_err(|error| refusal(format!("Vault salt randomness unavailable: {error}")))?;
+    #[cfg(feature = "test-support")]
+    super::testing::event("before-vault-salt-randomness", root).map_err(|error| {
+        caused_refusal(format!("Vault salt randomness unavailable: {error}"), error)
+    })?;
+    #[cfg(not(feature = "test-support"))]
+    let _ = root;
+    getrandom::fill(&mut bytes).map_err(|error| {
+        caused_refusal(format!("Vault salt randomness unavailable: {error}"), error)
+    })?;
     if let Some(log) = log {
         log.event("INFO", "vault", "Enable salt randomness acquired");
     }
@@ -52,8 +60,8 @@ fn new_descriptor(
     if let Some(log) = log {
         log.event("INFO", "vault", "Enable verifier encryption started");
     }
-    let verifier =
-        encrypt(password, &salt, "numera-vault-ok").map_err(|error| refusal(error.to_string()))?;
+    let verifier = encrypt(password, &salt, "numera-vault-ok")
+        .map_err(|error| caused_refusal(error.to_string(), error))?;
     Ok(json!({"salt": salt, "verifier": verifier}))
 }
 
@@ -136,7 +144,7 @@ pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
     }
     log.event("INFO", "vault", "Enable config admitted");
     log.event("INFO", "vault", "Enable descriptor derivation started");
-    let descriptor = new_descriptor(password, Some(&log))?;
+    let descriptor = new_descriptor(root, password, Some(&log))?;
     log.event("INFO", "vault", "Enable descriptor derivation finished");
     begin(root, &descriptor, None)?;
     #[cfg(feature = "test-support")]
@@ -219,7 +227,7 @@ pub fn rotate(root: &Path, old_password: &str, password: &str) -> Result<usize, 
     ) {
         return Err(refusal("that is not the current master password"));
     }
-    let descriptor = new_descriptor(password, None)?;
+    let descriptor = new_descriptor(root, password, None)?;
     begin(root, &descriptor, Some(&old))?;
     #[cfg(feature = "test-support")]
     super::testing::event("before-migration", root)?;

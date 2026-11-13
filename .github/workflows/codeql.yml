@@ -23,19 +23,67 @@ jobs:
         language: [rust]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Record the actual checkout and workflow subjects separately
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/numera-codeql-evidence"
+          git rev-parse HEAD > "$RUNNER_TEMP/numera-codeql-evidence/checkout-sha.txt"
+          git rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/numera-codeql-evidence/checkout-tree.txt"
+          printf 'github.sha=%s\npr.head.sha=%s\npr.merge.sha=%s\nworkflow.sha=%s\ngithub.ref=%s\nevent=%s\nrepository=%s\nrun.id=%s\nrun.attempt=%s\n' "$GITHUB_SHA" "$PR_HEAD_SHA" "$PR_MERGE_SHA" "$WORKFLOW_SHA" "$GITHUB_REF" "$GITHUB_EVENT_NAME" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > "$RUNNER_TEMP/numera-codeql-evidence/workflow-subjects.txt"
       - name: Initialize supported language analysis without duplicate builds
+        id: init
         uses: github/codeql-action/init@cee97f86b972a3ded3c58d04148362b193ddc518 # v4.38.3
         with:
           languages: ${{ matrix.language }}
           build-mode: none
           queries: security-extended
           threads: 2
+          db-location: ${{ runner.temp }}/numera-codeql-databases
           # Use the action's cgroup-aware RAM sizing, including its OS reserve.
-      - name: Analyze and upload the exact source revision
+      - name: Analyze the checkout and retain every Rust result
         uses: github/codeql-action/analyze@cee97f86b972a3ded3c58d04148362b193ddc518 # v4.38.3
         with:
           category: /language:${{ matrix.language }}
+          output: ${{ runner.temp }}/numera-codeql-results
+          # Repository default setup remains enabled. Competing advanced SARIF
+          # uploads are rejected; retaining results does not certify findings.
+          upload: never
           wait-for-processing: true
+      - name: Record the actual CodeQL tool and resolved security suite
+        if: always() && steps.init.outcome == 'success'
+        env:
+          CODEQL: ${{ steps.init.outputs.codeql-path }}
+        run: |
+          "$CODEQL" version --format=json > "$RUNNER_TEMP/numera-codeql-evidence/codeql-version.json"
+          "$CODEQL" resolve queries --format=bylanguage codeql/rust-queries:codeql-suites/rust-security-extended.qls > "$RUNNER_TEMP/numera-codeql-evidence/resolved-security-queries.json"
+      - name: Record evaluated queries and the complete SARIF digest
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -d "$RUNNER_TEMP/numera-codeql-databases/rust/results" ]; then
+            find "$RUNNER_TEMP/numera-codeql-databases/rust/results" -type f -name '*.bqrs' -print | sort > "$RUNNER_TEMP/numera-codeql-evidence/evaluated-queries.txt"
+          fi
+          if [ -f "$RUNNER_TEMP/numera-codeql-results/rust.sarif" ]; then
+            sha256sum "$RUNNER_TEMP/numera-codeql-results/rust.sarif" > "$RUNNER_TEMP/numera-codeql-evidence/sarif.sha256"
+          fi
+      - name: Preserve full findings, extraction diagnostics and source evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: codeql-rust-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/numera-codeql-evidence
+            ${{ runner.temp }}/numera-codeql-results
+            ${{ runner.temp }}/numera-codeql-databases/rust/log
+            ${{ runner.temp }}/numera-codeql-databases/rust/codeql-database.yml
+            ${{ runner.temp }}/user-config.yaml
+          if-no-files-found: error
+          retention-days: 7
 
   verdict:
     name: Independent exact-source CodeQL verdict

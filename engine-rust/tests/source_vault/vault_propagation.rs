@@ -97,7 +97,7 @@ source_test!(
             unlocked.proxy.as_ref().expect("resolved proxy"),
         )
         .expect("native credential relay");
-        let relay_url = relay.url();
+        let relay_url = relay.url().expect("ready relay URL");
         let options = numera_core::browser::options::build(
             &unlocked,
             "playwright",

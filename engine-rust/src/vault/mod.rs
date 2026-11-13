@@ -1,6 +1,7 @@
 //! Original Fernet envelope compatibility; recovery/journal acceptance is separate.
 pub mod completion;
 pub mod durability;
+mod encryption;
 pub mod journal;
 pub mod migration;
 pub mod policy;
@@ -24,19 +25,47 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct VaultError(String);
-impl fmt::Display for VaultError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
+pub struct VaultError {
+    message: String,
+    cause: Option<Box<dyn Error + Send + Sync>>,
+}
+impl VaultError {
+    fn message(message: String) -> Self {
+        Self {
+            message,
+            cause: None,
+        }
+    }
+    fn caused(message: String, cause: impl Error + Send + Sync + 'static) -> Self {
+        Self {
+            message,
+            cause: Some(Box::new(cause)),
+        }
     }
 }
-impl Error for VaultError {}
+impl fmt::Display for VaultError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+impl Error for VaultError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        self.cause
+            .as_deref()
+            .map(|cause| cause as &(dyn Error + 'static))
+    }
+}
+#[derive(Clone)]
+struct Cipher {
+    reader: Fernet,
+    key: zeroize::Zeroizing<[u8; 32]>,
+}
 
 struct CachedKey {
     password: String,
     salt: String,
     rounds: u32,
-    cipher: Fernet,
+    cipher: Cipher,
 }
 static KEYS: OnceLock<Mutex<VecDeque<CachedKey>>> = OnceLock::new();
 
@@ -53,7 +82,7 @@ pub fn is_envelope(value: &str) -> bool {
 
 fn decode_original_base64(value: &str, url_safe: bool) -> Result<Vec<u8>, VaultError> {
     if !value.is_ascii() {
-        return Err(VaultError(
+        return Err(VaultError::message(
             "string argument should contain only ASCII characters".into(),
         ));
     }
@@ -74,7 +103,7 @@ fn decode_original_base64(value: &str, url_safe: bool) -> Result<Vec<u8>, VaultE
     }
     let remainder = text.len() % 4;
     if remainder == 1 {
-        return Err(VaultError(format!(
+        return Err(VaultError::message(format!(
             "Invalid base64-encoded string: number of data characters ({}) cannot be 1 more than a multiple of 4",
             text.len()
         )));
@@ -82,7 +111,7 @@ fn decode_original_base64(value: &str, url_safe: bool) -> Result<Vec<u8>, VaultE
     if remainder != 0 {
         let required = 4 - remainder;
         if padding < required {
-            return Err(VaultError("Incorrect padding".into()));
+            return Err(VaultError::message("Incorrect padding".into()));
         }
         text.extend(std::iter::repeat_n(b'=', required));
     }
@@ -92,21 +121,21 @@ fn decode_original_base64(value: &str, url_safe: bool) -> Result<Vec<u8>, VaultE
         GeneralPurposeConfig::new().with_decode_allow_trailing_bits(true),
     )
     .decode(text)
-    .map_err(|_| VaultError("Incorrect padding".into()))
+    .map_err(|_| VaultError::message("Incorrect padding".into()))
 }
 
-fn cipher(password: &str, salt: &str, rounds: u32) -> Result<Fernet, VaultError> {
+fn cipher(password: &str, salt: &str, rounds: u32) -> Result<Cipher, VaultError> {
     let mut keys = KEYS
         .get_or_init(|| Mutex::new(VecDeque::new()))
         .lock()
-        .map_err(|_| VaultError("vault key cache is unavailable".into()))?;
+        .map_err(|_| VaultError::message("vault key cache is unavailable".into()))?;
     if let Some(index) = keys
         .iter()
         .position(|k| k.password == password && k.salt == salt && k.rounds == rounds)
     {
         let key = keys
             .remove(index)
-            .ok_or_else(|| VaultError("vault key cache entry missing".into()))?;
+            .ok_or_else(|| VaultError::message("vault key cache entry missing".into()))?;
         let cipher = key.cipher.clone();
         keys.push_back(key);
         return Ok(cipher);
@@ -114,12 +143,16 @@ fn cipher(password: &str, salt: &str, rounds: u32) -> Result<Fernet, VaultError>
     let bytes = decode_original_base64(salt, false)?;
     #[cfg(feature = "test-support")]
     testing::event("before-key-derivation", std::path::Path::new(salt))
-        .map_err(|error| VaultError(error.to_string()))?;
-    let mut key = pbkdf2_hmac_array::<Sha256, 32>(password.as_bytes(), &bytes, rounds);
-    let encoded = URL_SAFE.encode(key);
-    key.fill(0);
-    let cipher =
-        Fernet::new(&encoded).ok_or_else(|| VaultError("vault derived key is invalid".into()))?;
+        .map_err(|error| VaultError::message(error.to_string()))?;
+    let key = zeroize::Zeroizing::new(pbkdf2_hmac_array::<Sha256, 32>(
+        password.as_bytes(),
+        &bytes,
+        rounds,
+    ));
+    let encoded = zeroize::Zeroizing::new(URL_SAFE.encode(key.as_slice()));
+    let reader = Fernet::new(&encoded)
+        .ok_or_else(|| VaultError::message("vault derived key is invalid".into()))?;
+    let cipher = Cipher { reader, key };
     if keys.len() == 16 {
         keys.pop_front();
     }
@@ -142,7 +175,7 @@ pub fn decrypt(password: &str, salt: &str, value: &str) -> Result<String, VaultE
         "v1" => 200_000,
         "v2" => 600_000,
         _ => {
-            return Err(VaultError(format!(
+            return Err(VaultError::message(format!(
                 "this secret was written by a newer version ({version}) than this engine understands"
             )));
         }
@@ -151,14 +184,14 @@ pub fn decrypt(password: &str, salt: &str, value: &str) -> Result<String, VaultE
     // system clock before it can panic; no TTL is imposed on existing tokens.
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_err(|_| VaultError("system clock precedes Unix epoch".into()))?;
+        .map_err(|_| VaultError::message("system clock precedes Unix epoch".into()))?;
     let token: String = value.chars().skip(5 + version.chars().count()).collect();
     // Source converts token text before deriving the key, then decodes its Base64.
     if !token.is_ascii() {
         let (start, first) = token
             .char_indices()
             .find(|(_, ch)| !ch.is_ascii())
-            .ok_or_else(|| VaultError("vault token ASCII conversion failed".into()))?;
+            .ok_or_else(|| VaultError::message("vault token ASCII conversion failed".into()))?;
         let position = token[..start].chars().count();
         let count = token[start..]
             .chars()
@@ -186,7 +219,7 @@ pub fn decrypt(password: &str, salt: &str, value: &str) -> Result<String, VaultE
         } else {
             format!("characters in position {position}-{}", position + count - 1)
         };
-        return Err(VaultError(format!(
+        return Err(VaultError::message(format!(
             "'ascii' codec can't encode {span}: ordinal not in range(128)"
         )));
     }
@@ -194,10 +227,11 @@ pub fn decrypt(password: &str, salt: &str, value: &str) -> Result<String, VaultE
     // Authentication still belongs to Fernet; normalize only Python's text codec.
     let token = decode_original_base64(&token, true)
         .map(|bytes| URL_SAFE.encode(bytes))
-        .map_err(|_| VaultError("wrong master password".into()))?;
+        .map_err(|_| VaultError::message("wrong master password".into()))?;
     let bytes = cipher
+        .reader
         .decrypt(&token)
-        .map_err(|_| VaultError("wrong master password".into()))?;
+        .map_err(|_| VaultError::message("wrong master password".into()))?;
     String::from_utf8(bytes).map_err(|error| {
         let invalid = error.utf8_error();
         let start = invalid.valid_up_to();
@@ -216,19 +250,25 @@ pub fn decrypt(password: &str, salt: &str, value: &str) -> Result<String, VaultE
         } else {
             format!("bytes in position {start}-{}", start + length - 1)
         };
-        VaultError(format!("'utf-8' codec can't decode {span}: {reason}"))
+        VaultError::message(format!("'utf-8' codec can't decode {span}: {reason}"))
     })
 }
 
 pub fn encrypt(password: &str, salt: &str, plaintext: &str) -> Result<String, VaultError> {
     #[cfg(feature = "test-support")]
-    testing::event("encrypt", std::path::Path::new("")).map_err(|e| VaultError(e.to_string()))?;
+    testing::event("encrypt", std::path::Path::new(""))
+        .map_err(|e| VaultError::message(e.to_string()))?;
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_err(|_| VaultError("system clock precedes Unix epoch".into()))?;
+        .map_err(|_| VaultError::message("system clock precedes Unix epoch".into()))?;
+    let cipher = cipher(password, salt, 600_000)?;
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| VaultError::message("system clock precedes Unix epoch".into()))?
+        .as_secs();
     Ok(format!(
         "enc:v2:{}",
-        cipher(password, salt, 600_000)?.encrypt(plaintext.as_bytes())
+        encryption::seal(&cipher.key, plaintext.as_bytes(), timestamp)?
     ))
 }
 

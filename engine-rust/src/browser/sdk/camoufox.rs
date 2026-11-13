@@ -324,7 +324,8 @@ impl Prepared {
             self.probe = Some(context.clone());
             let observation = tokio::time::timeout(Duration::from_secs(30), async {
                 let page = match context.pages().into_iter().next() { Some(page) => page, None => context.new_page().await? };
-                let value = super::evaluate_raw(&page, "() => { const gl = document.createElement('canvas').getContext('webgl'); const d = gl && gl.getExtension('WEBGL_debug_renderer_info'); return {width:screen.width,height:screen.height,gpu:d?[gl.getParameter(d.UNMASKED_VENDOR_WEBGL),gl.getParameter(d.UNMASKED_RENDERER_WEBGL)]:null}; }", &Value::Null, false).await?;
+                let expression = crate::page_runtime::expression(crate::page_runtime::Program::HostEnvironment);
+                let value = super::evaluate_raw(&page, &expression, &Value::Null, false).await?;
                 super::values::decode(&value).map_err(playwright_rs::Error::from)
             }).await;
             if !self.cleanup_probe().await {

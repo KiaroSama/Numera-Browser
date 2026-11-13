@@ -21,6 +21,7 @@ three-platform CI are verified. See [verification status](rust-rewrite.md).
 | `engine-rust/src/vault/` | Credential encryption, descriptors, journaled transitions and recovery. |
 | `engine-rust/src/browser/` | Launch admission, settings, persistent profiles, proxy relay and framed worker management. |
 | `engine-rust/src/browser/sdk/` | Native browser preparation and the vendor automation protocol. |
+| `browser-page-rust/` | Rust browser-realm identity and probes, with checked compiler-generated runtime assets. |
 | `engine-rust/src/ownership/` | Process-tree ownership, readiness, output capture, claims and cleanup evidence. |
 | `engine-rust/src/network/` | Proxy checks, extension acquisition, diagnostics and bounded network transports. |
 | `dashboard/` | Rust components and state compiled to WASM, plus native and real-browser tests. |
@@ -58,6 +59,19 @@ The repository does not reimplement Chromium, Firefox, Node or the vendor
 JavaScript protocol server in Rust. Browser-injected script and WASM glue are
 generated runtime assets. [Provisioning](../tools/xtask/README.md) explicitly
 acquires reviewed vendor bytes; ordinary Cargo builds do not install browsers.
+
+Browser identity and probe logic is authored in `browser-page-rust`. Locked Rust
+and wasm-bindgen builds produce WASM, which pinned Binaryen translates into the
+checked JavaScript factory embedded by the native engine. This avoids compiling
+WASM inside pages whose CSP forbids it. The generated artifact has source and
+compiler receipts and a required regeneration check. Strict-CSP browser tests
+verify identity before the first page script while ordinary `eval`, `Function`
+and WASM compilation remain blocked. The SDK's 1 MiB frame limit is unchanged.
+
+Minimal platform bindings connect the Rust components to their WebViews. The
+Tauri updater's initialization binding publishes its endpoint/token only to the
+expected top-level origin; updater authorization, requests and state are Rust.
+That scope guard remains at the native/WebView boundary.
 
 ## Ownership and shutdown
 

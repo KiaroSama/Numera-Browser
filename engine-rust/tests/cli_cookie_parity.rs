@@ -15,6 +15,10 @@ mod browser_fixture;
 #[path = "cli_characterization/mod.rs"]
 mod cli_characterization;
 mod common;
+#[path = "../../browser-page-rust/src/artifact.rs"]
+mod page_artifact;
+#[path = "cli_cookie_parity/probe_contracts.rs"]
+mod probe_contracts;
 #[path = "support/probe_output.rs"]
 mod probe_output;
 
@@ -24,6 +28,7 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
     let temporary = common::TempDirectory::new("cli-cookie-parity")?;
     let root = temporary.path();
     let document = cli_characterization::load("cli_cookie_parity", &root.join("source"))?;
+    probe_contracts::artifact()?;
 
     probe_output::compare(&document["humanProbes"])?;
     let native = root.join("native");
@@ -185,14 +190,14 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
             claims::Claim::Absent
         ));
     }
-    assert_eq!(
-        document["probes"]["tlsScript"],
-        include_str!("../src/browser/tls_probe.js").trim()
-    );
-    assert_eq!(
-        document["probes"]["dnsScript"],
-        include_str!("../src/browser/dns_probe.js").trim()
-    );
+    probe_contracts::original(
+        &document["probes"]["tlsScript"],
+        "faddfd663f2265ef2750aba188232f1f193eef6511209541ff9e29ee07635de7",
+    )?;
+    probe_contracts::original(
+        &document["probes"]["dnsScript"],
+        "e881d3e2c92dfa251ceb7addd6aeb65ebcca8c22b69ea99ae4cac60c26beefad",
+    )?;
     let probes = document["probes"]["cases"]
         .as_array()
         .ok_or("Probe cases missing")?;
@@ -283,8 +288,10 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
             .ok_or("Probe never evaluated")?;
         assert_eq!(evaluation["tolerate_failure"], true);
         if verb == "dns" {
+            probe_contracts::expression(&evaluation["expression"], "dns_probe")?;
             assert_eq!(evaluation["argument"]["n"], 8);
         } else {
+            probe_contracts::expression(&evaluation["expression"], "tls_probe")?;
             assert_eq!(calls[2]["url"], "https://tls.peet.ws/api/all");
             assert_eq!(calls[2]["timeout_ms"], 20000);
         }
@@ -352,14 +359,14 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
         ));
     }
     let network = &document["probes"]["network"];
-    assert_eq!(
-        network["ipScript"],
-        include_str!("../src/browser/ip_probe.js").trim()
-    );
-    assert_eq!(
-        network["iceScript"],
-        include_str!("../src/browser/webrtc_probe.js").trim()
-    );
+    probe_contracts::original(
+        &network["ipScript"],
+        "1387b482a649a4394d01e77d28b656c74f201b6e694c992aa9573724e599640f",
+    )?;
+    probe_contracts::original(
+        &network["iceScript"],
+        "9c56813478bceeab3ecf434aeb39a96da9e04eb16fb445f585f12f5ca7db6f2b",
+    )?;
     for address in network["addresses"]
         .as_array()
         .ok_or("Address cases missing")?
@@ -440,13 +447,12 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
             .filter(|call| call["operation"] == "evaluate")
             .collect::<Vec<_>>();
         assert_eq!(evaluations.len(), 4);
-        for (call, expression) in evaluations.iter().zip([
-            include_str!("../src/browser/ip_probe.js"),
-            include_str!("../src/browser/webrtc_probe.js"),
-            include_str!("../src/browser/dns_probe.js"),
-            include_str!("../src/browser/tls_probe.js"),
-        ]) {
-            assert_eq!(call["expression"], expression);
+        for (call, export) in
+            evaluations
+                .iter()
+                .zip(["ip_probe", "webrtc_probe", "dns_probe", "tls_probe"])
+        {
+            probe_contracts::expression(&call["expression"], export)?;
         }
         assert_eq!(
             calls
@@ -499,10 +505,10 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
         claims::Claim::Absent
     ));
     let trust = &document["probes"]["trust"];
-    assert_eq!(
-        trust["script"],
-        include_str!("../src/browser/trust_probe.js").trim()
-    );
+    probe_contracts::original(
+        &trust["script"],
+        "b3eecd5d1abe0a1740475d7f90b64f52de639f9e4d2b6592ee60ccbf61ff18dc",
+    )?;
     let trust_cases = trust["cases"].as_array().ok_or("Trust cases missing")?;
     assert_eq!(trust_cases.len(), 5);
     for case in trust_cases {
@@ -552,10 +558,7 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
             assert_eq!(calls[2]["body"], trust["html"]);
             assert_eq!(calls[3]["url"], trust["url"]);
             assert_eq!(calls[3]["timeout_ms"], 15000);
-            assert_eq!(
-                calls[4]["expression"],
-                include_str!("../src/browser/trust_probe.js")
-            );
+            probe_contracts::expression(&calls[4]["expression"], "trust_probe")?;
             assert!(matches!(
                 claims::read(&native, "fixture"),
                 claims::Claim::Absent
@@ -563,10 +566,10 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
         }
     }
     let alignment = &document["alignment"];
-    assert_eq!(
-        alignment["fontScript"],
-        include_str!("../src/browser/font_probe.js").trim()
-    );
+    probe_contracts::original(
+        &alignment["fontScript"],
+        "5a49cb250a62da0a84ff66a96e7dc1ace248b64babcaf9a22aad7432396b86d0",
+    )?;
     assert_eq!(
         json!(numera_core::browser::alignment::candidates()?),
         alignment["candidates"]
@@ -609,10 +612,7 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
                 "hello", "open", "route", "navigate", "evaluate", "evaluate", "close"
             ]
         );
-        assert_eq!(
-            calls[5]["expression"],
-            include_str!("../src/browser/font_probe.js")
-        );
+        probe_contracts::expression(&calls[5]["expression"], "font_probe")?;
         assert_eq!(calls[5]["argument"], alignment["candidates"]);
         assert!(matches!(
             claims::read(&native, "fixture"),
