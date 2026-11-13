@@ -71,6 +71,4 @@ fn attachment_readiness_holds_the_admission_decision_and_settles_failed_owner()
     Ok(())
 }
 
-use crate as core;
-#[path = "../../tests/common/ownership_process.rs"]
-mod ownership_process;
+use crate::ownership::ownership_process;

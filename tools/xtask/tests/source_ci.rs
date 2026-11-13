@@ -53,30 +53,32 @@ fn root() -> PathBuf {
 
 #[path = "source_ci/accounting.rs"]
 mod accounting_cases;
+#[path = "source_ci/browser_benchmark.rs"]
+mod browser_benchmark;
 #[path = "source_ci/camoufox_runtime.rs"]
 mod camoufox_runtime;
 #[path = "source_ci/candidate.rs"]
 mod candidate_cases;
-#[path = "source_ci/browser_benchmark.rs"]
-mod browser_benchmark;
-#[path = "source_ci/migration.rs"]
-mod migration;
 #[path = "source_ci/container.rs"]
 mod container_cases;
-#[path = "source_ci/desktop_history.rs"]
-mod desktop_history;
 #[path = "source_ci/desktop_ci.rs"]
 mod desktop_ci;
+#[path = "source_ci/desktop_history.rs"]
+mod desktop_history;
 #[path = "source_ci/history_inputs.rs"]
 mod history_inputs;
 #[path = "source_ci/macos.rs"]
 mod macos;
 #[path = "source_ci/memory.rs"]
 mod memory_cases;
+#[path = "source_ci/migration.rs"]
+mod migration;
 #[path = "source_ci/history.rs"]
 mod native_history;
 #[path = "source_ci/partition.rs"]
 mod partition;
+#[path = "source_ci/secret_review.rs"]
+mod secret_review;
 #[path = "source_ci/version.rs"]
 mod version_cases;
 

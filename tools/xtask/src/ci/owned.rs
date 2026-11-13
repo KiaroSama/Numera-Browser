@@ -18,6 +18,14 @@ pub struct Output {
     pub memory: Value,
 }
 pub fn run(root: &Path, command: &mut Command, limits: capture::Limits) -> Result<Output> {
+    run_streamed(root, command, limits, |_, _| {})
+}
+pub fn run_streamed(
+    root: &Path,
+    command: &mut Command,
+    limits: capture::Limits,
+    mut on_chunk: impl FnMut(usize, &[u8]),
+) -> Result<Output> {
     command.env_remove("NUMERA_UPDATE_ACTIVATION");
     let temporary = super::migration::Temporary::new(
         &super::root(),
@@ -56,11 +64,19 @@ pub fn run(root: &Path, command: &mut Command, limits: capture::Limits) -> Resul
                 log.event("INFO", "ci-owned", "phase=monitor");
                 match memory::Owner::from_record(&record) {
                     Ok(owner) => {
-                        recorder = Some(memory::Recorder::new(
-                            owner,
-                            Default::default(),
-                            cfg!(windows),
-                        ))
+                        let mut started_recorder =
+                            memory::Recorder::new(owner, Default::default(), cfg!(windows));
+                        // A short command may end before the first periodic
+                        // callback. Attempt a real retained-owner observation
+                        // at birth; an already ended proc is recorded missing.
+                        if started_recorder
+                            .sample_native(0.0, tree, receipt.as_deref())
+                            .is_err()
+                        {
+                            diagnostic_failure =
+                                Some("Native memory observation lost an owned handle");
+                        }
+                        recorder = Some(started_recorder);
                     }
                     Err(_) => {
                         diagnostic_failure = Some("Native command owner could not be measured")
@@ -112,7 +128,10 @@ pub fn run(root: &Path, command: &mut Command, limits: capture::Limits) -> Resul
                 }
             }
         },
-        super::compiler::observe_current,
+        |index, bytes| {
+            super::compiler::observe_current(index, bytes);
+            on_chunk(index, bytes);
+        },
     );
     // Cleanup remains mandatory even when the original command failed or the
     // pre-cleanup observation already proves a leaked subprocess.

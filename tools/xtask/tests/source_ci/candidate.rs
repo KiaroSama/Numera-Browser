@@ -11,6 +11,20 @@ source_test!(
     {
         let value = metadata(&root());
         candidate::targets(&value, &root())?;
+        let canonical = root().canonicalize()?;
+        assert!(candidate::same_path(
+            &root().join("engine-rust/Cargo.toml"),
+            &canonical.join("engine-rust/Cargo.toml")
+        ));
+        #[cfg(windows)]
+        {
+            let ordinary = canonical
+                .to_string_lossy()
+                .strip_prefix(r"\\?\")
+                .map(str::to_owned)
+                .unwrap_or_else(|| canonical.to_string_lossy().into_owned());
+            candidate::targets(&metadata(Path::new(&ordinary)), &canonical)?;
+        }
         for damage in [
             "candidate-default",
             "browser-only-default",
@@ -65,6 +79,9 @@ fn report(rows: &[Value]) -> Vec<u8> {
         .join("\n")
         .into_bytes()
 }
+fn approved_artifact(root: &Path, report: &[u8], release: bool) -> ci::Result<PathBuf> {
+    candidate::artifact_in_target(root, report, release, &root.join("engine-rust/target"))
+}
 source_test!(
     candidate_compiler_evidence,
     "tests/test_native_candidate.py::test_cargo_report_requires_success_and_one_current_enabled_binary",
@@ -73,7 +90,7 @@ source_test!(
         let artifact = artifact(&temp.0, false);
         let complete = json!({"reason":"build-finished","success":true});
         assert_eq!(
-            candidate::artifact(
+            approved_artifact(
                 &temp.0,
                 &report(&[artifact.clone(), complete.clone()]),
                 false
@@ -104,7 +121,7 @@ source_test!(
                 }
             }
             assert!(
-                candidate::artifact(&temp.0, &report(&rows), false).is_err(),
+                approved_artifact(&temp.0, &report(&rows), false).is_err(),
                 "{damage}"
             );
         }
@@ -118,7 +135,17 @@ source_test!(
         let temp = Temp::new("candidate-release")?;
         let value = artifact(&temp.0, true);
         let completed = json!({"reason":"build-finished","success":true});
-        candidate::artifact(&temp.0, &report(&[value.clone(), completed.clone()]), true)?;
+        approved_artifact(&temp.0, &report(&[value.clone(), completed.clone()]), true)?;
+        let binary = PathBuf::from(value["executable"].as_str().expect("executable"));
+        fs::create_dir_all(binary.parent().expect("binary parent"))?;
+        fs::write(&binary, b"actual artifact fixture")?;
+        ci::build_artifact::release_artifact(
+            &report(&[value.clone(), completed.clone()]),
+            &temp.0.join("engine-rust/Cargo.toml"),
+            &temp.0.join("engine-rust/target"),
+            candidate::BINARY,
+            "native-candidate",
+        )?;
         for profile in [
             json!({"test":false,"opt_level":"0","debug_assertions":false}),
             json!({"test":false,"opt_level":"3","debug_assertions":true}),
@@ -127,7 +154,7 @@ source_test!(
             let mut changed = value.clone();
             changed["profile"] = profile;
             assert!(
-                candidate::artifact(&temp.0, &report(&[changed, completed.clone()]), true).is_err()
+                approved_artifact(&temp.0, &report(&[changed, completed.clone()]), true).is_err()
             );
         }
         Ok(())

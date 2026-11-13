@@ -13,6 +13,187 @@ use std::{
 };
 pub const SCANNER_CONFIG_SHA256: &str =
     "e163e53b9e7e8a8511e77271e2b323ed057759542a6d988258afe3a1fa329caf";
+pub const REVIEWED_RULES_SHA256: &str =
+    "e8bacdc1cbd76ae1495ef4ec5a917030761093f793dc4a89bb512671600c5ca6";
+const SIGNING_FIXTURE_DIRECTORY: &str = "tools/xtask/tests/fixtures/windows-signing";
+const SIGNING_FIXTURE_RECORD: &str =
+    "9373b346cbc88ab826f9fb59d526c96f3cd3aa720fa5a513958cdbfb632400ae";
+const SIGNING_FIXTURES: [(&str, &str, u64); 2] = [
+    (
+        "public-fixture.der",
+        "8fedb7633c7d447b6607375392c9bb02b549ed7c5fbaf7b562312f50d1edd7db",
+        802,
+    ),
+    (
+        "public-fixture.pfx",
+        "4bc4ea7fa927262945f0eed6418d1a60b7f43e69d773007c79e6c7d129480782",
+        2563,
+    ),
+];
+
+fn signing_material(path: &Path) -> bool {
+    path.extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|value| ["der", "pfx", "p12"].contains(&value.to_ascii_lowercase().as_str()))
+}
+fn validate_signing_fixture(path: &Path) -> Result<()> {
+    let parent = path.parent().ok_or("Binary fixture parent missing")?;
+    let name = path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .ok_or("Signing fixture name is not UTF8")?;
+    let (_, expected, length) = SIGNING_FIXTURES
+        .iter()
+        .find(|(allowed, _, _)| name == *allowed && parent.ends_with(SIGNING_FIXTURE_DIRECTORY))
+        .ok_or("Unregistered binary signing material in tracked verification scope")?;
+    regular(path, false)?;
+    let record = parent.join("provenance.json");
+    regular(&record, false)?;
+    if fs::metadata(&record)?.len() > 16384 || super::digest(&record)? != SIGNING_FIXTURE_RECORD {
+        return fail("Public signing fixture record differs from the reviewed pin");
+    }
+    let provenance: Value = decode(&fs::read(record)?)?;
+    if provenance["schema"] != 1
+        || provenance["files"]
+            .as_object()
+            .is_none_or(|files| files.len() != SIGNING_FIXTURES.len())
+        || SIGNING_FIXTURES.iter().any(|(file, hash, size)| {
+            provenance["files"][*file]["sha256"] != *hash
+                || provenance["files"][*file]["bytes"] != *size
+        })
+        || fs::metadata(path)?.len() != *length
+        || super::digest(path)? != *expected
+    {
+        return fail("Public signing fixture bytes differ from the reviewed pin");
+    }
+    Ok(())
+}
+fn validate_signing_directory(root: &Path) -> Result<()> {
+    let directory = root.join(SIGNING_FIXTURE_DIRECTORY);
+    if directory.exists() {
+        for entry in fs::read_dir(directory)? {
+            let path = entry?.path();
+            if signing_material(&path) {
+                validate_signing_fixture(&path)?;
+            }
+        }
+    }
+    Ok(())
+}
+fn validate_tracked_signing(root: &Path, path: &Path) -> Result<()> {
+    let relative = path.strip_prefix(root)?;
+    if !SIGNING_FIXTURES
+        .iter()
+        .any(|(name, _, _)| relative == Path::new(SIGNING_FIXTURE_DIRECTORY).join(name))
+    {
+        return fail("Signing material is outside its exact reviewed tracked path");
+    }
+    validate_signing_fixture(path)
+}
+
+/// Validate signing material at every path and revision before a history scan.
+/// Current checkout validation alone cannot see an unknown blob later restored
+/// to approved fixture bytes, or a deleted signing fixture directory.
+pub fn history_signing_material(root: &Path) -> Result<usize> {
+    use super::{gitleaks_contract as contract, release_signing};
+    fn checked(root: &Path, args: &[&str], bytes: usize) -> Result<Vec<u8>> {
+        let result = capture(
+            Command::new("git")
+                .arg("-C")
+                .arg(root)
+                .args(args)
+                .env("GIT_NO_REPLACE_OBJECTS", "1")
+                .env("GIT_CONFIG_NOSYSTEM", "1")
+                .env(
+                    "GIT_CONFIG_GLOBAL",
+                    if cfg!(windows) { "NUL" } else { "/dev/null" },
+                ),
+            Duration::from_secs(30),
+            Duration::from_secs(30),
+            bytes,
+        )?;
+        if result.exit != 0 || !result.stderr.is_empty() {
+            return fail("Signing-material Git history producer failed");
+        }
+        Ok(result.stdout)
+    }
+    if checked(root, &["rev-parse", "--is-shallow-repository"], 1024)? != b"false\n" {
+        return fail("Complete signing-material history is unavailable");
+    }
+    let head = checked(root, &["rev-parse", "--verify", "HEAD^{commit}"], 1024)?;
+    if head.len() != 41
+        || head.last() != Some(&b'\n')
+        || !std::str::from_utf8(&head[..40]).is_ok_and(super::canonical_sha)
+    {
+        return fail("Signing-material history has no canonical committed head");
+    }
+    let output = checked(
+        root,
+        &[
+            "log",
+            "--all",
+            "--raw",
+            "-z",
+            "--no-abbrev",
+            "--format=",
+            "--full-history",
+            "--root",
+            "-m",
+            "--no-renames",
+            "--no-relative",
+            "--no-notes",
+            "--no-ext-diff",
+            "--no-textconv",
+            "--ignore-submodules=all",
+            "--",
+            ":(icase,glob)**/*.pfx",
+            ":(icase,glob)**/*.p12",
+            ":(icase,glob)**/*.der",
+            "tools/xtask/tests/fixtures/windows-signing/provenance.json",
+        ],
+        contract::HISTORY_BYTES,
+    )?;
+    let records = contract::history_records(&output)
+        .map_err(|error| std::io::Error::other(error.to_string()))?;
+    let mut queries = BTreeSet::new();
+    let mut environment = std::env::vars_os()
+        .filter_map(|(key, value)| Some((key.into_string().ok()?, value.into_string().ok()?)))
+        .collect();
+    environment = release_signing::tool_environment(&environment, "git");
+    environment.insert("GIT_NO_REPLACE_OBJECTS".into(), "1".into());
+    environment.insert("GIT_CONFIG_NOSYSTEM".into(), "1".into());
+    environment.insert(
+        "GIT_CONFIG_GLOBAL".into(),
+        if cfg!(windows) { "NUL" } else { "/dev/null" }.into(),
+    );
+    for (path, old, new) in records {
+        for oid in [old, new] {
+            if oid.bytes().any(|byte| byte != b'0') && queries.insert((path.clone(), oid.clone())) {
+                let packet = release_signing::execute_bounded(
+                    &release_signing::ToolRequest {
+                        program: "git".into(),
+                        args: vec![
+                            "-C".into(),
+                            root.into(),
+                            "cat-file".into(),
+                            "--batch".into(),
+                        ],
+                        environment: environment.clone(),
+                        input: format!("{oid}\n").into_bytes(),
+                        seconds: 15,
+                    },
+                    16_384,
+                )?;
+                if packet.exit != 0 || !packet.stderr.is_empty() {
+                    return fail("Historical signing-material blob read failed");
+                }
+                contract::history_blob(&path, &oid, &packet.stdout)
+                    .map_err(|error| std::io::Error::other(error.to_string()))?;
+            }
+        }
+    }
+    Ok(queries.len())
+}
 
 pub fn counted_tests(text: &str, expected: usize, exit: i32) -> Result<()> {
     counted_tests_format(text, expected, exit, false)
@@ -138,25 +319,8 @@ pub fn check_utf8(paths: &[PathBuf]) -> Result<usize> {
     ];
     let mut checked = 0;
     for path in paths {
-        if path
-            .extension()
-            .is_some_and(|extension| extension == "der" || extension == "pfx")
-        {
-            let allowed = Path::new("tools/xtask/tests/fixtures/windows-signing");
-            let parent = path.parent().ok_or("Binary fixture parent missing")?;
-            if !parent.ends_with(allowed) {
-                return fail("Unregistered binary signing material in tracked verification scope");
-            }
-            let provenance: Value = decode(&fs::read(parent.join("provenance.json"))?)?;
-            let name = path
-                .file_name()
-                .and_then(|v| v.to_str())
-                .ok_or("Signing fixture name is not UTF8")?;
-            if fs::metadata(path)?.len() > 16384
-                || provenance["files"][name]["sha256"] != super::digest(path)?
-            {
-                return fail("Public signing fixture differs from its reviewed provenance");
-            }
+        if signing_material(path) {
+            validate_signing_fixture(path)?;
             checked += 1;
             continue;
         }
@@ -176,9 +340,16 @@ pub fn stage_tracked(root: &Path, destination: &Path) -> Result<usize> {
     if destination.exists() {
         return fail("Tracked secret scan requires a new empty destination");
     }
+    validate_signing_directory(root)?;
+    let paths = tracked(root)?;
+    for source in &paths {
+        regular(source, false)?;
+        if signing_material(source) {
+            validate_tracked_signing(root, source)?;
+        }
+    }
     fs::create_dir_all(destination)?;
     let result = (|| {
-        let paths = tracked(root)?;
         for source in &paths {
             regular(source, false)?;
             let target = destination.join(source.strip_prefix(root)?);
@@ -186,6 +357,18 @@ pub fn stage_tracked(root: &Path, destination: &Path) -> Result<usize> {
                 fs::create_dir_all(parent)?;
             }
             fs::copy(source, target)?;
+        }
+        // Validate the actual scanner input again after publication, so a
+        // source changed between the first hash and its copy cannot be hidden
+        // behind the exact public-fixture filename exception.
+        validate_signing_directory(destination)?;
+        for source in &paths {
+            if signing_material(source) {
+                validate_tracked_signing(
+                    destination,
+                    &destination.join(source.strip_prefix(root)?),
+                )?;
+            }
         }
         Ok(paths.len())
     })();
@@ -228,13 +411,16 @@ pub fn prepare_secret_config_checked(
     if destination.exists() {
         return fail("Scanner configuration destination must be new");
     }
+    validate_signing_directory(root)?;
     let data = fs::read(base)?;
     if super::sha(&data) != expected_sha {
         return fail("Official scanner configuration checksum mismatch");
     }
     let text = sanitize_scanner(std::str::from_utf8(&data)?)?;
     let template = fs::read_to_string(root.join("scripts/ci/gitleaks.toml"))?;
-    if template.matches("useDefault = true").count() != 1 {
+    if super::sha(template.as_bytes()) != REVIEWED_RULES_SHA256
+        || template.matches("useDefault = true").count() != 1
+    {
         return fail("Exact reviewed scanner configuration changed");
     }
     let config = template.replace(
@@ -578,6 +764,16 @@ pub fn source_checkpoint(root: &Path, args: &[OsString]) -> Result<()> {
             if !text.lines().any(|line| line.starts_with("test result:")) {
                 return fail("Source module has no completed test evidence");
             }
+            if output.exit == 0 {
+                super::coverage_inventory::validate_target_output(
+                    root,
+                    "engine-rust",
+                    module,
+                    std::env::consts::OS,
+                    text,
+                    0,
+                )?;
+            }
             match output.exit {
                 0 => Ok(0),
                 101 => Ok(1),
@@ -592,6 +788,14 @@ pub fn source_checkpoint(root: &Path, args: &[OsString]) -> Result<()> {
     Ok(())
 }
 pub fn report_directory(root: &Path, directory: &Path, modules: &[String]) -> Result<usize> {
+    report_directory_with(root, directory, modules, verify_report)
+}
+pub fn report_directory_with(
+    root: &Path,
+    directory: &Path,
+    modules: &[String],
+    mut verify: impl FnMut(&Path, &Value) -> Result<usize>,
+) -> Result<usize> {
     let paths = fs::read_dir(directory)?
         .filter_map(|entry| entry.ok().map(|entry| entry.path()))
         .filter(|path| {
@@ -613,7 +817,7 @@ pub fn report_directory(root: &Path, directory: &Path, modules: &[String]) -> Re
     }
     let mut total = 0;
     for path in paths {
-        total += verify_report(root, &decode(&fs::read(path)?)?)?;
+        total += verify(root, &decode(&fs::read(path)?)?)?;
     }
     Ok(total)
 }
@@ -650,8 +854,19 @@ pub fn native_command(root: &Path, phase: &str, targets: &[String]) -> Result<Co
     Ok(command)
 }
 pub fn native_phase(root: &Path, phase: &str) -> Result<()> {
-    let targets = targets(root)?;
-    target_registration(&targets)?;
+    let inventory = super::coverage_inventory::validate(root)?;
+    let registered = targets(root)?;
+    target_registration(&registered)?;
+    let targets = registered
+        .into_iter()
+        .filter_map(|target| {
+            match inventory.applicable("engine-rust", &target, std::env::consts::OS) {
+                Ok(true) => Some(Ok(target)),
+                Ok(false) => None,
+                Err(error) => Some(Err(error)),
+            }
+        })
+        .collect::<Result<Vec<_>>>()?;
     let mut command = native_command(root, phase, &targets)?;
     let output = capture(
         &mut command,
@@ -668,9 +883,38 @@ pub fn native_phase(root: &Path, phase: &str) -> Result<()> {
     if output.exit != 0 {
         return fail("Required native verification failed");
     }
+    if phase == "test" {
+        super::coverage_inventory::validate_native_output(
+            root,
+            std::str::from_utf8(&output.stdout)?,
+        )?;
+    }
     Ok(())
 }
 pub fn verify_report(root: &Path, report: &Value) -> Result<usize> {
+    let inventory = super::coverage_inventory::validate(root)?;
+    verify_report_with(root, report, |module, row| {
+        let expected = inventory.expected(
+            if module == "source_ci" {
+                "tools/xtask"
+            } else {
+                "engine-rust"
+            },
+            module,
+            std::env::consts::OS,
+        )?;
+        let stdout = row["stdout"]
+            .as_str()
+            .filter(|v| v.len() <= 8 * 1024 * 1024)
+            .ok_or("Native report lacks bounded actual named execution evidence")?;
+        super::coverage_inventory::validate_expected_output(&expected, stdout, 0)
+    })
+}
+pub fn verify_report_with(
+    root: &Path,
+    report: &Value,
+    mut verify: impl FnMut(&str, &Value) -> Result<usize>,
+) -> Result<usize> {
     let expected = report["modules"]
         .as_array()
         .ok_or("Native report module inventory missing")?
@@ -711,6 +955,9 @@ pub fn verify_report(root: &Path, report: &Value) -> Result<usize> {
             .ok_or("Native module has no passing evidence")?;
         if row["failed"] != 0 || row["ignored"] != 0 {
             return fail("Native source evidence failed or skipped cases");
+        }
+        if verify(module, row)? != count as usize {
+            return fail("Native reported count differs from named execution evidence");
         }
         total += count as usize;
     }
@@ -769,6 +1016,16 @@ pub fn source_run(root: &Path, args: &[OsString]) -> Result<()> {
         )?;
         fs::write(output.join(format!("{module}.stdout")), &result.stdout)?;
         let text = std::str::from_utf8(&result.stdout)?;
+        if result.exit == 0 {
+            super::coverage_inventory::validate_target_output(
+                root,
+                "engine-rust",
+                module,
+                std::env::consts::OS,
+                text,
+                0,
+            )?;
+        }
         let counts = counts_pattern
             .captures(text)
             .ok_or("Native module has no complete test verdict")?;
@@ -788,7 +1045,7 @@ pub fn source_run(root: &Path, args: &[OsString]) -> Result<()> {
         };
         checkpoint.finish_module(module, exit)?;
         save(&output.join("checkpoint.json"), &checkpoint)?;
-        results.push(json!({"module":module,"exit":exit,"settled":true,"passed":number(1)?,"failed":number(2)?,"ignored":number(3)?}));
+        results.push(json!({"module":module,"exit":exit,"settled":true,"passed":number(1)?,"failed":number(2)?,"ignored":number(3)?,"stdout":text}));
     }
     let report = json!({"schema":1,"modules":modules,"results":results});
     save(&output.join("report.json"), &report)?;

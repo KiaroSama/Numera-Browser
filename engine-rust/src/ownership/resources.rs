@@ -10,6 +10,29 @@ use std::{
 };
 
 static PANICS: AtomicU64 = AtomicU64::new(0);
+/// Preserve reviewable test/compiler diagnostics while filtering credential
+/// syntax and explicitly supplied protected CI environment values.
+pub fn redact_diagnostics(text: &str) -> String {
+    let mut text = crate::log_redaction::redact(text);
+    for (key, value) in std::env::vars() {
+        if value.len() >= 4
+            && [
+                "TOKEN",
+                "PASSWORD",
+                "SECRET",
+                "API_KEY",
+                "LICENSE_KEY",
+                "SIGNING_KEY",
+                "PFX",
+            ]
+            .iter()
+            .any(|suffix| key.ends_with(suffix))
+        {
+            text = text.replace(&value, "[REDACTED]");
+        }
+    }
+    text
+}
 fn install_panic_observer() {
     static INSTALL: Once = Once::new();
     INSTALL.call_once(|| {

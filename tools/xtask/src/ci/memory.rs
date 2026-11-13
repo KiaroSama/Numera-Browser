@@ -182,8 +182,13 @@ impl Owner {
             .and_then(|pid| u32::try_from(pid).ok())
             .filter(|pid| *pid > 0)
             .ok_or("Memory diagnostic owner PID missing")?;
-        let birth = record["token"]
-            .as_u64()
+        let raw = record["token"].as_u64();
+        let normalized = record["pidToken"].as_u64();
+        if raw.is_some() && normalized.is_some() && raw != normalized {
+            return fail("Memory diagnostic owner birth identities conflict");
+        }
+        let birth = raw
+            .or(normalized)
             .filter(|birth| *birth > 0)
             .ok_or("Memory diagnostic owner birth missing")?;
         let group = if record["tree"]["kind"] == "pgid" {
@@ -332,14 +337,17 @@ impl Recorder {
     ) -> Result<()> {
         let (complete, owners) = if let Some(path) = receipt {
             match numera_core::ownership::unit_report::read(path) {
-                Ok(report) => (
-                    report.complete,
-                    report
-                        .trees
-                        .iter()
-                        .map(Owner::from_record)
-                        .collect::<Result<Vec<_>>>()?,
-                ),
+                Ok(report) => {
+                    let mut complete = report.complete;
+                    let mut owners = Vec::new();
+                    for record in &report.trees {
+                        match Owner::from_record(record) {
+                            Ok(owner) => owners.push(owner),
+                            Err(_) => complete = false,
+                        }
+                    }
+                    (complete, owners)
+                }
                 Err(_) => (false, Vec::new()),
             }
         } else {

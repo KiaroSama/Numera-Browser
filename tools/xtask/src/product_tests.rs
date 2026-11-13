@@ -291,6 +291,30 @@ fn vendor_archive_contracts() -> Result<(), Box<dyn Error>> {
     use std::io::Write;
     use zip::write::SimpleFileOptions;
 
+    // Invoke the actual native test harness as a finite vendor command. Its
+    // invalid argument must remain visible through the provisioning boundary.
+    let mut command = Command::new(std::env::current_exe()?);
+    command.arg("--numera-vendor-diagnostic-fixture");
+    let error = crate::provision::execute(&mut command, 5)
+        .err()
+        .ok_or("Failed vendor command was accepted")?;
+    let diagnostic = error.to_string();
+    assert!(diagnostic.contains("exit="));
+    assert!(diagnostic.contains("natural_settlement=Some(true)"));
+    assert!(diagnostic.contains("numera-vendor-diagnostic-fixture"));
+    assert!(diagnostic.contains("Captured stderr:"));
+    let synthetic = "q".repeat(1000);
+    let mut command = Command::new(std::env::current_exe()?);
+    command.arg(format!("--{} token:{synthetic}", "x".repeat(17_000)));
+    let error = crate::provision::execute(&mut command, 5)
+        .err()
+        .ok_or("Failed verbose vendor command was accepted")?;
+    let diagnostic = error.to_string();
+    assert!(diagnostic.contains("[earlier output omitted]"));
+    assert!(diagnostic.contains("[REDACTED]"));
+    assert!(!diagnostic.contains(&synthetic));
+    assert!(diagnostic.len() < 33_000);
+
     // A directory link can appear before links inside its target. Publishing
     // that directory too early silently omits required browser resources.
     let fixture = Fixture::new()?;

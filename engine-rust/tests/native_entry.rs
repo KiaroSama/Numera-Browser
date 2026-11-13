@@ -192,6 +192,7 @@ fn browser_dispatch_uses_actual_handshake_without_redundant_metadata()
                 country: None,
                 relay: None,
                 binary_options: Default::default(),
+                registry: None,
                 deployment: Some(Deployment {
                     app,
                     environment: Default::default(),
@@ -290,6 +291,7 @@ fn entry_dispatch_reads_real_store_and_preserves_structured_refusals()
             country: None,
             relay: None,
             binary_options: Default::default(),
+            registry: None,
             deployment: None,
         },
     };

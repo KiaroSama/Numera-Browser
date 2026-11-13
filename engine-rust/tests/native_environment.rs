@@ -28,6 +28,7 @@ fn metadata_discovery_uses_sdk_only_adapter_and_rejects_malformed_receipts()
             country: None,
             relay: None,
             binary_options: Default::default(),
+            registry: None,
             deployment: Some(Deployment {
                 app: root.clone(),
                 environment: BTreeMap::new(),

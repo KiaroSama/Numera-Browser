@@ -56,6 +56,7 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
             use numera_core::ownership::resources::{ResourceFailure, ResourceGuard};
             let root = Path::new(args.get(1).ok_or("root missing")?);
             let leaked = args.get(2).is_some_and(|s| s == "unsettled");
+            let baseline = numera_core::ownership::resources::snapshot()?;
             let guard = ResourceGuard::new()?;
             let mut file = Some(fs::File::open(root.join("payload"))?);
             let (send, receive) = std::sync::mpsc::sync_channel::<()>(1);
@@ -66,6 +67,18 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
                 drop(file.take());
                 send.send(())?;
                 worker.join().map_err(|_| "resource fixture panicked")?;
+                // Join synchronizes user code, while the OS's process-wide
+                // thread enumeration can still contain its terminating task.
+                // This isolated worker has exactly that one controlled child
+                // thread. Require its actual disappearance within a bounded
+                // cleanup interval before making the unchanged resource check.
+                let deadline = std::time::Instant::now() + Duration::from_secs(2);
+                while numera_core::ownership::resources::snapshot()?.threads > baseline.threads {
+                    if std::time::Instant::now() >= deadline {
+                        return Err("joined resource fixture thread remained observable".into());
+                    }
+                    std::thread::sleep(Duration::from_millis(1));
+                }
                 let e = guard.finish()?;
                 println!(
                     "{{\"ok\":true,\"evidence\":{{\"before\":{{\"handles\":{},\"threads\":{}}},\"after\":{{\"handles\":{},\"threads\":{}}},\"panics\":{}}}}}",

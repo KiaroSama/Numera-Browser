@@ -5,6 +5,7 @@ use serde_json::{Value, json};
 #[test]
 fn importer_lexical_profiles_match_original_without_changing_inputs()
 -> Result<(), Box<dyn std::error::Error>> {
+    extended_json_lexical_contracts();
     let temporary = common::TempDirectory::new("importer-lexical")?;
     // Frozen immutable source observation; all native assertions below remain live.
     let cases: Vec<Value> = serde_json::from_str(include_str!(
@@ -72,4 +73,47 @@ fn native_envelope_versions_match_original_exact_numeric_guidance()
     }
     temporary.cleanup()?;
     Ok(())
+}
+
+// Fold the HTTP JSON grammar controls into the existing lexical-import case,
+// preserving its ID and the complete original native case inventory.
+fn extended_json_lexical_contracts() {
+    use numera_core::http::json_extended::parse;
+    let value=parse(r#"{"a":[NaN,Infinity,-Infinity],"__numera_nonfinite_0__":"__numera_nonfinite_1__","quoted":"NaN","escaped":"\u005f_numera_nonfinite_2__","literal":"-Infinity"}"#).expect("source JSON constants");
+    assert_eq!(value["a"][0].as_number().expect("NaN").as_str(), "NaN");
+    assert_eq!(
+        value["a"][1].as_number().expect("infinity").as_str(),
+        "Infinity"
+    );
+    assert_eq!(
+        value["a"][2]
+            .as_number()
+            .expect("negative infinity")
+            .as_str(),
+        "-Infinity"
+    );
+    assert_eq!(value["quoted"], "NaN");
+    assert_eq!(value["literal"], "-Infinity");
+    assert_eq!(value["escaped"], "__numera_nonfinite_2__");
+    assert_eq!(value["__numera_nonfinite_0__"], "__numera_nonfinite_1__");
+    for text in [
+        "[NaNx]",
+        "[Infinity0]",
+        "[-Infinity.0]",
+        "[+Infinity]",
+        "[nan]",
+        "[NaN,]",
+        "{NaN:1}",
+        "{\"x\":NaN //comment\n}",
+        "{\"x\":Infinity} trailing",
+        "[NaN Infinity]",
+    ] {
+        assert!(parse(text).is_err(), "Accepted invalid JSON: {text}");
+    }
+    for text in ["null", "{\"x\":1.25}", "[true,false,\"NaN\"]"] {
+        assert_eq!(
+            parse(text).expect("ordinary JSON"),
+            serde_json::from_str::<Value>(text).expect("ordinary JSON")
+        );
+    }
 }

@@ -16,6 +16,8 @@ source_test!(
     seed_is_reproducible,
     "tests/test_fingerprint.py::test_seed_is_reproducible",
     {
+        device_sampler_vectors::weighted_vectors();
+        device_sampler_vectors::generated_identities();
         assert_eq!(
             serde_json::to_value(generate(42, None, None)).expect("serialize"),
             serde_json::to_value(generate(42, None, None)).expect("serialize")
@@ -156,6 +158,7 @@ source_test!(
     fonts_come_from_the_os_font_set,
     "tests/test_fingerprint.py::test_fonts_come_from_the_os_font_set",
     {
+        device_sampler_vectors::font_vectors();
         let d = catalog();
         for os in ["windows", "macos", "linux", "android"] {
             let fp = generate(3, Some(os), None);

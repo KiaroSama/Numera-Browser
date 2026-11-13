@@ -312,7 +312,7 @@ impl Observer for Native {
                 std::thread::sleep(Duration::from_millis(1));
             }
         };
-        if exit != 0 {
+        if exit != 0 || !output[1].is_empty() {
             return fail(format!(
                 "Browser sample observation failed exit={exit} {}",
                 failure_projection(&String::from_utf8_lossy(&output[1]))
@@ -839,6 +839,24 @@ pub fn workflow_measurement(action: &Value) -> Result<()> {
     }
     super::workflow::ordered(steps, &["ci acceptance "], "ci browser-benchmark")?;
     let measure = super::workflow::step_once(steps, "ci browser-benchmark", true)?;
+    if !steps[measure]["run"]
+        .as_str()
+        .is_some_and(|run| run.contains("\"$NUMERA_NATIVE_ENGINE\""))
+    {
+        return fail("Browser comparison must measure the actual native product binary");
+    }
+    let entry = super::workflow::step_once(steps, "ci entry-benchmark", false)?;
+    if steps[entry]["if"] != "inputs.engine == 'playwright'"
+        || entry <= super::workflow::step_once(steps, "ci acceptance ", true)?
+        || entry >= measure
+        || !steps[entry]["run"]
+            .as_str()
+            .is_some_and(|run| run.contains("--wall 180 --idle 90"))
+    {
+        return fail(
+            "All five entry workloads require their bounded owning Windows/Linux acceptance legs",
+        );
+    }
     if build >= measure {
         return fail("Browser measurement cannot precede candidate compilation");
     }
@@ -906,6 +924,7 @@ pub fn run(
         (reference, super::reference::SOURCE.to_owned(), true),
         (candidate, std::env::var("GITHUB_SHA")?, false),
     ] {
+        super::build_artifact::verify(binary, worker, &sha, acceptance)?;
         let output = crate::acceptance::execute(Command::new(binary).arg("--build-info"), None)?;
         let identity = super::decode(output.stdout.as_bytes())?;
         if output.exit != 0

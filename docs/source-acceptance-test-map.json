@@ -37,9 +37,16 @@
       "passed": 123,
       "failed": 0,
       "ignored": 0,
-      "elapsed_seconds": 1.92,
+      "elapsed_seconds": 1.42,
       "verified_on": "2026-11-13",
-      "strict_lint": "passed"
+      "strict_lint": "passed: source_acceptance test target, -D warnings,12.09s",
+      "parallel_stress": {
+        "threads": 64,
+        "passed": 123,
+        "failed": 0,
+        "ignored": 0,
+        "elapsed_seconds": 1.45
+      }
     },
     "native_gate": {
       "verified_on": "2026-11-13",
@@ -315,7 +322,7 @@
       "native_type": "#[test]",
       "original_parameters": [],
       "original_fixtures": [],
-      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+      "adaptation": "Parses actual native-ci.yml live matrix: four mandatory engines on Linux/Windows, bounded two-way concurrency, complete required-job topology and native SDK action. The legacy manual ci.yml now owns signed artifact review rather than automatic SDK acceptance."
     },
     {
       "python_id": "tests/test_live_engine_contract.py::test_release_downloads_and_publishes_only_verified_manifest_products",
@@ -327,7 +334,7 @@
       "native_type": "#[test]",
       "original_parameters": [],
       "original_fixtures": [],
-      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+      "adaptation": "Real native distribution hash/source/extra-asset refusal controls remain. Actual owner-only read-only workflows require signed-product-review after download and exact-source CodeQL; removing or softening verification is refused. No release publication is performed by the migrated workflow."
     },
     {
       "python_id": "tests/test_live_engine_contract.py::test_independent_native_acceptance_precedes_the_required_benchmark[None]",
@@ -1305,7 +1312,7 @@
         "monkeypatch",
         "caplog"
       ],
-      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+      "adaptation": "Actual isolated Rust worker owns a file and controlled thread. Clean control joins and then requires OS-visible thread settlement within2s before unchanged ResourceGuard handle/thread non-increase and zero-panic checks. Unsettled controls measure while resources remain live; timeout diagnostic precedes retained-fixture cleanup refusal."
     },
     {
       "python_id": "tests/test_migration_cleanup.py::test_timeout_trigger_is_retained_before_fatal_cleanup[settled-idle]",
@@ -1330,7 +1337,7 @@
         "monkeypatch",
         "caplog"
       ],
-      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+      "adaptation": "Actual isolated Rust worker owns a file and controlled thread. Clean control joins and then requires OS-visible thread settlement within2s before unchanged ResourceGuard handle/thread non-increase and zero-panic checks. Unsettled controls measure while resources remain live; timeout diagnostic precedes retained-fixture cleanup refusal."
     },
     {
       "python_id": "tests/test_migration_cleanup.py::test_timeout_trigger_is_retained_before_fatal_cleanup[settled-both]",
@@ -1355,7 +1362,7 @@
         "monkeypatch",
         "caplog"
       ],
-      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+      "adaptation": "Actual isolated Rust worker owns a file and controlled thread. Clean control joins and then requires OS-visible thread settlement within2s before unchanged ResourceGuard handle/thread non-increase and zero-panic checks. Unsettled controls measure while resources remain live; timeout diagnostic precedes retained-fixture cleanup refusal."
     },
     {
       "python_id": "tests/test_migration_cleanup.py::test_timeout_trigger_is_retained_before_fatal_cleanup[reader-unsettled-wall]",
@@ -1380,7 +1387,7 @@
         "monkeypatch",
         "caplog"
       ],
-      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+      "adaptation": "Actual isolated Rust worker owns a file and controlled thread. Clean control joins and then requires OS-visible thread settlement within2s before unchanged ResourceGuard handle/thread non-increase and zero-panic checks. Unsettled controls measure while resources remain live; timeout diagnostic precedes retained-fixture cleanup refusal."
     },
     {
       "python_id": "tests/test_migration_cleanup.py::test_timeout_trigger_is_retained_before_fatal_cleanup[reader-unsettled-idle]",
@@ -1405,7 +1412,7 @@
         "monkeypatch",
         "caplog"
       ],
-      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+      "adaptation": "Actual isolated Rust worker owns a file and controlled thread. Clean control joins and then requires OS-visible thread settlement within2s before unchanged ResourceGuard handle/thread non-increase and zero-panic checks. Unsettled controls measure while resources remain live; timeout diagnostic precedes retained-fixture cleanup refusal."
     },
     {
       "python_id": "tests/test_migration_cleanup.py::test_timeout_trigger_is_retained_before_fatal_cleanup[reader-unsettled-both]",
@@ -1430,7 +1437,7 @@
         "monkeypatch",
         "caplog"
       ],
-      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+      "adaptation": "Actual isolated Rust worker owns a file and controlled thread. Clean control joins and then requires OS-visible thread settlement within2s before unchanged ResourceGuard handle/thread non-increase and zero-panic checks. Unsettled controls measure while resources remain live; timeout diagnostic precedes retained-fixture cleanup refusal."
     },
     {
       "python_id": "tests/test_migration_cleanup.py::test_cleanup_diagnostic_is_load_bearing_against_exact_previous_runner",

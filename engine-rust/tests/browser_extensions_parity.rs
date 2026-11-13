@@ -244,6 +244,7 @@ fn portable_backend_selection_matches_original_bundle_options_and_overrides()
                 country: None,
                 relay: None,
                 binary_options: Map::new(),
+                registry: None,
                 deployment: Some(numera_core::browser::runtime::Deployment {
                     app: root.clone(),
                     environment: environment.clone(),

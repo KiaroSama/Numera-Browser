@@ -1,0 +1,80 @@
+name: Gitleaks
+
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+  workflow_dispatch:
+  schedule:
+    - cron: '7 4 * * 2'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitleaks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: Gitleaks secret scan
+    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Protect scan diagnostics before checkout
+        shell: bash
+        run: |
+          if [ "${RUNNER_DEBUG:-0}" = 1 ]; then
+            echo '::error::Disable Actions step debugging before scanning Git history.'
+            exit 1
+          fi
+      - name: Check out the complete Git history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+      - name: Verify and compile the isolated Rust security bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          sha256sum --check --strict <<'SHA256'
+          61539c78ae23ce82280cd17436f8132ad1fbab710c41edd860d4072b6c0974be  tools/security-scan/Cargo.toml
+          d5ee34a7017457ca39dc76873e76b471b2b7dc550f9e73c1f8375a05b9ae5667  tools/security-scan/Cargo.lock
+          240bb7d693a05215f2f19bce6693d55d06ac4aaf9526d96d7494959cdb60aa84  tools/security-scan/src/main.rs
+          edce532712685b304b88fbf6ea5172765dda2ff042826702b24a4a14340a57cd  tools/security-scan/src/contract.rs
+          SHA256
+          bootstrap_dir=$(mktemp -d "$RUNNER_TEMP/numera-security-bootstrap.XXXXXXXX")
+          mkdir "$bootstrap_dir/src"
+          cp tools/security-scan/Cargo.toml tools/security-scan/Cargo.lock "$bootstrap_dir/"
+          cp tools/security-scan/src/main.rs tools/security-scan/src/contract.rs "$bootstrap_dir/src/"
+          # No repository Cargo configuration, build script or application crate runs here.
+          cd "$bootstrap_dir"
+          CARGO_HOME="$RUNNER_TEMP/numera-security-cargo" cargo +1.99.1 build --locked --release --quiet
+          install -m 700 target/release/numera-security-scan "$RUNNER_TEMP/numera-security-scan"
+      - name: Scan history using verified scanner, rules and actual Git completion
+        shell: bash
+        run: |
+          set -euo pipefail
+          scanner_dir=$(mktemp -d "$RUNNER_TEMP/numera-gitleaks.XXXXXXXX")
+          trap 'rm -rf "$scanner_dir"' EXIT
+          cd "$scanner_dir"
+          curl --fail --silent --show-error --location --retry 3 --max-time 120 \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            --output scanner.tar.gz
+          curl --fail --silent --show-error --location --retry 3 --max-time 120 \
+            https://raw.githubusercontent.com/gitleaks/gitleaks/v8.30.1/config/gitleaks.toml \
+            --output official.toml
+          sha256sum --check --strict <<'SHA256'
+          551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  scanner.tar.gz
+          e163e53b9e7e8a8511e77271e2b323ed057759542a6d988258afe3a1fa329caf  official.toml
+          SHA256
+          tar -xzf scanner.tar.gz --no-same-owner gitleaks
+          chmod 700 gitleaks
+          "$RUNNER_TEMP/numera-security-scan" "$GITHUB_WORKSPACE" \
+            "$scanner_dir/gitleaks" "$scanner_dir/official.toml" \
+            "$GITHUB_WORKSPACE/scripts/ci/gitleaks.toml"

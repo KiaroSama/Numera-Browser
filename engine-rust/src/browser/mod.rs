@@ -18,6 +18,7 @@ pub mod network_probe;
 pub mod options;
 pub mod probe_grades;
 pub mod probes;
+pub mod registry;
 pub mod resources;
 pub mod runtime;
 #[cfg(feature = "native-browser")]

@@ -25,3 +25,9 @@ mod update_admission_tests;
 mod windows;
 
 pub mod file_stat;
+
+#[cfg(test)]
+use crate as core;
+#[cfg(test)]
+#[path = "../../tests/common/ownership_process.rs"]
+pub(crate) mod ownership_process;

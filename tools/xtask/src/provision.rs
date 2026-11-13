@@ -24,12 +24,36 @@ fn text<'a>(value: &'a Value, key: &str) -> Result<&'a str> {
         .ok_or_else(|| io::Error::other("Provision pin is missing").into())
 }
 
-fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
+fn diagnostic(bytes: &[u8]) -> String {
+    const LIMIT: usize = 16 * 1024;
+    // Redact before clipping so a cut through a credential cannot publish its
+    // suffix without the key/prefix that identifies it to the redactor.
+    let text =
+        numera_core::ownership::resources::redact_diagnostics(&String::from_utf8_lossy(bytes));
+    let mut start = text.len().saturating_sub(LIMIT);
+    while !text.is_char_boundary(start) {
+        start += 1;
+    }
+    let tail = text[start..]
+        .chars()
+        .filter(|character| !character.is_control() || ['\n', '\r', '\t'].contains(character))
+        .collect::<String>();
+    if start > 0 {
+        format!("[earlier output omitted]\n{tail}")
+    } else {
+        tail
+    }
+}
+
+/// Run an explicitly selected vendor tool with retained ownership and bounded,
+/// redacted failure output. No caller may infer success from cleanup alone.
+pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
     restrict_environment(command);
     command.env_remove("GH_TOKEN").env_remove("GITHUB_TOKEN");
     let mut last = Instant::now();
     let mut natural = None;
-    let result = capture::run_observed(
+    let mut partial = [Vec::new(), Vec::new()];
+    let result = capture::run_observed_streamed(
         command,
         capture::Limits {
             wall: Duration::from_secs(seconds),
@@ -50,9 +74,26 @@ fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
                 natural = natural_settlement;
             }
         },
-    )?;
+        |index, bytes| partial[index].extend_from_slice(bytes),
+    );
+    let result = match result {
+        Ok(output) => output,
+        Err(error) => {
+            eprintln!(
+                "Vendor provisioning capture failed: {error}\nCaptured stdout:\n{}\nCaptured stderr:\n{}",
+                diagnostic(&partial[0]),
+                diagnostic(&partial[1])
+            );
+            return Err(error.into());
+        }
+    };
     if result.exit != 0 || natural != Some(true) {
-        return ci::fail("Vendor provisioning command failed or left a process behind");
+        return ci::fail(format!(
+            "Vendor provisioning command failed (exit={}, natural_settlement={natural:?})\nCaptured stdout:\n{}\nCaptured stderr:\n{}",
+            result.exit,
+            diagnostic(&result.stdout),
+            diagnostic(&result.stderr)
+        ));
     }
     Ok(result)
 }
@@ -105,7 +146,11 @@ fn download(url: &str, target: &Path, expected: &str, limit: u64) -> Result<()> 
             .arg(url),
         630,
     );
-    if result.is_err() || fs::metadata(target)?.len() > limit || ci::digest(target)? != expected {
+    if let Err(error) = result {
+        fs::remove_file(target)?;
+        return Err(error);
+    }
+    if fs::metadata(target)?.len() > limit || ci::digest(target)? != expected {
         fs::remove_file(target)?;
         return ci::fail("Vendor download failed its pinned digest or size check");
     }

@@ -1,11 +1,9 @@
-use super::common;
 use numera_core::ownership::claims::{self, Claim};
 use serde_json::Value;
 
 #[test]
 fn claim_diagnostics_match_original_truth_and_display_without_changing_records()
 -> Result<(), Box<dyn std::error::Error>> {
-    let temporary = common::TempDirectory::new("claim-diagnostics")?;
     // Frozen immutable source observation; all native assertions below remain live.
     let cases: Vec<Value> = serde_json::from_str(include_str!(
         "../fixtures/characterization/claim_diagnostics_match_original_truth_and_display_without_changing_records.json"
@@ -29,6 +27,5 @@ fn claim_diagnostics_match_original_truth_and_display_without_changing_records()
             assert_eq!(record, case["input"], "Native diagnostic changed claim");
         }
     }
-    temporary.cleanup()?;
     Ok(())
 }

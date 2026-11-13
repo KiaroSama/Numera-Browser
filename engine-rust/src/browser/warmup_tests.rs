@@ -136,6 +136,7 @@ fn original_warmup_validation_presets_and_native_control_match_without_real_wait
         country: None,
         relay: None,
         binary_options: Default::default(),
+        registry: None,
         deployment: None,
     };
     let service = Warmup {

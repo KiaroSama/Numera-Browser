@@ -113,6 +113,48 @@ fn row(pid: u32, birth: u64, rss: u64, peak: u64) -> Row {
     }
 }
 fn recorder(damage: &str) -> TestResult {
+    let raw = json!({"pid":41,"token":900,"tree":{"kind":"pgid","group":41}});
+    let normalized = json!({"pid":41,"pidToken":900,"tree":{"kind":"pgid","group":41}});
+    assert_eq!(
+        memory::Owner::from_record(&raw)?,
+        memory::Owner::from_record(&normalized)?
+    );
+    let mut conflicting = normalized.clone();
+    conflicting["token"] = json!(901);
+    assert!(memory::Owner::from_record(&conflicting).is_err());
+    if damage == "None" {
+        let temp = Temp::new("ended fast command")?;
+        let binary = Path::new(env!("CARGO_BIN_EXE_numera-xtask"));
+        for _ in 0..4 {
+            let mut command = std::process::Command::new(binary);
+            command.args(["ci", "owned", "--wall", "5", "--idle", "2", "--"]);
+            if cfg!(windows) {
+                command.args(["cmd.exe", "/d", "/c", "exit", "/b", "0"]);
+            } else {
+                command.arg("true");
+            }
+            let result = ci::owned::run(
+                &temp.0,
+                &mut command,
+                ci::owned::limits(
+                    std::time::Duration::from_secs(10),
+                    std::time::Duration::from_secs(3),
+                    65536,
+                ),
+            )?;
+            assert_eq!(
+                result.command.exit,
+                0,
+                "{}",
+                String::from_utf8_lossy(&result.command.stderr)
+            );
+            assert!(
+                result.memory["snapshots"]
+                    .as_u64()
+                    .is_some_and(|count| count > 0)
+            );
+        }
+    }
     let direct = owner(41, 900);
     let sdk = owner(42, 901);
     let prior = owner(10, 800);
@@ -403,6 +445,29 @@ fn handles(failed: bool) -> TestResult {
 }
 source_cases!("tests/test_browser_memory_diagnostics.py::test_windows_memory_uses_retained_job_and_closes_process_handles",handles,[memory_handles_good=>("False",false),memory_handles_failed=>("True",true)]);
 fn joint(damage: &'static str) -> TestResult {
+    if damage == "None" {
+        let first = native::monotonic_ticks()?;
+        std::thread::yield_now();
+        assert!(native::monotonic_ticks()? >= first);
+        #[cfg(windows)]
+        {
+            let mut command = std::process::Command::new(std::env::current_exe()?);
+            command
+                .arg("--list")
+                .stdin(std::process::Stdio::null())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null());
+            let mut tree = numera_core::ownership::tree::OwnedTree::spawn(&mut command)?;
+            let first = native::joint_snapshot(&tree)?;
+            let second = native::joint_snapshot(&tree)?;
+            let closed = tree.settle(std::time::Duration::from_secs(5));
+            assert!(
+                second.started_ns >= first.finished_ns,
+                "A fresh retained-job query reset the interval clock"
+            );
+            closed?;
+        }
+    }
     let mut backend = Windows::new(damage);
     let result = native::observe_joint(&mut backend);
     if ["peak", "clock", "query"].contains(&damage) {

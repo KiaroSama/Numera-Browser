@@ -190,6 +190,9 @@ impl RuntimeLog {
         }
     }
 }
+/// Apply the same credential policy as every runtime message handler.
+pub use crate::log_redaction::redact;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -362,6 +365,3 @@ mod tests {
         Ok(())
     }
 }
-
-/// Apply the same credential policy as every runtime message handler.
-pub use crate::log_redaction::redact;

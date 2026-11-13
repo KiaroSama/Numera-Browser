@@ -9,6 +9,7 @@ fn source_runtime(root: &Path) -> io::Result<numera_core::browser::runtime::Runt
         country: Some("US".into()),
         relay: None,
         binary_options: Default::default(),
+        registry: None,
         deployment: None,
     })
 }

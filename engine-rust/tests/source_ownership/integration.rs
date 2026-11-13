@@ -18,6 +18,7 @@ fn runtime(root: &Path) -> io::Result<numera_core::browser::runtime::Runtime> {
         country: None,
         relay: None,
         binary_options: Default::default(),
+        registry: None,
         deployment: None,
     })
 }

@@ -1,4 +1,7 @@
-use crate::{devices::catalog, models::Fingerprint, python_random::PythonRandom};
+use crate::{
+    devices::{self, SeededSampler, catalog},
+    models::Fingerprint,
+};
 use serde_json::{Value, json};
 use std::{error::Error, fmt};
 
@@ -30,31 +33,35 @@ fn text(value: &Value) -> Result<&str, GenerationError> {
         .as_str()
         .ok_or(GenerationError("Device catalog text is invalid"))
 }
-fn pick(rng: &mut PythonRandom, values: &Value, weights: &Value) -> Result<Value, GenerationError> {
+fn pick(
+    rng: &mut SeededSampler,
+    values: &Value,
+    weights: &Value,
+) -> Result<Value, GenerationError> {
     let values = pool(values)?;
-    if values.is_empty() {
-        return Err(GenerationError("Device catalog pool is empty"));
-    }
-    let index = if let Some(weights) = weights
+    let weights = weights
         .as_array()
         .filter(|weights| !weights.is_empty() && weights.len() == values.len())
-    {
-        let numbers: Result<Vec<u64>, _> = weights
-            .iter()
-            .map(|w| {
-                w.as_u64()
-                    .ok_or(GenerationError("Device catalog weight is invalid"))
-            })
-            .collect();
-        let numbers = numbers?;
-        if numbers.iter().sum::<u64>() == 0 {
-            return Err(GenerationError("Device catalog weight is zero"));
-        }
-        rng.weighted(&numbers)
-    } else {
-        rng.below(values.len())
-    };
-    Ok(values[index].clone())
+        .map(|weights| {
+            weights
+                .iter()
+                .map(|weight| {
+                    weight
+                        .as_f64()
+                        .ok_or(GenerationError("Device catalog weight is invalid"))
+                })
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?;
+    devices::weighted(rng, values, weights.as_deref())
+        .cloned()
+        .map_err(|error| match error {
+            devices::SamplingError::EmptyPool => GenerationError("Device catalog pool is empty"),
+            devices::SamplingError::NonPositiveTotal => {
+                GenerationError("Device catalog weight is zero")
+            }
+            _ => GenerationError("Device catalog weight is invalid"),
+        })
 }
 
 pub fn user_agent(
@@ -102,8 +109,8 @@ pub fn generate<S: Into<serde_json::Number>>(
     let root = catalog().map_err(|_| GenerationError("Cannot parse embedded device catalog"))?;
     let d = &root["catalog"];
     let w = &d["WEIGHTS"];
-    let mut rng = PythonRandom::from_number(&seed)
-        .ok_or(GenerationError("Fingerprint seed must be an integer"))?;
+    let mut rng = SeededSampler::from_number(&seed)
+        .map_err(|_| GenerationError("Fingerprint seed must be an integer"))?;
     let os = match options.os.filter(|v| !v.is_empty()) {
         Some(os) => os.to_lowercase(),
         None if options.mobile => {
@@ -165,20 +172,8 @@ pub fn generate<S: Into<serde_json::Number>>(
             .ok_or(GenerationError("Locale catalog is empty"))?
             .clone()
     };
-    let font_pool = pool(&d["FONTS"][&os])?;
-    let mut fonts: Vec<String> = if mobile {
-        font_pool
-            .iter()
-            .map(|v| text(v).map(str::to_owned))
-            .collect::<Result<_, _>>()?
-    } else {
-        let count = 6.max(font_pool.len() - rng.below(7));
-        rng.sample_indices(font_pool.len(), count)
-            .iter()
-            .map(|&i| text(&font_pool[i]).map(str::to_owned))
-            .collect::<Result<_, _>>()?
-    };
-    fonts.sort();
+    let fonts = devices::sample_fonts(&mut rng, &os)
+        .map_err(|_| GenerationError("Device catalog font is invalid"))?;
     let (cameras, microphones, speakers) = if mobile {
         (2, 1, 1)
     } else {

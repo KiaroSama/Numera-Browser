@@ -64,6 +64,7 @@ fn cookie_http_uses_native_format_policy_and_owned_sdk() -> Result<(), Box<dyn s
             country: None,
             relay: None,
             binary_options: Default::default(),
+            registry: None,
             deployment: None,
         };
         runtime.block_on(async {

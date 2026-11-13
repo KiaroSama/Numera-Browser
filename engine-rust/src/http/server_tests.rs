@@ -20,6 +20,7 @@ fn options(root: &std::path::Path) -> Options {
             country: None,
             relay: None,
             binary_options: Default::default(),
+            registry: None,
             deployment: None,
         },
         dashboard: None,

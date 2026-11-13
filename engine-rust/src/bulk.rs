@@ -5,6 +5,7 @@ use crate::{
     proxy::Proxy,
     python_random::PythonRandom,
 };
+use num_bigint::BigInt;
 use serde_json::{Value, json};
 use std::io;
 
@@ -171,7 +172,7 @@ pub fn apply(
     Ok(changed)
 }
 
-pub struct GenerateBatch<'a, S = i64> {
+pub struct GenerateBatch<'a, S = i64, N = i64> {
     pub count: usize,
     pub seed: S,
     pub oses: &'a [String],
@@ -179,16 +180,20 @@ pub struct GenerateBatch<'a, S = i64> {
     pub chrome_versions: &'a [String],
     pub engine: &'a str,
     pub prefix: &'a str,
-    pub start: i64,
+    pub start: N,
     pub pad: usize,
     pub tags: &'a [String],
     pub mobile: bool,
 }
-pub fn generate<S: Into<serde_json::Number>>(
-    options: GenerateBatch<'_, S>,
+pub fn generate<S: Into<serde_json::Number>, N: Into<BigInt>>(
+    options: GenerateBatch<'_, S, N>,
     mut identity: impl FnMut() -> io::Result<String>,
     time: f64,
 ) -> io::Result<Vec<Profile>> {
+    if options.count == 0 {
+        return Ok(Vec::new());
+    }
+    let start = options.start.into();
     let defaults = ["windows".to_owned()];
     let oses = if options.oses.is_empty() {
         &defaults[..]
@@ -225,10 +230,7 @@ pub fn generate<S: Into<serde_json::Number>>(
             )
             .map_err(io::Error::other)?;
         }
-        let number = options
-            .start
-            .checked_add(i64::try_from(i).map_err(io::Error::other)?)
-            .ok_or_else(|| io::Error::other("Bulk name index overflow"))?;
+        let number = &start + BigInt::from(i);
         let name = format!("{}-{:0width$}", options.prefix, number, width = options.pad);
         profiles.push(Profile::from_record(&json!({"id":identity()?,"name":name,"fingerprint":fp,"engine":options.engine,"tags":options.tags,"created_at":time,"updated_at":time})).map_err(io::Error::other)?);
     }

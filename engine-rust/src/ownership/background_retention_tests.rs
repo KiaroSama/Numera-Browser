@@ -63,6 +63,4 @@ fn quarantine_keeps_actual_worker_and_adapter_until_explicit_retry()
     Ok(())
 }
 
-use crate as core;
-#[path = "../../tests/common/ownership_process.rs"]
-mod ownership_process;
+use crate::ownership::ownership_process;

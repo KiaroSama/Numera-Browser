@@ -10,7 +10,7 @@ pub mod collision;
 mod common;
 pub mod conversion;
 mod decimal;
-mod devices;
+pub mod devices;
 pub mod fingerprint;
 pub mod http;
 pub mod identity;

@@ -197,3 +197,25 @@ pub fn build(
     }
     Ok(options)
 }
+
+/// Use a registry-issued descriptor for a custom engine. Profile strings alone
+/// remain subject to the builtin-only build boundary above.
+pub fn build_registered(
+    profile: &Profile,
+    driver: &super::registry::ResolvedDriver,
+    user_data_dir: &str,
+    headless: bool,
+    extra_args: &[String],
+    extensions: &[String],
+    relay: Option<&str>,
+) -> io::Result<Value> {
+    build(
+        profile,
+        driver.family().options_backend(),
+        user_data_dir,
+        headless,
+        extra_args,
+        extensions,
+        relay,
+    )
+}

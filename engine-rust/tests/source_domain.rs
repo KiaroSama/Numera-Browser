@@ -179,3 +179,6 @@ mod importer_cases;
 mod model_policy_cases;
 #[path = "source_domain/name_contract.rs"]
 mod name_contract_cases;
+
+#[path = "common/device_sampler.rs"]
+mod device_sampler_vectors;

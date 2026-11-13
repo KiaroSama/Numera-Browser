@@ -150,5 +150,14 @@
     "stdlib_ntpath_sha256": "bf16566322f41f7052b7516fb684b2d64a437b39f5bbd21731b1bda1697d1a2e",
     "privacy": "No actual account names, home paths or account contents are stored. Windows paths are synthetic; the Unix observation stores only the equality/refusal shape.",
     "runtime": "Rust tests call native account lookup and CLI settings services; no observer interpreter is invoked."
+  },
+  "bulk_integer_contract": {
+    "file": "engine-rust/tests/fixtures/cli-characterization/bulk-integer-contract.json",
+    "sha256": "a6e69f6be28c74b264d94c6f7129622c9d06a152e36c31eb3c72f5b79cd11568",
+    "bytes": 10574,
+    "source": "Immutable13b numera.bulk.generate_profiles, activated with exact baseline/source tree verification.",
+    "observer_runtime": "Python3.13.15; temporary observation only.",
+    "normalization": "Only generated UUID identities are replaced with fixtureN and wall-clock creation/update times with1000.0; all fingerprint/name/profile fields and refusal type/message are retained.",
+    "runtime": "Existing Rust bulk test calls actual CLI parsing, application service, repository and pure generator; no interpreter is invoked."
   }
 }

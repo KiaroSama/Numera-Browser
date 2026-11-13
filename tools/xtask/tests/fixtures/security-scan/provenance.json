@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "purpose": "Immutable public upstream scanner configuration used only as offline native contract-test data.",
+  "version": "8.30.1",
+  "source": "https://github.com/gitleaks/gitleaks/blob/v8.30.1/config/gitleaks.toml",
+  "sha256": "e163e53b9e7e8a8511e77271e2b323ed057759542a6d988258afe3a1fa329caf",
+  "bytes": 97731,
+  "license": "MIT; upstream LICENSE included.",
+  "execution": "No upstream code or observer runtime is executed by the pure-contract test.",
+  "encoding": "Deterministic gzip; Rust tests verify both compressed bytes and exact decoded official checksum. The public upstream rule corpus contains a detector signature which matches itself; no scanner exception or changed bootstrap pin is used.",
+  "compressed_sha256": "da1838bd7cedb1bbd297163435c1675e777babb98ddf641a653f309733bd1fd1",
+  "compressed_bytes": 21132
+}

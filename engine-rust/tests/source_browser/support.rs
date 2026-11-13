@@ -124,6 +124,7 @@ pub fn runtime(root: &Path) -> browser::runtime::Runtime {
         country: None,
         relay: None,
         binary_options: serde_json::Map::new(),
+        registry: None,
         deployment: None,
     }
 }

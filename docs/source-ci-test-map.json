@@ -16,7 +16,7 @@
     "reported_passed": 643,
     "failed": 0,
     "ignored": 0,
-    "log_sha256": "7a4955f16d2664eabb368d2f29b7cfebbdeeaeaae10bbe27b0a9d59dfbff4fec",
+    "log_sha256": "62a9947e6ef8a5af23d00ca09273ebd80bc9b92440b8bcdf2e88b0735406a38e",
     "command": "cargo test --locked --manifest-path tools/xtask/Cargo.toml --test source_ci -- --test-threads=2",
     "hosted_windows_macos": "required; not claimed by this local proof"
   },

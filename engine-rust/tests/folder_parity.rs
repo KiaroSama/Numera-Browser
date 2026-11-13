@@ -6,11 +6,7 @@ mod common;
 #[test]
 fn json_filename_selection_matches_original_storage_consumers()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::{
-        ownership::capture,
-        storage::{dashboard::DashboardStore, first_run},
-    };
-    use std::{path::Path, process::Command, time::Duration};
+    use numera_core::storage::{dashboard::DashboardStore, first_run};
 
     let temporary = common::TempDirectory::new("json-filename-selection")?;
     // Frozen immutable source observation; all native assertions below remain live.
@@ -72,9 +68,6 @@ fn json_filename_selection_matches_original_storage_consumers()
 #[test]
 fn malformed_folder_text_refuses_without_replacing_source_bytes()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::ownership::capture;
-    use std::{path::Path, process::Command, time::Duration};
-
     let temporary = common::TempDirectory::new("folder-text")?;
     // Frozen immutable source observation; all native assertions below remain live.
     let cases: Vec<Value> = serde_json::from_str(include_str!(
@@ -140,9 +133,6 @@ fn malformed_folder_text_refuses_without_replacing_source_bytes()
 
 #[test]
 fn folder_name_whitespace_matches_original_operations() -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::ownership::capture;
-    use std::{path::Path, process::Command, time::Duration};
-
     let temporary = common::TempDirectory::new("folder-whitespace")?;
     // Frozen immutable source observation; all native assertions below remain live.
     let cases: Vec<Value> = serde_json::from_str(include_str!(

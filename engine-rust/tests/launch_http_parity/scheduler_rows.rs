@@ -37,6 +37,7 @@ fn skipped_malformed_schedule_ids_do_not_abort_later_occurrences()
                 country: None,
                 relay: None,
                 binary_options: Default::default(),
+                registry: None,
                 deployment: None,
             },
         )?;

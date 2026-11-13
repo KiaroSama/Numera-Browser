@@ -60,6 +60,7 @@ fn launch_optional_body_and_refusals_match_original_before_native_activation()
             country: None,
             relay: None,
             binary_options: Default::default(),
+            registry: None,
             deployment: None,
         };
         let result = runtime.block_on(async {
@@ -161,6 +162,7 @@ fn launch_optional_body_and_refusals_match_original_before_native_activation()
                     country: None,
                     relay: None,
                     binary_options: Default::default(),
+                    registry: None,
                     deployment: None,
                 }),
             )
@@ -251,6 +253,7 @@ fn warmup_http(
                     country: None,
                     relay: None,
                     binary_options: Default::default(),
+                    registry: None,
                     deployment: None,
                 }),
             )
@@ -336,6 +339,7 @@ fn warmup_http(
                             country: None,
                             relay: None,
                             binary_options: Default::default(),
+                            registry: None,
                             deployment: None,
                         },
                     )?;
@@ -424,6 +428,7 @@ fn attached_lifetime(
                 country: None,
                 relay: None,
                 binary_options: Default::default(),
+                registry: None,
                 deployment: None,
             }),
         )

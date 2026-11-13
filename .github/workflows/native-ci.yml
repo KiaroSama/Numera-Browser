@@ -54,6 +54,14 @@ jobs:
       - name: Verify real Windows native signing with an ephemeral fixture certificate
         if: runner.os == 'Windows'
         run: cargo xtask ci counted-tests 1 build/windows-native-signing.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_ci release_identity::c000_both_freezers_embed_identity_and_windows_uses_approved_icon -- --exact --test-threads=1 --color=never
+      - name: Preserve the actual Windows native signing test report
+        if: always() && runner.os == 'Windows'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: windows-native-signing-${{ github.sha }}
+          path: build/windows-native-signing*
+          if-no-files-found: error
+          retention-days: 7
       - name: Install Linux desktop bundling libraries
         if: runner.os == 'Linux'
         run: |
@@ -258,11 +266,13 @@ jobs:
           curl --fail --location --connect-timeout 10 --max-time 60 https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz --output "$directory/download.tar.gz"
           echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $directory/download.tar.gz" | sha256sum --check --strict
           tar -xzf "$directory/download.tar.gz" -C "$directory" gitleaks
-          curl --fail --location --connect-timeout 10 --max-time 60 https://raw.githubusercontent.com/gitleaks/gitleaks/v8.30.1/config/gitleaks.toml --output "$directory/official.toml"
+          curl --fail --location --connect-timeout 10 --max-time 60 https://raw.githubusercontent.com/gitleaks/gitleaks/v8.30.1/config/gitleaks.toml --output "$directory/official-original.toml"
+          cp "$directory/official-original.toml" "$directory/official.toml"
       - run: cargo xtask ci owned --wall 60 --idle 30 -- cargo xtask ci secret-config "$RUNNER_TEMP/gitleaks-8.30.1/official.toml" "$RUNNER_TEMP/gitleaks-8.30.1/strict.toml"
       - run: cargo xtask ci owned --wall 60 --idle 30 -- cargo xtask ci stage-tracked "$RUNNER_TEMP/numera-tracked-scan"
       - run: cargo xtask ci owned --wall 300 --idle 120 -- "$RUNNER_TEMP/gitleaks-8.30.1/gitleaks" dir "$RUNNER_TEMP/numera-tracked-scan" --config "$RUNNER_TEMP/gitleaks-8.30.1/strict.toml" --redact=100 --ignore-gitleaks-allow --gitleaks-ignore-path "$RUNNER_TEMP/no-secret-exclusions" --timeout 240 --no-banner
-      - run: cargo xtask ci owned --wall 300 --idle 120 -- "$RUNNER_TEMP/gitleaks-8.30.1/gitleaks" git . --log-opts=--all --config "$RUNNER_TEMP/gitleaks-8.30.1/strict.toml" --redact=100 --ignore-gitleaks-allow --gitleaks-ignore-path "$RUNNER_TEMP/no-secret-exclusions" --timeout 240 --no-banner
+      - name: Require complete history and the actual Git producer verdict
+        run: env GITHUB_EVENT_NAME=workflow_dispatch cargo run --manifest-path tools/security-scan/Cargo.toml --locked -- "$GITHUB_WORKSPACE" "$RUNNER_TEMP/gitleaks-8.30.1/gitleaks" "$RUNNER_TEMP/gitleaks-8.30.1/official-original.toml" "$GITHUB_WORKSPACE/scripts/ci/gitleaks.toml"
 
   dashboard:
     uses: ./.github/workflows/dashboard.yml
