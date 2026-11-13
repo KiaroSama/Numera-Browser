@@ -22,17 +22,21 @@ runs:
       shell: bash
       run: |
         cargo xtask ci owned --wall 960 --idle 330 -- cargo xtask build-candidate build/native-candidate --release
-        cargo xtask ci owned --wall 960 --idle 330 -- cargo build --manifest-path engine-rust/Cargo.toml --locked --release --no-default-features --features native-product,native-browser --bin numera-engine --bin numera-browser-runtime
+        cargo xtask ci owned --wall 960 --idle 330 -- cargo xtask ci product-compile
         cargo xtask ci owned --wall 120 --idle 60 -- cargo xtask ci reference-prepare "$RUNNER_TEMP/numera-native-checkpoint" "$NUMERA_BROWSER_RUNTIME"
         cargo xtask ci owned --wall 960 --idle 330 -- cargo xtask ci reference-build "$RUNNER_TEMP/numera-native-checkpoint" "$RUNNER_TEMP/numera-native-checkpoint.receipt.json"
     - name: Real relocated application CLI MCP HTTP and browser lifecycle
       shell: bash
-      run: cargo xtask ci owned --wall 600 --idle 150 -- cargo xtask ci acceptance "$NUMERA_NATIVE_CANDIDATE" "$RUNNER_TEMP/native-application-acceptance"
+      run: cargo xtask ci owned --wall 600 --idle 150 -- cargo xtask ci acceptance "$NUMERA_NATIVE_ENGINE" "$RUNNER_TEMP/native-application-acceptance"
+    - name: Require all five native entry workloads on both ownership platforms
+      if: inputs.engine == 'playwright'
+      shell: bash
+      run: cargo xtask ci owned --wall 180 --idle 90 -- cargo xtask ci entry-benchmark "$RUNNER_TEMP/numera-native-checkpoint.target/release/numera-native-candidate${{ runner.os == 'Windows' && '.exe' || '' }}" "$NUMERA_NATIVE_ENGINE" "$NUMERA_BROWSER_RUNTIME" build/native-candidate/entry-performance.json
     - name: Real browser performance against the immutable native checkpoint
       shell: bash
       env:
         CANDIDATE_ENGINE: ${{ inputs.engine }}
-      run: cargo xtask ci owned --wall 600 --idle 150 -- cargo xtask ci browser-benchmark "$RUNNER_TEMP/numera-native-checkpoint.target/release/numera-native-candidate${{ runner.os == 'Windows' && '.exe' || '' }}" "$NUMERA_NATIVE_CANDIDATE" "$NUMERA_BROWSER_RUNTIME" build/native-candidate/browser-performance.json "$CANDIDATE_ENGINE"
+      run: cargo xtask ci owned --wall 600 --idle 150 -- cargo xtask ci browser-benchmark "$RUNNER_TEMP/numera-native-checkpoint.target/release/numera-native-candidate${{ runner.os == 'Windows' && '.exe' || '' }}" "$NUMERA_NATIVE_ENGINE" "$NUMERA_BROWSER_RUNTIME" build/native-candidate/browser-performance.json "$CANDIDATE_ENGINE"
     - name: Preserve exact-source browser measurement and checkpoint bridge evidence
       if: always()
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -40,6 +44,7 @@ runs:
         name: browser-performance-${{ runner.os }}-${{ inputs.engine }}-${{ github.sha }}
         path: |
           build/native-candidate/browser-performance.json
+          build/native-candidate/entry-performance.json
           ${{ runner.temp }}/numera-native-checkpoint.receipt.json
         if-no-files-found: error
         retention-days: 7

@@ -589,6 +589,7 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
                 country: None,
                 relay: None,
                 binary_options: Default::default(),
+                registry: None,
                 deployment: None,
             };
             let environment = numera_core::native_environment::Environment {

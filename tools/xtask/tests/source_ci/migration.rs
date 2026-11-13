@@ -132,6 +132,7 @@ source_test!(
         let source = occurrence_fixture()?;
         let valid = complete(&temp, &source)?;
         assert!(migration::coverage(&temp.0, &source, &valid)?.is_empty());
+        exact_inventory_controls()?;
         for fault in [
             "missing",
             "duplicate",
@@ -159,6 +160,64 @@ source_test!(
         Ok(())
     }
 );
+fn exact_inventory_controls() -> TestResult {
+    let baseline = ci::decode(&fs::read(root().join("docs/rust-test-baseline.json"))?)?;
+    let mut paths = fs::read_dir(root().join("docs"))?
+        .map(|entry| entry.map(|entry| entry.path()))
+        .collect::<io::Result<Vec<_>>>()?;
+    paths.retain(|path| {
+        path.file_name()
+            .and_then(|v| v.to_str())
+            .is_some_and(|v| v.starts_with("source-") && v.ends_with("-test-map.json"))
+    });
+    paths.sort();
+    let maps = paths
+        .iter()
+        .map(|path| ci::decode(&fs::read(path)?))
+        .collect::<ci::Result<Vec<_>>>()?;
+    ci::coverage_inventory::validate_documents(&root(), &baseline, &maps)?;
+    let selected = maps
+        .iter()
+        .position(|map| map["suite"] == "source_ci")
+        .ok_or("CI source map missing")?;
+    for damage in ["missing", "duplicate", "kind", "platform"] {
+        let mut changed = maps.clone();
+        let map = &mut changed[selected];
+        match damage {
+            "missing" => {
+                let removed = map["cases"].as_array_mut().expect("cases").remove(0);
+                let count = map["source_count"].as_u64().expect("count") - 1;
+                map["source_count"] = json!(count);
+                map["implemented_count"] = json!(count);
+                let kind = removed["original_type"].as_str().expect("kind");
+                let count = map["case_types"][kind].as_u64().expect("kind count") - 1;
+                map["case_types"][kind] = json!(count);
+            }
+            "duplicate" => map["cases"][1] = map["cases"][0].clone(),
+            "kind" => map["cases"][0]["original_type"] = json!("standard"),
+            _ => map["cases"][0]["native_platforms"] = json!(["windows"]),
+        }
+        assert!(
+            ci::coverage_inventory::validate_documents(&root(), &baseline, &changed).is_err(),
+            "{damage}"
+        );
+    }
+    let expected = BTreeSet::from(["exact_original_case".into()]);
+    let valid = "running 1 test\ntest exact_original_case ... ok\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n";
+    assert_eq!(
+        ci::coverage_inventory::validate_expected_output(&expected, valid, 0)?,
+        1
+    );
+    for damaged in [
+        valid.replace("test exact_original_case ... ok\n", ""),
+        valid.replace("exact_original_case", "invented_replacement"),
+        valid.replace(" ... ok", " ... ignored"),
+        valid.replace("running 1 test", "running 0 tests"),
+    ] {
+        assert!(ci::coverage_inventory::validate_expected_output(&expected, &damaged, 0).is_err());
+    }
+    Ok(())
+}
 source_test!(
     migration_frozen_ledger,
     "tests/test_migration_gates.py::test_mapped_occurrences_retain_frozen_inventory_and_block_selection",
@@ -528,6 +587,64 @@ source_test!(
         Ok(())
     }
 );
+fn entry_creation_fixture(
+    temp: &Temp,
+    settings: &Value,
+    profile: &Value,
+    dashboard: &Value,
+    newline: &str,
+    lock_content: &[u8],
+    extra_lock: bool,
+) -> ci::Result<Value> {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let number = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let template = temp.0.join(format!("template-{number}"));
+    fs::create_dir(&template)?;
+    let initial = json!({"default_engine":"playwright","future":{"items":[42,true]}});
+    fs::write(
+        template.join("config.json"),
+        serde_json::to_string_pretty(&initial)?.replace('\n', "\r\n"),
+    )?;
+    let workspace = temp.0.join(format!("pair-{number}"));
+    fs::create_dir(&workspace)?;
+    let (_, payload) = ci::entry_benchmark::observation(
+        &template,
+        &workspace,
+        ci::entry_benchmark::Scenario::Create,
+        &Value::Null,
+        |data, _| {
+            fs::write(
+                data.join("config.json"),
+                serde_json::to_string_pretty(settings)?.replace('\n', newline),
+            )?;
+            for (directory, record) in [("profiles", profile), ("dashboard", dashboard)] {
+                let path = data.join(directory).join("new.json");
+                fs::create_dir_all(path.parent().expect("parent"))?;
+                fs::write(&path, record.to_string())?;
+                let lock = numera_core::storage::locks::DataLock::for_file(&path)?;
+                fs::create_dir_all(lock.path().parent().expect("lock parent"))?;
+                fs::write(lock.path(), lock_content)?;
+                if extra_lock {
+                    fs::write(
+                        lock.path()
+                            .parent()
+                            .expect("lock parent")
+                            .join("unrelated.lock"),
+                        b"",
+                    )?;
+                }
+            }
+            Ok(browser::Sample {
+                elapsed_ns: 1,
+                metric: "fixture".into(),
+                bytes: 1,
+                payload: json!({"ok":true,"profile":profile}),
+                diagnostics: None,
+            })
+        },
+    )?;
+    Ok(payload)
+}
 source_test!(
     migration_creation_content,
     "tests/test_migration_gates.py::test_benchmark_creation_compares_new_dashboard_content_not_just_existence",
@@ -537,21 +654,12 @@ source_test!(
         let profile =
             json!({"id":"new","name":"Measured creation","created_at":1000.0,"updated_at":1001.0});
         let dashboard = json!({"id":"new","name":"Measured creation","_rev":1,"_created":1000.0});
-        temp.write(
-            "config.json",
-            serde_json::to_string_pretty(&settings)?
-                .replace('\n', "\r\n")
-                .as_bytes(),
-        )?;
-        let path = temp.write("profiles/new.json", profile.to_string().as_bytes())?;
-        temp.write("dashboard/new.json", dashboard.to_string().as_bytes())?;
-        let payload = json!({"ok":true,"profile":profile});
-        let expected = migration::creation(&temp.0, &settings, &payload)?;
-        temp.write(
-            "config.json",
-            serde_json::to_vec_pretty(&settings)?.as_slice(),
-        )?;
-        assert_eq!(migration::creation(&temp.0, &settings, &payload)?, expected);
+        let expected =
+            entry_creation_fixture(&temp, &settings, &profile, &dashboard, "\n", b"", false)?;
+        assert_eq!(
+            entry_creation_fixture(&temp, &settings, &profile, &dashboard, "\r\n", b"", false)?,
+            expected
+        );
         for changed in [
             json!({"default_engine":"camoufox","future":{"items":[42,true]}}),
             json!({"default_engine":"playwright","future":{"items":[42,1]}}),
@@ -559,30 +667,38 @@ source_test!(
             json!({"default_engine":"playwright","future":{"items":[42,true]},"unexpected":true}),
             Value::Null,
         ] {
-            fs::write(temp.0.join("config.json"), changed.to_string())?;
-            assert!(migration::creation(&temp.0, &settings, &payload).is_err());
+            assert!(
+                entry_creation_fixture(&temp, &changed, &profile, &dashboard, "\n", b"", false)
+                    .is_err()
+            );
         }
-        fs::write(temp.0.join("config.json"), settings.to_string())?;
         let mut changed = dashboard.clone();
         changed["name"] = json!("lost identity");
-        fs::write(temp.0.join("dashboard/new.json"), changed.to_string())?;
-        assert!(migration::creation(&temp.0, &settings, &payload).is_err());
-        fs::write(temp.0.join("dashboard/new.json"), b"{}")?;
-        assert!(migration::creation(&temp.0, &settings, &payload).is_err());
-        fs::write(temp.0.join("dashboard/new.json"), dashboard.to_string())?;
-        let lock = temp.write(
-            &format!(
-                "profiles/.locks/new.json.{}.lock",
-                &ci::sha(path.canonicalize()?.to_string_lossy().as_bytes())[..16]
-            ),
-            b"",
-        )?;
-        migration::creation(&temp.0, &settings, &payload)?;
-        fs::write(&lock, b"not bookkeeping")?;
-        assert!(migration::creation(&temp.0, &settings, &payload).is_err());
-        fs::write(lock, b"")?;
-        temp.write("profiles/.locks/unrelated.lock", b"")?;
-        assert!(migration::creation(&temp.0, &settings, &payload).is_err());
+        assert_ne!(
+            entry_creation_fixture(&temp, &settings, &profile, &changed, "\n", b"", false)?,
+            expected,
+            "Benchmark discarded new dashboard fields"
+        );
+        assert!(
+            entry_creation_fixture(&temp, &settings, &profile, &json!({}), "\n", b"", false)
+                .is_err()
+        );
+        assert!(
+            entry_creation_fixture(
+                &temp,
+                &settings,
+                &profile,
+                &dashboard,
+                "\n",
+                b"not bookkeeping",
+                false
+            )
+            .is_err()
+        );
+        assert!(
+            entry_creation_fixture(&temp, &settings, &profile, &dashboard, "\n", b"", true)
+                .is_err()
+        );
         Ok(())
     }
 );

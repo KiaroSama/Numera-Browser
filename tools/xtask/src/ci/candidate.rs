@@ -7,6 +7,20 @@ use std::{
     path::{Path, PathBuf},
 };
 pub const BINARY: &str = "numera-native-candidate";
+/// Cargo emits ordinary Windows paths while fs::canonicalize may return the
+/// verbatim extended prefix. Compare existing source identities using the OS.
+pub fn same_path(left: &Path, right: &Path) -> bool {
+    match (left.canonicalize(), right.canonicalize()) {
+        (Ok(left), Ok(right)) => left == right,
+        _ => left == right,
+    }
+}
+pub fn within_path(path: &Path, root: &Path) -> bool {
+    match (path.canonicalize(), root.canonicalize()) {
+        (Ok(path), Ok(root)) => path.starts_with(root),
+        _ => path.starts_with(root),
+    }
+}
 pub fn targets(metadata: &Value, root: &Path) -> Result<()> {
     let packages = metadata["packages"]
         .as_array()
@@ -59,8 +73,9 @@ pub fn targets(metadata: &Value, root: &Path) -> Result<()> {
         if !seen.insert(name)
             || target["required-features"] != serde_json::json!([feature])
             || target["test"] != false
-            || target["src_path"].as_str().map(Path::new)
-                != Some(root.join("engine-rust").join(source).as_path())
+            || !target["src_path"].as_str().is_some_and(|path| {
+                same_path(Path::new(path), &root.join("engine-rust").join(source))
+            })
         {
             return fail(
                 "Candidate target must remain explicit, source-bound and outside default tests",
@@ -73,11 +88,28 @@ pub fn targets(metadata: &Value, root: &Path) -> Result<()> {
     Ok(())
 }
 pub fn artifact(root: &Path, report: &[u8], release: bool) -> Result<PathBuf> {
-    let mut found = Vec::new();
-    let mut finished = None;
     let target = std::env::var_os("CARGO_TARGET_DIR")
         .map(PathBuf::from)
+        .map(|path| {
+            if path.is_absolute() {
+                path
+            } else {
+                root.join(path)
+            }
+        })
         .unwrap_or_else(|| root.join("engine-rust/target"));
+    artifact_in_target(root, report, release, &target)
+}
+/// Explicit Cargo target identity also supports scoped test fixtures without
+/// mutating the environment of a parallel native test harness.
+pub fn artifact_in_target(
+    root: &Path,
+    report: &[u8],
+    release: bool,
+    target: &Path,
+) -> Result<PathBuf> {
+    let mut found = Vec::new();
+    let mut finished = None;
     for line in report
         .split(|byte| *byte == b'\n')
         .filter(|line| !line.is_empty())
@@ -95,16 +127,16 @@ pub fn artifact(root: &Path, report: &[u8], release: bool) -> Result<PathBuf> {
                     .as_str()
                     .ok_or("Candidate executable missing")?,
             );
-            if value["manifest_path"].as_str().map(Path::new)
-                != Some(root.join("engine-rust/Cargo.toml").as_path())
-                || !value["target"]["kind"]
-                    .as_array()
-                    .is_some_and(|kinds| kinds.iter().any(|kind| kind == "bin"))
+            if !value["manifest_path"].as_str().is_some_and(|path| {
+                same_path(Path::new(path), &root.join("engine-rust/Cargo.toml"))
+            }) || !value["target"]["kind"]
+                .as_array()
+                .is_some_and(|kinds| kinds.iter().any(|kind| kind == "bin"))
                 || !value["features"].as_array().is_some_and(|features| {
                     features.iter().any(|feature| feature == "native-candidate")
                 })
                 || value["profile"]["test"] != false
-                || !path.starts_with(&target)
+                || !within_path(&path, target)
             {
                 return fail("Candidate artifact is not the enabled current source executable");
             }

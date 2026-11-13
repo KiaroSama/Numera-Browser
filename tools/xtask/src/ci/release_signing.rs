@@ -219,13 +219,21 @@ pub fn retry_tool_cleanup() -> io::Result<()> {
     Ok(())
 }
 pub fn execute(request: &ToolRequest) -> io::Result<ToolOutput> {
+    execute_bounded(request, 2 * 1024 * 1024)
+}
+/// The same retained process boundary with a narrower caller output budget.
+pub fn execute_bounded(request: &ToolRequest, output_bytes: usize) -> io::Result<ToolOutput> {
     use numera_core::ownership::{capture::Pipe, tree::OwnedTree};
     use std::{
         process::{Command, Stdio},
         time::Instant,
     };
     retry_tool_cleanup()?;
-    if request.input.len() > 4096 || request.seconds == 0 {
+    if request.input.len() > 4096
+        || request.seconds == 0
+        || output_bytes == 0
+        || output_bytes > 2 * 1024 * 1024
+    {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             "Signing input or deadline exceeds bound",
@@ -286,7 +294,7 @@ pub fn execute(request: &ToolRequest) -> io::Result<ToolOutput> {
                     match pipe.available(&mut bytes)? {
                         Some(0) => *slot = None,
                         Some(count) => {
-                            if outputs[0].len() + outputs[1].len() + count > 2 * 1024 * 1024 {
+                            if outputs[0].len() + outputs[1].len() + count > output_bytes {
                                 return Err(io::Error::other("Signing output exceeds bound"));
                             }
                             outputs[index].extend_from_slice(&bytes[..count]);

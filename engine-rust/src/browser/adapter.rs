@@ -476,6 +476,26 @@ impl Adapter {
                 "Unknown browser backend",
             ));
         }
+        self.open_context(backend, options, scripts, cdp_policy, budget)
+    }
+    pub(crate) fn open_registered(
+        &mut self,
+        driver: &super::registry::ResolvedDriver,
+        options: Map<String, Value>,
+        scripts: Vec<String>,
+        cdp_policy: Option<Value>,
+        budget: Duration,
+    ) -> io::Result<()> {
+        self.open_context(driver.wire_backend(), options, scripts, cdp_policy, budget)
+    }
+    fn open_context(
+        &mut self,
+        backend: &str,
+        options: Map<String, Value>,
+        scripts: Vec<String>,
+        cdp_policy: Option<Value>,
+        budget: Duration,
+    ) -> io::Result<()> {
         if self.metadata["backends"][backend]["installed"] != true {
             return Err(io::Error::new(
                 io::ErrorKind::NotFound,

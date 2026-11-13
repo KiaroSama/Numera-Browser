@@ -3,6 +3,8 @@ use serde_json::{Value, json};
 #[path = "cli_characterization/mod.rs"]
 mod cli_characterization;
 mod common;
+#[path = "bulk_parity/integers.rs"]
+mod integers;
 #[path = "bulk_parity/selection.rs"]
 mod selection;
 fn strings(value: &Value) -> Vec<String> {
@@ -16,6 +18,7 @@ fn strings(value: &Value) -> Vec<String> {
 
 #[test]
 fn bulk_generation_patch_and_selection_match_original() -> Result<(), Box<dyn std::error::Error>> {
+    integers::check()?;
     let root = common::TempDirectory::new("bulk-source")?;
     let document = cli_characterization::load("bulk_parity", root.path())?;
 

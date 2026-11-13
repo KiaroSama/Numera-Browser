@@ -24,6 +24,7 @@ source_test!(
     test_builtin_engines_registered,
     "tests/test_drivers.py::test_builtin_engines_registered",
     {
+        registered_drivers::registration_and_override();
         let m = browser::sdk::metadata();
         for n in ["playwright", "patchright", "camoufox"] {
             assert!(m["backends"].get(n).is_some());
@@ -34,6 +35,7 @@ source_test!(
     test_availability_map_covers_all,
     "tests/test_drivers.py::test_availability_map_covers_all",
     {
+        registered_drivers::availability();
         let m = browser::sdk::metadata();
         assert_eq!(
             m["backends"]
@@ -60,6 +62,7 @@ source_test!(
     test_unknown_engine_raises,
     "tests/test_drivers.py::test_unknown_engine_raises",
     {
+        registered_drivers::unknown();
         let e = browser::options::build(
             &profile(),
             "does-not-exist",
@@ -77,6 +80,7 @@ source_test!(
     test_uninstalled_engine_raises_with_hint,
     "tests/test_drivers.py::test_uninstalled_engine_raises_with_hint",
     {
+        registered_drivers::failed_handshake();
         let d = fresh();
         let mut c = support::worker(d.path());
         c.env("NUMERA_CAMOUFOX_DRIVER", d.path().join("missing-camoufox"));

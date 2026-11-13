@@ -91,6 +91,7 @@ fn rpc(mode: &str, config: Value) -> io::Result<()> {
     let mut seen = Vec::<Value>::new();
     let mut tab = 0;
     let mut server = None;
+    let mut registered_child: Option<std::process::Child> = None;
     let mut rows = io::stdin().lock().lines();
     while let Some(line) = rows.next() {
         let request: Value = serde_json::from_str(&line?)?;
@@ -115,6 +116,24 @@ fn rpc(mode: &str, config: Value) -> io::Result<()> {
         if config["trace_operations"] == true {
             seen.push(json!(operation));
         }
+        if mode == "registered" && operation == "hello" && config["fail_hello"] == true {
+            let root = Path::new(
+                config["root"]
+                    .as_str()
+                    .ok_or_else(|| io::Error::other("registered root absent"))?,
+            );
+            let child = std::process::Command::new(std::env::current_exe()?)
+                .arg("wait")
+                .stdin(std::process::Stdio::null())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn()?;
+            fs::write(root.join("registered-child"), child.id().to_string())?;
+            // Deliberately leave the real child alive after this malformed hello.
+            // The native controller, rather than fixture teardown, must end it.
+            emit(&json!({"protocol":2,"id":request["id"],"ok":true,"result":{}}))?;
+            return Ok(());
+        }
         let result = match operation {
             "hello" => {
                 if mode == "cookies" {
@@ -125,6 +144,29 @@ fn rpc(mode: &str, config: Value) -> io::Result<()> {
                 config.get("metadata").cloned().unwrap_or_else(||json!({"backends":{"playwright":{"installed":true},"patchright":{"installed":true},"camoufox":{"installed":true},"cloak":{"installed":true}}}))
             }
             "open" => {
+                if mode == "registered" {
+                    let root = Path::new(
+                        config["root"]
+                            .as_str()
+                            .ok_or_else(|| io::Error::other("registered root absent"))?,
+                    );
+                    let id = config["profile"]
+                        .as_str()
+                        .ok_or_else(|| io::Error::other("registered profile absent"))?;
+                    if !root.join("sessions").join(format!("{id}.json")).is_file() {
+                        return Err(io::Error::other("registered open preceded its claim"));
+                    }
+                    fs::write(root.join("registered-claim-before-open"), b"published")?;
+                    let child = std::process::Command::new(std::env::current_exe()?)
+                        .arg("wait")
+                        .stdin(std::process::Stdio::null())
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
+                        .spawn()?;
+                    fs::write(root.join("registered-child"), child.id().to_string())?;
+                    registered_child = Some(child);
+                }
+
                 if let Some(path) = present(&config, "headless_capture") {
                     write(Some(&path), &request["options"]["headless"])?;
                 }
@@ -203,6 +245,11 @@ fn rpc(mode: &str, config: Value) -> io::Result<()> {
                 json!({"evaluated":true,"value":config.get("evaluation").cloned().unwrap_or_else(||if request["argument"].is_null(){json!("fixture.test")}else{json!(["https://fixture.test/deeper"])}) })
             }
             "close" => {
+                if let Some(mut child) = registered_child.take() {
+                    let _ = child.kill();
+                    child.wait()?;
+                }
+
                 if mode == "cookies" {
                     seen.push(json!({"operation":"close"}));
                 } else if mode == "cli" {
@@ -250,10 +297,14 @@ fn main() -> io::Result<()> {
     let args = std::env::args_os().skip(1).collect::<Vec<_>>();
     let own_config = std::env::current_exe()?.with_extension("fixture.json");
     if own_config.is_file() {
-        let config: Value = serde_json::from_slice(&fs::read(own_config)?)?;
+        let config: Value = serde_json::from_slice(&fs::read(&own_config)?)?;
         if http_process_fixture::dispatch(&config, &args)? {
             return Ok(());
         }
+    }
+    if args.first().is_some_and(|arg| arg == "--metadata") {
+        let config: Value = serde_json::from_slice(&fs::read(&own_config)?)?;
+        return emit(&config["metadata"]);
     }
     let (mode, config) = if let Some(mode) = args.first() {
         let mode = mode

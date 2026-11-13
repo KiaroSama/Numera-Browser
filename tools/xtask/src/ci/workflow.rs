@@ -149,6 +149,7 @@ pub fn ordered(steps: &Value, earlier: &[&str], later: &str) -> Result<()> {
     Ok(())
 }
 pub fn coverage(root: &Path) -> Result<()> {
+    super::coverage_inventory::validate(root)?;
     let native = parse(&fs::read_to_string(
         root.join(".github/workflows/native-ci.yml"),
     )?)?;

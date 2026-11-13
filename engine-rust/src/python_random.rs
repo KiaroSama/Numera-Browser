@@ -107,28 +107,22 @@ impl PythonRandom {
     }
 
     pub(crate) fn below(&mut self, n: usize) -> usize {
-        // All callers are bounded device pools, never attacker-controlled lengths.
-        debug_assert!(n > 0 && n <= u32::MAX as usize);
+        debug_assert!(n > 0);
         let bits = usize::BITS - n.leading_zeros();
         loop {
-            let value = (self.word() >> (32 - bits)) as usize;
+            let value = if bits <= 32 {
+                (self.word() >> (32 - bits)) as usize
+            } else {
+                // Python getrandbits fills its least-significant 32-bit word
+                // first; only the final word is shifted for the remaining bits.
+                let low = u64::from(self.word());
+                let high = u64::from(self.word() >> (64 - bits));
+                (low | (high << 32)) as usize
+            };
             if value < n {
                 return value;
             }
         }
-    }
-
-    pub(crate) fn weighted(&mut self, weights: &[u64]) -> usize {
-        let total: u64 = weights.iter().sum();
-        let value = self.random() * total as f64;
-        let mut cumulative = 0;
-        for (i, weight) in weights.iter().enumerate() {
-            cumulative += weight;
-            if value < cumulative as f64 {
-                return i;
-            }
-        }
-        weights.len() - 1
     }
 
     pub(crate) fn sample_indices(&mut self, n: usize, k: usize) -> Vec<usize> {

@@ -158,6 +158,7 @@ fn server_scheduler_errors_reach_the_runtime_file_without_starting_an_sdk()
             country: None,
             relay: None,
             binary_options: Default::default(),
+            registry: None,
             deployment: None,
         },
         dashboard: None,
@@ -236,6 +237,7 @@ fn serve_verbose_matches_original_debug_admission_through_cli_dispatch()
                 country: None,
                 relay: None,
                 binary_options: Default::default(),
+                registry: None,
                 deployment: None,
             },
         };

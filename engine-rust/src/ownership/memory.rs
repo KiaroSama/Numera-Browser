@@ -3,7 +3,15 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     io,
+    sync::OnceLock,
+    time::Instant,
 };
+/// One process-wide epoch brackets successive snapshots of a retained owner.
+/// Recreating the short-lived query adapter must not reset diagnostic time.
+pub fn monotonic_ticks() -> io::Result<u64> {
+    static START: OnceLock<Instant> = OnceLock::new();
+    u64::try_from(START.get_or_init(Instant::now).elapsed().as_nanos()).map_err(io::Error::other)
+}
 pub const MAX_PROCESSES: usize = 512;
 /// Linux's largest waited child lifetime RSS. A fresh observer must see zero
 /// before spawning; this metric is never presented as concurrent tree memory.
@@ -227,7 +235,6 @@ mod windows {
         mem,
         os::windows::io::{AsRawHandle, BorrowedHandle},
         ptr,
-        time::Instant,
     };
     use windows_sys::Win32::{
         Foundation::{CloseHandle, DuplicateHandle, FILETIME, HANDLE},
@@ -245,7 +252,6 @@ mod windows {
     };
     pub struct Native<'a> {
         job: BorrowedHandle<'a>,
-        start: Instant,
     }
     pub struct Process(HANDLE);
     /// A query-only duplicate of the retained owner. Never opens a job by name
@@ -323,7 +329,6 @@ mod windows {
         pub fn new(tree: &'a super::super::tree::OwnedTree) -> Self {
             Self {
                 job: tree.job_handle(),
-                start: Instant::now(),
             }
         }
     }
@@ -439,7 +444,7 @@ mod windows {
             Ok(information.PeakJobMemoryUsed as u64)
         }
         fn ticks(&mut self) -> io::Result<u64> {
-            u64::try_from(self.start.elapsed().as_nanos()).map_err(io::Error::other)
+            monotonic_ticks()
         }
     }
     pub fn snapshot(tree: &super::super::tree::OwnedTree) -> io::Result<Snapshot> {

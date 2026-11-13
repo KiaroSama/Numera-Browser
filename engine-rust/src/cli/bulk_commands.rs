@@ -1,5 +1,6 @@
 use super::profile_commands::{Outcome, Profiles, parse_proxy};
 use crate::{bulk, conversion::value_text, storage::repo::RepoError};
+use num_bigint::{BigInt, Sign};
 use serde_json::{Map, Value, json};
 
 fn strings(args: &Map<String, Value>, key: &str) -> Vec<String> {
@@ -21,18 +22,36 @@ fn entropy() -> Result<i64, RepoError> {
         }
     }
 }
-fn whole(args: &Map<String, Value>, key: &str, default: i64) -> Result<i64, RepoError> {
+fn whole(args: &Map<String, Value>, key: &str, default: i64) -> Result<BigInt, RepoError> {
     match args.get(key).filter(|v| !v.is_null()) {
-        None => Ok(default),
-        Some(value) => value.as_i64().ok_or_else(|| {
-            RepoError::Message(format!("{key} is outside the native supported range"))
-        }),
+        None => Ok(default.into()),
+        Some(value) => value
+            .as_number()
+            .and_then(|value| value.to_string().parse().ok())
+            .ok_or_else(|| RepoError::Message(format!("{key} must be an integer"))),
     }
 }
 
 impl Profiles<'_> {
     pub fn bulk_create(&self, args: &Map<String, Value>, time: f64) -> Result<Outcome, RepoError> {
-        let count = whole(args, "count", 0)?.max(0) as usize;
+        let requested = whole(args, "count", 0)?;
+        let count = if requested.sign() == Sign::Minus {
+            0
+        } else {
+            usize::try_from(requested).map_err(|_| {
+                RepoError::Message("count exceeds the native allocation range".into())
+            })?
+        };
+        // Source returns immediately for an empty batch, before interpreting
+        // padding. Otherwise zfill accepts only a platform-sized signed width.
+        let pad = if count == 0 {
+            0
+        } else {
+            let pad = isize::try_from(whole(args, "pad", 4)?).map_err(|_| {
+                RepoError::Message("Python int too large to convert to C ssize_t".into())
+            })?;
+            pad.max(0) as usize
+        };
         let oses = strings(args, "os");
         let locales = strings(args, "locale");
         let versions = strings(args, "chrome");
@@ -65,7 +84,7 @@ impl Profiles<'_> {
                     .and_then(Value::as_str)
                     .unwrap_or("Profile"),
                 start: whole(args, "start", 1)?,
-                pad: whole(args, "pad", 4)?.max(0) as usize,
+                pad,
                 tags: &tags,
                 mobile: args.get("mobile") == Some(&Value::Bool(true)),
             },

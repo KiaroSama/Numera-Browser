@@ -64,6 +64,7 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
         country: None,
         relay: None,
         binary_options: Default::default(),
+        registry: None,
         deployment: None,
     };
     let installed = std::collections::BTreeMap::new();

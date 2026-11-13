@@ -37,6 +37,7 @@ fn foreground_launch_reuses_admission_and_native_backend_lifetime_policy()
         country: None,
         relay: None,
         binary_options: Default::default(),
+        registry: None,
         deployment: None,
     };
     let installed = BTreeMap::new();

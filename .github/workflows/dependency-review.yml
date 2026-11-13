@@ -53,3 +53,4 @@ jobs:
           cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file desktop/src-tauri/Cargo.lock
           cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file tools/xtask/Cargo.lock
           cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file tools/xtask/lifecycle-tests/Cargo.lock
+          cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file tools/security-scan/Cargo.lock

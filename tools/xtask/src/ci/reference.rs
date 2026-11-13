@@ -253,7 +253,7 @@ pub fn compile(root: &Path, destination: &Path, receipt: &Value) -> Result<PathB
     // Never admit a caller's shared product target into this historical build.
     let target = destination.with_extension("target");
     command
-        .current_dir(destination)
+        .current_dir(&destination)
         .args([
             "build",
             "--manifest-path",
@@ -282,6 +282,20 @@ pub fn compile(root: &Path, destination: &Path, receipt: &Value) -> Result<PathB
     if output.command.exit != 0 {
         return fail("Native checkpoint compilation failed");
     }
-    crate::artifact_identity::compiler_artifact(&output.command.stdout, "numera-native-candidate")
-        .map_err(|error| std::io::Error::other(error.to_string()).into())
+    let binary = super::build_artifact::release_artifact(
+        &output.command.stdout,
+        &destination.join("engine-rust/Cargo.toml"),
+        &target,
+        "numera-native-candidate",
+        "native-candidate",
+    )?;
+    super::build_artifact::write(
+        &binary,
+        worker,
+        &output.command.stdout,
+        SOURCE,
+        true,
+        json!({"transport_patch_sha256":receipt["transport_patch_sha256"],"reference_receipt_sha256":super::sha(&serde_json::to_vec(receipt)?)}),
+    )?;
+    Ok(binary)
 }

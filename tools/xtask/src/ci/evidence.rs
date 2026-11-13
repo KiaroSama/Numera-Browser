@@ -1,6 +1,22 @@
 use super::{Result, canonical_sha, fail};
 use serde_json::Value;
 use std::collections::BTreeSet;
+pub fn retain_test_diagnostics(
+    path: &std::path::Path,
+    stdout: &[u8],
+    stderr: &[u8],
+) -> Result<(String, String)> {
+    let stdout =
+        numera_core::ownership::resources::redact_diagnostics(&String::from_utf8_lossy(stdout));
+    let stderr =
+        numera_core::ownership::resources::redact_diagnostics(&String::from_utf8_lossy(stderr));
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(path, &stdout)?;
+    std::fs::write(path.with_extension("stderr.log"), &stderr)?;
+    Ok((stdout, stderr))
+}
 
 pub fn codeql(pages: &Value, sha: &str) -> Result<u64> {
     if !canonical_sha(sha) {

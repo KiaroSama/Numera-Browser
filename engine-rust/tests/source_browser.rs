@@ -64,3 +64,6 @@ mod ua_metadata;
 mod warmup;
 #[path = "source_browser/warning_gate.rs"]
 mod warning_gate;
+
+#[path = "source_browser/registered_drivers.rs"]
+mod registered_drivers;

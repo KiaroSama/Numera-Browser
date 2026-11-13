@@ -33,3 +33,46 @@ condition = "AND"
 regexTarget = "secret"
 paths = ['''(^|/)desktop/src-tauri/build\.rs$''']
 regexes = ['''^d4ab0a9e265f108225bc28089cbcba0823beaad39a3639574c1a56e416dd2fad$''']
+
+[[rules.allowlists]]
+description = "Exact characterization fixture SHA256s, independently recomputed from committed JSON bytes2026-11-13"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''(^|/)docs/native\-storage\-vault\-retirement\-map\.json$''']
+regexes = ['''^199a3303b6bf7b2b9f0a0844331f954af6f30d87f307d292c39ca67b2527cd21$''', '''^322d7785663c8226e0298f717afd21ba0f9cfa7c1da00bf904343cbdb340eb30$''']
+
+[[rules.allowlists]]
+description = "Exact original vault test SHA256s, independently recomputed from committed source bytes2026-11-13"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''(^|/)docs/source\-vault\-test\-map\.json$''']
+regexes = ['''^7330ad2a12b8e8d130200ffdec4d79907d534374c3ab8bbcb88adddcf22887e9$''', '''^c33bf2a917a1d54cf3c3d070d3a36e828d94861201dadfd03e15a23b5de4733a$''']
+
+[[rules.allowlists]]
+description = "Exact original HTTP/auth test SHA256s, independently recomputed from committed source bytes2026-11-13"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''(^|/)docs/source\-http\-test\-map\.json$''']
+regexes = ['''^1eb97667710d45d19a8e43a3ed39dce06ba855f4297448467c4752a74edc6a07$''', '''^344f4258689232f7e905764414256c520488b4ab9d40347856dcc9aad4e60a71$''', '''^7bf5b215b5a142a9fa35bb8da15f5cf2ca60f47d50d6667a4e53864687f139b2$''', '''^925f2e2452f7e29acd69c4cdde1c35670329ef384886f1025983c7f4ca8aa501$''', '''^cc919f7996e8e72abd588f656283020dd9d59f0c30fe209e24b0099c80df2bd3$''']
+
+[[rules.allowlists]]
+description = "Exact synthetic portable-root log-redaction literal ported from the already-reviewed original test2026-11-13"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''(^|/)engine\-rust/tests/source_storage/portable_root\.rs$''']
+regexes = ['''^sk\-live\-9f8e7d6c5b4a$''']
+
+[[rules.allowlists]]
+description = "Exact historical Rust parser module SHA256s, independently recomputed from reachable committed source bytes2026-11-13"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''(^|/)tools/xtask/src/ci/history\-cases\.json$''']
+regexes = ['''^cfe23726c81a6a2f04c827c6dc68f4da68bfcc00cffce2c84bec95847d63b093$''', '''^dd7ca91090c4cdbfb2e2c17f5f9108432595f3bd28e7356708b4284d938634da$''']
+
+[[rules]]
+id = "pkcs12-file"
+
+[[rules.allowlists]]
+description = "Exact public synthetic Windows signing fixture; mandatory native pre-scan gates pin payload and provenance bytes, reviewed2026-11-13"
+condition = "AND"
+paths = ['''(^|/)tools/xtask/tests/fixtures/windows-signing/public-fixture\.pfx$''']

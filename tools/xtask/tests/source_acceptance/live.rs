@@ -406,10 +406,12 @@ source_test!(
     "tests/test_live_engine_contract.py::test_every_supported_engine_is_required_on_both_platforms",
     {
         let root = source_root();
-        let ci = workflow::parse(&fs::read_to_string(root.join(".github/workflows/ci.yml"))?)?;
+        let ci = workflow::parse(&fs::read_to_string(
+            root.join(".github/workflows/native-ci.yml"),
+        )?)?;
         let jobs = &ci["jobs"];
         workflow::bounded_jobs(&ci)?;
-        let matrix = &jobs["engine-live"]["strategy"]["matrix"];
+        let matrix = &jobs["live"]["strategy"]["matrix"];
         let engines = matrix["engine"]
             .as_array()
             .ok_or("live engine matrix missing")?
@@ -433,7 +435,7 @@ source_test!(
                 .iter()
                 .any(|v| v.as_str().is_some_and(|s| s.starts_with("windows")))
         );
-        assert_eq!(jobs["engine-live"]["strategy"]["max-parallel"], 2);
+        assert_eq!(jobs["live"]["strategy"]["max-parallel"], 2);
         let expected = jobs
             .as_object()
             .ok_or("jobs missing")?
@@ -442,6 +444,7 @@ source_test!(
             .cloned()
             .collect();
         workflow::required_jobs(jobs, &expected)?;
+        workflow::native_automatic(&ci)?;
         let automatic = workflow::parse(&fs::read_to_string(
             root.join(".github/workflows/rust-candidate.yml"),
         )?)?;
@@ -486,12 +489,39 @@ source_test!(
             b"unexpected publication payload",
         )?;
         assert!(release::verify_distribution(t.path(), &manifest, &sha, false).is_err());
-        let workflow = fs::read_to_string(source_root().join(".github/workflows/release.yml"))?;
-        assert!(!workflow.contains("continue-on-error"));
-        assert!(workflow.contains("digest-mismatch: error"));
-        assert!(workflow.contains("SOURCE_SHA"));
-        assert!(workflow.contains("update-manifest.sig"));
-        assert!(workflow.contains("--prerelease --latest=false"));
+        let root = source_root();
+        let documents = json!({
+            "ci":workflow::parse(&fs::read_to_string(root.join(".github/workflows/ci.yml"))?)?,
+            "release":workflow::parse(&fs::read_to_string(root.join(".github/workflows/release.yml"))?)?
+        });
+        // The native release boundary independently verifies signed products
+        // after download; it has read-only authority and never publishes them.
+        release::release_workflows(&documents)?;
+        let steps = documents["release"]["jobs"]["review"]["steps"]
+            .as_array()
+            .ok_or("Signed product review steps missing")?;
+        let download = steps
+            .iter()
+            .position(|step| {
+                step["uses"]
+                    .as_str()
+                    .is_some_and(|name| name.starts_with("actions/download-artifact@"))
+            })
+            .ok_or("Signed product artifact download missing")?;
+        let verification = steps.iter().position(|step| {
+            step["run"] == "cargo xtask ci signed-product-review build/owner-review \"${{ inputs.source_sha }}\""
+        }).ok_or("Exact-source signed product verification missing")?;
+        assert!(download < verification);
+        let mut skipped = documents.clone();
+        skipped["release"]["jobs"]["review"]["steps"]
+            .as_array_mut()
+            .ok_or("Review steps missing")?
+            .remove(verification);
+        assert!(release::release_workflows(&skipped).is_err());
+        let mut softened = documents.clone();
+        softened["release"]["jobs"]["review"]["steps"][verification]["continue-on-error"] =
+            true.into();
+        assert!(release::release_workflows(&softened).is_err());
 
         Ok(())
     }

@@ -186,6 +186,4 @@ fn scheduled_commit_failure_settles_same_owner_under_its_admission_decision()
     Ok(())
 }
 
-use crate as core;
-#[path = "../../tests/common/ownership_process.rs"]
-mod ownership_process;
+use crate::ownership::ownership_process;

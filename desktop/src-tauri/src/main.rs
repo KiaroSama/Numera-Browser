@@ -89,7 +89,11 @@ fn main() {
                     updates::install_lease::shared(&root)?,
                 ))));
             }
-            match lifecycle::start_engine(log.clone(), &token, handle.path().resource_dir().ok().as_deref()) {
+            match lifecycle::start_engine(
+                log.clone(),
+                &token,
+                handle.path().resource_dir().ok().as_deref(),
+            ) {
                 Ok((child, port, reader)) => {
                     #[cfg(windows)]
                     let mut child = child;

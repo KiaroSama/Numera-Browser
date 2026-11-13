@@ -10,11 +10,16 @@ use std::{
 };
 pub mod accounting;
 pub mod browser_benchmark;
+pub mod build_artifact;
 pub mod camoufox_runtime;
 pub mod candidate;
 pub mod compiler;
 pub mod container;
+pub mod coverage_inventory;
+pub mod entry_benchmark;
 pub mod evidence;
+#[path = "../../../security-scan/src/contract.rs"]
+pub mod gitleaks_contract;
 pub mod history;
 pub mod mapping;
 pub mod memory;
@@ -237,6 +242,13 @@ pub fn run(root: &Path, mut args: impl Iterator<Item = OsString>) -> Result<()> 
             )
         }
         "coverage" => workflow::coverage(root),
+        "product-compile" => {
+            if !rest.is_empty() {
+                return fail("product-compile takes no arguments");
+            }
+            println!("{}", build_artifact::product(root)?.display());
+            Ok(())
+        }
         "dashboard-identity" => {
             let identity = crate::artifact_identity::BuildIdentity::from_environment()
                 .map_err(|error| std::io::Error::other(error.to_string()))?;
@@ -244,6 +256,20 @@ pub fn run(root: &Path, mut args: impl Iterator<Item = OsString>) -> Result<()> 
                 .map_err(|error| std::io::Error::other(error.to_string()).into())
         }
         "browser-sample" => browser_benchmark::sample_command(&rest),
+        "entry-sample" => entry_benchmark::cli_sample(&rest),
+        "entry-http-sample" => entry_benchmark::http_sample(&rest),
+        "entry-benchmark" => {
+            if rest.len() != 4 {
+                return fail("entry-benchmark requires reference,product,worker,destination");
+            }
+            entry_benchmark::run(
+                root,
+                Path::new(&rest[0]),
+                Path::new(&rest[1]),
+                Path::new(&rest[2]),
+                Path::new(&rest[3]),
+            )
+        }
         "browser-benchmark" => {
             if rest.len() != 5 {
                 return fail(
@@ -329,6 +355,13 @@ pub fn run(root: &Path, mut args: impl Iterator<Item = OsString>) -> Result<()> 
                 return fail("secret-config requires reviewed base and new destination");
             }
             scope::prepare_secret_config(root, Path::new(&rest[0]), Path::new(&rest[1]))
+        }
+        "signing-history" => {
+            if !rest.is_empty() {
+                return fail("signing-history accepts no arguments");
+            }
+            scope::history_signing_material(root)
+                .map(|count| println!("Validated {count} pinned historical signing-material blobs"))
         }
         "native-phase" => {
             if rest.len() != 1 {
@@ -437,23 +470,103 @@ pub fn run(root: &Path, mut args: impl Iterator<Item = OsString>) -> Result<()> 
             let expected = rest[0].to_string_lossy().parse::<usize>()?;
             let mut command = Command::new(&rest[3]);
             command.args(&rest[4..]).current_dir(root);
-            let output = capture(
-                &mut command,
-                Duration::from_secs(900),
-                Duration::from_secs(180),
-                8 * 1024 * 1024,
-            )?;
             let path = Path::new(&rest[1]);
-            if let Some(parent) = path.parent() {
-                fs::create_dir_all(parent)?;
+            let mut partial = [Vec::new(), Vec::new()];
+            let output = owned::run_streamed(
+                root,
+                &mut command,
+                owned::limits(
+                    Duration::from_secs(900),
+                    Duration::from_secs(180),
+                    8 * 1024 * 1024,
+                ),
+                |index, bytes| partial[index].extend_from_slice(bytes),
+            );
+            let output = match output {
+                Ok(output) => output.command,
+                Err(error) => {
+                    let (stdout, stderr) =
+                        evidence::retain_test_diagnostics(path, &partial[0], &partial[1])?;
+                    eprintln!(
+                        "Native test command failed before a complete verdict: {error}\nCaptured stdout:\n{stdout}\nCaptured stderr:\n{stderr}"
+                    );
+                    return Err(error);
+                }
+            };
+            let (safe_stdout, safe_stderr) =
+                evidence::retain_test_diagnostics(path, &output.stdout, &output.stderr)?;
+            let verdict = (|| -> Result<()> {
+                if output.exit != 0 {
+                    return fail(format!(
+                        "Nested test command exited{}; captured diagnostics retained at {}",
+                        output.exit,
+                        path.display()
+                    ));
+                }
+                scope::counted_tests_format(
+                    std::str::from_utf8(&output.stdout)?,
+                    expected,
+                    output.exit,
+                    wasm,
+                )?;
+                if !wasm {
+                    let arguments = rest[3..]
+                        .iter()
+                        .filter_map(|value| value.to_str())
+                        .collect::<Vec<_>>();
+                    let target = arguments
+                        .windows(2)
+                        .find_map(|pair| (pair[0] == "--test").then_some(pair[1]));
+                    let manifest = arguments.windows(2).find_map(|pair| {
+                        (pair[0] == "--manifest-path").then_some(Path::new(pair[1]))
+                    });
+                    if let (Some(target), Some(manifest)) = (target, manifest) {
+                        let crate_name = if manifest.ends_with("tools/xtask/Cargo.toml") {
+                            Some("tools/xtask")
+                        } else if manifest.ends_with("engine-rust/Cargo.toml") {
+                            Some("engine-rust")
+                        } else {
+                            None
+                        };
+                        if let Some(crate_name) = crate_name {
+                            let inventory = coverage_inventory::validate(root)?;
+                            let available =
+                                inventory.expected(crate_name, target, std::env::consts::OS)?;
+                            if arguments.contains(&"--exact") {
+                                let selected = available
+                                    .iter()
+                                    .filter(|name| arguments.contains(&name.as_str()))
+                                    .cloned()
+                                    .collect::<std::collections::BTreeSet<_>>();
+                                if selected.len() != 1 {
+                                    return fail(
+                                        "Exact maintained proof must select one canonical test name",
+                                    );
+                                }
+                                coverage_inventory::validate_selected_output(
+                                    &available,
+                                    &selected,
+                                    std::str::from_utf8(&output.stdout)?,
+                                    output.exit,
+                                )?;
+                            } else {
+                                coverage_inventory::validate_expected_output(
+                                    &available,
+                                    std::str::from_utf8(&output.stdout)?,
+                                    output.exit,
+                                )?;
+                            }
+                        }
+                    }
+                }
+                Ok(())
+            })();
+            if let Err(error) = verdict {
+                eprintln!(
+                    "Native test proof refused: {error}\nCaptured stdout:\n{safe_stdout}\nCaptured stderr:\n{safe_stderr}"
+                );
+                return Err(error);
             }
-            fs::write(path, &output.stdout)?;
-            scope::counted_tests_format(
-                std::str::from_utf8(&output.stdout)?,
-                expected,
-                output.exit,
-                wasm,
-            )?;
             println!("Verified exactly{expected} passing native tests; no ignored cases");
             Ok(())
         }
@@ -495,7 +608,8 @@ fn owned(root: &Path, args: &[OsString]) -> Result<()> {
     }
     let mut command = Command::new(&args[boundary + 1]);
     command.args(&args[boundary + 2..]).current_dir(root);
-    let observed = owned::run(
+    let mut partial = [Vec::new(), Vec::new()];
+    let observed = owned::run_streamed(
         root,
         &mut command,
         owned::limits(
@@ -503,7 +617,25 @@ fn owned(root: &Path, args: &[OsString]) -> Result<()> {
             Duration::from_secs_f64(idle),
             16 * 1024 * 1024,
         ),
-    )?;
+        |index, bytes| partial[index].extend_from_slice(bytes),
+    );
+    let observed = match observed {
+        Ok(output) => output,
+        Err(error) => {
+            let path = root.join("build").join(format!(
+                "owned-command-failure-{}-{}.log",
+                std::process::id(),
+                sha(format!("{:?}", std::time::Instant::now()).as_bytes())
+            ));
+            let (stdout, stderr) =
+                evidence::retain_test_diagnostics(&path, &partial[0], &partial[1])?;
+            eprintln!(
+                "Owned command boundary failed: {error}\nCaptured stdout:\n{stdout}\nCaptured stderr:\n{stderr}\nRetained diagnostic: {}",
+                path.display()
+            );
+            return Err(error);
+        }
+    };
     let output = observed.command;
     use std::io::Write;
     std::io::stdout().write_all(&output.stdout)?;

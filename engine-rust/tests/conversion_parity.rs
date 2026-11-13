@@ -3,12 +3,10 @@ use numera_core::{
     models::Profile,
 };
 use serde_json::Value;
-mod common;
 
 #[test]
 fn conversion_text_boundaries_match_original_profiles_and_roundtrips()
 -> Result<(), Box<dyn std::error::Error>> {
-    let temporary = common::TempDirectory::new("conversion-text")?;
     // Frozen immutable source observation; all native assertions below remain live.
     let cases: Vec<Value> = serde_json::from_str(include_str!(
         "fixtures/characterization/conversion_text_boundaries_match_original_profiles_and_roundtrips.json"
@@ -29,14 +27,12 @@ fn conversion_text_boundaries_match_original_profiles_and_roundtrips()
             case["label"]
         );
     }
-    temporary.cleanup()?;
     Ok(())
 }
 
 #[test]
 fn container_text_conversion_matches_original_profiles_and_roundtrips()
 -> Result<(), Box<dyn std::error::Error>> {
-    let temporary = common::TempDirectory::new("conversion-container-text")?;
     // Frozen immutable source observation; all native assertions below remain live.
     let oracle: Value = serde_json::from_str(include_str!(
         "fixtures/characterization/container_text_conversion_matches_original_profiles_and_roundtrips.json"
@@ -72,14 +68,12 @@ fn container_text_conversion_matches_original_profiles_and_roundtrips()
         );
         assert_eq!(record, before, "Container conversion mutated its input");
     }
-    temporary.cleanup()?;
     Ok(())
 }
 
 #[test]
 fn reverse_proxy_conversion_matches_original_without_canonicalizing_records()
 -> Result<(), Box<dyn std::error::Error>> {
-    let temporary = common::TempDirectory::new("conversion-proxy")?;
     // Frozen immutable source observation; all native assertions below remain live.
     let oracle: Value = serde_json::from_str(include_str!(
         "fixtures/characterization/reverse_proxy_conversion_matches_original_without_canonicalizing_records.json"
@@ -103,14 +97,12 @@ fn reverse_proxy_conversion_matches_original_without_canonicalizing_records()
             "Reverse conversion mutated its profile"
         );
     }
-    temporary.cleanup()?;
     Ok(())
 }
 
 #[test]
 fn integer_conversion_matches_original_grammar_defaults_and_seed_magnitude()
 -> Result<(), Box<dyn std::error::Error>> {
-    let temporary = common::TempDirectory::new("conversion-integer")?;
     // Frozen immutable source observation; all native assertions below remain live.
     let oracle: Value = serde_json::from_str(include_str!(
         "fixtures/characterization/integer_conversion_matches_original_grammar_defaults_and_seed_magnitude.json"
@@ -144,14 +136,12 @@ fn integer_conversion_matches_original_grammar_defaults_and_seed_magnitude()
         );
         assert_eq!(record, before, "Integer conversion mutated its input");
     }
-    temporary.cleanup()?;
     Ok(())
 }
 
 #[test]
 fn fractional_conversion_matches_original_numeric_values_and_defaults()
 -> Result<(), Box<dyn std::error::Error>> {
-    let temporary = common::TempDirectory::new("conversion-fractional")?;
     // Frozen immutable source observation; all native assertions below remain live.
     let oracle: Value = serde_json::from_str(include_str!(
         "fixtures/characterization/fractional_conversion_matches_original_numeric_values_and_defaults.json"
@@ -224,7 +214,6 @@ fn fractional_conversion_matches_original_numeric_values_and_defaults()
         }
         assert_eq!(record, before, "Fractional conversion mutated its input");
     }
-    temporary.cleanup()?;
     Ok(())
 }
 

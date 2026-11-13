@@ -83,6 +83,7 @@ pub(super) fn runtime(root: &Path) -> numera_core::browser::runtime::Runtime {
         country: None,
         relay: None,
         binary_options: Default::default(),
+        registry: None,
         deployment: None,
     }
 }

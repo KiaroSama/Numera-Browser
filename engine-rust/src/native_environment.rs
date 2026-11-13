@@ -53,6 +53,7 @@ impl Environment {
                 country: None,
                 relay: None,
                 binary_options: Default::default(),
+                registry: None,
                 deployment: Some(crate::browser::runtime::Deployment {
                     app: app.clone(),
                     environment: [
@@ -77,10 +78,15 @@ impl Environment {
         addons_requested: bool,
     ) -> Result<BTreeMap<String, bool>, capture::Failure> {
         if !self.browser.adapter.is_file() {
-            return Ok(["playwright", "patchright", "camoufox", "cloak"]
-                .into_iter()
-                .map(|name| (name.into(), false))
-                .collect());
+            return self
+                .browser
+                .available(
+                    ["playwright", "patchright", "camoufox", "cloak"]
+                        .into_iter()
+                        .map(|name| (name.into(), false))
+                        .collect(),
+                )
+                .map_err(capture::Failure::from);
         }
         let mut command = self.browser.sdk_command();
         command.arg("--metadata");
@@ -107,6 +113,7 @@ impl Environment {
                 .ok_or_else(|| io::Error::other("Browser SDK metadata is malformed"))?;
             installed.insert(name.into(), present);
         }
+        let installed = self.browser.available(installed)?;
         let addons = value["default_addons"]
             .as_array()
             .ok_or_else(|| io::Error::other("Browser SDK addon metadata is malformed"))?

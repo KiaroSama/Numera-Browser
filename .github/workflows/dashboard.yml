@@ -44,7 +44,7 @@ jobs:
       - name: Compile and lint the actual browser target
         run: cargo xtask ci owned --wall 600 --idle 120 -- cargo clippy --manifest-path dashboard/Cargo.toml --locked --all-targets --target wasm32-unknown-unknown -- -D warnings
       - name: Require all 71 native dashboard source cases
-        run: cargo xtask ci counted-tests 71 build/dashboard-native.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --lib -- --test-threads=2 --color=never
+        run: cargo xtask ci counted-tests 71 build/dashboard-native.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --test regression -- --test-threads=2 --color=never
       - name: Select the hosted native WebDriver
         run: |
           set -euo pipefail
@@ -56,7 +56,8 @@ jobs:
         env:
           CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
           WASM_BINDGEN_TEST_WEBDRIVER_JSON: dashboard/tests/webdriver.json
-        run: cargo xtask ci counted-wasm-tests 124 build/dashboard-wasm.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --lib --target wasm32-unknown-unknown -- --color=never
+          WASM_BINDGEN_TEST_TIMEOUT: "180"
+        run: cargo xtask ci counted-wasm-tests 124 build/dashboard-wasm.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --color=never --lib --target wasm32-unknown-unknown
       - name: Build and bind the dashboard to this exact source
         run: cargo xtask ci owned --wall 600 --idle 120 -- cargo run --manifest-path dashboard/Cargo.toml --locked --bin dashboard-build
       - name: Preserve exact source dashboard and test evidence

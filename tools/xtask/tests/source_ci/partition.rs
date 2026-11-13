@@ -15,12 +15,22 @@ fn repo(temp: &Temp, modules: &[String]) -> TestResult {
     Ok(())
 }
 fn report(modules: &[String]) -> Value {
-    json!({"schema":1,"modules":modules,"results":modules.iter().map(|module|json!({"module":module,"exit":0,"settled":true,"passed":1,"failed":0,"ignored":0})).collect::<Vec<_>>()})
+    json!({"schema":1,"modules":modules,"results":modules.iter().map(|module|json!({"module":module,"exit":0,"settled":true,"passed":1,"failed":0,"ignored":0,"stdout":"running 1 test\ntest contract ... ok\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n"})).collect::<Vec<_>>()})
+}
+fn fixture_report(root: &Path, value: &Value) -> ci::Result<usize> {
+    scope::verify_report_with(root, value, |_, row| {
+        ci::coverage_inventory::validate_expected_output(
+            &BTreeSet::from(["contract".into()]),
+            row["stdout"].as_str().ok_or("Fixture stdout missing")?,
+            0,
+        )
+    })
 }
 source_test!(
     partitions_cover_source,
     "tests/test_python_source_partition.py::test_all_four_partitions_are_disjoint_complete_and_nonempty",
     {
+        secret_review::check()?;
         let modules = scope::targets(&root())?
             .into_iter()
             .filter(|module| module.starts_with("source_"))
@@ -62,6 +72,21 @@ fn module_report(damage: &str) -> TestResult {
     repo(&temp, &modules)?;
     let selected = scope::partition(&modules, 0, 2)?;
     let mut value = report(&selected);
+    if damage == "None" {
+        let path = temp.0.join("redacted.log");
+        let (stdout, stderr) = evidence::retain_test_diagnostics(
+            &path,
+            b"running 0 tests\n",
+            b"Error: signing HRESULT=2147942487 token=synthetic-protected\n",
+        )?;
+        assert_eq!(stdout, "running 0 tests\n");
+        assert!(stderr.contains("HRESULT=2147942487"));
+        assert!(!stderr.contains("synthetic-protected"));
+        assert_eq!(
+            fs::read_to_string(path.with_extension("stderr.log"))?,
+            stderr
+        );
+    }
     match damage {
         "missing" => {
             value["results"].as_array_mut().expect("rows").pop();
@@ -71,7 +96,7 @@ fn module_report(damage: &str) -> TestResult {
         "failure" => value["results"][1]["failed"] = json!(1),
         _ => (),
     };
-    let result = scope::verify_report(&temp.0, &value);
+    let result = fixture_report(&temp.0, &value);
     if damage == "None" {
         assert_eq!(result?, 2);
     } else {
@@ -98,7 +123,7 @@ fn directory(damage: &str) -> TestResult {
     if damage == "extra" {
         fs::write(output.join("source_foreign.json"), b"{}")?;
     }
-    let result = scope::report_directory(&temp.0, &output, &modules);
+    let result = scope::report_directory_with(&temp.0, &output, &modules, fixture_report);
     if damage == "None" {
         assert_eq!(result?, 2);
     } else {

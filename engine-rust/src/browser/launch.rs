@@ -40,26 +40,56 @@ pub fn open(
     launch: PreparedLaunch<'_>,
     now: f64,
 ) -> Result<Adapter, StartupFailed> {
+    open_selected(session, profile, command, launch, now, None)
+}
+pub(crate) fn open_registered(
+    session: Session,
+    profile: Profile,
+    command: &mut Command,
+    launch: PreparedLaunch<'_>,
+    now: f64,
+    driver: &super::registry::ResolvedDriver,
+) -> Result<Adapter, StartupFailed> {
+    if driver.name() != launch.backend {
+        return Err(StartupFailed {
+            kind: "failed".into(),
+            message: "Registered browser capability does not match the requested engine".into(),
+        });
+    }
+    open_selected(session, profile, command, launch, now, Some(driver))
+}
+fn open_selected(
+    session: Session,
+    profile: Profile,
+    command: &mut Command,
+    launch: PreparedLaunch<'_>,
+    now: f64,
+    driver: Option<&super::registry::ResolvedDriver>,
+) -> Result<Adapter, StartupFailed> {
     let failure = |error: io::Error| StartupFailed {
         kind: "failed".into(),
         message: error.to_string(),
     };
-    if !["playwright", "patchright", "camoufox", "cloak"].contains(&launch.backend) {
-        return Err(failure(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Unknown browser backend",
-        )));
-    }
-    let profile = if launch.backend == "camoufox" {
+    let family = driver
+        .map(|driver| driver.family())
+        .or_else(|| super::registry::OptionsFamily::builtin(launch.backend))
+        .ok_or_else(|| {
+            failure(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Unknown browser backend",
+            ))
+        })?;
+    let backend = family.options_backend();
+    let profile = if backend == "camoufox" {
         profile
     } else {
         ip_identity::resolve(&profile, launch.country).map_err(failure)?
     };
-    if launch.backend != "camoufox" {
+    if backend != "camoufox" {
         resources::prepare(&session, &profile, now).map_err(failure)?;
     }
     let path = session.preparation_path(&profile.id).map_err(failure)?;
-    let extensions = if launch.backend == "camoufox" {
+    let extensions = if backend == "camoufox" {
         Vec::new()
     } else {
         extensions::paths(&profile.extensions, launch.cwd, launch.home).map_err(failure)?
@@ -72,23 +102,37 @@ pub fn open(
         None
     };
     let relay_url = relay.as_ref().map(crate::network::relay::Relay::url);
-    let mut options = options::build(
-        &profile,
-        launch.backend,
-        path.to_str()
-            .ok_or_else(|| failure(io::Error::other("Profile path is not Unicode")))?,
-        launch.headless,
-        launch.extra_args,
-        &extensions,
-        launch.relay.or(relay_url.as_deref()),
-    )
-    .map_err(failure)?
-    .as_object()
-    .cloned()
-    .ok_or_else(|| failure(io::Error::other("Browser options missing")))?;
+    let user_data_dir = path
+        .to_str()
+        .ok_or_else(|| failure(io::Error::other("Profile path is not Unicode")))?;
+    let prepared_options = match driver {
+        Some(driver) => options::build_registered(
+            &profile,
+            driver,
+            user_data_dir,
+            launch.headless,
+            launch.extra_args,
+            &extensions,
+            launch.relay.or(relay_url.as_deref()),
+        ),
+        None => options::build(
+            &profile,
+            launch.backend,
+            user_data_dir,
+            launch.headless,
+            launch.extra_args,
+            &extensions,
+            launch.relay.or(relay_url.as_deref()),
+        ),
+    };
+    let mut options = prepared_options
+        .map_err(failure)?
+        .as_object()
+        .cloned()
+        .ok_or_else(|| failure(io::Error::other("Browser options missing")))?;
     // Only package-selected executable fields may augment application options.
     for (key, value) in launch.binary_options {
-        let valid = match (launch.backend, key.as_str()) {
+        let valid = match (backend, key.as_str()) {
             (_, "executable_path") => value.is_string(),
             ("cloak", "browser_version") | ("camoufox", "ff_version") => value.is_string(),
             ("camoufox", "addons" | "exclude_addons") => value
@@ -104,7 +148,7 @@ pub fn open(
         }
         options.insert(key, value);
     }
-    let chromium = matches!(launch.backend, "playwright" | "patchright");
+    let chromium = matches!(backend, "playwright" | "patchright");
     let scripts = if chromium {
         vec![
             identity_script::build(&profile.fingerprint)
@@ -128,13 +172,19 @@ pub fn open(
     if let Some(relay) = relay {
         adapter.own_relay(relay).map_err(failure)?;
     }
-    if let Err(error) = adapter.open_configured(
-        launch.backend,
-        options,
-        scripts,
-        policy,
-        Duration::from_secs(90),
-    ) {
+    let opened = match driver {
+        Some(driver) => {
+            adapter.open_registered(driver, options, scripts, policy, Duration::from_secs(90))
+        }
+        None => adapter.open_configured(
+            launch.backend,
+            options,
+            scripts,
+            policy,
+            Duration::from_secs(90),
+        ),
+    };
+    if let Err(error) = opened {
         return Err(failed_startup(&mut adapter, error));
     }
     if let Err(error) = startup::navigate(&mut adapter, &profile.startup_urls) {

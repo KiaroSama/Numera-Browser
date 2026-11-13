@@ -209,6 +209,9 @@ fn pair(mode: &str) -> TestResult {
 }
 source_cases!("tests/test_browser_benchmark.py::test_browser_pair_checks_full_export_and_preserves_failed_inputs",pair,[browser_pair_normal=>("normal","normal"),browser_pair_cookie=>("cookie","cookie"),browser_pair_order=>("order","order"),browser_pair_type=>("type","type"),browser_pair_profile=>("profile","profile"),browser_pair_sentinel=>("sentinel","sentinel"),browser_pair_metadata=>("metadata","metadata"),browser_pair_exit=>("exit","exit")]);
 fn pairs(mode: &str) -> TestResult {
+    if ["normal", "parity", "inconclusive", "metric", "write"].contains(&mode) {
+        entry_pairs(mode)?;
+    }
     let temp = Temp::new("browser all pairs")?;
     let parent = temp.0.join(".ci-work/migration-temp");
     let destination = temp.0.join("measurements.json");
@@ -317,6 +320,127 @@ fn pairs(mode: &str) -> TestResult {
         assert_eq!(report["engine"], "playwright");
         assert_eq!(report["repetitions"], 7);
         assert_eq!(report["warmup_pairs"], 1);
+    }
+    Ok(())
+}
+fn entry_pairs(mode: &str) -> TestResult {
+    use ci::entry_benchmark::{self as entry, Scenario};
+    let temp = Temp::new("entry all five pairs")?;
+    let parent = temp.0.join("inputs");
+    let destination = temp.0.join("entry-performance.json");
+    if mode == "write" {
+        fs::write(&destination, b"prior evidence")?;
+    }
+    let mut observed = Vec::<(Scenario, String, i32)>::new();
+    let result = entry::run_pairs(
+        &parent,
+        &destination,
+        &json!({"comparison":"native-checkpoint-to-native-product"}),
+        |scenario, runtime, workspace, repetition| {
+            fs::write(
+                workspace.join("input.json"),
+                b"synthetic retained measurement input",
+            )?;
+            observed.push((scenario, runtime.into(), repetition));
+            let value = if runtime == "native" && mode != "inconclusive" {
+                1
+            } else {
+                100
+            };
+            let mut value = sample(value, Value::Null);
+            if mode == "metric" {
+                value.metric = runtime.into();
+            }
+            Ok((
+                value,
+                if mode == "parity" {
+                    json!(runtime)
+                } else {
+                    json!({"complete":[true,42,"preserved"]})
+                },
+            ))
+        },
+    );
+    if mode == "normal" {
+        let report = result?;
+        assert_eq!(report["results"].as_array().expect("results").len(), 5);
+        assert_eq!(fs::read_dir(&parent)?.count(), 0);
+    } else {
+        assert!(result.is_err());
+        let run = fs::read_dir(&parent)?
+            .next()
+            .ok_or("Retained entry run missing")??
+            .path();
+        assert_eq!(
+            fs::read_dir(run)?
+                .filter_map(|entry| entry.ok())
+                .filter(|entry| entry.path().join("input.json").is_file())
+                .count(),
+            observed.len()
+        );
+    }
+    let scenarios = if matches!(mode, "parity" | "metric") {
+        &entry::SCENARIOS[..1]
+    } else {
+        &entry::SCENARIOS[..]
+    };
+    let expected = scenarios
+        .iter()
+        .flat_map(|scenario| {
+            (-1i32..7).flat_map(move |repetition| {
+                let order = if repetition % 2 == 0 {
+                    ["reference", "native"]
+                } else {
+                    ["native", "reference"]
+                };
+                order
+                    .into_iter()
+                    .map(move |runtime| (*scenario, runtime.to_owned(), repetition))
+            })
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        observed,
+        if mode == "parity" {
+            expected[..2].to_vec()
+        } else {
+            expected
+        }
+    );
+    if mode == "write" {
+        assert_eq!(fs::read_to_string(&destination)?, "prior evidence");
+    } else if matches!(mode, "normal" | "inconclusive") {
+        let report = ci::decode(&fs::read(destination)?)?;
+        assert_eq!(
+            report["results"]
+                .as_array()
+                .expect("results")
+                .iter()
+                .map(|row| row["scenario"].as_str().expect("scenario"))
+                .collect::<Vec<_>>(),
+            vec!["create", "list", "vault-read", "backup", "http-list"]
+        );
+        assert_eq!(report["warmup_pairs"], 1);
+        assert_eq!(report["repetitions"], 7);
+        for row in report["results"].as_array().expect("results") {
+            assert_eq!(row["samples"].as_array().expect("samples").len(), 7);
+            assert_eq!(
+                row["time"],
+                if mode == "normal" {
+                    "no-regression"
+                } else {
+                    "inconclusive"
+                }
+            );
+            assert_eq!(
+                row["memory"],
+                if mode == "normal" {
+                    "no-regression"
+                } else {
+                    "inconclusive"
+                }
+            );
+        }
     }
     Ok(())
 }
@@ -552,23 +676,36 @@ fn measurement(damage: &str) -> TestResult {
         root().join(".github/actions/native-candidate-acceptance/action.yml"),
     )?)?;
     browser::workflow_measurement(&action)?;
+    let build = workflow::step_once(&action["runs"]["steps"], "build-candidate", true)?;
+    let functional = workflow::step_once(&action["runs"]["steps"], "ci acceptance ", true)?;
+    let measurement = workflow::step_once(&action["runs"]["steps"], "ci browser-benchmark", true)?;
+    let upload = action["runs"]["steps"]
+        .as_array()
+        .expect("steps")
+        .iter()
+        .position(|step| {
+            step["uses"]
+                .as_str()
+                .is_some_and(|value| value.starts_with("actions/upload-artifact@"))
+        })
+        .expect("upload");
     let steps = action["runs"]["steps"].as_array_mut().expect("steps");
     match damage {
         "unoptimized" => {
-            steps[3]["run"] = json!(
-                steps[3]["run"]
+            steps[build]["run"] = json!(
+                steps[build]["run"]
                     .as_str()
                     .expect("build")
                     .replace(" --release", "")
             )
         }
         "missing" => {
-            steps.remove(5);
+            steps.remove(measurement);
         }
-        "softened" => steps[5]["continue-on-error"] = json!(true),
-        "skipped" => steps[5]["if"] = json!("false"),
-        "artifact" => steps[6]["with"]["if-no-files-found"] = json!("warn"),
-        _ => steps.swap(4, 5),
+        "softened" => steps[measurement]["continue-on-error"] = json!(true),
+        "skipped" => steps[measurement]["if"] = json!("false"),
+        "artifact" => steps[upload]["with"]["if-no-files-found"] = json!("warn"),
+        _ => steps.swap(functional, measurement),
     }
     assert!(browser::workflow_measurement(&action).is_err());
     Ok(())
