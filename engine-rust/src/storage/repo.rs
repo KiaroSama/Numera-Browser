@@ -56,6 +56,7 @@ impl Error for RepoError {
         match self {
             Self::Directory { cause, .. } => Some(cause),
             Self::Io(error) => error.source(),
+            Self::Recovery(error) => Some(error),
             _ => None,
         }
     }

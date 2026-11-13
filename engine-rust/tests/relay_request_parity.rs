@@ -133,7 +133,7 @@ fn socks_origin_requests_preserve_original_target_bytes() -> Result<(), Box<dyn 
         false,
     )?;
     let mut relay = Relay::start(&proxy)?;
-    let address = reqwest::Url::parse(&relay.url())?;
+    let address = reqwest::Url::parse(&relay.url()?)?;
     let outcome = (|| -> Result<(), Box<dyn std::error::Error>> {
         for (index, case) in cases.iter().enumerate() {
             let mut client =

@@ -90,6 +90,25 @@ fn locked_atomic_write_and_rollback_preserve_original_bytes()
             original,
             "Failed stream must never publish partial bytes"
         );
+        let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            write_stream(&path, |file| -> std::io::Result<()> {
+                use std::io::Write;
+                file.write_all(b"partial secret before a writer panic")?;
+                std::panic::panic_any((17_u32, "controlled writer panic"));
+            })
+        }))
+        .expect_err("The writer's original panic must keep unwinding");
+        assert_eq!(
+            panic.downcast_ref::<(u32, &'static str)>(),
+            Some(&(17, "controlled writer panic")),
+            "Atomic publication must preserve the exact panic payload"
+        );
+        assert_eq!(fs::read(&path)?, original);
+        assert!(
+            !fs::read_dir(&root)?.any(|entry| entry
+                .is_ok_and(|entry| { entry.file_name().to_string_lossy().contains(".tmp-") })),
+            "An unwinding writer must remove its owned partial temporary file"
+        );
         let mut batch = Batch::default();
         batch.write(&path, &json!({"name":"changed"}))?;
         let created = root.join("new.json");

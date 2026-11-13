@@ -157,7 +157,7 @@ fn socks_handshake_failures_preserve_original_diagnostics_and_wire()
             *last_error = Some(error.to_owned());
         }
         let mut peer = Peer::start(&listener, &case)?;
-        let url = reqwest::Url::parse(&relay.url())?;
+        let url = reqwest::Url::parse(&relay.url()?)?;
         let address = ("127.0.0.1", url.port().ok_or("Relay port missing")?);
         let result = (|| -> Result<(), Box<dyn std::error::Error>> {
             let mut client = TcpStream::connect(address)?;
@@ -211,7 +211,7 @@ fn socks_handshake_failures_preserve_original_diagnostics_and_wire()
         assert_eq!(wire?, expected, "SOCKS complete handshake wire differs");
     }
     for (relay, _) in relays.values_mut() {
-        let url = reqwest::Url::parse(&relay.url())?;
+        let url = reqwest::Url::parse(&relay.url()?)?;
         let address = ("127.0.0.1", url.port().ok_or("Relay port missing")?);
         relay.close(Duration::from_secs(2))?;
         assert!(

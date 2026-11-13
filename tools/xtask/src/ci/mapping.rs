@@ -209,6 +209,20 @@ pub fn build(root: &Path) -> Result<Value> {
             if id.starts_with("tests/test_migration_gates.py::") {
                 row["adaptation"]="Native Rust AST occurrences, independently linked reference modules, owned kernel trees and isolated OS lifetime measurements replace interpreter imports and monkeypatches. Historical fixture hashes remain characterization provenance; no historical Python is executed.".into();
             }
+            if id.ends_with(
+                "::test_inventory_keeps_alternative_definitions_independently_addressable",
+            ) {
+                row["historical_program_sha256"] =
+                    "22de18dea172c6f67a991fa53ed47dfeaae220f1a139a39f93f5f9f76c274314".into();
+                row["adaptation"] = "The historical program hash is provenance metadata only. The real Rust AST inventory retains every conditional occurrence; a collapsed-ID mutation is rejected by the production coverage gate with every duplicate and missing ID asserted. No historical program file is read or executed.".into();
+            }
+            if id.ends_with(
+                "::test_benchmark_requires_natural_settlement_inside_the_original_deadline",
+            ) {
+                row["historical_program_sha256"] =
+                    "e9e65689ecff7dd714e7e1f349c442c02f4ad4992c77532d58c45a7bd2f2aaa1".into();
+                row["adaptation"] = "The historical program hash is provenance metadata only. A native child compiles the actual Rust observer with its natural-settlement query bypassed and proves that mutant samples a live tree; the shipped observer rejects the same host. Transient, active, unknown, expired and late cases retain all original deadline, peak-order and cleanup assertions.".into();
+            }
         }
         cases.push(row);
     }

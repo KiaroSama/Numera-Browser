@@ -96,7 +96,7 @@ impl Formatter for SourceJson {
     }
 }
 
-/// Retain the original page script; Rust owns only its identity configuration.
+/// Initialize the compiler-generated Rust browser runtime before page scripts.
 pub fn build(fp: &Fingerprint) -> Result<String, serde_json::Error> {
     let value = config(fp)?;
     let mut bytes = Vec::new();
@@ -106,5 +106,5 @@ pub fn build(fp: &Fingerprint) -> Result<String, serde_json::Error> {
     let encoded = String::from_utf8(bytes).map_err(|error| {
         serde_json::Error::io(io::Error::new(io::ErrorKind::InvalidData, error))
     })?;
-    Ok(include_str!("identity_page.js").replacen("{{CONFIG}}", &encoded, 1))
+    Ok(crate::page_runtime::identity(&encoded))
 }

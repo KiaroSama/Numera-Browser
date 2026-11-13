@@ -1,4 +1,5 @@
 use super::{adapter::Adapter, network_grades, probes};
+use crate::page_runtime::{self, Program};
 use serde_json::{Value, json};
 use std::io;
 
@@ -6,7 +7,7 @@ use std::io;
 pub fn read(adapter: &mut Adapter, country: Option<&str>) -> io::Result<Value> {
     let Some(info) = probes::observation(
         adapter,
-        include_str!("ip_probe.js"),
+        &page_runtime::expression(Program::Ip),
         json!([
             "https://ipapi.co/json/",
             "https://ipwho.is/",
@@ -16,7 +17,11 @@ pub fn read(adapter: &mut Adapter, country: Option<&str>) -> io::Result<Value> {
     else {
         return Ok(json!({"error":"Browser IP evaluation failed"}));
     };
-    let ice = probes::evaluate(adapter, include_str!("webrtc_probe.js"), Value::Null)?;
+    let ice = probes::evaluate(
+        adapter,
+        &page_runtime::expression(Program::WebRtc),
+        Value::Null,
+    )?;
     let leaks = network_grades::leaks(&ice, info["ip"].as_str())?;
     let dns = probes::dns(adapter, country)?;
     let tls = probes::tls(adapter)?;

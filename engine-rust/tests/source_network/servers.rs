@@ -443,7 +443,7 @@ impl Socks {
     }
 }
 pub(super) fn tunnel(relay: &Relay, origin: &Site, path: &str) -> (u16, String) {
-    let url = reqwest::Url::parse(&relay.url()).expect("relay URL");
+    let url = reqwest::Url::parse(&relay.url().expect("ready relay URL")).expect("relay URL");
     let mut stream =
         TcpStream::connect(("127.0.0.1", url.port().expect("port"))).expect("relay socket");
     stream

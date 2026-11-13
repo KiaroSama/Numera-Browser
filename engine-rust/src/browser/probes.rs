@@ -1,4 +1,5 @@
 use super::{adapter::Adapter, probe_grades};
+use crate::page_runtime::{self, Program};
 use serde_json::{Map, Value, json};
 use std::{io, time::Duration};
 
@@ -62,7 +63,11 @@ pub fn tls(adapter: &mut Adapter) -> io::Result<Value> {
         if navigation["navigated"] != true {
             continue;
         }
-        let info = evaluate(adapter, include_str!("tls_probe.js"), Value::Null)?;
+        let info = evaluate(
+            adapter,
+            &page_runtime::expression(Program::Tls),
+            Value::Null,
+        )?;
         if crate::conversion::truth(&info["ja3Hash"]) || crate::conversion::truth(&info["ja4"]) {
             return probe_grades::tls(&info);
         }
@@ -72,7 +77,7 @@ pub fn tls(adapter: &mut Adapter) -> io::Result<Value> {
 pub fn dns(adapter: &mut Adapter, country: Option<&str>) -> io::Result<Value> {
     let result = evaluate(
         adapter,
-        include_str!("dns_probe.js"),
+        &page_runtime::expression(Program::Dns),
         json!({
             "idUrl":"https://bash.ws/id","subTmpl":"https://{i}.{id}.bash.ws/",
             "resultTmpl":"https://bash.ws/dnsleak/test/{id}?json","n":8,

@@ -4,7 +4,13 @@ source_test!(
     "tests/test_relay_socks4.py::test_a_socks4_proxy_carries_a_real_request",
     {
         let (site, socks, mut relay) = socks4_relay(None, true);
-        let (status, body) = exchange(&relay.url(), "GET", &site.url("/"), &[], &[]);
+        let (status, body) = exchange(
+            &relay.url().expect("ready relay URL"),
+            "GET",
+            &site.url("/"),
+            &[],
+            &[],
+        );
         assert_eq!(status, 200, "{body}");
         assert_eq!(body, "NUMERA_TEST_ORIGIN / body=0");
         let seen = socks.seen.lock().expect("handshake");
@@ -19,7 +25,17 @@ source_test!(
     {
         let (site, socks, mut relay) = socks4_relay(None, true);
         let target = format!("http://localhost:{}/", site.server.address.port());
-        assert_eq!(exchange(&relay.url(), "GET", &target, &[], &[]).0, 200);
+        assert_eq!(
+            exchange(
+                &relay.url().expect("ready relay URL"),
+                "GET",
+                &target,
+                &[],
+                &[]
+            )
+            .0,
+            200
+        );
         let seen = socks.seen.lock().expect("handshake");
         let connect = seen.iter().find(|v| v["connect"] == true).expect("CONNECT");
         assert_eq!(connect["address"], json!([0, 0, 0, 1]));
@@ -35,7 +51,14 @@ source_test!(
     {
         let (site, socks, mut relay) = socks4_relay(Some("tenant-7"), true);
         assert_eq!(
-            exchange(&relay.url(), "GET", &site.url("/"), &[], &[]).0,
+            exchange(
+                &relay.url().expect("ready relay URL"),
+                "GET",
+                &site.url("/"),
+                &[],
+                &[]
+            )
+            .0,
             200
         );
         assert!(
@@ -55,7 +78,14 @@ source_test!(
     {
         let (site, _socks, mut relay) = socks4_relay(None, false);
         assert_eq!(
-            exchange(&relay.url(), "GET", &site.url("/"), &[], &[]).0,
+            exchange(
+                &relay.url().expect("ready relay URL"),
+                "GET",
+                &site.url("/"),
+                &[],
+                &[]
+            )
+            .0,
             502
         );
         assert!(

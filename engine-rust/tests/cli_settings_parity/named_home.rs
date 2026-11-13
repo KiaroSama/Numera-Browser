@@ -106,6 +106,31 @@ pub(super) fn check(root: &Path) -> Result<(), Box<dyn std::error::Error>> {
         format!("'{}' isn't in the default set", home.join(suffix).display())
     );
     assert_eq!(fs::read(root.join("config.json"))?, before);
+    for (spelling, expected) in [
+        (format!("./~{name}/{suffix}"), home.join(suffix)),
+        (format!("./~/{suffix}"), contextual_home.join(suffix)),
+        ("./plainpath".to_owned(), Path::new("plainpath").to_owned()),
+        (
+            home.join(suffix)
+                .to_str()
+                .ok_or("Account home nontext")?
+                .to_owned(),
+            home.join(suffix),
+        ),
+    ] {
+        let outcome = cli::extension_commands::defaults(
+            root,
+            "default-remove",
+            Some(&spelling),
+            &contextual_home,
+        )?;
+        assert_eq!(outcome.exit, 1);
+        assert_eq!(
+            outcome.payload["error"],
+            format!("'{}' isn't in the default set", expected.display())
+        );
+        assert_eq!(fs::read(root.join("config.json"))?, before);
+    }
     let missing = format!(
         "numera-absent-{}-{}",
         std::process::id(),
@@ -113,6 +138,22 @@ pub(super) fn check(root: &Path) -> Result<(), Box<dyn std::error::Error>> {
             .duration_since(std::time::UNIX_EPOCH)?
             .subsec_nanos()
     );
+    #[cfg(unix)]
+    {
+        let failure = cli::extension_commands::defaults(
+            root,
+            "default-remove",
+            Some(&format!("./~{missing}/{suffix}")),
+            &contextual_home,
+        )
+        .err()
+        .ok_or("Leading current directory must not hide an unknown account")?;
+        assert_eq!(
+            failure.to_string(),
+            contract["unix"]["unknown_named_user_error"]
+        );
+        assert_eq!(fs::read(root.join("config.json"))?, before);
+    }
     let request =
         json!({"headless_launch":"on","default_extension":[format!("~{missing}/{suffix}")]});
     let result = settings.config(

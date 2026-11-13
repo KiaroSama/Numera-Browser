@@ -81,7 +81,7 @@ impl Driver for Native {
                 Phase::Page=>{self.page=Some(self.context.as_ref().ok_or_else(invalid)?.new_page().await?);Ok(Value::Null)},
                 Phase::Content=>{self.page.as_ref().ok_or_else(invalid)?.set_content(&format!("<main id=\"numera-smoke\">{}</main>",container_smoke::PAGE_TEXT),Some(GotoOptions::new().timeout(Duration::from_secs(5)).wait_until(WaitUntil::Load))).await?;Ok(Value::Null)},
                 Phase::Text=>{Ok(json!(self.page.as_ref().ok_or_else(invalid)?.locator("#numera-smoke").inner_text().await?))},
-                Phase::Evaluate=>{self.page.as_ref().ok_or_else(invalid)?.evaluate::<(),Value>("() => 6 * 7",None).await},
+                Phase::Evaluate=>{let expression=crate::page_runtime::expression(crate::page_runtime::Program::SmokeValue);self.page.as_ref().ok_or_else(invalid)?.evaluate::<(),Value>(&expression,None).await},
                 Phase::ClosePage=>{if let Some(page)=self.page.take(){page.close().await?;}Ok(Value::Null)},
                 Phase::CloseContext=>{if let Some(context)=self.context.take(){context.close().await?;}Ok(Value::Null)},
                 Phase::CloseBrowser=>{if let Some(browser)=self.browser.as_ref(){browser.close().await?;}Ok(Value::Null)},

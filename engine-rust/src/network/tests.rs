@@ -353,7 +353,7 @@ fn native_http_relay_owns_auth_connections_and_closes_idle_clients() -> io::Resu
     )
     .map_err(io::Error::other)?;
     let mut relay = relay::Relay::start(&proxy)?;
-    let address = Url::parse(&relay.url()).map_err(io::Error::other)?;
+    let address = Url::parse(&relay.url()?).map_err(io::Error::other)?;
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;

@@ -14,7 +14,13 @@ source_test!(
     {
         let up = HttpProxy::new();
         let mut relay = Relay::start(&up.model("s3cr3t pass")).expect("relay");
-        let (status, body) = exchange(&relay.url(), "GET", "http://numera.test/page?q=1", &[], &[]);
+        let (status, body) = exchange(
+            &relay.url().expect("ready relay URL"),
+            "GET",
+            "http://numera.test/page?q=1",
+            &[],
+            &[],
+        );
         assert_eq!(status, 200, "{body}");
         assert!(
             body.contains("NUMERA_TEST_ORIGIN") && body.contains("http://numera.test/page?q=1")
@@ -38,7 +44,14 @@ source_test!(
         let up = HttpProxy::new();
         let mut relay = Relay::start(&up.model("wrong")).expect("relay");
         assert_eq!(
-            exchange(&relay.url(), "GET", "http://numera.test/", &[], &[]).0,
+            exchange(
+                &relay.url().expect("ready relay URL"),
+                "GET",
+                "http://numera.test/",
+                &[],
+                &[]
+            )
+            .0,
             407
         );
         assert_eq!(
@@ -56,7 +69,7 @@ source_test!(
         let mut relay = Relay::start(&up.model("s3cr3t pass")).expect("relay");
         assert_eq!(
             exchange(
-                &relay.url(),
+                &relay.url().expect("ready relay URL"),
                 "GET",
                 "http://numera.test/",
                 &[("Proxy-Authorization", "Basic bm9wZTpub3Bl")],
@@ -118,7 +131,13 @@ source_test!(
         let socks = Socks::new(SocksKind::Five, origin.server.address, true, true, true);
         let mut relay =
             Relay::start(&socks.model(SocksKind::Five, Some("u"), Some("p"))).expect("relay");
-        let (status, body) = exchange(&relay.url(), "GET", &origin.url("/plain?x=2"), &[], &[]);
+        let (status, body) = exchange(
+            &relay.url().expect("ready relay URL"),
+            "GET",
+            &origin.url("/plain?x=2"),
+            &[],
+            &[],
+        );
         assert_eq!(status, 200);
         assert_eq!(body, "NUMERA_TEST_ORIGIN /plain?x=2 body=0");
         relay.close(Duration::from_secs(3)).expect("relay joined");
@@ -133,7 +152,13 @@ source_test!(
         let mut relay =
             Relay::start(&socks.model(SocksKind::Five, Some("u"), Some("p"))).expect("relay");
         let payload = vec![b'n'; 5000];
-        let (status, body) = exchange(&relay.url(), "POST", &origin.url("/post"), &[], &payload);
+        let (status, body) = exchange(
+            &relay.url().expect("ready relay URL"),
+            "POST",
+            &origin.url("/post"),
+            &[],
+            &payload,
+        );
         assert_eq!(status, 200, "{body}");
         assert!(body.ends_with("body=5000"));
         assert_eq!(
@@ -157,7 +182,13 @@ source_test!(
         let socks = Socks::new(SocksKind::Five, origin.server.address, true, true, true);
         let mut relay =
             Relay::start(&socks.model(SocksKind::Five, Some("u"), Some("wrong"))).expect("relay");
-        let (status, body) = exchange(&relay.url(), "GET", "http://numera.test/", &[], &[]);
+        let (status, body) = exchange(
+            &relay.url().expect("ready relay URL"),
+            "GET",
+            "http://numera.test/",
+            &[],
+            &[],
+        );
         assert_eq!(status, 502);
         assert!(body.contains("rejected the credentials"), "{body}");
         relay.close(Duration::from_secs(3)).expect("relay joined");
@@ -195,7 +226,13 @@ source_test!(
         .expect("proxy");
         let started = Instant::now();
         let mut relay = Relay::start(&proxy).expect("relay");
-        let (status, body) = exchange(&relay.url(), "GET", "http://numera.test/", &[], &[]);
+        let (status, body) = exchange(
+            &relay.url().expect("ready relay URL"),
+            "GET",
+            "http://numera.test/",
+            &[],
+            &[],
+        );
         assert_eq!(status, 502);
         assert!(body.contains("upstream proxy"));
         relay.close(Duration::from_secs(3)).expect("relay joined");
@@ -208,7 +245,7 @@ source_test!(
     {
         let up = HttpProxy::new();
         let mut relay = Relay::start(&up.model("s3cr3t pass")).expect("relay");
-        let url = reqwest::Url::parse(&relay.url()).expect("URL");
+        let url = reqwest::Url::parse(&relay.url().expect("ready relay URL")).expect("URL");
         let mut socket =
             TcpStream::connect(("127.0.0.1", url.port().expect("port"))).expect("relay socket");
         socket
@@ -229,9 +266,16 @@ source_test!(
     {
         let up = HttpProxy::new();
         let mut relay = Relay::start(&up.model("s3cr3t pass")).expect("relay");
-        let address = reqwest::Url::parse(&relay.url()).expect("URL");
+        let address = reqwest::Url::parse(&relay.url().expect("ready relay URL")).expect("URL");
         assert_eq!(
-            exchange(&relay.url(), "GET", "http://numera.test/", &[], &[]).0,
+            exchange(
+                &relay.url().expect("ready relay URL"),
+                "GET",
+                "http://numera.test/",
+                &[],
+                &[]
+            )
+            .0,
             200
         );
         relay
@@ -287,8 +331,8 @@ source_test!(
     {
         let up = HttpProxy::new();
         let mut relay = Relay::start(&up.model("s3cr3t pass")).expect("started ready relay");
-        let first = relay.url();
-        assert_eq!(relay.url(), first);
+        let first = relay.url().expect("ready relay URL");
+        assert_eq!(relay.url().expect("ready relay URL"), first);
         assert_eq!(
             exchange(&first, "GET", "http://numera.test/", &[], &[]).0,
             200
@@ -297,6 +341,12 @@ source_test!(
         relay
             .close(Duration::from_secs(3))
             .expect("idempotent close");
+        let port = relay.port().expect_err("closed relay exposed its port");
+        let url = relay.url().expect_err("closed relay exposed its URL");
+        assert_eq!(port.kind(), io::ErrorKind::NotConnected);
+        assert_eq!(port.to_string(), "the relay is not running");
+        assert_eq!(url.kind(), io::ErrorKind::NotConnected);
+        assert_eq!(url.to_string(), "the relay is not running");
     }
 );
 source_test!(
@@ -306,11 +356,11 @@ source_test!(
         let up = HttpProxy::new();
         let mut first = Relay::start(&up.model("s3cr3t pass")).expect("first relay");
         let mut second = Relay::start(&up.model("s3cr3t pass")).expect("second relay");
-        let a = reqwest::Url::parse(&first.url()).expect("URL");
-        let b = reqwest::Url::parse(&second.url()).expect("URL");
+        let a = reqwest::Url::parse(&first.url().expect("ready relay URL")).expect("URL");
+        let b = reqwest::Url::parse(&second.url().expect("ready relay URL")).expect("URL");
         assert_ne!(a.port(), b.port());
         assert_eq!(
-            first.url(),
+            first.url().expect("ready relay URL"),
             format!("http://127.0.0.1:{}", a.port().expect("port"))
         );
         first.close(Duration::from_secs(3)).expect("first close");
@@ -323,7 +373,7 @@ source_test!(
     {
         let up = HttpProxy::new();
         let mut relay = Relay::start(&up.model("s3cr3t pass")).expect("relay");
-        let url = reqwest::Url::parse(&relay.url()).expect("URL");
+        let url = reqwest::Url::parse(&relay.url().expect("ready relay URL")).expect("URL");
         assert_eq!(url.host_str(), Some("127.0.0.1"));
         let route = std::net::UdpSocket::bind("0.0.0.0:0").expect("local routing probe");
         if route.connect("192.0.2.1:9").is_ok() {
@@ -349,7 +399,7 @@ source_test!(
         let up = HttpProxy::new();
         let mut relay = Relay::start(&up.model("s3cr3t pass"))
             .expect("constructor publishes only a ready relay");
-        let url = relay.url();
+        let url = relay.url().expect("ready relay URL");
         assert_eq!(
             exchange(&url, "GET", "http://numera.test/", &[], &[]).0,
             200,
@@ -389,7 +439,10 @@ source_test!(
         let (cfg, relay) =
             network::relay::proxy_transport(Some(&auth)).expect("credentialed transport");
         let mut relay = relay.expect("credentialed native bridge");
-        assert_eq!(cfg, Some(json!({"server":relay.url()})));
+        assert_eq!(
+            cfg,
+            Some(json!({"server":relay.url().expect("ready relay URL")}))
+        );
         relay
             .close(Duration::from_secs(3))
             .expect("owned bridge joined");

@@ -10,7 +10,7 @@ use crate::{
     },
 };
 use serde_json::{Map, Value, json};
-use std::{collections::BTreeMap, path::PathBuf};
+use std::collections::BTreeMap;
 
 pub struct Settings<'a> {
     pub root: &'a std::path::Path,
@@ -255,88 +255,19 @@ impl Settings<'_> {
     }
 }
 pub(crate) fn expand(text: &str, home: &std::path::Path) -> Result<String, RepoError> {
-    let path = if let Some(tail) = text.strip_prefix('~') {
-        let end = tail
-            .find(|c| c == '/' || cfg!(windows) && c == '\\')
-            .unwrap_or(tail.len());
-        let name = &tail[..end];
-        let base = if name.is_empty() {
-            home.to_owned()
-        } else {
-            named_home(name, home)?
-        };
-        base.join(tail[end..].trim_start_matches(|c| c == '/' || cfg!(windows) && c == '\\'))
-    } else {
-        PathBuf::from(text)
-    };
-    let path = path.components().collect::<PathBuf>();
+    let path = crate::storage::home_path::expand(std::path::Path::new(text), home)
+        .map_err(expand_error)?;
     Ok(path
         .to_str()
         .ok_or_else(|| RepoError::Message("Extension path is not Unicode".into()))?
         .into())
 }
-
-#[cfg(unix)]
-#[allow(unsafe_code)]
-fn named_home(name: &str, _: &std::path::Path) -> Result<PathBuf, RepoError> {
-    use std::{
-        ffi::{CStr, CString, OsStr},
-        mem::MaybeUninit,
-        os::unix::ffi::OsStrExt,
-        ptr,
-    };
-    let name = CString::new(name)
-        .map_err(|_| RepoError::Message("Could not determine home directory.".into()))?;
-    let mut length = 1024;
-    loop {
-        let mut buffer = vec![0u8; length];
-        let mut record = MaybeUninit::<libc::passwd>::uninit();
-        let mut result = ptr::null_mut();
-        // SAFETY: all outputs are live, correctly aligned, and writable for
-        // the supplied buffer length. The reentrant API owns no global record.
-        let code = unsafe {
-            libc::getpwnam_r(
-                name.as_ptr(),
-                record.as_mut_ptr(),
-                buffer.as_mut_ptr().cast(),
-                buffer.len(),
-                &mut result,
-            )
-        };
-        if code == libc::ERANGE && length < 1024 * 1024 {
-            length *= 2;
-            continue;
-        }
-        if code == libc::ENOENT || code == libc::ESRCH {
-            return Err(RepoError::Message(
-                "Could not determine home directory.".into(),
-            ));
-        }
-        if code != 0 {
-            return Err(std::io::Error::from_raw_os_error(code).into());
-        }
-        if result.is_null() {
-            return Err(RepoError::Message(
-                "Could not determine home directory.".into(),
-            ));
-        }
-        // SAFETY: successful nonnull getpwnam_r initializes the passwd record
-        // and its NUL-terminated directory inside the retained buffer.
-        let directory = unsafe { (*result).pw_dir };
-        if directory.is_null() {
-            return Err(RepoError::Message(
-                "Could not determine home directory.".into(),
-            ));
-        }
-        // SAFETY: the successful lookup's directory remains live until copied.
-        let directory = unsafe { CStr::from_ptr(directory) };
-        return Ok(PathBuf::from(OsStr::from_bytes(directory.to_bytes())));
+fn expand_error(error: std::io::Error) -> RepoError {
+    if error.kind() == std::io::ErrorKind::NotFound {
+        RepoError::Message(error.to_string())
+    } else {
+        error.into()
     }
-}
-
-#[cfg(windows)]
-fn named_home(name: &str, home: &std::path::Path) -> Result<PathBuf, RepoError> {
-    windows_named_home(name, home, std::env::var_os("USERNAME").as_deref())
 }
 
 /// Windows' account-name path policy, with observations supplied by its caller.
@@ -345,20 +276,6 @@ pub fn windows_named_home(
     name: &str,
     home: &std::path::Path,
     current: Option<&std::ffi::OsStr>,
-) -> Result<PathBuf, RepoError> {
-    // CPython ntpath expands another user only when the current profile has
-    // the ordinary <parent>/<USERNAME> shape. It does not query the account
-    // database or require the guessed sibling profile to exist.
-    if current == Some(std::ffi::OsStr::new(name)) {
-        return Ok(home.to_owned());
-    }
-    if current.is_none() || home.file_name() != current {
-        return Err(RepoError::Message(
-            "Could not determine home directory.".into(),
-        ));
-    }
-    Ok(home
-        .parent()
-        .ok_or_else(|| RepoError::Message("Could not determine home directory.".into()))?
-        .join(name))
+) -> Result<std::path::PathBuf, RepoError> {
+    crate::storage::home_path::windows_named_home(name, home, current).map_err(expand_error)
 }

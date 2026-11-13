@@ -11,6 +11,14 @@ fn invalid(message: &str) -> io::Error {
 fn read(path: &Path) -> io::Result<Value> {
     serde_json::from_slice(&fs::read(path)?).map_err(io::Error::other)
 }
+fn selected(expression: &str, export: &str) -> bool {
+    expression
+        .strip_prefix("(argument) => (")
+        .and_then(|expression| expression.strip_suffix(&format!(")().{export}(argument)")))
+        == Some(include_str!(
+            "../../../browser-page-rust/generated/runtime.js"
+        ))
+}
 pub fn run(mode: &str, config: Value) -> io::Result<()> {
     let case = if let Some(path) = config["case_file"].as_str() {
         read(Path::new(path))?
@@ -65,7 +73,7 @@ pub fn run(mode: &str, config: Value) -> io::Result<()> {
                 let expression = request["expression"]
                     .as_str()
                     .ok_or_else(|| invalid("SDK expression missing"))?;
-                let attempt = if case["alignment"] == true && expression.starts_with("(fonts)") {
+                let attempt = if case["alignment"] == true && selected(expression, "font_probe") {
                     let store = store.as_ref().ok_or_else(|| invalid("Alignment store missing"))?;
                     let id = config["profile_id"].as_str().unwrap_or("fixture");
                     for directory in ["profiles", "dashboard"] {
@@ -76,14 +84,16 @@ pub fn run(mode: &str, config: Value) -> io::Result<()> {
                     }
                     json!({"value":case["observation"]["fontsRendered"]})
                 } else if case.get("observations").is_some() {
-                    let kind = if expression.contains("async (urls)") {
+                    let kind = if selected(expression, "ip_probe") {
                         "info"
-                    } else if expression.contains("RTCPeerConnection") {
+                    } else if selected(expression, "webrtc_probe") {
                         "ice"
-                    } else if expression.contains("idUrl") {
+                    } else if selected(expression, "dns_probe") {
                         "dns"
-                    } else {
+                    } else if selected(expression, "tls_probe") {
                         "tls"
+                    } else {
+                        return Err(invalid("Network observation selected an unexpected browser export"));
                     };
                     if case["observations"]["ipFailed"] == true {
                         json!({"evaluate":false})

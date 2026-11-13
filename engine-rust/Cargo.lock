@@ -1468,8 +1468,10 @@ dependencies = [
 name = "numera-core"
 version = "0.36.0"
 dependencies = [
+ "aes",
  "axum",
  "base64 0.23.1",
+ "cbc",
  "chrono",
  "clap",
  "ctrlc",
@@ -1478,6 +1480,7 @@ dependencies = [
  "flate2",
  "getrandom 0.4.3",
  "hickory-resolver",
+ "hmac 0.13.0",
  "libc",
  "maxminddb",
  "num-bigint",
@@ -1501,6 +1504,7 @@ dependencies = [
  "tower-http 0.7.1",
  "windows-sys 0.61.2",
  "winresource",
+ "zeroize",
  "zip",
 ]
 

@@ -1,0 +1,3846 @@
+{
+  "schema": 1,
+  "group": "cli",
+  "reviewed_on": "2026-11-13",
+  "ledger": "docs/migration-coverage.json",
+  "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+  "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+  "scope": "93 exact assigned IDs in11 files; behavior evidence supplement only; global907 ledger unchanged.",
+  "source_files": [
+    {
+      "path": "engine/numera/cli/__init__.py",
+      "sha256": "b91ee61d7543a8ca478e94e39ae51e4e627beb772096e80e34175fdda069b476",
+      "git_blob": "59d066cc37b46dc861bf22bb4be6827b43713cdf"
+    },
+    {
+      "path": "engine/numera/cli/profiles.py",
+      "sha256": "6fd35c04a4ff70e1078530204f57c081ac4c71ef05af3c6b9da24b41901e9093",
+      "git_blob": "332fa6f52b05254be16f71c5ac7299988c4c1b6e"
+    },
+    {
+      "path": "engine/numera/cli/browser.py",
+      "sha256": "034984b9c5c03a2dd76070b6a413e81d4b2ed499191e85cff959b9746ceb031e",
+      "git_blob": "821d632f8665d12dab58bfd1a3551be7d198a112"
+    },
+    {
+      "path": "engine/numera/cli/setup.py",
+      "sha256": "a0a2f5db774d48627278399ab53317181eebaed1d7670b41f237872854154c39",
+      "git_blob": "6b89c0dc104627b6f7b16653e4361d449133a8c5"
+    },
+    {
+      "path": "engine/numera/cli/out.py",
+      "sha256": "b28a9bf672b37fb4df9afd014916fdd3f0e27309eca743f0f6f55baaf1a9d80b",
+      "git_blob": "e18db43d3f8f1793578b2a45099f4632a68a74b1"
+    },
+    {
+      "path": "engine/numera/cli/pool.py",
+      "sha256": "6f2e21722cd93fda3f6d2cdfe76c34e78fbfecebf42c636c3e69e0cc4d7b7429",
+      "git_blob": "e23dcfd68cbf16849580fcbdb36a09f35229d190"
+    },
+    {
+      "path": "engine/numera/cli/parser.py",
+      "sha256": "3292eaaec60b8e9a0e290e03b9869a69260f87c63c4d685653d83eff56e64c57",
+      "git_blob": "8e5670a77a7a8b55955599e10b852750584cda3c"
+    },
+    {
+      "path": "engine/numera/bulk.py",
+      "sha256": "fa1d2453f70db47b093645eb03757a65b4a7900758e7f5df2203077dbef63b2b",
+      "git_blob": "dbac5d8ee024184f2128665ea7c6eaaa4faa1a0a"
+    },
+    {
+      "path": "engine/numera/convert.py",
+      "sha256": "60dbfa148ade557de5233c63ec9866aa1bb7f63931840c7a96b603c4fb3f856b",
+      "git_blob": "0102f9f5ecb46ba7aa9c6522976fb9153b3759b5"
+    },
+    {
+      "path": "engine/numera/collision.py",
+      "sha256": "e7f9e61829c40a62e991f7fb1de3e332515727b2df9a60b48c40e17604ec0237",
+      "git_blob": "0ce4945206c860e84dab9dd392c3e06a66906190"
+    },
+    {
+      "path": "engine/numera/automation.py",
+      "sha256": "375449da9f3c8c0b190dc8b54d61dd71e5c5924cb6e4aff2288d8ce544f557fe",
+      "git_blob": "71eb27c2edd08191a815ab3693afcca78dee6148"
+    }
+  ],
+  "review_method": "Read the original/current Python bodies and the three changes against the pinned original tree, inspected native Rust implementation bodies and named test assertions. The11 original file hashes are verified against the ledger. Per-ID mappings and fusion explanations are hand authored; map lookups only resolve exact test IDs. No test counts were changed for this review.",
+  "verification": {
+    "current_cli_retirement": "All11 original tests across7 targets passed after native named-home and BigInt bulk repairs; /workspace/work/cli-bulk-integer11.txt.",
+    "strict_clippy": "The same7 targets pass -D warnings after both repairs; /workspace/work/cli-bulk-integer-clippy.txt (7.55s).",
+    "fixture_provenance": "engine-rust/tests/fixtures/cli-characterization-manifest.json;7 immutable13b observers, payload hashes and observer-revision hashes independently audited.",
+    "named_home": "Existing settings case includes native reentrant Unix account lookup, independent kernel UID lookup, unknown-user byte preservation, and frozen synthetic Windows policy controls; no actual account/home strings are stored.",
+    "platform_limit": "Local execution is Linux. Windows/macOS runtime and real Windows synthetic-certificate signing remain for hosted CI. Cited other suites retain their own evidence and are not claimed freshly rerun by this document.",
+    "bulk_integer_contract": "Seven additional frozen13b observations were folded into the existing bulk test, preserving both original bulk test names: full profile/name equality across i64 boundaries, huge negative count, representable negative padding, empty-count ignored huge padding, source OverflowError for out-of-isize padding, and early impossible-count allocation refusal.",
+    "resource_policy": "CLI arbitrary negative counts clamp to0 before native allocation conversion; positive count beyond usize fails before creating records. Padding outside isize retains the source zfill overflow refusal. Arbitrary name indices use BigInt.",
+    "new_tests": 0,
+    "manual_terminal": {
+      "kind": "manual_actual_controlling_terminal",
+      "platform": "Linux",
+      "binary_sha256": "c00a946c4ae91fda3eafbcd9b2b0ee6ac946fa0e529d35f3e53177e02b24c839",
+      "matching_confirmation": "vault enabled, input not echoed, original terminal mode restored",
+      "mismatch_confirmation": "refused, vault remains disabled, input not echoed, original terminal mode restored",
+      "logs": [
+        {
+          "path": "/workspace/work/tty-vault-session.log",
+          "sha256": "73f27161ea9ee1045b0362e4661ff640d744cb4d94972bd37884e90e9fae5bf3"
+        },
+        {
+          "path": "/workspace/work/tty-vault-refusal-session.log",
+          "sha256": "f55356909c6c26c942bc4c75dc863f03381a28c910dfde828692e1fbdf911547"
+        }
+      ],
+      "limits": "Windows physical console interaction is not claimed; no new automated test identities were added."
+    }
+  },
+  "summary": {
+    "implemented": 89,
+    "partial": 4,
+    "gap": 0
+  },
+  "findings": [
+    {
+      "id": "engine/numera/cli/browser.py::cmd_warmup",
+      "kind": "composed_cli_test_gap",
+      "detail": "Native policy, shared browsing worker/lifetime and CLI presentation are covered separately. No cited test directly drives the public successful CLI warmup wrapper through a full browsing cadence."
+    },
+    {
+      "id": "engine/numera/cli/setup.py::_prompt_password",
+      "kind": "interactive_test_gap",
+      "detail": "Terminal-only bounded input and RAII echo restoration are implemented. The cited tests cover JSON refusal and recovery; they do not independently drive a physical terminal echo/confirmation session."
+    },
+    {
+      "id": "engine/numera/cli/setup.py::cmd_schedule",
+      "kind": "run_due_cli_test_gap",
+      "detail": "Schedule CRUD, claims, worker policy and rendered run-due results are covered. No cited test directly drives the successful CLI run-due callback loop; its native body was reviewed."
+    },
+    {
+      "id": "engine/numera/automation.py::cdp_info",
+      "kind": "diagnostic_and_transport_adaptation",
+      "detail": "Native polling requires an object, refuses redirects and reports a stable bounded timeout without the original last-exception detail. The normal live CDP object/lifetime path is covered; these direct-library differences remain qualified."
+    }
+  ],
+  "cases": [
+    {
+      "id": "engine/numera/automation.py::cdp_info",
+      "disposition": "partial",
+      "rust": [
+        {
+          "path": "engine-rust/src/network/devtools.rs",
+          "line": 5,
+          "symbols": [
+            "info"
+          ]
+        }
+      ],
+      "behavior": "Poll bounded loopback /json/version until a valid JSON object or timeout; reject redirects and keep the live endpoint private to the machine.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "qualification": {
+        "kind": "diagnostic_and_transport_adaptation",
+        "detail": "Native polling requires an object, refuses redirects and reports a stable bounded timeout without the original last-exception detail. The normal live CDP object/lifetime path is covered; these direct-library differences remain qualified."
+      },
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_launch_parity",
+          "test": "foreground_launch_reuses_admission_and_native_backend_lifetime_policy",
+          "file": "engine-rust/tests/cli_launch_parity.rs",
+          "assertions": "Drives native launch/attach through compiled SDK peers; checks admission, backend/first-page policy, current claims, live CDP endpoint publication, snippets, cancellation and natural-close cleanup."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/automation.py::attach",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/attach_commands.rs",
+          "line": 115,
+          "symbols": [
+            "Attach::run_started"
+          ]
+        }
+      ],
+      "behavior": "Validate CDP-capable backends, keep profile admission while opening a first page with remote-debugging-port, and return/publish endpoint data while that browser is live.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The Python tuple of driver handles plus info becomes an owned Adapter lifetime and published Value; ownership cannot be detached from the live session.",
+      "native_tests": [
+        {
+          "suite": "cli_launch_parity",
+          "test": "foreground_launch_reuses_admission_and_native_backend_lifetime_policy",
+          "file": "engine-rust/tests/cli_launch_parity.rs",
+          "assertions": "Drives native launch/attach through compiled SDK peers; checks admission, backend/first-page policy, current claims, live CDP endpoint publication, snippets, cancellation and natural-close cleanup."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/automation.py::snippets",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/network/devtools.rs",
+          "line": 55,
+          "symbols": [
+            "snippets"
+          ]
+        }
+      ],
+      "behavior": "Render the same Playwright/Puppeteer/Selenium and WebSocket endpoint examples using the selected loopback port and observed websocket URL.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "Python/JavaScript words remain user-facing example strings; they are not executable runtime helpers or generated process fixtures.",
+      "native_tests": [
+        {
+          "suite": "cli_launch_parity",
+          "test": "foreground_launch_reuses_admission_and_native_backend_lifetime_policy",
+          "file": "engine-rust/tests/cli_launch_parity.rs",
+          "assertions": "Drives native launch/attach through compiled SDK peers; checks admission, backend/first-page policy, current claims, live CDP endpoint publication, snippets, cancellation and natural-close cleanup."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/bulk.py::apply_patch",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/bulk.rs",
+          "line": 42,
+          "symbols": [
+            "apply"
+          ]
+        }
+      ],
+      "behavior": "Apply only present fields; preserve null/absent proxy distinction, changed-field order, locale coupling, tags and same-slot regeneration.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "bulk_parity",
+          "test": "bulk_generation_patch_and_selection_match_original",
+          "file": "engine-rust/tests/bulk_parity.rs",
+          "assertions": "Checks native deterministic batch records, changed-field order, patch outcomes, selection and source seed draws. Existing test additionally checks7 frozen large-integer full-profile/CLI/store/refusal observations with no new test count."
+        },
+        {
+          "suite": "source_storage",
+          "test": "bulk::setting_the_same_value_is_not_a_change",
+          "file": "engine-rust/tests/source_storage/bulk.rs",
+          "assertions": "Calls native bulk::apply and verifies identical values do not produce changed fields."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_bulk.py::test_setting_the_same_value_is_not_a_change"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/bulk.py::apply_patch.touch",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/bulk.rs",
+          "line": 42,
+          "symbols": [
+            "apply"
+          ]
+        }
+      ],
+      "behavior": "Treat absent/null and equal values as untouched while reporting only real changed fields.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The private touch closure is fused into explicit typed comparisons in bulk::apply; proxy still takes its separate presence-sensitive branch.",
+      "native_tests": [
+        {
+          "suite": "bulk_parity",
+          "test": "bulk_generation_patch_and_selection_match_original",
+          "file": "engine-rust/tests/bulk_parity.rs",
+          "assertions": "Checks native deterministic batch records, changed-field order, patch outcomes, selection and source seed draws. Existing test additionally checks7 frozen large-integer full-profile/CLI/store/refusal observations with no new test count."
+        },
+        {
+          "suite": "source_storage",
+          "test": "bulk::setting_the_same_value_is_not_a_change",
+          "file": "engine-rust/tests/source_storage/bulk.rs",
+          "assertions": "Calls native bulk::apply and verifies identical values do not produce changed fields."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_bulk.py::test_setting_the_same_value_is_not_a_change"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/bulk.py::generate_profiles",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/bulk.rs",
+          "line": 188,
+          "symbols": [
+            "generate"
+          ]
+        },
+        {
+          "path": "engine-rust/src/bulk.rs",
+          "line": 175,
+          "symbols": [
+            "GenerateBatch"
+          ]
+        }
+      ],
+      "behavior": "Cycle OS and locale on separate strides, draw per-profile Python-compatible seeds, override UA versions coherently, and keep names/tags/engine settings. Generic BigInt-compatible starts preserve exact indices beyond i64 and across its boundary.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "bulk_parity",
+          "test": "bulk_generation_patch_and_selection_match_original",
+          "file": "engine-rust/tests/bulk_parity.rs",
+          "assertions": "Checks native deterministic batch records, changed-field order, patch outcomes, selection and source seed draws. Existing test additionally checks7 frozen large-integer full-profile/CLI/store/refusal observations with no new test count."
+        },
+        {
+          "suite": "source_storage",
+          "test": "bulk::generate_profiles_reproducible_with_seed",
+          "file": "engine-rust/tests/source_storage/bulk.rs",
+          "assertions": "Generates real native batches twice with the same seed and compares device identity draws."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_bulk.py::test_generate_profiles_reproducible_with_seed"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/bulk.py::select",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/bulk.rs",
+          "line": 12,
+          "symbols": [
+            "select"
+          ]
+        }
+      ],
+      "behavior": "Select all or ordered tag/reference membership without introducing overlap duplicates or losing complete profile equality semantics.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "bulk_parity",
+          "test": "selection::selection_matches_original_complete_profile_membership",
+          "file": "engine-rust/tests/bulk_parity/selection.rs",
+          "assertions": "Checks complete profile membership/equality, all/tag/reference union order and duplicate behavior against frozen original observations."
+        },
+        {
+          "suite": "source_storage",
+          "test": "bulk::select_never_returns_duplicates",
+          "file": "engine-rust/tests/source_storage/bulk.rs",
+          "assertions": "Calls actual native selection with overlapping reference/tag matches and verifies membership."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_bulk.py::test_select_never_returns_duplicates"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/__init__.py::_open_store",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/application.rs",
+          "line": 35,
+          "symbols": [
+            "open_store"
+          ]
+        }
+      ],
+      "behavior": "Ordinary commands open one selected native repository; vault resume requires both old and new passwords before exposing stores.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "shared_cli_open_uses_both_resume_passwords_before_exposing_stores",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Refuses absent old/new recovery passwords without changing stored bytes; then opens with both passwords and verifies resumed secrets."
+        },
+        {
+          "suite": "cli_settings_parity",
+          "test": "strict_settings::settings_commands_preserve_original_decoding_refusals_and_early_errors",
+          "file": "engine-rust/tests/cli_settings_parity/strict_settings.rs",
+          "assertions": "Exercises56 malformed settings files and early command refusals against actual native storage; checks decoding distinctions and unchanged records."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/__init__.py::main",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/native_entry.rs",
+          "line": 31,
+          "symbols": [
+            "run"
+          ]
+        },
+        {
+          "path": "engine-rust/src/native_entry.rs",
+          "line": 105,
+          "symbols": [
+            "execute"
+          ]
+        },
+        {
+          "path": "engine-rust/src/native_entry.rs",
+          "line": 189,
+          "symbols": [
+            "dispatch"
+          ]
+        }
+      ],
+      "behavior": "Parse the shared registry, choose JSON output, resolve root/password, enter update admission/startup and runtime lifetime, dispatch services, emit structured refusals and settle retained process ownership.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The procedural main/_execute stack is fused into the native executable entry and explicit Environment/Output/Admission owners; no interpreter forwarding remains.",
+      "native_tests": [
+        {
+          "suite": "native_entry",
+          "test": "entry_dispatch_reads_real_store_and_preserves_structured_refusals",
+          "file": "engine-rust/tests/native_entry.rs",
+          "assertions": "Invokes native dispatch against real stores; checks JSON-only success/refusal, HTTP/MCP entry behavior and ownership cleanup."
+        },
+        {
+          "suite": "native_entry",
+          "test": "browser_dispatch_uses_actual_handshake_without_redundant_metadata",
+          "file": "engine-rust/tests/native_entry.rs",
+          "assertions": "Invokes the native browser dispatch and verifies the actual peer hello/open/close handshake without redundant metadata execution."
+        },
+        {
+          "suite": "source_http",
+          "test": "agent_cases::agent_parity_test_every_offline_command_emits_only_json",
+          "file": "engine-rust/tests/source_http/agent.rs",
+          "assertions": "Runs native offline command surfaces and parses their entire stdout as the sole result."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_agent_parity.py::test_every_offline_command_emits_only_json"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/__init__.py::_detach_target",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/native_detach.rs",
+          "line": 23,
+          "symbols": [
+            "start"
+          ]
+        }
+      ],
+      "behavior": "Resolve only a textual profile reference before creating a durable background job; missing refs yield no target and ambiguous refs fail inside structured error handling.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The helper is a typed Option/Result pipeline inside native_detach::start so resolution errors cannot escape the command refusal boundary.",
+      "native_tests": [
+        {
+          "suite": "source_http",
+          "test": "product_cases::public_surface_test_a_detached_command_reports_a_bad_reference_as_json",
+          "file": "engine-rust/tests/source_http/product.rs",
+          "assertions": "Invokes actual native detached/public command handling with an ambiguous target and checks a structured refusal."
+        },
+        {
+          "suite": "job_parity",
+          "test": "durable_job_argument_and_outcome_policy_matches_source",
+          "file": "engine-rust/tests/job_parity.rs",
+          "assertions": "Checks durable job argv/password transport, listing/state/tail/stop/prune and actual recorded process stop ownership."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_public_surface.py::test_a_detached_command_reports_a_bad_reference_as_json"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::cmd_launch",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/launch_commands.rs",
+          "line": 26,
+          "symbols": [
+            "Profiles::launch_with_output"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/launch_commands.rs",
+          "line": 59,
+          "symbols": [
+            "Profiles::launch_started"
+          ]
+        }
+      ],
+      "behavior": "Hold session admission for the whole foreground browser lifetime; derive backend/warnings from the current profile under lease and honor an explicit engine override.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The source proxy_warnings call currently always returns []; native launch retains the real coherence warning behavior and credentialed SOCKS is handled by the actual relay factory.",
+      "native_tests": [
+        {
+          "suite": "cli_launch_parity",
+          "test": "foreground_launch_reuses_admission_and_native_backend_lifetime_policy",
+          "file": "engine-rust/tests/cli_launch_parity.rs",
+          "assertions": "Drives native launch/attach through compiled SDK peers; checks admission, backend/first-page policy, current claims, live CDP endpoint publication, snippets, cancellation and natural-close cleanup."
+        },
+        {
+          "suite": "native_entry",
+          "test": "browser_dispatch_uses_actual_handshake_without_redundant_metadata",
+          "file": "engine-rust/tests/native_entry.rs",
+          "assertions": "Invokes the native browser dispatch and verifies the actual peer hello/open/close handshake without redundant metadata execution."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::cmd_stop",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/job_commands.rs",
+          "line": 68,
+          "symbols": [
+            "Profiles::stop_observed"
+          ]
+        }
+      ],
+      "behavior": "Stop only owned detached jobs, settle claims after proved death, and distinguish foreign/busy sessions from stale or absent sessions.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        },
+        {
+          "suite": "job_parity",
+          "test": "durable_job_argument_and_outcome_policy_matches_source",
+          "file": "engine-rust/tests/job_parity.rs",
+          "assertions": "Checks durable job argv/password transport, listing/state/tail/stop/prune and actual recorded process stop ownership."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::cmd_jobs",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/job_commands.rs",
+          "line": 10,
+          "symbols": [
+            "run"
+          ]
+        }
+      ],
+      "behavior": "List/show/tail/stop/prune durable job records with live/orphaned/verified status and source-compatible output.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "job_parity",
+          "test": "durable_job_argument_and_outcome_policy_matches_source",
+          "file": "engine-rust/tests/job_parity.rs",
+          "assertions": "Checks durable job argv/password transport, listing/state/tail/stop/prune and actual recorded process stop ownership."
+        },
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::cmd_attach",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/attach_commands.rs",
+          "line": 66,
+          "symbols": [
+            "Attach::run_with_output"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/attach_commands.rs",
+          "line": 115,
+          "symbols": [
+            "Attach::run_started"
+          ]
+        }
+      ],
+      "behavior": "Acquire the current profile/session, reject non-CDP backends, request the debugging port and publish the endpoint before waiting for browser completion.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_launch_parity",
+          "test": "foreground_launch_reuses_admission_and_native_backend_lifetime_policy",
+          "file": "engine-rust/tests/cli_launch_parity.rs",
+          "assertions": "Drives native launch/attach through compiled SDK peers; checks admission, backend/first-page policy, current claims, live CDP endpoint publication, snippets, cancellation and natural-close cleanup."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::_attached",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/attach_commands.rs",
+          "line": 115,
+          "symbols": [
+            "Attach::run_started"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/attach_commands.rs",
+          "line": 23,
+          "symbols": [
+            "ready"
+          ]
+        }
+      ],
+      "behavior": "Emit live CDP browser/ws/port information and snippets, then wait for natural close/cancellation and close the complete native adapter tree.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "Python pw/context/page handles are fused into the Adapter ownership object; it keeps the lease and process tree until explicit settlement and endpoint cleanup.",
+      "native_tests": [
+        {
+          "suite": "cli_launch_parity",
+          "test": "foreground_launch_reuses_admission_and_native_backend_lifetime_policy",
+          "file": "engine-rust/tests/cli_launch_parity.rs",
+          "assertions": "Drives native launch/attach through compiled SDK peers; checks admission, backend/first-page policy, current claims, live CDP endpoint publication, snippets, cancellation and natural-close cleanup."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::cmd_warmup",
+      "disposition": "partial",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/warmup_commands.rs",
+          "line": 33,
+          "symbols": [
+            "Warmup::run_with_output"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/warmup_commands.rs",
+          "line": 108,
+          "symbols": [
+            "Warmup::run_started"
+          ]
+        }
+      ],
+      "behavior": "Validate duration/preset/sites, use the current admitted profile, run the native browsing cadence, stream events and report pages/errors/elapsed duration.",
+      "coverage_scope": "Warmup policy/ownership and HTTP worker paths have native scenario assertions; CLI narration is frozen/asserted and the thin public CLI-to-Warmup routing is reviewed in source.",
+      "qualification": {
+        "kind": "composed_cli_test_gap",
+        "detail": "Native policy, shared browsing worker/lifetime and CLI presentation are covered separately. No cited test directly drives the public successful CLI warmup wrapper through a full browsing cadence."
+      },
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        },
+        {
+          "suite": "launch_http_parity",
+          "test": "launch_optional_body_and_refusals_match_original_before_native_activation",
+          "file": "engine-rust/tests/launch_http_parity.rs",
+          "assertions": "Checks real native HTTP warmup/launch worker admission, readiness, active-state cleanup and scheduler claims."
+        },
+        {
+          "suite": "source_storage",
+          "test": "compound_atomicity::an_impossible_warmup_duration_is_refused_everywhere_case_008",
+          "file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+          "assertions": "Runs the source boundary refusal scenario with nonfinite minutes and proves no browser/work state is started."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_compound_atomicity.py::test_an_impossible_warmup_duration_is_refused_everywhere[inf]"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::cmd_cookies_list",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/cookie_commands.rs",
+          "line": 114,
+          "symbols": [
+            "Cookies::list"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/cookie_commands.rs",
+          "line": 17,
+          "symbols": [
+            "Cookies::run_with_output"
+          ]
+        }
+      ],
+      "behavior": "Resolve/admit the profile for cookie list; preserve source jar format, domain counts, clear/add order, refusal/output and owned SDK cleanup.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_cookie_parity",
+          "test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "file": "engine-rust/tests/cli_cookie_parity.rs",
+          "assertions": "Executes cookies and all browser probe CLI cases using compiled Rust SDK peers; checks exact operation order, grades, retries, trust/align JSON exits, emitted text, concurrent note preservation and claim release."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::cmd_cookies_export",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/cookie_commands.rs",
+          "line": 141,
+          "symbols": [
+            "Cookies::export"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/cookie_commands.rs",
+          "line": 17,
+          "symbols": [
+            "Cookies::run_with_output"
+          ]
+        }
+      ],
+      "behavior": "Resolve/admit the profile for cookie export; preserve source jar format, domain counts, clear/add order, refusal/output and owned SDK cleanup.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_cookie_parity",
+          "test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "file": "engine-rust/tests/cli_cookie_parity.rs",
+          "assertions": "Executes cookies and all browser probe CLI cases using compiled Rust SDK peers; checks exact operation order, grades, retries, trust/align JSON exits, emitted text, concurrent note preservation and claim release."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::cmd_cookies_import",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/cookie_commands.rs",
+          "line": 182,
+          "symbols": [
+            "Cookies::import"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/cookie_commands.rs",
+          "line": 17,
+          "symbols": [
+            "Cookies::run_with_output"
+          ]
+        }
+      ],
+      "behavior": "Resolve/admit the profile for cookie import; preserve source jar format, domain counts, clear/add order, refusal/output and owned SDK cleanup.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_cookie_parity",
+          "test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "file": "engine-rust/tests/cli_cookie_parity.rs",
+          "assertions": "Executes cookies and all browser probe CLI cases using compiled Rust SDK peers; checks exact operation order, grades, retries, trust/align JSON exits, emitted text, concurrent note preservation and claim release."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::cmd_proxy_test",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/probe_commands.rs",
+          "line": 43,
+          "symbols": [
+            "Probes::run_started"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/probe_commands.rs",
+          "line": 138,
+          "symbols": [
+            "complete_report"
+          ]
+        }
+      ],
+      "behavior": "Run the proxy observation in a finite admitted native browser; use current identity/proxy, preserve grades/retries/refusals and human/JSON verdict policy.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The four procedural probe commands share Probes::run_started with an explicit operation and common report completion; each operation keeps its own native observer/grader.",
+      "native_tests": [
+        {
+          "suite": "cli_cookie_parity",
+          "test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "file": "engine-rust/tests/cli_cookie_parity.rs",
+          "assertions": "Executes cookies and all browser probe CLI cases using compiled Rust SDK peers; checks exact operation order, grades, retries, trust/align JSON exits, emitted text, concurrent note preservation and claim release."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::cmd_tls",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/probe_commands.rs",
+          "line": 43,
+          "symbols": [
+            "Probes::run_started"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/probe_commands.rs",
+          "line": 138,
+          "symbols": [
+            "complete_report"
+          ]
+        }
+      ],
+      "behavior": "Run the tls observation in a finite admitted native browser; use current identity/proxy, preserve grades/retries/refusals and human/JSON verdict policy.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The four procedural probe commands share Probes::run_started with an explicit operation and common report completion; each operation keeps its own native observer/grader.",
+      "native_tests": [
+        {
+          "suite": "cli_cookie_parity",
+          "test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "file": "engine-rust/tests/cli_cookie_parity.rs",
+          "assertions": "Executes cookies and all browser probe CLI cases using compiled Rust SDK peers; checks exact operation order, grades, retries, trust/align JSON exits, emitted text, concurrent note preservation and claim release."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::cmd_dns",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/probe_commands.rs",
+          "line": 43,
+          "symbols": [
+            "Probes::run_started"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/probe_commands.rs",
+          "line": 138,
+          "symbols": [
+            "complete_report"
+          ]
+        }
+      ],
+      "behavior": "Run the dns observation in a finite admitted native browser; use current identity/proxy, preserve grades/retries/refusals and human/JSON verdict policy.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The four procedural probe commands share Probes::run_started with an explicit operation and common report completion; each operation keeps its own native observer/grader.",
+      "native_tests": [
+        {
+          "suite": "cli_cookie_parity",
+          "test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "file": "engine-rust/tests/cli_cookie_parity.rs",
+          "assertions": "Executes cookies and all browser probe CLI cases using compiled Rust SDK peers; checks exact operation order, grades, retries, trust/align JSON exits, emitted text, concurrent note preservation and claim release."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::cmd_trust",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/probe_commands.rs",
+          "line": 43,
+          "symbols": [
+            "Probes::run_started"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/probe_commands.rs",
+          "line": 138,
+          "symbols": [
+            "complete_report"
+          ]
+        }
+      ],
+      "behavior": "Run the trust observation in a finite admitted native browser; use current identity/proxy, preserve grades/retries/refusals and human/JSON verdict policy.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The four procedural probe commands share Probes::run_started with an explicit operation and common report completion; each operation keeps its own native observer/grader.",
+      "native_tests": [
+        {
+          "suite": "cli_cookie_parity",
+          "test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "file": "engine-rust/tests/cli_cookie_parity.rs",
+          "assertions": "Executes cookies and all browser probe CLI cases using compiled Rust SDK peers; checks exact operation order, grades, retries, trust/align JSON exits, emitted text, concurrent note preservation and claim release."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/browser.py::cmd_align",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/align_commands.rs",
+          "line": 37,
+          "symbols": [
+            "Align::run_started"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/align_commands.rs",
+          "line": 108,
+          "symbols": [
+            "complete_report"
+          ]
+        }
+      ],
+      "behavior": "Observe actual browser/font identity, patch only alignment fields on fresh repository state, preserve concurrent notes and make JSON grade results successful command outcomes.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_cookie_parity",
+          "test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "file": "engine-rust/tests/cli_cookie_parity.rs",
+          "assertions": "Executes cookies and all browser probe CLI cases using compiled Rust SDK peers; checks exact operation order, grades, retries, trust/align JSON exits, emitted text, concurrent note preservation and claim release."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/out.py::json_mode",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/output.rs",
+          "line": 45,
+          "symbols": [
+            "Output::json_mode"
+          ]
+        }
+      ],
+      "behavior": "Read command-local JSON mode so human narration cannot contaminate machine-readable stdout.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The process-global mutable boolean becomes immutable per-Output state, avoiding cross-request/global state drift.",
+      "native_tests": [
+        {
+          "suite": "cli_registry_parity",
+          "test": "command_registry_matches_original_schemas_arguments_and_parse_views",
+          "file": "engine-rust/tests/cli_registry_parity.rs",
+          "assertions": "Compares every tool schema/argv and parsed namespace; checks help/version plus39 plain/TTY/JSON narration, confirmation, EOF and emission observations."
+        },
+        {
+          "suite": "source_http",
+          "test": "agent_cases::agent_parity_test_every_offline_command_emits_only_json",
+          "file": "engine-rust/tests/source_http/agent.rs",
+          "assertions": "Runs native offline command surfaces and parses their entire stdout as the sole result."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_agent_parity.py::test_every_offline_command_emits_only_json"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/out.py::set_json_mode",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/output.rs",
+          "line": 36,
+          "symbols": [
+            "Output::new"
+          ]
+        },
+        {
+          "path": "engine-rust/src/native_entry.rs",
+          "line": 31,
+          "symbols": [
+            "run"
+          ]
+        }
+      ],
+      "behavior": "Select JSON mode from the parsed command at construction of the stdout/stderr owner.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The setter is fused into Output construction; no independently mutable process-global setting remains.",
+      "native_tests": [
+        {
+          "suite": "cli_registry_parity",
+          "test": "command_registry_matches_original_schemas_arguments_and_parse_views",
+          "file": "engine-rust/tests/cli_registry_parity.rs",
+          "assertions": "Compares every tool schema/argv and parsed namespace; checks help/version plus39 plain/TTY/JSON narration, confirmation, EOF and emission observations."
+        },
+        {
+          "suite": "source_http",
+          "test": "agent_cases::agent_parity_test_every_offline_command_emits_only_json",
+          "file": "engine-rust/tests/source_http/agent.rs",
+          "assertions": "Runs native offline command surfaces and parses their entire stdout as the sole result."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_agent_parity.py::test_every_offline_command_emits_only_json"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/out.py::C",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/output.rs",
+          "line": 6,
+          "symbols": [
+            "Tone"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/output.rs",
+          "line": 15,
+          "symbols": [
+            "Tone::escape"
+          ]
+        }
+      ],
+      "behavior": "Represent bold/dim/green/red/yellow/cyan colors and reset codes used by command narration.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The Python constants class becomes a typed enum plus one escape mapping; output snapshots preserve byte-level color behavior.",
+      "native_tests": [
+        {
+          "suite": "cli_registry_parity",
+          "test": "command_registry_matches_original_schemas_arguments_and_parse_views",
+          "file": "engine-rust/tests/cli_registry_parity.rs",
+          "assertions": "Compares every tool schema/argv and parsed namespace; checks help/version plus39 plain/TTY/JSON narration, confirmation, EOF and emission observations."
+        },
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        },
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/out.py::_c",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/output.rs",
+          "line": 48,
+          "symbols": [
+            "Output::style"
+          ]
+        }
+      ],
+      "behavior": "Wrap styled text only when the output is a terminal; pipe output remains plain.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_registry_parity",
+          "test": "command_registry_matches_original_schemas_arguments_and_parse_views",
+          "file": "engine-rust/tests/cli_registry_parity.rs",
+          "assertions": "Compares every tool schema/argv and parsed namespace; checks help/version plus39 plain/TTY/JSON narration, confirmation, EOF and emission observations."
+        },
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/out.py::say",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/output.rs",
+          "line": 55,
+          "symbols": [
+            "Output::say"
+          ]
+        }
+      ],
+      "behavior": "Write/flush human text with optional terminal styling and remain silent under JSON mode.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_registry_parity",
+          "test": "command_registry_matches_original_schemas_arguments_and_parse_views",
+          "file": "engine-rust/tests/cli_registry_parity.rs",
+          "assertions": "Compares every tool schema/argv and parsed namespace; checks help/version plus39 plain/TTY/JSON narration, confirmation, EOF and emission observations."
+        },
+        {
+          "suite": "source_http",
+          "test": "agent_cases::agent_parity_test_every_offline_command_emits_only_json",
+          "file": "engine-rust/tests/source_http/agent.rs",
+          "assertions": "Runs native offline command surfaces and parses their entire stdout as the sole result."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_agent_parity.py::test_every_offline_command_emits_only_json"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/out.py::emit",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/output.rs",
+          "line": 71,
+          "symbols": [
+            "Output::emit"
+          ]
+        }
+      ],
+      "behavior": "Emit exactly one complete JSON result and flush before live attachment waits; return the supplied exit code and reject a second emission.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_registry_parity",
+          "test": "command_registry_matches_original_schemas_arguments_and_parse_views",
+          "file": "engine-rust/tests/cli_registry_parity.rs",
+          "assertions": "Compares every tool schema/argv and parsed namespace; checks help/version plus39 plain/TTY/JSON narration, confirmation, EOF and emission observations."
+        },
+        {
+          "suite": "source_http",
+          "test": "agent_cases::agent_parity_test_every_offline_command_emits_only_json",
+          "file": "engine-rust/tests/source_http/agent.rs",
+          "assertions": "Runs native offline command surfaces and parses their entire stdout as the sole result."
+        },
+        {
+          "suite": "cli_launch_parity",
+          "test": "foreground_launch_reuses_admission_and_native_backend_lifetime_policy",
+          "file": "engine-rust/tests/cli_launch_parity.rs",
+          "assertions": "Drives native launch/attach through compiled SDK peers; checks admission, backend/first-page policy, current claims, live CDP endpoint publication, snippets, cancellation and natural-close cleanup."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_agent_parity.py::test_every_offline_command_emits_only_json"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/out.py::_confirm",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/output.rs",
+          "line": 98,
+          "symbols": [
+            "Output::confirm"
+          ]
+        }
+      ],
+      "behavior": "Accept only a stripped case-insensitive y; refuse JSON/EOF without hanging, preserve prompt and input-consumption rules.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_registry_parity",
+          "test": "command_registry_matches_original_schemas_arguments_and_parse_views",
+          "file": "engine-rust/tests/cli_registry_parity.rs",
+          "assertions": "Compares every tool schema/argv and parsed namespace; checks help/version plus39 plain/TTY/JSON narration, confirmation, EOF and emission observations."
+        },
+        {
+          "suite": "source_http",
+          "test": "agent_cases::agent_parity_test_json_mode_never_waits_for_a_keyboard",
+          "file": "engine-rust/tests/source_http/agent.rs",
+          "assertions": "Checks native JSON confirmation refusal without waiting for keyboard input."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_agent_parity.py::test_json_mode_never_waits_for_a_keyboard"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/out.py::_parse_proxy",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 235,
+          "symbols": [
+            "parse_proxy"
+          ]
+        }
+      ],
+      "behavior": "Parse optional scheme/auth/hostport and country into typed proxy fields, preserving password colons and explicit empty proxy intent.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        },
+        {
+          "suite": "cli_pool_parity",
+          "test": "shared_pool_cli_guards_and_assignment_match_original",
+          "file": "engine-rust/tests/cli_pool_parity.rs",
+          "assertions": "Runs pool mutations, invalid ports, stdin import, archive, export, local proxy checks/rotate and atomic profile assignment; checks original payloads and human output."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/out.py::_row",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 230,
+          "symbols": [
+            "summary"
+          ]
+        }
+      ],
+      "behavior": "Produce id/name/engine/device/locale/tags/proxy-server/country summaries without exposing proxy credentials.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        },
+        {
+          "suite": "profile_overview_parity",
+          "test": "profile_health_and_collisions_preserve_source_readonly_outcomes",
+          "file": "engine-rust/tests/profile_overview_parity.rs",
+          "assertions": "Checks26 actual HTTP health/collision views, schedule/live-state summaries and preservation of all profile and schedule bytes."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/out.py::_no_profile",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 31,
+          "symbols": [
+            "missing"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/profile_output.rs",
+          "line": 103,
+          "symbols": [
+            "render"
+          ]
+        }
+      ],
+      "behavior": "Compose the precise missing-profile payload/nonzero exit and human diagnostic used by profile commands.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The payload helper is Profiles missing/Outcome::failed and its human text is centralized in profile_output::render; browser services retain the same typed early-return pattern.",
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/out.py::_resolve_or_fail",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 54,
+          "symbols": [
+            "Profiles::show"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/probe_commands.rs",
+          "line": 43,
+          "symbols": [
+            "Probes::run_started"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/cookie_commands.rs",
+          "line": 86,
+          "symbols": [
+            "Cookies::run_started"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/attach_commands.rs",
+          "line": 115,
+          "symbols": [
+            "Attach::run_started"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/warmup_commands.rs",
+          "line": 108,
+          "symbols": [
+            "Warmup::run_started"
+          ]
+        }
+      ],
+      "behavior": "Resolve id/name and stop each browser command before SDK work if no profile matches.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "Each typed service performs the same Option-returning repository resolution at its own admission boundary; the untyped args/store helper is eliminated.",
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        },
+        {
+          "suite": "cli_cookie_parity",
+          "test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "file": "engine-rust/tests/cli_cookie_parity.rs",
+          "assertions": "Executes cookies and all browser probe CLI cases using compiled Rust SDK peers; checks exact operation order, grades, retries, trust/align JSON exits, emitted text, concurrent note preservation and claim release."
+        },
+        {
+          "suite": "cli_launch_parity",
+          "test": "foreground_launch_reuses_admission_and_native_backend_lifetime_policy",
+          "file": "engine-rust/tests/cli_launch_parity.rs",
+          "assertions": "Drives native launch/attach through compiled SDK peers; checks admission, backend/first-page policy, current claims, live CDP endpoint publication, snippets, cancellation and natural-close cleanup."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/out.py::_print_checks",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/probe_output.rs",
+          "line": 32,
+          "symbols": [
+            "checks"
+          ]
+        }
+      ],
+      "behavior": "Print PASS/FAIL checks with failed-only details and source terminal tone/indentation.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_cookie_parity",
+          "test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "file": "engine-rust/tests/cli_cookie_parity.rs",
+          "assertions": "Executes cookies and all browser probe CLI cases using compiled Rust SDK peers; checks exact operation order, grades, retries, trust/align JSON exits, emitted text, concurrent note preservation and claim release."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/out.py::_print_summary",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_output.rs",
+          "line": 15,
+          "symbols": [
+            "summary"
+          ]
+        }
+      ],
+      "behavior": "Render compact or full device/profile details including UA/languages/proxy/tags/notes/seed with source label widths and styling.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/parser.py::build_parser",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/mod.rs",
+          "line": 44,
+          "symbols": [
+            "registry"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/mod.rs",
+          "line": 79,
+          "symbols": [
+            "parse"
+          ]
+        }
+      ],
+      "behavior": "Build one Clap command tree for human CLI and MCP reflection, retaining source command ordering, defaults, flags, integer grammar and token boundaries.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_registry_parity",
+          "test": "command_registry_matches_original_schemas_arguments_and_parse_views",
+          "file": "engine-rust/tests/cli_registry_parity.rs",
+          "assertions": "Compares every tool schema/argv and parsed namespace; checks help/version plus39 plain/TTY/JSON narration, confirmation, EOF and emission observations."
+        },
+        {
+          "suite": "cli_registry_parity",
+          "test": "separate_option_values_match_original_token_classification",
+          "file": "engine-rust/tests/cli_registry_parity.rs",
+          "assertions": "Checks actual option-token classification, source exit codes and parsed values at token boundaries."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/parser.py::build_parser.add",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/definitions.rs",
+          "line": 23,
+          "symbols": [
+            "command"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/definitions.rs",
+          "line": 30,
+          "symbols": [
+            "leaf"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/mod.rs",
+          "line": 104,
+          "symbols": [
+            "agent"
+          ]
+        }
+      ],
+      "behavior": "Add common command help plus --json/--detach flags before command-specific options.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The parser-local add closure is split into small typed command/leaf/agent builders reused across the native command tree.",
+      "native_tests": [
+        {
+          "suite": "cli_registry_parity",
+          "test": "command_registry_matches_original_schemas_arguments_and_parse_views",
+          "file": "engine-rust/tests/cli_registry_parity.rs",
+          "assertions": "Compares every tool schema/argv and parsed namespace; checks help/version plus39 plain/TTY/JSON narration, confirmation, EOF and emission observations."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/pool.py::_refuse_if_locked",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/pool_commands.rs",
+          "line": 26,
+          "symbols": [
+            "Pool::locked"
+          ]
+        }
+      ],
+      "behavior": "Count selected pool entries whose secret is withheld and refuse unsafe export/test/rotate/assign without changing stores.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_pool_parity",
+          "test": "shared_pool_cli_guards_and_assignment_match_original",
+          "file": "engine-rust/tests/cli_pool_parity.rs",
+          "assertions": "Runs pool mutations, invalid ports, stdin import, archive, export, local proxy checks/rotate and atomic profile assignment; checks original payloads and human output."
+        },
+        {
+          "suite": "source_vault",
+          "test": "locked_cli_and_vault::locked_pool_assign_refuses_and_changes_nothing",
+          "file": "engine-rust/tests/source_vault/locked_cli_and_vault.rs",
+          "assertions": "Runs native pool assign with withheld vault credentials; checks refusal and no changed records."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_locked_cli_and_vault.py::test_locked_pool_assign_refuses_and_changes_nothing"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/pool.py::cmd_pool",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/pool_commands.rs",
+          "line": 43,
+          "symbols": [
+            "Pool::list"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/pool_commands.rs",
+          "line": 198,
+          "symbols": [
+            "Pool::add"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/pool_commands.rs",
+          "line": 214,
+          "symbols": [
+            "Pool::remove"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/pool_commands.rs",
+          "line": 252,
+          "symbols": [
+            "Pool::edit"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/pool_commands.rs",
+          "line": 230,
+          "symbols": [
+            "Pool::archive"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/pool_commands.rs",
+          "line": 301,
+          "symbols": [
+            "Pool::export"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/pool_commands.rs",
+          "line": 68,
+          "symbols": [
+            "Pool::test_observed"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/pool_commands.rs",
+          "line": 143,
+          "symbols": [
+            "Pool::rotate_observed"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/pool_commands.rs",
+          "line": 340,
+          "symbols": [
+            "Pool::assign_observed"
+          ]
+        }
+      ],
+      "behavior": "Implement shared pool CRUD/archive/export, validation, check/rotate and round-robin assignment with statuses and CLI result/output policy.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The procedural subcommand switch becomes a typed Pool service; application dispatch chooses the method while shared pool/network stores retain all data rules.",
+      "native_tests": [
+        {
+          "suite": "cli_pool_parity",
+          "test": "shared_pool_cli_guards_and_assignment_match_original",
+          "file": "engine-rust/tests/cli_pool_parity.rs",
+          "assertions": "Runs pool mutations, invalid ports, stdin import, archive, export, local proxy checks/rotate and atomic profile assignment; checks original payloads and human output."
+        },
+        {
+          "suite": "source_vault",
+          "test": "locked_cli_and_vault::locked_pool_assign_refuses_and_changes_nothing",
+          "file": "engine-rust/tests/source_vault/locked_cli_and_vault.rs",
+          "assertions": "Runs native pool assign with withheld vault credentials; checks refusal and no changed records."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_locked_cli_and_vault.py::test_locked_pool_assign_refuses_and_changes_nothing"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/pool.py::cmd_pool.assign",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/pool_commands.rs",
+          "line": 340,
+          "symbols": [
+            "Pool::assign_observed"
+          ]
+        }
+      ],
+      "behavior": "Apply the planned proxy to each fresh locked profile using canonical scheme/IPv6/auth conversion and country-driven locale/timezone/languages.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The nested closure is fused into the repository patch transaction; it records assigned summary rows without overwriting concurrent profile fields.",
+      "native_tests": [
+        {
+          "suite": "cli_pool_parity",
+          "test": "shared_pool_cli_guards_and_assignment_match_original",
+          "file": "engine-rust/tests/cli_pool_parity.rs",
+          "assertions": "Runs pool mutations, invalid ports, stdin import, archive, export, local proxy checks/rotate and atomic profile assignment; checks original payloads and human output."
+        },
+        {
+          "suite": "source_storage",
+          "test": "repo_authority::pool_assign_does_not_overwrite_an_edit_it_never_saw",
+          "file": "engine-rust/tests/source_storage/repo_authority.rs",
+          "assertions": "An actual after-profile-selection observer edits the note before native Pool::assign takes its patch lock; both stores retain that edit and the assigned proxy."
+        },
+        {
+          "suite": "source_vault",
+          "test": "locked_cli_and_vault::locked_pool_assign_refuses_and_changes_nothing",
+          "file": "engine-rust/tests/source_vault/locked_cli_and_vault.rs",
+          "assertions": "Runs native pool assign with withheld vault credentials; checks refusal and no changed records."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_repo_authority.py::test_pool_assign_does_not_overwrite_an_edit_it_never_saw",
+        "tests/test_locked_cli_and_vault.py::test_locked_pool_assign_refuses_and_changes_nothing"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_create",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 80,
+          "symbols": [
+            "Profiles::create"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 105,
+          "symbols": [
+            "Profiles::create_started"
+          ]
+        }
+      ],
+      "behavior": "Generate coherent identity and proxy, inherit default engine/extensions, and create both records plus explicit default-engine change in one name-checked transaction.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_list",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 42,
+          "symbols": [
+            "Profiles::list"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 230,
+          "symbols": [
+            "summary"
+          ]
+        }
+      ],
+      "behavior": "Filter the fleet by tag and return summary rows without proxy passwords; empty listings preserve the same result shape.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_show",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 54,
+          "symbols": [
+            "Profiles::show"
+          ]
+        }
+      ],
+      "behavior": "Resolve id/name and return the complete profile or a nonzero missing-profile verdict.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_edit",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 170,
+          "symbols": [
+            "Profiles::edit"
+          ]
+        }
+      ],
+      "behavior": "Apply note/tag/proxy edits to fresh locked profile state and persist both records without reverting concurrent fields.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        },
+        {
+          "suite": "source_storage",
+          "test": "two_store_sync::a_cli_note_and_an_api_tag_edit_both_survive",
+          "file": "engine-rust/tests/source_storage/two_store_sync.rs",
+          "assertions": "Uses actual CLI/API operations across a lock race and proves both field changes survive."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_two_store_sync.py::test_a_cli_note_and_an_api_tag_edit_both_survive"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::_apply_edit",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 170,
+          "symbols": [
+            "Profiles::edit"
+          ]
+        }
+      ],
+      "behavior": "Overwrite notes only when present, append unique tags, and distinguish omitted proxy from explicit empty proxy.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The private mutation helper is fused into the ProfileRepo::patch_many closure inside Profiles::edit, keeping the entire read-modify-write under the coordinator lock.",
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        },
+        {
+          "suite": "source_storage",
+          "test": "two_store_sync::a_cli_note_and_an_api_tag_edit_both_survive",
+          "file": "engine-rust/tests/source_storage/two_store_sync.rs",
+          "assertions": "Uses actual CLI/API operations across a lock race and proves both field changes survive."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_two_store_sync.py::test_a_cli_note_and_an_api_tag_edit_both_survive"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_regen",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/bulk_commands.rs",
+          "line": 264,
+          "symbols": [
+            "Profiles::regen"
+          ]
+        }
+      ],
+      "behavior": "Regenerate identity with requested OS/locale and current proxy while retaining the profile identity/session and writing both stores.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "source_storage",
+          "test": "two_store_sync::a_cli_regen_reaches_the_dashboard_copy",
+          "file": "engine-rust/tests/source_storage/two_store_sync.rs",
+          "assertions": "Calls actual Profiles::regen and verifies regenerated Linux identity reaches the dashboard twin."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_two_store_sync.py::test_a_cli_regen_reaches_the_dashboard_copy"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_regen.regenerate",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/bulk_commands.rs",
+          "line": 264,
+          "symbols": [
+            "Profiles::regen"
+          ]
+        }
+      ],
+      "behavior": "Generate a fresh fingerprint from the current locked profile proxy and return that same identity slot.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The nested Python closure becomes the inline patch_many closure in Profiles::regen; native entropy is drawn at mutation time.",
+      "native_tests": [
+        {
+          "suite": "source_storage",
+          "test": "two_store_sync::a_cli_regen_reaches_the_dashboard_copy",
+          "file": "engine-rust/tests/source_storage/two_store_sync.rs",
+          "assertions": "Calls actual Profiles::regen and verifies regenerated Linux identity reaches the dashboard twin."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_two_store_sync.py::test_a_cli_regen_reaches_the_dashboard_copy"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_delete",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/fleet_commands.rs",
+          "line": 99,
+          "symbols": [
+            "Profiles::delete_with_output"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/fleet_commands.rs",
+          "line": 111,
+          "symbols": [
+            "Profiles::delete_observed"
+          ]
+        }
+      ],
+      "behavior": "Resolve/deduplicate the confirmation set, preserve original references across the lease/re-read, refuse missing/moved targets and report actual removed/missing/failed results.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        },
+        {
+          "suite": "source_http",
+          "test": "product_cases::public_surface_test_the_cli_refuses_a_delete_whose_target_moved",
+          "file": "engine-rust/tests/source_http/product.rs",
+          "assertions": "Moves a real resolved target before lease acquisition; native CLI delete refuses and preserves both records."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_public_surface.py::test_the_cli_refuses_a_delete_whose_target_moved"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_export",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 204,
+          "symbols": [
+            "Profiles::export"
+          ]
+        }
+      ],
+      "behavior": "Resolve the requested profile and export the validated complete record with credential admission and source-compatible output.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "Export and backup share Profiles::export with an explicit backup flag; the repository owns actual format/destination/credential rules.",
+      "native_tests": [
+        {
+          "suite": "profile_export_parity",
+          "test": "exported_profile_bytes_match_original_text_format_and_preserve_refusals",
+          "file": "engine-rust/tests/profile_export_parity.rs",
+          "assertions": "Verifies actual exported bytes, ASCII/platform newline policy, refused credentials and unchanged destinations."
+        },
+        {
+          "suite": "source_http",
+          "test": "agent_cases::agent_parity_test_export_edit_import_is_a_real_full_profile_edit",
+          "file": "engine-rust/tests/source_http/agent.rs",
+          "assertions": "Uses the real command/application export-edit-import path to verify full-profile editing and persistence."
+        },
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_agent_parity.py::test_export_edit_import_is_a_real_full_profile_edit"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_import",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 223,
+          "symbols": [
+            "Profiles::import"
+          ]
+        }
+      ],
+      "behavior": "Read an exported profile file through shared complete-record validation and name policy, then write both representations atomically.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "profile_import_parity",
+          "test": "imported_profile_uses_shared_dual_store_validation_and_names",
+          "file": "engine-rust/tests/profile_import_parity.rs",
+          "assertions": "Imports actual JSON files through repository validation, dual-store writes, name contracts and secret admission."
+        },
+        {
+          "suite": "source_http",
+          "test": "agent_cases::agent_parity_test_export_edit_import_is_a_real_full_profile_edit",
+          "file": "engine-rust/tests/source_http/agent.rs",
+          "assertions": "Uses the real command/application export-edit-import path to verify full-profile editing and persistence."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_agent_parity.py::test_export_edit_import_is_a_real_full_profile_edit"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_backup",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 204,
+          "symbols": [
+            "Profiles::export"
+          ]
+        }
+      ],
+      "behavior": "Resolve the identity and archive the full profile/session with admission before creating an output archive.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The backup command selects the backup branch of Profiles::export; the payload and human warning remain in the CLI presentation layer.",
+      "native_tests": [
+        {
+          "suite": "profile_backup_parity",
+          "test": "backup_carries_complete_profile_and_session_or_refuses_before_output",
+          "file": "engine-rust/tests/profile_backup_parity.rs",
+          "assertions": "Builds real archives containing full profile/session data and checks refusal before destination output."
+        },
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_restore",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/bulk_commands.rs",
+          "line": 294,
+          "symbols": [
+            "Profiles::restore"
+          ]
+        }
+      ],
+      "behavior": "Restore a real backup archive with optional new identity through staged session and dual-record replacement.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "profile_restore_parity",
+          "test": "restore_stages_then_replaces_session_and_commits_both_records",
+          "file": "engine-rust/tests/profile_restore_parity.rs",
+          "assertions": "Restores real archives through staging, session replacement and both metadata stores, including coherent IDs/names."
+        },
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_collisions",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 72,
+          "symbols": [
+            "Profiles::collisions"
+          ]
+        },
+        {
+          "path": "engine-rust/src/collision.rs",
+          "line": 22,
+          "symbols": [
+            "find"
+          ]
+        }
+      ],
+      "behavior": "Read the fleet, report linked signature groups and return nonzero when at least one collision exists.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        },
+        {
+          "suite": "profile_overview_parity",
+          "test": "collision_groups_and_summary_match_original_occurrences",
+          "file": "engine-rust/tests/profile_overview_parity.rs",
+          "assertions": "Checks10 occurrence/order/numeric-signature cases, complete collision groups, seeds and summaries."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_check",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/profile_commands.rs",
+          "line": 62,
+          "symbols": [
+            "Profiles::check"
+          ]
+        }
+      ],
+      "behavior": "Resolve the profile, validate fingerprint coherence and return issues with success iff the issue list is empty.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_apply",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/bulk_commands.rs",
+          "line": 143,
+          "symbols": [
+            "Profiles::apply_observed"
+          ]
+        }
+      ],
+      "behavior": "Build the selection and field patch, confirm before changes, then patch current profiles and default-engine side effect in one transaction.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        },
+        {
+          "suite": "source_storage",
+          "test": "two_store_sync::a_cli_note_and_an_api_tag_edit_both_survive",
+          "file": "engine-rust/tests/source_storage/two_store_sync.rs",
+          "assertions": "Uses actual CLI/API operations across a lock race and proves both field changes survive."
+        },
+        {
+          "suite": "source_storage",
+          "test": "repo_authority::apply_does_not_overwrite_an_edit_it_never_saw",
+          "file": "engine-rust/tests/source_storage/repo_authority.rs",
+          "assertions": "An actual after-profile-selection observer commits an API note before CLI apply patches current profiles; both stores retain the note and added tag."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_two_store_sync.py::test_a_cli_note_and_an_api_tag_edit_both_survive",
+        "tests/test_repo_authority.py::test_apply_does_not_overwrite_an_edit_it_never_saw"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_apply.change",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/bulk_commands.rs",
+          "line": 143,
+          "symbols": [
+            "Profiles::apply_observed"
+          ]
+        },
+        {
+          "path": "engine-rust/src/bulk.rs",
+          "line": 42,
+          "symbols": [
+            "apply"
+          ]
+        }
+      ],
+      "behavior": "Collect changed-field names for each profile from the patch result and leave unchanged profiles out of the written result.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The private change closure is the transaction callback in apply_observed; touched-field bookkeeping is scoped to that callback rather than a separately callable function.",
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        },
+        {
+          "suite": "source_storage",
+          "test": "bulk::setting_the_same_value_is_not_a_change",
+          "file": "engine-rust/tests/source_storage/bulk.rs",
+          "assertions": "Calls native bulk::apply and verifies identical values do not produce changed fields."
+        },
+        {
+          "suite": "source_storage",
+          "test": "repo_authority::apply_does_not_overwrite_an_edit_it_never_saw",
+          "file": "engine-rust/tests/source_storage/repo_authority.rs",
+          "assertions": "An actual after-profile-selection observer commits an API note before CLI apply patches current profiles; both stores retain the note and added tag."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_bulk.py::test_setting_the_same_value_is_not_a_change",
+        "tests/test_repo_authority.py::test_apply_does_not_overwrite_an_edit_it_never_saw"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_bulk_create",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/bulk_commands.rs",
+          "line": 36,
+          "symbols": [
+            "Profiles::bulk_create"
+          ]
+        },
+        {
+          "path": "engine-rust/src/bulk.rs",
+          "line": 188,
+          "symbols": [
+            "generate"
+          ]
+        }
+      ],
+      "behavior": "Generate deterministic coherent batch identities, skip taken names inside one transaction and include explicit default-engine changes in the same commit. Arbitrary signed name indices use BigInt; negative counts clamp before allocation, empty batches ignore padding, and platform zfill overflow is retained.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "bulk_parity",
+          "test": "bulk_generation_patch_and_selection_match_original",
+          "file": "engine-rust/tests/bulk_parity.rs",
+          "assertions": "Checks native deterministic batch records, changed-field order, patch outcomes, selection and source seed draws. Existing test additionally checks7 frozen large-integer full-profile/CLI/store/refusal observations with no new test count."
+        },
+        {
+          "suite": "source_storage",
+          "test": "compound_atomicity::a_failing_bulk_create_writes_nothing",
+          "file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+          "assertions": "Injects a real atomic-write failure during Profiles::bulk_create and proves the entire batch is absent."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_compound_atomicity.py::test_a_failing_bulk_create_writes_nothing"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_import_from",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/import_commands.rs",
+          "line": 7,
+          "symbols": [
+            "Profiles::import_from"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/import_commands.rs",
+          "line": 40,
+          "symbols": [
+            "Profiles::import_vendor"
+          ]
+        }
+      ],
+      "behavior": "Parse vendor export shapes, validate all generated profiles, save them under shared name/secret contracts and report coherent results and skipped names.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_import_parity",
+          "test": "vendor_cli_import_preserves_generated_identity_secret_intent_and_skip_policy",
+          "file": "engine-rust/tests/cli_import_parity.rs",
+          "assertions": "Calls native vendor CLI services; verifies generated identity, source issues, skipped names and persisted secret intent."
+        },
+        {
+          "suite": "source_contracts",
+          "test": "cli_import_write_contract::c000_a_good_vendor_export_still_imports_from_the_cli",
+          "file": "engine-rust/tests/source_contracts/cli_import_write_contract.rs",
+          "assertions": "Feeds a real vendor export through the CLI import write boundary and checks a valid persisted native profile."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_cli_import_write_contract.py::test_a_good_vendor_export_still_imports_from_the_cli"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/profiles.py::cmd_health",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/fleet_commands.rs",
+          "line": 14,
+          "symbols": [
+            "Profiles::health"
+          ]
+        }
+      ],
+      "behavior": "Combine safe profile summaries with coherence, collision membership, schedules, live jobs and needs-attention counts; CLI trust remains uncached/null.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_profile_parity",
+          "test": "profile_command_services_match_original_payloads_and_verdicts",
+          "file": "engine-rust/tests/cli_profile_parity.rs",
+          "assertions": "Executes24 CLI cases and compares payloads, exits, both persisted proxy views, rejected-create default preservation, and62 plain/TTY output cases."
+        },
+        {
+          "suite": "profile_overview_parity",
+          "test": "profile_health_and_collisions_preserve_source_readonly_outcomes",
+          "file": "engine-rust/tests/profile_overview_parity.rs",
+          "assertions": "Checks26 actual HTTP health/collision views, schedule/live-state summaries and preservation of all profile and schedule bytes."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::cmd_engines",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/settings_commands.rs",
+          "line": 22,
+          "symbols": [
+            "Settings::engines"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cloak_acquisition.rs",
+          "line": 159,
+          "symbols": [
+            "command"
+          ]
+        }
+      ],
+      "behavior": "List installed backend/default status; the native entry also routes explicit Cloak offer/approve acquisition commands through the shared acquisition policy.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::cmd_default_engine",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/settings_commands.rs",
+          "line": 28,
+          "symbols": [
+            "Settings::default_engine"
+          ]
+        }
+      ],
+      "behavior": "Show the saved default or validate/set an allowlisted backend, retaining known-versus-installed distinctions.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::cmd_config",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/settings_commands.rs",
+          "line": 46,
+          "symbols": [
+            "Settings::config"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/settings_commands.rs",
+          "line": 257,
+          "symbols": [
+            "expand"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/home_path.rs",
+          "line": 13,
+          "symbols": [
+            "expand",
+            "named_home"
+          ]
+        }
+      ],
+      "behavior": "Validate the complete engine/headless/default-extension patch and expansion before one configuration commit; include root/version in the result.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        },
+        {
+          "suite": "cli_settings_parity",
+          "test": "strict_settings::settings_commands_preserve_original_decoding_refusals_and_early_errors",
+          "file": "engine-rust/tests/cli_settings_parity/strict_settings.rs",
+          "assertions": "Exercises56 malformed settings files and early command refusals against actual native storage; checks decoding distinctions and unchanged records."
+        },
+        {
+          "suite": "source_storage",
+          "test": "compound_atomicity::an_invalid_extension_leaves_the_earlier_config_fields_alone",
+          "file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+          "assertions": "Invokes native compound config with a missing extension and checks earlier fields/config bytes remain unchanged."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_compound_atomicity.py::test_an_invalid_extension_leaves_the_earlier_config_fields_alone"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::cmd_vault",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/vault_commands.rs",
+          "line": 13,
+          "symbols": [
+            "run"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/application.rs",
+          "line": 35,
+          "symbols": [
+            "open_store"
+          ]
+        }
+      ],
+      "behavior": "Expose enabled/unlocked/backend state, enable or rotate all-root secrets, and report resume only after store-open recovery with both passwords.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The optional Python cryptography backend branch becomes an always-present native Rust vault implementation; rotation/recovery still enforce the original admission and refusal rules.",
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "shared_cli_open_uses_both_resume_passwords_before_exposing_stores",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Refuses absent old/new recovery passwords without changing stored bytes; then opens with both passwords and verifies resumed secrets."
+        },
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::cmd_token",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/settings_commands.rs",
+          "line": 121,
+          "symbols": [
+            "Settings::tokens"
+          ]
+        }
+      ],
+      "behavior": "List token metadata without hashes, create a one-time plaintext token under unique names, and revoke by id with precise missing-token result.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::cmd_folder",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/settings_commands.rs",
+          "line": 92,
+          "symbols": [
+            "Settings::folder"
+          ]
+        }
+      ],
+      "behavior": "Delegate list/create/rename/delete and reassignment to the shared folder transaction, retaining validation/refusal shapes.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::_cmd_ext_default",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/extension_commands.rs",
+          "line": 79,
+          "symbols": [
+            "defaults"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/settings_commands.rs",
+          "line": 257,
+          "symbols": [
+            "expand"
+          ]
+        }
+      ],
+      "behavior": "List/validate/add/remove the shared extension defaults under a transaction lock, including native current/named-home expansion.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::_cmd_ext_store",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/extension_commands.rs",
+          "line": 132,
+          "symbols": [
+            "installed"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/extension_commands.rs",
+          "line": 155,
+          "symbols": [
+            "install_with_output"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/extension_commands.rs",
+          "line": 137,
+          "symbols": [
+            "uninstall"
+          ]
+        }
+      ],
+      "behavior": "Route installed/list, CRX download/install and owned uninstall through the native extension package store; update defaults unless no-default is set.",
+      "coverage_scope": "Installed/uninstall and human CLI results are asserted here; real install/download/ZIP controls are independently reported in source_network webstore and extension_routes_parity, and CLI dispatch is reviewed.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        },
+        {
+          "suite": "extension_routes_parity",
+          "test": "installed_extension_http_lists_store_and_manual_resources_without_download",
+          "file": "engine-rust/tests/extension_routes_parity.rs",
+          "assertions": "Uses actual extension stores/routes for installed-resource listing, reuse/default updates and uninstall; checks real filesystem effects and refusal behavior."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::cmd_ext",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/extension_commands.rs",
+          "line": 12,
+          "symbols": [
+            "Profiles::extensions"
+          ]
+        }
+      ],
+      "behavior": "Resolve the profile, list its extensions, validate additions and add/remove only the latest locked extension list while preserving both stores.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::cmd_ext.change",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/extension_commands.rs",
+          "line": 12,
+          "symbols": [
+            "Profiles::extensions"
+          ]
+        }
+      ],
+      "behavior": "Apply add/remove against the current profile, report already-loaded/missing paths and persist the selected extension list.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The nested mutable outcome closure is the inline patch_many callback and scoped changed/missing flags inside Profiles::extensions.",
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::_prompt_password",
+      "disposition": "partial",
+      "rust": [
+        {
+          "path": "engine-rust/src/native_password.rs",
+          "line": 53,
+          "symbols": [
+            "prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/native_password.rs",
+          "line": 12,
+          "symbols": [
+            "read"
+          ]
+        }
+      ],
+      "behavior": "Refuse keyboard input in JSON mode; otherwise read bounded terminal-only input with echo restoration and confirmation checks for enable/change/resume.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "qualification": {
+        "kind": "platform_interactive_test_gap",
+        "detail": "Actual Linux controlling-PTY success and mismatch runs prove no password echo and exact terminal-mode restoration; Windows physical-console interaction remains unexecuted. See verification.manual_terminal."
+      },
+      "architecture_reason": "Prompt preparation is centralized before native store opening; the platform-specific terminal owner replaces getpass. Interactive terminal echo restoration is implemented but these cited cases exercise noninteractive refusal/recovery, not a physical terminal UI.",
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "shared_cli_open_uses_both_resume_passwords_before_exposing_stores",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Refuses absent old/new recovery passwords without changing stored bytes; then opens with both passwords and verifies resumed secrets."
+        },
+        {
+          "suite": "source_http",
+          "test": "agent_cases::agent_parity_test_json_mode_never_waits_for_a_keyboard",
+          "file": "engine-rust/tests/source_http/agent.rs",
+          "assertions": "Checks native JSON confirmation refusal without waiting for keyboard input."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_agent_parity.py::test_json_mode_never_waits_for_a_keyboard"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::cmd_schedule",
+      "disposition": "partial",
+      "rust": [
+        {
+          "path": "engine-rust/src/cli/settings_commands.rs",
+          "line": 168,
+          "symbols": [
+            "Settings::schedule"
+          ]
+        },
+        {
+          "path": "engine-rust/src/cli/schedule_commands.rs",
+          "line": 31,
+          "symbols": [
+            "Warmup::run_due_observed"
+          ]
+        }
+      ],
+      "behavior": "Manage schedule records through shared validation; run-due claims each occurrence once, skips missing/busy targets, releases failed starts and stamps successful runs.",
+      "coverage_scope": "CRUD/presentation, shared scheduler claims and HTTP scheduler worker behavior are scenario-tested; CLI run-due callback routing is reviewed in source.",
+      "qualification": {
+        "kind": "run_due_cli_test_gap",
+        "detail": "Schedule CRUD, claims, worker policy and rendered run-due results are covered. No cited test directly drives the successful CLI run-due callback loop; its native body was reviewed."
+      },
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "cli_settings_parity",
+          "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+          "file": "engine-rust/tests/cli_settings_parity.rs",
+          "assertions": "Runs29 settings cases,52 human cases,32 automation render cases and32 extension cases; also checks named-home expansion using native account lookup and refused compound config byte preservation."
+        },
+        {
+          "suite": "launch_http_parity",
+          "test": "launch_optional_body_and_refusals_match_original_before_native_activation",
+          "file": "engine-rust/tests/launch_http_parity.rs",
+          "assertions": "Checks real native HTTP warmup/launch worker admission, readiness, active-state cleanup and scheduler claims."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::cmd_serve",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/native_entry.rs",
+          "line": 534,
+          "symbols": [
+            "serve"
+          ]
+        },
+        {
+          "path": "engine-rust/src/native_entry.rs",
+          "line": 189,
+          "symbols": [
+            "dispatch"
+          ]
+        }
+      ],
+      "behavior": "Start the authenticated native HTTP application with root/password/browser context, guard pending recovery/import before opening stores and retain server/parent ownership through shutdown.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "native_entry",
+          "test": "entry_dispatch_reads_real_store_and_preserves_structured_refusals",
+          "file": "engine-rust/tests/native_entry.rs",
+          "assertions": "Invokes native dispatch against real stores; checks JSON-only success/refusal, HTTP/MCP entry behavior and ownership cleanup."
+        },
+        {
+          "suite": "source_http",
+          "test": "startup_cases::update_startup_test_actual_cli_serve_refuses_pending_import_before_opening_store",
+          "file": "engine-rust/tests/source_http/startup.rs",
+          "assertions": "Invokes actual native serve entry and proves pending startup import refuses before opening destructive store state."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_update_startup.py::test_actual_cli_serve_refuses_pending_import_before_opening_store"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/cli/setup.py::cmd_mcp",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/mcp_command.rs",
+          "line": 168,
+          "symbols": [
+            "serve_controlled"
+          ]
+        },
+        {
+          "path": "engine-rust/src/native_entry.rs",
+          "line": 189,
+          "symbols": [
+            "dispatch"
+          ]
+        }
+      ],
+      "behavior": "Serve bounded MCP frames over stdio with the actual native command registry, inherited root/unlock and owned child command lifecycle.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "mcp_parity",
+          "test": "native_mcp_preserves_original_messages_verdicts_and_bounded_framing",
+          "file": "engine-rust/tests/mcp_parity.rs",
+          "assertions": "Exercises native MCP stdio frames, tool dispatch, error versus verdict shapes and bounded lifecycle."
+        },
+        {
+          "suite": "native_entry",
+          "test": "entry_dispatch_reads_real_store_and_preserves_structured_refusals",
+          "file": "engine-rust/tests/native_entry.rs",
+          "assertions": "Invokes native dispatch against real stores; checks JSON-only success/refusal, HTTP/MCP entry behavior and ownership cleanup."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/collision.py::signature",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/collision.rs",
+          "line": 12,
+          "symbols": [
+            "signature"
+          ]
+        },
+        {
+          "path": "engine-rust/src/collision.rs",
+          "line": 5,
+          "symbols": [
+            "signals"
+          ]
+        }
+      ],
+      "behavior": "Extract visible OS/UA/platform/WebGL/screen/CPU/memory signals excluding seed, including Python-compatible integral numeric equality.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "profile_overview_parity",
+          "test": "collision_groups_and_summary_match_original_occurrences",
+          "file": "engine-rust/tests/profile_overview_parity.rs",
+          "assertions": "Checks10 occurrence/order/numeric-signature cases, complete collision groups, seeds and summaries."
+        },
+        {
+          "suite": "source_storage",
+          "test": "collision::signature_ignores_the_seed",
+          "file": "engine-rust/tests/source_storage/collision.rs",
+          "assertions": "Directly checks native collision signature equality across different randomization seeds."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_collision.py::test_signature_ignores_the_seed"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/collision.py::find_collisions",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/collision.rs",
+          "line": 22,
+          "symbols": [
+            "find"
+          ]
+        }
+      ],
+      "behavior": "Group equal visible signatures in first-occurrence order, include member id/name/seed, mark identical seeds and sort most-linked groups first.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "profile_overview_parity",
+          "test": "collision_groups_and_summary_match_original_occurrences",
+          "file": "engine-rust/tests/profile_overview_parity.rs",
+          "assertions": "Checks10 occurrence/order/numeric-signature cases, complete collision groups, seeds and summaries."
+        },
+        {
+          "suite": "source_storage",
+          "test": "collision::groups_are_most_linked_first",
+          "file": "engine-rust/tests/source_storage/collision.rs",
+          "assertions": "Directly checks native collision groups sort by descending linked-member count."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_collision.py::test_groups_are_most_linked_first"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/collision.py::summary",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/collision.rs",
+          "line": 42,
+          "symbols": [
+            "summary"
+          ]
+        }
+      ],
+      "behavior": "Count total profiles, collision groups, individual clashing members and identical groups.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "profile_overview_parity",
+          "test": "collision_groups_and_summary_match_original_occurrences",
+          "file": "engine-rust/tests/profile_overview_parity.rs",
+          "assertions": "Checks10 occurrence/order/numeric-signature cases, complete collision groups, seeds and summaries."
+        },
+        {
+          "suite": "source_storage",
+          "test": "collision::summary_counts_clashing_profiles_not_groups",
+          "file": "engine-rust/tests/source_storage/collision.rs",
+          "assertions": "Checks native total/groups/clashing/identical metrics from concrete profiles."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_collision.py::test_summary_counts_clashing_profiles_not_groups"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::_vendor_for",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 229,
+          "symbols": [
+            "to_engine"
+          ]
+        }
+      ],
+      "behavior": "Infer the Google Inc. GPU-family vendor in the original priority order when a nonblank renderer has no explicit vendor.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The small family lookup is inlined into to_engine next to renderer/vendor fallback, preserving the source matching order.",
+      "native_tests": [
+        {
+          "suite": "conversion_parity",
+          "test": "profile_shapes_and_secret_intent_match_source",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks complete engine/dashboard conversions and omitted/clear/remove/replace secret intent against source fixture observations."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "conversion_text_boundaries_match_original_profiles_and_roundtrips",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks69 raw textual dashboard inputs, full engine records and reverse dashboard output."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::_engine_webgl",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 229,
+          "symbols": [
+            "to_engine"
+          ]
+        }
+      ],
+      "behavior": "Pass through real trimmed renderer/vendor observations and use the first curated OS GPU only when the renderer is blank.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The tuple-producing helper is fused into the typed fingerprint construction in to_engine.",
+      "native_tests": [
+        {
+          "suite": "conversion_parity",
+          "test": "profile_shapes_and_secret_intent_match_source",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks complete engine/dashboard conversions and omitted/clear/remove/replace secret intent against source fixture observations."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "conversion_text_boundaries_match_original_profiles_and_roundtrips",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks69 raw textual dashboard inputs, full engine records and reverse dashboard output."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::_parse_lines",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 97,
+          "symbols": [
+            "lines"
+          ]
+        }
+      ],
+      "behavior": "Accept string/list input, implement Python splitlines/strip boundaries, ignore nonstrings/blank entries and tolerate malformed legacy containers.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "conversion_parity",
+          "test": "conversion_text_boundaries_match_original_profiles_and_roundtrips",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks69 raw textual dashboard inputs, full engine records and reverse dashboard output."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "container_text_conversion_matches_original_profiles_and_roundtrips",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks54 malformed/list/container inputs in both conversion directions and input immutability."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::_str_list",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 123,
+          "symbols": [
+            "strings"
+          ]
+        }
+      ],
+      "behavior": "Keep only string list elements; treat all other containers as no entries without mutating the input.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "conversion_parity",
+          "test": "container_text_conversion_matches_original_profiles_and_roundtrips",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks54 malformed/list/container inputs in both conversion directions and input immutability."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::_exact",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 83,
+          "symbols": [
+            "number"
+          ]
+        },
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 39,
+          "symbols": [
+            "integer_number"
+          ]
+        }
+      ],
+      "behavior": "Keep finite fractional values exact and represent integral values as integers, avoiding truncated quarter/half-gigabyte memory.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The source cast callback is fused with number and integer_number, which preserve arbitrary JSON integer spellings/magnitude and finite float values.",
+      "native_tests": [
+        {
+          "suite": "conversion_parity",
+          "test": "fractional_conversion_matches_original_numeric_values_and_defaults",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks82 fractional/finite/default cases, exact f64 bits for memory and DPR, complete record equivalence and unchanged input."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "integer_conversion_matches_original_grammar_defaults_and_seed_magnitude",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks80 integer grammar/default/magnitude cases, full fingerprint/profile fields, stable seed and reverse output without mutation."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::_num",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 83,
+          "symbols": [
+            "number"
+          ]
+        },
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 39,
+          "symbols": [
+            "integer_number"
+          ]
+        },
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 75,
+          "symbols": [
+            "finite_number"
+          ]
+        }
+      ],
+      "behavior": "Reject booleans/invalid/nonfinite conversions to the default, preserve whole arbitrary integers and tolerate legacy read fields.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "conversion_parity",
+          "test": "integer_conversion_matches_original_grammar_defaults_and_seed_magnitude",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks80 integer grammar/default/magnitude cases, full fingerprint/profile fields, stable seed and reverse output without mutation."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "fractional_conversion_matches_original_numeric_values_and_defaults",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks82 fractional/finite/default cases, exact f64 bits for memory and DPR, complete record equivalence and unchanged input."
+        },
+        {
+          "suite": "source_domain",
+          "test": "flat_numeric_cases::the_core_conversion_stays_tolerant_for_legacy_readers",
+          "file": "engine-rust/tests/source_domain/flat_numeric.rs",
+          "assertions": "Checks actual tolerant conversion of legacy numerical shapes while public write boundaries remain strict."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_flat_numeric_policy.py::test_the_core_conversion_stays_tolerant_for_legacy_readers"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::_parse_bookmarks",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 199,
+          "symbols": [
+            "bookmarks"
+          ]
+        }
+      ],
+      "behavior": "Split the final pipe, trim name/URL, use URL as an empty-name fallback and ignore empty entries.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "conversion_parity",
+          "test": "conversion_text_boundaries_match_original_profiles_and_roundtrips",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks69 raw textual dashboard inputs, full engine records and reverse dashboard output."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "container_text_conversion_matches_original_profiles_and_roundtrips",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks54 malformed/list/container inputs in both conversion directions and input immutability."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::_split_legacy_commas",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 161,
+          "symbols": [
+            "urls"
+          ]
+        }
+      ],
+      "behavior": "Split commas only while the preceding entry is scheme/host; preserve commas in paths/query/fragment and explicit list elements.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The host-versus-opaque scan is the inner loop of urls, avoiding a separate untyped string helper.",
+      "native_tests": [
+        {
+          "suite": "conversion_parity",
+          "test": "conversion_text_boundaries_match_original_profiles_and_roundtrips",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks69 raw textual dashboard inputs, full engine records and reverse dashboard output."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::_parse_startup_urls",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 161,
+          "symbols": [
+            "urls"
+          ]
+        }
+      ],
+      "behavior": "Normalize textarea legacy commas versus list boundaries, strip blanks and add https unless an explicit scheme/about URL is present.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "conversion_parity",
+          "test": "conversion_text_boundaries_match_original_profiles_and_roundtrips",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks69 raw textual dashboard inputs, full engine records and reverse dashboard output."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "container_text_conversion_matches_original_profiles_and_roundtrips",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks54 malformed/list/container inputs in both conversion directions and input immutability."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::_stable_seed",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 157,
+          "symbols": [
+            "stable_seed"
+          ]
+        }
+      ],
+      "behavior": "Use the first eight SHA256 hex digits of the profile id as a stable nonzero seed when the stored seed is absent/zero.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "conversion_parity",
+          "test": "integer_conversion_matches_original_grammar_defaults_and_seed_magnitude",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks80 integer grammar/default/magnitude cases, full fingerprint/profile fields, stable seed and reverse output without mutation."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "profile_shapes_and_secret_intent_match_source",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks complete engine/dashboard conversions and omitted/clear/remove/replace secret intent against source fixture observations."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::to_engine_profile",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 229,
+          "symbols": [
+            "to_engine"
+          ]
+        }
+      ],
+      "behavior": "Convert complete dashboard fields, mobile dimensions, UA/GPU, finite numbers, proxy intent, launch preferences, bookmarks and stable identity into the typed Profile.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "conversion_parity",
+          "test": "profile_shapes_and_secret_intent_match_source",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks complete engine/dashboard conversions and omitted/clear/remove/replace secret intent against source fixture observations."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "conversion_text_boundaries_match_original_profiles_and_roundtrips",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks69 raw textual dashboard inputs, full engine records and reverse dashboard output."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "container_text_conversion_matches_original_profiles_and_roundtrips",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks54 malformed/list/container inputs in both conversion directions and input immutability."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "integer_conversion_matches_original_grammar_defaults_and_seed_magnitude",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks80 integer grammar/default/magnitude cases, full fingerprint/profile fields, stable seed and reverse output without mutation."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "fractional_conversion_matches_original_numeric_values_and_defaults",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks82 fractional/finite/default cases, exact f64 bits for memory and DPR, complete record equivalence and unchanged input."
+        },
+        {
+          "suite": "source_domain",
+          "test": "flat_numeric_cases::the_core_conversion_stays_tolerant_for_legacy_readers",
+          "file": "engine-rust/tests/source_domain/flat_numeric.rs",
+          "assertions": "Checks actual tolerant conversion of legacy numerical shapes while public write boundaries remain strict."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_flat_numeric_policy.py::test_the_core_conversion_stays_tolerant_for_legacy_readers"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::_proxy_to_dash",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 426,
+          "symbols": [
+            "to_dashboard"
+          ]
+        }
+      ],
+      "behavior": "Preserve proxy scheme/IPv6 brackets/port/user/password/country in the reverse dashboard representation without mutating engine records.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "The source optional proxy helper is the first mapping closure in to_dashboard; no separate record canonicalization is introduced.",
+      "native_tests": [
+        {
+          "suite": "conversion_parity",
+          "test": "reverse_proxy_conversion_matches_original_without_canonicalizing_records",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks112 scheme/host/IPv6/port/credential reverse conversions and that the engine profile is not modified."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::to_dashboard_profile",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 426,
+          "symbols": [
+            "to_dashboard"
+          ]
+        }
+      ],
+      "behavior": "Serialize the complete engine fingerprint/profile into dashboard fields, modes, seed, launch controls, lists/bookmarks and credential representation.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "conversion_parity",
+          "test": "profile_shapes_and_secret_intent_match_source",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks complete engine/dashboard conversions and omitted/clear/remove/replace secret intent against source fixture observations."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "conversion_text_boundaries_match_original_profiles_and_roundtrips",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks69 raw textual dashboard inputs, full engine records and reverse dashboard output."
+        },
+        {
+          "suite": "conversion_parity",
+          "test": "reverse_proxy_conversion_matches_original_without_canonicalizing_records",
+          "file": "engine-rust/tests/conversion_parity.rs",
+          "assertions": "Checks112 scheme/host/IPv6/port/credential reverse conversions and that the engine profile is not modified."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::_rel_time",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/http/profile_routes.rs",
+          "line": 202,
+          "symbols": [
+            "relative_time"
+          ]
+        },
+        {
+          "path": "engine-rust/src/http/profile_routes.rs",
+          "line": 227,
+          "symbols": [
+            "decorate"
+          ]
+        }
+      ],
+      "behavior": "Produce never/just now/minute/hour/day labels at the original boundaries without rewriting stored timestamps.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": "Human last-active decoration lives at the native HTTP read boundary, where an explicit clock is available; conversion remains deterministic.",
+      "native_tests": [
+        {
+          "suite": "profile_read_parity",
+          "test": "relative_activity_http_matches_original_without_rewriting_storage",
+          "file": "engine-rust/tests/profile_read_parity.rs",
+          "assertions": "Calls actual profile routes across relative-time boundaries and verifies view labels without storage rewrites."
+        }
+      ],
+      "source_test_ids": [],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "engine/numera/convert.py::dashboard_coherence",
+      "disposition": "implemented",
+      "rust": [
+        {
+          "path": "engine-rust/src/conversion.rs",
+          "line": 417,
+          "symbols": [
+            "dashboard_coherence"
+          ]
+        }
+      ],
+      "behavior": "Convert the dashboard record then run the actual engine validator; conversion/validation failures become a diagnostic issue list.",
+      "coverage_scope": "Native behavior assertions plus source-to-native control-flow review.",
+      "architecture_reason": null,
+      "native_tests": [
+        {
+          "suite": "fingerprint_routes_parity",
+          "test": "public_dashboard_coherence_matches_original_ordered_issues_and_http",
+          "file": "engine-rust/tests/fingerprint_routes_parity.rs",
+          "assertions": "Calls actual dashboard_coherence and the native HTTP validation route; compares ordered issue lists and defensive failure results from frozen source inputs."
+        },
+        {
+          "suite": "source_domain",
+          "test": "flat_numeric_cases::the_core_conversion_stays_tolerant_for_legacy_readers",
+          "file": "engine-rust/tests/source_domain/flat_numeric.rs",
+          "assertions": "Checks actual tolerant conversion of legacy numerical shapes while public write boundaries remain strict."
+        }
+      ],
+      "source_test_ids": [
+        "tests/test_flat_numeric_policy.py::test_the_core_conversion_stays_tolerant_for_legacy_readers"
+      ],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    }
+  ]
+}

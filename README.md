@@ -37,6 +37,10 @@ are implemented in Rust. The dashboard runs as WebAssembly. Browser automation
 uses explicitly provisioned vendor Node drivers and Chromium/Firefox binaries;
 these third-party dependencies retain their own languages and licenses.
 
+Browser identity and diagnostic logic is also authored in
+[Rust](browser-page-rust/README.md). Its checked compiler-generated browser
+artifact preserves strict page CSP and needs no compiler at runtime.
+
 The [rewrite PR](https://github.com/KiaroSama/Numera-Browser/pull/76) continues the
 native checkpoint and remains unmerged. Complete test-port verification,
 interpreter retirement and full three-platform CI are still in progress; see the

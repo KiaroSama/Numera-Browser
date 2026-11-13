@@ -16,7 +16,7 @@
     "reported_passed": 643,
     "failed": 0,
     "ignored": 0,
-    "log_sha256": "62a9947e6ef8a5af23d00ca09273ebd80bc9b92440b8bcdf2e88b0735406a38e",
+    "log_sha256": "d440ab460a697452fcf9cb9f37d90dfcfb34394f507a4697db1d63a61175b021",
     "command": "cargo test --locked --manifest-path tools/xtask/Cargo.toml --test source_ci -- --test-threads=2",
     "hosted_windows_macos": "required; not claimed by this local proof"
   },
@@ -2265,7 +2265,8 @@
       "rust_test": "migration::migration_occurrences",
       "rust_file": "tools/xtask/tests/source_ci/migration.rs",
       "native_type": "#[test]",
-      "adaptation": "Native Rust AST occurrences, independently linked reference modules, owned kernel trees and isolated OS lifetime measurements replace interpreter imports and monkeypatches. Historical fixture hashes remain characterization provenance; no historical Python is executed."
+      "adaptation": "The historical program hash is provenance metadata only. The real Rust AST inventory retains every conditional occurrence; a collapsed-ID mutation is rejected by the production coverage gate with every duplicate and missing ID asserted. No historical program file is read or executed.",
+      "historical_program_sha256": "22de18dea172c6f67a991fa53ed47dfeaae220f1a139a39f93f5f9f76c274314"
     },
     {
       "python_id": "tests/test_migration_gates.py::test_capability_gate_accepts_distinct_occurrences_but_refuses_reused_ids",
@@ -2337,7 +2338,8 @@
       "rust_test": "migration::migration_natural_deadline",
       "rust_file": "tools/xtask/tests/source_ci/migration.rs",
       "native_type": "#[test]",
-      "adaptation": "Native Rust AST occurrences, independently linked reference modules, owned kernel trees and isolated OS lifetime measurements replace interpreter imports and monkeypatches. Historical fixture hashes remain characterization provenance; no historical Python is executed."
+      "adaptation": "The historical program hash is provenance metadata only. A native child compiles the actual Rust observer with its natural-settlement query bypassed and proves that mutant samples a live tree; the shipped observer rejects the same host. Transient, active, unknown, expired and late cases retain all original deadline, peak-order and cleanup assertions.",
+      "historical_program_sha256": "e9e65689ecff7dd714e7e1f349c442c02f4ad4992c77532d58c45a7bd2f2aaa1"
     },
     {
       "python_id": "tests/test_migration_gates.py::test_benchmark_peak_requires_supported_platform_and_positive_os_observation",

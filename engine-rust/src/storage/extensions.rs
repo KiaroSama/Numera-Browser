@@ -271,7 +271,21 @@ pub fn unloadable(entries: &[String]) -> Vec<String> {
             problems.push(format!("{quoted} is a URL. Install it first - paste it on the Extensions page, where the button reads Install for a link, or run `numera ext install <url>` - then the unpacked folder goes in this list."));
             continue;
         }
-        let path = Path::new(entry);
+        let path = match std::env::home_dir() {
+            Some(home) => super::home_path::expand(Path::new(entry), &home),
+            None if entry.starts_with('~') => Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Could not determine home directory.",
+            )),
+            None => Ok(PathBuf::from(entry)),
+        };
+        let path = match path {
+            Ok(path) => path,
+            Err(error) => {
+                problems.push(error.to_string());
+                continue;
+            }
+        };
         if !path.is_dir() {
             problems.push(format!("{quoted} is not a folder on this machine."));
         } else if !path.join("manifest.json").is_file() {

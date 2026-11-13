@@ -134,7 +134,7 @@ pub fn observe(case: &Value) -> Result<(), Box<dyn std::error::Error>> {
     let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
         || -> Result<_, Box<dyn std::error::Error>> {
             let mut relay = Relay::start(&model)?;
-            let url = reqwest::Url::parse(&relay.url())?;
+            let url = reqwest::Url::parse(&relay.url()?)?;
             // Public check uses production echo URLs, so this fixture owns its raw request.
             let mut client =
                 TcpStream::connect(("127.0.0.1", url.port().ok_or("Relay port missing")?))?;

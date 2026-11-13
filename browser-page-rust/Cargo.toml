@@ -1,0 +1,42 @@
+[package]
+name = "numera-browser-page"
+version = "0.36.0"
+edition = "2024"
+rust-version = "1.99"
+license-file = "../LICENSE"
+description = "Rust browser identity and diagnostic runtime"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-futures = "=0.4.79"
+js-sys = "=0.3.106"
+web-sys = { version = "=0.3.106", features = [
+    "CanvasRenderingContext2d", "CssStyleDeclaration", "Document", "Element",
+    "Event", "EventTarget", "HtmlCanvasElement", "HtmlElement", "HtmlSpanElement",
+    "MediaDeviceInfo", "MediaDeviceKind", "MediaDevices", "Navigator", "Node",
+    "Notification", "PermissionStatus", "Permissions", "RequestCache", "RequestInit",
+    "RequestMode", "Response", "RtcConfiguration", "RtcDataChannel", "RtcIceCandidate",
+    "RtcIceServer", "RtcPeerConnection", "RtcPeerConnectionIceEvent",
+    "RtcSessionDescriptionInit", "Screen", "WebGlRenderingContext", "Window",
+] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+sha2 = "=0.11.1"
+serde_json = "=1.0.154"
+
+[profile.release]
+lto = true
+opt-level = "z"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+unwrap_used = "deny"

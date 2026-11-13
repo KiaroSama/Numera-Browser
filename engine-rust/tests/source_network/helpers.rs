@@ -218,7 +218,7 @@ pub(super) fn dns_grade(rows: Vec<Value>, country: Option<&str>) -> Value {
         .expect("native DNS grading")
 }
 pub(super) fn open_tunnel(relay: &Relay, target: SocketAddr) -> TcpStream {
-    let url = reqwest::Url::parse(&relay.url()).expect("relay URL");
+    let url = reqwest::Url::parse(&relay.url().expect("ready relay URL")).expect("relay URL");
     let mut socket =
         TcpStream::connect(("127.0.0.1", url.port().expect("port"))).expect("relay socket");
     socket

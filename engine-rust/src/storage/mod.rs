@@ -14,6 +14,7 @@ pub mod first_run;
 #[cfg(target_os = "linux")]
 mod first_run_xattrs;
 pub mod folders;
+pub mod home_path;
 pub mod locks;
 pub mod paths;
 pub mod pool;

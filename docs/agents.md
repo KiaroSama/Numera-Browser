@@ -8,7 +8,7 @@ Numera Browser has two front doors and they are not the same size.
 * The **CLI** (`numera …`) is what a script or an agent on a headless server
   wants: no server to start, no port to pick, an exit code that means something.
 
-`engine/tests/test_agent_parity.py` holds the two against each other and fails
+`engine-rust/tests/source_http/agent.rs` holds the two against each other and fails
 when they drift. This page is the human version of that file.
 
 ---
@@ -37,9 +37,9 @@ Two conventions worth knowing:
   *unhealthy* — the payload is still on stdout, so
   `numera check p --json; echo $?` is a one-liner health gate. `trust` and
   `align` exit **0 under `--json` whatever the grade** (read `score` from the
-  payload); the API shells out to those two and treats a non-zero exit as a
-  server error, so a merely-imperfect profile must not look like a broken
-  command. Their human form still reports the verdict in `$?`.
+  payload). The native API and CLI use the shared Rust implementation, so a
+  merely-imperfect profile must not look like a broken command. Their human
+  form still reports the verdict in `$?`.
 * **`--json` never prompts.** A destructive command without `-y` fails with
   `{"ok": false, "error": "this needs confirmation — pass -y …"}` instead of
   waiting on a keyboard nobody is at. Same for `vault enable` without

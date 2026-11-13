@@ -9,6 +9,40 @@ use std::{
 
 static NONCE: AtomicU64 = AtomicU64::new(0);
 
+// Result failures use the explicit cleanup below so cleanup errors stay visible.
+// Unwinding must also close and remove only the temporary file we created.
+struct OwnedTemporary {
+    path: PathBuf,
+    file: Option<fs::File>,
+}
+impl Drop for OwnedTemporary {
+    fn drop(&mut self) {
+        if std::thread::panicking() {
+            // Windows refuses unlinking an open file. Close before reclaiming it.
+            drop(self.file.take());
+            let _ = fs::remove_file(&self.path);
+        }
+    }
+}
+
+fn replace_once(temporary: &Path, destination: &Path) -> io::Result<()> {
+    #[cfg(feature = "test-support")]
+    crate::vault::testing::event("before-atomic-replace-attempt", destination)?;
+    fs::rename(temporary, destination)
+}
+fn retry_delay(path: &Path, delay: Duration) -> io::Result<()> {
+    #[cfg(feature = "test-support")]
+    {
+        crate::vault::testing::wait("before-atomic-retry-delay", path, delay)
+    }
+    #[cfg(not(feature = "test-support"))]
+    {
+        let _ = path;
+        std::thread::sleep(delay);
+        Ok(())
+    }
+}
+
 fn temporary(path: &Path) -> io::Result<PathBuf> {
     let name = path
         .file_name()
@@ -51,22 +85,30 @@ pub fn write_stream(
         }
         #[cfg(feature = "test-support")]
         crate::vault::testing::event("before-temporary-create", &tmp)?;
-        let mut file = options.open(&tmp)?;
+        let file = options.open(&tmp)?;
         owned = true;
-        write(&mut file)?;
+        let mut temporary = OwnedTemporary {
+            path: tmp.clone(),
+            file: Some(file),
+        };
+        let file = temporary
+            .file
+            .as_mut()
+            .ok_or_else(|| io::Error::other("Owned temporary file is closed"))?;
+        write(file)?;
         file.sync_all()?;
-        drop(file);
+        drop(temporary.file.take());
         #[cfg(feature = "test-support")]
         crate::vault::testing::event("before-atomic-replace", path)?;
         for attempt in 0..5 {
-            match fs::rename(&tmp, path) {
+            match replace_once(&tmp, path) {
                 Ok(()) => {
                     #[cfg(feature = "test-support")]
                     crate::vault::testing::event("after-atomic-write", path)?;
                     return Ok(());
                 }
                 Err(error) if error.kind() == io::ErrorKind::PermissionDenied && attempt < 4 => {
-                    std::thread::sleep(Duration::from_millis(20 * (attempt + 1)));
+                    retry_delay(path, Duration::from_millis(50 * (attempt + 1)))?;
                 }
                 Err(error) => return Err(error),
             }

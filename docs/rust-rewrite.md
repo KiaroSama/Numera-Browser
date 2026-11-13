@@ -20,6 +20,12 @@ vendor Node transports and vendor browser engines. Those external dependencies
 are not rewritten Chromium/Firefox/Node implementations; generated browser
 scripts and WASM bindings remain runtime assets.
 
+Browser-realm identity and probes also have Rust sources in
+[`browser-page-rust`](../browser-page-rust/README.md). The embedded JavaScript
+factory is compiler output, with source/tool hashes and deterministic regeneration
+checks. Actual browser comparisons preserve identity, probe failures and strict
+CSP behavior. No page CSP policy is relaxed to initialize this runtime.
+
 [Current upstream review](upstream-review-20261113.json) distinguishes stable
 artifacts from source-only changes. Driver/browser generations remain separate.
 Camoufox includes native fingerprint-model, identity, geometry, locale, GeoIP,
@@ -32,8 +38,9 @@ its proprietary binary is excluded from public bundles.
 
 `rust-test-baseline.json` freezes the original collection, its identities and test
 kinds. The counts are **3,418 backend/tooling source cases**, **195 dashboard
-cases**, and **294 preexisting native cases**, including a separately executed
-live-browser case. Platform-only cases retain their applicability.
+cases**, and **294 preexisting native cases on Linux**, including a separately
+executed live-browser case. The original platform-specific native inventories are
+295 on macOS and 286 on Windows; their applicability is preserved.
 
 Each `source-*-test-map.json` maps an individual source case to an individually
 reported Rust case, its original kind and platform. Mapping is not an execution
@@ -53,6 +60,12 @@ Its old pending rows are not retroactively labeled accepted. Current Rust
 occurrence inventories use the Rust AST and identify duplicate symbol occurrences
 separately. They complement behavioral tests rather than establish feature parity
 by symbol count.
+
+The [current capability review](rust-capability-review.json) covers the exact
+907-ID union in six independently reviewed families. Each family records actual
+Rust replacements, asserting tests, typed or composed adaptations and remaining
+platform evidence limits. The review also records the defects found and fixed
+during the rewrite; it does not substitute mapping counts for test execution.
 
 ## Build and resource provenance
 
@@ -88,12 +101,11 @@ environment requires an isolated writable browser home; its sandbox exception is
 limited to that local test and is not added to the product. Full licensed Cloak
 acceptance remains a required CI tier.
 
-The source-suite ports and interpreter retirement are being verified as one
-integration. Per-suite maps record successful runs and outstanding work. The
-remaining ownership race checks, complete product packaging, actual Windows
-signing fixture execution and final exact-head full CI must pass before this
-rewrite is described as finished. An ancestor's green candidate matrix is not
-latest-head product acceptance.
+Source-suite ports and interpreter retirement are one integration. Per-suite maps
+record named execution evidence. Required acceptance includes ownership checks,
+complete product packaging, actual Windows signing-fixture execution and the
+full CI result for the exact current PR revision. An ancestor's green candidate
+matrix does not establish current product acceptance.
 
 Performance compares the genuine `3bf1d8` native application checkpoint with the
 current native product, using the same current Rust SDK transport and resources.

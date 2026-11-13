@@ -70,8 +70,19 @@ fn original_warmup_validation_presets_and_native_control_match_without_real_wait
         json!(warmup_policy::sites(Some("missing"))),
         document["policy"]["fallback"]
     );
-    assert_eq!(warmup::HOST, document["policy"]["hostScript"]);
-    assert_eq!(warmup::LINKS, document["policy"]["linksScript"]);
+    for (program, suffix) in [
+        (warmup::HOST, ")().location_host(argument)"),
+        (warmup::LINKS, ")().internal_links(argument)"),
+    ] {
+        let expression = crate::page_runtime::expression(program);
+        assert_eq!(
+            expression
+                .strip_prefix("(argument) => (")
+                .and_then(|body| body.strip_suffix(suffix)),
+            Some(crate::page_runtime::artifact()),
+            "Warmup must invoke the exact compiled export using the canonical artifact"
+        );
+    }
     let runs = document["runs"]
         .as_array()
         .ok_or("Warmup run cases missing")?;

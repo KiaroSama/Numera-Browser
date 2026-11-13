@@ -1,4 +1,18 @@
 use super::*;
+#[path = "../../../browser-page-rust/src/webrtc_rules.rs"]
+mod rules;
+fn observations() -> Value {
+    use sha2::{Digest, Sha256};
+    let raw = include_bytes!("../fixtures/browser-page-webrtc.json");
+    assert_eq!(
+        Sha256::digest(raw)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>(),
+        "7570de3bb939f841b185f72c2e51f8a3b5b1ca4bd41a716e999ec0586936f11c"
+    );
+    serde_json::from_slice(raw).expect("immutable original WebRTC observations")
+}
 source_test!(
     c000_default_mode_is_altered,
     "tests/test_webrtc.py::test_default_mode_is_altered",
@@ -29,6 +43,20 @@ source_test!(
             fp.webrtc = mode.into();
             let script = identity_script::build(&fp).expect("identity script");
             assert!(script.contains(&format!("\"webrtc\": \"{mode}\"")));
+            let encoded = script
+                .strip_prefix("(() => {\nconst CFG = ")
+                .and_then(|script| script.split_once(";\n(").map(|(encoded, _)| encoded))
+                .expect("initialization configuration boundary");
+            let delivered: Value = serde_json::from_str(encoded).expect("delivered configuration");
+            assert_eq!(delivered["webrtc"], mode);
+            assert_eq!(
+                rules::mode(delivered["webrtc"].as_str().expect("mode")),
+                match mode {
+                    "disabled" => rules::Mode::Disabled,
+                    "real" => rules::Mode::Real,
+                    _ => rules::Mode::Altered,
+                }
+            );
         }
     }
 );
@@ -38,19 +66,61 @@ source_test!(
     {
         let mut fp = generated();
         fp.webrtc = "real".into();
-        let script = identity_script::build(&fp).expect("identity script");
-        assert!(script.contains("cfg.webrtc === 'disabled'"));
-        assert!(script.contains("cfg.webrtc !== 'real'"));
+        assert_eq!(
+            identity_script::config(&fp).expect("configuration")["webrtc"],
+            "real"
+        );
+        // The actual browser wrapper branches on this shared pure selector:
+        // real returns before replacing listeners or SDP descriptors.
+        assert_eq!(rules::mode(&fp.webrtc), rules::Mode::Real);
+        assert_ne!(rules::mode("disabled"), rules::Mode::Real);
+        assert_eq!(rules::mode("altered"), rules::Mode::Altered);
+        assert_eq!(rules::mode(""), rules::Mode::Altered);
+        for event in observations()["end_events"].as_array().expect("end events") {
+            let line = event["event"]["candidate"]["candidate"].as_str();
+            assert_eq!(
+                rules::drop_candidate(line),
+                event["drop"].as_bool().expect("drop result")
+            );
+        }
     }
 );
 source_test!(
     c000_candidate_filter_keeps_private_and_mdns,
     "tests/test_webrtc.py::test_candidate_filter_keeps_private_and_mdns",
     {
-        let script = identity_script::build(&generated()).expect("identity script");
-        assert!(script.contains(".local"));
-        assert!(script.contains(r"192\.168\."));
-        assert!(script.contains("a=candidate:"));
+        let frozen = observations();
+        assert_eq!(
+            frozen["source_commit"],
+            "13b6d9c6973281fe123353eaec05b29d65781a2d"
+        );
+        for case in frozen["candidate_cases"]
+            .as_array()
+            .expect("candidate observations")
+        {
+            let line = case["line"].as_str().expect("candidate line");
+            assert_eq!(
+                rules::candidate_address(line),
+                case["address"].as_str(),
+                "candidate grammar {line:?}"
+            );
+            assert_eq!(
+                rules::safe_candidate(line),
+                case["safe"].as_bool().expect("safe result"),
+                "candidate policy {line:?}"
+            );
+            assert_eq!(
+                rules::drop_candidate(Some(line)),
+                case["drop"].as_bool().expect("drop result"),
+                "event policy {line:?}"
+            );
+        }
+        for case in frozen["sdp_cases"].as_array().expect("SDP observations") {
+            assert_eq!(
+                rules::scrub_sdp(case["input"].as_str().expect("SDP input")),
+                case["output"].as_str().expect("SDP result")
+            );
+        }
     }
 );
 source_test!(

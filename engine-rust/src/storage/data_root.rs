@@ -4,14 +4,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub(crate) fn expand_home(path: &Path, home: &Path) -> PathBuf {
-    if path == Path::new("~") {
-        return home.to_owned();
-    }
-    if let Ok(tail) = path.strip_prefix("~") {
-        return home.join(tail);
-    }
-    path.to_owned()
+pub(crate) fn expand_home(path: &Path, home: &Path) -> io::Result<PathBuf> {
+    super::home_path::expand(path, home)
 }
 
 fn writable(directory: &Path) -> io::Result<bool> {
@@ -48,7 +42,7 @@ pub fn resolve(
 ) -> io::Result<PathBuf> {
     for path in [explicit, environment].into_iter().flatten() {
         if !path.as_os_str().is_empty() {
-            return Ok(expand_home(path, home));
+            return expand_home(path, home);
         }
     }
     let portable = app.join("data");
