@@ -1,0 +1,6437 @@
+[
+  {
+    "operation": "create",
+    "args": [
+      "\u001cnew\u001c"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "new"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "new"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u001c"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": null,
+    "error": "folder name required",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "inner\u001cname"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "inner\u001cname"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "inner\u001cname"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "\u001csource\u001c",
+      "target"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "\u001ctarget\u001c"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "\u001csource\u001c"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u001ctarget\u001c"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "target"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "target"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u001c"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u001dnew\u001d"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "new"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "new"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u001d"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": null,
+    "error": "folder name required",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "inner\u001dname"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "inner\u001dname"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "inner\u001dname"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "\u001dsource\u001d",
+      "target"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "\u001dtarget\u001d"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "\u001dsource\u001d"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u001dtarget\u001d"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "target"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "target"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u001d"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u001enew\u001e"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "new"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "new"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u001e"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": null,
+    "error": "folder name required",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "inner\u001ename"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "inner\u001ename"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "inner\u001ename"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "\u001esource\u001e",
+      "target"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "\u001etarget\u001e"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "\u001esource\u001e"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u001etarget\u001e"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "target"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "target"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u001e"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u001fnew\u001f"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "new"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "new"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u001f"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": null,
+    "error": "folder name required",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "inner\u001fname"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "inner\u001fname"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "inner\u001fname"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "\u001fsource\u001f",
+      "target"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "\u001ftarget\u001f"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "\u001fsource\u001f"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u001ftarget\u001f"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "target"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "target"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u001f"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u0085new\u0085"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "new"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "new"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u0085"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": null,
+    "error": "folder name required",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "inner\u0085name"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "inner\u0085name"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "inner\u0085name"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "\u0085source\u0085",
+      "target"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "\u0085target\u0085"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "\u0085source\u0085"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u0085target\u0085"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "target"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "target"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u0085"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u00a0new\u00a0"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "new"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "new"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u00a0"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": null,
+    "error": "folder name required",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "inner\u00a0name"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "inner\u00a0name"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "inner\u00a0name"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "\u00a0source\u00a0",
+      "target"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "\u00a0target\u00a0"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "\u00a0source\u00a0"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u00a0target\u00a0"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "target"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "target"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u00a0"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u2003new\u2003"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "new"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "new"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u2003"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": null,
+    "error": "folder name required",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "inner\u2003name"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "inner\u2003name"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "inner\u2003name"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "\u2003source\u2003",
+      "target"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "\u2003target\u2003"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "\u2003source\u2003"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u2003target\u2003"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "target"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "target"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u2003"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u202fnew\u202f"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "new"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "new"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u202f"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": null,
+    "error": "folder name required",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "inner\u202fname"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "inner\u202fname"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "inner\u202fname"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "\u202fsource\u202f",
+      "target"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "\u202ftarget\u202f"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "\u202fsource\u202f"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u202ftarget\u202f"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "target"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "target"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u202f"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u3000new\u3000"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "new"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "new"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u3000"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": null,
+    "error": "folder name required",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "inner\u3000name"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "inner\u3000name"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "inner\u3000name"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "\u3000source\u3000",
+      "target"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "\u3000target\u3000"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "target",
+          "source": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "\u3000source\u3000"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u3000target\u3000"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "target"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "target"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u3000"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u001bnew\u001b"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "\u001bnew\u001b"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "\u001bnew\u001b"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u001b"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "\u001b"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "\u001b"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "inner\u001bname"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "inner\u001bname"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "inner\u001bname"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "\u001bsource\u001b",
+      "target"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source",
+          "\u001bsource\u001b": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "\u001btarget\u001b"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "\u001btarget\u001b",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "\u001btarget\u001b",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "\u001btarget\u001b",
+          "source": "\u001btarget\u001b"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "\u001btarget\u001b",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "\u001bsource\u001b"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u001btarget\u001b"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "\u001btarget\u001b"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "\u001btarget\u001b"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "\u001btarget\u001b",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u001b"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "\u001b"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "\u001b"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "\u001b",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u200bnew\u200b"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "\u200bnew\u200b"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "\u200bnew\u200b"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\u200b"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "\u200b"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "\u200b"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "inner\u200bname"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "inner\u200bname"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "inner\u200bname"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "\u200bsource\u200b",
+      "target"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source",
+          "\u200bsource\u200b": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "\u200btarget\u200b"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "\u200btarget\u200b",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "\u200btarget\u200b",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "\u200btarget\u200b",
+          "source": "\u200btarget\u200b"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "\u200btarget\u200b",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "\u200bsource\u200b"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u200btarget\u200b"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "\u200btarget\u200b"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "\u200btarget\u200b"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "\u200btarget\u200b",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\u200b"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "\u200b"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "\u200b"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "\u200b",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\ufeffnew\ufeff"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "\ufeffnew\ufeff"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "\ufeffnew\ufeff"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "\ufeff"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "\ufeff"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "\ufeff"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "inner\ufeffname"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha",
+      "inner\ufeffname"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "inner\ufeffname"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "\ufeffsource\ufeff",
+      "target"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source",
+          "\ufeffsource\ufeff": "target"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "\ufefftarget\ufeff"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "\ufefftarget\ufeff",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "\ufefftarget\ufeff",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "\ufefftarget\ufeff",
+          "source": "\ufefftarget\ufeff"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "\ufefftarget\ufeff",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "\ufeffsource\ufeff"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "source",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": true,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\ufefftarget\ufeff"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "\ufefftarget\ufeff"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "\ufefftarget\ufeff"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "\ufefftarget\ufeff",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source",
+      "\ufeff"
+    ],
+    "meta": {
+      "folders": [
+        "source",
+        "alpha"
+      ],
+      "renamed": {
+        "before": "source"
+      },
+      "future": {
+        "kept": "\u03b1"
+      }
+    },
+    "profiles": {
+      "a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "result": [
+      "alpha",
+      "\ufeff"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "\ufeff"
+        ],
+        "renamed": {
+          "before": "source"
+        },
+        "future": {
+          "kept": "\u03b1"
+        }
+      },
+      "a.json": {
+        "id": "a",
+        "folder": "\ufeff",
+        "future": [
+          7
+        ]
+      },
+      "b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "a.json": false,
+      "b.json": true
+    }
+  }
+]

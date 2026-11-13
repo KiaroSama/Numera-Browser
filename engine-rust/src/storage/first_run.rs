@@ -33,6 +33,8 @@ pub struct Summary {
 }
 
 fn copy_file(source: &Path, destination: &Path, merging: bool) -> io::Result<()> {
+    #[cfg(feature = "test-support")]
+    crate::vault::testing::event("before-copy-file", source)?;
     let metadata = fs::metadata(source).map_err(|error| errors::at(error, source))?;
     #[cfg(unix)]
     {

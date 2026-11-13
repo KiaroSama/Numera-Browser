@@ -6,7 +6,7 @@ use super::{
     migration::Migration,
     transaction::commit_and_verify,
 };
-use crate::storage::locks::DataLock;
+use crate::storage::{atomic::RollbackFailed, locks::DataLock};
 use serde_json::Value;
 use std::{error::Error, fmt, fs, io, path::Path};
 
@@ -16,8 +16,12 @@ pub enum RecoveryErrorKind {
     JournalUnreadable,
     VaultIncomplete,
     VaultLocked,
+    RollbackFailed,
     Io,
 }
+
+#[derive(Debug)]
+struct ErrorCause(Box<dyn Error + Send + Sync>);
 
 #[derive(Debug)]
 pub struct RecoveryError {
@@ -25,6 +29,8 @@ pub struct RecoveryError {
     pub problems: Vec<Problem>,
     pub codes: Vec<&'static str>,
     pub role: Option<&'static str>,
+    pub rollback: Option<Box<RollbackFailed>>,
+    cause: Option<Box<ErrorCause>>,
     message: String,
 }
 impl fmt::Display for RecoveryError {
@@ -32,7 +38,18 @@ impl fmt::Display for RecoveryError {
         f.write_str(&self.message)
     }
 }
-impl Error for RecoveryError {}
+impl Error for RecoveryError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        self.rollback
+            .as_ref()
+            .map(|error| error.as_ref() as &(dyn Error + 'static))
+            .or_else(|| {
+                self.cause
+                    .as_ref()
+                    .map(|cause| cause.0.as_ref() as &(dyn Error + 'static))
+            })
+    }
+}
 impl From<io::Error> for RecoveryError {
     fn from(e: io::Error) -> Self {
         Self {
@@ -41,6 +58,8 @@ impl From<io::Error> for RecoveryError {
             codes: vec!["unreadable_files"],
             role: None,
             message: format!("Vault recovery file operation failed; evidence retained: {e}"),
+            rollback: None,
+            cause: Some(Box::new(ErrorCause(Box::new(e)))),
         }
     }
 }
@@ -51,7 +70,34 @@ pub(crate) fn refusal(message: impl Into<String>) -> RecoveryError {
         codes: Vec::new(),
         role: None,
         message: message.into(),
+        rollback: None,
+        cause: None,
     }
+}
+pub(crate) fn caused_refusal(
+    message: impl Into<String>,
+    cause: impl Error + Send + Sync + 'static,
+) -> RecoveryError {
+    let mut error = refusal(message);
+    error.cause = Some(Box::new(ErrorCause(Box::new(cause))));
+    error
+}
+pub(crate) fn migration_failure(cause: super::migration::MigrationError) -> RecoveryError {
+    caused_refusal(cause.to_string(), cause)
+}
+pub(crate) fn rollback_failed(
+    cause: RecoveryError,
+    failures: Vec<(std::path::PathBuf, io::Error)>,
+    what: &str,
+) -> RecoveryError {
+    let rollback = RollbackFailed {
+        cause: io::Error::other(cause),
+        failures,
+    };
+    let mut error = refusal(format!("{what}: {rollback}; journal retained"));
+    error.kind = RecoveryErrorKind::RollbackFailed;
+    error.rollback = Some(Box::new(rollback));
+    error
 }
 pub(crate) fn locked(role: &'static str, message: &str) -> RecoveryError {
     let mut error = refusal(message);
@@ -101,6 +147,8 @@ pub(crate) fn incomplete_for(found: Vec<Problem>, what: &str) -> RecoveryError {
                 .join("; ")
         ),
         problems: found,
+        rollback: None,
+        cause: None,
     }
 }
 pub fn recover_enable(root: &Path, password: Option<&str>) -> Result<bool, RecoveryError> {
@@ -158,9 +206,9 @@ pub fn recover(
     }
     if state != JournalState::Valid {
         let message = if record.is_none() {
-            "vault-migration.json exists but is not a usable recovery record; nothing has been changed or deleted"
+            "vault-migration.json exists but is not a usable recovery record; nothing has been changed or deleted. Restore this data root from a backup before retrying"
         } else {
-            "vault-migration.json is unreadable or unsupported; recovery evidence is retained"
+            "vault-migration.json is unreadable or unsupported; recovery evidence is retained. Restore this data root from a backup before retrying"
         };
         let mut error = refusal(message);
         error.kind = RecoveryErrorKind::JournalUnreadable;
@@ -255,11 +303,13 @@ pub fn recover(
     } else if !observed.is_empty() {
         return Err(incomplete(observed));
     }
+    #[cfg(feature = "test-support")]
+    super::testing::event("before-recovery", root)?;
     let mut step = Migration::new(root.to_owned());
     let result = (|| -> Result<(), RecoveryError> {
         if leftover.is_some() {
             step.encrypt_all(password.unwrap_or(""), new["salt"].as_str().unwrap_or(""))
-                .map_err(|e| refusal(e.to_string()))?;
+                .map_err(migration_failure)?;
         }
         commit_and_verify(
             root,
@@ -273,10 +323,7 @@ pub fn recover(
     if let Err(error) = result {
         let failures = step.rollback();
         if !failures.is_empty() {
-            return Err(refusal(format!(
-                "Vault recovery failed and {} file(s) could not be restored; journal retained",
-                failures.len()
-            )));
+            return Err(rollback_failed(error, failures, "Vault recovery failed"));
         }
         sync_data(root)?;
         if config_path.exists() {
@@ -285,7 +332,11 @@ pub fn recover(
         sync_dir(root)?;
         return Err(error);
     }
-    fs::remove_file(root.join("vault-migration.json"))?;
-    sync_dir(root)?;
+    super::durability::end_journal(root).map_err(|error| {
+        caused_refusal(
+            format!("Vault migration cleanup failed; evidence retained: {error}"),
+            error,
+        )
+    })?;
     Ok(true)
 }

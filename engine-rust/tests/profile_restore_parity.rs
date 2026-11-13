@@ -10,95 +10,11 @@ mod common;
 #[test]
 fn restore_copy_candidates_match_original_existing_name_ownership()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::ownership::capture;
-    use std::{process::Command, time::Duration};
-
     let temporary = common::TempDirectory::new("restore-name-ownership")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import base64,json,sys,zipfile
-from pathlib import Path
-from unittest.mock import patch
-repository,parent=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.store import ProfileStore
-from run_logging import run_log
-fixture=json.loads((repository/'engine-rust/tests/fixtures/profile-restore.json').read_text(encoding='utf-8'))
-base=fixture['cases'][0]['result']
-name=base['name'];copy=name+' (copy)';second=name+' (copy 2)'
-# Each row names raw engine/dashboard owners, including deliberately divergent twins.
-variants=[('unclaimed',[]),('foreign-base',[('other',name,name)]),
- ('own-base',[('fixture-restore',name,name),('other',name,name)]),
- ('own-copy',[('fixture-restore',copy,copy),('other',name,copy)]),
- ('own-dashboard-copy',[('fixture-restore','previous',copy),('other',name,copy)]),
- ('own-engine-copy',[('fixture-restore',copy,'previous'),('other',name,copy)]),
- ('foreign-copy',[('other',name,copy)]),
- ('own-second',[('fixture-restore',second,second),('other',name,copy),('third',second,second)]),
- ('foreign-chain',[('other',name,copy),('third',second,second)]),
- ('case-distinct',[('other',name.upper(),copy)]),
- ('unicode-distinct',[('other',name+' 日本語',copy)]),
- ('own-diverged-base',[('fixture-restore','previous',name),('other',name,name)])]
-observed=[]
-with run_log('restore-name-ownership-oracle',parent/'logs') as log:
- source=parent/'incoming.zip'
- with zipfile.ZipFile(source,'w',zipfile.ZIP_STORED) as archive:
-  archive.writestr('profile.json',json.dumps(base))
-  archive.writestr('user-data/Default/restore.bin',b'\x00\xffrestored session\r\n')
- archive_bytes=source.read_bytes()
- for label,rows in variants:
-  root=parent/str(len(observed));store=ProfileStore(root)
-  initial={}
-  for identifier,left,right in rows:
-   initial['profiles/'+identifier+'.json']={**base,'id':identifier,'name':left,'notes':'retained record'}
-   initial['dashboard/'+identifier+'.json']={'id':identifier,'name':right,'folder':'retained folder',
-     '_created':123.0,'_rev':7,'futureRestore':{'text':'日本語','values':[True,42]}}
-  for relative,record in initial.items():
-   path=root/relative;path.parent.mkdir(parents=True,exist_ok=True)
-   path.write_text(json.dumps(record,ensure_ascii=True),encoding='utf-8')
-  old=root/'user-data/fixture-restore/stale.bin'
-  old.parent.mkdir(parents=True,exist_ok=True);old.write_bytes(b'old session must be replaced')
-  untouched={relative:(root/relative).read_bytes() for relative in initial if 'fixture-restore.json' not in relative}
-  with patch('numera.repo.time.time',return_value=1700000000.0):
-   result=store.restore(source).to_dict()
-  written={path.relative_to(root).as_posix():json.loads(path.read_text(encoding='utf-8'))
-    for kind in ('profiles','dashboard') for path in sorted((root/kind).glob('*.json'))}
-  assert all((root/relative).read_bytes()==raw for relative,raw in untouched.items())
-  assert not old.exists() and source.read_bytes()==archive_bytes
-  assert (root/'user-data/fixture-restore/Default/restore.bin').read_bytes()==b'\x00\xffrestored session\r\n'
-  assert not list(root.glob('numera-restore-*')) and not list((root/'user-data').glob('*.replaced-*'))
-  observed.append({'label':label,'initial':initial,'result':result,'written':written})
- log.info('Observed public restore name cases=%s',len(observed))
- print(json.dumps({'archive':base64.b64encode(archive_bytes).decode('ascii'),'cases':observed},ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("source"));
-    let original = match capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    ) {
-        Ok(output) => output,
-        Err(mut failure) => {
-            if failure.settle(Duration::from_secs(5)).is_err() {
-                std::mem::forget(temporary);
-            }
-            return Err(failure.into());
-        }
-    };
-    assert_eq!(
-        original.exit, 0,
-        "Original restore ownership observer failed"
-    );
-    let observed: Value = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let observed: Value = serde_json::from_str(include_str!(
+        "fixtures/characterization/restore_copy_candidates_match_original_existing_name_ownership.json"
+    ))?;
     let archive = STANDARD.decode(observed["archive"].as_str().ok_or("Archive missing")?)?;
     let cases = observed["cases"]
         .as_array()

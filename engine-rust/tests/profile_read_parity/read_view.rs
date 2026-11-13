@@ -4,88 +4,20 @@ use axum::{
     http::Request,
 };
 use numera_core::{
-    http::profile_routes::router, models::Profile, ownership::capture, read_view,
-    storage::repo::ProfileRepo,
+    http::profile_routes::router, models::Profile, read_view, storage::repo::ProfileRepo,
 };
 use serde_json::{Value, json};
-use std::{fs, path::Path, process::Command, time::Duration};
+use std::{fs, time::Duration};
 use tower::ServiceExt;
 
 #[test]
 fn legacy_read_views_match_original_core_http_and_name_admission()
 -> Result<(), Box<dyn std::error::Error>> {
     let temporary = common::TempDirectory::new("legacy-read-views")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import copy,json,os,sys
-from pathlib import Path
-from unittest.mock import patch
-repository,parent=map(Path,sys.argv[1:])
-os.environ.pop('NUMERA_PASSWORD',None)
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import write_contract
-from numera.server.routes_profiles import readable as dashboard_readable
-from numera.repo import ProfileRepo
-from numera.store import ProfileStore
-from numera.models import Profile
-from run_logging import run_log
-values=[None,False,True,'', 'plain α 日本語',17,-17,0.0,-0.0,1.0,1.23456789,
-        1e-5,1e-4,999999.5,1000000.0,1e100,5e-324,
-        9007199254740993,[],['α',1,None,True,'z'],{}, {'nested':[True,None,1.25]}]
-views=[]
-with run_log('legacy-read-views-oracle',parent/'logs') as log:
-    for value in values:
-        record={'name':value,'notes':value,'tags':value,'future':{'retained':[value]}}
-        before=copy.deepcopy(record)
-        views.append({'input':record,'default':write_contract.readable(record),
-                      'dashboard':dashboard_readable(record),
-                      'custom':write_contract.readable(record,text_fields=('notes',),list_fields=('future',)),
-                      'name':write_contract.readable_value('name',value),
-                      'tags':write_contract.readable_value('tags',value),
-                      'names':write_contract.readable_names([('a',value),('b','unchanged')])})
-        assert record==before,'Original read view changed input'
-    for record in ({},{'notes':None,'future':{'x':[1,2]}}):
-        views.append({'input':record,'default':write_contract.readable(record),
-                      'dashboard':dashboard_readable(record),
-                      'custom':write_contract.readable(record,text_fields=('notes',),list_fields=('future',))})
-    base=json.loads((repository/'engine-rust/tests/fixtures/repo-write.json').read_text(encoding='utf-8'))['cases'][0]['initial']['profiles']
-    names=[]
-    for value in [1.0,-1.0,1.23456789,1e-5,999999.5,1e100,17,True]:
-        for directory in ('profiles','dashboard'):
-            root=parent/str(len(names));store=ProfileStore(root);repo=ProfileRepo(store)
-            old={'id':'aaaaaaaaaaaa','name':value}
-            raw=json.dumps(old,ensure_ascii=True).encode('utf-8')
-            path=root/directory/'aaaaaaaaaaaa.json';path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(raw)
-            candidate={**base,'id':'bbbbbbbbbbbb','name':write_contract.readable_value('name',value)}
-            with patch('numera.repo.time.time',return_value=1700000000.0):
-                try: repo.save_many([Profile.from_dict(candidate)]);error=None
-                except ValueError as exc:error=str(exc)
-            assert error is not None and path.read_bytes()==raw,'Original legacy name was not protected'
-            names.append({'record':old,'directory':directory,'candidate':candidate,'error':error})
-    log.info('Observed read views=%s name refusals=%s',len(views),len(names))
-    print(json.dumps({'views':views,'names':names},ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("source")).env("PYTHONUTF8","1");
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 524288,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(
-        original.exit, 0,
-        "Original legacy read-view observer failed"
-    );
-    let observed: Value = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let observed: Value = serde_json::from_str(include_str!(
+        "../fixtures/characterization/legacy_read_views_match_original_core_http_and_name_admission.json"
+    ))?;
     let views = observed["views"].as_array().ok_or("Read views missing")?;
     assert_eq!(views.len(), 24, "Legacy read observations missing");
     let runtime = tokio::runtime::Builder::new_current_thread()

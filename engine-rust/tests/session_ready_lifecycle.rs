@@ -1,25 +1,22 @@
 use numera_core::ownership::{claims, session::Session};
-use std::{
-    fs,
-    process::{Command, Stdio},
-    time::Duration,
-};
+use std::{fs, process::Stdio, time::Duration};
 mod common;
+use numera_core as core;
+#[allow(dead_code)]
+#[path = "common/ownership_process.rs"]
+mod fixture;
 
 #[test]
 fn readiness_failure_settles_tree_and_success_retains_lease_until_close()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     for failure in [false, true] {
         let temporary = common::TempDirectory::new("session-ready-lifecycle")?;
         let root = temporary.path();
         let ready = root.join("ready.json");
-        let script = "import json,os,pathlib,threading; p=pathlib.Path(os.environ['FIXTURE_READY']); tmp=p.with_suffix('.part'); tmp.write_text(json.dumps({'ok':os.environ['FIXTURE_FAILURE']=='false','kind':'locked','error':'fixture startup refusal'}),encoding='utf-8'); tmp.replace(p); threading.Event().wait()";
-        let mut command = Command::new(&python);
+        let mut command = fixture::command("ready")?;
         command
-            .args(["-u", "-c", script])
-            .env("FIXTURE_READY", &ready)
-            .env("FIXTURE_FAILURE", failure.to_string())
+            .arg(&ready)
+            .arg(if failure { "locked" } else { "ok" })
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null());

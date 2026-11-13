@@ -7,75 +7,15 @@ mod common;
 #[test]
 fn malformed_pool_text_refuses_without_replacing_original_bytes()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::{ownership::capture, storage::repo::RepoError};
+    use numera_core::storage::repo::RepoError;
     use serde_json::{Map, json};
-    use std::{io, path::Path, process::Command, time::Duration};
+    use std::io;
 
     let temporary = common::TempDirectory::new("pool-text-storage")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import json,sys
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.store import ProfileStore
-from numera.server.stores import ProxyPool
-from run_logging import run_log
-rows=[]
-inputs=[b'\xff',b'["\xc3("]',b'["\xe2\x82',b'{broken',b'{}',b'[]',b'null',None,
-        b'[{"id":"fixture","host":"host.test","port":"80","pass":null,"future":[true,7]}]',b'[{}]']
-operations=['list','get','withheld','update','empty-update','update-many','empty-many','delete','missing-delete','add-empty']
-with run_log('pool-storage-text-oracle',parent/'logs') as log:
-    for raw in inputs:
-        for operation in operations:
-            root=parent/('source-'+str(len(rows)))
-            store=ProfileStore(root);pool=ProxyPool(root,store);path=root/'proxies.json'
-            if raw is not None:path.write_bytes(raw)
-            try:
-                if operation=='list':value=pool.list()
-                elif operation=='get':value=pool.get('fixture')
-                elif operation=='withheld':value=pool.secret_withheld('fixture')
-                elif operation=='update':value=pool.update('fixture',{'label':'α'})
-                elif operation=='empty-update':value=pool.update('fixture',{})
-                elif operation=='update-many':value=pool.update_many({'fixture':{'label':'α'}})
-                elif operation=='empty-many':value=pool.update_many({})
-                elif operation=='delete':value=pool.delete('fixture')
-                elif operation=='missing-delete':value=pool.delete('missing')
-                else:value=pool.add_many([])
-                outcome={'result':value,'error':None}
-            except UnicodeDecodeError:
-                outcome={'result':None,'error':'UnicodeDecodeError'}
-            after=path.read_bytes() if path.exists() else None
-            disk=None
-            if after is not None:
-                try:disk=json.loads(after.decode('utf-8'))
-                except (UnicodeDecodeError,json.JSONDecodeError):pass
-            rows.append({'raw':None if raw is None else raw.hex(),'operation':operation,
-                         'outcome':outcome,'disk':disk,'unchanged':raw==after})
-    log.info('Observed pooled proxy text storage cases=%s',len(rows))
-    print(json.dumps(rows,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path());
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(
-        original.exit, 0,
-        "Original pool storage text observer failed"
-    );
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/malformed_pool_text_refuses_without_replacing_original_bytes.json"
+    ))?;
     assert_eq!(cases.len(), 100, "Pool storage text cases missing");
     for (index, case) in cases.iter().enumerate() {
         let root = temporary.path().join(format!("native-{index}"));

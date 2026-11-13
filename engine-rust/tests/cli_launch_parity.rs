@@ -1,5 +1,5 @@
 use numera_core::{
-    browser::{adapter::Adapter, runtime::Runtime},
+    browser::runtime::Runtime,
     cli::{self, application::Application},
     fingerprint::{GenerateOptions, generate},
     models::Profile,
@@ -9,69 +9,27 @@ use numera_core::{
 use serde_json::{Value, json};
 use std::{
     collections::BTreeMap,
-    path::Path,
-    process::Command,
     time::{Duration, Instant},
 };
 #[path = "support/attach_output.rs"]
 mod attach_output;
 mod common;
+use numera_core as core;
+#[allow(dead_code)]
+#[path = "common/browser_fixture.rs"]
+mod fixture;
 
 #[test]
 fn foreground_launch_reuses_admission_and_native_backend_lifetime_policy()
 -> Result<(), Box<dyn std::error::Error>> {
     let temporary = common::TempDirectory::new("cli-launch")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
-    let mut command = Command::new(&python);
-    command.args(["-u","-c",r#"
-import json,os,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from cli_launch_cases import cases, attach_cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(os.environ['FIXTURE_ROOT']),'attach':attach_cases(os.environ['FIXTURE_ROOT']),'human':cases(os.path.join(os.environ['FIXTURE_ROOT'],'human'),human=True),'humanAttach':attach_cases(os.path.join(os.environ['FIXTURE_ROOT'],'human-attach'),human=True)}}),flush=True)
-"#]).env("PYTHONUTF8","1").env("FIXTURE_ROOT",temporary.path().join("source")).env("PYTHONPATH",std::env::join_paths([repository.join("scripts/migration"),repository.join("engine")])?);
-    let mut source = Adapter::spawn(
-        temporary.path(),
-        "oracle",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = source.call(
-        "observe-launch-cli",
-        Default::default(),
-        Duration::from_secs(30),
-    )?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
+    let document = fixture::oracle("launch-cli")?;
     let root = temporary.path().join("native");
     let repo = ProfileRepo::open(root.clone(), None, None)?;
     repo.save(Profile::from_record(&json!({"id":"fixture","name":"Fixture","fingerprint":generate(GenerateOptions{seed:42,..Default::default()})?,"created_at":1000.0,"updated_at":1000.0}))?,1000.0)?;
-    let script = root.join("sdk.py");
-    std::fs::write(
-        &script,
-        r#"
-import json,os,pathlib,sys,threading
-seen=[]
-for line in sys.stdin:
-    request=json.loads(line);op=request['operation'];seen.append(op)
-    if op=='hello': result={'backends':{'playwright':{'installed':True},'camoufox':{'installed':True}}}
-    elif op=='open':
-        result={'opened':True,'backend':request['backend']}
-        pathlib.Path(__file__).with_suffix('.policy').write_text(json.dumps({'backend':request['backend'],'first':os.environ.get('NUMERA_ADAPTER_FIRST_PAGE')}),encoding='utf-8')
-    else: result={'closing':True}
-    pathlib.Path(__file__).with_suffix('.seen').write_text(json.dumps(seen),encoding='utf-8')
-    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-    if op=='close': break
-"#,
-    )?;
+    let script = fixture::executable(&root.join("sdk"), "cli", json!({}))?;
     let sessions = Registry::new(root.clone(), "fixture-host".into(), None)?;
     let browser = Runtime {
-        python: python.into(),
         adapter: script,
         cwd: root.clone(),
         home: root.clone(),
@@ -187,57 +145,7 @@ for line in sys.stdin:
         );
         assert!(stderr.is_empty());
     }
-    let attach_script = root.join("attach-sdk.py");
-    std::fs::write(
-        &attach_script,
-        r#"
-import json,os,pathlib,socket,sys,threading
-server=None;worker=None;stop=threading.Event()
-def serve():
-    while not stop.is_set():
-        try: client,address=server.accept()
-        except socket.timeout: continue
-        except OSError: return
-        with client:
-            client.settimeout(1)
-            request=client.recv(4096)
-            assert b'/json/version' in request
-            port=server.getsockname()[1]
-            body=json.dumps({'Browser':'Fixture Chromium','webSocketDebuggerUrl':f'ws://127.0.0.1:{port}/devtools/browser/fixture'}).encode('utf-8')
-            client.sendall(b'HTTP/1.1 200 OK\r\nContent-Length: '+str(len(body)).encode('ascii')+b'\r\nConnection: close\r\n\r\n'+body)
-try:
-    for line in sys.stdin:
-        request=json.loads(line);op=request['operation']
-        if op=='hello': result={'backends':{'playwright':{'installed':True}}}
-        elif op=='open':
-            args=request['options']['args'];flag=next(arg for arg in args if arg.startswith('--remote-debugging-port='))
-            port=int(flag.split('=',1)[1]);server=socket.socket();server.bind(('127.0.0.1',port));server.listen();server.settimeout(.1)
-            worker=threading.Thread(target=serve);worker.start()
-            pathlib.Path(__file__).with_suffix('.open').write_text(json.dumps(request),encoding='utf-8')
-            result={'opened':True,'backend':request['backend']}
-        elif op=='close':
-            stop.set()
-            if server: server.close()
-            if worker:
-                worker.join(timeout=2)
-                if worker.is_alive(): raise RuntimeError('Fixture worker failed to finish')
-            result={'closing':True}
-        else: raise AssertionError('Unexpected attach operation')
-        print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-        if op=='close': break
-        if op=='open' and os.environ.get('FIXTURE_NATURAL'):
-            release=pathlib.Path(__file__).with_suffix('.release')
-            deadline=__import__('time').monotonic()+5
-            while not release.exists() and __import__('time').monotonic()<deadline:
-                stop.wait(.01)
-            if not release.exists(): raise RuntimeError('Natural close signal missing')
-            break
-finally:
-    stop.set()
-    if server: server.close()
-    if worker: worker.join(timeout=2)
-"#,
-    )?;
+    let attach_script = fixture::executable(&root.join("attach-sdk"), "attach", json!({}))?;
     let browser = Runtime {
         adapter: attach_script.clone(),
         ..browser.clone()
@@ -319,14 +227,8 @@ finally:
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
     let port = listener.local_addr()?.port();
     drop(listener);
-    let natural_script = root.join("natural-sdk.py");
-    std::fs::write(
-        &natural_script,
-        format!(
-            "import os\nos.environ['FIXTURE_NATURAL']='1'\nexec(compile(open({:?},encoding='utf-8').read(),__file__,'exec'))\n",
-            attach_script.to_str().ok_or("Attach script path nontext")?
-        ),
-    )?;
+    let natural_script =
+        fixture::executable(&root.join("natural-sdk"), "attach", json!({"natural":true}))?;
     let browser = Runtime {
         adapter: natural_script.clone(),
         ..browser.clone()

@@ -62,7 +62,13 @@ pub fn settle(record: &Value, budget: Duration) -> io::Result<bool> {
         let name = record["tree"]["group"]
             .as_str()
             .ok_or_else(|| io::Error::other("Stored job name missing"))?;
-        return super::windows::settle_named(name, end);
+        return super::windows::settle_named(
+            name,
+            end,
+            record["pid"]
+                .as_u64()
+                .and_then(|pid| u32::try_from(pid).ok()),
+        );
     }
     if empty(record)? {
         return Ok(true);
@@ -102,32 +108,66 @@ pub fn settle(record: &Value, budget: Duration) -> io::Result<bool> {
 #[cfg(unix)]
 #[allow(unsafe_code)]
 fn signal(record: &Value, force: bool) -> io::Result<()> {
-    let target = if record["tree"]["kind"] == "pgid" {
-        let group = record["tree"]["group"]
-            .as_i64()
-            .and_then(|v| i32::try_from(v).ok())
-            .filter(|v| *v > 0)
-            .ok_or_else(|| io::Error::other("Stored process group is invalid"))?;
-        // SAFETY: getpgrp has no arguments or borrowed storage.
-        if group == unsafe { libc::getpgrp() } {
-            return Err(io::Error::other(
-                "Refusing to stop the current process group",
-            ));
+    struct Native;
+    impl super::observation::SignalSource for Native {
+        fn birth(&mut self, pid: u32) -> io::Result<Option<u64>> {
+            identity::started_at(pid)
         }
-        -group
-    } else {
-        i32::try_from(pid(record)?).map_err(io::Error::other)?
-    };
-    // SAFETY: the durable birth identity was rechecked immediately before signal;
-    // positive PID or a validated distinct group, never zero or the current group.
-    if unsafe { libc::kill(target, if force { libc::SIGKILL } else { libc::SIGTERM }) } != 0 {
-        let error = io::Error::last_os_error();
-        if error.raw_os_error() != Some(libc::ESRCH) {
-            return Err(error);
+        fn caller_group(&mut self) -> i32 {
+            // SAFETY: getpgrp takes no pointers and only reads caller identity.
+            unsafe { libc::getpgrp() }
+        }
+        fn deliver(&mut self, target: i32, force: bool) -> io::Result<()> {
+            #[cfg(feature = "test-support")]
+            if let Some(result) = super::test_support::signal(target, force) {
+                return result;
+            }
+            // SAFETY: the shared policy checked birth identity and excludes the
+            // caller group immediately before this single signal attempt.
+            if unsafe { libc::kill(target, if force { libc::SIGKILL } else { libc::SIGTERM }) } == 0
+            {
+                Ok(())
+            } else {
+                Err(io::Error::last_os_error())
+            }
         }
     }
-    Ok(())
+    let group = if record["tree"]["kind"] == "pgid" {
+        Some(
+            record["tree"]["group"]
+                .as_i64()
+                .and_then(|g| i32::try_from(g).ok())
+                .filter(|g| *g > 0)
+                .ok_or_else(|| io::Error::other("Stored process group is invalid"))?,
+        )
+    } else {
+        None
+    };
+    let attempt = super::observation::attempt_signal(
+        super::observation::SignalIdentity {
+            pid: pid(record)?,
+            token: record["pidToken"].as_u64(),
+            group,
+        },
+        force,
+        &mut Native,
+    );
+    if attempt.delivered || attempt.errno == Some(libc::ESRCH) {
+        return Ok(());
+    }
+    Err(io::Error::other(super::observation::diagnostic(
+        group.unwrap_or_else(|| {
+            record["pid"]
+                .as_i64()
+                .and_then(|v| i32::try_from(v).ok())
+                .unwrap_or(0)
+        }),
+        !force,
+        false,
+        true,
+    )))
 }
+
 #[cfg(unix)]
 fn prove(record: &Value, end: Instant) -> io::Result<bool> {
     loop {

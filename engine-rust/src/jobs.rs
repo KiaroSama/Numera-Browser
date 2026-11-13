@@ -218,3 +218,6 @@ impl JobStore {
         write_json(&path, &Value::Object(outcome))
     }
 }
+
+/// Options and retained-failure handle for the actual detached spawn methods.
+pub use crate::job_spawn::{SpawnFailure, SpawnOptions};

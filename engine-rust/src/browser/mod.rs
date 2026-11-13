@@ -3,6 +3,8 @@ pub mod adapter;
 pub mod admission;
 pub mod alignment;
 pub mod bundled;
+pub mod camoufox_fonts;
+pub mod container_smoke;
 pub(crate) mod cookie_expiry;
 pub mod cookie_format;
 pub mod cookie_normalize;

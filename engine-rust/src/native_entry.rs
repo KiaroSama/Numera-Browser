@@ -81,6 +81,9 @@ pub fn run(argv: Vec<String>) -> i32 {
     pending.extend(crate::ownership::capture_units::retry_retained(
         Duration::from_secs(10),
     ));
+    pending.extend(crate::browser::adapter::retry_retained(
+        Duration::from_secs(10),
+    ));
     pending.extend(crate::job_supervisor::retry_retained(Duration::from_secs(
         10,
     )));
@@ -115,7 +118,15 @@ fn execute(
         &environment.home,
     )?;
     environment.browser.logs = RuntimeLog::directory(&root);
-    let log = RuntimeLog::new(&environment.browser.logs, "native-cli");
+    let recovery_ticket = std::env::var("NUMERA_UPDATE_TICKET").ok();
+    let log = crate::ownership::update_admission::Admission::new(&root, &environment.host)?
+        .with_startup(false, recovery_ticket.as_deref(), |recovering| {
+            Ok(if recovering {
+                RuntimeLog::without_file()
+            } else {
+                RuntimeLog::new(&environment.browser.logs, "native-cli")
+            })
+        })?;
     log.event("INFO", "entry", "Startup");
     let cancelled = Arc::new(AtomicBool::new(false));
     let signal = cancelled.clone();
@@ -123,46 +134,52 @@ fn execute(
         .map_err(io::Error::other)?;
     let operation = args.get("command").and_then(Value::as_str).unwrap_or("");
     if operation == "serve" && args.get("detach") != Some(&Value::Bool(true)) {
-        let _admission =
-            crate::ownership::update_admission::Reservation::begin(&root, "native-server-prepare")?;
-        let host = args
-            .get("host")
-            .and_then(Value::as_str)
-            .map(str::trim)
-            .filter(|host| !host.is_empty())
-            .unwrap_or("127.0.0.1");
-        if let Some(refusal) = crate::http::bind_policy::refusal(
-            host,
-            &crate::http::tokens::TokenStore::new(root.clone()),
-            &std::env::var("NUMERA_API_TOKEN").unwrap_or_default(),
-            &std::env::var("NUMERA_ALLOW_INSECURE_BIND").unwrap_or_default(),
-        ) {
-            return Err(io::Error::new(io::ErrorKind::PermissionDenied, refusal));
-        }
-        if let Some(summary) = crate::storage::first_run::run_if_needed(
-            &root,
-            &[
-                environment.home.join(".numera"),
-                environment.home.join(".persona"),
-            ],
-        )? {
-            if !summary.copied.is_empty() {
-                output.say(
-                    &format!(
-                        "  Imported {} profile(s) from an older install",
-                        summary.profiles
-                    ),
-                    None,
-                )?;
-            }
-            for _ in summary.failed {
-                log.event(
-                    "WARNING",
-                    "first-run",
-                    "Import item failed; retry remains possible",
-                );
-            }
-        }
+        let ticket = std::env::var("NUMERA_UPDATE_TICKET").ok();
+        crate::ownership::update_admission::Admission::new(&root, &environment.host)?
+            .with_startup(true, ticket.as_deref(), |recovering| {
+                if recovering {
+                    return Ok(());
+                }
+                let host = args
+                    .get("host")
+                    .and_then(Value::as_str)
+                    .map(str::trim)
+                    .filter(|host| !host.is_empty())
+                    .unwrap_or("127.0.0.1");
+                if let Some(refusal) = crate::http::bind_policy::refusal(
+                    host,
+                    &crate::http::tokens::TokenStore::new(root.clone()),
+                    &std::env::var("NUMERA_API_TOKEN").unwrap_or_default(),
+                    &std::env::var("NUMERA_ALLOW_INSECURE_BIND").unwrap_or_default(),
+                ) {
+                    return Err(io::Error::new(io::ErrorKind::PermissionDenied, refusal));
+                }
+                if let Some(summary) = crate::storage::first_run::run_if_needed(
+                    &root,
+                    &[
+                        environment.home.join(".numera"),
+                        environment.home.join(".persona"),
+                    ],
+                )? {
+                    if !summary.copied.is_empty() {
+                        output.say(
+                            &format!(
+                                "  Imported {} profile(s) from an older install",
+                                summary.profiles
+                            ),
+                            None,
+                        )?;
+                    }
+                    for _ in summary.failed {
+                        log.event(
+                            "WARNING",
+                            "first-run",
+                            "Import item failed; retry remains possible",
+                        );
+                    }
+                }
+                Ok(())
+            })?;
     }
     log.timing(NativePhase::Startup, started.elapsed());
     dispatch(args, argv, output, environment, &root, cancelled, &log)
@@ -182,35 +199,65 @@ pub fn dispatch(
     let password = std::env::var("NUMERA_PASSWORD").ok();
     let root = root.to_owned();
     let operation = args.get("command").and_then(Value::as_str).unwrap_or("");
+    if operation == "serve" && args.get("detach") != Some(&Value::Bool(true)) {
+        let ticket = std::env::var("NUMERA_UPDATE_TICKET").ok();
+        let recovering =
+            crate::ownership::update_admission::Admission::new(&root, &environment.host)?
+                .with_startup(false, ticket.as_deref(), Ok)?;
+        if recovering {
+            #[cfg(feature = "native-browser")]
+            let installed = crate::browser::sdk::metadata()["backends"]
+                .as_object()
+                .map(|backends| {
+                    backends
+                        .iter()
+                        .map(|(name, info)| (name.clone(), info["installed"] == true))
+                        .collect()
+                })
+                .unwrap_or_default();
+            #[cfg(not(feature = "native-browser"))]
+            let installed = Default::default();
+            return serve(
+                &root,
+                args,
+                &environment,
+                installed,
+                password,
+                cancelled,
+                output,
+            );
+        }
+    }
     let mut admission = crate::ownership::update_admission::Reservation::for_command(&root, args)?;
-    let prepared = (|| -> io::Result<_> {
-        // Resume requires both keys before recovery. Other vault prompts belong
-        // after ordinary store-open, so a damaged journal refuses first.
-        let opened = if args.get("vault_command").and_then(Value::as_str) == Some("resume") {
-            None
-        } else {
-            Some(
-                application::open_store(&root, args, password.as_deref())
-                    .map_err(io::Error::other)?,
-            )
-        };
-        let args = crate::native_password::prepare(args, cancelled.clone())?;
-        let repo = match opened {
-            Some(mut repo) => {
-                if let Some(password) = args
-                    .get("password")
-                    .and_then(Value::as_str)
-                    .filter(|value| !value.is_empty())
-                {
-                    repo.password = Some(password.into());
+    let prepared = crate::ownership::update_admission::Admission::new(&root, &environment.host)?
+        .with_startup(false, None, |_| {
+            // Resume requires both keys before recovery. Other vault prompts belong
+            // after ordinary store-open, so a damaged journal refuses first.
+            let opened = if args.get("vault_command").and_then(Value::as_str) == Some("resume") {
+                None
+            } else {
+                Some(
+                    application::open_store(&root, args, password.as_deref())
+                        .map_err(io::Error::other)?,
+                )
+            };
+            let args = crate::native_password::prepare(args, cancelled.clone())?;
+            let repo = match opened {
+                Some(mut repo) => {
+                    if let Some(password) = args
+                        .get("password")
+                        .and_then(Value::as_str)
+                        .filter(|value| !value.is_empty())
+                    {
+                        repo.password = Some(password.into());
+                    }
+                    repo
                 }
-                repo
-            }
-            None => application::open_store(&root, &args, password.as_deref())
-                .map_err(io::Error::other)?,
-        };
-        Ok((args, repo))
-    })();
+                None => application::open_store(&root, &args, password.as_deref())
+                    .map_err(io::Error::other)?,
+            };
+            Ok((args, repo))
+        });
     log.timing(NativePhase::Prepare, prepared_at.elapsed());
     let (prepared_args, repo) = match prepared {
         Ok(prepared) => prepared,
@@ -276,6 +323,22 @@ pub fn dispatch(
             }
         }
     } else {
+        if operation == "engines"
+            && (args.get("cloak_offer") == Some(&Value::Bool(true))
+                || args.get("acquire_cloak").and_then(Value::as_str).is_some())
+        {
+            let execute_at = std::time::Instant::now();
+            let acquisition = crate::cloak_acquisition::Acquisition::native_at(&root);
+            log.event(
+                "INFO",
+                "engines",
+                "Explicit Cloak acquisition command started",
+            );
+            let result = crate::cloak_acquisition::command(&acquisition, args, &cancelled)?
+                .ok_or_else(|| io::Error::other("Cloak acquisition command missing"))?;
+            log.timing(NativePhase::Execute, execute_at.elapsed());
+            return output.emit(&result, 0);
+        }
         let metadata_at = std::time::Instant::now();
         let addons_needed = matches!(
             operation,
@@ -512,12 +575,7 @@ fn serve(
         },
         args.get("verbose") == Some(&Value::Bool(true)),
     )?;
-    let parent = std::env::var("NUMERA_PARENT_PID")
-        .ok()
-        .and_then(|value| value.parse::<u32>().ok())
-        .filter(|pid| *pid > 0)
-        .map(|pid| crate::ownership::identity::started_at(pid).map(|token| (pid, token)))
-        .transpose();
+    let parent = crate::ownership::parent::Monitor::from_environment();
     let (parent, mut failure) = match parent {
         Ok(parent) => (parent, server.wait_ready(Duration::from_secs(10)).err()),
         Err(error) => (None, Some(error)),
@@ -531,8 +589,8 @@ fn serve(
             .err();
     }
     while failure.is_none() && !cancelled.load(Ordering::Acquire) {
-        if let Some((pid, token)) = parent {
-            match crate::ownership::identity::alive(pid, token) {
+        if let Some(parent) = parent {
+            match parent.alive() {
                 Ok(true) => {}
                 Ok(false) => break,
                 Err(error) => {

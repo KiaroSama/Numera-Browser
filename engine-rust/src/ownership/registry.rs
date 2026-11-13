@@ -13,7 +13,7 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
     sync::{Arc, Mutex},
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -100,6 +100,23 @@ pub struct Registry {
 fn poisoned() -> io::Error {
     io::Error::other("Session registry lock is poisoned; ownership is not free")
 }
+fn lock_before<T>(mutex: &Mutex<T>, deadline: Instant) -> io::Result<std::sync::MutexGuard<'_, T>> {
+    loop {
+        match mutex.try_lock() {
+            Ok(guard) => return Ok(guard),
+            Err(std::sync::TryLockError::Poisoned(_)) => return Err(poisoned()),
+            Err(std::sync::TryLockError::WouldBlock) => {}
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(io::Error::new(
+                io::ErrorKind::TimedOut,
+                "Ownership settlement lock exceeded its cleanup budget; retain the owner",
+            ));
+        }
+        std::thread::sleep(remaining.min(Duration::from_millis(5)));
+    }
+}
 fn now() -> io::Result<f64> {
     Ok(SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -130,6 +147,37 @@ impl Registry {
     }
     pub fn host(&self) -> &str {
         &self.host
+    }
+    /// A contended or populated owner table cannot authorize an update. This
+    /// observation never waits for a startup decision while holding root IO.
+    pub fn update_busy(&self) -> io::Result<bool> {
+        let decisions = match self.decisions.try_lock() {
+            Ok(decisions) => decisions
+                .iter()
+                .map(|(id, decision)| (id.clone(), Arc::clone(decision)))
+                .collect::<Vec<_>>(),
+            Err(std::sync::TryLockError::WouldBlock) => return Ok(true),
+            Err(_) => return Err(poisoned()),
+        };
+        let mut guards = Vec::new();
+        for (_, decision) in &decisions {
+            match decision.try_lock() {
+                Ok(guard) => guards.push(guard),
+                Err(std::sync::TryLockError::WouldBlock) => return Ok(true),
+                Err(_) => return Err(poisoned()),
+            }
+        }
+        // Existing startup/stop operations own their decision before entries;
+        // holding those decisions prevents root-lock inversion during reaping.
+        match self.entries.try_lock() {
+            Ok(entries) => drop(entries),
+            Err(std::sync::TryLockError::WouldBlock) => return Ok(true),
+            Err(_) => return Err(poisoned()),
+        }
+        for (id, _) in &decisions {
+            self.reap_one(id)?;
+        }
+        Ok(!self.entries.lock().map_err(|_| poisoned())?.is_empty())
     }
 
     fn decision(&self, id: &str) -> io::Result<Arc<Mutex<()>>> {
@@ -197,7 +245,10 @@ impl Registry {
         match SessionLease::acquire(&SessionLease::path_for(&self.root, id)?) {
             Ok(lease) => drop(lease),
             Err(error) if error.kind() == io::ErrorKind::WouldBlock => return Ok(true),
-            Err(error) => return Err(error),
+            // An inaccessible lease is unknown ownership, not a stopped
+            // profile. Admission/destructive operations still return the IO
+            // error; status must keep showing that the profile may be in use.
+            Err(_) => return Ok(true),
         }
         Ok(claims::state(&claims::read(&self.root, id), &self.host) != claims::State::Free)
     }
@@ -237,6 +288,16 @@ impl Registry {
         }
         if self.reap_one(id).map_err(failure)? {
             return Ok(false);
+        }
+        #[cfg(feature = "test-support")]
+        if let Some(result) = super::test_support::before_admit(id) {
+            result.map_err(failure)?;
+        }
+        if *self.closed.lock().map_err(|_| failure(poisoned()))? {
+            return Err(StartupFailed {
+                kind: "failed".into(),
+                message: "Session registry is shutting down".into(),
+            });
         }
         let mut session = Session::admit(&self.root, id, &self.host).map_err(failure)?;
         session.spawn(command, kind.name()).map_err(failure)?;
@@ -493,13 +554,19 @@ impl Registry {
     }
 
     pub fn stop(&self, id: &str, budget: Duration) -> io::Result<bool> {
+        let deadline = Instant::now()
+            .checked_add(budget)
+            .ok_or_else(|| io::Error::other("Invalid registry cleanup budget"))?;
         let decision = self.decision(id)?;
-        let _guard = decision.lock().map_err(|_| poisoned())?;
-        let mut entries = self.entries.lock().map_err(|_| poisoned())?;
+        let _guard = lock_before(&decision, deadline)?;
+        let mut entries = lock_before(&self.entries, deadline)?;
         let Some(entry) = entries.get_mut(id) else {
             return Ok(false);
         };
-        let code = entry.owner.stop(budget)?.unwrap_or(-1);
+        let code = entry
+            .owner
+            .stop(deadline.saturating_duration_since(Instant::now()))?
+            .unwrap_or(-1);
         let entry = entries
             .remove(id)
             .ok_or_else(|| io::Error::other("Stopped session disappeared"))?;
@@ -524,18 +591,21 @@ impl Registry {
     }
     pub fn shutdown(&self, budget: Duration) -> Vec<(String, String)> {
         let mut failed = Vec::new();
-        match self.closed.lock() {
+        let Some(deadline) = Instant::now().checked_add(budget) else {
+            return vec![(String::new(), "Invalid registry cleanup budget".into())];
+        };
+        match lock_before(&self.closed, deadline) {
             Ok(mut closed) => *closed = true,
-            Err(_) => return vec![(String::new(), poisoned().to_string())],
+            Err(error) => return vec![(String::new(), error.to_string())],
         }
         // Include in-flight admissions, not just already-ready entries. Their
         // per-profile decision lock makes shutdown wait for readiness cleanup.
-        let ids = match self.decisions.lock() {
+        let ids = match lock_before(&self.decisions, deadline) {
             Ok(decisions) => decisions.keys().cloned().collect::<Vec<_>>(),
-            Err(_) => return vec![(String::new(), poisoned().to_string())],
+            Err(error) => return vec![(String::new(), error.to_string())],
         };
         for id in ids {
-            if let Err(error) = self.stop(&id, budget) {
+            if let Err(error) = self.stop(&id, deadline.saturating_duration_since(Instant::now())) {
                 failed.push((id, error.to_string()));
             }
         }

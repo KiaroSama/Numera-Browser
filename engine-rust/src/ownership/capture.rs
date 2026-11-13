@@ -1,5 +1,6 @@
 //! Bounded command capture with one pipe owner, no blocking reader threads.
-use super::{capture_pipe::Pipe, tree::OwnedTree};
+pub use super::capture_pipe::Pipe;
+use super::tree::OwnedTree;
 use std::{
     io,
     process::{Command, Stdio},
@@ -17,6 +18,24 @@ pub struct Output {
     pub exit: i32,
     pub stdout: Vec<u8>,
     pub stderr: Vec<u8>,
+}
+/// Kernel ownership observations for callers that require producers to finish
+/// without leaving descendants. Observations precede cleanup; a successful
+/// cleanup therefore cannot erase evidence of a residual process tree.
+#[derive(Debug)]
+pub enum Observation {
+    Spawned {
+        record: serde_json::Value,
+    },
+    /// At most one sample every 50 ms while capture is in progress. The
+    /// accompanying borrowed owner retains the original Windows Job handle.
+    Polling,
+    BeforeCleanup {
+        record: serde_json::Value,
+        leader_exited: bool,
+        /// `None` means that kernel observation failed, rather than emptiness.
+        natural_settlement: Option<bool>,
+    },
 }
 pub struct Failure {
     error: io::Error,
@@ -45,6 +64,10 @@ impl From<io::Error> for Failure {
     }
 }
 impl Failure {
+    pub(crate) fn context(mut self, error: io::Error) -> Self {
+        self.error = io::Error::new(error.kind(), format!("{error}; {}", self.error));
+        self
+    }
     pub fn kind(&self) -> io::ErrorKind {
         self.error.kind()
     }
@@ -112,7 +135,36 @@ pub fn run(command: &mut Command, limits: Limits) -> Result<Output, Failure> {
 pub fn run_controlled(
     command: &mut Command,
     limits: Limits,
+    cancelled: impl FnMut() -> bool,
+) -> Result<Output, Failure> {
+    run_observed(command, limits, cancelled, |_, _| {})
+}
+pub fn run_observed(
+    command: &mut Command,
+    limits: Limits,
+    cancelled: impl FnMut() -> bool,
+    observe: impl FnMut(Observation, &OwnedTree),
+) -> Result<Output, Failure> {
+    run_observed_streamed(command, limits, cancelled, observe, |_, _| {})
+}
+/// Project accepted bytes as they arrive while retaining the same single pipe
+/// owner, output limit, process-tree proof and completion semantics.
+pub fn run_observed_streamed(
+    command: &mut Command,
+    limits: Limits,
+    cancelled: impl FnMut() -> bool,
+    observe: impl FnMut(Observation, &OwnedTree),
+    on_chunk: impl FnMut(usize, &[u8]),
+) -> Result<Output, Failure> {
+    run_observed_then(command, limits, cancelled, observe, |_, _, _| {}, on_chunk)
+}
+pub(crate) fn run_observed_then(
+    command: &mut Command,
+    limits: Limits,
     mut cancelled: impl FnMut() -> bool,
+    mut observe: impl FnMut(Observation, &OwnedTree),
+    mut after_tree: impl FnMut(bool, &OwnedTree, Duration),
+    mut on_chunk: impl FnMut(usize, &[u8]),
 ) -> Result<Output, Failure> {
     if cancelled() {
         return Err(
@@ -139,6 +191,16 @@ pub fn run_controlled(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     let mut tree = OwnedTree::spawn(command)?;
+    observe(
+        Observation::Spawned {
+            record: tree.record(),
+        },
+        &tree,
+    );
+    let mut cleanup_failed = false;
+    let mut cleanup_observed = false;
+    let mut cleanup_reported = false;
+    let mut cleanup_deadline = None;
     let result = (|| -> io::Result<Output> {
         let out = tree
             .child_mut()
@@ -151,8 +213,16 @@ pub fn run_controlled(
             .take()
             .ok_or_else(|| io::Error::other("Captured stderr missing"))?;
         let mut pipes = [Some(Pipe::Out(out)), Some(Pipe::Err(err))];
-        for pipe in pipes.iter().flatten() {
-            pipe.prepare()?;
+        for (index, pipe) in pipes.iter().enumerate() {
+            if let Some(pipe) = pipe {
+                pipe.prepare()?;
+                #[cfg(feature = "test-support")]
+                if let Some(result) = super::test_support::pipe_prepared(index) {
+                    result?;
+                }
+                #[cfg(not(feature = "test-support"))]
+                let _ = index;
+            }
         }
         let mut output = Output {
             exit: -1,
@@ -161,6 +231,8 @@ pub fn run_controlled(
         };
         let mut bytes = [0u8; 8192];
         let mut progress = Instant::now();
+        let mut next_sample = progress + Duration::from_millis(50);
+        let mut leader_settled = false;
         loop {
             if cancelled() {
                 return Err(io::Error::new(
@@ -168,21 +240,58 @@ pub fn run_controlled(
                     "Native command cancelled",
                 ));
             }
-            if pipes.iter().all(Option::is_none)
-                && let Some(status) = tree.child_mut().try_wait()?
-            {
-                #[cfg(unix)]
-                {
-                    use std::os::unix::process::ExitStatusExt;
-                    output.exit = status
-                        .code()
-                        .unwrap_or_else(|| -status.signal().unwrap_or(1));
+            if let Some(status) = tree.child_mut().try_wait()? {
+                // Descendants may keep both writers open after the command
+                // exits. End and prove our tree before waiting for their EOF,
+                // then drain every already-buffered output byte normally.
+                if !leader_settled {
+                    let cleanup_end = Instant::now()
+                        .checked_add(limits.cleanup)
+                        .ok_or_else(|| io::Error::other("Capture cleanup deadline overflow"))?;
+                    cleanup_deadline = Some(cleanup_end);
+                    observe(
+                        Observation::BeforeCleanup {
+                            record: tree.record(),
+                            leader_exited: true,
+                            natural_settlement: tree.empty().ok(),
+                        },
+                        &tree,
+                    );
+                    cleanup_observed = true;
+                    if let Err(error) =
+                        tree.settle(cleanup_end.saturating_duration_since(Instant::now()))
+                    {
+                        cleanup_failed = true;
+                        after_tree(
+                            false,
+                            &tree,
+                            cleanup_end.saturating_duration_since(Instant::now()),
+                        );
+                        cleanup_reported = true;
+                        return Err(error);
+                    }
+                    after_tree(
+                        true,
+                        &tree,
+                        cleanup_end.saturating_duration_since(Instant::now()),
+                    );
+                    cleanup_reported = true;
+                    leader_settled = true;
                 }
-                #[cfg(not(unix))]
-                {
-                    output.exit = status.code().unwrap_or(-1);
+                if pipes.iter().all(Option::is_none) {
+                    #[cfg(unix)]
+                    {
+                        use std::os::unix::process::ExitStatusExt;
+                        output.exit = status
+                            .code()
+                            .unwrap_or_else(|| -status.signal().unwrap_or(1));
+                    }
+                    #[cfg(not(unix))]
+                    {
+                        output.exit = status.code().unwrap_or(-1);
+                    }
+                    return Ok(output);
                 }
-                return Ok(output);
             }
             let remaining = end.saturating_duration_since(Instant::now());
             let idle = limits.idle.saturating_sub(progress.elapsed());
@@ -206,11 +315,19 @@ pub fn run_controlled(
                     ),
                 ));
             }
+            if !leader_settled && Instant::now() >= next_sample {
+                observe(Observation::Polling, &tree);
+                next_sample = Instant::now() + Duration::from_millis(50);
+            }
             let mut changed = false;
             for (index, pipe) in pipes.iter_mut().enumerate() {
                 let Some(reader) = pipe.as_mut() else {
                     continue;
                 };
+                #[cfg(feature = "test-support")]
+                if let Some(result) = super::test_support::pipe_read(index) {
+                    result?;
+                }
                 match reader.available(&mut bytes)? {
                     Some(0) => {
                         *pipe = None;
@@ -232,6 +349,7 @@ pub fn run_controlled(
                         } else {
                             output.stderr.extend_from_slice(&bytes[..count]);
                         }
+                        on_chunk(index, &bytes[..count]);
                         changed = true;
                     }
                     None => {}
@@ -246,13 +364,60 @@ pub fn run_controlled(
     })();
     // Pipes close before settlement even when a writer escaped the POSIX group;
     // no reader/join can keep this call alive past its explicit cleanup budget.
-    if let Err(error) = tree.settle(limits.cleanup) {
+    if !cleanup_observed {
+        cleanup_deadline = Instant::now().checked_add(limits.cleanup);
+        let leader_exited = tree.child_mut().try_wait().ok().flatten().is_some();
+        observe(
+            Observation::BeforeCleanup {
+                record: tree.record(),
+                leader_exited,
+                natural_settlement: tree.empty().ok(),
+            },
+            &tree,
+        );
+    }
+    if cleanup_failed {
         return Err(Failure {
             error: io::Error::other(format!(
-                "Native command cleanup remains unverified: {error}"
+                "Native command cleanup remains unverified: {}",
+                result
+                    .err()
+                    .unwrap_or_else(|| io::Error::other("Owned tree did not settle"))
             )),
             pending: Some(Box::new(tree)),
         });
+    }
+    if let Err(error) = tree.settle(cleanup_deadline.map_or(Duration::ZERO, |deadline| {
+        deadline.saturating_duration_since(Instant::now())
+    })) {
+        if !cleanup_reported {
+            after_tree(
+                false,
+                &tree,
+                cleanup_deadline.map_or(Duration::ZERO, |deadline| {
+                    deadline.saturating_duration_since(Instant::now())
+                }),
+            );
+        }
+        return Err(Failure {
+            error: io::Error::other(format!(
+                "Native command cleanup remains unverified: {error}{}",
+                result
+                    .as_ref()
+                    .err()
+                    .map_or_else(String::new, |reason| format!("; command failed: {reason}")),
+            )),
+            pending: Some(Box::new(tree)),
+        });
+    }
+    if !cleanup_reported {
+        after_tree(
+            true,
+            &tree,
+            cleanup_deadline.map_or(Duration::ZERO, |deadline| {
+                deadline.saturating_duration_since(Instant::now())
+            }),
+        );
     }
     result.map_err(Failure::from)
 }

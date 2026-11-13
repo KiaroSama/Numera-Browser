@@ -1,6 +1,14 @@
 use numera_core::{browser::hints, models::Fingerprint};
 use serde_json::Value;
 #[cfg(feature = "native-browser")]
+#[path = "common/camoufox_cpu.rs"]
+mod camoufox_cpu;
+#[cfg(feature = "native-browser")]
+#[path = "common/camoufox_geo_cases.rs"]
+mod camoufox_geo_cases;
+#[path = "common/camoufox_webgl.rs"]
+mod camoufox_webgl;
+#[cfg(feature = "native-browser")]
 mod common;
 #[path = "common/hint_site.rs"]
 mod hint_site;
@@ -140,7 +148,93 @@ fn cdp_hint_commands_and_new_page_policy_match_original() -> Result<(), Box<dyn 
         );
     }
     #[cfg(feature = "native-browser")]
-    camoufox_model_posteriors_match_pinned_source()?;
+    {
+        camoufox_model_posteriors_match_pinned_source()?;
+        camoufox_catalog_draws_match_source()?;
+        camoufox_webgl::verify()?;
+        camoufox_cpu::verify()?;
+        camoufox_geo_cases::verify()?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "native-browser")]
+fn camoufox_catalog_draws_match_source() -> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::browser::sdk::camoufox_identity::{self, Os};
+    use sha2::{Digest, Sha256};
+    let data: Value = serde_json::from_str(include_str!("fixtures/camoufox-identity.json"))?;
+    let catalogs =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/browser/sdk/camoufox-data");
+    let digests = data["data_sha256"]
+        .as_object()
+        .ok_or("Catalog digests missing")?;
+    assert_eq!(digests.len(), 8);
+    for (name, digest) in digests {
+        assert!(!name.contains(['/', '\\']));
+        assert_eq!(
+            Sha256::digest(std::fs::read(catalogs.join(name))?)
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>(),
+            digest.as_str().ok_or("Catalog digest is not text")?,
+            "Camoufox catalog changed: {name}"
+        );
+    }
+    let os = |name: &str| match name {
+        "win" | "windows" => Ok(Os::Windows),
+        "mac" | "macos" => Ok(Os::Macos),
+        "lin" | "linux" => Ok(Os::Linux),
+        _ => Err("Invalid identity OS"),
+    };
+    let fonts = data["fonts"].as_array().ok_or("Font cases missing")?;
+    assert_eq!(fonts.len(), 240);
+    for row in fonts {
+        let os = os(row["os"].as_str().ok_or("OS missing")?)?;
+        let seed = u32::try_from(row["seed"].as_u64().ok_or("Seed missing")?)?;
+        let actual = camoufox_identity::font_subset(
+            os,
+            seed,
+            row["native"].as_bool().ok_or("Native flag missing")?,
+            row["locale"].as_str(),
+            row["variant"].as_bool().ok_or("Variant flag missing")?,
+        );
+        assert_eq!(
+            serde_json::json!(actual),
+            row["fonts"],
+            "Font identity {} seed={seed} native={} variant={} locale={}",
+            row["os"],
+            row["native"],
+            row["variant"],
+            row["locale"]
+        );
+    }
+    let media = data["media"].as_array().ok_or("Media cases missing")?;
+    assert_eq!(media.len(), 30);
+    for row in media {
+        let actual = camoufox_identity::media_devices(
+            os(row["os"].as_str().ok_or("OS missing")?)?,
+            u32::try_from(row["seed"].as_u64().ok_or("Seed missing")?)?,
+        );
+        assert_eq!(
+            actual, row["value"],
+            "Media identity {} seed={}",
+            row["os"], row["seed"]
+        );
+    }
+    let voices = data["voices"].as_array().ok_or("Voice cases missing")?;
+    assert_eq!(voices.len(), 90);
+    for row in voices {
+        let actual = camoufox_identity::voice_config(
+            os(row["os"].as_str().ok_or("OS missing")?)?,
+            u32::try_from(row["seed"].as_u64().ok_or("Seed missing")?)?,
+            row["locale"].as_str(),
+        );
+        assert_eq!(
+            actual, row["value"],
+            "Speech identity {} seed={} locale={}",
+            row["os"], row["seed"], row["locale"]
+        );
+    }
     Ok(())
 }
 
@@ -151,8 +245,8 @@ fn camoufox_model_posteriors_match_pinned_source() -> Result<(), Box<dyn std::er
         collections::{BTreeMap, BTreeSet},
         path::Path,
     };
-    let archive =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/camoufox-model-2-2026.zip");
+    let archive = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("src/browser/sdk/fingerprint-data/model-2-2026.zip");
     let model = Model::open(&archive)?;
     let rows: Value =
         serde_json::from_str(include_str!("fixtures/camoufox-model-posteriors.json"))?;

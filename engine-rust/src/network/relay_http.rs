@@ -194,7 +194,7 @@ pub(super) async fn serve(
                 &mut client,
                 502,
                 "Bad Gateway",
-                "relay could not reach the upstream proxy",
+                &format!("relay could not reach the upstream proxy: {error}"),
             )
             .await;
             return Ok(());

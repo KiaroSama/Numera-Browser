@@ -1,55 +1,18 @@
-use numera_core::{
-    browser::adapter::Adapter,
-    jobs::{self, JobStore},
-};
+use numera_core::jobs::{self, JobStore};
 use serde_json::{Value, json};
-use std::{path::Path, process::Command, time::Duration};
+use std::{path::Path, time::Duration};
 mod common;
+#[allow(dead_code)]
+#[path = "common/http_fixture.rs"]
+mod http_fixture;
 #[path = "job_parity/text.rs"]
 mod text;
 
 #[test]
 fn durable_job_argument_and_outcome_policy_matches_source() -> Result<(), Box<dyn std::error::Error>>
 {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let root = common::TempDirectory::new("job-parity")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(python);
-    command
-        .args([
-            "-u",
-            "-c",
-            r#"
-import json,os,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from job_cases import cases,human_cases
-result=cases(os.environ['FIXTURE_ROOT']);result['human']=human_cases()
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-"#,
-        ])
-        .env("PYTHONUTF8", "1")
-        .env("FIXTURE_ROOT", root.path().join("source"))
-        .env(
-            "PYTHONPATH",
-            std::env::join_paths([
-                repository.join("scripts/migration"),
-                repository.join("engine"),
-            ])?,
-        );
-    let mut source = Adapter::spawn(
-        root.path(),
-        "oracle",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = source.call("observe-jobs", Default::default(), Duration::from_secs(30))?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
+    let document = http_fixture::oracle("job")?;
     for case in document["arguments"]
         .as_array()
         .ok_or("Job argv cases missing")?
@@ -264,21 +227,9 @@ fn recorded_stop(root: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let directory = root.join("stop");
     std::fs::create_dir_all(&directory)?;
     let ready = directory.join("ready");
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
-    let mut command = Command::new(python);
+    let mut command = ownership_process::command("tree")?;
     command
-        .args([
-            "-u",
-            "-c",
-            r#"
-import os,pathlib,subprocess,sys,threading
-subprocess.Popen([sys.executable,'-c','import threading; threading.Event().wait(15)'])
-pathlib.Path(os.environ['FIXTURE_READY']).write_text('ready',encoding='utf-8')
-threading.Event().wait(15)
-"#,
-        ])
-        .env("FIXTURE_READY", &ready)
-        .env("PYTHONUTF8", "1")
+        .arg(&directory)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
@@ -331,7 +282,9 @@ threading.Event().wait(15)
     })();
     let cleanup = owner.settle(Duration::from_secs(5));
     cleanup?;
-    result
+    result?;
+    stop_profile_selects_exact_tree(root)?;
+    Ok(())
 }
 fn normalize_log(value: &mut Value) {
     match value {
@@ -357,4 +310,67 @@ fn normalize_log(value: &mut Value) {
         }
         _ => {}
     }
+}
+
+use numera_core as core;
+#[path = "common/ownership_process.rs"]
+mod ownership_process;
+
+fn stop_profile_selects_exact_tree(root: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::{recorded_tree, tree::OwnedTree};
+    use std::process::Stdio;
+    let root = root.join("profile-stop-selection");
+    std::fs::create_dir_all(root.join("jobs"))?;
+    let store = JobStore::new(root.clone());
+    let mut owners = Vec::new();
+    for (index, (id, profile)) in [("first", "p"), ("second", "q")].into_iter().enumerate() {
+        let mut command = ownership_process::command("sleep")?;
+        command
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+        let tree = OwnedTree::spawn(&mut command)?;
+        let mut record = tree.record();
+        record["pidToken"] = record["token"].take();
+        record["id"] = id.into();
+        record["profile"] = profile.into();
+        record["command"] = "launch".into();
+        record["started"] = serde_json::json!(100 + index * 100);
+        numera_core::storage::atomic::write_json(
+            &root.join("jobs").join(format!("{id}.json")),
+            &record,
+        )?;
+        owners.push((tree, record));
+    }
+    let listing = store.listing(1000.0)?;
+    assert_eq!(
+        listing
+            .iter()
+            .map(|row| row["id"].as_str())
+            .collect::<Vec<_>>(),
+        vec![Some("first"), Some("second")]
+    );
+    let stopped = store.stop_profile("p", "fixture-host", 1001.0)?;
+    assert_eq!(stopped.len(), 1);
+    assert_eq!(stopped[0]["id"], "first");
+    assert_eq!(stopped[0]["state"], "stopped");
+    assert!(recorded_tree::empty(&owners[0].1)?);
+    assert!(
+        !owners[1].0.empty()?,
+        "profile stop terminated another profile's real tree"
+    );
+    assert!(
+        store
+            .stop_profile("missing", "fixture-host", 1002.0)?
+            .is_empty()
+    );
+    assert!(!owners[1].0.empty()?);
+    store
+        .stop("second", "fixture-host", 1003.0)?
+        .ok_or("other profile job vanished")?;
+    for (owner, record) in &mut owners {
+        owner.settle(Duration::from_secs(2))?;
+        assert!(recorded_tree::empty(record)?);
+    }
+    Ok(())
 }

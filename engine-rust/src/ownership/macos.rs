@@ -2,7 +2,6 @@
 #![allow(unsafe_code)]
 use sha2::{Digest, Sha256};
 use std::{
-    collections::BTreeSet,
     io,
     mem::{size_of, size_of_val},
 };
@@ -130,50 +129,63 @@ fn group_query(group: i32, buffer: &mut [i32]) -> io::Result<usize> {
     Ok(bytes / size_of::<i32>())
 }
 pub(super) fn group_empty(group: i32) -> io::Result<bool> {
-    if group <= 0 {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Invalid process group",
-        ));
-    }
-    let mut pids = vec![0i32; 64];
-    let mut count = group_query(group, &mut pids)?;
-    if count == pids.len() {
-        let hint = group_query(group, &mut [])?;
-        let capacity = hint.max(pids.len() * 2);
-        if capacity > MAX_PIDS {
-            return Err(invalid("macOS process group exceeds the observation bound"));
+    struct Kernel;
+    impl super::observation::GroupSource for Kernel {
+        fn enumerate(&mut self, group: i32) -> io::Result<super::observation::Enumeration> {
+            let mut pids = vec![0i32; 64];
+            let mut count = group_query(group, &mut pids)?;
+            if count == pids.len() {
+                let hint = group_query(group, &mut [])?;
+                let capacity = hint.max(pids.len() * 2);
+                if capacity > MAX_PIDS {
+                    return Err(invalid("macOS process group exceeds the observation bound"));
+                }
+                pids.resize(capacity, 0);
+                count = group_query(group, &mut pids)?;
+                if count == pids.len() {
+                    return Err(invalid(
+                        "macOS process group remains truncated; emptiness unknown",
+                    ));
+                }
+            }
+            pids.truncate(count);
+            let pids = pids
+                .into_iter()
+                .map(|pid| {
+                    u32::try_from(pid)
+                        .ok()
+                        .filter(|pid| *pid > 0)
+                        .ok_or_else(|| invalid("macOS process group has an invalid PID"))
+                })
+                .collect::<io::Result<Vec<_>>>()?;
+            Ok(super::observation::Enumeration {
+                pids,
+                complete: true,
+                filtered: true,
+            })
         }
-        pids.resize(capacity, 0);
-        count = group_query(group, &mut pids)?;
-        if count == pids.len() {
-            return Err(invalid(
-                "macOS process group remains truncated; emptiness unknown",
-            ));
+        fn process(&mut self, pid: u32) -> io::Result<Option<super::observation::Row>> {
+            let Some(info) = process(pid)? else {
+                return Ok(None);
+            };
+            let state = match info.pbi_status {
+                libc::SIDL => b'I',
+                libc::SRUN => b'R',
+                libc::SSLEEP => b'S',
+                libc::SSTOP => b'T',
+                libc::SZOMB => b'Z',
+                _ => return Err(invalid("macOS process state is unknown")),
+            };
+            let group = i32::try_from(info.pbi_pgid)
+                .map_err(|_| invalid("macOS process group is out of range"))?;
+            Ok(Some(super::observation::Row {
+                pid,
+                group,
+                state_codes: vec![state],
+            }))
         }
     }
-    pids.truncate(count);
-    let mut unique = BTreeSet::new();
-    if pids.iter().any(|pid| *pid <= 0 || !unique.insert(*pid)) {
-        return Err(invalid(
-            "macOS process group contains invalid or duplicate PIDs",
-        ));
-    }
-    let mut unknown = false;
-    for pid in pids {
-        match process(pid as u32) {
-            Ok(Some(info)) if info.pbi_pgid != group as u32 => unknown = true,
-            Ok(Some(info)) if info.pbi_status != libc::SZOMB => return Ok(false),
-            Ok(_) => {}
-            Err(_) => unknown = true,
-        }
-    }
-    if unknown {
-        return Err(invalid(
-            "macOS process group observation incomplete; retain its claim",
-        ));
-    }
-    Ok(true)
+    super::observation::observe_group(group, None, &mut Kernel)
 }
 
 fn process_observation(pid: i32, info: &mut libc::proc_bsdinfo) -> (i32, i32) {

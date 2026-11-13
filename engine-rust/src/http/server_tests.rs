@@ -13,7 +13,6 @@ fn options(root: &std::path::Path) -> Options {
         host: "fixture-host".into(),
         installed: Default::default(),
         browser: Runtime {
-            python: root.join("never-start-python"),
             adapter: root.join("never-start-sdk"),
             cwd: root.into(),
             home: root.into(),

@@ -5,24 +5,9 @@ use crate::ownership::{claims, session::Session};
 #[test]
 fn quarantine_keeps_actual_worker_and_adapter_until_explicit_retry()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("background-retention")?;
     let root = temporary.path();
-    let mut command = std::process::Command::new(python);
-    command
-        .args([
-            "-u",
-            "-c",
-            r#"
-import json,sys
-for line in sys.stdin:
-    request=json.loads(line)
-    result={'closing':True} if request['operation']=='close' else {}
-    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-    if request['operation']=='close': break
-"#,
-        ])
-        .env("PYTHONUTF8", "1");
+    let mut command = ownership_process::command("rpc")?;
     let mut adapter = Some(Adapter::spawn_admitted(
         Session::admit(root, "retained", "fixture-host")?,
         &mut command,
@@ -77,3 +62,7 @@ for line in sys.stdin:
     temporary.cleanup()?;
     Ok(())
 }
+
+use crate as core;
+#[path = "../../tests/common/ownership_process.rs"]
+mod ownership_process;

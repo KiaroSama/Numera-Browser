@@ -10,19 +10,17 @@ Manage separate browser profiles, proxy settings and sessions from a desktop win
 web dashboard or CLI. Choose Playwright, Patchright, Camoufox or CloakBrowser for
 workflows you are authorized to run.
 
-[![CI](https://github.com/KiaroSama/Numera-Browser/actions/workflows/ci.yml/badge.svg?branch=main&event=workflow_dispatch)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/ci.yml)
+[![Native CI](https://github.com/KiaroSama/Numera-Browser/actions/workflows/native-ci.yml/badge.svg?branch=rewrite%2Frust-complete-20261110)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/native-ci.yml)
 [![Rust candidate builds](https://github.com/KiaroSama/Numera-Browser/actions/workflows/rust-candidate.yml/badge.svg?branch=rewrite%2Frust-complete-20261110)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/rust-candidate.yml)
 [![License: noncommercial](https://img.shields.io/badge/License-noncommercial-d04a9a)](LICENSE)
 [![Version: 0.36.0](https://img.shields.io/badge/Version-0.36.0-blue)](CHANGELOG.md)
-[![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776ab)](engine/pyproject.toml)
-[![Rust shell: 1.90+](https://img.shields.io/badge/Rust%20shell-1.90%2B-dea584)](desktop/src-tauri/Cargo.toml)
-[![Rust core: 1.99.1](https://img.shields.io/badge/Rust%20core-1.99.1-dea584)](engine-rust/Cargo.toml)
+[![Rust: 1.99.1](https://img.shields.io/badge/Rust-1.99.1-dea584)](rust-toolchain.toml)
 
 [![Desktop build targets](https://img.shields.io/badge/Targets-Windows%20x64%20%7C%20Linux%20x64%20%7C%20macOS%20ARM64-555)](.github/workflows/build-desktop.yml)
 [![Documentation](https://img.shields.io/badge/Docs-setup%20%26%20usage-4c9a2a)](docs/setup.md)
 [![Dashboard: Rust + WebAssembly](https://img.shields.io/badge/Dashboard-Rust%20%2B%20WebAssembly-654ff0)](dashboard/Cargo.toml)
 [![Tauri: 2](https://img.shields.io/badge/Tauri-2-24c8d8)](desktop/src-tauri/Cargo.toml)
-[![HTTP API: FastAPI](https://img.shields.io/badge/API-FastAPI-009688)](engine/pyproject.toml)
+[![HTTP API: Axum](https://img.shields.io/badge/API-Axum-009688)](engine-rust/Cargo.toml)
 [![Browser: Playwright](https://img.shields.io/badge/Browser-Playwright-45ba4b)](Dockerfile)
 [![Support donations](https://img.shields.io/badge/Support-donations-d04a9a)](#donate)
 
@@ -34,16 +32,16 @@ workflows you are authorized to run.
 
 </div>
 
-The [Rust rewrite integration](docs/rust-rewrite.md) continues the native runtime
-checkpoint in a separate unmerged PR. Native CLI/HTTP/MCP candidates now build
-automatically on Linux, Windows and macOS. The full rewrite, interpreter removal,
-test migration and complete application distributions remain in progress; the
-candidate build badge is separate from full application acceptance.
-The candidate also includes a Rust browser worker for Playwright and Patchright,
-validated with real browsers without Python. It still requires external vendor
-Node/SDK resources; Camoufox/Cloak remain to be migrated. The dashboard now uses
-Rust and WebAssembly. Its 195 original cases retain 26 suites: 71 native unit
-cases and 124 cases executed in Chromium, with no ignored or duplicate cases.
+The application, HTTP API, CLI, MCP, dashboard, desktop integration and build tools
+are implemented in Rust. The dashboard runs as WebAssembly. Browser automation
+uses explicitly provisioned vendor Node drivers and Chromium/Firefox binaries;
+these third-party dependencies retain their own languages and licenses.
+
+The [rewrite PR](https://github.com/KiaroSama/Numera-Browser/pull/76) continues the
+native checkpoint and remains unmerged. Complete test-port verification,
+interpreter retirement and full three-platform CI are still in progress; see the
+[acceptance record](docs/rust-rewrite.md). A build badge does not establish that a
+complete release has shipped.
 
 ## What it does
 
@@ -93,36 +91,22 @@ badge is not evidence that the latest tree has passed or an asset has shipped.
 
 ### Source installation
 
-The retained backend uses Python **3.10+** during the engine cutover. The dashboard
-uses Rust, the `wasm32-unknown-unknown` target and wasm-bindgen CLI **0.2.129**.
-Create/activate the backend environment as shown in
-[setup](docs/setup.md#from-source), then:
-
-```bash
-python -m pip install -e "./engine[api,launch]"
-```
-
-```bash
-python -m playwright install chromium
-```
+Install Rust **1.99.1**, the WASM target and the pinned binding tool, then build
+and serve the dashboard with the native engine:
 
 ```bash
 rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli --version 0.2.129 --locked
-```
-
-```bash
 cargo run --manifest-path dashboard/Cargo.toml --locked --bin dashboard-build
+cargo build --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser --bins
+cargo run --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser --bin numera-engine -- serve --port 8787
 ```
 
-```bash
-python -m numera serve --port 8787
-```
-
-Open <http://127.0.0.1:8787>. For frontend development, keep the engine running and
-use `cargo run --manifest-path dashboard/Cargo.toml --locked --bin dashboard-dev`
-in a second terminal; the Rust development server proxies `/api` to
-port 8787. Without the API the dashboard shows clearly labelled **demo data**.
+Open <http://127.0.0.1:8787>. Browser launching additionally needs its matching
+vendor resources; [setup](docs/setup.md#from-source) describes explicit acquisition.
+For frontend development, keep the engine running and start
+`cargo run --manifest-path dashboard/Cargo.toml --locked --bin dashboard-dev`
+in a second terminal. The Rust development server proxies `/api` to port 8787.
 
 Detailed platform prerequisites, alternative browser setup, Docker, headless
 configuration and troubleshooting are in [docs/setup.md](docs/setup.md).
@@ -132,39 +116,39 @@ configuration and troubleshooting are in [docs/setup.md](docs/setup.md).
 Create a profile:
 
 ```bash
-python -m numera create qa-profile --os windows --locale en-US --engine playwright
+numera-engine create qa-profile --os windows --locale en-US --engine playwright
 ```
 
 List saved profiles:
 
 ```bash
-python -m numera list --json
+numera-engine list --json
 ```
 
 Launch the selected profile:
 
 ```bash
-python -m numera launch qa-profile
+numera-engine launch qa-profile
 ```
 
 Inspect installed browser backends:
 
 ```bash
-python -m numera engines
+numera-engine engines
 ```
 
 Set the default deliberately:
 
 ```bash
-python -m numera default-engine playwright
+numera-engine default-engine playwright
 ```
 
 `playwright` is the initial default. Explicit engine choices on creation or
 engine-changing edits can update it; editing unrelated fields does not. The
 server is authoritative, and Settings shows its saved default.
 
-For command help, use `python -m numera --help`. See
-[engine/README.md](engine/README.md) for commands and the Python API,
+For command help, use `numera-engine --help`. See
+[engine-rust/README.md](engine-rust/README.md) for native commands and development,
 [docs/agents.md](docs/agents.md) for JSON/MCP workflows, and
 [dashboard/README.md](dashboard/README.md) for frontend development.
 
@@ -172,10 +156,10 @@ For command help, use `python -m numera --help`. See
 
 | Backend | Browser and distribution boundary |
 |---|---|
-| `playwright` | Playwright's matched Chromium. Available through the `launch` extra. |
+| `playwright` | Playwright's matched Chromium and explicitly provisioned SDK transport. |
 | `patchright` | A separate Patchright SDK and matched Chromium; not Playwright's shared binary. |
 | `camoufox` | Camoufox's Firefox build, addons and associated data. Its own generated identity differs from Chromium settings. |
-| `cloak` | CloakBrowser wrapper plus a separately licensed vendor browser. The proprietary binary is excluded from public bundles. |
+| `cloak` | Native Cloak preparation plus a separately licensed vendor browser. The proprietary binary is excluded from public bundles. |
 
 Portable builds bundle Playwright, Patchright and Camoufox resources with their
 matching SDK versions. Cloak acquisition requires explicit consent and permitted
@@ -193,7 +177,7 @@ data root. Portable data normally lives beside the app when writable; explicit
 configuration and token records are sensitive. A profile configuration export is
 not a full browser-session backup.
 
-Keep the API and CDP endpoints private. `numera serve` binds to localhost by
+Keep the API and CDP endpoints private. `numera-engine serve` binds to localhost by
 default; use bearer authentication and a controlled tunnel/reverse proxy for
 remote access. A non-loopback bind requires authentication. `NUMERA_ALLOWED_ORIGINS`
 restricts browser callers; CORS is not a substitute for authentication.
@@ -206,14 +190,14 @@ signature verification, recovery, filesystem and trust limits.
 
 ## Logs
 
-The retained engine writes UTF-8 logs under the actual data root's `logs/`, one
+The native engine writes UTF-8 logs under the actual data root's `logs/`, one
 `numera_YYYY-MM-DD_HH-mm-ss_UTC.log` per run, with a collision suffix when needed.
 Entries use `[YYYY-MM-DD HH:mm:ss UTC] [LEVEL] [COMPONENT] Message`. Verbose mode adds
 diagnostics; redaction is applied before file output. The engine retains a bounded
-set of run logs; see [engine/README.md](engine/README.md) for its exact controls.
+set of run logs; see [engine-rust/README.md](engine-rust/README.md) for its controls.
 
 Desktop/update and build tooling keep their own lifecycle diagnostics. The native
-candidate records fixed vault-enable phases in `logs/native-vault-enable_*_UTC.log`
+runtime records fixed vault-enable phases in `logs/native-vault-enable_*_UTC.log`
 (with collision suffixes); these diagnostic-only logs never fall back to console
 output or extend command-capture idle deadlines. On creating a log, the native
 runtime prunes the oldest matching runs per component toward a 20-file limit,
@@ -227,24 +211,23 @@ permission to publish raw cookies, tokens or profile data.
 
 | Directory | Responsibility |
 |---|---|
-| `engine/` | Retained Python application: storage, CLI, HTTP API, MCP and browser orchestration. |
-| `engine-rust/` | Non-default native application candidate and parity/ownership acceptance work. |
+| `engine-rust/` | Native application, storage, browser preparation, CLI, Axum API and MCP. |
 | `dashboard/` | Rust/WebAssembly dashboard, native unit and real browser interaction tests. |
 | `desktop/` | Tauri window, owned engine lifecycle and portable updater. |
-| `scripts/` | Bounded verification, provenance, browser bundling, signing and distribution tools. |
+| `tools/xtask/` | Rust CI, vendor provisioning, provenance, signing and distribution tools. |
 
-[CI](.github/workflows/ci.yml) is manually initiated for one reviewed source SHA.
-Its required jobs cover discovered source/native/frontend suites, browser-backed
-contracts, dependency/security checks and platform distributions. Release
-publication reuses verified artifacts after the blocking aggregate succeeds;
-failed checks do not authorize a release. Current results are visible in
-[Actions](https://github.com/KiaroSama/Numera-Browser/actions), not a static passing
-claim in this README.
+[Native CI](.github/workflows/native-ci.yml) runs on pushes and pull requests.
+Independent jobs compile the real engine and worker on Linux, Windows and macOS
+before test gates. Full-product jobs build the dashboard, desktop installers and
+portable server archives. Other required jobs cover the maintained suite counts,
+functional and real-browser behavior, ownership, dependencies and security.
+Current exact-source results are in
+[Actions](https://github.com/KiaroSama/Numera-Browser/actions).
 
-The Rust application migration is **unfinished**. Python remains the selected
-runtime and rollback/oracle. Full parity, real four-engine Windows/Linux
-acceptance, replay, performance/peak-memory and rollback gates must pass before
-cutover or retirement. See [migration status](docs/migration.md),
+The original inventory retains **3,418 source cases**, **195 dashboard cases in
+26 suites**, and **294 preexisting native cases**. Port maps record individual
+case identities, types and platform applicability. The migration and complete
+CI remain under verification; see [rewrite status](docs/rust-rewrite.md),
 [architecture](docs/architecture.md) and [changelog](CHANGELOG.md).
 
 ## Responsible use

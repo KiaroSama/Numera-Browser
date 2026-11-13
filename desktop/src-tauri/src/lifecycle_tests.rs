@@ -18,6 +18,7 @@ mod tests {
 
     #[test]
     fn accepts_the_engines_own_health_payload() {
+        readiness_uses_the_public_endpoint_without_exposing_the_update_token();
         // Exactly what `numera serve` returns from `/api/ready`, verified
         // against a live server. This stub still carried the old
         // `/api/health` payload, which has no `service` field - so it
@@ -44,6 +45,27 @@ mod tests {
     fn rejects_a_closed_port() {
         let port = free_port().unwrap(); // reserved then released; nothing listening
         assert!(!healthy(port));
+    }
+
+    fn readiness_uses_the_public_endpoint_without_exposing_the_update_token() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let (send, receive) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            let mut bytes = [0; 4096];
+            let size = socket.read(&mut bytes).unwrap();
+            send.send(String::from_utf8_lossy(&bytes[..size]).into_owned())
+                .unwrap();
+            socket
+                .write_all(b"HTTP/1.0 200 OK\r\n\r\n{\"service\":\"numera-browser\",\"ok\":true}")
+                .unwrap();
+        });
+        assert!(healthy(port));
+        let request = receive.recv().unwrap();
+        assert!(request.starts_with("GET /api/ready HTTP/1.0\r\n"));
+        assert!(!request.to_ascii_lowercase().contains("authorization"));
+        assert!(!request.to_ascii_lowercase().contains("token"));
     }
 
     /// The whole point of the job object: the child must die when the last
@@ -211,6 +233,7 @@ mod tests {
     /// engine/, which an update replaces wholesale.
     #[test]
     fn a_writable_portable_root_keeps_data_beside_the_shell() {
+        portable_native_layout_selects_its_engine_and_keeps_data_beside_the_shell();
         let _env = Env::new("writable");
         let root = Scratch::new("writable-root");
 
@@ -251,6 +274,7 @@ mod tests {
     /// string, and this is what keeps it that way.
     #[test]
     fn a_path_with_spaces_is_chosen_and_written_like_any_other() {
+        explicit_native_engine_paths_and_port_arguments_preserve_spaces();
         let _env = Env::new("spaced");
         let root = Scratch::new("with spaces");
         let install = root.path().join("Program Files").join("Numera Browser");
@@ -403,6 +427,7 @@ mod tests {
     /// user's profiles exactly where the next update would delete them.
     #[test]
     fn an_unwritable_root_names_the_per_user_location_instead() {
+        installed_bundle_uses_platform_resources_and_per_user_data();
         let env = Env::new("unwritable");
         let root = Scratch::new("unwritable-root");
         // A path under a FILE cannot be created as a directory on any platform.
@@ -461,8 +486,79 @@ mod tests {
 
     #[test]
     fn free_port_hands_out_a_bindable_port() {
+        a_missing_native_engine_never_falls_back_to_a_python_environment();
         let port = free_port().unwrap();
         assert!(port > 0);
         TcpListener::bind(("127.0.0.1", port)).expect("the port we handed out was not free");
+    }
+
+    fn a_missing_native_engine_never_falls_back_to_a_python_environment() {
+        let _env = Env::new("no-python-fallback");
+        let root = Scratch::new("no-python-fallback-root");
+        #[cfg(windows)]
+        let python = root.path().join(".venv/Scripts/python.exe");
+        #[cfg(not(windows))]
+        let python = root.path().join(".venv/bin/python");
+        std::fs::create_dir_all(python.parent().unwrap()).unwrap();
+        std::fs::write(python, b"legacy interpreter must not run").unwrap();
+        let error = engine_command_at(45001, root.path(), None, None).unwrap_err();
+        assert!(error.contains("No native engine"));
+        assert!(error.contains(NATIVE_ENGINE));
+    }
+
+    fn explicit_native_engine_paths_and_port_arguments_preserve_spaces() {
+        let root = Scratch::new("explicit native engine");
+        let executable = root.path().join("native engine with spaces");
+        let command = engine_command_at(
+            45002,
+            root.path(),
+            None,
+            Some(executable.clone().into_os_string()),
+        )
+        .unwrap();
+        assert_eq!(command.get_program(), executable.as_os_str());
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            ["serve", "--host", "127.0.0.1", "--port", "45002"]
+        );
+    }
+
+    fn portable_native_layout_selects_its_engine_and_keeps_data_beside_the_shell() {
+        let _env = Env::new("native-portable");
+        let root = Scratch::new("native portable with spaces");
+        let executable = root.path().join("engine").join(NATIVE_ENGINE);
+        std::fs::create_dir_all(executable.parent().unwrap()).unwrap();
+        std::fs::write(&executable, b"native fixture").unwrap();
+        let command = engine_command_at(45003, root.path(), None, None).unwrap();
+        assert_eq!(command.get_program(), executable.as_os_str());
+        let args = command
+            .get_args()
+            .map(|arg| arg.to_owned())
+            .collect::<Vec<_>>();
+        assert_eq!(args[0], "--data-dir");
+        assert_eq!(args[1], root.path().join("data").into_os_string());
+        assert_eq!(
+            args[2..],
+            ["serve", "--host", "127.0.0.1", "--port", "45003"]
+        );
+    }
+
+    fn installed_bundle_uses_platform_resources_and_per_user_data() {
+        let env = Env::new("native-installed");
+        let root = Scratch::new("native installed shell");
+        let resources = Scratch::new("native installed resources");
+        let executable = resources.path().join("engine").join(NATIVE_ENGINE);
+        std::fs::create_dir_all(executable.parent().unwrap()).unwrap();
+        std::fs::write(&executable, b"native fixture").unwrap();
+        let command = engine_command_at(45004, root.path(), Some(resources.path()), None).unwrap();
+        assert_eq!(command.get_program(), executable.as_os_str());
+        let args = command
+            .get_args()
+            .map(|arg| arg.to_owned())
+            .collect::<Vec<_>>();
+        assert_eq!(args[0], "--data-dir");
+        assert_eq!(args[1], env.home().join(".numera").into_os_string());
+        assert!(!root.path().join("data").exists());
+        assert!(!resources.path().join("data").exists());
     }
 }

@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "kind": "intentional source-checkpoint portable path upgrade",
+  "historical_baseline": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+  "current_baseline": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+  "current_source_tree": "8178ab9d3f04613462afcf52a2bf565e361d1d2e",
+  "historical_observation": "engine-rust/tests/fixtures/characterization/direct_session_paths_and_deletion_match_original_without_touching_profiles.json",
+  "historical_observation_sha256": "dfa4f28bc9573a4c6b0a65d89e06fde73e874ffcc09a3627cb2ff34af3ebc163",
+  "observer_sha256": "173cee80a22b877d8038c1f10258ee93bf33447fed47c2786da3bef9cd62aa30",
+  "runtime_python": false,
+  "capture": "Pinned Python3.13.15 executed exact materialized3bf Git blobs; original relative/alias ProfileStore.user_data_path scenario. No product output supplied expected values.",
+  "output": "current-root-resolution.json",
+  "output_sha256": "cd4de7ac51301b9fbaf73e3b80820fdb0162a786d54797e505e2cf6ebb6e9edf",
+  "historical_rows": [
+    {
+      "op": "path-root",
+      "mode": "relative",
+      "absolute": false,
+      "same": true,
+      "directory": true
+    },
+    {
+      "op": "path-root",
+      "mode": "alias",
+      "absolute": true,
+      "same": true,
+      "directory": true
+    }
+  ],
+  "delta": "Current3bf paths.id_path resolves its base before lexical/physical/link containment. Both relative and alias inputs now return absolute paths distinct from the unresolved caller path. Directory creation and both mode identities are unchanged."
+}

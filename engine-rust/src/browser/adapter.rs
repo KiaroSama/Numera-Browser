@@ -31,7 +31,92 @@ pub struct Adapter {
     relay: Option<crate::network::relay::Relay>,
     log: Option<RuntimeLog>,
 }
-pub(crate) fn frame(reader: &mut impl BufRead) -> io::Result<Option<Value>> {
+fn join_worker(
+    worker: &mut Option<JoinHandle<()>>,
+    deadline: std::time::Instant,
+    label: &str,
+) -> io::Result<()> {
+    while worker.as_ref().is_some_and(|worker| !worker.is_finished()) {
+        let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+        if remaining.is_zero() {
+            return Err(io::Error::new(
+                io::ErrorKind::TimedOut,
+                format!("Browser adapter {label} is still settling; its owner is retained"),
+            ));
+        }
+        thread::sleep(remaining.min(Duration::from_millis(5)));
+    }
+    if let Some(worker) = worker.take() {
+        worker
+            .join()
+            .map_err(|_| io::Error::other(format!("Browser adapter {label} failed")))?;
+    }
+    Ok(())
+}
+struct RetainedWorkers {
+    reader: Option<JoinHandle<()>>,
+    writer: Option<JoinHandle<()>>,
+    tree: Option<Value>,
+}
+impl RetainedWorkers {
+    fn finish(&mut self, deadline: std::time::Instant) -> io::Result<()> {
+        if let Some(tree) = &self.tree
+            && !crate::ownership::recorded_tree::empty(tree)?
+        {
+            return Err(io::Error::other(
+                "Browser adapter tree is not proved empty; I/O workers remain owned",
+            ));
+        }
+        let writer = join_worker(&mut self.writer, deadline, "input writer");
+        let reader = join_worker(&mut self.reader, deadline, "output reader");
+        writer.and(reader)
+    }
+}
+fn retained_workers() -> &'static std::sync::Mutex<Vec<RetainedWorkers>> {
+    static WORKERS: std::sync::OnceLock<std::sync::Mutex<Vec<RetainedWorkers>>> =
+        std::sync::OnceLock::new();
+    WORKERS.get_or_init(|| std::sync::Mutex::new(Vec::new()))
+}
+/// Retry joining I/O workers whose adapter already requested shutdown. Their
+/// handles remain owned across failed cleanup rather than becoming detached.
+pub fn retry_retained(budget: Duration) -> Vec<String> {
+    let workers = std::mem::take(
+        &mut *retained_workers()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner),
+    );
+    let deadline = std::time::Instant::now()
+        .checked_add(budget)
+        .unwrap_or_else(std::time::Instant::now);
+    let mut pending = Vec::new();
+    let mut errors = Vec::new();
+    for mut workers in workers {
+        if let Err(error) = workers.finish(deadline) {
+            errors.push(error.to_string());
+            pending.push(workers);
+        }
+    }
+    retained_workers()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .extend(pending);
+    errors
+}
+pub fn frame(reader: &mut impl BufRead) -> io::Result<Option<Value>> {
+    bounded_frame(reader, MAX_FRAME)
+}
+/// Exercise the same native framing boundary at a smaller contract limit.
+#[cfg(feature = "test-support")]
+pub fn frame_with_limit(reader: &mut impl BufRead, limit: usize) -> io::Result<Option<Value>> {
+    if limit == 0 || limit > MAX_FRAME {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Invalid adapter frame limit",
+        ));
+    }
+    bounded_frame(reader, limit)
+}
+fn bounded_frame(reader: &mut impl BufRead, limit: usize) -> io::Result<Option<Value>> {
     let mut bytes = Vec::new();
     loop {
         let (count, end, eof) = {
@@ -41,7 +126,7 @@ pub(crate) fn frame(reader: &mut impl BufRead) -> io::Result<Option<Value>> {
                 .iter()
                 .position(|byte| *byte == b'\n')
                 .map_or(available.len(), |index| index + 1);
-            if bytes.len() + count > MAX_FRAME {
+            if bytes.len() + count > limit {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
                     "Browser adapter frame exceeds limit",
@@ -103,6 +188,21 @@ fn request_bytes(
     }
     Ok(bytes)
 }
+/// Remove application credentials and inherited ownership markers before the
+/// SDK adapter is born. Its request carries the resolved browser options.
+pub fn restrict_environment(command: &mut Command) {
+    for key in [
+        "NUMERA_API_TOKEN",
+        "NUMERA_PASSWORD",
+        "NUMERA_UPDATE_TOKEN",
+        "NUMERA_UPDATE_TICKET",
+        "NUMERA_UPDATE_ACTIVATION",
+        "NUMERA_TREE",
+        "NUMERA_READY_FILE",
+    ] {
+        command.env_remove(key);
+    }
+}
 impl Adapter {
     /// Check the largest sequence envelope before any destructive SDK operation.
     pub(crate) fn preflight(operation: &str, fields: Map<String, Value>) -> io::Result<()> {
@@ -125,11 +225,8 @@ impl Adapter {
         command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .env_remove("NUMERA_API_TOKEN")
-            .env_remove("NUMERA_PASSWORD")
-            .env_remove("NUMERA_TREE")
-            .env_remove("NUMERA_READY_FILE");
+            .stderr(Stdio::null());
+        restrict_environment(command);
         let log = command
             .get_envs()
             .find(|(key, _)| *key == "NUMERA_ADAPTER_LOG_DIR")
@@ -153,6 +250,8 @@ impl Adapter {
             .take()
             .ok_or_else(|| io::Error::other("Browser adapter input missing"))?;
         let (input, writes) = mpsc::sync_channel::<PendingWrite>(1);
+        #[cfg(feature = "test-support")]
+        let writer_context = crate::ownership::test_support::capture();
         let writer = thread::spawn(move || {
             while let Ok(PendingWrite { bytes, answer }) = writes.recv() {
                 let result = stdin.write_all(&bytes).and_then(|_| stdin.flush());
@@ -162,8 +261,15 @@ impl Adapter {
                     break;
                 }
             }
+            drop(stdin);
+            #[cfg(feature = "test-support")]
+            crate::ownership::test_support::with_context(writer_context, || {
+                crate::ownership::test_support::adapter_worker_end(0);
+            });
         });
         let (sender, output) = mpsc::sync_channel(8);
+        #[cfg(feature = "test-support")]
+        let reader_context = crate::ownership::test_support::capture();
         let reader = thread::spawn(move || {
             let mut input = BufReader::new(stdout);
             loop {
@@ -186,6 +292,11 @@ impl Adapter {
                     }
                 }
             }
+            drop(input);
+            #[cfg(feature = "test-support")]
+            crate::ownership::test_support::with_context(reader_context, || {
+                crate::ownership::test_support::adapter_worker_end(1);
+            });
         });
         let mut adapter = Self {
             session,
@@ -204,10 +315,13 @@ impl Adapter {
                 adapter.metadata = metadata;
                 Ok(adapter)
             }
-            Err(error) => {
-                adapter.finish(budget)?;
-                Err(error)
-            }
+            Err(error) => Err(match adapter.finish(budget) {
+                Ok(()) => error,
+                Err(cleanup) => io::Error::new(
+                    error.kind(),
+                    format!("{error}; adapter startup cleanup failed: {cleanup}"),
+                ),
+            }),
         }
     }
     pub fn metadata(&self) -> &Value {
@@ -265,10 +379,20 @@ impl Adapter {
         let deadline = std::time::Instant::now()
             .checked_add(budget)
             .ok_or_else(|| io::Error::other("Invalid browser cleanup budget"))?;
+        // Reserve time to force and prove cleanup if cooperative EOF does not
+        // arrive. Both phases consume this one caller deadline.
+        let observation_end = std::time::Instant::now()
+            .checked_add(budget / 2)
+            .unwrap_or(deadline)
+            .min(deadline);
         let mut observation = None;
-        while self.session.tree_record().is_some() && std::time::Instant::now() < deadline {
+        while self.session.tree_record().is_some() && std::time::Instant::now() < observation_end {
             match observe(&mut self.session) {
-                Ok(None) => thread::sleep(Duration::from_millis(10)),
+                Ok(None) => thread::sleep(
+                    observation_end
+                        .saturating_duration_since(std::time::Instant::now())
+                        .min(Duration::from_millis(10)),
+                ),
                 Ok(Some(_)) => break,
                 Err(error) => {
                     observation = Some(error);
@@ -276,13 +400,16 @@ impl Adapter {
                 }
             }
         }
-        let cleanup = self.session.finish_with_status(budget);
+        let cleanup = self
+            .session
+            .finish_with_status(deadline.saturating_duration_since(std::time::Instant::now()));
         if observation.is_some() && cleanup.is_ok() {
             eprintln!(
                 "Browser tree observation failed; native owner subsequently settled the tree"
             );
         }
-        let relay_cleanup = self.close_relay(budget);
+        let relay_cleanup =
+            self.close_relay(deadline.saturating_duration_since(std::time::Instant::now()));
         let code = match (cleanup, relay_cleanup) {
             (Err(tree), Err(relay)) => {
                 return Err(io::Error::other(format!(
@@ -292,19 +419,14 @@ impl Adapter {
             (Err(error), _) | (_, Err(error)) => return Err(error),
             (Ok(code), Ok(())) => code,
         };
-        if let Some(writer) = self.writer.take() {
-            writer
-                .join()
-                .map_err(|_| io::Error::other("Browser adapter input writer failed"))?;
-        }
-        if let Some(reader) = self.reader.take() {
-            reader
-                .join()
-                .map_err(|_| io::Error::other("Browser adapter output reader failed"))?;
-        }
+        join_worker(&mut self.writer, deadline, "input writer")?;
+        join_worker(&mut self.reader, deadline, "output reader")?;
         Ok(code)
     }
     pub(crate) fn close(&mut self, budget: Duration) -> io::Result<Option<i32>> {
+        let deadline = std::time::Instant::now()
+            .checked_add(budget)
+            .ok_or_else(|| io::Error::other("Invalid browser close budget"))?;
         let result = self.call("close", Map::new(), budget).and_then(|value| {
             if value["closing"] == true {
                 Ok(())
@@ -315,13 +437,16 @@ impl Adapter {
                 ))
             }
         });
-        let cleanup = self.finish_with_status(budget);
+        let cleanup =
+            self.finish_with_status(deadline.saturating_duration_since(std::time::Instant::now()));
         match cleanup {
             Err(error) => Err(error),
             Ok(code) => {
                 if result.is_err() {
                     eprintln!("Browser close failed; native owner settled its entire tree");
-                    Ok(Some(-1))
+                    // A protocol failure cannot erase a concrete child exit.
+                    // Zero/no exit still needs a failed-operation outcome.
+                    Ok(Some(code.filter(|code| *code != 0).unwrap_or(-1)))
                 } else {
                     Ok(code.or(Some(0)))
                 }
@@ -354,7 +479,7 @@ impl Adapter {
         if self.metadata["backends"][backend]["installed"] != true {
             return Err(io::Error::new(
                 io::ErrorKind::NotFound,
-                "Requested browser SDK is not installed",
+                format!("Requested {backend} browser SDK is not installed"),
             ));
         }
         let fields = Map::from_iter([
@@ -448,6 +573,11 @@ impl Adapter {
             ));
         }
         if value["ok"] != true {
+            if value["error"]["kind"] == "sdk-cleanup" {
+                return Err(io::Error::other(
+                    "Browser SDK operation failed; SDK cleanup failed; inspect the sanitized adapter log",
+                ));
+            }
             return Err(io::Error::other(
                 "Browser SDK operation failed; inspect the sanitized adapter log",
             ));
@@ -464,6 +594,20 @@ impl Drop for Adapter {
     fn drop(&mut self) {
         if let Err(error) = self.finish(Duration::from_secs(2)) {
             eprintln!("Browser adapter cleanup remains unverified: {error}");
+            if self.writer.is_some() || self.reader.is_some() {
+                let tree = self.session.tree_record().map(|mut record| {
+                    record["pidToken"] = record["token"].take();
+                    record
+                });
+                retained_workers()
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .push(RetainedWorkers {
+                        reader: self.reader.take(),
+                        writer: self.writer.take(),
+                        tree,
+                    });
+            }
         }
     }
 }
@@ -471,10 +615,16 @@ impl Drop for Adapter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate as core;
+    #[allow(dead_code)]
+    mod fixture {
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/common/browser_fixture.rs"
+        ));
+    }
     #[test]
     fn polling_error_still_settles_sdk_tree_and_owned_relay() -> io::Result<()> {
-        let python = std::env::var_os("NUMERA_ORACLE_PYTHON")
-            .ok_or_else(|| io::Error::other("Fixture interpreter required"))?;
         let mut nonce = [0; 8];
         getrandom::fill(&mut nonce).map_err(io::Error::other)?;
         let root = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -486,17 +636,7 @@ mod tests {
         )?;
         std::fs::create_dir(&root)?;
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let mut command = Command::new(python);
-            command.args([
-                "-u",
-                "-c",
-                r#"
-import json,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-sys.stdin.readline()
-"#,
-            ]);
+            let mut command = fixture::command(&root, "rpc", json!({}))?;
             let mut adapter = Adapter::spawn(
                 &root,
                 "a",

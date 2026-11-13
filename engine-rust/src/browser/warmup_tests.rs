@@ -1,12 +1,16 @@
 use super::{adapter::Adapter, runtime::Runtime, warmup, warmup_policy};
+use crate as core;
 use crate::common;
+#[allow(dead_code)]
+#[path = "../../tests/common/browser_fixture.rs"]
+mod fixture;
 use crate::{
     cli::warmup_commands::{Options, Warmup},
     ownership::registry::Registry,
     storage::repo::ProfileRepo,
 };
 use serde_json::{Value, json};
-use std::{path::Path, process::Command, time::Duration};
+use std::{process::Command, time::Duration};
 
 struct Clock(f64, std::path::PathBuf);
 impl warmup::Control for Clock {
@@ -34,31 +38,9 @@ impl warmup::Control for Clock {
 #[test]
 fn original_warmup_validation_presets_and_native_control_match_without_real_waits()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("warmup-control")?;
     let root = temporary.path();
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(&python);
-    command.args(["-u","-c",r#"
-import json,os,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from warmup_cases import cases,run_cases,schedule_cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'policy':cases(),'runs':run_cases(),'schedules':schedule_cases(os.environ['FIXTURE_ROOT'])}}),flush=True)
-"#]).env("FIXTURE_ROOT",root.join("source-store")).env("PYTHONUTF8","1").env("PYTHONPATH",std::env::join_paths([repository.join("scripts/migration"),repository.join("engine")])?);
-    let mut source = Adapter::spawn(
-        root,
-        "source",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = source.call("observe", Default::default(), Duration::from_secs(20))?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
+    let document = fixture::oracle("warmup")?;
     for case in document["policy"]["validation"]
         .as_array()
         .ok_or("Validation cases missing")?
@@ -94,40 +76,14 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'policy':c
         .as_array()
         .ok_or("Warmup run cases missing")?;
     assert_eq!(runs.len(), 2);
-    let script = root.join("sdk.py");
-    std::fs::write(
-        &script,
-        r#"
-import json,os,pathlib,sys
-seen=[]
-for line in sys.stdin:
-    request=json.loads(line);op=request['operation']
-    if op=='navigate':
-        seen.append({'operation':'navigate','url':request['url'],'timeout':request['timeout_ms']})
-        failed=os.environ.get('FIXTURE_FAILED','0')=='1'
-        if failed: pathlib.Path(__file__).with_suffix('.ticks').write_text(str(len(seen)),encoding='utf-8')
-        result={'navigated':not failed}
-    elif op=='mouse':
-        seen.append({'operation':request['action'],'x':request['x'],'y':request['y']})
-        result={'performed':True}
-    elif op=='open': result={'opened':True,'backend':request['backend']}
-    elif op=='hello': result={'backends':{'playwright':{'installed':True}}}
-    else: result={'closing':True} if op=='close' else {}
-    pathlib.Path(__file__).with_suffix('.seen').write_text(json.dumps(seen),encoding='utf-8')
-    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-    if op=='close': break
-"#,
-    )?;
+    let script = fixture::executable(&root.join("sdk-fixture"), "warmup", json!({}))?;
     for case in runs {
         let ticks = script.with_extension("ticks");
         if ticks.exists() {
             std::fs::remove_file(&ticks)?;
         }
-        let mut command = Command::new(&python);
-        command.arg("-u").arg(&script).env("PYTHONUTF8", "1").env(
-            "FIXTURE_FAILED",
-            if case["failed"] == true { "1" } else { "0" },
-        );
+        fixture::executable(&script, "warmup", json!({"failed":case["failed"]}))?;
+        let mut command = Command::new(&script);
         let mut sdk = Adapter::spawn(
             root,
             "native",
@@ -171,8 +127,8 @@ for line in sys.stdin:
         1000.0,
     )?;
     let sessions = Registry::new(native.clone(), "fixture-host".into(), None)?;
+    fixture::executable(&script, "warmup", json!({"failed":false}))?;
     let browser = Runtime {
-        python: python.into(),
         adapter: script.clone(),
         cwd: root.into(),
         home: root.into(),

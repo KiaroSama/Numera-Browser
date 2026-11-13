@@ -89,7 +89,11 @@ impl ProfileRepo {
                 "Session tombstone already exists; nothing was deleted".into(),
             ));
         }
-        fs::rename(session, &tomb)?;
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("before-session-detach", &session)?;
+        fs::rename(&session, &tomb)?;
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("after-session-detach", &tomb)?;
         Ok(Some(tomb))
     }
 
@@ -113,7 +117,14 @@ impl ProfileRepo {
         };
         // Detached bytes no longer belong to the active profile; reclaim outside the lease.
         if let Some(tomb) = tomb {
-            let _ = fs::remove_dir_all(&tomb);
+            #[cfg(feature = "test-support")]
+            let reclaim = crate::vault::testing::event("before-session-reclaim", &tomb)?
+                != crate::vault::testing::Action::Skip;
+            #[cfg(not(feature = "test-support"))]
+            let reclaim = true;
+            if reclaim {
+                let _ = fs::remove_dir_all(&tomb);
+            }
             if tomb.try_exists()? {
                 return Err(RepoError::Message(format!(
                     "the session for {id} was detached to {} but could not be deleted - remove it by hand once nothing holds it",
@@ -133,6 +144,12 @@ impl ProfileRepo {
             return Ok(false);
         };
         let id = candidate.id;
+        #[cfg(feature = "test-support")]
+        if crate::vault::testing::event("before-profile-delete-lease", &self.root)?
+            == crate::vault::testing::Action::Skip
+        {
+            return Ok(false);
+        }
         let tomb: Option<PathBuf>;
         {
             let _lease = SessionLease::acquire(&SessionLease::path_for(&self.root, &id)?).map_err(
@@ -169,6 +186,8 @@ impl ProfileRepo {
                         batch.remember(&path)?;
                         #[cfg(test)]
                         tests::filesystem_fault(&path, false)?;
+                        #[cfg(feature = "test-support")]
+                        crate::vault::testing::event("before-delete-metadata", &path)?;
                         fs::remove_file(path)?;
                     }
                 }
@@ -183,11 +202,23 @@ impl ProfileRepo {
                         let attempt = tests::filesystem_fault(tomb, true);
                         #[cfg(not(test))]
                         let attempt: io::Result<()> = Ok(());
-                        attempt.and_then(|()| fs::rename(tomb, &session))
+                        attempt.and_then(|()| {
+                            #[cfg(feature = "test-support")]
+                            crate::vault::testing::event("before-session-restore", tomb)?;
+                            fs::rename(tomb, &session)
+                        })
                     }
                 {
                     stranded = Some((tomb.clone(), session.clone()));
-                    failures.push((tomb.clone(), restore));
+                    failures.push((
+                        tomb.clone(),
+                        io::Error::other(super::paths::SessionStranded {
+                            retained: tomb.clone(),
+                            destination: session.clone(),
+                            cause: restore,
+                            primary: Some(error.to_string()),
+                        }),
+                    ));
                 }
                 if !failures.is_empty() {
                     return Err(io::Error::other(DeleteRollback {
@@ -203,13 +234,28 @@ impl ProfileRepo {
         // Logical deletion has committed. Expensive browser-state reclamation
         // must not block every unrelated writer under the root transaction.
         let _ = claims::clear(&self.root, &id, host)?;
-        if let Some(tomb) = tomb
-            && let Err(error) = fs::remove_dir_all(&tomb)
-        {
-            eprintln!(
-                "WARNING: {id} is deleted, but its session is still on disk as {}; remove it once nothing holds it ({error})",
-                tomb.display()
-            );
+        if let Some(tomb) = tomb {
+            #[cfg(feature = "test-support")]
+            let reclaim = crate::vault::testing::event("before-session-reclaim", &tomb)?
+                != crate::vault::testing::Action::Skip;
+            #[cfg(not(feature = "test-support"))]
+            let reclaim = true;
+            let result = if reclaim {
+                fs::remove_dir_all(&tomb)
+            } else {
+                Ok(())
+            };
+            if let Err(error) = result {
+                eprintln!(
+                    "WARNING: {id} is deleted, but its session is still on disk as {}; remove it once nothing holds it ({error})",
+                    tomb.display()
+                );
+            } else if tomb.exists() {
+                eprintln!(
+                    "WARNING: {id} is deleted, but its session is still on disk as {}; remove it once nothing holds it",
+                    tomb.display()
+                );
+            }
         }
         Ok(true)
     }

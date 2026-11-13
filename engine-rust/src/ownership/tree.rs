@@ -22,9 +22,25 @@ impl OwnedTree {
     /// Capability is withheld until the child belongs to its own kernel tree.
     pub fn spawn(command: &mut Command) -> io::Result<Self> {
         let attempt = super::unit_report::begin_spawn()?;
+        #[cfg(feature = "test-support")]
+        if let Some(Err(error)) = super::test_support::before_spawn() {
+            // This boundary precedes the OS spawn. Its intent cannot own a
+            // child, unlike an uncertain failure after a spawn syscall.
+            super::unit_report::cancel_spawn(attempt.as_deref())?;
+            return Err(error);
+        }
         // Failed creation can be uncertain after the OS accepted a child. Leave
         // the intent pending rather than inventing a zero-unit cancellation.
         let mut tree = Self::spawn_tree(command)?;
+        #[cfg(feature = "test-support")]
+        if let Some(Err(error)) = super::test_support::spawned(&tree.record()) {
+            if tree.settle(Duration::from_secs(5)).is_ok() {
+                super::unit_report::cancel_spawn(attempt.as_deref())?;
+            } else {
+                super::capture::retain_tree(tree);
+            }
+            return Err(error);
+        }
         if let Err(error) = super::unit_report::record(&tree.record(), attempt.as_deref()) {
             if tree.settle(Duration::from_secs(5)).is_ok() {
                 super::unit_report::cancel_spawn(attempt.as_deref())?;
@@ -104,10 +120,22 @@ impl OwnedTree {
     pub fn child_mut(&mut self) -> &mut Child {
         &mut self.child
     }
+    #[cfg(windows)]
+    pub fn peak_job_memory(&self) -> io::Result<u64> {
+        self.job.peak_memory()
+    }
+    #[cfg(windows)]
+    pub(crate) fn job_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
+        self.job.handle()
+    }
     pub fn empty(&mut self) -> io::Result<bool> {
         let _ = self.child.try_wait()?;
         #[cfg(windows)]
         {
+            #[cfg(feature = "test-support")]
+            if let Some(result) = super::test_support::group_empty(self.pid() as i32) {
+                return result;
+            }
             self.job.empty()
         }
         #[cfg(unix)]
@@ -122,9 +150,22 @@ impl OwnedTree {
         let deadline = Instant::now()
             .checked_add(budget)
             .ok_or_else(|| io::Error::other("Invalid tree cleanup budget"))?;
-        if !self.empty()? {
+        if !self.observed_empty(deadline)? {
             #[cfg(windows)]
-            self.job.terminate()?;
+            {
+                #[cfg(feature = "test-support")]
+                let signalled = match super::test_support::signal(-(self.pid() as i32), true) {
+                    Some(result) => result,
+                    None => self.job.terminate(),
+                };
+                #[cfg(not(feature = "test-support"))]
+                let signalled = self.job.terminate();
+                if let Err(error) = signalled
+                    && !self.observed_empty(deadline)?
+                {
+                    return Err(error);
+                }
+            }
             #[cfg(unix)]
             {
                 // A live reused leader is not ours. Unknown identity is not
@@ -136,11 +177,15 @@ impl OwnedTree {
                     Err(error) => return Err(error),
                     _ => {}
                 }
-                terminate_group(self.group)?;
+                if let Err(error) = terminate_group(self.group)
+                    && !self.observed_empty(deadline)?
+                {
+                    return Err(error);
+                }
             }
         }
         loop {
-            if self.empty()? {
+            if self.observed_empty(deadline)? {
                 self.child.wait()?;
                 self.settled = true;
                 return Ok(());
@@ -156,6 +201,23 @@ impl OwnedTree {
                     .saturating_duration_since(Instant::now())
                     .min(Duration::from_millis(20)),
             );
+        }
+    }
+
+    fn observed_empty(&mut self, deadline: Instant) -> io::Result<bool> {
+        loop {
+            match self.empty() {
+                Ok(empty) => return Ok(empty),
+                Err(error) if Instant::now() >= deadline => return Err(error),
+                // A procfs row can disappear or become unreadable while the
+                // process exits. Unknown remains unknown; retry only inside
+                // this caller's existing cleanup deadline.
+                Err(_) => thread::sleep(
+                    deadline
+                        .saturating_duration_since(Instant::now())
+                        .min(Duration::from_millis(10)),
+                ),
+            }
         }
     }
 }
@@ -176,6 +238,14 @@ pub fn record_empty(record: &serde_json::Value) -> io::Result<bool> {
             .as_str()
             .filter(|s| !s.is_empty())
             .ok_or_else(|| io::Error::other("Tree job name missing"))?;
+        #[cfg(feature = "test-support")]
+        if let Some(pid) = record["pid"]
+            .as_u64()
+            .and_then(|pid| i32::try_from(pid).ok())
+            && let Some(result) = super::test_support::group_empty(pid)
+        {
+            return result;
+        }
         super::windows::named_empty(name)
     }
     #[cfg(unix)]
@@ -205,52 +275,62 @@ mod tests;
 
 #[cfg(target_os = "linux")]
 fn group_empty(group: i32) -> io::Result<bool> {
+    #[cfg(feature = "test-support")]
+    if let Some(result) = super::test_support::group_empty(group) {
+        return result;
+    }
     #[cfg(test)]
-    let root = PROCFS_ROOT.with(|root| root.borrow().clone());
+    let default_root = PROCFS_ROOT.with(|root| root.borrow().clone());
     #[cfg(not(test))]
-    let root = std::path::Path::new("/proc");
-    let mut unknown = false;
-    for entry in std::fs::read_dir(root)? {
-        let entry = entry?;
-        if entry
-            .file_name()
-            .to_str()
-            .is_none_or(|s| s.parse::<u32>().is_err())
-        {
-            continue;
-        }
-        let text = match std::fs::read_to_string(entry.path().join("stat")) {
-            Ok(text) => text,
-            Err(e) if e.kind() == io::ErrorKind::NotFound => continue,
-            Err(_) => {
-                unknown = true;
-                continue;
+    let default_root = std::path::PathBuf::from("/proc");
+    #[cfg(feature = "test-support")]
+    let root = super::test_support::procfs_root().unwrap_or(default_root);
+    #[cfg(not(feature = "test-support"))]
+    let root = default_root;
+    struct Procfs(std::path::PathBuf);
+    impl super::observation::GroupSource for Procfs {
+        fn enumerate(&mut self, _group: i32) -> io::Result<super::observation::Enumeration> {
+            let mut pids = Vec::new();
+            for entry in std::fs::read_dir(&self.0)? {
+                let entry = entry?;
+                if let Some(pid) = entry
+                    .file_name()
+                    .to_str()
+                    .and_then(|text| text.parse::<u32>().ok())
+                {
+                    pids.push(pid);
+                }
             }
-        };
-        let Some((_, rest)) = text.rsplit_once(") ") else {
-            unknown = true;
-            continue;
-        };
-        let fields: Vec<_> = rest.split_whitespace().collect();
-        if fields.len() < 3 {
-            unknown = true;
-            continue;
+            Ok(super::observation::Enumeration {
+                pids,
+                complete: true,
+                filtered: false,
+            })
         }
-        match fields[2].parse::<i32>() {
-            Ok(member_group) if member_group == group && fields[0] != "Z" => return Ok(false),
-            Ok(_) => {}
-            Err(_) => unknown = true,
+        fn process(&mut self, pid: u32) -> io::Result<Option<super::observation::Row>> {
+            let path = self.0.join(pid.to_string()).join("stat");
+            #[cfg(feature = "test-support")]
+            let text =
+                super::test_support::stat(&path).unwrap_or_else(|| std::fs::read_to_string(&path));
+            #[cfg(not(feature = "test-support"))]
+            let text = std::fs::read_to_string(&path);
+            match text {
+                Ok(text) => super::observation::procfs_process(pid, &text),
+                Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+                Err(error) => Err(error),
+            }
         }
     }
-    if unknown {
-        return Err(io::Error::other(
-            "Process table incomplete; tree emptiness unknown",
-        ));
-    }
-    Ok(true)
+    super::observation::observe_group(group, None, &mut Procfs(root))
 }
 #[cfg(target_os = "macos")]
-use super::macos::group_empty;
+fn group_empty(group: i32) -> io::Result<bool> {
+    #[cfg(feature = "test-support")]
+    if let Some(result) = super::test_support::group_empty(group) {
+        return result;
+    }
+    super::macos::group_empty(group)
+}
 
 #[cfg(all(unix, not(any(target_os = "linux", target_os = "macos"))))]
 fn group_empty(_group: i32) -> io::Result<bool> {
@@ -264,6 +344,10 @@ fn group_empty(_group: i32) -> io::Result<bool> {
 fn terminate_group(group: i32) -> io::Result<()> {
     if group <= 0 {
         return Err(io::Error::other("Invalid owned process group"));
+    }
+    #[cfg(feature = "test-support")]
+    if let Some(result) = super::test_support::signal(-group, true) {
+        return result;
     }
     // SAFETY: positive group created by this owner; birth identity checked.
     if unsafe { libc::kill(-group, libc::SIGKILL) } != 0 {

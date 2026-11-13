@@ -1,0 +1,2112 @@
+{
+  "schema": 1,
+  "baseline": "docs/rust-test-baseline.json",
+  "baseline_source_commit": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+  "suite": "source_domain",
+  "count": 242,
+  "files": {
+    "tests/test_align.py": 12,
+    "tests/test_fingerprint.py": 25,
+    "tests/test_flat_numeric_policy.py": 84,
+    "tests/test_importers.py": 26,
+    "tests/test_model_policy_coverage.py": 14,
+    "tests/test_name_contract.py": 19,
+    "tests/test_write_contract_context.py": 27,
+    "tests/test_write_contract_core.py": 35
+  },
+  "case_types": {
+    "standard": 102,
+    "parameterized": 140
+  },
+  "native_only": true,
+  "verification": {
+    "status": "passed",
+    "command": "cargo test --locked --manifest-path engine-rust/Cargo.toml --test source_domain --no-default-features -- --test-threads=8",
+    "reported": 242,
+    "passed": 242,
+    "failed": 0,
+    "ignored": 0,
+    "source_oracle_processes": 0,
+    "failures": [],
+    "clippy": "passed: cargo clippy --locked --manifest-path engine-rust/Cargo.toml --test source_domain --no-default-features -- -D warnings",
+    "individually_reported_cases": 242,
+    "mapping_set_equals_frozen_baseline_subset": true,
+    "fixed_regressions": [
+      "Nonfinite in-memory numeric values report finite-number refusal.",
+      "Over-4300-digit integer diagnostics use exact integer bit length without quoting secret values."
+    ]
+  },
+  "adaptations": [
+    "Python dataclass field introspection ports to the actual Rust model Serialize output. Runtime-only Proxy password intent is excluded by serde(skip); persisted fields including password are checked.",
+    "Python malformed dynamically-typed Profile objects are checked with the public complete-record write contract and then refused through the actual ProfileRepo::import_file raw write door, with no engine/dashboard JSON written. Rust Profile statically prevents constructing most malformed field types. Malformed batch tags are sent through the real CLI vendor batch import, asserting the profiles[1] context and whole-batch rollback.",
+    "Python bytes inside switched_off is represented by a non-text byte array at the JSON record boundary; the same every-entry-must-be-text refusal and zero-write effects are asserted.",
+    "Python healthy read-view object identity ports to unchanged JSON value and borrowed input preservation. The native read_view API returns an owned Value.",
+    "Original alignment tests stub browser observation. Native cases feed identical observations to production alignment::rewrite/patch and persist with the real repository, then grade before and after.",
+    "Nonfinite in-memory values are preserved with serde_json arbitrary_precision Number::from_string_unchecked, which is designed for test use; no parser/runtime/oracle subprocess is invoked."
+  ],
+  "cases": [
+    {
+      "python_id": "tests/test_align.py::test_os_inferred_from_platform",
+      "rust_test": "alignment_cases::os_inferred_from_platform",
+      "rust_file": "engine-rust/tests/source_domain/alignment.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_align.py::test_chrome_pulled_from_ua",
+      "rust_test": "alignment_cases::chrome_pulled_from_ua",
+      "rust_file": "engine-rust/tests/source_domain/alignment.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_align.py::test_vendor_guessed_from_renderer",
+      "rust_test": "alignment_cases::vendor_guessed_from_renderer",
+      "rust_file": "engine-rust/tests/source_domain/alignment.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_align.py::test_align_reconciles_mac_profile_to_windows_host",
+      "rust_test": "alignment_cases::align_reconciles_mac_profile_to_windows_host",
+      "rust_file": "engine-rust/tests/source_domain/alignment.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_align.py::test_aligned_profile_is_coherent",
+      "rust_test": "alignment_cases::aligned_profile_is_coherent",
+      "rust_file": "engine-rust/tests/source_domain/alignment.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_align.py::test_align_is_a_noop_when_already_matching",
+      "rust_test": "alignment_cases::align_is_a_noop_when_already_matching",
+      "rust_file": "engine-rust/tests/source_domain/alignment.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_align.py::test_align_moves_timezone_and_locale_to_reality",
+      "rust_test": "alignment_cases::align_moves_timezone_and_locale_to_reality",
+      "rust_file": "engine-rust/tests/source_domain/alignment.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_align.py::test_align_keeps_timezone_when_no_locale_models_it",
+      "rust_test": "alignment_cases::align_keeps_timezone_when_no_locale_models_it",
+      "rust_file": "engine-rust/tests/source_domain/alignment.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_align.py::test_crossing_os_families_resets_the_values_the_old_os_owned",
+      "rust_test": "alignment_cases::crossing_os_families_resets_the_values_the_old_os_owned",
+      "rust_file": "engine-rust/tests/source_domain/alignment.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_align.py::test_the_client_hints_agree_with_the_new_os",
+      "rust_test": "alignment_cases::the_client_hints_agree_with_the_new_os",
+      "rust_file": "engine-rust/tests/source_domain/alignment.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_align.py::test_touch_and_dpr_follow_the_observed_machine",
+      "rust_test": "alignment_cases::touch_and_dpr_follow_the_observed_machine",
+      "rust_file": "engine-rust/tests/source_domain/alignment.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_align.py::test_an_unobserved_form_factor_falls_back_to_the_new_os",
+      "rust_test": "alignment_cases::an_unobserved_form_factor_falls_back_to_the_new_os",
+      "rust_file": "engine-rust/tests/source_domain/alignment.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_a_malformed_engine_record_stays_a_complete_record[record0-a null fingerprint]",
+      "rust_test": "context_cases::a_malformed_engine_record_stays_a_complete_record_case_000",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_a_malformed_engine_record_stays_a_complete_record[record1-a numeric fingerprint]",
+      "rust_test": "context_cases::a_malformed_engine_record_stays_a_complete_record_case_001",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_a_malformed_engine_record_stays_a_complete_record[record2-a text fingerprint]",
+      "rust_test": "context_cases::a_malformed_engine_record_stays_a_complete_record_case_002",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_a_malformed_engine_record_stays_a_complete_record[record3-a list fingerprint]",
+      "rust_test": "context_cases::a_malformed_engine_record_stays_a_complete_record_case_003",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_an_entry_point_may_declare_the_shape_outright",
+      "rust_test": "context_cases::an_entry_point_may_declare_the_shape_outright",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_an_unknown_declared_shape_is_refused_not_guessed",
+      "rust_test": "context_cases::an_unknown_declared_shape_is_refused_not_guessed",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_an_ordinary_patch_is_still_a_patch",
+      "rust_test": "context_cases::an_ordinary_patch_is_still_a_patch",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_a_profile_object_is_unaffected",
+      "rust_test": "context_cases::a_profile_object_is_unaffected",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_a_fractional_device_memory_survives_conversion[0.25]",
+      "rust_test": "context_cases::a_fractional_device_memory_survives_conversion_case_008",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_a_fractional_device_memory_survives_conversion[0.5]",
+      "rust_test": "context_cases::a_fractional_device_memory_survives_conversion_case_009",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_a_whole_device_memory_stays_a_whole_number[16-16]",
+      "rust_test": "context_cases::a_whole_device_memory_stays_a_whole_number_case_010",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_a_whole_device_memory_stays_a_whole_number[8-8]",
+      "rust_test": "context_cases::a_whole_device_memory_stays_a_whole_number_case_011",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_a_whole_device_memory_stays_a_whole_number[4.0-4]",
+      "rust_test": "context_cases::a_whole_device_memory_stays_a_whole_number_case_012",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_a_fractional_device_memory_round_trips_through_a_real_store[0.25]",
+      "rust_test": "context_cases::a_fractional_device_memory_round_trips_through_a_real_store_case_013",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_a_fractional_device_memory_round_trips_through_a_real_store[0.5]",
+      "rust_test": "context_cases::a_fractional_device_memory_round_trips_through_a_real_store_case_014",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_the_dashboard_guard_and_the_complete_guard_agree[0.25]",
+      "rust_test": "context_cases::the_dashboard_guard_and_the_complete_guard_agree_case_015",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_the_dashboard_guard_and_the_complete_guard_agree[0.5]",
+      "rust_test": "context_cases::the_dashboard_guard_and_the_complete_guard_agree_case_016",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_the_dashboard_guard_and_the_complete_guard_agree[16]",
+      "rust_test": "context_cases::the_dashboard_guard_and_the_complete_guard_agree_case_017",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_device_memory_allows_exactly_the_reported_fractions",
+      "rust_test": "context_cases::device_memory_allows_exactly_the_reported_fractions",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_counts_are_still_whole[hardware_concurrency]",
+      "rust_test": "context_cases::counts_are_still_whole_case_019",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_counts_are_still_whole[screen_width]",
+      "rust_test": "context_cases::counts_are_still_whole_case_020",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_counts_are_still_whole[cameras]",
+      "rust_test": "context_cases::counts_are_still_whole_case_021",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_counts_are_still_whole[max_touch_points]",
+      "rust_test": "context_cases::counts_are_still_whole_case_022",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_an_unusable_memory_still_falls_back[inf]",
+      "rust_test": "context_cases::an_unusable_memory_still_falls_back_case_023",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_an_unusable_memory_still_falls_back[nan]",
+      "rust_test": "context_cases::an_unusable_memory_still_falls_back_case_024",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_an_unusable_memory_still_falls_back[lots]",
+      "rust_test": "context_cases::an_unusable_memory_still_falls_back_case_025",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_context.py::test_an_unusable_memory_still_falls_back[None]",
+      "rust_test": "context_cases::an_unusable_memory_still_falls_back_case_026",
+      "rust_file": "engine-rust/tests/source_domain/context.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[name-123-must be text]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_000",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[name-None-must be text]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_001",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[name-value2-must be text]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_002",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[notes-7-must be text]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_003",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[engine-value4-must be text]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_004",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[tags-value5-every entry]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_005",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[tags-value6-every entry]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_006",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[tags-notalist-must be a list]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_007",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[startup_urls-value8-every entry]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_008",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[extensions-value9-every entry]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_009",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[launch_args-value10-every entry]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_010",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[ip_based-value11-every entry]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_011",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[clear_on_start-value12-every entry]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_012",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_core_write_path_refuses_what_the_api_refuses[switched_off-value13-every entry]",
+      "rust_test": "core_cases::the_core_write_path_refuses_what_the_api_refuses_case_013",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_batch_names_the_entry_that_failed",
+      "rust_test": "core_cases::a_batch_names_the_entry_that_failed",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_an_ordinary_profile_is_untouched",
+      "rust_test": "core_cases::an_ordinary_profile_is_untouched",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_an_empty_list_and_an_empty_string_are_fine",
+      "rust_test": "core_cases::an_empty_list_and_an_empty_string_are_fine",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_an_enormous_integer_is_refused_not_an_overflow[10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000]",
+      "rust_test": "core_cases::an_enormous_integer_is_refused_not_an_overflow_case_017",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_an_enormous_integer_is_refused_not_an_overflow[-10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000]",
+      "rust_test": "core_cases::an_enormous_integer_is_refused_not_an_overflow_case_018",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_an_enormous_integer_is_refused_not_an_overflow[1606938044258990275541962092341162602522202993782792835301376]",
+      "rust_test": "core_cases::an_enormous_integer_is_refused_not_an_overflow_case_019",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_non_finite_float_is_refused[nan]",
+      "rust_test": "core_cases::a_non_finite_float_is_refused_case_020",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_non_finite_float_is_refused[inf]",
+      "rust_test": "core_cases::a_non_finite_float_is_refused_case_021",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_non_finite_float_is_refused[-inf]",
+      "rust_test": "core_cases::a_non_finite_float_is_refused_case_022",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_number_inside_the_range_is_accepted",
+      "rust_test": "core_cases::a_number_inside_the_range_is_accepted",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_boolean_is_not_a_number",
+      "rust_test": "core_cases::a_boolean_is_not_a_number",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_legacy_name_renders_as_text[123-123]",
+      "rust_test": "core_cases::a_legacy_name_renders_as_text_case_025",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_legacy_name_renders_as_text[None-]",
+      "rust_test": "core_cases::a_legacy_name_renders_as_text_case_026",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_legacy_name_renders_as_text[12.5-12.5]",
+      "rust_test": "core_cases::a_legacy_name_renders_as_text_case_027",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_legacy_name_renders_as_text[True-true]",
+      "rust_test": "core_cases::a_legacy_name_renders_as_text_case_028",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_legacy_name_renders_as_text[stored4-]",
+      "rust_test": "core_cases::a_legacy_name_renders_as_text_case_029",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_legacy_name_renders_as_text[stored5-]",
+      "rust_test": "core_cases::a_legacy_name_renders_as_text_case_030",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_read_view_never_touches_the_stored_record",
+      "rust_test": "core_cases::the_read_view_never_touches_the_stored_record",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_healthy_record_passes_through_unchanged",
+      "rust_test": "core_cases::a_healthy_record_passes_through_unchanged",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_the_dashboard_view_uses_its_own_field_names",
+      "rust_test": "core_cases::the_dashboard_view_uses_its_own_field_names",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_write_contract_core.py::test_a_bad_record_does_not_hide_the_healthy_ones",
+      "rust_test": "core_cases::a_bad_record_does_not_hide_the_healthy_ones",
+      "rust_file": "engine-rust/tests/source_domain/core.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_generated_fingerprint_is_always_coherent",
+      "rust_test": "fingerprint_cases::generated_fingerprint_is_always_coherent",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_seed_is_reproducible",
+      "rust_test": "fingerprint_cases::seed_is_reproducible",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_different_seeds_differ",
+      "rust_test": "fingerprint_cases::different_seeds_differ",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_forced_os_matches_platform_and_gpu[windows]",
+      "rust_test": "fingerprint_cases::forced_os_windows",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_forced_os_matches_platform_and_gpu[macos]",
+      "rust_test": "fingerprint_cases::forced_os_macos",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_forced_os_matches_platform_and_gpu[linux]",
+      "rust_test": "fingerprint_cases::forced_os_linux",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_forced_os_matches_platform_and_gpu[android]",
+      "rust_test": "fingerprint_cases::forced_os_android",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_mobile_flag",
+      "rust_test": "fingerprint_cases::mobile_flag",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_proxy_country_steers_locale",
+      "rust_test": "fingerprint_cases::proxy_country_steers_locale",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_explicit_locale_wins_over_proxy",
+      "rust_test": "fingerprint_cases::explicit_locale_wins_over_proxy",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_viewport_never_exceeds_screen",
+      "rust_test": "fingerprint_cases::viewport_never_exceeds_screen",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_sec_ch_ua_contains_chrome_major",
+      "rust_test": "fingerprint_cases::sec_ch_ua_contains_chrome_major",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_validate_catches_tampering",
+      "rust_test": "fingerprint_cases::validate_catches_tampering",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_fonts_come_from_the_os_font_set",
+      "rust_test": "fingerprint_cases::fonts_come_from_the_os_font_set",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_validate_catches_a_font_from_another_os",
+      "rust_test": "fingerprint_cases::validate_catches_a_font_from_another_os",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_phones_always_have_a_camera_and_microphone",
+      "rust_test": "fingerprint_cases::phones_always_have_a_camera_and_microphone",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_validate_catches_a_phone_with_no_camera",
+      "rust_test": "fingerprint_cases::validate_catches_a_phone_with_no_camera",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_desktops_may_have_no_webcam",
+      "rust_test": "fingerprint_cases::desktops_may_have_no_webcam",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_secondary_signals_survive_a_round_trip",
+      "rust_test": "fingerprint_cases::secondary_signals_survive_a_round_trip",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_fingerprints_saved_before_these_fields_existed_still_load",
+      "rust_test": "fingerprint_cases::fingerprints_saved_before_these_fields_existed_still_load",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_webgl_plausible_accepts_real_host_gpus",
+      "rust_test": "fingerprint_cases::webgl_plausible_accepts_real_host_gpus",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_webgl_plausible_rejects_wrong_os",
+      "rust_test": "fingerprint_cases::webgl_plausible_rejects_wrong_os",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_real_screen_size_is_coherent",
+      "rust_test": "fingerprint_cases::real_screen_size_is_coherent",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_italian_and_belgian_locales_are_coherent",
+      "rust_test": "fingerprint_cases::italian_and_belgian_locales_are_coherent",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_fingerprint.py::test_every_locale_has_a_country_and_coordinates",
+      "rust_test": "fingerprint_cases::every_locale_has_a_country_and_coordinates",
+      "rust_file": "engine-rust/tests/source_domain/fingerprint.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_every_flat_number_has_exactly_one_model_rule",
+      "rust_test": "flat_numeric_cases::every_flat_number_has_exactly_one_model_rule",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_a_fractional_count_is_refused_before_conversion[1.5-cores]",
+      "rust_test": "flat_numeric_cases::a_fractional_count_is_refused_before_conversion_case_001",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_a_fractional_count_is_refused_before_conversion[1.5-mediaVideo]",
+      "rust_test": "flat_numeric_cases::a_fractional_count_is_refused_before_conversion_case_002",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_a_fractional_count_is_refused_before_conversion[1.5-mediaAudio]",
+      "rust_test": "flat_numeric_cases::a_fractional_count_is_refused_before_conversion_case_003",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_a_fractional_count_is_refused_before_conversion[1.5-mediaSpeakers]",
+      "rust_test": "flat_numeric_cases::a_fractional_count_is_refused_before_conversion_case_004",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_a_fractional_count_is_refused_before_conversion[1.5-maxTouchPoints]",
+      "rust_test": "flat_numeric_cases::a_fractional_count_is_refused_before_conversion_case_005",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_a_fractional_count_is_refused_before_conversion[1.5-seed]",
+      "rust_test": "flat_numeric_cases::a_fractional_count_is_refused_before_conversion_case_006",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_a_fractional_count_is_refused_before_conversion[2.25-cores]",
+      "rust_test": "flat_numeric_cases::a_fractional_count_is_refused_before_conversion_case_007",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_a_fractional_count_is_refused_before_conversion[2.25-mediaVideo]",
+      "rust_test": "flat_numeric_cases::a_fractional_count_is_refused_before_conversion_case_008",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_a_fractional_count_is_refused_before_conversion[2.25-mediaAudio]",
+      "rust_test": "flat_numeric_cases::a_fractional_count_is_refused_before_conversion_case_009",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_a_fractional_count_is_refused_before_conversion[2.25-mediaSpeakers]",
+      "rust_test": "flat_numeric_cases::a_fractional_count_is_refused_before_conversion_case_010",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_a_fractional_count_is_refused_before_conversion[2.25-maxTouchPoints]",
+      "rust_test": "flat_numeric_cases::a_fractional_count_is_refused_before_conversion_case_011",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_a_fractional_count_is_refused_before_conversion[2.25-seed]",
+      "rust_test": "flat_numeric_cases::a_fractional_count_is_refused_before_conversion_case_012",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_memory_refuses_a_fraction_no_device_reports",
+      "rust_test": "flat_numeric_cases::memory_refuses_a_fraction_no_device_reports",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_legal_values_still_pass_and_survive_conversion[fields0]",
+      "rust_test": "flat_numeric_cases::legal_values_still_pass_and_survive_conversion_case_014",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_legal_values_still_pass_and_survive_conversion[fields1]",
+      "rust_test": "flat_numeric_cases::legal_values_still_pass_and_survive_conversion_case_015",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_legal_values_still_pass_and_survive_conversion[fields2]",
+      "rust_test": "flat_numeric_cases::legal_values_still_pass_and_survive_conversion_case_016",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_legal_values_still_pass_and_survive_conversion[fields3]",
+      "rust_test": "flat_numeric_cases::legal_values_still_pass_and_survive_conversion_case_017",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_legal_values_still_pass_and_survive_conversion[fields4]",
+      "rust_test": "flat_numeric_cases::legal_values_still_pass_and_survive_conversion_case_018",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_legal_values_still_pass_and_survive_conversion[fields5]",
+      "rust_test": "flat_numeric_cases::legal_values_still_pass_and_survive_conversion_case_019",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_legal_values_still_pass_and_survive_conversion[fields6]",
+      "rust_test": "flat_numeric_cases::legal_values_still_pass_and_survive_conversion_case_020",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_legal_values_still_pass_and_survive_conversion[fields7]",
+      "rust_test": "flat_numeric_cases::legal_values_still_pass_and_survive_conversion_case_021",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_legal_values_still_pass_and_survive_conversion[fields8]",
+      "rust_test": "flat_numeric_cases::legal_values_still_pass_and_survive_conversion_case_022",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_legal_values_still_pass_and_survive_conversion[fields9]",
+      "rust_test": "flat_numeric_cases::legal_values_still_pass_and_survive_conversion_case_023",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_legal_values_still_pass_and_survive_conversion[fields10]",
+      "rust_test": "flat_numeric_cases::legal_values_still_pass_and_survive_conversion_case_024",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_non_numbers_and_out_of_range_stay_refused[True]",
+      "rust_test": "flat_numeric_cases::non_numbers_and_out_of_range_stay_refused_case_025",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_non_numbers_and_out_of_range_stay_refused[8]",
+      "rust_test": "flat_numeric_cases::non_numbers_and_out_of_range_stay_refused_case_026",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_non_numbers_and_out_of_range_stay_refused[inf]",
+      "rust_test": "flat_numeric_cases::non_numbers_and_out_of_range_stay_refused_case_027",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_non_numbers_and_out_of_range_stay_refused[nan]",
+      "rust_test": "flat_numeric_cases::non_numbers_and_out_of_range_stay_refused_case_028",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_non_numbers_and_out_of_range_stay_refused[-1]",
+      "rust_test": "flat_numeric_cases::non_numbers_and_out_of_range_stay_refused_case_029",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_non_numbers_and_out_of_range_stay_refused[1000000]",
+      "rust_test": "flat_numeric_cases::non_numbers_and_out_of_range_stay_refused_case_030",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_omitted_and_null_still_mean_not_changing",
+      "rust_test": "flat_numeric_cases::omitted_and_null_still_mean_not_changing",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_an_unprintable_integer_is_refused_not_crashed[fields0]",
+      "rust_test": "flat_numeric_cases::an_unprintable_integer_is_refused_not_crashed_case_032",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_an_unprintable_integer_is_refused_not_crashed[fields1]",
+      "rust_test": "flat_numeric_cases::an_unprintable_integer_is_refused_not_crashed_case_033",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_an_unprintable_integer_is_refused_not_crashed[fields2]",
+      "rust_test": "flat_numeric_cases::an_unprintable_integer_is_refused_not_crashed_case_034",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_a_secret_is_still_not_quoted_back",
+      "rust_test": "flat_numeric_cases::a_secret_is_still_not_quoted_back",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[cores-1.25]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_036",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[cores-True]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_037",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[cores-8]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_038",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[cores-nan]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_039",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[cores-inf]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_040",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[cores--1]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_041",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[memory-1.25]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_042",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[memory-True]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_043",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[memory-8]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_044",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[memory-nan]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_045",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[memory-inf]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_046",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[memory--1]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_047",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaVideo-1.25]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_048",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaVideo-True]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_049",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaVideo-8]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_050",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaVideo-nan]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_051",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaVideo-inf]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_052",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaVideo--1]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_053",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaAudio-1.25]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_054",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaAudio-True]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_055",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaAudio-8]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_056",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaAudio-nan]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_057",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaAudio-inf]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_058",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaAudio--1]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_059",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaSpeakers-1.25]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_060",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaSpeakers-True]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_061",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaSpeakers-8]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_062",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaSpeakers-nan]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_063",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaSpeakers-inf]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_064",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[mediaSpeakers--1]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_065",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[maxTouchPoints-1.25]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_066",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[maxTouchPoints-True]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_067",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[maxTouchPoints-8]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_068",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[maxTouchPoints-nan]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_069",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[maxTouchPoints-inf]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_070",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[maxTouchPoints--1]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_071",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[devicePixelRatio-True]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_072",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[devicePixelRatio-8]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_073",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[devicePixelRatio-nan]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_074",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[devicePixelRatio-inf]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_075",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[devicePixelRatio--1]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_076",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[seed-1.25]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_077",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[seed-True]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_078",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[seed-8]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_079",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[seed-nan]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_080",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[seed-inf]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_081",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_server_conversion_refuses_a_number_it_would_change[seed--1]",
+      "rust_test": "flat_numeric_cases::the_server_conversion_refuses_a_number_it_would_change_case_082",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_flat_numeric_policy.py::test_the_core_conversion_stays_tolerant_for_legacy_readers",
+      "rust_test": "flat_numeric_cases::the_core_conversion_stays_tolerant_for_legacy_readers",
+      "rust_file": "engine-rust/tests/source_domain/flat_numeric.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_gologin_core_fields",
+      "rust_test": "importer_cases::gologin_core_fields",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_adspower_nested_and_group_becomes_tag",
+      "rust_test": "importer_cases::adspower_nested_and_group_becomes_tag",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_multilogin_without_proxy",
+      "rust_test": "importer_cases::multilogin_without_proxy",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_os_inferred_from_user_agent_when_field_missing",
+      "rust_test": "importer_cases::os_inferred_from_user_agent_when_field_missing",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_missing_fields_fall_back_to_a_coherent_base",
+      "rust_test": "importer_cases::missing_fields_fall_back_to_a_coherent_base",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_unknown_locale_is_replaced_not_left_incoherent",
+      "rust_test": "importer_cases::unknown_locale_is_replaced_not_left_incoherent",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_direct_proxy_mode_means_no_proxy",
+      "rust_test": "importer_cases::direct_proxy_mode_means_no_proxy",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_unwrap_handles_wrappers",
+      "rust_test": "importer_cases::unwrap_handles_wrappers",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_import_file_saves_and_reports",
+      "rust_test": "importer_cases::import_file_saves_and_reports",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_the_chrome_version_in_the_user_agent_is_kept",
+      "rust_test": "importer_cases::the_chrome_version_in_the_user_agent_is_kept",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_a_vendor_specific_webgl_path_is_not_dropped",
+      "rust_test": "importer_cases::a_vendor_specific_webgl_path_is_not_dropped",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_a_snake_case_user_agent_under_navigator_is_found",
+      "rust_test": "importer_cases::a_snake_case_user_agent_under_navigator_is_found",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_an_imported_profile_is_coherent",
+      "rust_test": "importer_cases::an_imported_profile_is_coherent",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_a_mobile_import_does_not_get_desktop_browser_chrome",
+      "rust_test": "importer_cases::a_mobile_import_does_not_get_desktop_browser_chrome",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_a_bare_ios_export_is_not_imported_as_windows",
+      "rust_test": "importer_cases::a_bare_ios_export_is_not_imported_as_windows",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_an_iphone_user_agent_is_not_imported_as_a_mac",
+      "rust_test": "importer_cases::an_iphone_user_agent_is_not_imported_as_a_mac",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_an_ipad_export_is_not_imported_as_a_desktop_mac",
+      "rust_test": "importer_cases::an_ipad_export_is_not_imported_as_a_desktop_mac",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_a_conflicting_os_field_does_not_turn_an_iphone_into_a_desktop",
+      "rust_test": "importer_cases::a_conflicting_os_field_does_not_turn_an_iphone_into_a_desktop",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_the_desktop_and_android_classifications_still_hold",
+      "rust_test": "importer_cases::the_desktop_and_android_classifications_still_hold",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_an_imported_phone_is_a_coherent_phone",
+      "rust_test": "importer_cases::an_imported_phone_is_a_coherent_phone",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_a_non_finite_number_falls_back_instead_of_raising",
+      "rust_test": "importer_cases::a_non_finite_number_falls_back_instead_of_raising",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_an_infinite_core_count_yields_a_plausible_profile",
+      "rust_test": "importer_cases::an_infinite_core_count_yields_a_plausible_profile",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_one_impossible_number_does_not_cost_the_whole_file",
+      "rust_test": "importer_cases::one_impossible_number_does_not_cost_the_whole_file",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_the_api_import_survives_the_same_number",
+      "rust_test": "importer_cases::the_api_import_survives_the_same_number",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_a_timezone_nested_under_id_is_read_not_refused",
+      "rust_test": "importer_cases::a_timezone_nested_under_id_is_read_not_refused",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_importers.py::test_an_object_naming_no_zone_is_still_refused",
+      "rust_test": "importer_cases::an_object_naming_no_zone_is_still_refused",
+      "rust_file": "engine-rust/tests/source_domain/importers.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_every_model_field_has_a_policy[Profile]",
+      "rust_test": "model_policy_cases::every_model_field_has_a_policy_profile",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_every_model_field_has_a_policy[Fingerprint]",
+      "rust_test": "model_policy_cases::every_model_field_has_a_policy_fingerprint",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_every_model_field_has_a_policy[Proxy]",
+      "rust_test": "model_policy_cases::every_model_field_has_a_policy_proxy",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_no_policy_names_a_field_that_is_gone[Profile]",
+      "rust_test": "model_policy_cases::no_policy_names_a_field_that_is_gone_profile",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_no_policy_names_a_field_that_is_gone[Fingerprint]",
+      "rust_test": "model_policy_cases::no_policy_names_a_field_that_is_gone_fingerprint",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_no_policy_names_a_field_that_is_gone[Proxy]",
+      "rust_test": "model_policy_cases::no_policy_names_a_field_that_is_gone_proxy",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_a_field_exempt_from_checking_says_why[Profile]",
+      "rust_test": "model_policy_cases::a_field_exempt_from_checking_says_why_profile",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_a_field_exempt_from_checking_says_why[Fingerprint]",
+      "rust_test": "model_policy_cases::a_field_exempt_from_checking_says_why_fingerprint",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_a_field_exempt_from_checking_says_why[Proxy]",
+      "rust_test": "model_policy_cases::a_field_exempt_from_checking_says_why_proxy",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_the_coverage_guard_actually_bites",
+      "rust_test": "model_policy_cases::the_coverage_guard_actually_bites",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_every_rule_kind_in_the_table_is_one_the_validator_implements",
+      "rust_test": "model_policy_cases::every_rule_kind_in_the_table_is_one_the_validator_implements",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_a_number_rule_resolves_to_exactly_one_set_of_bounds",
+      "rust_test": "model_policy_cases::a_number_rule_resolves_to_exactly_one_set_of_bounds",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_the_policy_covers_the_fields_the_serialized_record_carries",
+      "rust_test": "model_policy_cases::the_policy_covers_the_fields_the_serialized_record_carries",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_model_policy_coverage.py::test_a_dataclass_field_list_is_what_is_being_diffed",
+      "rust_test": "model_policy_cases::a_dataclass_field_list_is_what_is_being_diffed",
+      "rust_file": "engine-rust/tests/source_domain/model_policy.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_a_second_create_with_a_taken_name_is_refused",
+      "rust_test": "name_contract_cases::a_second_create_with_a_taken_name_is_refused",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_two_entries_of_one_batch_cannot_share_a_name",
+      "rust_test": "name_contract_cases::two_entries_of_one_batch_cannot_share_a_name",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_a_batch_cannot_claim_a_name_the_store_already_holds",
+      "rust_test": "name_contract_cases::a_batch_cannot_claim_a_name_the_store_already_holds",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_renaming_a_profile_onto_a_taken_name_is_refused",
+      "rust_test": "name_contract_cases::renaming_a_profile_onto_a_taken_name_is_refused",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_a_profile_may_still_be_saved_under_the_name_it_already_has",
+      "rust_test": "name_contract_cases::a_profile_may_still_be_saved_under_the_name_it_already_has",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_a_bulk_rename_of_many_profiles_onto_one_name_is_refused",
+      "rust_test": "name_contract_cases::a_bulk_rename_of_many_profiles_onto_one_name_is_refused",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_a_bulk_patch_that_does_not_touch_names_still_works",
+      "rust_test": "name_contract_cases::a_bulk_patch_that_does_not_touch_names_still_works",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_importing_the_same_vendor_file_twice_is_refused",
+      "rust_test": "name_contract_cases::importing_the_same_vendor_file_twice_is_refused",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_one_vendor_file_naming_a_profile_twice_is_refused",
+      "rust_test": "name_contract_cases::one_vendor_file_naming_a_profile_twice_is_refused",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_the_api_refuses_the_name_the_cli_created",
+      "rust_test": "name_contract_cases::the_api_refuses_the_name_the_cli_created",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_the_cli_refuses_the_name_the_api_created",
+      "rust_test": "name_contract_cases::the_cli_refuses_the_name_the_api_created",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_listing_still_adopts_a_cli_made_profile",
+      "rust_test": "name_contract_cases::listing_still_adopts_a_cli_made_profile",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_restoring_a_clone_takes_a_free_name",
+      "rust_test": "name_contract_cases::restoring_a_clone_takes_a_free_name",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_a_second_clone_does_not_collide_with_the_first",
+      "rust_test": "name_contract_cases::a_second_clone_does_not_collide_with_the_first",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_restoring_over_the_same_id_keeps_the_archived_name",
+      "rust_test": "name_contract_cases::restoring_over_the_same_id_keeps_the_archived_name",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_a_name_based_command_after_a_clone_targets_one_profile",
+      "rust_test": "name_contract_cases::a_name_based_command_after_a_clone_targets_one_profile",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_importing_an_export_whose_name_is_taken_is_refused",
+      "rust_test": "name_contract_cases::importing_an_export_whose_name_is_taken_is_refused",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_reimporting_an_export_over_its_own_id_still_works",
+      "rust_test": "name_contract_cases::reimporting_an_export_over_its_own_id_still_works",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_name_contract.py::test_a_hand_made_archive_can_still_be_restored_into_an_empty_store",
+      "rust_test": "name_contract_cases::a_hand_made_archive_can_still_be_restored_into_an_empty_store",
+      "rust_file": "engine-rust/tests/source_domain/name_contract.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    }
+  ],
+  "source_hashes": {
+    "tests/test_align.py": "74b022ace5e7d860e714a7b3704b2506682cf6d6adb7ac3cb9f526d59260c5e6",
+    "tests/test_fingerprint.py": "1ade93d3d6f93698fb0baa6be5bdda96c7250fbaf55db367a189c6cb2fdb83f7",
+    "tests/test_flat_numeric_policy.py": "05e2d09485b4d773eb4f92464c17ee3fdb2af59a4251650c93834a5d7bd2cec2",
+    "tests/test_importers.py": "a156c4100b1b7ea6a378221c75d99eac3477333bd8bd307ba4fc5fac2ba4606f",
+    "tests/test_model_policy_coverage.py": "24d72858501ecc3e15c63ccfc6e48d3a8e4e08f3561842b5b65f42e4fd38fc95",
+    "tests/test_name_contract.py": "2e303647600ee796e5d80a45c70b2414d5d8393040104c6b9562b542d0f75aec",
+    "tests/test_write_contract_context.py": "d81056083d295e06bf9b5b159081c7d919378a1d53d7785f4cf09abbaee7ed4f",
+    "tests/test_write_contract_core.py": "ca15dad871898655c5cbef4f990658ef37da9a8b18914e9b62b34f1a1953bbef"
+  }
+}

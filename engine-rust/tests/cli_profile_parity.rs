@@ -1,45 +1,20 @@
 use numera_core::{
-    browser::adapter::Adapter,
     cli::{self, application::Application},
     storage::{config::ConfigStore, repo::ProfileRepo},
 };
 use serde_json::Value;
-use std::{collections::BTreeMap, path::Path, process::Command, time::Duration};
+use std::collections::BTreeMap;
+#[path = "cli_characterization/mod.rs"]
+mod cli_characterization;
 mod common;
 
 #[test]
 fn profile_command_services_match_original_payloads_and_verdicts()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("cli-profile-parity")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(python);
-    command.args(["-u","-c",r#"
-import json,os,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from cli_profile_cases import cases,human_cases
-from cli_fleet_output_cases import cases as fleet_cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(os.environ['FIXTURE_ROOT']),'human':human_cases(os.environ['FIXTURE_ROOT'])+fleet_cases(),'mutationHuman':cases(os.path.join(os.environ['FIXTURE_ROOT'],'mutation-human'),human=True)}}),flush=True)
-"#]).env("PYTHONUTF8","1").env("FIXTURE_ROOT",temporary.path().join("source"))
-        .env("PYTHONPATH",std::env::join_paths([repository.join("scripts/migration"),repository.join("engine")])?);
-    let mut source = Adapter::spawn(
-        temporary.path(),
-        "oracle",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = source.call(
-        "observe-profile-cli",
-        Default::default(),
-        Duration::from_secs(30),
-    )?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
+    let document =
+        cli_characterization::load("cli_profile_parity", &temporary.path().join("source"))?;
+
     let root = temporary.path().join("native");
     let repo = ProfileRepo::open(root.clone(), None, None)?;
     let config = ConfigStore::new(root.clone());

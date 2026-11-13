@@ -366,6 +366,8 @@ impl Pool<'_> {
             args.get("tag").and_then(Value::as_str),
             args.get("all") == Some(&Value::Bool(true)),
         );
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("after-profile-selection", &self.profiles.repo.root)?;
         if targets.is_empty() {
             return Ok(Outcome::failed("no profiles matched"));
         }

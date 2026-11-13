@@ -6,93 +6,13 @@ mod common;
 #[test]
 fn public_password_change_updates_only_the_successful_store_instance()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::{ownership::capture, storage::repo::ProfileRepo};
-    use std::{path::Path, process::Command, time::Duration};
+    use numera_core::storage::repo::ProfileRepo;
 
     let temporary = common::TempDirectory::new("vault-store-change")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import copy,json,os,sys
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-os.environ.pop('NUMERA_PASSWORD',None)
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import crypto
-from numera.store import ProfileStore
-from numera.vault import decrypt_for_read
-from run_logging import run_log
-fixtures=repository/'engine-rust/tests/fixtures'
-cases=json.loads((fixtures/'vault-rotate.json').read_text(encoding='utf-8'))['cases']
-profile=json.loads((fixtures/'repo.json').read_text(encoding='utf-8'))['cases'][0]['engine']
-observed=[]
-with run_log('vault-store-change-oracle',parent/'logs') as log:
-    for index,case in enumerate(cases):
-        root=parent/str(index);prior=None if index==0 else 'fixture-old-master'
-        store=ProfileStore(root,password=prior)
-        files=copy.deepcopy(case['files']);files['config.json']=case['config']
-        if index==0:
-            token=files['proxies.json'][0]['pass']
-            record=copy.deepcopy(profile);record['id']='a';record['future']=7
-            record['proxy']['password']=token
-            files['profiles/a.json']=record
-            files['dashboard/a.json']={'proxy':{'pass':token},'folder':'kept'}
-        for name,value in files.items():
-            path=root/name;path.parent.mkdir(parents=True,exist_ok=True)
-            path.write_text(json.dumps(value),encoding='utf-8')
-        session=root/'user-data'/'kept'/'session.bin';session.parent.mkdir(parents=True)
-        session.write_bytes(b'\x00\xff\r\n')
-        before={name:(root/name).read_bytes() for name in files}
-        try: count,error=store.change_vault_password(case['old_password'],case['password']),None
-        except (RuntimeError,ValueError) as exc: count,error=None,str(exc)
-        status={'enabled':store.vault_enabled(),'unlocked':store.unlocked()}
-        after={name:(root/name).read_bytes() for name in files}
-        disk={name:json.loads(raw) for name,raw in after.items()}
-        if count is not None:
-            descriptor=store.vault()
-            assert status=={'enabled':True,'unlocked':True}
-            assert crypto.check_password(case['password'],descriptor['salt'],descriptor['verifier'])
-            assert not crypto.check_password(case['old_password'],descriptor['salt'],descriptor['verifier'])
-            disk['config.json']['vault']={'authenticated':True}
-            for name,data in disk.items():
-                if name=='config.json':continue
-                rows=data if name=='proxies.json' else [data]
-                for row in rows:
-                    holder=row if name=='proxies.json' else row.get('proxy')
-                    key='password' if name.startswith('profiles/') else 'pass'
-                    if isinstance(holder,dict) and holder.get(key):
-                        assert holder[key].startswith('enc:v2:'),'Original rotation left plaintext'
-                        holder[key]=decrypt_for_read(store,holder[key])
-        else: assert after==before,'Original refused rotation changed bytes'
-        found=store.get('a');read=None if found is None else found.to_dict()
-        assert session.read_bytes()==b'\x00\xff\r\n'
-        observed.append({'files':files,'prior':prior,'old':case['old_password'],'new':case['password'],
-                         'count':count,'error':error,'status':status,'read':read,'disk':disk,
-                         'unchanged':{name:raw==after[name] for name,raw in before.items()},
-                         'journal':(root/'vault-migration.json').exists()})
-    log.info('Observed public password change cases=%s',len(observed))
-    print(json.dumps(observed,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("source"));
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(
-        original.exit, 0,
-        "Original public password change observer failed"
-    );
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/public_password_change_updates_only_the_successful_store_instance.json"
+    ))?;
     assert_eq!(cases.len(), 5);
     for (index, case) in cases.iter().enumerate() {
         let root = temporary.path().join(format!("native-change-{index}"));

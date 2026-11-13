@@ -41,6 +41,10 @@ impl TokenStore {
         self.root.join("tokens.json")
     }
     fn table(&self) -> (TokenState, Vec<Value>) {
+        #[cfg(feature = "test-support")]
+        if crate::vault::testing::event("json-read", &self.path()).is_err() {
+            return (TokenState::Unreadable, Vec::new());
+        }
         let bytes = match fs::read(self.path()) {
             Ok(bytes) => bytes,
             Err(error) if error.kind() == io::ErrorKind::NotFound => {

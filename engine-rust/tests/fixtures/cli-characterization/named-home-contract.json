@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "unix": {
+    "existing_named_user_matches_pwd_home": true,
+    "unknown_named_user_error": "Could not determine home directory.",
+    "backslash_is_username_character": true
+  },
+  "windows": [
+    {
+      "home": "C:\\Users\\alice",
+      "username": "alice",
+      "path": "~alice\\extension",
+      "expanded": "C:\\Users\\alice\\extension",
+      "error": null
+    },
+    {
+      "home": "C:\\Users\\alice",
+      "username": "alice",
+      "path": "~bob\\extension",
+      "expanded": "C:\\Users\\bob\\extension",
+      "error": null
+    },
+    {
+      "home": "D:\\Portable",
+      "username": "alice",
+      "path": "~bob\\extension",
+      "expanded": null,
+      "error": "Could not determine home directory."
+    },
+    {
+      "home": "C:\\Users\\alice",
+      "username": null,
+      "path": "~alice\\extension",
+      "expanded": null,
+      "error": "Could not determine home directory."
+    }
+  ]
+}

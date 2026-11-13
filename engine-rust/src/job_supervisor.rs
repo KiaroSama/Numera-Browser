@@ -166,7 +166,7 @@ pub fn await_gate(path: &Path) -> io::Result<()> {
 
 /// Internal entrypoint is selected before CLI parsing; it accepts no shell command.
 pub fn run_internal(path: &Path) -> io::Result<i32> {
-    if !cfg!(any(windows, target_os = "linux")) {
+    if !cfg!(any(windows, target_os = "linux", target_os = "macos")) {
         return Err(unsupported());
     }
     let (store, id, record) = record_location(path)?;
@@ -390,9 +390,18 @@ mod tests {
             profile: None,
             password: None,
         });
+        let error = result.expect_err("Invalid detach started");
         assert_eq!(
-            result.expect_err("Unsupported detach started").kind(),
-            io::ErrorKind::Unsupported
+            error.kind(),
+            if cfg!(target_os = "macos") {
+                io::ErrorKind::NotFound
+            } else {
+                io::ErrorKind::Unsupported
+            }
+        );
+        assert!(
+            !store.root.exists(),
+            "Rejected detach created its data root"
         );
     }
 

@@ -1,89 +1,16 @@
-use serde::{Deserialize, Serialize};
+pub use numera_xtask::artifact_identity::{BuildIdentity, hash};
+#[cfg(test)]
 use serde_json::Value;
-use sha2::{Digest, Sha256};
+#[cfg(test)]
+use std::io::Read;
 use std::{
-    env,
     error::Error,
     fs::{self, File, OpenOptions},
-    io::{Read, Write},
+    io::Write,
     path::Path,
     process::Command,
 };
 use zip::{CompressionMethod, System, ZipWriter, write::SimpleFileOptions};
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct BuildIdentity {
-    pub source_sha: String,
-    pub generation: u64,
-    pub platform: String,
-    pub architecture: String,
-}
-
-impl BuildIdentity {
-    pub fn from_environment() -> Result<Self, Box<dyn Error>> {
-        Self::parse(
-            &env::var("GITHUB_SHA")?,
-            &env::var("GITHUB_RUN_ID")?,
-            env::consts::OS,
-            env::consts::ARCH,
-        )
-    }
-
-    fn parse(source: &str, generation: &str, os: &str, arch: &str) -> Result<Self, Box<dyn Error>> {
-        if source.len() != 40
-            || !source
-                .bytes()
-                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-            || generation.is_empty()
-            || generation.len() > 16
-            || generation.starts_with('0')
-            || !generation.bytes().all(|b| b.is_ascii_digit())
-            || !["linux", "windows", "macos"].contains(&os)
-            || !["x86_64", "aarch64"].contains(&arch)
-        {
-            return Err("invalid candidate build identity".into());
-        }
-        Ok(Self {
-            source_sha: source.into(),
-            generation: generation.parse()?,
-            platform: os.into(),
-            architecture: arch.into(),
-        })
-    }
-
-    pub fn verify(&self, info: &Value) -> Result<(), Box<dyn Error>> {
-        if info["schema"] != 1
-            || info["owner"] != "KiaroSama"
-            || info["product"] != "Numera Browser"
-            || info["version"] != env!("CARGO_PKG_VERSION")
-            || info["source_sha"] != self.source_sha
-            || info["generation"] != self.generation
-            || info["application_runtime"] != "native-candidate"
-            || info["acceptance"] != true
-        {
-            return Err("compiled candidate identity differs from the packaging job".into());
-        }
-        Ok(())
-    }
-}
-
-fn hash(path: &Path) -> Result<String, Box<dyn Error>> {
-    let mut source = File::open(path)?;
-    let mut digest = Sha256::new();
-    let mut bytes = [0u8; 65536];
-    loop {
-        let read = source.read(&mut bytes)?;
-        if read == 0 {
-            break;
-        }
-        digest.update(&bytes[..read]);
-    }
-    Ok(digest
-        .finalize()
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect())
-}
 
 const NOTICE: &str = "Numera Browser native acceptance candidate\n\n\
 This archive is a CLI/HTTP/MCP acceptance executable, not a complete desktop\n\
@@ -214,6 +141,8 @@ mod tests {
     #[test]
     fn validates_canonical_source_generation_and_supported_platforms() -> Result<(), Box<dyn Error>>
     {
+        crate::product::tests::command_requires_explicit_resources_and_native_bundle_targets()?;
+        crate::product::tests::resource_paths_licenses_and_cloak_redistribution_fail_closed()?;
         let sha = "a".repeat(40);
         for os in ["linux", "windows", "macos"] {
             for arch in ["x86_64", "aarch64"] {
@@ -233,6 +162,8 @@ mod tests {
 
     #[test]
     fn mismatched_candidate_metadata_refuses_packaging() -> Result<(), Box<dyn Error>> {
+        crate::product::tests::product_identity_rejects_candidate_foreign_component_and_wrong_source()?;
+        crate::product::tests::dashboard_requires_matching_source_receipt_and_rust_wasm()?;
         let identity = BuildIdentity::parse(&"a".repeat(40), "42", "linux", "x86_64")?;
         let info = serde_json::json!({"schema":1,"owner":"KiaroSama","product":"Numera Browser",
             "version":env!("CARGO_PKG_VERSION"),"source_sha":identity.source_sha,"generation":42,
@@ -260,6 +191,8 @@ mod tests {
 
     #[test]
     fn archives_exact_source_bytes_and_refuses_existing_outputs() -> Result<(), Box<dyn Error>> {
+        crate::product::tests::native_layout_archives_exact_binaries_wasm_licenses_sources_and_unsigned_provenance()?;
+        crate::product::tests::provisioned_resources_are_exact_hashed_complete_and_platform_specific()?;
         let temporary = TestRoot::new()?;
         let root = &temporary.0;
         fs::create_dir(root.join("docs"))?;
@@ -379,6 +312,9 @@ mod tests {
 
     #[test]
     fn failed_packaging_removes_only_its_new_directory() -> Result<(), Box<dyn Error>> {
+        crate::product::tests::exact_source_refuses_wrong_sha_dirty_inputs_untracked_files_and_private_paths()?;
+        #[cfg(unix)]
+        crate::product::tests::resource_links_are_rejected_before_copying_even_with_a_matching_receipt()?;
         let temporary = TestRoot::new()?;
         let output = temporary.0.join("failed");
         let executable = temporary.0.join("binary");

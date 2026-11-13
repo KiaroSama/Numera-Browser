@@ -22,6 +22,8 @@ use std::{
 };
 
 fn read_text(path: &Path) -> io::Result<String> {
+    #[cfg(feature = "test-support")]
+    crate::vault::testing::event("json-read", path)?;
     fs::read_to_string(path).map_err(|error| {
         if error.kind() == io::ErrorKind::InvalidData {
             io::Error::new(
@@ -56,7 +58,7 @@ impl DashboardStore {
             }
             Err(error) => return Err(error.into()),
         };
-        Ok(serde_json::from_str(&text).unwrap_or_else(|_| serde_json::json!({})))
+        Ok(crate::http::json_extended::parse(&text).unwrap_or_else(|_| serde_json::json!({})))
     }
     pub fn set_meta(&self, metadata: Value) -> Result<Value, RepoError> {
         let path = self.root.join("dashboard-config.json");
@@ -90,7 +92,7 @@ impl DashboardStore {
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
             Err(error) => return Err(error.into()),
         };
-        let record = serde_json::from_str(&text).map_err(|_| {
+        let record = crate::http::json_extended::parse(&text).map_err(|_| {
             RepoError::InvalidRecord("Stored dashboard profile cannot be decoded".into())
         })?;
         self.decrypted(record).map(Some)
@@ -119,7 +121,7 @@ impl DashboardStore {
         let mut records = Vec::new();
         for path in paths {
             if super::paths::json_filename(&path)
-                && let Ok(record) = serde_json::from_str::<Value>(&read_text(&path)?)
+                && let Ok(record) = crate::http::json_extended::parse(&read_text(&path)?)
             {
                 records.push(self.decrypted(record)?);
             }
@@ -223,6 +225,9 @@ impl DashboardStore {
                 problems.join("; ")
             )));
         }
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("before-dashboard-conversion", &self.repo.path(&id, "dashboard")?)
+            .map_err(|error| RepoError::UnconvertibleProfile(format!("profile {id} cannot be converted for the engine, so neither copy was written: {error}")))?;
         let profile=conversion::to_engine(&record,now).map_err(|error|RepoError::UnconvertibleProfile(format!("profile {id} cannot be converted for the engine, so neither copy was written: {error}")))?;
         // Mirroring reaches the engine secret gate even when no credential was supplied.
         self.repo.vault()?;

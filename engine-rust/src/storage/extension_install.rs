@@ -25,7 +25,10 @@ fn regular_directory(path: &Path) -> io::Result<bool> {
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(false),
         Err(error) => return Err(error),
     };
-    if !metadata.is_dir() || metadata.file_type().is_symlink() {
+    if metadata.file_type().is_symlink() {
+        return Err(io::Error::other("Extension target must not be linked"));
+    }
+    if !metadata.is_dir() {
         return Err(io::Error::other(
             "Extension target must be a regular directory",
         ));
@@ -35,7 +38,7 @@ fn regular_directory(path: &Path) -> io::Result<bool> {
         use std::os::windows::fs::MetadataExt;
         if metadata.file_attributes() & 0x400 != 0 {
             return Err(io::Error::other(
-                "Extension target must not be a reparse point",
+                "Extension target must not be linked (a reparse point)",
             ));
         }
     }

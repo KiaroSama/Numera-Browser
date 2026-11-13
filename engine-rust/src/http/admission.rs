@@ -27,6 +27,7 @@ async fn admit(State(root): State<PathBuf>, request: Request, next: Next) -> Res
     if request.method() == "OPTIONS"
         || !path.starts_with("/api/")
         || path.trim_end_matches('/') == "/api/ready"
+        || super::update_routes::private_path(path)
         || stop_profile
     {
         return next.run(request).await;
@@ -50,9 +51,17 @@ where
     R: Send + 'static,
 {
     let owner = REQUEST_OWNER.try_with(Arc::clone).ok();
-    tokio::task::spawn_blocking(move || match owner {
-        Some(owner) => REQUEST_OWNER.sync_scope(owner, operation),
-        None => operation(),
+    #[cfg(feature = "test-support")]
+    let observer = crate::vault::testing::capture();
+    tokio::task::spawn_blocking(move || {
+        let operation = || match owner {
+            Some(owner) => REQUEST_OWNER.sync_scope(owner, operation),
+            None => operation(),
+        };
+        #[cfg(feature = "test-support")]
+        return crate::vault::testing::with_context(observer, operation);
+        #[cfg(not(feature = "test-support"))]
+        operation()
     })
 }
 

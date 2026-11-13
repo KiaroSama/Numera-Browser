@@ -1,0 +1,16 @@
+[
+  {
+    "op": "path-root",
+    "mode": "relative",
+    "absolute": true,
+    "same": false,
+    "directory": true
+  },
+  {
+    "op": "path-root",
+    "mode": "alias",
+    "absolute": true,
+    "same": false,
+    "directory": true
+  }
+]

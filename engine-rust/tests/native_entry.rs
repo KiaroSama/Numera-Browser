@@ -8,6 +8,13 @@ use std::{
     sync::{Arc, atomic::AtomicBool},
 };
 mod common;
+#[allow(dead_code)]
+#[path = "common/http_fixture.rs"]
+mod http_fixture;
+use numera_core as core;
+#[allow(dead_code)]
+#[path = "common/browser_fixture.rs"]
+mod fixture;
 
 #[test]
 fn entry_logs_follow_original_data_root_and_preserve_explicit_override()
@@ -39,68 +46,46 @@ fn entry_logs_follow_original_data_root_and_preserve_explicit_override()
         return Ok(());
     }
     let temporary = common::TempDirectory::new("entry log roots α")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command
-        .args([
-            "-I", "-B", "-c",
-            r#"
-import json,os,sys
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import logs,paths
-rows=[]
-for name in ('explicit','environment','portable','home','legacy','override','relative','empty-override','unavailable'):
-    base=parent/name
-    app,home,cwd=(base/part for part in ('app','home','cwd'))
-    for path in (app,home,cwd):path.mkdir(parents=True)
-    paths.app_dir=lambda:app
-    os.environ['HOME']=os.environ['USERPROFILE']=str(home)
-    os.environ.pop('NUMERA_DATA_DIR',None)
-    explicit=str(base/'selected data') if name not in ('environment','portable','home','legacy') else None
-    inherited=str(base/'environment data') if name in ('explicit','environment') else None
-    if inherited is not None:os.environ['NUMERA_DATA_DIR']=inherited
-    if name in ('home','legacy'):(app/'data').write_bytes(b'read-only layout stand-in')
-    if name=='legacy':(home/'.persona').mkdir()
-    root=paths.resolve_data_dir(explicit)
-    override={'override':str(base/'separate logs'),'relative':'relative logs','empty-override':''}.get(name)
-    directory=logs.log_dir(root) if override is None else Path(override)
-    if not directory.is_absolute():directory=cwd/directory
-    if name=='unavailable':
-        directory.parent.mkdir(parents=True,exist_ok=True)
-        directory.write_bytes(b'retained log blocker')
-    argv=['list','--json'] if explicit is None else ['--data-dir',explicit,'list','--json']
-    row=dict(name=name,app=str(app),home=str(home),cwd=str(cwd),root=str(root),logs=str(directory),override=override,inherited=inherited,argv=argv)
-    record=base/'case.json'
-    record.write_text(json.dumps(row),encoding='utf-8')
-    row['record']=str(record)
-    rows.append(row)
-print(json.dumps(rows,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .arg(temporary.path())
-        .env("PYTHONUTF8", "1");
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(10),
-            idle: Duration::from_secs(10),
-            bytes: 65536,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(original.exit, 0, "Original log directory observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/entry_logs_follow_original_data_root_and_preserve_explicit_override.json"
+    ))?;
     assert_eq!(cases.len(), 9, "Log directory observations missing");
-    for case in cases {
+    for mut case in cases {
+        let observed_root = Path::new(
+            case["app"]
+                .as_str()
+                .ok_or("Observed application root missing")?,
+        )
+        .parent()
+        .and_then(Path::parent)
+        .ok_or("Observed temporary root missing")?
+        .to_string_lossy()
+        .into_owned();
+        http_fixture::rebase(&mut case, &observed_root, temporary.path())?;
+        for key in ["app", "home", "cwd"] {
+            fs::create_dir_all(case[key].as_str().ok_or("Fixture directory missing")?)?;
+        }
+        if matches!(case["name"].as_str(), Some("home" | "legacy")) {
+            fs::write(
+                Path::new(case["app"].as_str().ok_or("App missing")?).join("data"),
+                b"read-only layout stand-in",
+            )?;
+        }
+        if case["name"] == "legacy" {
+            fs::create_dir(
+                Path::new(case["home"].as_str().ok_or("Home missing")?).join(".persona"),
+            )?;
+        }
+        if case["name"] == "unavailable" {
+            let path = Path::new(case["logs"].as_str().ok_or("Log path missing")?);
+            fs::create_dir_all(path.parent().ok_or("Log parent missing")?)?;
+            fs::write(path, b"retained log blocker")?;
+        }
+        fs::write(
+            case["record"].as_str().ok_or("Record path missing")?,
+            serde_json::to_vec(&case)?,
+        )?;
         let mut child = Command::new(std::env::current_exe()?);
         child
             .args([
@@ -117,7 +102,10 @@ print(json.dumps(rows,ensure_ascii=True))
             .env("NUMERA_APP_DIR", case["app"].as_str().ok_or("App missing")?)
             .env("HOME", case["home"].as_str().ok_or("Home missing")?)
             .env("USERPROFILE", case["home"].as_str().ok_or("Home missing")?)
-            .env("NUMERA_BROWSER_ADAPTER", temporary.path().join("absent.py"))
+            .env(
+                "NUMERA_BROWSER_ADAPTER",
+                temporary.path().join("absent-sdk"),
+            )
             .env("NUMERA_PASSWORD", "private-fixture-sentinel")
             .env_remove("NUMERA_NATIVE_SUPERVISE")
             .env_remove("NUMERA_NATIVE_JOB_GATE")
@@ -172,7 +160,7 @@ fn browser_dispatch_uses_actual_handshake_without_redundant_metadata()
         "id":"fixture","name":"Fixture","engine":"playwright","fingerprint":fixture["cases"][0]["input"]
     }))?;
     ProfileRepo::new(root.into(), None).save(profile, 1000.0)?;
-    let adapter = root.join("sdk.py");
+    let adapter_path = root.join("sdk");
     let log = RuntimeLog::new(&root.join("logs"), "native-entry-test");
     for (installed, packaged, command) in [
         (true, false, "cookies"),
@@ -186,26 +174,10 @@ fn browser_dispatch_uses_actual_handshake_without_redundant_metadata()
             fs::create_dir_all(app.join("browsers"))?;
             fs::write(app.join("browsers/marker"), b"packaged resource discovery")?;
         }
-        fs::write(
-            &adapter,
-            format!(
-                r#"
-import json,sys
-def available():
- raise RuntimeError('Redundant metadata preflight')
-if __name__=='__main__':
- for line in sys.stdin:
-  request=json.loads(line);op=request['operation']
-  if op=='hello':result={{'backends':{{'playwright':{{'installed':{installed}}}}}}}
-  elif op=='open':result={{'opened':True,'backend':'playwright'}}
-  elif op=='cookies-read':result={{'cookies':[]}}
-  elif op=='close':result={{'closing':True}}
-  else:raise RuntimeError('Unexpected SDK operation')
-  print(json.dumps({{'protocol':1,'id':request['id'],'ok':True,'result':result}}),flush=True)
-  if op=='close':break
-"#,
-                installed = if installed { "True" } else { "False" }
-            ),
+        let adapter = fixture::executable(
+            &adapter_path,
+            "rpc",
+            json!({"metadata":{"backends":{"playwright":{"installed":installed}}},"metadata_failure":true}),
         )?;
         let environment = Environment {
             app: app.clone(),
@@ -213,9 +185,6 @@ if __name__=='__main__':
             cwd: root.into(),
             host: "fixture-host".into(),
             browser: Runtime {
-                python: std::env::var_os("NUMERA_ORACLE_PYTHON")
-                    .ok_or("Fixture interpreter required")?
-                    .into(),
                 adapter: adapter.clone(),
                 cwd: root.into(),
                 home: root.into(),
@@ -302,9 +271,10 @@ fn entry_dispatch_reads_real_store_and_preserves_structured_refusals()
         "id":"fixture","name":"Fixture","engine":"playwright","fingerprint":fixture["cases"][0]["input"]
     }))?;
     numera_core::storage::repo::ProfileRepo::new(root.clone(), None).save(profile, 1000.0)?;
-    fs::write(
-        root.join("broken-adapter.py"),
-        "raise AssertionError('Store command must not discover browser SDK')\n",
+    let broken_adapter = fixture::executable(
+        &root.join("broken-adapter"),
+        "rpc",
+        serde_json::json!({"reject":true}),
     )?;
     let log = RuntimeLog::new(&root.join("logs"), "native-entry-test");
     let environment = || Environment {
@@ -313,10 +283,7 @@ fn entry_dispatch_reads_real_store_and_preserves_structured_refusals()
         cwd: root.clone(),
         host: "fixture-host".into(),
         browser: Runtime {
-            python: std::env::var_os("NUMERA_ORACLE_PYTHON")
-                .expect("Fixture interpreter required")
-                .into(),
-            adapter: root.join("broken-adapter.py"),
+            adapter: broken_adapter.clone(),
             cwd: root.clone(),
             home: root.clone(),
             logs: root.join("logs"),

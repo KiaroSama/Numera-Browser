@@ -1,0 +1,458 @@
+{
+  "schema": 1,
+  "suite": "native_storage_vault_retirement",
+  "baseline": "docs/rust-test-baseline.json",
+  "already_counted_in_native_294": true,
+  "new_reported_cases": 0,
+  "count": 31,
+  "first_run_count": 11,
+  "vault_count": 20,
+  "case_types": {
+    "standard": 31
+  },
+  "native_only": true,
+  "verification": {
+    "status": "passed",
+    "reported_tests": 31,
+    "ignored": 0,
+    "test_log": "/tmp/native-storage-vault-retirement-final.log",
+    "independent_reader_final_log": "/tmp/vault-native-reader-optimized-final.log",
+    "strict_clippy_log": "/tmp/native-storage-vault-retirement-clippy-final.log",
+    "cargo_locked": true,
+    "runtime_python": false
+  },
+  "fixture_sha256": {
+    "engine-rust/tests/fixtures/characterization/complete_first_run_summaries_match_original_paths_and_copy_results.json": "d4f5f5911fd0f0d3d40c7982dad4b17c396af35e6dec4b480a80cce0ed2c1e90",
+    "engine-rust/tests/fixtures/characterization/legacy_discovery_preserves_original_order_and_never_marks_denied_sources_complete.json": "eebacc475825293ded7393b4af3726576c30ce9590e882e07c38095ae3950df5",
+    "engine-rust/tests/fixtures/characterization/imported_new_directories_preserve_original_metadata_without_replacing_existing_modes.json": "6dece528adae2db5304616e8cc24c2f7686d4811da04c1acf02c1e78e44b3336",
+    "engine-rust/tests/fixtures/first-run.json": "df3ca6ca1ea59d66121cf94ad67271f4f444a1b540d09b82233711603d0108c6",
+    "engine-rust/tests/fixtures/characterization/new_subtrees_preserve_original_nested_lock_entries.json": "e46e50ef0840637f15f753036a93e1fac2d52e283796d879d87c3814267b4771",
+    "engine-rust/tests/fixtures/characterization/fifo_import_matches_original_refusal_continuation_and_retry.json": "1297cc7ccbd905718cfeea6e5b10a2c7501cda0e526fca28357f609bd437bbd7",
+    "engine-rust/tests/fixtures/characterization/new_subtree_errors_match_original_continuation_summaries_and_retry.json": "47fc3ba87e4ecf1ce49a39eaaa759696a94f8c2527bb6c83db01f8e915696771",
+    "engine-rust/tests/fixtures/characterization/advisory_profile_count_matches_original_when_destination_scan_is_denied.json": "6d3c4c1cd8ef602e6cbee4223a81f5d710b09f0331ee44070ca6f3121a9a1039",
+    "engine-rust/tests/fixtures/characterization/envelope_classification_matches_original_unicode_and_prefix_contracts.json": "363a0e0f055b4309c3acd4f817dadef67eb781348583ed5523fe4e363e737980",
+    "engine-rust/tests/fixtures/characterization/crypto_text_admission_matches_original_and_new_tokens_reopen_there.json": "322d7785663c8226e0298f717afd21ba0f9cfa7c1da00bf904343cbdb340eb30",
+    "engine-rust/tests/fixtures/vault.json": "d2a5e2142e25befe06458b123e4c236f4b19439c92bca1f2dbd126103df208f7",
+    "engine-rust/tests/fixtures/characterization/recovery_error_data_matches_original_without_parsing_messages.json": "69f0ef995f9f9213bf4dc791fa4639b92f9fab8a55716b2e93ddd24098898445",
+    "engine-rust/tests/fixtures/characterization/public_vault_status_matches_original_without_mutating_settings.json": "86967507747cc86dcacc466ee16a2bb01c7f83eac1c931a6ea1154435fc85312",
+    "engine-rust/tests/fixtures/characterization/public_enable_preserves_instance_state_and_every_secret_site.json": "199a3303b6bf7b2b9f0a0844331f954af6f30d87f307d292c39ca67b2527cd21",
+    "engine-rust/tests/fixtures/vault-enable.json": "77269aa4e3f7c65795078f521819f7adc9be0047c18046ca89f2c488d6dcb3ba",
+    "engine-rust/tests/fixtures/characterization/public_password_change_updates_only_the_successful_store_instance.json": "379a29699b70f9b4634f9271daa162caefec24ac3073734ab6d32caeec26e530",
+    "engine-rust/tests/fixtures/vault-rotate.json": "59b59e93dd4d9d1c6e7e7b353de439ea7c7de011699b05a69d7177806e47fe5a",
+    "engine-rust/tests/fixtures/characterization/unreadable_active_config_preserves_original_recovery_causes_and_bytes.json": "df9fb0d7b199aa85522fab7361d16dd601c4c902c3857113380a56b9169fbada",
+    "engine-rust/tests/fixtures/recovery.json": "65b0a8b8a0c79102b21c30194be57975ec4f1747571a9633ce0837f6cd984455",
+    "engine-rust/tests/fixtures/characterization/public_resume_returns_the_authenticated_store_or_preserves_recovery_evidence.json": "ed587dbfc1b8fbcf31ac64244c148f1eeb902e985b8cfa1c9499400c18a3efbf",
+    "engine-rust/tests/fixtures/characterization/committed_rotation_metadata_matches_original_without_rewriting_generation.json": "8454f05828b57a6ceb9248ece9e1e69bdfba4b8a6381b819c831c3f6e0552c4d",
+    "engine-rust/tests/fixtures/rotation-recovery.json": "3bb7cc155efbafe65e5330c9a78465d7d8f12298148f4cd744c94787a624aeaf",
+    "engine-rust/tests/fixtures/characterization/completion_diagnostics_match_original_distinct_paths_and_readable_holders.json": "d8dfac848214d6ea895e6a49e8e6bca6bb2b0c0611d36bce94235ae78d232340",
+    "engine-rust/tests/fixtures/completion.json": "c78352844c5f478d27df0feb9e066645b1e06fac28027aca4f725cb01f07bf97",
+    "engine-rust/tests/fixtures/characterization/journal_descriptor_boundaries_match_original_without_repairing_evidence.json": "84692dadcb625fe94f52f07aefc5d92d3bce1961098ec9e440809fc534cfee07",
+    "engine-rust/tests/fixtures/journal.json": "7f582d7343c7369721686e52bd51f34e1ca944ebd44bffeeb5b08348f36a4d90",
+    "engine-rust/tests/fixtures/characterization/denied_store_directories_match_original_actionable_errors_and_preserve_state.json": "b1a1630021a1251c8d4e57df55f73ffef8359e26b83716aafa21bc037c738ec5",
+    "engine-rust/tests/fixtures/models.json": "8c4f8bf4d34d6a2d3ca52067df7edbe9c714665705f20a453bff6d6ca0223440"
+  },
+  "native_helpers": [
+    "engine-rust/tests/first_run_parity/support.rs",
+    "engine-rust/tests/vault_parity/token_reader.rs"
+  ],
+  "preserved_contracts": [
+    "All 31 existing Rust test identities, platform cfgs, fixture matrix sizes, domain assertions and filesystem effects remain. These cases remain part of the preexisting 294 native cases and add no source3418 IDs.",
+    "Pure source observations use the immutable existing characterization files. The global characterization manifest and data are not edited by this retirement.",
+    "First-run source roots in expected summaries, errors and writer-created marker bytes are rebased into newly owned temporary roots. Relative input identities, binary payloads, diagnostic ordering and summary fields remain exact. Local path separators and writer marker line endings retain their original platform policy.",
+    "Native preparation creates real Unix FIFOs, non-Unicode filenames, read-denied directories/files and ordinary binary files. Owned native subprocess captures retain the original hang/refusal/continuation/retry assertions. Source byte preservation and completed-marker policy remain independently asserted.",
+    "Linux metadata cases prepare exact modes/timestamps/xattrs natively and inspect full source/destination snapshots. Direct copy observes post-read atime, copytree preserves its pre-read snapshot, and existing destinations retain their metadata. The immutable source _merge_dir uses mkdir for the top-level merge container; its expected default attributes come from a separate owned directory control rather than importer output.",
+    "Store-open diagnostics still compare the entire source message. The historical root and captured uid/gid tuple are replaced by the corresponding prepared path/owner/current process observations. PermissionDenied and the exact native raw cause are checked against an independent denied kernel operation; POSIX additionally retains the frozen errno check.",
+    "Fresh native Fernet-v2 tokens are authenticated in a separate compiled Rust executable that links neither numera_core nor fernet. It independently derives the key and checks framing, HMAC-SHA256, AES-CBC/PKCS7 padding, and every plaintext before the original four-row readback assertion. Frozen original ciphertext/error interoperability assertions remain unchanged.",
+    "No Python runtime, shell oracle, ignored test, runtime expected-value oracle, broad duplicated runner, or count-only test remains in these assigned targets. Windows permission setup retains the original bounded owned icacls operation."
+  ],
+  "cases": [
+    {
+      "rust_target": "first_run_parity",
+      "rust_test": "complete_first_run_summaries_match_original_paths_and_copy_results",
+      "rust_file": "engine-rust/tests/first_run_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/complete_first_run_summaries_match_original_paths_and_copy_results.json",
+        "engine-rust/tests/fixtures/characterization/legacy_discovery_preserves_original_order_and_never_marks_denied_sources_complete.json",
+        "engine-rust/tests/fixtures/characterization/imported_new_directories_preserve_original_metadata_without_replacing_existing_modes.json",
+        "engine-rust/tests/fixtures/first-run.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "first_run_parity",
+      "rust_test": "legacy_discovery_preserves_original_order_and_never_marks_denied_sources_complete",
+      "rust_file": "engine-rust/tests/first_run_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/complete_first_run_summaries_match_original_paths_and_copy_results.json",
+        "engine-rust/tests/fixtures/characterization/legacy_discovery_preserves_original_order_and_never_marks_denied_sources_complete.json",
+        "engine-rust/tests/fixtures/characterization/imported_new_directories_preserve_original_metadata_without_replacing_existing_modes.json",
+        "engine-rust/tests/fixtures/first-run.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "first_run_parity",
+      "rust_test": "imported_new_directories_preserve_original_metadata_without_replacing_existing_modes",
+      "rust_file": "engine-rust/tests/first_run_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/complete_first_run_summaries_match_original_paths_and_copy_results.json",
+        "engine-rust/tests/fixtures/characterization/legacy_discovery_preserves_original_order_and_never_marks_denied_sources_complete.json",
+        "engine-rust/tests/fixtures/characterization/imported_new_directories_preserve_original_metadata_without_replacing_existing_modes.json",
+        "engine-rust/tests/fixtures/first-run.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "first_run_parity",
+      "rust_test": "first_run_copies_without_overwriting_and_never_marks_failed_work_complete",
+      "rust_file": "engine-rust/tests/first_run_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/complete_first_run_summaries_match_original_paths_and_copy_results.json",
+        "engine-rust/tests/fixtures/characterization/legacy_discovery_preserves_original_order_and_never_marks_denied_sources_complete.json",
+        "engine-rust/tests/fixtures/characterization/imported_new_directories_preserve_original_metadata_without_replacing_existing_modes.json",
+        "engine-rust/tests/fixtures/first-run.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "first_run_parity",
+      "rust_test": "nested_copy::new_subtrees_preserve_original_nested_lock_entries",
+      "rust_file": "engine-rust/tests/first_run_parity/nested_copy.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/new_subtrees_preserve_original_nested_lock_entries.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "first_run_failure",
+      "rust_test": "fifo_import_matches_original_refusal_continuation_and_retry",
+      "rust_file": "engine-rust/tests/first_run_failure.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/fifo_import_matches_original_refusal_continuation_and_retry.json"
+      ],
+      "platform": "Unix, preserving original cfg"
+    },
+    {
+      "rust_target": "first_run_failure",
+      "rust_test": "failed_first_run_remains_retryable_and_never_overwrites_the_obstruction",
+      "rust_file": "engine-rust/tests/first_run_failure.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/fifo_import_matches_original_refusal_continuation_and_retry.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "first_run_failure",
+      "rust_test": "copytree_errors::new_subtree_errors_match_original_continuation_summaries_and_retry",
+      "rust_file": "engine-rust/tests/first_run_failure/copytree_errors.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/new_subtree_errors_match_original_continuation_summaries_and_retry.json"
+      ],
+      "platform": "Unix, preserving original cfg"
+    },
+    {
+      "rust_target": "first_run_failure",
+      "rust_test": "profile_count::advisory_profile_count_matches_original_when_destination_scan_is_denied",
+      "rust_file": "engine-rust/tests/first_run_failure/profile_count.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/advisory_profile_count_matches_original_when_destination_scan_is_denied.json"
+      ],
+      "platform": "Unix, preserving original cfg"
+    },
+    {
+      "rust_target": "first_run_metadata_parity",
+      "rust_test": "direct_copy_access_times_match_original_without_changing_copytree_snapshots",
+      "rust_file": "engine-rust/tests/first_run_metadata_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [],
+      "platform": "Linux, preserving original target cfg"
+    },
+    {
+      "rust_target": "first_run_metadata_parity",
+      "rust_test": "imported_attributes_match_original_without_replacing_destination_metadata",
+      "rust_file": "engine-rust/tests/first_run_metadata_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [],
+      "platform": "Linux, preserving original target cfg"
+    },
+    {
+      "rust_target": "vault_parity",
+      "rust_test": "envelope_classification_matches_original_unicode_and_prefix_contracts",
+      "rust_file": "engine-rust/tests/vault_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/envelope_classification_matches_original_unicode_and_prefix_contracts.json",
+        "engine-rust/tests/fixtures/characterization/crypto_text_admission_matches_original_and_new_tokens_reopen_there.json",
+        "engine-rust/tests/fixtures/vault.json",
+        "engine-rust/tests/fixtures/vault.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "vault_parity",
+      "rust_test": "crypto_text_admission_matches_original_and_new_tokens_reopen_there",
+      "rust_file": "engine-rust/tests/vault_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/envelope_classification_matches_original_unicode_and_prefix_contracts.json",
+        "engine-rust/tests/fixtures/characterization/crypto_text_admission_matches_original_and_new_tokens_reopen_there.json",
+        "engine-rust/tests/fixtures/vault.json",
+        "engine-rust/tests/fixtures/vault.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "vault_parity",
+      "rust_test": "original_ciphertext_and_errors_are_interoperable",
+      "rust_file": "engine-rust/tests/vault_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/envelope_classification_matches_original_unicode_and_prefix_contracts.json",
+        "engine-rust/tests/fixtures/characterization/crypto_text_admission_matches_original_and_new_tokens_reopen_there.json",
+        "engine-rust/tests/fixtures/vault.json",
+        "engine-rust/tests/fixtures/vault.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "vault_enable_parity",
+      "rust_test": "recovery_error_data_matches_original_without_parsing_messages",
+      "rust_file": "engine-rust/tests/vault_enable_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/recovery_error_data_matches_original_without_parsing_messages.json",
+        "engine-rust/tests/fixtures/characterization/public_vault_status_matches_original_without_mutating_settings.json",
+        "engine-rust/tests/fixtures/characterization/public_enable_preserves_instance_state_and_every_secret_site.json",
+        "engine-rust/tests/fixtures/vault-enable.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "vault_enable_parity",
+      "rust_test": "public_vault_status_matches_original_without_mutating_settings",
+      "rust_file": "engine-rust/tests/vault_enable_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/recovery_error_data_matches_original_without_parsing_messages.json",
+        "engine-rust/tests/fixtures/characterization/public_vault_status_matches_original_without_mutating_settings.json",
+        "engine-rust/tests/fixtures/characterization/public_enable_preserves_instance_state_and_every_secret_site.json",
+        "engine-rust/tests/fixtures/vault-enable.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "vault_enable_parity",
+      "rust_test": "public_enable_preserves_instance_state_and_every_secret_site",
+      "rust_file": "engine-rust/tests/vault_enable_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/recovery_error_data_matches_original_without_parsing_messages.json",
+        "engine-rust/tests/fixtures/characterization/public_vault_status_matches_original_without_mutating_settings.json",
+        "engine-rust/tests/fixtures/characterization/public_enable_preserves_instance_state_and_every_secret_site.json",
+        "engine-rust/tests/fixtures/vault-enable.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "vault_enable_parity",
+      "rust_test": "ordinary_enable_is_all_or_nothing_and_authenticates_every_secret_site",
+      "rust_file": "engine-rust/tests/vault_enable_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/recovery_error_data_matches_original_without_parsing_messages.json",
+        "engine-rust/tests/fixtures/characterization/public_vault_status_matches_original_without_mutating_settings.json",
+        "engine-rust/tests/fixtures/characterization/public_enable_preserves_instance_state_and_every_secret_site.json",
+        "engine-rust/tests/fixtures/vault-enable.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "vault_rotate_parity",
+      "rust_test": "public_password_change_updates_only_the_successful_store_instance",
+      "rust_file": "engine-rust/tests/vault_rotate_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/public_password_change_updates_only_the_successful_store_instance.json",
+        "engine-rust/tests/fixtures/vault-rotate.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "vault_rotate_parity",
+      "rust_test": "master_password_rotation_keeps_the_old_generation_on_every_refusal",
+      "rust_file": "engine-rust/tests/vault_rotate_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/public_password_change_updates_only_the_successful_store_instance.json",
+        "engine-rust/tests/fixtures/vault-rotate.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "recovery_parity",
+      "rust_test": "unreadable_active_config_preserves_original_recovery_causes_and_bytes",
+      "rust_file": "engine-rust/tests/recovery_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/unreadable_active_config_preserves_original_recovery_causes_and_bytes.json",
+        "engine-rust/tests/fixtures/recovery.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "recovery_parity",
+      "rust_test": "interrupted_enable_is_authenticated_or_refused_without_losing_evidence",
+      "rust_file": "engine-rust/tests/recovery_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/unreadable_active_config_preserves_original_recovery_causes_and_bytes.json",
+        "engine-rust/tests/fixtures/recovery.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "rotation_recovery_parity",
+      "rust_test": "public_resume_returns_the_authenticated_store_or_preserves_recovery_evidence",
+      "rust_file": "engine-rust/tests/rotation_recovery_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/public_resume_returns_the_authenticated_store_or_preserves_recovery_evidence.json",
+        "engine-rust/tests/fixtures/characterization/committed_rotation_metadata_matches_original_without_rewriting_generation.json",
+        "engine-rust/tests/fixtures/rotation-recovery.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "rotation_recovery_parity",
+      "rust_test": "committed_rotation_metadata_matches_original_without_rewriting_generation",
+      "rust_file": "engine-rust/tests/rotation_recovery_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/public_resume_returns_the_authenticated_store_or_preserves_recovery_evidence.json",
+        "engine-rust/tests/fixtures/characterization/committed_rotation_metadata_matches_original_without_rewriting_generation.json",
+        "engine-rust/tests/fixtures/rotation-recovery.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "rotation_recovery_parity",
+      "rust_test": "interrupted_rotation_authenticates_both_keys_or_retains_its_journal",
+      "rust_file": "engine-rust/tests/rotation_recovery_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/public_resume_returns_the_authenticated_store_or_preserves_recovery_evidence.json",
+        "engine-rust/tests/fixtures/characterization/committed_rotation_metadata_matches_original_without_rewriting_generation.json",
+        "engine-rust/tests/fixtures/rotation-recovery.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "completion_parity",
+      "rust_test": "completion_diagnostics_match_original_distinct_paths_and_readable_holders",
+      "rust_file": "engine-rust/tests/completion_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/completion_diagnostics_match_original_distinct_paths_and_readable_holders.json",
+        "engine-rust/tests/fixtures/completion.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "completion_parity",
+      "rust_test": "only_authenticated_readable_generation_can_complete_vault",
+      "rust_file": "engine-rust/tests/completion_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/completion_diagnostics_match_original_distinct_paths_and_readable_holders.json",
+        "engine-rust/tests/fixtures/completion.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "journal_parity",
+      "rust_test": "journal_descriptor_boundaries_match_original_without_repairing_evidence",
+      "rust_file": "engine-rust/tests/journal_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/journal_descriptor_boundaries_match_original_without_repairing_evidence.json",
+        "engine-rust/tests/fixtures/journal.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "journal_parity",
+      "rust_test": "journal_classification_retains_uncertainty_and_original_bytes",
+      "rust_file": "engine-rust/tests/journal_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/journal_descriptor_boundaries_match_original_without_repairing_evidence.json",
+        "engine-rust/tests/fixtures/journal.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "store_open_parity",
+      "rust_test": "denied_store_directories_match_original_actionable_errors_and_preserve_state",
+      "rust_file": "engine-rust/tests/store_open_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/denied_store_directories_match_original_actionable_errors_and_preserve_state.json",
+        "engine-rust/tests/fixtures/recovery.json",
+        "engine-rust/tests/fixtures/models.json"
+      ],
+      "platform": "original target platforms"
+    },
+    {
+      "rust_target": "store_open_parity",
+      "rust_test": "opening_a_store_recovers_before_exposing_credentials_and_refuses_late_damage",
+      "rust_file": "engine-rust/tests/store_open_parity.rs",
+      "already_in_native_baseline": true,
+      "type": "standard",
+      "fixtures": [
+        "engine-rust/tests/fixtures/characterization/denied_store_directories_match_original_actionable_errors_and_preserve_state.json",
+        "engine-rust/tests/fixtures/recovery.json",
+        "engine-rust/tests/fixtures/models.json"
+      ],
+      "platform": "original target platforms"
+    }
+  ]
+}

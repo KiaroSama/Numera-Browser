@@ -1,78 +1,15 @@
-use super::{Application, BTreeMap, Command, Duration, Path, Value, cli, common, json};
-use numera_core::{
-    ownership::{capture, registry::Registry},
-    storage::repo::RepoError,
-};
+use super::{Application, BTreeMap, Duration, Value, cli, common, json};
+use numera_core::{ownership::registry::Registry, storage::repo::RepoError};
 use std::fs;
 
 #[test]
 fn settings_commands_preserve_original_decoding_refusals_and_early_errors()
 -> Result<(), Box<dyn std::error::Error>> {
     let temporary = common::TempDirectory::new("strict-settings-cli")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import contextlib,io,json,os,sys
-from pathlib import Path
-from unittest.mock import patch
-repository,parent=map(Path,sys.argv[1:])
-os.environ.pop('NUMERA_PASSWORD',None)
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.cli.parser import build_parser
-from numera.cli.out import set_json_mode
-from numera.store import ProfileStore
-from run_logging import run_log
-parser=build_parser()
-operations=[['engines'],['default-engine'],['default-engine','invalid'],['config'],
-            ['config','--default-engine','invalid'],['ext','default-list'],
-            ['vault','status'],['vault','enable']]
-# These byte sequences exercise decoding, not the valid-text JSON fallback.
-settings=[bytes([255]),bytes([0xc3,0x28]),bytes([0xe2,0x82]),b'{}',b'{broken',b'[]',None]
-available={'camoufox':False,'cloak':False,'patchright':False,'playwright':True}
-observed=[]
-with run_log('strict-settings-cli-oracle',parent/'logs') as log:
-    for operation in operations:
-        for raw in settings:
-            root=parent/str(len(observed));store=ProfileStore(root,password=None)
-            path=root/'config.json'
-            if raw is not None:path.write_bytes(raw)
-            args=parser.parse_args(operation+['--json']);set_json_mode(True)
-            output=io.StringIO()
-            with contextlib.redirect_stdout(output),patch('numera.drivers.available',return_value=available), \
-                    patch('numera.drivers.is_installed',side_effect=lambda name:available.get(name,False)):
-                try:
-                    code=args.func(args,store);payload=json.loads(output.getvalue());error=None
-                    if isinstance(payload,dict) and 'root' in payload:
-                        assert payload['root']==str(root.resolve())
-                        payload['root']='fixture-root'
-                except UnicodeDecodeError:code,payload,error=None,None,'UnicodeDecodeError'
-                except RuntimeError as exc:code,payload,error=None,None,str(exc)
-            assert (path.read_bytes() if path.exists() else None)==raw
-            observed.append({'argv':operation,'raw':list(raw) if raw is not None else None,
-                             'exit':code,'payload':payload,'error':error})
-    log.info('Observed strict settings CLI cases=%s',len(observed))
-    print(json.dumps(observed,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("source"));
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(
-        original.exit, 0,
-        "Original strict settings CLI observer failed"
-    );
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "../fixtures/characterization/settings_commands_preserve_original_decoding_refusals_and_early_errors.json"
+    ))?;
     assert_eq!(cases.len(), 56);
     let installed = BTreeMap::from([
         ("camoufox".into(), false),

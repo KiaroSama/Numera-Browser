@@ -85,6 +85,21 @@ pub struct Relay {
     worker: Option<JoinHandle<()>>,
     last_error: Arc<Mutex<Option<String>>>,
 }
+
+/// Only credentials need the native loopback bridge; a plain proxy stays direct.
+pub fn proxy_transport(
+    proxy: Option<&Proxy>,
+) -> io::Result<(Option<serde_json::Value>, Option<Relay>)> {
+    let Some(proxy) = proxy else {
+        return Ok((None, None));
+    };
+    let options = proxy.to_playwright();
+    if options.get("username").is_none() && options.get("password").is_none() {
+        return Ok((Some(options), None));
+    }
+    let relay = Relay::start(proxy)?;
+    Ok((Some(serde_json::json!({"server":relay.url()})), Some(relay)))
+}
 impl Relay {
     pub fn start(proxy: &Proxy) -> io::Result<Self> {
         Self::start_with_dns(proxy, || SystemDns::new(Duration::from_secs(15)))

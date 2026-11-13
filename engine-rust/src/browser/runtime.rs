@@ -10,7 +10,7 @@ use serde_json::{Map, Value};
 use std::{path::PathBuf, process::Command};
 
 /// Deployment-selected SDK transport and independently observed launch resources.
-/// This is not a Python application entry point: only the fixed SDK protocol runs.
+/// Only the bounded native SDK protocol crosses this process boundary.
 #[derive(Clone)]
 pub struct Deployment {
     pub app: PathBuf,
@@ -19,7 +19,6 @@ pub struct Deployment {
 }
 #[derive(Clone)]
 pub struct Runtime {
-    pub python: PathBuf,
     pub adapter: PathBuf,
     pub cwd: PathBuf,
     pub home: PathBuf,
@@ -30,21 +29,14 @@ pub struct Runtime {
     pub deployment: Option<Deployment>,
 }
 impl Runtime {
-    /// The explicit native executable uses the same bounded SDK protocol.
-    /// Legacy `.py` fixtures remain selectable during case-by-case migration.
+    /// Start only the explicitly selected native SDK executable.
     pub(crate) fn sdk_command(&self) -> Command {
-        if !self.native_sdk() {
-            let mut command = Command::new(&self.python);
-            command.arg("-u").arg(&self.adapter).env("PYTHONUTF8", "1");
-            command
-        } else {
-            Command::new(&self.adapter)
-        }
-    }
-    pub(crate) fn native_sdk(&self) -> bool {
-        self.adapter
-            .extension()
-            .is_none_or(|extension| extension != "py")
+        let mut command = Command::new(&self.adapter);
+        command
+            .env_remove("NUMERA_UPDATE_TOKEN")
+            .env_remove("NUMERA_UPDATE_TICKET")
+            .env_remove("NUMERA_UPDATE_ACTIVATION");
+        command
     }
     pub fn open(
         &self,
@@ -139,6 +131,24 @@ impl Runtime {
         }
         let mut binary_options = resources.options;
         binary_options.extend(self.binary_options.clone());
+        if profile.engine == "cloak"
+            && !command
+                .get_envs()
+                .any(|(key, value)| key == "CLOAKBROWSER_BINARY_PATH" && value.is_some())
+        {
+            let fail = |error: std::io::Error| StartupFailed {
+                kind: "failed".into(),
+                message: error.to_string(),
+            };
+            let prepared = session.preparation_path(&profile.id).map_err(fail)?;
+            let root = prepared
+                .parent()
+                .and_then(std::path::Path::parent)
+                .ok_or_else(|| fail(std::io::Error::other("Session data root is missing")))?;
+            let selected = crate::cloak_acquisition::selected_binary(root).map_err(fail)?;
+            command.envs(selected.environment);
+            binary_options.extend(selected.options);
+        }
         command
             .current_dir(&self.cwd)
             .env("NUMERA_ADAPTER_LOG_DIR", &self.logs)

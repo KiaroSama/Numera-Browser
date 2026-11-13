@@ -79,18 +79,20 @@ fn decode(bytes: &[u8]) -> Option<Value> {
 }
 
 pub async fn check(proxy: &Value, budget: Duration) -> Value {
+    #[cfg(feature = "test-support")]
+    if let Some(result) = testing::replacement(proxy) {
+        return result;
+    }
     check_at(proxy, budget, &ECHO).await
 }
 
 pub(crate) async fn check_at(proxy: &Value, budget: Duration, endpoints: &[&str]) -> Value {
     let started = Instant::now();
-    let relay = if proxy["type"]
-        .as_str()
-        .is_some_and(|kind| kind.eq_ignore_ascii_case("SOCKS4"))
-    {
+    let kind = proxy["type"].as_str().unwrap_or("").to_ascii_uppercase();
+    let relay = if matches!(kind.as_str(), "SOCKS4" | "SOCKS5") {
         let model = crate::proxy::Proxy::from_record(
             &json!({
-                "server":match pool::server_url("SOCKS4",proxy["host"].as_str().unwrap_or(""), &value_text(&proxy["port"])) {
+                "server":match pool::server_url(&kind,proxy["host"].as_str().unwrap_or(""), &value_text(&proxy["port"])) {
                     Ok(server) => server,
                     Err(error) => return json!({"ok":false,"error":error.to_string()}),
                 }, "username":proxy["user"],"password":proxy["pass"],"country":null
@@ -290,5 +292,38 @@ mod tests {
         );
         assert_eq!(decode(b"[]"), None);
         assert_eq!(decode(br#"{"ip":""}"#), None);
+    }
+}
+
+#[cfg(feature = "test-support")]
+pub mod testing {
+    use super::*;
+    use std::{
+        cell::RefCell,
+        sync::{Arc, Mutex},
+    };
+    type Checker = Arc<Mutex<Box<dyn FnMut(&Value) -> Value + Send>>>;
+    thread_local! {static CHECKER:RefCell<Option<Checker>>=const{RefCell::new(None)};}
+    struct Restore(Option<Checker>);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            CHECKER.with(|slot| *slot.borrow_mut() = self.0.take());
+        }
+    }
+    pub fn with_checker<T>(
+        checker: impl FnMut(&Value) -> Value + Send + 'static,
+        operation: impl FnOnce() -> T,
+    ) -> T {
+        let old = CHECKER.with(|slot| slot.replace(Some(Arc::new(Mutex::new(Box::new(checker))))));
+        let _restore = Restore(old);
+        operation()
+    }
+    pub(super) fn replacement(proxy: &Value) -> Option<Value> {
+        CHECKER
+            .with(|slot| slot.borrow().clone())
+            .map(|check| check.lock().expect("native test checker lock")(proxy))
+    }
+    pub async fn check_at(proxy: &Value, budget: Duration, endpoints: &[&str]) -> Value {
+        super::check_at(proxy, budget, endpoints).await
     }
 }

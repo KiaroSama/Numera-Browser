@@ -109,6 +109,15 @@ pub(crate) fn repr(value: &Value) -> String {
     }
 }
 fn short(value: &Value, quoted: bool) -> String {
+    if let Some(raw) = value.as_number().map(ToString::to_string) {
+        let digits = raw.trim_start_matches('-');
+        if digits.len() > 4300
+            && digits.bytes().all(|c| c.is_ascii_digit())
+            && let Some(integer) = num_bigint::BigUint::parse_bytes(digits.as_bytes(), 10)
+        {
+            return format!("int of {} bits", integer.bits());
+        }
+    }
     let text = if quoted {
         repr(value)
     } else if let Value::Number(number) = value {
@@ -167,6 +176,11 @@ fn number_problem(field: &str, value: &Value, rule: &Value, optional: bool) -> O
     };
     let bounds = &rule["bounds"];
     let raw = number.to_string();
+    if matches!(raw.as_str(), "NaN" | "Infinity" | "-Infinity") {
+        return Some(format!(
+            "profile: '{field}' must be a finite number. Nothing was written."
+        ));
+    }
     if !raw.contains(['.', 'e', 'E']) {
         let in_range = raw.parse::<i128>().ok().is_some_and(|n| {
             bounds[0].as_f64().is_none_or(|low| n >= low.ceil() as i128)

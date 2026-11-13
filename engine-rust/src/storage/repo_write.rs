@@ -254,14 +254,24 @@ impl ProfileRepo {
                 (old.map(str::to_owned), twin.map(str::to_owned))
             } else {
                 let asked = proxy.to_record()["password"].as_str().map(str::to_owned);
-                let value = write_secret(state, asked.as_deref(), old, seal)
-                    .map_err(|e| RepoError::Message(e.to_string()))?;
+                let value = write_secret(state, asked.as_deref(), old, seal).map_err(|e| {
+                    if state == VaultState::Locked {
+                        RepoError::VaultLocked(e.to_string())
+                    } else {
+                        RepoError::Message(e.to_string())
+                    }
+                })?;
                 (value.clone(), value)
             }
         } else {
             for value in [old, twin] {
-                write_secret(state, Some(""), value, seal)
-                    .map_err(|e| RepoError::Message(e.to_string()))?;
+                write_secret(state, Some(""), value, seal).map_err(|e| {
+                    if state == VaultState::Locked {
+                        RepoError::VaultLocked(e.to_string())
+                    } else {
+                        RepoError::Message(e.to_string())
+                    }
+                })?;
             }
             (None, None)
         };

@@ -6,6 +6,10 @@ use numera_core::{
 use serde_json::{Map, Value, json};
 use std::process::Command;
 mod common;
+use numera_core as core;
+#[allow(dead_code)]
+#[path = "common/browser_fixture.rs"]
+mod fixture;
 
 #[test]
 fn admitted_launch_refuses_invalid_backend_and_unsupported_socks4_password_before_sdk_birth()
@@ -59,7 +63,6 @@ fn admitted_launch_refuses_invalid_backend_and_unsupported_socks4_password_befor
 #[test]
 fn camoufox_retains_source_locale_with_marked_country_observation()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let fixture: Value = serde_json::from_str(include_str!("fixtures/init-script.json"))?;
     let temporary = common::TempDirectory::new("camoufox-launch-policy")?;
     let root = temporary.path();
@@ -68,11 +71,7 @@ fn camoufox_retains_source_locale_with_marked_country_observation()
         "ip_based":["languages"], "proxy":{"server":"http://127.0.0.1:9", "username":null, "password":null, "country":null},
     }))?;
     let capture = root.join("open.json");
-    let script = "import json,os,pathlib,sys; hello=json.loads(sys.stdin.readline()); print(json.dumps({'protocol':1,'id':hello['id'],'ok':True,'result':{'backends':{'camoufox':{'installed':True}}}}),flush=True); opened=json.loads(sys.stdin.readline()); pathlib.Path(os.environ['FIXTURE_CAPTURE']).write_text(json.dumps(opened),encoding='utf-8'); print(json.dumps({'protocol':1,'id':opened['id'],'ok':True,'result':{'opened':True,'backend':'camoufox'}}),flush=True); sys.stdin.readline()";
-    let mut command = Command::new(python);
-    command
-        .args(["-u", "-c", script])
-        .env("FIXTURE_CAPTURE", &capture);
+    let mut command = fixture::command(root, "capture", json!({"capture":capture}))?;
     let session = Session::admit(root, "a", "fixture-host")?;
     let mut adapter = launch::open(
         session,
@@ -105,7 +104,6 @@ fn camoufox_retains_source_locale_with_marked_country_observation()
 #[test]
 fn admitted_browser_owns_automatic_relay_until_sdk_tree_settles()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let fixture: Value = serde_json::from_str(include_str!("fixtures/init-script.json"))?;
     let temporary = common::TempDirectory::new("launch-relay-lifetime")?;
     let root = temporary.path();
@@ -114,19 +112,7 @@ fn admitted_browser_owns_automatic_relay_until_sdk_tree_settles()
         "proxy":{"server":"http://127.0.0.1:9","username":"fixture","password":"synthetic"},
     }))?;
     let capture = root.join("open.json");
-    let script = r#"
-import json,os,pathlib,sys
-hello=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':hello['id'],'ok':True,'result':{'backends':{'playwright':{'installed':True}}}}),flush=True)
-opened=json.loads(sys.stdin.readline())
-pathlib.Path(os.environ['FIXTURE_CAPTURE']).write_text(json.dumps(opened),encoding='utf-8')
-print(json.dumps({'protocol':1,'id':opened['id'],'ok':True,'result':{'opened':True,'backend':'playwright'}}),flush=True)
-sys.stdin.readline()
-"#;
-    let mut command = Command::new(python);
-    command
-        .args(["-u", "-c", script])
-        .env("FIXTURE_CAPTURE", &capture);
+    let mut command = fixture::command(root, "capture", json!({"capture":capture}))?;
     let session = Session::admit(root, "a", "fixture-host")?;
     let mut adapter = launch::open(
         session,

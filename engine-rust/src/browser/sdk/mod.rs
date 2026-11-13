@@ -1,10 +1,24 @@
 //! SDK-only subprocess in Rust. Application state, consent, leases and browser
 //! selection remain in the native owner. Stdout contains bounded JSON frames.
+mod camoufox;
+pub mod camoufox_coherence;
+pub mod camoufox_config;
+pub mod camoufox_cpu;
+pub mod camoufox_geo;
+mod camoufox_host;
+pub mod camoufox_identity;
+pub mod camoufox_webgl;
+pub mod cloak;
+pub mod container_smoke;
 mod driver;
 pub mod fingerprint;
 mod options;
 mod policy;
+#[cfg(feature = "test-support")]
+mod testing;
 pub mod values;
+
+pub use options::persistent as persistent_options;
 
 use super::adapter::{PROTOCOL, frame};
 use crate::{native_input::Input, runtime_log::RuntimeLog};
@@ -27,6 +41,59 @@ use std::{
 fn invalid() -> playwright_rs::Error {
     io::Error::new(io::ErrorKind::InvalidInput, "Invalid SDK request").into()
 }
+fn error_category(error: &playwright_rs::Error) -> &'static str {
+    use playwright_rs::Error;
+    match error {
+        Error::Io(error) => match error.kind() {
+            io::ErrorKind::NotFound => "io-not-found",
+            io::ErrorKind::PermissionDenied => "io-denied",
+            io::ErrorKind::InvalidInput => "io-invalid-input",
+            io::ErrorKind::InvalidData => "io-invalid-data",
+            io::ErrorKind::TimedOut => "io-timeout",
+            _ => "io",
+        },
+        Error::Json(_) => "json",
+        Error::ProtocolError(message) => {
+            // Vendor errors may contain arguments, credentials, environment or
+            // page content. Only fixed categories may cross the log boundary.
+            if message.contains("error while loading shared libraries") {
+                "protocol-library"
+            } else if message.contains("no DISPLAY environment variable")
+                || message.contains("cannot open display")
+            {
+                "protocol-display"
+            } else if message.contains("profile is in use") || message.contains("already running") {
+                "protocol-profile-busy"
+            } else if message.contains("MOZ_CRASH") || message.contains("signal=SIGSEGV") {
+                "protocol-browser-crash"
+            } else if message.contains("ValidationError") || message.contains("expected object") {
+                "protocol-validation"
+            } else if message.contains("Failed to launch") {
+                "protocol-launch"
+            } else if message.contains("Target page, context or browser has been closed") {
+                "protocol-target-closed"
+            } else if message.contains("<process did exit:") {
+                "protocol-browser-exit"
+            } else if message.contains("Connection closed") {
+                "protocol-connection-closed"
+            } else {
+                "protocol"
+            }
+        }
+        Error::TransportError(_) => "transport",
+        Error::ServerError(_) => "server",
+        Error::LaunchFailed(_) => "launch",
+        Error::ConnectionFailed(_) => "connection",
+        Error::TargetClosed { .. } => "target-closed",
+        Error::ChannelClosed => "channel-closed",
+        Error::UnknownObjectType(_) => "unknown-object",
+        Error::ObjectNotFound(_) => "object-not-found",
+        Error::TypeMismatch { .. } => "object-type",
+        Error::Timeout(_) => "timeout",
+        Error::InvalidArgument(_) => "invalid-argument",
+        _ => "sdk",
+    }
+}
 fn text<'a>(request: &'a Value, key: &str) -> playwright_rs::Result<&'a str> {
     request[key]
         .as_str()
@@ -37,6 +104,44 @@ fn boolean(request: &Value, key: &str) -> playwright_rs::Result<bool> {
     request
         .get(key)
         .map_or(Ok(false), |value| value.as_bool().ok_or_else(invalid))
+}
+
+/// Read installed SDK metadata without creating an SDK process during updater
+/// recovery. The browser-worker handshake uses the same installation checks.
+pub fn metadata() -> Value {
+    driver::metadata()
+}
+
+/// The browser family and persistent-context call sent to a provisioned vendor
+/// driver. `options` has already passed the backend's native preparation.
+#[derive(Debug)]
+pub struct LaunchRequest {
+    pub family: &'static str,
+    pub method: &'static str,
+    pub options: Value,
+}
+
+pub fn launch_request(
+    backend: &str,
+    options: &serde_json::Map<String, Value>,
+) -> io::Result<LaunchRequest> {
+    let family = match backend {
+        "camoufox" => "firefox",
+        "playwright" | "patchright" | "cloak" => "chromium",
+        _ => return Err(io::Error::other("Unknown SDK backend")),
+    };
+    if options
+        .get("userDataDir")
+        .and_then(Value::as_str)
+        .is_none_or(str::is_empty)
+    {
+        return Err(io::Error::other("Persistent profile directory required"));
+    }
+    Ok(LaunchRequest {
+        family,
+        method: "launchPersistentContext",
+        options: Value::Object(options.clone()),
+    })
 }
 
 async fn evaluate_raw(
@@ -93,6 +198,8 @@ struct Worker {
     page: Option<Page>,
     policy: Option<Arc<policy::Policy>>,
     patchright: bool,
+    camoufox: Option<camoufox::Prepared>,
+    cloak: Option<cloak::Prepared>,
 }
 impl Worker {
     async fn execute(
@@ -107,7 +214,7 @@ impl Worker {
             }
             "open" if self.initialized && self.context.is_none() => {
                 let backend = text(request, "backend")?;
-                if !matches!(backend, "playwright" | "patchright") {
+                if !matches!(backend, "playwright" | "patchright" | "camoufox" | "cloak") {
                     return Err(invalid());
                 }
                 self.patchright = backend == "patchright";
@@ -127,10 +234,49 @@ impl Worker {
                     .filter(|value| !value.is_null())
                     .map(policy::Policy::parse)
                     .transpose()?;
-                let options = options::persistent(options)?;
+                if backend == "camoufox" && (policy.is_some() || !scripts.is_empty()) {
+                    return Err(invalid());
+                }
+                // Validate the selected binary and prepare its launch before
+                // starting vendor code. A refused Cloak offer must not create
+                // a driver process or a browser profile as a side effect.
+                let prepared = match backend {
+                    "cloak" => {
+                        self.cloak = Some(cloak::prepare_async(options).await?);
+                        Some(self.cloak.as_ref().ok_or_else(invalid)?.options.clone())
+                    }
+                    "camoufox" => {
+                        camoufox::binary(options)?;
+                        None
+                    }
+                    _ => Some(options::persistent(options)?),
+                };
                 self.driver = Some(Driver::start(Installation::discover(backend)?).await?);
                 let driver = self.driver.as_ref().ok_or_else(invalid)?;
-                let context = driver.open(false, options).await?;
+                let options = match backend {
+                    "camoufox" => {
+                        self.camoufox = Some(camoufox::Prepared::default());
+                        self.camoufox
+                            .as_mut()
+                            .ok_or_else(invalid)?
+                            .prepare(options, driver)
+                            .await?
+                    }
+                    _ => prepared.ok_or_else(invalid)?,
+                };
+                let context = match driver.open(backend, options).await {
+                    Ok(context) => context,
+                    Err(error) => {
+                        if let Some(denial) = self
+                            .cloak
+                            .as_ref()
+                            .and_then(|cloak| cloak.launch_error(&error.to_string()))
+                        {
+                            return Err(denial.into_error().into());
+                        }
+                        return Err(error);
+                    }
+                };
                 self.context = Some(context.clone());
                 let signal = Arc::clone(closed);
                 context
@@ -306,9 +452,14 @@ impl Worker {
         }
         self.policy.take();
         self.page.take();
+        if let Some(camoufox) = self.camoufox.as_mut() {
+            success &= camoufox.cleanup_probe().await;
+        }
         if let Some(driver) = self.driver.take() {
             success &= driver.stop().await.is_ok();
         }
+        self.camoufox.take();
+        self.cloak.take();
         success
     }
 }
@@ -327,8 +478,18 @@ async fn run() -> io::Result<()> {
     let closed = Arc::new(AtomicBool::new(false));
     let (sender, mut receiver) = tokio::sync::mpsc::channel(1);
     let cancel = Arc::clone(&cancelled);
+    #[cfg(feature = "test-support")]
+    let schedule = testing::Schedule::from_environment()?;
+    #[cfg(feature = "test-support")]
+    let input_schedule = Arc::clone(&schedule);
     let input = std::thread::spawn(move || {
-        let mut reader = BufReader::new(Input::new(io::stdin(), cancel));
+        #[cfg(feature = "test-support")]
+        let input = Input::with_wait(io::stdin(), cancel, input_schedule.wait())
+            .expect("Test scheduling wait is bounded")
+            .with_observer(input_schedule);
+        #[cfg(not(feature = "test-support"))]
+        let input = Input::new(io::stdin(), cancel);
+        let mut reader = BufReader::new(input);
         loop {
             let result = frame(&mut reader);
             let done = !matches!(result, Ok(Some(_)));
@@ -341,12 +502,16 @@ async fn run() -> io::Result<()> {
     let mut worker = Worker::default();
     let deadline = Instant::now() + Duration::from_secs(120);
     let mut closing = None;
+    let mut close_started = None;
+    let mut failed = None;
     let result = async {
         loop {
             if closed.load(Ordering::Acquire) { break; }
             let request = tokio::select! {
                 request = receiver.recv() => match request { Some(request) => request?, None => break },
                 _ = tokio::time::sleep(Duration::from_millis(25)) => {
+                    #[cfg(feature = "test-support")]
+                    schedule.idle(worker.context.is_some());
                     if worker.context.is_none() && Instant::now() >= deadline {
                         return Err(io::Error::new(io::ErrorKind::TimedOut, "SDK input deadline exceeded"));
                     }
@@ -358,9 +523,12 @@ async fn run() -> io::Result<()> {
                 .filter(|_| request["protocol"].as_u64() == Some(PROTOCOL))
                 .ok_or_else(|| io::Error::other("Invalid SDK protocol envelope"))?;
             let label = operation(&request);
-            if label == "close" && worker.initialized { closing = Some(id); break; }
+            if label == "close" && worker.initialized { closing = Some(id); close_started = Some(Instant::now()); break; }
             let start = Instant::now();
-            let result = worker.execute(&request, &closed).await;
+            let mut result = worker.execute(&request, &closed).await;
+            if let Some(denial) = worker.cloak.as_ref().and_then(cloak::Prepared::denial) {
+                result = Err(denial.into_error().into());
+            }
             // SDK errors can embed credentials, request URLs and source text.
             // Only an allowlisted operation and the native error category leave
             // this boundary; never format the vendor error itself.
@@ -376,9 +544,14 @@ async fn run() -> io::Result<()> {
                         return Err(error);
                     }
                 }
-                Err(_) => {
-                    log.event("ERROR", "numera.browser-adapter", "SDK operation failed");
-                    send(&mut output, id, Err("sdk"))?;
+                Err(error) => {
+                    if label == "open" && let Some(camoufox) = &worker.camoufox {
+                        log.message("ERROR", "numera.browser-adapter", &format!("Camoufox preparation failed phase={}", camoufox.phase));
+                    }
+                    log.message("ERROR", "numera.browser-adapter", &format!("SDK operation failed category={}",error_category(&error)));
+                    // Report cleanup separately only after observing the
+                    // native guards. Vendor error text cannot set this flag.
+                    failed = Some(id);
                     return Err(io::Error::other("SDK operation failed"));
                 }
             }
@@ -391,6 +564,16 @@ async fn run() -> io::Result<()> {
     let input_ok = input.join().is_ok();
     let cleanup_started = Instant::now();
     let cleanup_ok = worker.cleanup().await && input_ok;
+    if let Some(started) = close_started {
+        log.message(
+            "INFO",
+            "numera.browser-adapter",
+            &format!(
+                "SDK timing operation=close elapsed_ns={}",
+                started.elapsed().as_nanos()
+            ),
+        );
+    }
     log.message(
         "INFO",
         "numera.browser-adapter",
@@ -399,6 +582,13 @@ async fn run() -> io::Result<()> {
             cleanup_started.elapsed().as_nanos()
         ),
     );
+    if let Some(id) = failed {
+        send(
+            &mut output,
+            id,
+            Err(if cleanup_ok { "sdk" } else { "sdk-cleanup" }),
+        )?;
+    }
     if let Some(id) = closing {
         send(
             &mut output,

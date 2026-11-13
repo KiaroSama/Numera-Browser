@@ -57,7 +57,7 @@ fn new_descriptor(
     Ok(json!({"salt": salt, "verifier": verifier}))
 }
 
-fn begin(root: &Path, new: &Value, old: Option<&Value>) -> Result<(), RecoveryError> {
+pub fn begin(root: &Path, new: &Value, old: Option<&Value>) -> Result<(), RecoveryError> {
     let pid = std::process::id();
     let token = crate::ownership::identity::started_at(pid)?.ok_or_else(|| {
         refusal("Vault migration owner identity unavailable; nothing was written")
@@ -84,8 +84,20 @@ pub(crate) fn commit_and_verify(
     let path = root.join("config.json");
     let lock = DataLock::for_file(&path)?;
     let _guard = lock.acquire_configured()?;
-    write_json(&path, &config)?;
+    #[cfg(feature = "test-support")]
+    let skip = super::testing::event("before-config", &path)? == super::testing::Action::Skip;
+    #[cfg(not(feature = "test-support"))]
+    let skip = false;
+    if !skip {
+        write_json(&path, &config)?;
+    }
+    #[cfg(feature = "test-support")]
+    super::testing::event("after-config", &path)?;
+    #[cfg(feature = "test-support")]
+    super::testing::event("before-config-sync", &path)?;
     sync_config(root)?;
+    #[cfg(feature = "test-support")]
+    super::testing::event("after-config-sync", &path)?;
     let persisted = read_config(root)?;
     let active = &persisted["vault"];
     if !super::journal::usable_descriptor(active)
@@ -127,12 +139,14 @@ pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
     let descriptor = new_descriptor(password, Some(&log))?;
     log.event("INFO", "vault", "Enable descriptor derivation finished");
     begin(root, &descriptor, None)?;
+    #[cfg(feature = "test-support")]
+    super::testing::event("before-migration", root)?;
     log.event("INFO", "vault", "Enable journal published");
     let mut step = Migration::new(root.to_owned());
     let result = (|| {
         let count = step
             .encrypt_all(password, descriptor["salt"].as_str().unwrap_or(""))
-            .map_err(|error| refusal(error.to_string()))?;
+            .map_err(super::recovery::migration_failure)?;
         commit_and_verify(
             root,
             &mut step,
@@ -165,10 +179,11 @@ fn finish(
     if let Err(error) = result {
         let failures = step.rollback();
         if !failures.is_empty() {
-            return Err(refusal(format!(
-                "Vault migration failed and {} file(s) could not be restored; journal retained",
-                failures.len()
-            )));
+            return Err(super::recovery::rollback_failed(
+                error,
+                failures,
+                "Vault migration failed",
+            ));
         }
         sync_data(root)?;
         sync_config(root)?;
@@ -206,6 +221,8 @@ pub fn rotate(root: &Path, old_password: &str, password: &str) -> Result<usize, 
     }
     let descriptor = new_descriptor(password, None)?;
     begin(root, &descriptor, Some(&old))?;
+    #[cfg(feature = "test-support")]
+    super::testing::event("before-migration", root)?;
     let mut step = Migration::new(root.to_owned());
     let result = (|| {
         let count = step
@@ -216,7 +233,7 @@ pub fn rotate(root: &Path, old_password: &str, password: &str) -> Result<usize, 
                 descriptor["salt"].as_str().unwrap_or(""),
                 false,
             )
-            .map_err(|error| refusal(error.to_string()))?;
+            .map_err(super::recovery::migration_failure)?;
         commit_and_verify(
             root,
             &mut step,

@@ -1,0 +1,609 @@
+[
+  {
+    "method": "GET",
+    "url": "/api/config",
+    "body": null,
+    "raw": [
+      255
+    ],
+    "status": 500,
+    "result": "Internal Server Error"
+  },
+  {
+    "method": "GET",
+    "url": "/api/config",
+    "body": null,
+    "raw": [
+      195,
+      40
+    ],
+    "status": 500,
+    "result": "Internal Server Error"
+  },
+  {
+    "method": "GET",
+    "url": "/api/config",
+    "body": null,
+    "raw": [
+      226,
+      130
+    ],
+    "status": 500,
+    "result": "Internal Server Error"
+  },
+  {
+    "method": "GET",
+    "url": "/api/config",
+    "body": null,
+    "raw": [
+      123,
+      125
+    ],
+    "status": 200,
+    "result": {
+      "default_engine": "playwright",
+      "default_extensions": [],
+      "headless_launch": false,
+      "folders": [],
+      "root": "fixture-root",
+      "version": "0.36.0",
+      "proxyCount": 0
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/config",
+    "body": null,
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "status": 200,
+    "result": {
+      "default_engine": "playwright",
+      "default_extensions": [],
+      "headless_launch": false,
+      "folders": [],
+      "root": "fixture-root",
+      "version": "0.36.0",
+      "proxyCount": 0
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/config",
+    "body": null,
+    "raw": [
+      91,
+      93
+    ],
+    "status": 200,
+    "result": {
+      "default_engine": "playwright",
+      "default_extensions": [],
+      "headless_launch": false,
+      "folders": [],
+      "root": "fixture-root",
+      "version": "0.36.0",
+      "proxyCount": 0
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/config",
+    "body": null,
+    "raw": null,
+    "status": 200,
+    "result": {
+      "default_engine": "playwright",
+      "default_extensions": [],
+      "headless_launch": false,
+      "folders": [],
+      "root": "fixture-root",
+      "version": "0.36.0",
+      "proxyCount": 0
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/engines",
+    "body": null,
+    "raw": [
+      255
+    ],
+    "status": 200,
+    "result": {
+      "camoufox": false,
+      "cloak": false,
+      "patchright": false,
+      "playwright": true
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/engines",
+    "body": null,
+    "raw": [
+      195,
+      40
+    ],
+    "status": 200,
+    "result": {
+      "camoufox": false,
+      "cloak": false,
+      "patchright": false,
+      "playwright": true
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/engines",
+    "body": null,
+    "raw": [
+      226,
+      130
+    ],
+    "status": 200,
+    "result": {
+      "camoufox": false,
+      "cloak": false,
+      "patchright": false,
+      "playwright": true
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/engines",
+    "body": null,
+    "raw": [
+      123,
+      125
+    ],
+    "status": 200,
+    "result": {
+      "camoufox": false,
+      "cloak": false,
+      "patchright": false,
+      "playwright": true
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/engines",
+    "body": null,
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "status": 200,
+    "result": {
+      "camoufox": false,
+      "cloak": false,
+      "patchright": false,
+      "playwright": true
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/engines",
+    "body": null,
+    "raw": [
+      91,
+      93
+    ],
+    "status": 200,
+    "result": {
+      "camoufox": false,
+      "cloak": false,
+      "patchright": false,
+      "playwright": true
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/engines",
+    "body": null,
+    "raw": null,
+    "status": 200,
+    "result": {
+      "camoufox": false,
+      "cloak": false,
+      "patchright": false,
+      "playwright": true
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/extensions/installed",
+    "body": null,
+    "raw": [
+      255
+    ],
+    "status": 500,
+    "result": "Internal Server Error"
+  },
+  {
+    "method": "GET",
+    "url": "/api/extensions/installed",
+    "body": null,
+    "raw": [
+      195,
+      40
+    ],
+    "status": 500,
+    "result": "Internal Server Error"
+  },
+  {
+    "method": "GET",
+    "url": "/api/extensions/installed",
+    "body": null,
+    "raw": [
+      226,
+      130
+    ],
+    "status": 500,
+    "result": "Internal Server Error"
+  },
+  {
+    "method": "GET",
+    "url": "/api/extensions/installed",
+    "body": null,
+    "raw": [
+      123,
+      125
+    ],
+    "status": 200,
+    "result": {
+      "extensions": []
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/extensions/installed",
+    "body": null,
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "status": 200,
+    "result": {
+      "extensions": []
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/extensions/installed",
+    "body": null,
+    "raw": [
+      91,
+      93
+    ],
+    "status": 200,
+    "result": {
+      "extensions": []
+    }
+  },
+  {
+    "method": "GET",
+    "url": "/api/extensions/installed",
+    "body": null,
+    "raw": null,
+    "status": 200,
+    "result": {
+      "extensions": []
+    }
+  },
+  {
+    "method": "PUT",
+    "url": "/api/config",
+    "body": {
+      "unknown": true
+    },
+    "raw": [
+      255
+    ],
+    "status": 400,
+    "result": {
+      "detail": "unknown config key(s): unknown"
+    }
+  },
+  {
+    "method": "PUT",
+    "url": "/api/config",
+    "body": {
+      "unknown": true
+    },
+    "raw": [
+      195,
+      40
+    ],
+    "status": 400,
+    "result": {
+      "detail": "unknown config key(s): unknown"
+    }
+  },
+  {
+    "method": "PUT",
+    "url": "/api/config",
+    "body": {
+      "unknown": true
+    },
+    "raw": [
+      226,
+      130
+    ],
+    "status": 400,
+    "result": {
+      "detail": "unknown config key(s): unknown"
+    }
+  },
+  {
+    "method": "PUT",
+    "url": "/api/config",
+    "body": {
+      "unknown": true
+    },
+    "raw": [
+      123,
+      125
+    ],
+    "status": 400,
+    "result": {
+      "detail": "unknown config key(s): unknown"
+    }
+  },
+  {
+    "method": "PUT",
+    "url": "/api/config",
+    "body": {
+      "unknown": true
+    },
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "status": 400,
+    "result": {
+      "detail": "unknown config key(s): unknown"
+    }
+  },
+  {
+    "method": "PUT",
+    "url": "/api/config",
+    "body": {
+      "unknown": true
+    },
+    "raw": [
+      91,
+      93
+    ],
+    "status": 400,
+    "result": {
+      "detail": "unknown config key(s): unknown"
+    }
+  },
+  {
+    "method": "PUT",
+    "url": "/api/config",
+    "body": {
+      "unknown": true
+    },
+    "raw": null,
+    "status": 400,
+    "result": {
+      "detail": "unknown config key(s): unknown"
+    }
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles/fixture/attach",
+    "body": null,
+    "raw": [
+      255
+    ],
+    "status": 400,
+    "result": {
+      "detail": "the 'camoufox' engine has no DevTools to attach to \u2014 use one of: playwright, patchright, cloak"
+    }
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles/fixture/attach",
+    "body": null,
+    "raw": [
+      195,
+      40
+    ],
+    "status": 400,
+    "result": {
+      "detail": "the 'camoufox' engine has no DevTools to attach to \u2014 use one of: playwright, patchright, cloak"
+    }
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles/fixture/attach",
+    "body": null,
+    "raw": [
+      226,
+      130
+    ],
+    "status": 400,
+    "result": {
+      "detail": "the 'camoufox' engine has no DevTools to attach to \u2014 use one of: playwright, patchright, cloak"
+    }
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles/fixture/attach",
+    "body": null,
+    "raw": [
+      123,
+      125
+    ],
+    "status": 400,
+    "result": {
+      "detail": "the 'camoufox' engine has no DevTools to attach to \u2014 use one of: playwright, patchright, cloak"
+    }
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles/fixture/attach",
+    "body": null,
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "status": 400,
+    "result": {
+      "detail": "the 'camoufox' engine has no DevTools to attach to \u2014 use one of: playwright, patchright, cloak"
+    }
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles/fixture/attach",
+    "body": null,
+    "raw": [
+      91,
+      93
+    ],
+    "status": 400,
+    "result": {
+      "detail": "the 'camoufox' engine has no DevTools to attach to \u2014 use one of: playwright, patchright, cloak"
+    }
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles/fixture/attach",
+    "body": null,
+    "raw": null,
+    "status": 400,
+    "result": {
+      "detail": "the 'camoufox' engine has no DevTools to attach to \u2014 use one of: playwright, patchright, cloak"
+    }
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles",
+    "body": {
+      "unknown": true
+    },
+    "raw": [
+      255
+    ],
+    "status": 500,
+    "result": "Internal Server Error"
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles",
+    "body": {
+      "unknown": true
+    },
+    "raw": [
+      195,
+      40
+    ],
+    "status": 500,
+    "result": "Internal Server Error"
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles",
+    "body": {
+      "unknown": true
+    },
+    "raw": [
+      226,
+      130
+    ],
+    "status": 500,
+    "result": "Internal Server Error"
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles",
+    "body": {
+      "unknown": true
+    },
+    "raw": [
+      123,
+      125
+    ],
+    "status": 422,
+    "result": {
+      "detail": "profile: unknown field 'unknown'"
+    }
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles",
+    "body": {
+      "unknown": true
+    },
+    "raw": [
+      123,
+      98,
+      114,
+      111,
+      107,
+      101,
+      110
+    ],
+    "status": 422,
+    "result": {
+      "detail": "profile: unknown field 'unknown'"
+    }
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles",
+    "body": {
+      "unknown": true
+    },
+    "raw": [
+      91,
+      93
+    ],
+    "status": 422,
+    "result": {
+      "detail": "profile: unknown field 'unknown'"
+    }
+  },
+  {
+    "method": "POST",
+    "url": "/api/profiles",
+    "body": {
+      "unknown": true
+    },
+    "raw": null,
+    "status": 422,
+    "result": {
+      "detail": "profile: unknown field 'unknown'"
+    }
+  }
+]

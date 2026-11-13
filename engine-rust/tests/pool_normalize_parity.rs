@@ -6,9 +6,9 @@ mod common;
 #[test]
 fn pooled_proxy_integer_and_whitespace_normalization_matches_original()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::{ownership::capture, pool::normalize_many};
+    use numera_core::pool::normalize_many;
     use serde_json::json;
-    use std::{fs, path::Path, process::Command, time::Duration};
+    use std::fs;
 
     let temporary = common::TempDirectory::new("pool-normalization")?;
     let base =
@@ -60,57 +60,18 @@ fn pooled_proxy_integer_and_whitespace_normalization_matches_original()
     }
     let input = temporary.path().join("input.json");
     fs::write(&input, serde_json::to_vec(&inputs)?)?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import copy,json,sys
-from pathlib import Path
-repository,parent,input_file=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.proxypool import normalize,normalize_many
-from run_logging import run_log
-inputs=json.loads(input_file.read_text(encoding='utf-8'))
-def observe(function,value):
-    before=copy.deepcopy(value)
-    try: result={'result':function(value),'error':None}
-    except ValueError as error: result={'result':None,'error':str(error)}
-    assert value==before,'Original pool normalization changed input'
-    return result
-with run_log('pool-normalization-oracle',parent/'logs') as log:
-    rows=[observe(normalize,value) for value in inputs]
-    batches=[observe(normalize_many,[value]) for value in inputs]
-    log.info('Observed pooled normalization cases=%s',len(rows))
-    print(json.dumps({'rows':rows,'batches':batches},ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .arg(temporary.path())
-        .arg(&input);
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
+    // Immutable original observation; native operations and full assertions remain live.
+    let expected: Value = serde_json::from_str(include_str!(
+        "fixtures/native-storage-characterization/pooled_proxy_integer_and_whitespace_normalization_matches_original.json"
+    ))?;
+    let original_inputs: Value = serde_json::from_str(include_str!(
+        "fixtures/native-storage-characterization/pooled_proxy_integer_and_whitespace_normalization_matches_original.inputs.json"
+    ))?;
     assert_eq!(
-        original.exit, 0,
-        "Original pool normalization observer failed"
+        serde_json::to_value(&inputs)?,
+        original_inputs,
+        "Original generated input matrix changed"
     );
-    let expected: Value = serde_json::from_slice(&original.stdout)?;
     assert_eq!(inputs.len(), 47);
     let observe = |result: std::io::Result<Value>| match result {
         Ok(value) => json!({"result":value,"error":null}),

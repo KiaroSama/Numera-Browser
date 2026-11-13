@@ -63,10 +63,34 @@ impl Server {
         Self::start_with_verbosity(options, false)
     }
     pub(crate) fn start_with_verbosity(options: Options, verbose: bool) -> io::Result<Self> {
-        let startup_admission = crate::ownership::update_admission::Reservation::begin(
-            &options.root,
-            "native-server-startup",
-        )?;
+        Self::start_with_recovery(
+            options,
+            verbose,
+            application::RecoveryOptions {
+                ticket: std::env::var("NUMERA_UPDATE_TICKET").ok(),
+                update_token: std::env::var("NUMERA_UPDATE_TOKEN").unwrap_or_default(),
+            },
+        )
+    }
+    pub fn start_with_recovery(
+        options: Options,
+        verbose: bool,
+        recovery: application::RecoveryOptions,
+    ) -> io::Result<Self> {
+        let admission =
+            crate::ownership::update_admission::Admission::new(&options.root, &options.host)?;
+        let (startup_admission, recovering) =
+            admission.with_startup(false, recovery.ticket.as_deref(), |recovering| {
+                let reservation = if recovering {
+                    None
+                } else {
+                    Some(crate::ownership::update_admission::Reservation::begin(
+                        &options.root,
+                        "native-server-startup",
+                    )?)
+                };
+                Ok((reservation, recovering))
+            })?;
         if let Some(message) = super::bind_policy::refusal(
             &options.address.ip().to_string(),
             &super::tokens::TokenStore::new(options.root.clone()),
@@ -91,8 +115,12 @@ impl Server {
         listener.set_nonblocking(true)?;
         let address = listener.local_addr()?;
         let log = Arc::new(
-            crate::runtime_log::RuntimeLog::new(&options.browser.logs, "native-http")
-                .with_verbose(verbose),
+            (if recovering {
+                crate::runtime_log::RuntimeLog::without_file()
+            } else {
+                crate::runtime_log::RuntimeLog::new(&options.browser.logs, "native-http")
+            })
+            .with_verbose(verbose),
         );
         log.event("INFO", "server", "Startup requested");
         let worker_log = log.clone();
@@ -119,7 +147,7 @@ impl Server {
                 runtime.block_on(async move {
                     let prepared = async {
                         let listener = tokio::net::TcpListener::from_std(listener)?;
-                        let router = application::router_with_dashboard(
+                        let router = application::router_with_recovery(
                             options.root,
                             &options.token,
                             &options.origins,
@@ -130,6 +158,7 @@ impl Server {
                                 sessions: worker_sessions,
                             },
                             (Some(options.browser), options.dashboard.as_deref()),
+                            recovery,
                         )
                         .await?;
                         Ok::<_, io::Error>((listener, router))
@@ -144,7 +173,9 @@ impl Server {
                         }
                     };
                     worker_log.event("DEBUG", "server", "Router prepared");
-                    startup_admission.release()?;
+                    if let Some(admission) = &mut startup_admission {
+                        admission.release()?;
+                    }
                     if worker_stop.load(Ordering::Acquire) || ready.send(Ok(())).is_err() {
                         return Ok(());
                     }
@@ -153,15 +184,20 @@ impl Server {
                     let scheduler_stop = worker_stop.clone();
                     let scheduled = tokio::task::spawn_blocking(move || {
                         while !scheduler_stop.load(Ordering::Acquire) {
-                            if let Err(error) = scheduler.tick() {
-                                scheduler_log.message(
-                                    "ERROR",
-                                    "scheduler",
-                                    &format!("Scheduler tick failed: {error}"),
-                                );
-                            }
-                            for error in retry_retained_background(Duration::ZERO) {
-                                eprintln!("Retained browser cleanup pending: {error}");
+                            // A closed recovery engine serves ready/private
+                            // resume without admitted work, scheduler writes or
+                            // cleanup side effects until the ticket reopens it.
+                            if admission.assert_open().is_ok() {
+                                if let Err(error) = scheduler.tick() {
+                                    scheduler_log.message(
+                                        "ERROR",
+                                        "scheduler",
+                                        &format!("Scheduler tick failed: {error}"),
+                                    );
+                                }
+                                for error in retry_retained_background(Duration::ZERO) {
+                                    eprintln!("Retained browser cleanup pending: {error}");
+                                }
                             }
                             let deadline = Instant::now() + Duration::from_secs(60);
                             while Instant::now() < deadline
@@ -274,24 +310,39 @@ impl Server {
                 self.failure = result.err();
             }
             let sessions = self.sessions.clone();
+            #[cfg(feature = "test-support")]
+            let observation = crate::ownership::test_support::capture();
             self.worker = Some(
                 thread::Builder::new()
                     .name("numera-http-cleanup".into())
                     .spawn(move || {
-                        let mut failures = sessions
-                            .shutdown(Duration::from_secs(10))
-                            .into_iter()
-                            .map(|(_, error)| error)
-                            .collect::<Vec<_>>();
-                        failures.extend(retry_retained_background(Duration::from_secs(10)));
-                        if failures.is_empty() {
-                            Ok(())
-                        } else {
-                            Err(io::Error::other(format!(
-                                "HTTP browser cleanup remains unsettled: {}",
-                                failures.join("; ")
-                            )))
-                        }
+                        let cleanup = || {
+                            let deadline = Instant::now() + Duration::from_secs(10);
+                            let remaining = || deadline.saturating_duration_since(Instant::now());
+                            let mut failures = sessions
+                                .shutdown(remaining())
+                                .into_iter()
+                                .map(|(_, error)| error)
+                                .collect::<Vec<_>>();
+                            failures.extend(retry_retained_background(remaining()));
+                            failures.extend(crate::ownership::capture::retry_retained(remaining()));
+                            failures.extend(crate::ownership::capture_units::retry_retained(
+                                remaining(),
+                            ));
+                            failures.extend(crate::browser::adapter::retry_retained(remaining()));
+                            if failures.is_empty() {
+                                Ok(())
+                            } else {
+                                Err(io::Error::other(format!(
+                                    "HTTP browser cleanup remains unsettled: {}",
+                                    failures.join("; ")
+                                )))
+                            }
+                        };
+                        #[cfg(feature = "test-support")]
+                        return crate::ownership::test_support::with_context(observation, cleanup);
+                        #[cfg(not(feature = "test-support"))]
+                        cleanup()
                     })?,
             );
             self.cleaning = true;

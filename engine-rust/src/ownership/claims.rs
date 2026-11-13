@@ -22,10 +22,19 @@ fn path(root: &Path, id: &str) -> io::Result<PathBuf> {
     id_path(&root.join("sessions"), id, ".json").map_err(io::Error::other)
 }
 pub fn read(root: &Path, id: &str) -> Claim {
+    if crate::storage::paths::safe_id(id).is_err() {
+        return Claim::Absent;
+    }
     let path = match path(root, id) {
         Ok(path) => path,
-        Err(_) => return Claim::Absent,
+        // A valid ID whose storage path cannot be observed safely is unknown
+        // ownership. Linked/inaccessible paths must not authorize a new owner.
+        Err(_) => return Claim::Unreadable,
     };
+    #[cfg(feature = "test-support")]
+    if crate::vault::testing::event("before-claim-read", &path).is_err() {
+        return Claim::Unreadable;
+    }
     let bytes = match fs::read(path) {
         Ok(bytes) => bytes,
         Err(e) if e.kind() == io::ErrorKind::NotFound => return Claim::Absent,
@@ -155,11 +164,56 @@ pub fn clear(root: &Path, id: &str, host: &str) -> io::Result<bool> {
 pub fn release(root: &Path, id: &str, session: &str, tree: &mut OwnedTree) -> io::Result<bool> {
     let lock = DataLock::transaction(root)?;
     let _guard = lock.acquire_configured()?;
+    release_locked(root, id, session, tree, None)
+}
+
+pub(crate) fn release_before(
+    root: &Path,
+    id: &str,
+    session: &str,
+    tree: &mut OwnedTree,
+    deadline: std::time::Instant,
+) -> io::Result<bool> {
+    let lock = DataLock::transaction(root)?;
+    let _guard = lock.acquire(deadline.saturating_duration_since(std::time::Instant::now()))?;
+    release_locked(root, id, session, tree, Some(deadline))
+}
+
+fn release_locked(
+    root: &Path,
+    id: &str,
+    session: &str,
+    tree: &mut OwnedTree,
+    deadline: Option<std::time::Instant>,
+) -> io::Result<bool> {
     let Claim::Record(record) = read(root, id) else {
         return Ok(false);
     };
-    if record["session"] != session || !tree.empty()? || !record_empty(&record)? {
+    if record["session"] != session {
         return Ok(false);
+    }
+    loop {
+        // Another process can disappear while the final process-table snapshot
+        // is read. Unknown remains unknown; a bounded owner may retry proof
+        // without restarting its cleanup budget or discarding the claim.
+        match tree.empty().and_then(|empty| {
+            if empty {
+                record_empty(&record)
+            } else {
+                Ok(false)
+            }
+        }) {
+            Ok(true) => break,
+            Ok(false) => return Ok(false),
+            Err(error) => match deadline {
+                Some(deadline) if std::time::Instant::now() < deadline => std::thread::sleep(
+                    deadline
+                        .saturating_duration_since(std::time::Instant::now())
+                        .min(std::time::Duration::from_millis(5)),
+                ),
+                _ => return Err(error),
+            },
+        }
     }
     match fs::remove_file(path(root, id)?) {
         Ok(()) => Ok(true),

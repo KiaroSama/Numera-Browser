@@ -1,42 +1,36 @@
 use super::*;
-use crate::browser::adapter::Adapter;
 use crate::common;
 use axum::body::to_bytes;
-use std::{process::Command, time::Duration};
 
 #[test]
 fn dashboard_files_and_spa_fallback_match_original_without_swallowing_api()
 -> Result<(), Box<dyn std::error::Error>> {
     let root = common::TempDirectory::new("dashboard-response")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Source interpreter required")?;
-    let mut command = Command::new(python);
-    command.args(["-u","-c",r#"
-import json,os,sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from dashboard_cases import cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':cases(os.environ['FIXTURE_ROOT'])}),flush=True)
-"#]).env("PYTHONUTF8","1").env("FIXTURE_ROOT",root.path().join("source"))
-        .env("PYTHONPATH",std::env::join_paths([repository.join("scripts/migration"),repository.join("engine")])?);
-    let mut source = Adapter::spawn(
-        root.path(),
-        "oracle",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = source.call(
-        "observe-dashboard",
-        Default::default(),
-        Duration::from_secs(20),
-    )?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
+    // Frozen immutable source HTTP observations. Prepare the same four real
+    // build files natively and exercise the actual static/authenticated routers.
+    let document: serde_json::Value = serde_json::from_str(include_str!(
+        "../../tests/fixtures/native-http-dashboard/responses.json"
+    ))?;
+    let inputs: serde_json::Value = serde_json::from_str(include_str!(
+        "../../tests/fixtures/native-http-dashboard/manifest.json"
+    ))?;
     let build = root.path().join("source/web");
+    std::fs::create_dir_all(build.join("assets"))?;
+    let files = inputs["inputs"]
+        .as_array()
+        .ok_or("Dashboard inputs missing")?;
+    assert_eq!(files.len(), 4, "Dashboard input files missing");
+    for input in files {
+        let bytes: Vec<u8> = serde_json::from_value(input["bytes"].clone())?;
+        std::fs::write(
+            build.join(
+                input["relative"]
+                    .as_str()
+                    .ok_or("Dashboard input name missing")?,
+            ),
+            bytes,
+        )?;
+    }
     let router = mount(Router::new(), Some(&build))?;
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -133,6 +127,20 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':cases(os.en
         }
         Ok::<(), Box<dyn std::error::Error>>(())
     })?;
+    for input in files {
+        let expected: Vec<u8> = serde_json::from_value(input["bytes"].clone())?;
+        assert_eq!(
+            std::fs::read(
+                build.join(
+                    input["relative"]
+                        .as_str()
+                        .ok_or("Dashboard input name missing")?
+                )
+            )?,
+            expected,
+            "Dashboard request changed a build file",
+        );
+    }
     assert_eq!(discover(&root.path().join("source")), Some(build));
     root.cleanup()?;
     Ok(())

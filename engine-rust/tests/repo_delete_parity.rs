@@ -7,106 +7,19 @@ mod common;
 #[test]
 fn direct_session_paths_and_deletion_match_original_without_touching_profiles()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::ownership::capture;
-    use std::{path::Path, process::Command, time::Duration};
-
     let temporary = common::TempDirectory::new("direct-session-storage")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import json,os,sys
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-os.environ.pop('NUMERA_PASSWORD',None)
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.store import ProfileStore
-from run_logging import run_log
-rows=[]
-with run_log('direct-session-storage-oracle',parent/'logs') as log:
-    for identifier in ['fixture-profile','a_b-9','a'*64,'','../outside','a/b','CON','日本語']:
-        root=parent/str(len(rows))
-        store=ProfileStore(root)
-        try:
-            path=store.user_data_path(identifier)
-            result=str(path.relative_to(root)).replace('\\','/')
-            assert store.user_data_path(identifier)==path
-            error=None
-        except ValueError as exc:result,error=None,str(exc)
-        rows.append({'op':'path','id':identifier,'result':result,'error':error,
-                     'directories':sorted(p.name for p in (root/'user-data').iterdir())})
-    for mode in ['present','absent','empty-claim','broken-claim','foreign-claim']:
-        root=parent/str(len(rows))
-        store=ProfileStore(root)
-        files={'config.json':b'{"future":[true,7]}','profiles/fixture-profile.json':b'{"future":"engine"}',
-               'dashboard/fixture-profile.json':b'{"future":"dashboard"}'}
-        if mode!='absent':
-            path=store.user_data_path('fixture-profile')
-            (path/'nested').mkdir()
-            (path/'nested/session.bin').write_bytes(b'\x00\xff\n\r\n')
-        claim={'empty-claim':b'{}','broken-claim':b'{broken',
-               'foreign-claim':b'{"host":"foreign-fixture","session":"fixture","pid":1}'}.get(mode)
-        if claim is not None:files['sessions/fixture-profile.json']=claim
-        for name,raw in files.items():
-            path=root/name
-            path.parent.mkdir(parents=True,exist_ok=True)
-            path.write_bytes(raw)
-        before={str(p.relative_to(root)).replace('\\','/'):list(p.read_bytes())
-                for directory in ['profiles','dashboard','sessions'] for p in (root/directory).glob('*')}
-        before['config.json']=list((root/'config.json').read_bytes())
-        try:
-            result=store.delete_session('fixture-profile')
-            store.delete_session('fixture-profile')
-            error=None
-        except RuntimeError as exc:result,error=None,str(exc)
-        after={name:list((root/name).read_bytes()) for name in before}
-        rows.append({'op':'delete','mode':mode,'files':{name:list(raw) for name,raw in files.items()},
-                     'result':result,'error':error,'unchanged':before==after,
-                     'session':(root/'user-data/fixture-profile').exists(),
-                     'binary':list((root/'user-data/fixture-profile/nested/session.bin').read_bytes())
-                              if (root/'user-data/fixture-profile/nested/session.bin').exists() else None,
-                     'tombs':sorted(p.name for p in (root/'user-data').glob('*.deleting-*'))})
-    for identifier in ['', '../outside', 'CON', '日本語']:
-        root=parent/str(len(rows))
-        store=ProfileStore(root)
-        (root/'sentinel').write_bytes(b'keep')
-        try:
-            result=store.delete_session(identifier)
-            error=None
-        except (RuntimeError,ValueError) as exc:result,error=None,str(exc)
-        rows.append({'op':'invalid-delete','id':identifier,'result':result,'error':error,
-                     'sentinel':list((root/'sentinel').read_bytes()),
-                     'directories':sorted(p.name for p in (root/'user-data').iterdir())})
-    for mode in ['relative','alias']:
-        root=parent/str(len(rows))
-        if mode=='relative':root_arg=Path(os.path.relpath(root))
-        else:
-            (root/'alias').mkdir(parents=True)
-            root_arg=root/'alias'/'..'/'actual'
-        store=ProfileStore(root_arg)
-        path=store.user_data_path('fixture-profile')
-        rows.append({'op':'path-root','mode':mode,'absolute':path.is_absolute(),
-                     'same':path==root_arg/'user-data'/'fixture-profile','directory':path.is_dir()})
-    log.info('Observed direct session storage cases=%s',len(rows))
-    print(json.dumps(rows))
-"#]).arg(repository).arg(temporary.path().join("source"));
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 131072,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(original.exit, 0, "Original direct-session observer failed");
-    let rows: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let rows: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/direct_session_paths_and_deletion_match_original_without_touching_profiles.json"
+    ))?;
     assert_eq!(rows.len(), 19);
+    // The current source checkpoint resolves roots before its containment
+    // checks; keep that verified safety upgrade separate from the 13b data.
+    let current_paths: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/native-storage-paths/current-root-resolution.json"
+    ))?;
+    assert_eq!(current_paths.len(), 2);
+
     for (index, row) in rows.iter().enumerate() {
         let root = temporary.path().join(format!("native-{index}"));
         fs::create_dir_all(root.join("user-data"))?;
@@ -132,6 +45,10 @@ with run_log('direct-session-storage-oracle',parent/'logs') as log:
             continue;
         }
         if row["op"] == "path-root" {
+            let row = current_paths
+                .iter()
+                .find(|expected| expected["mode"] == row["mode"])
+                .ok_or("Current root resolution observation missing")?;
             let argument = if row["mode"] == "relative" {
                 root.strip_prefix(std::env::current_dir()?)?.to_path_buf()
             } else {

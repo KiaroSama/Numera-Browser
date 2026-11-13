@@ -1,0 +1,1176 @@
+[
+  {
+    "raw": "ff",
+    "operation": "list",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "ff",
+    "operation": "get",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "ff",
+    "operation": "withheld",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "ff",
+    "operation": "update",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "ff",
+    "operation": "empty-update",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "ff",
+    "operation": "update-many",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "ff",
+    "operation": "empty-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "ff",
+    "operation": "delete",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "ff",
+    "operation": "missing-delete",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "ff",
+    "operation": "add-empty",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22c328225d",
+    "operation": "list",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22c328225d",
+    "operation": "get",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22c328225d",
+    "operation": "withheld",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22c328225d",
+    "operation": "update",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22c328225d",
+    "operation": "empty-update",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22c328225d",
+    "operation": "update-many",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22c328225d",
+    "operation": "empty-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22c328225d",
+    "operation": "delete",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22c328225d",
+    "operation": "missing-delete",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22c328225d",
+    "operation": "add-empty",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22e282",
+    "operation": "list",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22e282",
+    "operation": "get",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22e282",
+    "operation": "withheld",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22e282",
+    "operation": "update",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22e282",
+    "operation": "empty-update",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22e282",
+    "operation": "update-many",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22e282",
+    "operation": "empty-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22e282",
+    "operation": "delete",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22e282",
+    "operation": "missing-delete",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "5b22e282",
+    "operation": "add-empty",
+    "outcome": {
+      "result": null,
+      "error": "UnicodeDecodeError"
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "7b62726f6b656e",
+    "operation": "list",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "7b62726f6b656e",
+    "operation": "get",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "7b62726f6b656e",
+    "operation": "withheld",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "7b62726f6b656e",
+    "operation": "update",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "7b62726f6b656e",
+    "operation": "empty-update",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "7b62726f6b656e",
+    "operation": "update-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "7b62726f6b656e",
+    "operation": "empty-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "7b62726f6b656e",
+    "operation": "delete",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "7b62726f6b656e",
+    "operation": "missing-delete",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "7b62726f6b656e",
+    "operation": "add-empty",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": [],
+    "unchanged": false
+  },
+  {
+    "raw": "7b7d",
+    "operation": "list",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": {},
+    "unchanged": true
+  },
+  {
+    "raw": "7b7d",
+    "operation": "get",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": {},
+    "unchanged": true
+  },
+  {
+    "raw": "7b7d",
+    "operation": "withheld",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": {},
+    "unchanged": true
+  },
+  {
+    "raw": "7b7d",
+    "operation": "update",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": {},
+    "unchanged": true
+  },
+  {
+    "raw": "7b7d",
+    "operation": "empty-update",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": {},
+    "unchanged": true
+  },
+  {
+    "raw": "7b7d",
+    "operation": "update-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": {},
+    "unchanged": true
+  },
+  {
+    "raw": "7b7d",
+    "operation": "empty-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": {},
+    "unchanged": true
+  },
+  {
+    "raw": "7b7d",
+    "operation": "delete",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": {},
+    "unchanged": true
+  },
+  {
+    "raw": "7b7d",
+    "operation": "missing-delete",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": {},
+    "unchanged": true
+  },
+  {
+    "raw": "7b7d",
+    "operation": "add-empty",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": [],
+    "unchanged": false
+  },
+  {
+    "raw": "5b5d",
+    "operation": "list",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "raw": "5b5d",
+    "operation": "get",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "raw": "5b5d",
+    "operation": "withheld",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "raw": "5b5d",
+    "operation": "update",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "raw": "5b5d",
+    "operation": "empty-update",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "raw": "5b5d",
+    "operation": "update-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "raw": "5b5d",
+    "operation": "empty-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "raw": "5b5d",
+    "operation": "delete",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "raw": "5b5d",
+    "operation": "missing-delete",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "raw": "5b5d",
+    "operation": "add-empty",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "raw": "6e756c6c",
+    "operation": "list",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "6e756c6c",
+    "operation": "get",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "6e756c6c",
+    "operation": "withheld",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "6e756c6c",
+    "operation": "update",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "6e756c6c",
+    "operation": "empty-update",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "6e756c6c",
+    "operation": "update-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "6e756c6c",
+    "operation": "empty-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "6e756c6c",
+    "operation": "delete",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "6e756c6c",
+    "operation": "missing-delete",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": "6e756c6c",
+    "operation": "add-empty",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": [],
+    "unchanged": false
+  },
+  {
+    "raw": null,
+    "operation": "list",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": null,
+    "operation": "get",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": null,
+    "operation": "withheld",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": null,
+    "operation": "update",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": null,
+    "operation": "empty-update",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": null,
+    "operation": "update-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": null,
+    "operation": "empty-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": null,
+    "operation": "delete",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": null,
+    "operation": "missing-delete",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "raw": null,
+    "operation": "add-empty",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": [],
+    "unchanged": false
+  },
+  {
+    "raw": "5b7b226964223a2266697874757265222c22686f7374223a22686f73742e74657374222c22706f7274223a223830222c2270617373223a6e756c6c2c22667574757265223a5b747275652c375d7d5d",
+    "operation": "list",
+    "outcome": {
+      "result": [
+        {
+          "id": "fixture",
+          "host": "host.test",
+          "port": "80",
+          "pass": null,
+          "future": [
+            true,
+            7
+          ]
+        }
+      ],
+      "error": null
+    },
+    "disk": [
+      {
+        "id": "fixture",
+        "host": "host.test",
+        "port": "80",
+        "pass": null,
+        "future": [
+          true,
+          7
+        ]
+      }
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b226964223a2266697874757265222c22686f7374223a22686f73742e74657374222c22706f7274223a223830222c2270617373223a6e756c6c2c22667574757265223a5b747275652c375d7d5d",
+    "operation": "get",
+    "outcome": {
+      "result": {
+        "id": "fixture",
+        "host": "host.test",
+        "port": "80",
+        "pass": null,
+        "future": [
+          true,
+          7
+        ]
+      },
+      "error": null
+    },
+    "disk": [
+      {
+        "id": "fixture",
+        "host": "host.test",
+        "port": "80",
+        "pass": null,
+        "future": [
+          true,
+          7
+        ]
+      }
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b226964223a2266697874757265222c22686f7374223a22686f73742e74657374222c22706f7274223a223830222c2270617373223a6e756c6c2c22667574757265223a5b747275652c375d7d5d",
+    "operation": "withheld",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": [
+      {
+        "id": "fixture",
+        "host": "host.test",
+        "port": "80",
+        "pass": null,
+        "future": [
+          true,
+          7
+        ]
+      }
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b226964223a2266697874757265222c22686f7374223a22686f73742e74657374222c22706f7274223a223830222c2270617373223a6e756c6c2c22667574757265223a5b747275652c375d7d5d",
+    "operation": "update",
+    "outcome": {
+      "result": {
+        "id": "fixture",
+        "host": "host.test",
+        "port": "80",
+        "pass": null,
+        "future": [
+          true,
+          7
+        ],
+        "label": "\u03b1"
+      },
+      "error": null
+    },
+    "disk": [
+      {
+        "id": "fixture",
+        "host": "host.test",
+        "port": "80",
+        "pass": null,
+        "future": [
+          true,
+          7
+        ],
+        "label": "\u03b1"
+      }
+    ],
+    "unchanged": false
+  },
+  {
+    "raw": "5b7b226964223a2266697874757265222c22686f7374223a22686f73742e74657374222c22706f7274223a223830222c2270617373223a6e756c6c2c22667574757265223a5b747275652c375d7d5d",
+    "operation": "empty-update",
+    "outcome": {
+      "result": {
+        "id": "fixture",
+        "host": "host.test",
+        "port": "80",
+        "pass": null,
+        "future": [
+          true,
+          7
+        ]
+      },
+      "error": null
+    },
+    "disk": [
+      {
+        "id": "fixture",
+        "host": "host.test",
+        "port": "80",
+        "pass": null,
+        "future": [
+          true,
+          7
+        ]
+      }
+    ],
+    "unchanged": false
+  },
+  {
+    "raw": "5b7b226964223a2266697874757265222c22686f7374223a22686f73742e74657374222c22706f7274223a223830222c2270617373223a6e756c6c2c22667574757265223a5b747275652c375d7d5d",
+    "operation": "update-many",
+    "outcome": {
+      "result": [
+        {
+          "id": "fixture",
+          "host": "host.test",
+          "port": "80",
+          "pass": null,
+          "future": [
+            true,
+            7
+          ],
+          "label": "\u03b1"
+        }
+      ],
+      "error": null
+    },
+    "disk": [
+      {
+        "id": "fixture",
+        "host": "host.test",
+        "port": "80",
+        "pass": null,
+        "future": [
+          true,
+          7
+        ],
+        "label": "\u03b1"
+      }
+    ],
+    "unchanged": false
+  },
+  {
+    "raw": "5b7b226964223a2266697874757265222c22686f7374223a22686f73742e74657374222c22706f7274223a223830222c2270617373223a6e756c6c2c22667574757265223a5b747275652c375d7d5d",
+    "operation": "empty-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": [
+      {
+        "id": "fixture",
+        "host": "host.test",
+        "port": "80",
+        "pass": null,
+        "future": [
+          true,
+          7
+        ]
+      }
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b226964223a2266697874757265222c22686f7374223a22686f73742e74657374222c22706f7274223a223830222c2270617373223a6e756c6c2c22667574757265223a5b747275652c375d7d5d",
+    "operation": "delete",
+    "outcome": {
+      "result": true,
+      "error": null
+    },
+    "disk": [],
+    "unchanged": false
+  },
+  {
+    "raw": "5b7b226964223a2266697874757265222c22686f7374223a22686f73742e74657374222c22706f7274223a223830222c2270617373223a6e756c6c2c22667574757265223a5b747275652c375d7d5d",
+    "operation": "missing-delete",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": [
+      {
+        "id": "fixture",
+        "host": "host.test",
+        "port": "80",
+        "pass": null,
+        "future": [
+          true,
+          7
+        ]
+      }
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b226964223a2266697874757265222c22686f7374223a22686f73742e74657374222c22706f7274223a223830222c2270617373223a6e756c6c2c22667574757265223a5b747275652c375d7d5d",
+    "operation": "add-empty",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": [
+      {
+        "id": "fixture",
+        "host": "host.test",
+        "port": "80",
+        "pass": null,
+        "future": [
+          true,
+          7
+        ]
+      }
+    ],
+    "unchanged": false
+  },
+  {
+    "raw": "5b7b7d5d",
+    "operation": "list",
+    "outcome": {
+      "result": [
+        {}
+      ],
+      "error": null
+    },
+    "disk": [
+      {}
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b7d5d",
+    "operation": "get",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": [
+      {}
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b7d5d",
+    "operation": "withheld",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": [
+      {}
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b7d5d",
+    "operation": "update",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": [
+      {}
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b7d5d",
+    "operation": "empty-update",
+    "outcome": {
+      "result": null,
+      "error": null
+    },
+    "disk": [
+      {}
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b7d5d",
+    "operation": "update-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": [
+      {}
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b7d5d",
+    "operation": "empty-many",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": [
+      {}
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b7d5d",
+    "operation": "delete",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": [
+      {}
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b7d5d",
+    "operation": "missing-delete",
+    "outcome": {
+      "result": false,
+      "error": null
+    },
+    "disk": [
+      {}
+    ],
+    "unchanged": true
+  },
+  {
+    "raw": "5b7b7d5d",
+    "operation": "add-empty",
+    "outcome": {
+      "result": [],
+      "error": null
+    },
+    "disk": [
+      {}
+    ],
+    "unchanged": false
+  }
+]

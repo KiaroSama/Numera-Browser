@@ -28,7 +28,7 @@ fn rules() -> &'static Rules {
     })
 }
 
-pub(crate) fn redact(text: &str) -> String {
+pub fn redact(text: &str) -> String {
     let rules = rules();
     let mut text = text.to_owned();
     for pattern in &rules.patterns {

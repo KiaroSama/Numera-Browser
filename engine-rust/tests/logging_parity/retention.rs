@@ -23,58 +23,8 @@ fn name(index: usize) -> String {
 fn run_retention_matches_original_mtime_order_and_namespace()
 -> Result<(), Box<dyn std::error::Error>> {
     let temporary = common::TempDirectory::new("retained logs α")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut original = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    original.args(["-I", "-B", "-c", r#"
-import json,logging,os,sys
-from pathlib import Path
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera import logs
-rows=[]
-for count in (0,1,19,20,21,27):
-    data=root/str(count)
-    directory=data/'logs'
-    directory.mkdir(parents=True)
-    for index in range(count):
-        path=directory/f'numera_2020-01-01_00-00-00_UTC.{index+1}.log'
-        path.write_text(str(index),encoding='utf-8')
-        # Reverse filename order deliberately; retention is by modification time.
-        os.utime(path,(1000000000+count-index,)*2)
-    foreign=directory/'other_2020-01-01_00-00-00_UTC.log'
-    foreign.write_text('retained',encoding='utf-8')
-    current=logs.setup(data)
-    assert current is not None
-    retained=sorted(p.read_text(encoding='utf-8') for p in directory.glob('numera_*.log') if p!=current)
-    assert foreign.read_text(encoding='utf-8')=='retained'
-    rows.append(dict(count=count,retained=retained))
-    logger=logging.getLogger(logs.LOGGER_NAME)
-    for handler in list(logger.handlers):
-        logger.removeHandler(handler)
-        handler.close()
-print(json.dumps(rows))
-"#]).arg(repository).arg(temporary.path().join("original"));
-    let output = capture::run(
-        &mut original,
-        capture::Limits {
-            wall: Duration::from_secs(10),
-            idle: Duration::from_secs(10),
-            bytes: 128 * 1024,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(output.exit, 0, "Original retention observer failed");
-    assert!(
-        output.stderr.is_empty(),
-        "Original retention observer emitted diagnostics"
-    );
-    let observations: Vec<Retention> = serde_json::from_slice(&output.stdout)?;
+    let observations: Vec<Retention> =
+        serde_json::from_value(http_fixture::oracle("log-retention")?)?;
     assert_eq!(
         observations.iter().map(|row| row.count).collect::<Vec<_>>(),
         [0, 1, 19, 20, 21, 27]

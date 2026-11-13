@@ -51,7 +51,12 @@ pub(crate) fn finish(
                 "master-password rotation",
             ));
         }
-        end_journal(root)?;
+        end_journal(root).map_err(|error| {
+            super::recovery::caused_refusal(
+                format!("Vault migration cleanup failed; evidence retained: {error}"),
+                error,
+            )
+        })?;
         return Ok(true);
     }
     let (Some(password), Some(old_password)) = (
@@ -89,6 +94,8 @@ pub(crate) fn finish(
             "that is not the master password the rotation was moving away from",
         ));
     }
+    #[cfg(feature = "test-support")]
+    super::testing::event("before-recovery", root)?;
     let mut step = Migration::new(root.to_owned());
     let result = (|| {
         step.rekey_all(
@@ -98,10 +105,10 @@ pub(crate) fn finish(
             new["salt"].as_str().unwrap_or(""),
             true,
         )
-        .map_err(|error| refusal(error.to_string()))?;
+        .map_err(super::recovery::migration_failure)?;
         // Recovery also covers plaintext left by a prior incomplete enable.
         step.encrypt_all(password, new["salt"].as_str().unwrap_or(""))
-            .map_err(|error| refusal(error.to_string()))?;
+            .map_err(super::recovery::migration_failure)?;
         commit_and_verify(
             root,
             &mut step,
@@ -114,15 +121,21 @@ pub(crate) fn finish(
     if let Err(error) = result {
         let failures = step.rollback();
         if !failures.is_empty() {
-            return Err(refusal(format!(
-                "Vault recovery failed and {} file(s) could not be restored; journal retained",
-                failures.len()
-            )));
+            return Err(super::recovery::rollback_failed(
+                error,
+                failures,
+                "Vault recovery failed",
+            ));
         }
         sync_data(root)?;
         sync_config(root)?;
         return Err(error);
     }
-    end_journal(root)?;
+    end_journal(root).map_err(|error| {
+        super::recovery::caused_refusal(
+            format!("Vault migration cleanup failed; evidence retained: {error}"),
+            error,
+        )
+    })?;
     Ok(true)
 }

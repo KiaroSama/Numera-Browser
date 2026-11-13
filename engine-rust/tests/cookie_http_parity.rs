@@ -3,59 +3,25 @@ use axum::{
     http::Request,
 };
 use numera_core::{
-    browser::{adapter::Adapter, runtime::Runtime},
+    browser::runtime::Runtime,
     http::application::{SessionApplication, router_with_browser},
     ownership::registry::Registry,
 };
 use serde_json::{Value, json};
-use std::{collections::BTreeMap, path::Path, process::Command, sync::Arc, time::Duration};
+use std::{collections::BTreeMap, sync::Arc, time::Duration};
 use tower::ServiceExt;
 mod common;
+use numera_core as core;
+#[allow(dead_code)]
+#[path = "common/browser_fixture.rs"]
+mod fixture;
+#[allow(dead_code)]
+#[path = "common/http_fixture.rs"]
+mod http_fixture;
 
 #[test]
 fn cookie_http_uses_native_format_policy_and_owned_sdk() -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
-    let source_root = common::TempDirectory::new("cookie-http-source")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let script = r#"
-import json, os, sys
-request=json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{}}),flush=True)
-request=json.loads(sys.stdin.readline())
-from cookie_http_cases import cases
-print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':cases(os.environ['FIXTURE_ROOT'])}}),flush=True)
-"#;
-    let mut command = Command::new(&python);
-    command
-        .args(["-u", "-c", script])
-        .env(
-            "PYTHONPATH",
-            format!(
-                "{}{}{}",
-                repository.join("scripts/migration").display(),
-                if cfg!(windows) { ";" } else { ":" },
-                repository.join("engine").display()
-            ),
-        )
-        .env("FIXTURE_ROOT", source_root.path().join("cases"))
-        .env("PYTHONUTF8", "1");
-    let mut oracle = Adapter::spawn(
-        source_root.path(),
-        "a",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = oracle.call(
-        "observe-cookies",
-        Default::default(),
-        Duration::from_secs(30),
-    )?;
-    oracle.finish(Duration::from_secs(5))?;
-    drop(oracle);
-    source_root.cleanup()?;
+    let document = http_fixture::oracle("cookie-http")?;
     let cases = document["cases"]
         .as_array()
         .ok_or("Cookie HTTP cases missing")?;
@@ -77,54 +43,20 @@ print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':{'cases':ca
             std::fs::create_dir_all(root.join("sessions"))?;
             std::fs::write(root.join("sessions/a.json"), claim)?;
         }
-        std::fs::write(
-            root.join("probe.json"),
-            serde_json::to_vec(
-                &json!({"probe":case["probe"],"network":case["network"],"alignment":case["alignment"]}),
-            )?,
-        )?;
-        let adapter = root.join("sdk.py");
-        std::fs::write(
-            &adapter,
-            r#"
-import json, pathlib, sys
-seen=[]
-for line in sys.stdin:
-    request=json.loads(line)
-    op=request['operation']
-    seen.append(op)
-    result={}
-    if op=='hello': result={'backends':{'playwright':{'installed':True},'camoufox':{'installed':True}}}
-    elif op=='open': result={'opened':True,'backend':request['backend']}
-    elif op=='cookies-add': result={'added':True}
-    elif op=='cookies-clear': result={'cleared':True}
-    elif op=='cookies-read': result={'cookies':[{'name':'fixture','value':'synthetic','domain':'.fixture.test'}]}
-    elif op=='route': result={'routed':True}
-    elif op=='navigate': result={'navigated':True}
-    elif op=='evaluate':
-        case=json.loads(pathlib.Path(__file__).with_name('probe.json').read_text(encoding='utf-8'))
-        if case['alignment'] is True and request['expression'].startswith('(fonts)'):
-            for directory in ['profiles','dashboard']:
-                path=pathlib.Path(__file__).with_name(directory).joinpath('a.json')
-                current=json.loads(path.read_text(encoding='utf-8'));current['notes']='edited during probe'
-                path.write_text(json.dumps(current),encoding='utf-8')
-            value=case['probe']['fontsRendered']
-        elif case['network'] is not None:
-            expression=request['expression']
-            kind='info' if 'async (urls)' in expression else 'ice' if 'RTCPeerConnection' in expression else 'dns' if 'idUrl' in expression else 'tls'
-            value=case['network'][kind]
-        else: value=case['probe']
-        result={'evaluated':True,'value':value}
-    elif op=='close': result={'closing':True}
-    else: raise AssertionError('Unexpected browser operation')
-    pathlib.Path(__file__).with_suffix('.seen').write_text(json.dumps(seen),encoding='utf-8')
-    print(json.dumps({'protocol':1,'id':request['id'],'ok':True,'result':result}),flush=True)
-    if op=='close': break
-"#,
+        let mut probe = json!({"observation":case["probe"],"alignment":case["alignment"]});
+        if !case["network"].is_null() {
+            probe["observations"] = case["network"].clone();
+        }
+        let adapter = fixture::executable(
+            &root.join("sdk"),
+            "cli-probe",
+            json!({
+                "case":probe,"store":root,"profile_id":"a","seen_style":"operations",
+                "cookies":[{"name":"fixture","value":"synthetic","domain":".fixture.test"}]
+            }),
         )?;
         let sessions = Arc::new(Registry::new(root.into(), "fixture-host".into(), None)?);
         let browser = Runtime {
-            python: python.clone().into(),
             adapter,
             cwd: root.into(),
             home: root.into(),

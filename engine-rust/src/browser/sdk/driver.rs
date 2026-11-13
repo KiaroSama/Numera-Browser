@@ -27,7 +27,8 @@ pub struct Installation {
 impl Installation {
     pub fn discover(backend: &str) -> io::Result<Self> {
         let key = match backend {
-            "playwright" | "camoufox" => "NUMERA_PLAYWRIGHT_DRIVER",
+            "playwright" => "NUMERA_PLAYWRIGHT_DRIVER",
+            "camoufox" => "NUMERA_CAMOUFOX_DRIVER",
             "patchright" => "NUMERA_PATCHRIGHT_DRIVER",
             "cloak" => "NUMERA_CLOAK_DRIVER",
             _ => return Err(io::Error::other("Unknown SDK backend")),
@@ -35,12 +36,13 @@ impl Installation {
         let root = std::env::var_os(key)
             .map(PathBuf::from)
             .or_else(|| {
-                std::env::var_os("NUMERA_BROWSER_DRIVERS").map(|root| {
-                    PathBuf::from(root).join(if backend == "camoufox" {
-                        "playwright"
-                    } else {
-                        backend
-                    })
+                std::env::var_os("NUMERA_BROWSER_DRIVERS")
+                    .map(|root| PathBuf::from(root).join(backend))
+            })
+            .or_else(|| {
+                std::env::current_exe().ok().and_then(|exe| {
+                    exe.parent()
+                        .map(|parent| parent.join("drivers").join(backend))
                 })
             })
             .ok_or_else(|| io::Error::other("Browser SDK driver has not been provisioned"))?;
@@ -65,8 +67,9 @@ impl Installation {
                 let mut parts = version.split('.');
                 parts.next() == Some("1")
                     && match parts.next() {
-                        Some("64") => true,
-                        Some("65") => backend != "cloak",
+                        Some("62") => backend == "camoufox",
+                        Some("64") => backend != "camoufox",
+                        Some("65") => matches!(backend, "playwright" | "cloak"),
                         _ => false,
                     }
                     && parts.next().is_some_and(|part| part.parse::<u32>().is_ok())
@@ -85,6 +88,11 @@ pub struct Driver {
     playwright: Option<Playwright>,
 }
 impl Driver {
+    pub(super) fn playwright(&self) -> io::Result<&Playwright> {
+        self.playwright
+            .as_ref()
+            .ok_or_else(|| io::Error::other("SDK not initialized"))
+    }
     pub async fn start(installation: Installation) -> playwright_rs::Result<Self> {
         let mut child = Command::new(installation.node)
             .arg(installation.cli)
@@ -92,8 +100,12 @@ impl Driver {
             .env("PW_LANG_NAME", "rust")
             .env("PW_LANG_NAME_VERSION", env!("CARGO_PKG_RUST_VERSION"))
             .env("PW_CLI_DISPLAY_VERSION", env!("CARGO_PKG_VERSION"))
+            .env("CLOAKBROWSER_AUTO_UPDATE", "false")
             .env_remove("NUMERA_PASSWORD")
             .env_remove("NUMERA_API_TOKEN")
+            .env_remove("NUMERA_UPDATE_TOKEN")
+            .env_remove("NUMERA_UPDATE_TICKET")
+            .env_remove("NUMERA_UPDATE_ACTIVATION")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -144,14 +156,20 @@ impl Driver {
 
     pub async fn open(
         &self,
-        firefox: bool,
+        backend: &str,
         options: Value,
     ) -> playwright_rs::Result<BrowserContext> {
+        let request = super::launch_request(
+            backend,
+            options
+                .as_object()
+                .ok_or_else(|| io::Error::other("SDK launch options are invalid"))?,
+        )?;
         let playwright = self
             .playwright
             .as_ref()
             .ok_or_else(|| io::Error::other("SDK not initialized"))?;
-        let browser = if firefox {
+        let browser = if request.family == "firefox" {
             playwright.firefox()
         } else {
             playwright.chromium()
@@ -160,7 +178,7 @@ impl Driver {
         // flags, which would otherwise disable web security in user profiles.
         let response: Value = browser
             .channel()
-            .send("launchPersistentContext", options)
+            .send(request.method, request.options)
             .await?;
         let guid = response["context"]["guid"]
             .as_str()
@@ -202,13 +220,7 @@ impl Drop for Driver {
 pub fn metadata() -> Value {
     let mut backends = serde_json::Map::new();
     for name in ["playwright", "patchright", "camoufox", "cloak"] {
-        // Specialized launch preparation is admitted only once its native
-        // implementation is present; a driver alone must not claim support.
-        let installation = if matches!(name, "playwright" | "patchright") {
-            Installation::discover(name).ok()
-        } else {
-            None
-        };
+        let installation = Installation::discover(name).ok();
         backends.insert(
             name.into(),
             json!({
@@ -217,5 +229,5 @@ pub fn metadata() -> Value {
             }),
         );
     }
-    json!({"backends":backends,"default_addons":[],"runtime":concat!("rust/",env!("CARGO_PKG_RUST_VERSION"))})
+    json!({"backends":backends,"default_addons":["UBO"],"runtime":concat!("rust/",env!("CARGO_PKG_RUST_VERSION"))})
 }

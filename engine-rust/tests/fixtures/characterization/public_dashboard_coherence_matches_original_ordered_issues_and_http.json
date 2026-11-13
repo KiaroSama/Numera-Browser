@@ -1,0 +1,345 @@
+[
+  {
+    "label": "fingerprint-0",
+    "input": {},
+    "issues": []
+  },
+  {
+    "label": "fingerprint-1",
+    "input": {
+      "timezone": "unknown"
+    },
+    "issues": [
+      "timezone does not match locale"
+    ]
+  },
+  {
+    "label": "fingerprint-2",
+    "input": {
+      "screen": "9000x9000"
+    },
+    "issues": [
+      "screen resolution not typical for this os"
+    ]
+  },
+  {
+    "label": "fingerprint-3",
+    "input": {
+      "os": "iOS",
+      "memory": 8
+    },
+    "issues": []
+  },
+  {
+    "label": "fingerprint-4",
+    "input": {
+      "webglRenderer": "alien"
+    },
+    "issues": [
+      "webgl vendor/renderer not valid for this os"
+    ]
+  },
+  {
+    "label": "fingerprint-5",
+    "input": {
+      "fontList": "alien"
+    },
+    "issues": [
+      "fonts not found on windows: alien"
+    ]
+  },
+  {
+    "label": "fingerprint-6",
+    "input": {
+      "maxTouchPoints": -1
+    },
+    "issues": [
+      "maxTouchPoints outside the range real devices report"
+    ]
+  },
+  {
+    "label": "fingerprint-7",
+    "input": {
+      "memory": 3.5
+    },
+    "issues": []
+  },
+  {
+    "label": "fingerprint-8",
+    "input": {
+      "proxy": {
+        "type": "INVALID",
+        "host": "fixture.test"
+      }
+    },
+    "issues": [
+      "could not validate: unsupported proxy type 'INVALID'; expected one of ['HTTP', 'HTTPS', 'SOCKS4', 'SOCKS5']"
+    ]
+  },
+  {
+    "label": "fingerprint-9",
+    "input": {
+      "cores": "invalid"
+    },
+    "issues": []
+  },
+  {
+    "label": "os-Windows",
+    "input": {
+      "os": "Windows"
+    },
+    "issues": []
+  },
+  {
+    "label": "invalid-Windows",
+    "input": {
+      "os": "Windows",
+      "screen": "9000x9000",
+      "maxTouchPoints": 25,
+      "devicePixelRatio": 5,
+      "mediaVideo": -1,
+      "mediaAudio": -1,
+      "webglRenderer": "alien",
+      "fontList": [
+        "Zulu \u03b1",
+        "Alpha \u65e5\u672c\u8a9e"
+      ],
+      "timezone": "unknown"
+    },
+    "issues": [
+      "webgl vendor/renderer not valid for this os",
+      "screen resolution not typical for this os",
+      "timezone does not match locale",
+      "maxTouchPoints outside the range real devices report",
+      "devicePixelRatio outside the range real displays report",
+      "fonts not found on windows: Alpha \u65e5\u672c\u8a9e, Zulu \u03b1",
+      "media device counts cannot be negative"
+    ]
+  },
+  {
+    "label": "os-macOS",
+    "input": {
+      "os": "macOS"
+    },
+    "issues": []
+  },
+  {
+    "label": "invalid-macOS",
+    "input": {
+      "os": "macOS",
+      "screen": "9000x9000",
+      "maxTouchPoints": 25,
+      "devicePixelRatio": 5,
+      "mediaVideo": -1,
+      "mediaAudio": -1,
+      "webglRenderer": "alien",
+      "fontList": [
+        "Zulu \u03b1",
+        "Alpha \u65e5\u672c\u8a9e"
+      ],
+      "timezone": "unknown"
+    },
+    "issues": [
+      "webgl vendor/renderer not valid for this os",
+      "screen resolution not typical for this os",
+      "timezone does not match locale",
+      "maxTouchPoints outside the range real devices report",
+      "devicePixelRatio outside the range real displays report",
+      "fonts not found on macos: Alpha \u65e5\u672c\u8a9e, Zulu \u03b1",
+      "media device counts cannot be negative"
+    ]
+  },
+  {
+    "label": "os-Linux",
+    "input": {
+      "os": "Linux"
+    },
+    "issues": []
+  },
+  {
+    "label": "invalid-Linux",
+    "input": {
+      "os": "Linux",
+      "screen": "9000x9000",
+      "maxTouchPoints": 25,
+      "devicePixelRatio": 5,
+      "mediaVideo": -1,
+      "mediaAudio": -1,
+      "webglRenderer": "alien",
+      "fontList": [
+        "Zulu \u03b1",
+        "Alpha \u65e5\u672c\u8a9e"
+      ],
+      "timezone": "unknown"
+    },
+    "issues": [
+      "webgl vendor/renderer not valid for this os",
+      "screen resolution not typical for this os",
+      "timezone does not match locale",
+      "maxTouchPoints outside the range real devices report",
+      "devicePixelRatio outside the range real displays report",
+      "fonts not found on linux: Alpha \u65e5\u672c\u8a9e, Zulu \u03b1",
+      "media device counts cannot be negative"
+    ]
+  },
+  {
+    "label": "os-Android",
+    "input": {
+      "os": "Android"
+    },
+    "issues": []
+  },
+  {
+    "label": "invalid-Android",
+    "input": {
+      "os": "Android",
+      "screen": "9000x9000",
+      "maxTouchPoints": 25,
+      "devicePixelRatio": 5,
+      "mediaVideo": -1,
+      "mediaAudio": -1,
+      "webglRenderer": "alien",
+      "fontList": [
+        "Zulu \u03b1",
+        "Alpha \u65e5\u672c\u8a9e"
+      ],
+      "timezone": "unknown"
+    },
+    "issues": [
+      "webgl vendor/renderer not valid for this os",
+      "screen resolution not typical for this os",
+      "timezone does not match locale",
+      "maxTouchPoints outside the range real devices report",
+      "devicePixelRatio outside the range real displays report",
+      "fonts not found on android: Alpha \u65e5\u672c\u8a9e, Zulu \u03b1",
+      "media device counts cannot be negative"
+    ]
+  },
+  {
+    "label": "os-iOS",
+    "input": {
+      "os": "iOS"
+    },
+    "issues": []
+  },
+  {
+    "label": "invalid-iOS",
+    "input": {
+      "os": "iOS",
+      "screen": "9000x9000",
+      "maxTouchPoints": 25,
+      "devicePixelRatio": 5,
+      "mediaVideo": -1,
+      "mediaAudio": -1,
+      "webglRenderer": "alien",
+      "fontList": [
+        "Zulu \u03b1",
+        "Alpha \u65e5\u672c\u8a9e"
+      ],
+      "timezone": "unknown"
+    },
+    "issues": [
+      "webgl vendor/renderer not valid for this os",
+      "screen resolution not typical for this os",
+      "timezone does not match locale",
+      "maxTouchPoints outside the range real devices report",
+      "devicePixelRatio outside the range real displays report",
+      "fonts not found on ios: Alpha \u65e5\u672c\u8a9e, Zulu \u03b1",
+      "media device counts cannot be negative"
+    ]
+  },
+  {
+    "label": "extra-20",
+    "input": {
+      "id": "explicit"
+    },
+    "issues": []
+  },
+  {
+    "label": "extra-21",
+    "input": {
+      "screen": "not a screen"
+    },
+    "issues": []
+  },
+  {
+    "label": "extra-22",
+    "input": {
+      "locale": "not-a-locale"
+    },
+    "issues": [
+      "unknown locale 'not-a-locale'"
+    ]
+  },
+  {
+    "label": "extra-23",
+    "input": {
+      "cores": "3.5"
+    },
+    "issues": []
+  },
+  {
+    "label": "extra-24",
+    "input": {
+      "cores": 3.5
+    },
+    "issues": []
+  },
+  {
+    "label": "extra-25",
+    "input": {
+      "cores": false
+    },
+    "issues": []
+  },
+  {
+    "label": "extra-26",
+    "input": {
+      "proxy": {
+        "host": "fixture.test",
+        "type": "SOCKS4"
+      }
+    },
+    "issues": []
+  },
+  {
+    "label": "extra-27",
+    "input": {
+      "proxy": {
+        "host": "fixture.test",
+        "type": "INVALID"
+      },
+      "screen": "9000x9000"
+    },
+    "issues": [
+      "could not validate: unsupported proxy type 'INVALID'; expected one of ['HTTP', 'HTTPS', 'SOCKS4', 'SOCKS5']"
+    ]
+  },
+  {
+    "label": "extra-28",
+    "input": {
+      "os": "Android",
+      "maxTouchPoints": 0,
+      "mediaVideo": 0,
+      "mediaAudio": 0
+    },
+    "issues": [
+      "a phone with no touch points is implausible",
+      "a phone with no camera or microphone is implausible"
+    ]
+  },
+  {
+    "label": "extra-29",
+    "input": {
+      "fontList": [
+        "Zulu",
+        "Alpha",
+        "Beta",
+        "Alpha"
+      ]
+    },
+    "issues": [
+      "fonts not found on windows: Alpha, Alpha, Beta"
+    ]
+  }
+]

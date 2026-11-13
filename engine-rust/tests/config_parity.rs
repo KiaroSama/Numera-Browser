@@ -9,74 +9,21 @@ use std::{
 mod common;
 #[path = "config_parity/extension_admission.rs"]
 mod extension_admission;
+#[path = "native_storage_characterization/support.rs"]
+mod frozen;
 #[path = "config_parity/strict_reads.rs"]
 mod strict_reads;
 
 #[test]
 fn fallible_settings_reads_preserve_original_utf8_refusal_and_cache()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::ownership::capture;
-    use std::{path::Path, process::Command, time::Duration};
+    use std::time::Duration;
 
     let temporary = common::TempDirectory::new("fallible-settings")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import json,os,sys
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.config_store import ConfigStore
-from run_logging import run_log
-valid=b'{"default_extensions":["kept"]}'
-invalid=bytes([255])+valid[1:]
-steps=[(valid,0),(invalid,0),(invalid,1),(invalid,0),
-       (bytes([0xc3,0x28]),2),(bytes([0xe2,0x82]),3),
-       (b'{broken',4),(b'[]',5),(None,6),(valid,7)]
-observed=[]
-with run_log('fallible-settings-oracle',parent/'logs') as log:
-    for operation in ('extensions','empty-update'):
-        root=parent/operation;root.mkdir(parents=True)
-        store=ConfigStore();store.root=root;store.config_path=root/'config.json'
-        for raw,tick in steps:
-            path=store.config_path
-            if raw is None:path.unlink()
-            else:
-                path.write_bytes(raw)
-                stamp=1800000000*1000000000+tick*100
-                os.utime(path,ns=(stamp,stamp))
-                assert path.stat().st_mtime_ns==stamp,'Fixture timestamp was not retained'
-            try:
-                value=store.get_default_extensions() if operation=='extensions' else store.set_config_many({})
-                result={'ok':True,'value':value}
-            except UnicodeDecodeError:
-                result={'ok':False}
-            assert (path.read_bytes() if path.exists() else None)==raw
-            observed.append({'operation':operation,'raw':list(raw) if raw is not None else None,
-                             'tick':tick,'result':result})
-    log.info('Observed fallible settings reads=%s',len(observed))
-    print(json.dumps(observed,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path().join("source"));
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 65536,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(
-        original.exit, 0,
-        "Original fallible settings observer failed"
-    );
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/fallible_settings_reads_preserve_original_utf8_refusal_and_cache.json"
+    ))?;
     assert_eq!(cases.len(), 20);
     for operation in ["extensions", "empty-update"] {
         let root = temporary.path().join(operation);
@@ -135,72 +82,13 @@ with run_log('fallible-settings-oracle',parent/'logs') as log:
 #[test]
 fn settings_instance_cache_matches_original_file_identity_and_detached_results()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::ownership::capture;
-    use std::{path::Path, process::Command, time::Duration};
+    use std::time::Duration;
 
     let temporary = common::TempDirectory::new("settings-instance-cache")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import json,os,sys
-from pathlib import Path
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.config_store import ConfigStore
-from run_logging import run_log
-root.mkdir(parents=True)
-store=ConfigStore();store.root=root;store.config_path=root/'config.json'
-a=b'{"nested":{"value":"A"}}';b=a.replace(b'A',b'B')
-steps=[(a,0),(b,0),(b,1),(b+b' ',1),(None,1),(a,1),
-       (b'{broken',2),(b,1),(b'[]',3),(b,1),(b,4)]
-observed=[]
-with run_log('settings-instance-cache-oracle',root/'logs') as log:
-    for raw,tick in steps:
-        path=store.config_path
-        if raw is None:path.unlink()
-        else:
-            path.write_bytes(raw)
-            stamp=1800000000*1000000000+tick*100
-            os.utime(path,ns=(stamp,stamp))
-            assert path.stat().st_mtime_ns==stamp,'Fixture timestamp was not retained'
-        first=store.get_config()
-        detached=json.loads(json.dumps(first))
-        if isinstance(first.get('nested'),dict):first['nested']['value']='changed-return'
-        first['injected']=['changed-return']
-        again=store.get_config()
-        fresh=ConfigStore();fresh.root=root;fresh.config_path=path
-        independent=fresh.get_config()
-        assert (path.read_bytes() if path.exists() else None)==raw
-        observed.append({'raw':list(raw) if raw is not None else None,'tick':tick,
-                         'first':detached,'again':again,'independent':independent})
-    log.info('Observed sequential settings cache steps=%s',len(observed))
-    print(json.dumps(observed,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .arg(temporary.path().join("source"));
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 32768,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(original.exit, 0, "Original settings cache observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Immutable original observation; native operations and full assertions remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/native-storage-characterization/settings_instance_cache_matches_original_file_identity_and_detached_results.json"
+    ))?;
     assert_eq!(cases.len(), 11);
     let root = temporary.path().join("native");
     fs::create_dir(&root)?;
@@ -254,111 +142,21 @@ with run_log('settings-instance-cache-oracle',root/'logs') as log:
 #[test]
 fn direct_settings_and_current_thread_replacement_match_original()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::{ownership::capture, storage::locks::DataLock};
+    use numera_core::storage::locks::DataLock;
     use serde_json::json;
-    use std::{path::Path, process::Command, sync::mpsc, thread, time::Duration};
+    use std::{sync::mpsc, thread, time::Duration};
 
     let temporary = common::TempDirectory::new("direct-settings")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command.args(["-I", "-B", "-c", r#"
-import json,sys,threading
-from contextlib import ExitStack
-from pathlib import Path
-repository,parent=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.config_store import ConfigStore
-from numera.paths import transaction_lock,holding_transaction
-from run_logging import run_log
-valid=parent/'extension';valid.mkdir()
-(valid/'manifest.json').write_text('{}',encoding='utf-8')
-missing=str(parent/'missing-extension')
-rows=[]
-with run_log('direct-settings-oracle',parent/'logs') as log:
-    inputs=[None,b'{}',b'{broken',b'[]',b'null',b'false',b'"text"',b'1',b'\xff',
-            json.dumps({'future':{'kept':['日本語',True]},'headless_launch':False}).encode('utf-8')]
-    jobs=[]
-    for raw in inputs:
-        jobs.extend((raw,op,value,'none') for op,value in (
-            ('set',{'nested':['α',None]}),('engine','unknown-but-stored'),
-            ('headless',True),('headless-read',None)) if raw!=b'\xff' or op!='headless-read')
-    for value in (None,False,0,0.0,'',[],{},True,1,-1,'false',[0],{'on':False}):
-        jobs.append((b'{"future":7}','headless',value,'none'))
-    for mode in ('none','owned','other-root','other-thread','reentrant','released'):
-        jobs.append((b'{"removed":1,"future":2}','replace',{'replacement':['α',True]},mode))
-    jobs.extend((raw,'extensions',value,'none') for raw,value in (
-        (b'{}',[str(valid)]),(b'{}',[str(valid),str(valid)]),
-        (b'{}',[missing]),(json.dumps({'default_extensions':[missing],'future':7}).encode(),[missing]),
-        (json.dumps({'default_extensions':[missing],'future':7}).encode(),[]),
-        (b'{}',[]),(b'{}',['']), (b'{}',['https://fixture.invalid/extension']),
-        (b'{"default_extensions":17}',[]),(b'[]',[]),(b'\xff',[]),
-        (b'\xff',[missing]),(b'\xff',['https://fixture.invalid/extension'])))
-    for raw,op,value,mode in jobs:
-        root=parent/'source'/str(len(rows));root.mkdir(parents=True)
-        store=ConfigStore();store.root=root;store.config_path=root/'config.json'
-        if raw is not None:store.config_path.write_bytes(raw)
-        def invoke():
-            if op=='set':return store._set_config('selected',value)
-            if op=='engine':return store.set_default_engine(value)
-            if op=='headless':return store.set_headless_launch(value)
-            if op=='headless-read':return store.get_headless_launch()
-            if op=='extensions':return store.set_default_extensions(value)
-            return store._save_config_locked(value)
-        thread=None;release=threading.Event();ready=threading.Event();worker_errors=[]
-        def hold():
-            try:
-                with transaction_lock(root):
-                    ready.set()
-                    if not release.wait(5):raise TimeoutError('Source owner release timed out')
-            except BaseException as exc:worker_errors.append(type(exc).__name__);ready.set()
-        with ExitStack() as stack:
-            if mode in ('owned','reentrant'):
-                stack.enter_context(transaction_lock(root))
-                if mode=='reentrant':
-                    with transaction_lock(root):pass
-            elif mode=='other-root':stack.enter_context(transaction_lock(root/'other'))
-            elif mode=='released':
-                with transaction_lock(root):pass
-            elif mode=='other-thread':
-                thread=threading.Thread(target=hold);thread.start()
-                if not ready.wait(5):raise TimeoutError('Source owner readiness timed out')
-            try:
-                held=holding_transaction(root)
-                try:result,error=invoke(),None
-                except (ValueError,TypeError,AttributeError,RuntimeError) as exc:
-                    result,error=None,type(exc).__name__
-            finally:
-                release.set()
-                if thread is not None:
-                    thread.join(5)
-                    assert not thread.is_alive(),'Source owner did not settle'
-        assert not worker_errors,'Source owner failed'
-        after=store.config_path.read_bytes() if store.config_path.exists() else None
-        try:disk=json.loads(after.decode('utf-8')) if after is not None else None
-        except (ValueError,UnicodeError):disk=None
-        rows.append({'input':raw.hex() if raw is not None else None,'op':op,'value':value,
-                     'mode':mode,'held':held,'released':holding_transaction(root),
-                     'result':result,'error':error,'disk':disk,'unchanged':after==raw})
-    log.info('Observed direct settings cases=%s',len(rows))
-    print(json.dumps(rows,ensure_ascii=True))
-"#]).arg(repository).arg(temporary.path());
-    let output = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 262144,
-            cleanup: Duration::from_secs(5),
-        },
+    let extension = temporary.path().join("extension");
+    fs::create_dir(&extension)?;
+    fs::write(extension.join("manifest.json"), b"{}")?;
+    let cases = frozen::load(
+        include_str!(
+            "fixtures/native-storage-characterization/direct_settings_and_current_thread_replacement_match_original.json"
+        ),
+        "/owned-fixture",
+        temporary.path(),
     )?;
-    assert_eq!(output.exit, 0, "Original direct settings observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&output.stdout)?;
     assert_eq!(cases.len(), 71, "Direct settings observations missing");
     for (index, case) in cases.iter().enumerate() {
         let root = temporary.path().join("native").join(index.to_string());
@@ -502,75 +300,13 @@ with run_log('direct-settings-oracle',parent/'logs') as log:
 #[test]
 fn malformed_settings_text_refuses_without_replacing_source_bytes()
 -> Result<(), Box<dyn std::error::Error>> {
-    use numera_core::{ownership::capture, storage::config::ConfigError};
-    use std::{path::Path, process::Command, time::Duration};
+    use numera_core::storage::config::ConfigError;
 
     let temporary = common::TempDirectory::new("config-text")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import json,sys
-from pathlib import Path
-repository,root=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.config_store import ConfigStore
-from run_logging import run_log
-
-with run_log('config-text-oracle',root/'logs') as log:
-    rows=[]
-    payloads=[b'\xff',b'{"future":"\xc3("}',b'{"future":"\xe2\x82',
-              b'{broken',None,b'{}',b'[]',b'null',
-              json.dumps({'future':{'kept':['日本語',True]},'headless_launch':False},
-                         ensure_ascii=False).encode('utf-8')]
-    for payload in payloads:
-        for changes in [{'headless_launch':True},{'default_engine':'patchright','future':None}]:
-            case=root/'source'/str(len(rows))
-            case.mkdir(parents=True)
-            store=ConfigStore()
-            store.root,store.config_path=case,case/'config.json'
-            if payload is not None:
-                store.config_path.write_bytes(payload)
-            try:
-                result,error=store.set_config_many(changes),None
-            except (UnicodeDecodeError,AttributeError) as exc:
-                result,error=None,type(exc).__name__
-            after=store.config_path.read_bytes() if store.config_path.exists() else None
-            try:
-                written=json.loads(after.decode('utf-8')) if after is not None else None
-            except (UnicodeDecodeError,json.JSONDecodeError):
-                written=None
-            rows.append({'input':payload.hex() if payload is not None else None,
-                         'changes':changes,'result':result,'error':error,
-                         'written':written,'unchanged':payload==after})
-    log.info('Observed settings text cases=%s',len(rows))
-    print(json.dumps(rows,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .arg(temporary.path())
-        .env("PYTHONUTF8", "1");
-    let observed = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 65536,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(observed.exit, 0, "Original settings text observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&observed.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/malformed_settings_text_refuses_without_replacing_source_bytes.json"
+    ))?;
     assert_eq!(cases.len(), 18, "Settings text observations missing");
     for (index, case) in cases.iter().enumerate() {
         let root = temporary.path().join("native").join(index.to_string());

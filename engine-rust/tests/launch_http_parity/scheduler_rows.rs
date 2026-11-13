@@ -1,78 +1,20 @@
 use numera_core::{
     browser::runtime::Runtime,
     http::scheduler::Scheduler,
-    ownership::{capture, claims, registry::Registry},
+    ownership::{claims, registry::Registry},
     storage::{atomic::write_json, schedules::ScheduleStore},
 };
 use serde_json::Value;
-use std::{fs, path::Path, process::Command, sync::Arc, time::Duration};
+use std::{fs, sync::Arc, time::Duration};
 
 #[test]
 fn skipped_malformed_schedule_ids_do_not_abort_later_occurrences()
 -> Result<(), Box<dyn std::error::Error>> {
     let temporary = super::common::TempDirectory::new("scheduler-row-isolation")?;
-    let repository = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?;
-    let mut command = Command::new(
-        std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Original interpreter required")?,
-    );
-    command
-        .args([
-            "-I",
-            "-B",
-            "-c",
-            r#"
-import json,os,sys
-from pathlib import Path
-from unittest.mock import patch
-repository,parent=map(Path,sys.argv[1:])
-sys.path.insert(0,str(repository/'scripts/migration'))
-from baseline_source import activate
-activate()
-from numera.server import create_app
-from numera.scheduler import ScheduleStore
-from run_logging import run_log
-base={'profileId':'gone','everyHours':1,'minutes':1,'preset':'news',
-      'enabled':True,'lastRun':None,'createdAt':0,'future':{'kept':'日本語'}}
-heads=[base]+[{**base,'id':sid} for sid in [None,7,[],{},'', 'missing-profile']]
-broken={'id':'later','profileId':'bad','everyHours':1,'minutes':1,
-        'preset':'news','enabled':True,'lastRun':None,'createdAt':0}
-profile={'id':'bad','name':'bad','seed':42,
-         'proxy':{'type':'INVALID','host':'fixture.test','port':'80'}}
-observed=[]
-with run_log('scheduler-row-isolation-oracle',parent/'logs') as log:
-    for head in heads:
-        root=parent/str(len(observed));root.mkdir(parents=True)
-        with patch.dict(os.environ,{'NUMERA_API_TOKEN':'fixture-api'}):
-            app=create_app(data_dir=str(root),start_scheduler=False)
-        (root/'dashboard').mkdir(exist_ok=True)
-        (root/'dashboard/bad.json').write_text(json.dumps(profile),encoding='utf-8')
-        schedules=ScheduleStore(root)
-        rows=[head,broken]
-        schedules._save(rows)
-        try:
-            with patch('time.time',return_value=1000.0):app.state.scheduler_tick()
-            error=None
-        except Exception as exc:error=type(exc).__name__
-        observed.append({'rows':rows,'profile':profile,'error':error,'stored':schedules.list()})
-    log.info('Observed scheduler row-isolation cases=%s',len(observed))
-    print(json.dumps(observed,ensure_ascii=True))
-"#,
-        ])
-        .arg(repository)
-        .arg(temporary.path().join("source"));
-    let original = capture::run(
-        &mut command,
-        capture::Limits {
-            wall: Duration::from_secs(30),
-            idle: Duration::from_secs(20),
-            bytes: 131072,
-            cleanup: Duration::from_secs(5),
-        },
-    )?;
-    assert_eq!(original.exit, 0, "Original scheduler row observer failed");
-    let cases: Vec<Value> = serde_json::from_slice(&original.stdout)?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "../fixtures/characterization/skipped_malformed_schedule_ids_do_not_abort_later_occurrences.json"
+    ))?;
     assert_eq!(cases.len(), 7, "Scheduler row observations missing");
     for (index, case) in cases.iter().enumerate() {
         assert!(case["error"].is_null(), "Original row failure escaped");
@@ -88,7 +30,6 @@ with run_log('scheduler-row-isolation-oracle',parent/'logs') as log:
             "fixture-host".into(),
             sessions.clone(),
             Runtime {
-                python: root.join("must-not-start-python"),
                 adapter: root.join("must-not-start-sdk"),
                 cwd: root.clone(),
                 home: root.clone(),

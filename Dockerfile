@@ -1,75 +1,40 @@
-# Numera Browser - container image
-#
-# Two stages. The first builds the dashboard with Node; the second is the
-# Playwright Python image, which already carries Chromium and the ~90 system
-# libraries it needs. Installing those onto a plain `python:slim` is possible
-# and is a long, brittle apt list that breaks on every base-image bump - this
-# is the same browser Playwright would fetch anyway, already matched to the
-# client version.
-#
-# Build:  docker build -t numera-browser .
-# Run:    see docker-compose.yml, or the Docker section of the README.
+# Build the exact native server first, from a clean checkout:
+# cargo xtask build-product build/container --resources /path/to/resources --server-only
+# The resource receipt inventories matched vendor drivers, browsers and notices.
+# Only that reviewed product enters the runtime image; no source interpreter runs.
+FROM ubuntu:24.04
 
-# --- 1. the dashboard -------------------------------------------------------
-FROM node:26-slim AS dashboard
-
-WORKDIR /src
-# Copy the manifests alone first so `npm ci` is cached until they change.
-COPY dashboard/package.json dashboard/package-lock.json ./
-RUN npm ci
-COPY dashboard/ ./
-RUN npm run build
-
-
-# --- 2. the engine ----------------------------------------------------------
-# Pinned to the Playwright release that matches engine/pyproject.toml's client,
-# because a browser build newer than its client is exactly how launches start
-# failing with protocol errors. Held at 1.62: camoufox 0.5.7 requires
-# playwright<1.63, and the desktop extra installs both.
-FROM mcr.microsoft.com/playwright/python:v1.62.0-noble
-
-ENV PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    NUMERA_DATA_DIR=/data \
-    NUMERA_CONTAINER_PLAYWRIGHT_VERSION=1.62.0
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates fontconfig fonts-liberation fonts-noto-color-emoji \
+        libasound2t64 libatk-bridge2.0-0t64 libatk1.0-0t64 libatspi2.0-0t64 \
+        libcairo2 libcups2t64 libdbus-1-3 libdrm2 libegl1 libgbm1 \
+        libglib2.0-0t64 libgtk-3-0t64 libnspr4 libnss3 libpango-1.0-0 \
+        libvulkan1 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 \
+        libxdamage1 libxext6 libxfixes3 libxi6 libxkbcommon0 libxrandr2 \
+        libxrender1 libxss1 libxt6 libxtst6 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 1001 numera \
+    && useradd --uid 1001 --gid 1001 --create-home numera \
+    && mkdir /data \
+    && chown 1001:1001 /data
 
 WORKDIR /app
+# This directory includes web/, drivers/, browsers/, sources/, FILES.json,
+# LICENSE, docs/licensing.md, docs/browser-notices.txt,
+# docs/migration-random-notices.txt and
+# engine-rust/src/http/documentation-assets/NOTICE.md.
+COPY ["build/container/Numera Browser/engine/", "/app/"]
+RUN ["/app/numera-engine", "--verify-installation"]
 
-COPY engine/ ./engine/
-COPY LICENSE ./engine/LICENSE
-COPY docs/licensing.md docs/browser-notices.txt docs/migration-random-notices.txt ./engine/numera/legal/docs/
-COPY LICENSE ./engine/numera/legal/LICENSE
-COPY engine-rust/src/http/documentation-assets/NOTICE.md ./engine/numera/legal/engine-rust/src/http/documentation-assets/NOTICE.md
-# The dashboard is served by the engine itself, from inside the package, so it
-# has to land where `dashboard_dir()` looks: numera/web next to the code.
-COPY --from=dashboard /src/dist/ ./engine/numera/web/
+ENV NUMERA_DATA_DIR=/data \
+    NUMERA_BROWSER_RUNTIME=/app/numera-browser-runtime \
+    NUMERA_BROWSER_DRIVERS=/app/drivers
 
-# Keep the literal image tag visible to Dependabot. The contract test requires
-# its version to equal this container-only pin; the general launch extra stays
-# flexible for source installations. Resolve both requirements together.
-RUN python -m pip install --no-cache-dir "./engine[api,launch,secure]" \
-        "playwright==${NUMERA_CONTAINER_PLAYWRIGHT_VERSION}" \
-    && python -m pip check
-
-# `pwuser` ships with the Playwright image and owns the browser cache. Running
-# as root would work and would also mean every file the container writes into a
-# mounted volume lands as root on the host.
-RUN mkdir -p /data && chown -R pwuser:pwuser /data /app
-USER pwuser
-
+USER numera
 VOLUME ["/data"]
 EXPOSE 8787
-
-# Inside a container 0.0.0.0 is the only address that is reachable at all, and
-# the engine refuses that without authentication - deliberately. Set
-# NUMERA_API_TOKEN (see docker-compose.yml) or, if something in front of this
-# already authenticates, NUMERA_ALLOW_INSECURE_BIND=1.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD python -c "import os,urllib.request as u; \
-t=os.environ.get('NUMERA_API_TOKEN'); \
-r=u.Request('http://127.0.0.1:8787/api/health'); \
-t and r.add_header('Authorization','Bearer '+t); \
-u.urlopen(r,timeout=4).read()" || exit 1
-
-ENTRYPOINT ["numera", "--data-dir", "/data", "serve", "--host", "0.0.0.0", "--port", "8787"]
+    CMD ["/app/numera-engine", "--http-healthcheck"]
+ENTRYPOINT ["/app/numera-engine", "--data-dir", "/data", "serve", "--host", "0.0.0.0", "--port", "8787"]

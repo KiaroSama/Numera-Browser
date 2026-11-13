@@ -41,6 +41,12 @@ fn value_with(field: &str, value: &Value, texts: &[&str], lists: &[&str]) -> Val
                 .cloned()
                 .collect(),
         )
+    } else if value.as_number().is_some_and(|number| {
+        let raw = number.to_string();
+        matches!(raw.as_str(), "NaN" | "Infinity" | "-Infinity")
+            || (raw.contains(['.', 'e', 'E']) && number.as_f64().is_none_or(|n| !n.is_finite()))
+    }) {
+        Value::Null
     } else {
         value.clone()
     }

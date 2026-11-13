@@ -1,0 +1,801 @@
+[
+  {
+    "body": "\t\t\n",
+    "responses": []
+  },
+  {
+    "body": "\t{\"id\":1,\"method\":\"ping\"}\t\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\t{\"id\":1,\"method\":\"ping\"}\t",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\n\n\n",
+    "responses": []
+  },
+  {
+    "body": "\n{\"id\":1,\"method\":\"ping\"}\n\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\n{\"id\":1,\"method\":\"ping\"}\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u000b\u000b\n",
+    "responses": []
+  },
+  {
+    "body": "\u000b{\"id\":1,\"method\":\"ping\"}\u000b\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u000b{\"id\":1,\"method\":\"ping\"}\u000b",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\f\f\n",
+    "responses": []
+  },
+  {
+    "body": "\f{\"id\":1,\"method\":\"ping\"}\f\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\f{\"id\":1,\"method\":\"ping\"}\f",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\r\r\n",
+    "responses": []
+  },
+  {
+    "body": "\r{\"id\":1,\"method\":\"ping\"}\r\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\r{\"id\":1,\"method\":\"ping\"}\r",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u001c\u001c\n",
+    "responses": []
+  },
+  {
+    "body": "\u001c{\"id\":1,\"method\":\"ping\"}\u001c\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u001c{\"id\":1,\"method\":\"ping\"}\u001c",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u001d\u001d\n",
+    "responses": []
+  },
+  {
+    "body": "\u001d{\"id\":1,\"method\":\"ping\"}\u001d\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u001d{\"id\":1,\"method\":\"ping\"}\u001d",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u001e\u001e\n",
+    "responses": []
+  },
+  {
+    "body": "\u001e{\"id\":1,\"method\":\"ping\"}\u001e\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u001e{\"id\":1,\"method\":\"ping\"}\u001e",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u001f\u001f\n",
+    "responses": []
+  },
+  {
+    "body": "\u001f{\"id\":1,\"method\":\"ping\"}\u001f\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u001f{\"id\":1,\"method\":\"ping\"}\u001f",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "  \n",
+    "responses": []
+  },
+  {
+    "body": " {\"id\":1,\"method\":\"ping\"} \n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": " {\"id\":1,\"method\":\"ping\"} ",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u0085\u0085\n",
+    "responses": []
+  },
+  {
+    "body": "\u0085{\"id\":1,\"method\":\"ping\"}\u0085\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u0085{\"id\":1,\"method\":\"ping\"}\u0085",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u00a0\u00a0\n",
+    "responses": []
+  },
+  {
+    "body": "\u00a0{\"id\":1,\"method\":\"ping\"}\u00a0\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u00a0{\"id\":1,\"method\":\"ping\"}\u00a0",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u1680\u1680\n",
+    "responses": []
+  },
+  {
+    "body": "\u1680{\"id\":1,\"method\":\"ping\"}\u1680\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u1680{\"id\":1,\"method\":\"ping\"}\u1680",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2000\u2000\n",
+    "responses": []
+  },
+  {
+    "body": "\u2000{\"id\":1,\"method\":\"ping\"}\u2000\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2000{\"id\":1,\"method\":\"ping\"}\u2000",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2001\u2001\n",
+    "responses": []
+  },
+  {
+    "body": "\u2001{\"id\":1,\"method\":\"ping\"}\u2001\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2001{\"id\":1,\"method\":\"ping\"}\u2001",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2002\u2002\n",
+    "responses": []
+  },
+  {
+    "body": "\u2002{\"id\":1,\"method\":\"ping\"}\u2002\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2002{\"id\":1,\"method\":\"ping\"}\u2002",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2003\u2003\n",
+    "responses": []
+  },
+  {
+    "body": "\u2003{\"id\":1,\"method\":\"ping\"}\u2003\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2003{\"id\":1,\"method\":\"ping\"}\u2003",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2004\u2004\n",
+    "responses": []
+  },
+  {
+    "body": "\u2004{\"id\":1,\"method\":\"ping\"}\u2004\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2004{\"id\":1,\"method\":\"ping\"}\u2004",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2005\u2005\n",
+    "responses": []
+  },
+  {
+    "body": "\u2005{\"id\":1,\"method\":\"ping\"}\u2005\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2005{\"id\":1,\"method\":\"ping\"}\u2005",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2006\u2006\n",
+    "responses": []
+  },
+  {
+    "body": "\u2006{\"id\":1,\"method\":\"ping\"}\u2006\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2006{\"id\":1,\"method\":\"ping\"}\u2006",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2007\u2007\n",
+    "responses": []
+  },
+  {
+    "body": "\u2007{\"id\":1,\"method\":\"ping\"}\u2007\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2007{\"id\":1,\"method\":\"ping\"}\u2007",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2008\u2008\n",
+    "responses": []
+  },
+  {
+    "body": "\u2008{\"id\":1,\"method\":\"ping\"}\u2008\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2008{\"id\":1,\"method\":\"ping\"}\u2008",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2009\u2009\n",
+    "responses": []
+  },
+  {
+    "body": "\u2009{\"id\":1,\"method\":\"ping\"}\u2009\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2009{\"id\":1,\"method\":\"ping\"}\u2009",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u200a\u200a\n",
+    "responses": []
+  },
+  {
+    "body": "\u200a{\"id\":1,\"method\":\"ping\"}\u200a\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u200a{\"id\":1,\"method\":\"ping\"}\u200a",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2028\u2028\n",
+    "responses": []
+  },
+  {
+    "body": "\u2028{\"id\":1,\"method\":\"ping\"}\u2028\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2028{\"id\":1,\"method\":\"ping\"}\u2028",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2029\u2029\n",
+    "responses": []
+  },
+  {
+    "body": "\u2029{\"id\":1,\"method\":\"ping\"}\u2029\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u2029{\"id\":1,\"method\":\"ping\"}\u2029",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u202f\u202f\n",
+    "responses": []
+  },
+  {
+    "body": "\u202f{\"id\":1,\"method\":\"ping\"}\u202f\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u202f{\"id\":1,\"method\":\"ping\"}\u202f",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u205f\u205f\n",
+    "responses": []
+  },
+  {
+    "body": "\u205f{\"id\":1,\"method\":\"ping\"}\u205f\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u205f{\"id\":1,\"method\":\"ping\"}\u205f",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u3000\u3000\n",
+    "responses": []
+  },
+  {
+    "body": "\u3000{\"id\":1,\"method\":\"ping\"}\u3000\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u3000{\"id\":1,\"method\":\"ping\"}\u3000",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "",
+    "responses": []
+  },
+  {
+    "body": "not JSON\n",
+    "responses": []
+  },
+  {
+    "body": "{\"id\":90,\"method\":\"ping\"}\r\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 90,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": " \u001c{\"id\":91,\"method\":\"ping\"}\u001f\nnot JSON\n{\"id\":92,\"method\":\"ping\"}",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 91,
+        "result": {}
+      },
+      {
+        "jsonrpc": "2.0",
+        "id": 92,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "{\"method\":\"notifications/initialized\"}\n{\"id\":93,\"method\":\"ping\"}\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 93,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "{\"id\":null,\"method\":\"unknown\"}\n",
+    "responses": []
+  },
+  {
+    "body": "{\"id\":false,\"method\":\"unknown\"}\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": false,
+        "error": {
+          "code": -32601,
+          "message": "unknown method 'unknown'"
+        }
+      }
+    ]
+  },
+  {
+    "body": "{\"id\":94,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"\u0641\u0627\u0631\u0633\u06cc\ud83d\ude00\\u001cinside\"}}\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 94,
+        "result": {
+          "protocolVersion": "\u0641\u0627\u0631\u0633\u06cc\ud83d\ude00\u001cinside",
+          "capabilities": {
+            "tools": {
+              "listChanged": false
+            }
+          },
+          "serverInfo": {
+            "name": "numera",
+            "version": "0.36.0"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "body": "{\"id\":95,\"method\":\"ping\",\"unused\":\"\\u001c\\u001f\"}\n",
+    "responses": [
+      {
+        "jsonrpc": "2.0",
+        "id": 95,
+        "result": {}
+      }
+    ]
+  },
+  {
+    "body": "\u0000{\"id\":1,\"method\":\"ping\"}\u0000\n",
+    "responses": []
+  },
+  {
+    "body": "\u200b{\"id\":1,\"method\":\"ping\"}\u200b\n",
+    "responses": []
+  },
+  {
+    "body": "\ufeff{\"id\":1,\"method\":\"ping\"}\ufeff\n",
+    "responses": []
+  }
+]

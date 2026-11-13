@@ -18,9 +18,11 @@ def verify_candidate_target(metadata: dict) -> None:
     expected = {
         'numera-native-candidate': ('native-candidate', 'examples/native_candidate.rs'),
         'numera-browser-runtime': ('native-browser', 'src/bin/browser_runtime.rs'),
+        'numera-engine': ('native-product', 'src/bin/engine.rs'),
+        'numera-http-observer': ('native-product', 'src/bin/http_observer.rs'),
     }
-    if (package['features'] != {'default': [], 'native-candidate': [],
-                               'native-browser': ['dep:playwright-rs', 'dep:ruzstd']}
+    if (package['features'] != {'default': [], 'native-candidate': [], 'native-product': [], 'test-support': [],
+                               'native-browser': ['dep:playwright-rs', 'dep:ruzstd', 'dep:maxminddb', 'dep:serde_yaml']}
             or len(targets) != len(expected) or {target['name'] for target in targets} != set(expected)
             or any(target.get('required-features') != [expected[target['name']][0]]
                    or Path(target['src_path']).resolve() !=

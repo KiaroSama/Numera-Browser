@@ -46,10 +46,15 @@ impl ProfileRepo {
         if safe_id(id).is_err() {
             return Ok(None);
         }
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("before-profile-get-lock", &self.root)?;
         let lock = DataLock::transaction(&self.root)?;
         let _guard = lock.acquire_configured()?;
         self.require_settled()?;
-        let bytes = match fs::read(self.path(id, "profiles")?) {
+        let path = self.path(id, "profiles")?;
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("json-read", &path)?;
+        let bytes = match fs::read(path) {
             Ok(bytes) => bytes,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
             Err(error) => return Err(error.into()),

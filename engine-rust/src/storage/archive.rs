@@ -21,6 +21,12 @@ impl ProfileRepo {
         let record: Value = serde_json::from_slice(&bytes).map_err(|error| {
             RepoError::InvalidRecord(format!("Imported profile JSON cannot be decoded: {error}"))
         })?;
+        crate::write_contract::require(
+            crate::write_contract::Input::Json(&record),
+            "profile",
+            Some(crate::write_contract::ENGINE_RECORD),
+        )
+        .map_err(|error| RepoError::InvalidRecord(error.to_string()))?;
         let profile = crate::models::Profile::from_record(&record).map_err(|error| {
             RepoError::InvalidRecord(format!("Imported profile cannot be modeled: {error}"))
         })?;

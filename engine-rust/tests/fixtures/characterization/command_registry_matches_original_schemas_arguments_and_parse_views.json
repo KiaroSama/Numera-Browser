@@ -1,0 +1,5078 @@
+{
+  "tools": [
+    {
+      "name": "create",
+      "description": "Create a new profile",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "name": {
+            "type": "string"
+          },
+          "os": {
+            "type": "string",
+            "enum": [
+              "windows",
+              "macos",
+              "linux",
+              "android"
+            ]
+          },
+          "locale": {
+            "type": "string"
+          },
+          "proxy": {
+            "type": "string",
+            "description": "scheme://[user:pass@]host:port"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO code to align locale/timezone (e.g. US, PK)"
+          },
+          "seed": {
+            "type": "integer",
+            "description": "Fixed seed for a reproducible fingerprint"
+          },
+          "mobile": {
+            "type": "boolean",
+            "description": "Generate a mobile device"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Launch backend: cloak | camoufox | patchright | playwright (default: saved default engine)"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "tag": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Add a tag (repeatable)"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "list",
+      "description": "List profiles",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "tag": {
+            "type": "string",
+            "description": "Filter by tag"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "show",
+      "description": "Show full profile details",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string",
+            "description": "Profile name or id"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "launch",
+      "description": "Launch a profile in a browser",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "headless": {
+            "type": "boolean"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Override the profile's launch engine for this run"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "stop",
+      "description": "End the sessions a profile has running",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "jobs_list",
+      "description": "Every job and its state",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "jobs_show",
+      "description": "One job, with the tail of its output",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "id": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "integer",
+            "description": "How much output to show"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "jobs_stop",
+      "description": "Terminate a job and anything it started",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "jobs_clear",
+      "description": "Forget the jobs that have finished",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "engines",
+      "description": "List available launch engines",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "cloak_offer": {
+            "type": "boolean",
+            "description": "Show the local Cloak acquisition target without downloading"
+          },
+          "acquire_cloak": {
+            "type": "string",
+            "description": "Acquire only the exact Cloak offer previously shown"
+          },
+          "approve": {
+            "type": "boolean",
+            "description": "Explicitly approve this exact browser acquisition"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "default_engine",
+      "description": "Show or set the engine used for new profiles",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "name": {
+            "type": "string",
+            "description": "Engine to make default (omit to show the current one)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "config",
+      "description": "Show or change settings (the dashboard's /api/config)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "default_engine": {
+            "type": "string",
+            "description": "Engine new profiles are created with"
+          },
+          "headless_launch": {
+            "type": "string",
+            "enum": [
+              "on",
+              "off"
+            ],
+            "description": "Whether the API launches profiles without a window"
+          },
+          "default_extension": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Unpacked extension folder for new profiles (repeatable, replaces the set; pass \"\" to clear)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "edit",
+      "description": "Edit notes / tags / proxy",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "add_tag": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "proxy": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "regen",
+      "description": "Regenerate the fingerprint",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "os": {
+            "type": "string",
+            "enum": [
+              "windows",
+              "macos",
+              "linux",
+              "android"
+            ]
+          },
+          "locale": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "delete",
+      "description": "Delete one or more profiles",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "yes": {
+            "type": "boolean",
+            "description": "Skip confirmation"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "export",
+      "description": "Export a profile to JSON",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref",
+          "file"
+        ]
+      }
+    },
+    {
+      "name": "import",
+      "description": "Import a profile from JSON",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "file": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ]
+      }
+    },
+    {
+      "name": "backup",
+      "description": "Zip a profile + its whole session to a portable file",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string",
+            "description": "Destination .zip"
+          }
+        },
+        "required": [
+          "ref",
+          "file"
+        ]
+      }
+    },
+    {
+      "name": "restore",
+      "description": "Recreate a profile + session from a backup zip",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "file": {
+            "type": "string",
+            "description": "A backup made with `numera backup`"
+          },
+          "new_id": {
+            "type": "boolean",
+            "description": "Import as a fresh copy instead of overwriting the original id"
+          }
+        },
+        "required": [
+          "file"
+        ]
+      }
+    },
+    {
+      "name": "collisions",
+      "description": "Find profiles that share a fingerprint (a linkage risk)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "health",
+      "description": "One row per profile: coherence, proxy, collisions, schedule",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "import_from",
+      "description": "Import profiles exported from GoLogin / AdsPower / Multilogin",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "file": {
+            "type": "string",
+            "description": "Their exported JSON (a single profile or a list)"
+          }
+        },
+        "required": [
+          "file"
+        ]
+      }
+    },
+    {
+      "name": "cookies_list",
+      "description": "Show what's in the profile's cookie jar",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Open with a different engine than the profile's"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "cookies_export",
+      "description": "Write the profile's cookies to a file",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "json",
+              "netscape"
+            ],
+            "description": "Output format (default: netscape for .txt, else json)"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Open with a different engine than the profile's"
+          }
+        },
+        "required": [
+          "ref",
+          "file"
+        ]
+      }
+    },
+    {
+      "name": "cookies_import",
+      "description": "Load cookies from a file into the profile",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "clear": {
+            "type": "boolean",
+            "description": "Empty the existing jar first (replace instead of merge)"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Open with a different engine than the profile's"
+          }
+        },
+        "required": [
+          "ref",
+          "file"
+        ]
+      }
+    },
+    {
+      "name": "check",
+      "description": "Validate fingerprint coherence",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "proxy_test",
+      "description": "Check the exit IP, country and WebRTC leaks",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Test with a different engine than the profile's"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "pool_list",
+      "description": "Every proxy in the pool",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "pool_add",
+      "description": "Import a proxy list",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "source": {
+            "type": "string",
+            "description": "A file of proxy lines, or - to read stdin"
+          }
+        },
+        "required": [
+          "source"
+        ]
+      }
+    },
+    {
+      "name": "pool_remove",
+      "description": "Drop proxies from the pool",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "One or more proxy ids"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "pool_edit",
+      "description": "Change one proxy in place",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "id": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "HTTP",
+              "HTTPS",
+              "SOCKS5",
+              "SOCKS4"
+            ]
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO code; aligns locale/timezone on assign"
+          },
+          "label": {
+            "type": "string",
+            "description": "Free text to tell same-country proxies apart"
+          },
+          "rotate_url": {
+            "type": "string",
+            "description": "A rotating proxy's change-IP endpoint; see `pool rotate`"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "pool_rotate",
+      "description": "Ask a rotating proxy for a new exit IP and prove it moved",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "One or more proxy ids"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "pool_archive",
+      "description": "Retire proxies without deleting them (kept out of assign)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "One or more proxy ids"
+          },
+          "restore": {
+            "type": "boolean",
+            "description": "Put them back in rotation"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "pool_export",
+      "description": "Write the pool back out as importable lines",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Only these ids (default: the whole pool)"
+          },
+          "file": {
+            "type": "string",
+            "description": "Write here instead of stdout"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "pool_test",
+      "description": "Route a real request through a proxy",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Proxy ids (omit with --all)"
+          },
+          "all": {
+            "type": "boolean",
+            "description": "Test the whole pool"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "pool_assign",
+      "description": "Spread the pool across profiles, aligning locale to country",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Profile names or ids"
+          },
+          "tag": {
+            "type": "string",
+            "description": "Every profile carrying this tag"
+          },
+          "all": {
+            "type": "boolean",
+            "description": "Every profile"
+          },
+          "proxy_id": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Use only these pool entries (repeatable; default: the whole pool)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "token_list",
+      "description": "Every named token (never the value)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "token_create",
+      "description": "Mint one; shown once, then only hashed",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "name": {
+            "type": "string",
+            "description": "What this token is for, so it can be revoked knowingly"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "token_revoke",
+      "description": "Revoke one without touching the rest",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "tls",
+      "description": "Show the profile's TLS/JA3 handshake fingerprint",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Read with a different engine than the profile's"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "dns",
+      "description": "Check whether DNS lookups leak past the proxy",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Test with a different engine than the profile's"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "trust",
+      "description": "Score the profile the way a fingerprinter would",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Inspect with a different engine than the profile's"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "align",
+      "description": "Auto-adjust: match the profile to what its browser really shows",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Align against a different engine than the profile's"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "bulk_create",
+      "description": "Generate many coherent profiles at once",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "count": {
+            "type": "integer",
+            "description": "How many to create"
+          },
+          "os": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "enum": [
+              "windows",
+              "macos",
+              "linux",
+              "android"
+            ],
+            "description": "OS to spread the batch across (repeatable; default windows)"
+          },
+          "locale": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Locale to spread across (repeatable; e.g. --locale en-US --locale de-DE)"
+          },
+          "chrome": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Chrome version to draw from (repeatable; e.g. 128.0.0.0)"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Launch backend for the batch"
+          },
+          "prefix": {
+            "type": "string",
+            "description": "Name prefix (default: Profile)"
+          },
+          "start": {
+            "type": "integer",
+            "description": "First number in the sequence"
+          },
+          "pad": {
+            "type": "integer",
+            "description": "Zero-pad the number to this width"
+          },
+          "tag": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tag every profile (repeatable)"
+          },
+          "mobile": {
+            "type": "boolean",
+            "description": "Generate mobile devices"
+          },
+          "seed": {
+            "type": "integer",
+            "description": "Fixed seed for a reproducible batch"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "warmup",
+      "description": "Browse normally for a while to age the profile",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "minutes": {
+            "type": "number",
+            "description": "How long to browse (default: 5)"
+          },
+          "site": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Site to visit (repeatable; replaces the preset/default list)"
+          },
+          "preset": {
+            "type": "string",
+            "enum": [
+              "general",
+              "ads",
+              "ecommerce",
+              "crypto",
+              "social",
+              "news"
+            ],
+            "description": "Per-vertical warm-up set to browse (default: general)"
+          },
+          "headless": {
+            "type": "boolean"
+          },
+          "engine": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "schedule_list",
+      "description": "Show all warm-up schedules and when they next run",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "schedule_add",
+      "description": "Schedule a recurring warm-up for a profile",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "every": {
+            "type": "number",
+            "description": "Interval in hours (e.g. 12)"
+          },
+          "minutes": {
+            "type": "number",
+            "description": "How long each warm-up runs"
+          },
+          "preset": {
+            "type": "string",
+            "enum": [
+              "general",
+              "ads",
+              "ecommerce",
+              "crypto",
+              "social",
+              "news"
+            ],
+            "description": "Per-vertical warm-up set (default: general)"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "schedule_update",
+      "description": "Change an existing schedule",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "id": {
+            "type": "string"
+          },
+          "every": {
+            "type": "number",
+            "description": "New interval in hours"
+          },
+          "minutes": {
+            "type": "number",
+            "description": "New warm-up length"
+          },
+          "preset": {
+            "type": "string",
+            "enum": [
+              "general",
+              "ads",
+              "ecommerce",
+              "crypto",
+              "social",
+              "news"
+            ]
+          },
+          "enabled": {
+            "type": "string",
+            "enum": [
+              "on",
+              "off"
+            ],
+            "description": "Pause or resume it"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "schedule_remove",
+      "description": "Delete a schedule by id",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "schedule_run_due",
+      "description": "Run every schedule that's due now (for cron/Task Scheduler)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "attach",
+      "description": "Open the profile with DevTools for your own automation",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "description": "DevTools port (default: 9222)"
+          },
+          "engine": {
+            "type": "string"
+          },
+          "headless": {
+            "type": "boolean",
+            "description": "Attach without a visible window (for servers/CI)"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "ext_list",
+      "description": "Show the extensions this profile loads",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      }
+    },
+    {
+      "name": "ext_add",
+      "description": "Load an unpacked extension folder",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref",
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "ext_remove",
+      "description": "Stop loading an extension",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref",
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "ext_install",
+      "description": "Install from a Chrome Web Store URL (downloads and unpacks it)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "url": {
+            "type": "string",
+            "description": "Web Store URL, or the 32-character extension id"
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Re-download even if installed"
+          },
+          "no_default": {
+            "type": "boolean",
+            "description": "Do not add it to the set new profiles start with"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "ext_installed",
+      "description": "List extensions installed from the Web Store",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "ext_uninstall",
+      "description": "Delete an extension installed from the Web Store",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "url": {
+            "type": "string",
+            "description": "Web Store URL or extension id"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      }
+    },
+    {
+      "name": "ext_default_list",
+      "description": "Show the extensions every NEW profile starts with",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "ext_default_add",
+      "description": "Add to the set every NEW profile starts with",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "ext_default_remove",
+      "description": "Drop one from that set",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "apply",
+      "description": "Apply one change to many profiles at once",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "ref": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Profile names or ids"
+          },
+          "tag": {
+            "type": "string",
+            "description": "Every profile carrying this tag"
+          },
+          "all": {
+            "type": "boolean",
+            "description": "Every profile"
+          },
+          "engine": {
+            "type": "string",
+            "description": "Switch them to this launch engine"
+          },
+          "proxy": {
+            "type": "string",
+            "description": "scheme://[user:pass@]host:port  (empty string = go direct)"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO code to align locale/timezone with the proxy"
+          },
+          "locale": {
+            "type": "string",
+            "description": "Locale (also moves timezone + languages)"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "startup_url": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Startup URL (repeatable, replaces)"
+          },
+          "extension": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Unpacked extension folder (repeatable, replaces; pass \"\" to clear)"
+          },
+          "add_tag": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "remove_tag": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "regen": {
+            "type": "boolean",
+            "description": "Give each one a fresh fingerprint (same OS, locale and session)"
+          },
+          "yes": {
+            "type": "boolean",
+            "description": "Skip confirmation"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "vault_status",
+      "description": "Show whether the vault is on, locked or unlocked",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "vault_enable",
+      "description": "Turn on encryption and encrypt existing secrets",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "vault_change",
+      "description": "Rotate the master password; re-encrypts every secret",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "new_password": {
+            "type": "string",
+            "description": "The new master password (prompted for when omitted)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "vault_resume",
+      "description": "Finish a master-password rotation that was interrupted",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "new_password": {
+            "type": "string",
+            "description": "The password the rotation was moving TO (prompted for when omitted)"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "folder_list",
+      "description": "List every folder",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "folder_create",
+      "description": "Create a folder",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "folder_rename",
+      "description": "Rename a folder and move its profiles with it",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "old": {
+            "type": "string"
+          },
+          "new": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "old",
+          "new"
+        ]
+      }
+    },
+    {
+      "name": "folder_delete",
+      "description": "Delete a folder; its profiles are reassigned, not deleted",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "detach": {
+            "type": "boolean",
+            "description": "Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."
+          },
+          "name": {
+            "type": "string"
+          },
+          "reassign_to": {
+            "type": "string",
+            "description": "Where its profiles go (default: Unfiled)"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    }
+  ],
+  "parse": [
+    {
+      "argv": [
+        "create",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "create",
+        "json": false,
+        "detach": false,
+        "name": "fixture",
+        "os": null,
+        "locale": null,
+        "proxy": null,
+        "country": null,
+        "seed": null,
+        "mobile": false,
+        "engine": null,
+        "notes": "",
+        "tag": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "list"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "list",
+        "json": false,
+        "detach": false,
+        "tag": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "show",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "show",
+        "json": false,
+        "detach": false,
+        "ref": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "launch",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "launch",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "headless": false,
+        "engine": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "stop",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "stop",
+        "json": false,
+        "detach": false,
+        "ref": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "list"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "jobs",
+        "json": false,
+        "detach": false,
+        "jobs_command": "list"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "show",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "jobs",
+        "json": false,
+        "detach": false,
+        "jobs_command": "show",
+        "id": "fixture",
+        "lines": 20
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "stop",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "jobs",
+        "json": false,
+        "detach": false,
+        "jobs_command": "stop",
+        "id": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "clear"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "jobs",
+        "json": false,
+        "detach": false,
+        "jobs_command": "clear"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "engines"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "engines",
+        "json": false,
+        "detach": false,
+        "cloak_offer": false,
+        "acquire_cloak": null,
+        "approve": false
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "default-engine",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "default-engine",
+        "json": false,
+        "detach": false,
+        "name": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "config"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "config",
+        "json": false,
+        "detach": false,
+        "default_engine": null,
+        "headless_launch": null,
+        "default_extension": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "edit",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "edit",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "notes": null,
+        "add_tag": null,
+        "proxy": null,
+        "country": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "regen",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "regen",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "os": null,
+        "locale": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "delete",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "delete",
+        "json": false,
+        "detach": false,
+        "ref": [
+          "fixture"
+        ],
+        "yes": false
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "export",
+        "fixture",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "export",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "file": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "import",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "import",
+        "json": false,
+        "detach": false,
+        "file": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "backup",
+        "fixture",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "backup",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "file": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "restore",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "restore",
+        "json": false,
+        "detach": false,
+        "file": "fixture",
+        "new_id": false
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "collisions"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "collisions",
+        "json": false,
+        "detach": false
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "health"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "health",
+        "json": false,
+        "detach": false
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "import-from",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "import-from",
+        "json": false,
+        "detach": false,
+        "file": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "list",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "cookies",
+        "json": false,
+        "detach": false,
+        "cookies_command": "list",
+        "ref": "fixture",
+        "engine": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "export",
+        "fixture",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "cookies",
+        "json": false,
+        "detach": false,
+        "cookies_command": "export",
+        "ref": "fixture",
+        "file": "fixture",
+        "format": null,
+        "engine": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "import",
+        "fixture",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "cookies",
+        "json": false,
+        "detach": false,
+        "cookies_command": "import",
+        "ref": "fixture",
+        "file": "fixture",
+        "clear": false,
+        "engine": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "check",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "check",
+        "json": false,
+        "detach": false,
+        "ref": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "proxy",
+        "test",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "proxy",
+        "json": false,
+        "detach": false,
+        "proxy_command": "test",
+        "ref": "fixture",
+        "engine": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "list"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "list"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "add",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "add",
+        "source": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "remove",
+        "id": [
+          "fixture"
+        ]
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "edit",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "edit",
+        "id": "fixture",
+        "host": null,
+        "port": null,
+        "user": null,
+        "type": null,
+        "country": null,
+        "label": null,
+        "rotate_url": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "rotate",
+        "id": [
+          "fixture"
+        ]
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "archive",
+        "id": [
+          "fixture"
+        ],
+        "restore": false
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "export"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "export",
+        "id": [],
+        "file": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "test"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "test",
+        "id": [],
+        "all": false
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "assign"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "assign",
+        "ref": [],
+        "tag": null,
+        "all": false,
+        "proxy_id": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "list"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "token",
+        "json": false,
+        "detach": false,
+        "token_command": "list"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "create",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "token",
+        "json": false,
+        "detach": false,
+        "token_command": "create",
+        "name": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "revoke",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "token",
+        "json": false,
+        "detach": false,
+        "token_command": "revoke",
+        "id": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "tls",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "tls",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "engine": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "dns",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "dns",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "engine": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "trust",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "trust",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "engine": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "align",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "align",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "engine": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "bulk-create",
+        "--count",
+        "2"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "bulk-create",
+        "json": false,
+        "detach": false,
+        "count": 2,
+        "os": null,
+        "locale": null,
+        "chrome": null,
+        "engine": null,
+        "prefix": "Profile",
+        "start": 1,
+        "pad": 4,
+        "tag": null,
+        "mobile": false,
+        "seed": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "warmup",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "warmup",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "minutes": 5,
+        "site": null,
+        "preset": null,
+        "headless": false,
+        "engine": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "list"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "schedule",
+        "json": false,
+        "detach": false,
+        "schedule_command": "list"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "fixture",
+        "--every",
+        "1.25"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "schedule",
+        "json": false,
+        "detach": false,
+        "schedule_command": "add",
+        "ref": "fixture",
+        "every": 1.25,
+        "minutes": 5,
+        "preset": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "update",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "schedule",
+        "json": false,
+        "detach": false,
+        "schedule_command": "update",
+        "id": "fixture",
+        "every": null,
+        "minutes": null,
+        "preset": null,
+        "enabled": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "remove",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "schedule",
+        "json": false,
+        "detach": false,
+        "schedule_command": "remove",
+        "id": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "run-due"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "schedule",
+        "json": false,
+        "detach": false,
+        "schedule_command": "run-due"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "attach",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "attach",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "port": 9222,
+        "engine": null,
+        "headless": false
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "list",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "ext",
+        "json": false,
+        "detach": false,
+        "ext_command": "list",
+        "ref": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "add",
+        "fixture",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "ext",
+        "json": false,
+        "detach": false,
+        "ext_command": "add",
+        "ref": "fixture",
+        "path": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "remove",
+        "fixture",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "ext",
+        "json": false,
+        "detach": false,
+        "ext_command": "remove",
+        "ref": "fixture",
+        "path": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "install",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "ext",
+        "json": false,
+        "detach": false,
+        "ext_command": "install",
+        "url": "fixture",
+        "force": false,
+        "no_default": false
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "installed"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "ext",
+        "json": false,
+        "detach": false,
+        "ext_command": "installed"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "uninstall",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "ext",
+        "json": false,
+        "detach": false,
+        "ext_command": "uninstall",
+        "url": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-list"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "ext",
+        "json": false,
+        "detach": false,
+        "ext_command": "default-list"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-add",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "ext",
+        "json": false,
+        "detach": false,
+        "ext_command": "default-add",
+        "path": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-remove",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "ext",
+        "json": false,
+        "detach": false,
+        "ext_command": "default-remove",
+        "path": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "apply"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": false,
+        "detach": false,
+        "ref": [],
+        "tag": null,
+        "all": false,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": null,
+        "startup_url": null,
+        "extension": null,
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "status"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "vault",
+        "json": false,
+        "detach": false,
+        "vault_command": "status"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "enable"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "vault",
+        "json": false,
+        "detach": false,
+        "vault_command": "enable"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "change"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "vault",
+        "json": false,
+        "detach": false,
+        "vault_command": "change",
+        "new_password": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "resume"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "vault",
+        "json": false,
+        "detach": false,
+        "vault_command": "resume",
+        "new_password": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "list"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "folder",
+        "json": false,
+        "detach": false,
+        "folder_command": "list"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "create",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "folder",
+        "json": false,
+        "detach": false,
+        "folder_command": "create",
+        "name": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "rename",
+        "fixture",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "folder",
+        "json": false,
+        "detach": false,
+        "folder_command": "rename",
+        "old": "fixture",
+        "new": "fixture"
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "delete",
+        "fixture"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "folder",
+        "json": false,
+        "detach": false,
+        "folder_command": "delete",
+        "name": "fixture",
+        "reassign_to": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "mcp"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "mcp",
+        "json": false,
+        "detach": false
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "serve"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "serve",
+        "json": false,
+        "detach": false,
+        "host": "127.0.0.1",
+        "port": 8787,
+        "verbose": false
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "create",
+        "fixture",
+        "--seed",
+        "\u0661_\u0662\u0663",
+        "--tag",
+        "one",
+        "--tag",
+        "two",
+        "--json"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "create",
+        "json": true,
+        "detach": false,
+        "name": "fixture",
+        "os": null,
+        "locale": null,
+        "proxy": null,
+        "country": null,
+        "seed": 123,
+        "mobile": false,
+        "engine": null,
+        "notes": "",
+        "tag": [
+          "one",
+          "two"
+        ]
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "create",
+        "fixture",
+        "--seed",
+        "999999999999999999999999999999999999"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "create",
+        "json": false,
+        "detach": false,
+        "name": "fixture",
+        "os": null,
+        "locale": null,
+        "proxy": null,
+        "country": null,
+        "seed": 999999999999999999999999999999999999,
+        "mobile": false,
+        "engine": null,
+        "notes": "",
+        "tag": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "launch",
+        "fixture",
+        "--headless",
+        "--headless"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "launch",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "headless": true,
+        "engine": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "launch",
+        "fixture",
+        "--headl"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "launch",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "headless": true,
+        "engine": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "create",
+        "fixture",
+        "--not",
+        "text"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "create",
+        "json": false,
+        "detach": false,
+        "name": "fixture",
+        "os": null,
+        "locale": null,
+        "proxy": null,
+        "country": null,
+        "seed": null,
+        "mobile": false,
+        "engine": null,
+        "notes": "text",
+        "tag": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "create",
+        "fixture",
+        "--co",
+        "US"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "create",
+        "json": false,
+        "detach": false,
+        "name": "fixture",
+        "os": null,
+        "locale": null,
+        "proxy": null,
+        "country": "US",
+        "seed": null,
+        "mobile": false,
+        "engine": null,
+        "notes": "",
+        "tag": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "config",
+        "--default",
+        "playwright"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "edit",
+        "fixture",
+        "--notes",
+        "old",
+        "--notes",
+        "new"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "edit",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "notes": "new",
+        "add_tag": null,
+        "proxy": null,
+        "country": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "--data-dir",
+        "fixture-root",
+        "--password",
+        "synthetic",
+        "pool",
+        "edit",
+        "a",
+        "--pass",
+        "synthetic-proxy"
+      ],
+      "values": {
+        "data_dir": "fixture-root",
+        "password": "synthetic-proxy",
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "edit",
+        "id": "a",
+        "host": null,
+        "port": null,
+        "user": null,
+        "type": null,
+        "country": null,
+        "label": null,
+        "rotate_url": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "delete",
+        "a",
+        "b",
+        "-y",
+        "--json"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "delete",
+        "json": true,
+        "detach": false,
+        "ref": [
+          "a",
+          "b"
+        ],
+        "yes": true
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "export"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "export",
+        "id": [],
+        "file": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "--all"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "test",
+        "id": [],
+        "all": true
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "apply",
+        "--all",
+        "--extension",
+        ""
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": false,
+        "detach": false,
+        "ref": [],
+        "tag": null,
+        "all": true,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": null,
+        "startup_url": null,
+        "extension": [
+          ""
+        ],
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "fixture",
+        "--every",
+        "\u0661.\u0665"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "schedule",
+        "json": false,
+        "detach": false,
+        "schedule_command": "add",
+        "ref": "fixture",
+        "every": 1.5,
+        "minutes": 5,
+        "preset": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [
+        "warmup",
+        "fixture",
+        "--minutes",
+        "1_2.5"
+      ],
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "warmup",
+        "json": false,
+        "detach": false,
+        "ref": "fixture",
+        "minutes": 12.5,
+        "site": null,
+        "preset": null,
+        "headless": false,
+        "engine": null
+      },
+      "exit": 0
+    },
+    {
+      "argv": [],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "create"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "create",
+        "fixture",
+        "--os",
+        "ios"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "create",
+        "fixture",
+        "--seed",
+        "1.2"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "create",
+        "fixture",
+        "--seed",
+        "1__2"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "fixture"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "serve",
+        "--port",
+        "bad"
+      ],
+      "exit": 2
+    }
+  ],
+  "argv": [
+    {
+      "name": "create",
+      "arguments": {
+        "detach": true,
+        "name": "fixture",
+        "os": "windows",
+        "locale": "fixture",
+        "proxy": "fixture",
+        "country": "fixture",
+        "seed": 2,
+        "mobile": true,
+        "engine": "fixture",
+        "notes": "fixture",
+        "tag": [
+          "one",
+          "two"
+        ]
+      },
+      "argv": [
+        "create",
+        "fixture",
+        "--detach",
+        "--os",
+        "windows",
+        "--locale",
+        "fixture",
+        "--proxy",
+        "fixture",
+        "--country",
+        "fixture",
+        "--seed",
+        "2",
+        "--mobile",
+        "--engine",
+        "fixture",
+        "--notes",
+        "fixture",
+        "--tag",
+        "one",
+        "--tag",
+        "two",
+        "--json"
+      ]
+    },
+    {
+      "name": "list",
+      "arguments": {
+        "detach": true,
+        "tag": "fixture"
+      },
+      "argv": [
+        "list",
+        "--detach",
+        "--tag",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "show",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture"
+      },
+      "argv": [
+        "show",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "launch",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "headless": true,
+        "engine": "fixture"
+      },
+      "argv": [
+        "launch",
+        "fixture",
+        "--detach",
+        "--headless",
+        "--engine",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "stop",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture"
+      },
+      "argv": [
+        "stop",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "jobs_list",
+      "arguments": {
+        "detach": true
+      },
+      "argv": [
+        "jobs",
+        "list",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "jobs_show",
+      "arguments": {
+        "detach": true,
+        "id": "fixture",
+        "lines": 2
+      },
+      "argv": [
+        "jobs",
+        "show",
+        "fixture",
+        "--detach",
+        "--lines",
+        "2",
+        "--json"
+      ]
+    },
+    {
+      "name": "jobs_stop",
+      "arguments": {
+        "detach": true,
+        "id": "fixture"
+      },
+      "argv": [
+        "jobs",
+        "stop",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "jobs_clear",
+      "arguments": {
+        "detach": true
+      },
+      "argv": [
+        "jobs",
+        "clear",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "engines",
+      "arguments": {
+        "detach": true,
+        "cloak_offer": true,
+        "acquire_cloak": "fixture",
+        "approve": true
+      },
+      "argv": [
+        "engines",
+        "--detach",
+        "--cloak-offer",
+        "--acquire-cloak",
+        "fixture",
+        "--approve",
+        "--json"
+      ]
+    },
+    {
+      "name": "default_engine",
+      "arguments": {
+        "detach": true,
+        "name": "fixture"
+      },
+      "argv": [
+        "default-engine",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "config",
+      "arguments": {
+        "detach": true,
+        "default_engine": "fixture",
+        "headless_launch": "on",
+        "default_extension": [
+          "one",
+          "two"
+        ]
+      },
+      "argv": [
+        "config",
+        "--detach",
+        "--default-engine",
+        "fixture",
+        "--headless-launch",
+        "on",
+        "--default-extension",
+        "one",
+        "--default-extension",
+        "two",
+        "--json"
+      ]
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "notes": "fixture",
+        "add_tag": [
+          "one",
+          "two"
+        ],
+        "proxy": "fixture",
+        "country": "fixture"
+      },
+      "argv": [
+        "edit",
+        "fixture",
+        "--detach",
+        "--notes",
+        "fixture",
+        "--add-tag",
+        "one",
+        "--add-tag",
+        "two",
+        "--proxy",
+        "fixture",
+        "--country",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "regen",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "os": "windows",
+        "locale": "fixture"
+      },
+      "argv": [
+        "regen",
+        "fixture",
+        "--detach",
+        "--os",
+        "windows",
+        "--locale",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "delete",
+      "arguments": {
+        "detach": true,
+        "ref": [
+          "one",
+          "two"
+        ],
+        "yes": true
+      },
+      "argv": [
+        "delete",
+        "one",
+        "two",
+        "--detach",
+        "--yes",
+        "--json"
+      ]
+    },
+    {
+      "name": "export",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "file": "fixture"
+      },
+      "argv": [
+        "export",
+        "fixture",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "import",
+      "arguments": {
+        "detach": true,
+        "file": "fixture"
+      },
+      "argv": [
+        "import",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "backup",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "file": "fixture"
+      },
+      "argv": [
+        "backup",
+        "fixture",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "restore",
+      "arguments": {
+        "detach": true,
+        "file": "fixture",
+        "new_id": true
+      },
+      "argv": [
+        "restore",
+        "fixture",
+        "--detach",
+        "--new-id",
+        "--json"
+      ]
+    },
+    {
+      "name": "collisions",
+      "arguments": {
+        "detach": true
+      },
+      "argv": [
+        "collisions",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "health",
+      "arguments": {
+        "detach": true
+      },
+      "argv": [
+        "health",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "import_from",
+      "arguments": {
+        "detach": true,
+        "file": "fixture"
+      },
+      "argv": [
+        "import-from",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "cookies_list",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "engine": "fixture"
+      },
+      "argv": [
+        "cookies",
+        "list",
+        "fixture",
+        "--detach",
+        "--engine",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "cookies_export",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "file": "fixture",
+        "format": "json",
+        "engine": "fixture"
+      },
+      "argv": [
+        "cookies",
+        "export",
+        "fixture",
+        "fixture",
+        "--detach",
+        "--format",
+        "json",
+        "--engine",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "cookies_import",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "file": "fixture",
+        "clear": true,
+        "engine": "fixture"
+      },
+      "argv": [
+        "cookies",
+        "import",
+        "fixture",
+        "fixture",
+        "--detach",
+        "--clear",
+        "--engine",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "check",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture"
+      },
+      "argv": [
+        "check",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "proxy_test",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "engine": "fixture"
+      },
+      "argv": [
+        "proxy",
+        "test",
+        "fixture",
+        "--detach",
+        "--engine",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "pool_list",
+      "arguments": {
+        "detach": true
+      },
+      "argv": [
+        "pool",
+        "list",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "pool_add",
+      "arguments": {
+        "detach": true,
+        "source": "fixture"
+      },
+      "argv": [
+        "pool",
+        "add",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "pool_remove",
+      "arguments": {
+        "detach": true,
+        "id": [
+          "one",
+          "two"
+        ]
+      },
+      "argv": [
+        "pool",
+        "remove",
+        "one",
+        "two",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "pool_edit",
+      "arguments": {
+        "detach": true,
+        "id": "fixture",
+        "host": "fixture",
+        "port": "fixture",
+        "user": "fixture",
+        "password": "fixture",
+        "type": "HTTP",
+        "country": "fixture",
+        "label": "fixture",
+        "rotate_url": "fixture"
+      },
+      "argv": [
+        "pool",
+        "edit",
+        "fixture",
+        "--detach",
+        "--host",
+        "fixture",
+        "--port",
+        "fixture",
+        "--user",
+        "fixture",
+        "--pass",
+        "fixture",
+        "--type",
+        "HTTP",
+        "--country",
+        "fixture",
+        "--label",
+        "fixture",
+        "--rotate-url",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "pool_rotate",
+      "arguments": {
+        "detach": true,
+        "id": [
+          "one",
+          "two"
+        ]
+      },
+      "argv": [
+        "pool",
+        "rotate",
+        "one",
+        "two",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "pool_archive",
+      "arguments": {
+        "detach": true,
+        "id": [
+          "one",
+          "two"
+        ],
+        "restore": true
+      },
+      "argv": [
+        "pool",
+        "archive",
+        "one",
+        "two",
+        "--detach",
+        "--restore",
+        "--json"
+      ]
+    },
+    {
+      "name": "pool_export",
+      "arguments": {
+        "detach": true,
+        "id": [
+          "one",
+          "two"
+        ],
+        "file": "fixture"
+      },
+      "argv": [
+        "pool",
+        "export",
+        "one",
+        "two",
+        "--detach",
+        "--file",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "pool_test",
+      "arguments": {
+        "detach": true,
+        "id": [
+          "one",
+          "two"
+        ],
+        "all": true
+      },
+      "argv": [
+        "pool",
+        "test",
+        "one",
+        "two",
+        "--detach",
+        "--all",
+        "--json"
+      ]
+    },
+    {
+      "name": "pool_assign",
+      "arguments": {
+        "detach": true,
+        "ref": [
+          "one",
+          "two"
+        ],
+        "tag": "fixture",
+        "all": true,
+        "proxy_id": [
+          "one",
+          "two"
+        ]
+      },
+      "argv": [
+        "pool",
+        "assign",
+        "one",
+        "two",
+        "--detach",
+        "--tag",
+        "fixture",
+        "--all",
+        "--proxy-id",
+        "one",
+        "--proxy-id",
+        "two",
+        "--json"
+      ]
+    },
+    {
+      "name": "token_list",
+      "arguments": {
+        "detach": true
+      },
+      "argv": [
+        "token",
+        "list",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "token_create",
+      "arguments": {
+        "detach": true,
+        "name": "fixture"
+      },
+      "argv": [
+        "token",
+        "create",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "token_revoke",
+      "arguments": {
+        "detach": true,
+        "id": "fixture"
+      },
+      "argv": [
+        "token",
+        "revoke",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "tls",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "engine": "fixture"
+      },
+      "argv": [
+        "tls",
+        "fixture",
+        "--detach",
+        "--engine",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "dns",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "engine": "fixture"
+      },
+      "argv": [
+        "dns",
+        "fixture",
+        "--detach",
+        "--engine",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "trust",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "engine": "fixture"
+      },
+      "argv": [
+        "trust",
+        "fixture",
+        "--detach",
+        "--engine",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "align",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "engine": "fixture"
+      },
+      "argv": [
+        "align",
+        "fixture",
+        "--detach",
+        "--engine",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "bulk_create",
+      "arguments": {
+        "detach": true,
+        "count": 2,
+        "os": [
+          "one",
+          "two"
+        ],
+        "locale": [
+          "one",
+          "two"
+        ],
+        "chrome": [
+          "one",
+          "two"
+        ],
+        "engine": "fixture",
+        "prefix": "fixture",
+        "start": 2,
+        "pad": 2,
+        "tag": [
+          "one",
+          "two"
+        ],
+        "mobile": true,
+        "seed": 2
+      },
+      "argv": [
+        "bulk-create",
+        "--detach",
+        "--count",
+        "2",
+        "--os",
+        "one",
+        "--os",
+        "two",
+        "--locale",
+        "one",
+        "--locale",
+        "two",
+        "--chrome",
+        "one",
+        "--chrome",
+        "two",
+        "--engine",
+        "fixture",
+        "--prefix",
+        "fixture",
+        "--start",
+        "2",
+        "--pad",
+        "2",
+        "--tag",
+        "one",
+        "--tag",
+        "two",
+        "--mobile",
+        "--seed",
+        "2",
+        "--json"
+      ]
+    },
+    {
+      "name": "warmup",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "minutes": 1.25,
+        "site": [
+          "one",
+          "two"
+        ],
+        "preset": "general",
+        "headless": true,
+        "engine": "fixture"
+      },
+      "argv": [
+        "warmup",
+        "fixture",
+        "--detach",
+        "--minutes",
+        "1.25",
+        "--site",
+        "one",
+        "--site",
+        "two",
+        "--preset",
+        "general",
+        "--headless",
+        "--engine",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "schedule_list",
+      "arguments": {
+        "detach": true
+      },
+      "argv": [
+        "schedule",
+        "list",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "schedule_add",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "every": 1.25,
+        "minutes": 1.25,
+        "preset": "general"
+      },
+      "argv": [
+        "schedule",
+        "add",
+        "fixture",
+        "--detach",
+        "--every",
+        "1.25",
+        "--minutes",
+        "1.25",
+        "--preset",
+        "general",
+        "--json"
+      ]
+    },
+    {
+      "name": "schedule_update",
+      "arguments": {
+        "detach": true,
+        "id": "fixture",
+        "every": 1.25,
+        "minutes": 1.25,
+        "preset": "general",
+        "enabled": "on"
+      },
+      "argv": [
+        "schedule",
+        "update",
+        "fixture",
+        "--detach",
+        "--every",
+        "1.25",
+        "--minutes",
+        "1.25",
+        "--preset",
+        "general",
+        "--enabled",
+        "on",
+        "--json"
+      ]
+    },
+    {
+      "name": "schedule_remove",
+      "arguments": {
+        "detach": true,
+        "id": "fixture"
+      },
+      "argv": [
+        "schedule",
+        "remove",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "schedule_run_due",
+      "arguments": {
+        "detach": true
+      },
+      "argv": [
+        "schedule",
+        "run-due",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "attach",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "port": 2,
+        "engine": "fixture",
+        "headless": true
+      },
+      "argv": [
+        "attach",
+        "fixture",
+        "--detach",
+        "--port",
+        "2",
+        "--engine",
+        "fixture",
+        "--headless",
+        "--json"
+      ]
+    },
+    {
+      "name": "ext_list",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture"
+      },
+      "argv": [
+        "ext",
+        "list",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "ext_add",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "path": "fixture"
+      },
+      "argv": [
+        "ext",
+        "add",
+        "fixture",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "ext_remove",
+      "arguments": {
+        "detach": true,
+        "ref": "fixture",
+        "path": "fixture"
+      },
+      "argv": [
+        "ext",
+        "remove",
+        "fixture",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "ext_install",
+      "arguments": {
+        "detach": true,
+        "url": "fixture",
+        "force": true,
+        "no_default": true
+      },
+      "argv": [
+        "ext",
+        "install",
+        "fixture",
+        "--detach",
+        "--force",
+        "--no-default",
+        "--json"
+      ]
+    },
+    {
+      "name": "ext_installed",
+      "arguments": {
+        "detach": true
+      },
+      "argv": [
+        "ext",
+        "installed",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "ext_uninstall",
+      "arguments": {
+        "detach": true,
+        "url": "fixture"
+      },
+      "argv": [
+        "ext",
+        "uninstall",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "ext_default_list",
+      "arguments": {
+        "detach": true
+      },
+      "argv": [
+        "ext",
+        "default-list",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "ext_default_add",
+      "arguments": {
+        "detach": true,
+        "path": "fixture"
+      },
+      "argv": [
+        "ext",
+        "default-add",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "ext_default_remove",
+      "arguments": {
+        "detach": true,
+        "path": "fixture"
+      },
+      "argv": [
+        "ext",
+        "default-remove",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "apply",
+      "arguments": {
+        "detach": true,
+        "ref": [
+          "one",
+          "two"
+        ],
+        "tag": "fixture",
+        "all": true,
+        "engine": "fixture",
+        "proxy": "fixture",
+        "country": "fixture",
+        "locale": "fixture",
+        "timezone": "fixture",
+        "notes": "fixture",
+        "startup_url": [
+          "one",
+          "two"
+        ],
+        "extension": [
+          "one",
+          "two"
+        ],
+        "add_tag": [
+          "one",
+          "two"
+        ],
+        "remove_tag": [
+          "one",
+          "two"
+        ],
+        "regen": true,
+        "yes": true
+      },
+      "argv": [
+        "apply",
+        "one",
+        "two",
+        "--detach",
+        "--tag",
+        "fixture",
+        "--all",
+        "--engine",
+        "fixture",
+        "--proxy",
+        "fixture",
+        "--country",
+        "fixture",
+        "--locale",
+        "fixture",
+        "--timezone",
+        "fixture",
+        "--notes",
+        "fixture",
+        "--startup-url",
+        "one",
+        "--startup-url",
+        "two",
+        "--extension",
+        "one",
+        "--extension",
+        "two",
+        "--add-tag",
+        "one",
+        "--add-tag",
+        "two",
+        "--remove-tag",
+        "one",
+        "--remove-tag",
+        "two",
+        "--regen",
+        "--yes",
+        "--json"
+      ]
+    },
+    {
+      "name": "vault_status",
+      "arguments": {
+        "detach": true
+      },
+      "argv": [
+        "vault",
+        "status",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "vault_enable",
+      "arguments": {
+        "detach": true
+      },
+      "argv": [
+        "vault",
+        "enable",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "vault_change",
+      "arguments": {
+        "detach": true,
+        "new_password": "fixture"
+      },
+      "argv": [
+        "vault",
+        "change",
+        "--detach",
+        "--new-password",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "vault_resume",
+      "arguments": {
+        "detach": true,
+        "new_password": "fixture"
+      },
+      "argv": [
+        "vault",
+        "resume",
+        "--detach",
+        "--new-password",
+        "fixture",
+        "--json"
+      ]
+    },
+    {
+      "name": "folder_list",
+      "arguments": {
+        "detach": true
+      },
+      "argv": [
+        "folder",
+        "list",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "folder_create",
+      "arguments": {
+        "detach": true,
+        "name": "fixture"
+      },
+      "argv": [
+        "folder",
+        "create",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "folder_rename",
+      "arguments": {
+        "detach": true,
+        "old": "fixture",
+        "new": "fixture"
+      },
+      "argv": [
+        "folder",
+        "rename",
+        "fixture",
+        "fixture",
+        "--detach",
+        "--json"
+      ]
+    },
+    {
+      "name": "folder_delete",
+      "arguments": {
+        "detach": true,
+        "name": "fixture",
+        "reassign_to": "fixture"
+      },
+      "argv": [
+        "folder",
+        "delete",
+        "fixture",
+        "--detach",
+        "--reassign-to",
+        "fixture",
+        "--json"
+      ]
+    }
+  ],
+  "output": [
+    {
+      "json": false,
+      "tty": false,
+      "input": "y\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 2
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "N\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": false,
+      "error": null,
+      "exit": 7,
+      "consumed": 2
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": null,
+      "error": "nothing to read the confirmation from \u2014 pass -y",
+      "exit": 7,
+      "consumed": 0
+    },
+    {
+      "json": true,
+      "tty": false,
+      "input": "must-not-read",
+      "stdout": "{\"text\": \"\\u0645\\u0631\\u062d\\u0628\\u0627 \\ud83d\\ude00\", \"values\": [true, null, 123], \"nested\": {\"key\": \"value\"}}\n",
+      "stderr": "",
+      "confirmed": null,
+      "error": "this needs confirmation \u2014 pass -y (a --json run never prompts)",
+      "exit": 7,
+      "consumed": 0
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "\u001cY\u001c\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "\u001dY\u001d\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "\u001eY\u001e\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "\u001fY\u001f\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "\u0085Y\u0085\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 6
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "\u00a0Y\u00a0\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 6
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "\u2003Y\u2003\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 8
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "\u3000Y\u3000\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 8
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": " y \r\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 5
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "Y",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 1
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": false,
+      "error": null,
+      "exit": 7,
+      "consumed": 1
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "yes\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": false,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "y\u001cy\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": false,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "\u200by\u200b\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": false,
+      "error": null,
+      "exit": 7,
+      "consumed": 8
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "\uff59\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": false,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": false,
+      "input": "y\nn\n",
+      "stdout": "\u0645\u0631\u062d\u0628\u0627 Fixture\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 2
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "\u001cY\u001c\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "\u001dY\u001d\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "\u001eY\u001e\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "\u001fY\u001f\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "\u0085Y\u0085\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 6
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "\u00a0Y\u00a0\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 6
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "\u2003Y\u2003\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 8
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "\u3000Y\u3000\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 8
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": " y \r\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 5
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "Y",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 1
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": false,
+      "error": null,
+      "exit": 7,
+      "consumed": 1
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "yes\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": false,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "y\u001cy\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": false,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "\u200by\u200b\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": false,
+      "error": null,
+      "exit": 7,
+      "consumed": 8
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "\uff59\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": false,
+      "error": null,
+      "exit": 7,
+      "consumed": 4
+    },
+    {
+      "json": false,
+      "tty": true,
+      "input": "y\nn\n",
+      "stdout": "\u001b[36m\u0645\u0631\u062d\u0628\u0627 Fixture\u001b[0m\nContinue? [y/N] ",
+      "stderr": "",
+      "confirmed": true,
+      "error": null,
+      "exit": 7,
+      "consumed": 2
+    },
+    {
+      "json": true,
+      "tty": false,
+      "input": "\u001cy\u001c\n",
+      "stdout": "{\"text\": \"\\u0645\\u0631\\u062d\\u0628\\u0627 \\ud83d\\ude00\", \"values\": [true, null, 123], \"nested\": {\"key\": \"value\"}}\n",
+      "stderr": "",
+      "confirmed": null,
+      "error": "this needs confirmation \u2014 pass -y (a --json run never prompts)",
+      "exit": 7,
+      "consumed": 0
+    },
+    {
+      "json": true,
+      "tty": false,
+      "input": "",
+      "stdout": "{\"text\": \"\\u0645\\u0631\\u062d\\u0628\\u0627 \\ud83d\\ude00\", \"values\": [true, null, 123], \"nested\": {\"key\": \"value\"}}\n",
+      "stderr": "",
+      "confirmed": null,
+      "error": "this needs confirmation \u2014 pass -y (a --json run never prompts)",
+      "exit": 7,
+      "consumed": 0
+    },
+    {
+      "json": true,
+      "tty": false,
+      "input": "y\n",
+      "stdout": "{\"text\": \"\\u0645\\u0631\\u062d\\u0628\\u0627 \\ud83d\\ude00\", \"values\": [true, null, 123], \"nested\": {\"key\": \"value\"}}\n",
+      "stderr": "",
+      "confirmed": null,
+      "error": "this needs confirmation \u2014 pass -y (a --json run never prompts)",
+      "exit": 7,
+      "consumed": 0
+    }
+  ]
+}

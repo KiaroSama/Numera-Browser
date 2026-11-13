@@ -10,7 +10,12 @@ const AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0.0.0"
 const MAX_PACKAGE: usize = 64 * 1024 * 1024;
 
 pub fn url(id: &str) -> io::Result<Url> {
-    let id = crate::storage::extensions::extension_id(id)?;
+    if id.len() != 32 || !id.bytes().all(|byte| (b'a'..=b'p').contains(&byte)) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "invalid Chrome extension id: expected exactly 32 lowercase letters a-p",
+        ));
+    }
     Url::parse(&format!(
         "{STORE}?response=redirect&prodversion=131.0.0.0&acceptformat=crx2,crx3&x=id%3D{id}%26uc"
     ))

@@ -31,8 +31,14 @@ def test_candidate_target_is_explicit_and_not_part_of_default_builds():
     browser = {'name': 'numera-browser-runtime', 'kind': ['bin'],
                'src_path': str(ROOT / 'engine-rust/src/bin/browser_runtime.rs'),
                'required-features': ['native-browser'], 'test': False}
-    features = {'default': [], 'native-candidate': [], 'native-browser': ['dep:playwright-rs', 'dep:ruzstd']}
-    package = {'name': 'numera-core', 'features': features, 'targets': [target, browser]}
+    product = {'name': 'numera-engine', 'kind': ['bin'],
+               'src_path': str(ROOT / 'engine-rust/src/bin/engine.rs'),
+               'required-features': ['native-product'], 'test': False}
+    observer = {'name': 'numera-http-observer', 'kind': ['bin'],
+                'src_path': str(ROOT / 'engine-rust/src/bin/http_observer.rs'),
+                'required-features': ['native-product'], 'test': False}
+    features = {'default': [], 'native-candidate': [], 'native-product': [], 'test-support': [], 'native-browser': ['dep:playwright-rs', 'dep:ruzstd', 'dep:maxminddb', 'dep:serde_yaml']}
+    package = {'name': 'numera-core', 'features': features, 'targets': [target, browser, product, observer]}
     gate.verify_candidate_target({'packages': [package]})
     for changed in (
         {**package, 'features': {**features, 'default': ['native-candidate']}},
@@ -44,6 +50,10 @@ def test_candidate_target_is_explicit_and_not_part_of_default_builds():
         {**package, 'targets': [target, {**browser, 'required-features': []}]},
         {**package, 'targets': [target, {**browser, 'test': True}]},
     ):
+        if 'targets' in changed and not any(item['name'] == 'numera-engine' for item in changed['targets']):
+            changed = {**changed, 'targets': changed['targets'] + [product]}
+        if 'targets' in changed and not any(item['name'] == 'numera-http-observer' for item in changed['targets']):
+            changed = {**changed, 'targets': changed['targets'] + [observer]}
         with pytest.raises(ValueError, match='candidate'):
             gate.verify_candidate_target({'packages': [changed]})
 

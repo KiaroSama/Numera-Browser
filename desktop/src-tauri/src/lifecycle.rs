@@ -10,13 +10,9 @@ use std::{
 };
 use tauri::Manager;
 #[cfg(windows)]
-const FROZEN_ENGINE: &str = "numera-engine.exe";
+const NATIVE_ENGINE: &str = "numera-engine.exe";
 #[cfg(not(windows))]
-const FROZEN_ENGINE: &str = "numera-engine";
-#[cfg(windows)]
-const VENV_PYTHON: &str = "Scripts/python.exe";
-#[cfg(not(windows))]
-const VENV_PYTHON: &str = "bin/python";
+const NATIVE_ENGINE: &str = "numera-engine";
 pub(crate) struct Engine(pub Mutex<Option<Child>>);
 pub(crate) struct Reader(pub Mutex<Option<std::thread::JoinHandle<()>>>);
 pub(crate) type Log = Arc<Mutex<VecDeque<String>>>;
@@ -24,9 +20,10 @@ pub(crate) type Log = Arc<Mutex<VecDeque<String>>>;
 pub(crate) fn start_engine(
     log: Log,
     update_token: &str,
+    resources: Option<&std::path::Path>,
 ) -> Result<(Child, u16, Option<std::thread::JoinHandle<()>>), String> {
     let port = free_port().map_err(|e| format!("could not reserve a local port: {e}"))?;
-    let mut cmd = engine_command(port)?;
+    let mut cmd = engine_command(port, resources)?;
     cmd.stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::piped());
@@ -87,7 +84,7 @@ fn free_port() -> std::io::Result<u16> {
 ///
 /// Every other case names a path, because *not* naming one is not neutral: an
 /// explicit `--data-dir` outranks everything in the engine's resolution order,
-/// and omitting it sends a frozen engine to its own portable default - `data/`
+/// and omitting it can send an engine to its own portable default - `data/`
 /// beside its binary, and the binary lives in `engine/`, the directory an
 /// update replaces wholesale. So an unwritable portable root falls back to the
 /// per-user location by name rather than by silence.
@@ -150,23 +147,53 @@ fn per_user_data_dir() -> Option<PathBuf> {
     Some(numera)
 }
 
-fn engine_command(port: u16) -> Result<Command, String> {
+fn engine_command(port: u16, resources: Option<&std::path::Path>) -> Result<Command, String> {
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let dir = exe.parent().ok_or("the shell has no parent directory")?;
+    engine_command_at(port, dir, resources, std::env::var_os("NUMERA_ENGINE"))
+}
+
+fn engine_command_at(
+    port: u16,
+    dir: &std::path::Path,
+    resources: Option<&std::path::Path>,
+    explicit: Option<std::ffi::OsString>,
+) -> Result<Command, String> {
     let port = port.to_string();
     let serve = ["serve", "--host", "127.0.0.1", "--port"];
 
-    if let Some(exe) = std::env::var_os("NUMERA_ENGINE") {
+    if let Some(exe) = explicit {
         let mut cmd = Command::new(exe);
         cmd.args(serve).arg(&port);
         return Ok(cmd);
     }
 
-    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-    let dir = exe.parent().ok_or("the shell has no parent directory")?;
-
-    // Portable layout: the frozen engine ships next to the shell.
-    let frozen = dir.join("engine").join(FROZEN_ENGINE);
-    if frozen.is_file() {
-        let mut cmd = Command::new(frozen);
+    // Portable archives keep engine/ beside the shell. Installed Tauri bundles
+    // put it in the platform resource directory (Resources on macOS, the
+    // application resource directory on Linux, installation root on Windows).
+    let portable = dir.join("engine").join(NATIVE_ENGINE);
+    let bundled = resources.map(|root| root.join("engine").join(NATIVE_ENGINE));
+    let selected = if portable.is_file() {
+        Some((portable.clone(), true))
+    } else {
+        bundled
+            .as_ref()
+            .filter(|path| path.is_file())
+            .map(|path| (path.clone(), false))
+    };
+    if let Some((engine, is_portable)) = selected {
+        let mut cmd = Command::new(&engine);
+        let app = engine
+            .parent()
+            .ok_or("the native engine has no parent directory")?;
+        // Native deployment inputs are relative to their immutable engine
+        // directory. Explicit operator resource overrides keep their precedence.
+        if std::env::var_os("NUMERA_APP_DIR").is_none() {
+            cmd.env("NUMERA_APP_DIR", app);
+        }
+        if std::env::var_os("NUMERA_BROWSER_DRIVERS").is_none() {
+            cmd.env("NUMERA_BROWSER_DRIVERS", app.join("drivers"));
+        }
         // Data goes beside the shell, not inside engine/. Left to its own
         // default it lands next to the engine binary, so replacing engine/ on
         // an update would take the user's profiles with it.
@@ -181,28 +208,24 @@ fn engine_command(port: u16) -> Result<Command, String> {
         // portable spot is not writable and the engine's per-user fallback is
         // the better answer.
         // --data-dir is a global flag, so it has to precede the subcommand.
-        if let Some(data) = portable_data_dir(dir) {
+        let data = if is_portable {
+            portable_data_dir(dir)
+        } else if std::env::var_os("NUMERA_DATA_DIR").is_none() {
+            per_user_data_dir()
+        } else {
+            None
+        };
+        if let Some(data) = data {
             cmd.arg("--data-dir").arg(data);
         }
         cmd.args(serve).arg(&port);
         return Ok(cmd);
     }
 
-    // Source checkout: the project venv, somewhere above the build output.
-    for root in dir.ancestors() {
-        let python: PathBuf = root.join(".venv").join(VENV_PYTHON);
-        if python.is_file() {
-            let mut cmd = Command::new(python);
-            cmd.args(["-m", "numera"]).args(serve).arg(&port);
-            return Ok(cmd);
-        }
-    }
-
     Err(format!(
-        "No engine to run.\nLooked for a frozen engine at:\n  {}\nand for a .venv in every \
-         directory above:\n  {}",
-        frozen.display(),
-        dir.display()
+        "No native engine to run.\nLooked for:\n  {}\n  {}\nBuild the native product or set NUMERA_ENGINE to its executable.",
+        portable.display(),
+        bundled.as_ref().map(|path| path.display().to_string()).unwrap_or_else(|| "(no installed resource directory)".into())
     ))
 }
 
@@ -333,7 +356,7 @@ pub(crate) fn wait_healthy(handle: &tauri::AppHandle, port: u16) -> Result<(), S
         std::thread::sleep(Duration::from_millis(150));
     }
     Err(format!(
-        "The engine did not answer http://127.0.0.1:{port}/api/health within {budget}s."
+        "The engine did not answer http://127.0.0.1:{port}/api/ready within {budget}s."
     ))
 }
 

@@ -1,4 +1,4 @@
-//! Composition of implemented routes, not a complete executable HTTP server.
+//! Native HTTP application composition, startup admission and shared policies.
 use super::{
     config_routes, cors, diagnostics, extension_routes, fingerprint_routes, folder_routes,
     middleware::protect, profile_routes, proxy_routes, request_auth::RequestAuth, schedule_routes,
@@ -103,6 +103,41 @@ pub async fn router_with_dashboard(
         Option<&std::path::Path>,
     ),
 ) -> io::Result<Router> {
+    router_with_recovery(
+        root,
+        environment,
+        origins,
+        password,
+        host,
+        application,
+        resources,
+        RecoveryOptions {
+            ticket: std::env::var("NUMERA_UPDATE_TICKET").ok(),
+            update_token: std::env::var("NUMERA_UPDATE_TOKEN").unwrap_or_default(),
+        },
+    )
+    .await
+}
+
+pub struct RecoveryOptions {
+    pub ticket: Option<String>,
+    pub update_token: String,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn router_with_recovery(
+    root: PathBuf,
+    environment: &str,
+    origins: &str,
+    password: Option<String>,
+    host: &str,
+    application: SessionApplication,
+    resources: (
+        Option<crate::browser::runtime::Runtime>,
+        Option<&std::path::Path>,
+    ),
+    recovery: RecoveryOptions,
+) -> io::Result<Router> {
     let (browser, dashboard) = resources;
     let SessionApplication {
         installed,
@@ -120,19 +155,28 @@ pub async fn router_with_dashboard(
             "Session registry does not belong to this application root and host",
         ));
     }
-    let startup_admission = Arc::new(crate::ownership::update_admission::Reservation::begin(
-        &root,
-        "native-http-startup",
-    )?);
     let auth = Arc::new(RequestAuth::new(TokenStore::new(root.clone()), environment));
     let adopting = auth.clone();
-    tokio::task::spawn_blocking(move || {
-        let _admission = startup_admission;
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_err(|_| io::Error::other("System clock precedes the Unix epoch"))?
-            .as_secs_f64();
-        adopting.adopt(now)
+    let startup = crate::ownership::update_admission::Admission::new(&root, host)?;
+    let startup_root = root.clone();
+    let startup_password = password.clone();
+    super::admission::blocking(move || {
+        startup.with_startup(false, recovery.ticket.as_deref(), |recovering| {
+            if recovering {
+                return Ok(());
+            }
+            #[cfg(feature = "test-support")]
+            crate::vault::testing::event("before-update-store-initialize", &startup_root)?;
+            crate::storage::repo::ProfileRepo::open(startup_root.clone(), startup_password, None)
+                .map_err(io::Error::other)?;
+            std::fs::create_dir_all(startup_root.join("dashboard"))?;
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map_err(|_| io::Error::other("System clock precedes the Unix epoch"))?
+                .as_secs_f64();
+            adopting.adopt(now)?;
+            Ok(())
+        })
     })
     .await
     .map_err(|_| io::Error::other("Authentication startup task failed"))??;
@@ -146,20 +190,28 @@ pub async fn router_with_dashboard(
             password.clone(),
             host,
             installed.clone(),
-            sessions,
+            sessions.clone(),
             browser,
         ))
         .merge(extension_routes::routes(root.clone()))
+        .merge(super::acquisition_routes::routes(root.clone(), environment))
         .merge(proxy_routes::routes(root.clone(), password.clone()))
         .merge(config_routes::routes(
             root.clone(),
             password.clone(),
             installed,
         ))
-        .merge(schedule_routes::routes(root, password))
+        .merge(schedule_routes::routes(root.clone(), password))
+        .merge(super::update_routes::routes(
+            crate::ownership::update_admission::Admission::new(&root, host)?,
+            sessions,
+        ))
         .method_not_allowed_fallback(method_not_allowed);
     let routes = super::dashboard::mount(routes, dashboard)?;
-    Ok(protect(cors::apply(routes, origins), auth))
+    Ok(super::update_routes::protect(
+        protect(cors::apply(routes, origins), auth),
+        recovery.update_token,
+    ))
 }
 pub(crate) async fn method_not_allowed() -> Response {
     (
