@@ -163,6 +163,15 @@ fn object_repr(path: &Path) -> String {
 
 #[derive(Debug, Default)]
 pub(super) struct CopyFailures(Vec<(String, String, String)>);
+#[cfg(all(feature = "test-support", target_os = "macos"))]
+pub(crate) fn pipe_failure(source: &Path, destination: &Path) -> String {
+    let mut failures = CopyFailures::default();
+    failures.push(source, destination, pipe(source));
+    failures
+        .finish()
+        .expect_err("one named-pipe error")
+        .to_string()
+}
 impl CopyFailures {
     pub(super) fn push(&mut self, source: &Path, destination: &Path, error: io::Error) {
         self.collect(path_repr(source), path_repr(destination), error);

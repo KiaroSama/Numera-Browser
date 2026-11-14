@@ -134,6 +134,31 @@ fn rpc(mode: &str, config: Value) -> io::Result<()> {
             emit(&json!({"protocol":2,"id":request["id"],"ok":true,"result":{}}))?;
             return Ok(());
         }
+        if matches!(mode, "leader-exit-held-pipe" | "final-reply-held-pipe")
+            && operation == "navigate"
+        {
+            let root = Path::new(
+                config["root"]
+                    .as_str()
+                    .ok_or_else(|| io::Error::other("held-pipe fixture root absent"))?,
+            );
+            // This real survivor deliberately retains the producer's stdout.
+            // The controller must observe leader death independently of EOF,
+            // then end this same owned tree during its normal outer cleanup.
+            let child = std::process::Command::new(std::env::current_exe()?)
+                .arg("wait")
+                .stdin(std::process::Stdio::null())
+                .stdout(std::process::Stdio::inherit())
+                .stderr(std::process::Stdio::null())
+                .spawn()?;
+            fs::write(root.join("held-pipe-child"), child.id().to_string())?;
+            if mode == "final-reply-held-pipe" {
+                emit(
+                    &json!({"protocol":1,"id":request["id"],"ok":true,"result":{"navigated":true}}),
+                )?;
+            }
+            std::process::exit(3);
+        }
         let result = match operation {
             "hello" => {
                 if mode == "cookies" {

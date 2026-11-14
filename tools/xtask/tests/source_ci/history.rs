@@ -155,6 +155,22 @@ source_test!(
         }
         assert_eq!(corrected, 3);
         let cases = registry.cases()?;
+        let clock_case = cases
+            .iter()
+            .find(|case| case.target == "profile_read_parity")
+            .ok_or("Native HTTP clock fixture missing")?;
+        for compile in [false, true] {
+            let command = history::proof_command(&root(), clock_case, compile, "linux");
+            let args = command
+                .get_args()
+                .map(|arg| arg.to_string_lossy().into_owned())
+                .collect::<Vec<_>>();
+            assert!(args.iter().any(|arg| arg == "--no-default-features"));
+            assert!(
+                args.windows(2)
+                    .any(|args| args == ["--features", "test-support"])
+            );
+        }
         assert_eq!(&cases[..extension.len()], extension);
         assert_eq!(&cases[extension.len()..], registry.current);
         Ok(())
@@ -278,8 +294,82 @@ source_test!(
     history_current_appended,
     "tests/test_native_regressions.py::test_current_caller_history_is_appended_after_compatibility_overlays",
     {
+        caller_bridge_controls()?;
         let registry = history::Registry::read()?;
         let cases = registry.cases()?;
+        let workflow = workflow::parse(&fs::read_to_string(
+            root().join(".github/workflows/native-ci.yml"),
+        )?)?;
+        workflow::native_failure_evidence(&workflow)?;
+        for lost in [
+            "build/native-product/.desktop-build/tauri-build*.log",
+            "engine-rust/target/cargo-timings/",
+            "build/native-product/**/PROVENANCE.json",
+        ] {
+            let mut changed = workflow.clone();
+            let artifact = changed["jobs"]["build"]["steps"]
+                .as_array_mut()
+                .ok_or("Build steps missing")?
+                .iter_mut()
+                .find(|step| step["name"] == "Preserve complete failed native packaging evidence")
+                .ok_or("Product diagnostic artifact missing")?;
+            artifact["with"]["path"] = artifact["with"]["path"]
+                .as_str()
+                .ok_or("Paths missing")?
+                .lines()
+                .filter(|path| *path != lost)
+                .collect::<Vec<_>>()
+                .join("\n")
+                .into();
+            assert!(workflow::native_failure_evidence(&changed).is_err());
+        }
+        for case in &cases {
+            let command = history::proof_command(&root(), case, true, "win32");
+            assert!(
+                command
+                    .get_envs()
+                    .any(|(key, value)| key == "VSCMD_SKIP_SENDTELEMETRY"
+                        && value.is_some_and(|value| value == "1"))
+            );
+        }
+        workflow::native_functional_fixture(&workflow)?;
+        let mut absent = workflow.clone();
+        absent["jobs"]["functional"]["env"]["NUMERA_NATIVE_CANDIDATE"] = Value::Null;
+        assert!(workflow::native_functional_fixture(&absent).is_err());
+        let mut wrong = workflow.clone();
+        wrong["jobs"]["functional"]["env"]["NUMERA_NATIVE_ENGINE"] =
+            "numera-native-candidate".into();
+        assert!(workflow::native_functional_fixture(&wrong).is_err());
+        history::workflow_contract(&workflow)?;
+        for (key, value) in [
+            (
+                "strategy",
+                json!({"fail-fast":false,"matrix":{"os":["windows-latest"]}}),
+            ),
+            (
+                "strategy",
+                json!({"fail-fast":false,"matrix":{"os":["ubuntu-24.04"]}}),
+            ),
+            (
+                "strategy",
+                json!({"fail-fast":true,"matrix":{"os":["ubuntu-24.04","windows-latest"]}}),
+            ),
+            ("runs-on", json!("windows-latest")),
+        ] {
+            let mut missing = workflow.clone();
+            missing["jobs"]["history"][key] = value;
+            assert!(history::workflow_contract(&missing).is_err());
+        }
+        let mut lost = workflow.clone();
+        let steps = lost["jobs"]["history"]["steps"]
+            .as_array_mut()
+            .ok_or("History steps missing")?;
+        let artifact = steps
+            .iter_mut()
+            .find(|step| step["name"] == "Preserve actual historical compiler diagnostics")
+            .ok_or("History artifact missing")?;
+        artifact["with"]["path"] = "build/history/".into();
+        assert!(history::workflow_contract(&lost).is_err());
         assert_eq!(registry.current.len(), 52);
         assert_eq!(&cases[cases.len() - 52..], registry.current);
         for case in &registry.current {
@@ -297,6 +387,84 @@ source_test!(
         Ok(())
     }
 );
+
+fn caller_bridge_controls() -> TestResult {
+    let root = root();
+    let cases = history::Registry::read()?.cases()?;
+    let repo = cases
+        .iter()
+        .find(|case| {
+            case.test
+                == "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        })
+        .ok_or("Repo history missing")?;
+    let path = "engine-rust/src/http/profile_routes.rs";
+    let before = fs::read(root.join(path))?;
+    let bridges = ci::history_compat::additional_callers(&root, repo)?;
+    let (_, bridge) = bridges
+        .iter()
+        .find(|(name, _)| name == path)
+        .ok_or("HTTP caller bridge missing")?;
+    assert_eq!(bridge.receipt["before_sha256"], ci::sha(&before));
+    assert_eq!(bridge.receipt["after_sha256"], ci::sha(&bridge.bytes));
+    assert_eq!(
+        bridge.receipt["request_snapshot_caller_rollback"],
+        ci::sha(&before) == "6e12619ba12661ebc352c1fdab9b2ce346e0cbe085ac81c4a68c61346ee7c6ea"
+    );
+    assert!(!String::from_utf8_lossy(&bridge.bytes).contains("list_for_reconciliation"));
+    assert_eq!(
+        fs::read(root.join(path))?,
+        before,
+        "Caller plan mutated live product source"
+    );
+    let wrong = Temp::new("unknown-history-caller")?;
+    wrong.write(path, &[before.as_slice(), b"\n// unreviewed"].concat())?;
+    assert!(ci::history_compat::additional_callers(&wrong.0, repo).is_err());
+    let selected = cases
+        .iter()
+        .find(|case| case.files.contains_key(path))
+        .ok_or("Selected HTTP historical source missing")?;
+    assert!(
+        ci::history_compat::additional_callers(&root, selected)?
+            .iter()
+            .all(|(name, _)| name != path)
+    );
+    let vault = cases
+        .iter()
+        .find(|case| {
+            case.test == "envelope_classification_matches_original_unicode_and_prefix_contracts"
+        })
+        .ok_or("Vault history missing")?;
+    let bridges = ci::history_compat::additional_callers(&root, vault)?;
+    let (_, policy) = bridges
+        .iter()
+        .find(|(name, _)| name == "engine-rust/src/vault/policy.rs")
+        .ok_or("Vault constructor bridge missing")?;
+    assert_eq!(
+        policy.receipt["historical_source_path"],
+        "engine-rust/src/vault/mod.rs"
+    );
+    assert!(!String::from_utf8_lossy(&policy.bytes).contains("VaultError::message("));
+    let atomic = cases
+        .iter()
+        .find(|case| {
+            case.test == "persisted_json_text_matches_original_escaping_and_platform_newlines"
+        })
+        .ok_or("Atomic history missing")?;
+    let before = fs::read(root.join("engine-rust/src/storage/atomic.rs"))?;
+    let bridges = ci::history_compat::additional_callers(&root, atomic)?;
+    assert_eq!(bridges.len(), 2);
+    assert!(
+        bridges
+            .iter()
+            .all(|(name, _)| !atomic.files.contains_key(name))
+    );
+    assert_eq!(
+        fs::read(root.join("engine-rust/src/storage/atomic.rs"))?,
+        before
+    );
+    Ok(())
+}
 fn failure(damage: &str) -> TestResult {
     let case = &history::Registry::read()?.cases()?[0];
     let mut evidence = evidence::Failure::new(&case.test, &case.symptom);

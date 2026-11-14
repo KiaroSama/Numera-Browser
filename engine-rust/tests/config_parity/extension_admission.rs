@@ -207,15 +207,31 @@ fn home_extension_worker(home: &std::path::Path) -> Result<(), Box<dyn std::erro
             use std::os::unix::ffi::OsStrExt;
             let suffix = std::ffi::OsStr::from_bytes(b"non-utf8-\xff");
             let owned = home.join(suffix);
-            fs::create_dir(&owned)?;
-            fs::write(owned.join("manifest.json"), b"{\"name\":\"owned\"}")?;
             let input = std::path::PathBuf::from(std::ffi::OsStr::from_bytes(b"./~/non-utf8-\xff"));
             let expanded = numera_core::storage::home_path::expand(&input, home)?;
             assert_eq!(expanded, owned);
-            assert_eq!(
-                fs::read(expanded.join("manifest.json"))?,
-                b"{\"name\":\"owned\"}"
-            );
+            match fs::create_dir(&owned) {
+                Ok(()) => {
+                    fs::write(owned.join("manifest.json"), b"{\"name\":\"owned\"}")?;
+                    assert_eq!(
+                        fs::read(expanded.join("manifest.json"))?,
+                        b"{\"name\":\"owned\"}"
+                    );
+                }
+                #[cfg(target_os = "macos")]
+                Err(error) if error.raw_os_error() == Some(libc::EILSEQ) => {
+                    // APFS rejects invalid UTF-8 before creating an entry.
+                    // Expansion still retains every original OS byte and
+                    // the actual filesystem refusal must leave no entry.
+                    assert_eq!(
+                        fs::symlink_metadata(&expanded)
+                            .expect_err("unrepresentable name")
+                            .raw_os_error(),
+                        Some(libc::EILSEQ)
+                    );
+                }
+                Err(error) => return Err(error.into()),
+            }
         }
         assert_eq!(
             unloadable(&[missing]),

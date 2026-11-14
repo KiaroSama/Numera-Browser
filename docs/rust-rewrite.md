@@ -115,6 +115,9 @@ workflow retains all security-extended queries and full SARIF evidence, and its
 independent verdict must not be replaced with a local successful process exit.
 Resolving the repository configuration and reviewing reported findings remain
 part of final CI acceptance.
+The [individual CodeQL review](verification/codeql-review-20261114.json) records
+the complete analyzed result set, source identity, confirmed defects and
+test-data or FFI-model findings; it is not a passing analysis verdict.
 
 Performance compares the genuine `3bf1d8` native application checkpoint with the
 current native product, using the same current Rust SDK transport and resources.

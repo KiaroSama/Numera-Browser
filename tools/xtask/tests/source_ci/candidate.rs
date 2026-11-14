@@ -163,6 +163,55 @@ source_test!(
 fn boxed<T>(result: Result<T, Box<dyn std::error::Error>>) -> ci::Result<T> {
     result.map_err(|error| io::Error::other(error.to_string()).into())
 }
+fn product_diagnostics(temp: &Temp) -> TestResult {
+    let source = temp.write("bundle-tool.rs", r#"fn main(){if std::env::args().nth(1).as_deref()==Some("fail"){print!("{}","λ".repeat(20000));eprintln!("password=synthetic-private-bundle-value");eprintln!("linuxdeploy fixture missing controlled library");std::process::exit(7);}println!("controlled bundle complete");}"#.as_bytes())?;
+    let binary = temp
+        .0
+        .join(format!("bundle-tool{}", std::env::consts::EXE_SUFFIX));
+    let compiled = ci::capture(
+        std::process::Command::new("rustc")
+            .arg("--edition=2024")
+            .arg(&source)
+            .arg("-o")
+            .arg(&binary),
+        Duration::from_secs(30),
+        Duration::from_secs(30),
+        65536,
+    )?;
+    assert_eq!(
+        compiled.exit,
+        0,
+        "{}",
+        String::from_utf8_lossy(&compiled.stderr)
+    );
+    let log = temp.0.join("tauri-build.log");
+    let error = numera_xtask::product_diagnostics::execute(
+        &root(),
+        std::process::Command::new(&binary).arg("fail"),
+        &log,
+    )
+    .expect_err("a real failed bundle tool must remain failed")
+    .to_string();
+    assert!(error.contains("exit=7"), "{error}");
+    assert!(
+        error.contains("linuxdeploy fixture missing controlled library"),
+        "{error}"
+    );
+    assert!(!error.contains("synthetic-private-bundle-value"));
+    assert!(
+        error.len() < 34000,
+        "diagnostic tail exceeded its byte budget"
+    );
+    let retained = fs::read_to_string(log.with_extension("stderr.log"))?;
+    assert!(retained.contains("linuxdeploy fixture missing controlled library"));
+    assert!(!retained.contains("synthetic-private-bundle-value"));
+    numera_xtask::product_diagnostics::execute(
+        &root(),
+        &mut std::process::Command::new(&binary),
+        &temp.0.join("success.log"),
+    )?;
+    Ok(())
+}
 source_test!(
     candidate_layout_integrity,
     "tests/test_native_candidate.py::test_candidate_layout_readback_detects_mutation_missing_and_unlisted_files",
@@ -173,6 +222,7 @@ source_test!(
             resources::{self, FileRecord, Receipt, SourceOffer},
         };
         let temp = Temp::new("candidate layout with spaces")?;
+        product_diagnostics(&temp)?;
         let resources = temp.0.join("resources");
         fs::create_dir(&resources)?;
         let mut files = Vec::new();

@@ -18,7 +18,7 @@
   "native_only": true,
   "verification": {
     "status": "passed",
-    "command": "cargo test --locked --manifest-path engine-rust/Cargo.toml --test source_storage --test source_performance --features native-product,test-support --no-default-features -- --test-threads=8",
+    "command": "cargo test --locked --manifest-path engine-rust/Cargo.toml --features test-support --test source_performance",
     "reported": 16,
     "passed": 16,
     "failed": 0,
@@ -26,10 +26,19 @@
     "source_oracle_processes": 0,
     "individually_reported_cases": 16,
     "mapping_set_equals_frozen_baseline_subset": true,
-    "clippy": "passed: cargo clippy --locked --manifest-path engine-rust/Cargo.toml --test source_storage --test source_performance --features native-product,test-support --no-default-features -- -D warnings",
-    "log": "/tmp/source-storage-performance-final.log",
-    "clippy_log": "/tmp/source-storage-performance-clippy-final.log",
-    "elapsed_seconds": 12.34
+    "clippy": "passed: cargo clippy --locked --manifest-path engine-rust/Cargo.toml --features test-support --lib --test source_vault --test source_performance --test repo_write_parity -- -D warnings",
+    "log": "/tmp/vault-salt-performance16-green.log",
+    "clippy_log": "/tmp/vault-salt-descriptor-clippy.log",
+    "elapsed_seconds": 11.37,
+    "working_tree_followup": "2026-11-14 salt fix and request-scoped listing snapshot; same16originalIDs/types.",
+    "later_working_tree_followup": {
+      "reason": "Final request snapshot and borrowed reconciliation comparison, including separately frozen NaN behavior observations.",
+      "log": "/workspace/work/http-list-snapshot-review/numeric-borrowed-green.txt",
+      "passed": 16,
+      "failed": 0,
+      "ignored": 0,
+      "elapsed_seconds": 11.86
+    }
   },
   "source_hashes": {
     "tests/test_perf_contracts.py": "059a9fbf8670856fb061d0629a621827f47ac8c63572ff917f8285668daa109d"
@@ -102,7 +111,8 @@
       "original_fixtures": [
         "tmp_path"
       ],
-      "native_type": "#[test]"
+      "native_type": "#[test]",
+      "native_adaptation": "Existing read-count case now requires exactly1realJSONread per healthy canonical twin; a later request reloads and repairs drift. Odd filenames/duplicate bodyIDs retain canonical authority, and raw500responses verify UTF8/readIOfailures without relaxing the existing strictJSON response assertions. No new case ID/count/type."
     },
     {
       "python_id": "tests/test_perf_contracts.py::test_health_converts_each_profile_once",

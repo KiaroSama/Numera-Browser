@@ -56,7 +56,7 @@ source_test!(
             "/api/profiles",
             json!({"name":"orig","engine":"camoufox","tags":["keep"],"notes":"important","folder":"Work","startupUrls":"https://example.com","proxy":{"type":"SOCKS5","host":"9.9.9.9","port":"1080","user":"u"}}),
         );
-        assert_eq!(status, 200, "{p}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let id = p["id"].as_str().expect("id");
         let before = raw(root, &format!("dashboard/{id}.json"));
         assert_eq!(
@@ -218,7 +218,7 @@ source_test!(
         let root = temp.path();
         vaulted(root);
         let (status, body) = http(root, "POST", "/api/proxies/export", json!({}));
-        assert_eq!(status, 409, "{body}");
+        assert_eq!(status, 409, "HTTP response status mismatch");
         assert!(!body.to_string().contains("PROXY-PASSWORD"));
     }
 );
@@ -256,7 +256,7 @@ source_test!(
             json!({}),
             Some("master".into()),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert!(
             body["text"]
                 .as_str()
@@ -331,9 +331,9 @@ source_test!(
             "/api/profiles/batch",
             json!({"profiles":[{"name":"p0"},{"name":"p1"},{"name":"p2"}]}),
         );
-        assert_eq!(status, 200, "{made}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let before = snapshot(root);
-        let (status, body) = testing::with_observer(nth_failure(3), || {
+        let (status, _body) = testing::with_observer(nth_failure(3), || {
             http(
                 root,
                 "POST",
@@ -341,7 +341,7 @@ source_test!(
                 json!({"ids":made["ids"],"patch":{"notes":"edited"}}),
             )
         });
-        assert!(status >= 500, "{body}");
+        assert!(status >= 500, "HTTP response status mismatch");
         assert_eq!(snapshot(root), before);
     }
 );
@@ -355,10 +355,10 @@ source_test!(
             &json!([{"name":"imported-0"},{"name":"imported-1"},{"name":"imported-2"}]),
         )
         .expect("exports");
-        let (status, body) = testing::with_observer(nth_failure(3), || {
+        let (status, _body) = testing::with_observer(nth_failure(3), || {
             http(root, "POST", "/api/profiles/import", json!({"text":text}))
         });
-        assert!(status >= 500, "{body}");
+        assert!(status >= 500, "HTTP response status mismatch");
         assert!(
             http(root, "GET", "/api/profiles", Value::Null)
                 .1
@@ -380,14 +380,14 @@ source_test!(
             "/api/profiles/batch",
             json!({"profiles":[{"name":"a"},{"name":"b"}]}),
         );
-        assert_eq!(status, 200, "{made}");
-        let (status, body) = http(
+        assert_eq!(status, 200, "HTTP response status mismatch");
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/bulk",
             json!({"ids":made["ids"],"patch":{"notes":"edited"}}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert!(
             http(root, "GET", "/api/profiles", Value::Null)
                 .1

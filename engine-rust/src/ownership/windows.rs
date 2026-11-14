@@ -24,12 +24,33 @@ use windows_sys::Win32::{
         SystemServices::{JOB_OBJECT_QUERY, JOB_OBJECT_TERMINATE},
         Threading::{
             OpenProcess, OpenThread, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE,
-            ResumeThread, THREAD_SUSPEND_RESUME, WaitForSingleObject,
+            QueryFullProcessImageNameW, ResumeThread, THREAD_SUSPEND_RESUME, WaitForSingleObject,
         },
     },
 };
 
 pub struct Job(OwnedHandle, String);
+fn image_class(path: &str) -> &'static str {
+    let name = path.rsplit(['\\', '/']).next().unwrap_or_default();
+    match name.to_ascii_lowercase().as_str() {
+        "cargo.exe" => "cargo",
+        "rustc.exe" => "rustc",
+        "lld-link.exe" => "lld-link",
+        "link.exe" => "link",
+        "mspdbsrv.exe" => "mspdbsrv",
+        "vctip.exe" => "vctip",
+        "conhost.exe" => "conhost",
+        "cmd.exe" => "cmd",
+        "powershell.exe" | "pwsh.exe" => "powershell",
+        "rustup.exe" => "rustup",
+        "numera-engine.exe" => "numera-engine",
+        "numera-browser-runtime.exe" => "numera-browser-runtime",
+        "numera-xtask.exe" => "numera-xtask",
+        "numera-native-candidate.exe" => "numera-native-candidate",
+        "numera-http-observer.exe" => "numera-http-observer",
+        _ => "unclassified",
+    }
+}
 fn job_name() -> io::Result<String> {
     let mut bytes = [0u8; 16];
     getrandom::fill(&mut bytes).map_err(|e| io::Error::other(e.to_string()))?;
@@ -134,35 +155,7 @@ impl Job {
     /// Read only: every member in a complete snapshot must already be signaled.
     /// This does not prove an empty Job and never permits accepting a survivor.
     pub fn all_members_exited(&self, leader: &Child) -> io::Result<bool> {
-        #[cfg(feature = "test-support")]
-        if let Some(result) = super::test_support::job_query() {
-            result?;
-        }
-        let mut buffer = vec![
-            0usize;
-            (8 + super::memory::MAX_PROCESSES * mem::size_of::<usize>())
-                .div_ceil(mem::size_of::<usize>())
-        ];
-        let size = buffer.len() * mem::size_of::<usize>();
-        let mut returned = 0;
-        // SAFETY: initialized, pointer-aligned output for this retained Job;
-        // no process or Job is reopened to establish tree ownership.
-        if unsafe {
-            QueryInformationJobObject(
-                self.0.as_raw_handle(),
-                JobObjectBasicProcessIdList,
-                buffer.as_mut_ptr().cast(),
-                size as u32,
-                &mut returned,
-            )
-        } == 0
-        {
-            return Err(io::Error::last_os_error());
-        }
-        // SAFETY: the initialized allocation bounds this temporary byte view.
-        let bytes = unsafe { std::slice::from_raw_parts(buffer.as_ptr().cast::<u8>(), size) };
-        let members =
-            super::memory::members_from_buffer(bytes, returned as usize, mem::size_of::<usize>())?;
+        let members = self.members()?;
         for pid in members {
             // Keep the original leader handle: exited processes may disappear
             // from OpenProcess before the Job's accounting finishes updating.
@@ -216,6 +209,117 @@ impl Job {
             }
         }
         Ok(true)
+    }
+    fn members(&self) -> io::Result<Vec<u32>> {
+        #[cfg(feature = "test-support")]
+        if let Some(result) = super::test_support::job_query() {
+            result?;
+        }
+        let mut buffer = vec![
+            0usize;
+            (8 + super::memory::MAX_PROCESSES * mem::size_of::<usize>())
+                .div_ceil(mem::size_of::<usize>())
+        ];
+        let size = buffer.len() * mem::size_of::<usize>();
+        let mut returned = 0;
+        // SAFETY: initialized, pointer-aligned output for this retained Job;
+        // no process or Job is reopened to establish tree ownership.
+        if unsafe {
+            QueryInformationJobObject(
+                self.0.as_raw_handle(),
+                JobObjectBasicProcessIdList,
+                buffer.as_mut_ptr().cast(),
+                size as u32,
+                &mut returned,
+            )
+        } == 0
+        {
+            return Err(io::Error::last_os_error());
+        }
+        // SAFETY: the initialized allocation bounds this temporary byte view.
+        let bytes = unsafe { std::slice::from_raw_parts(buffer.as_ptr().cast::<u8>(), size) };
+        super::memory::members_from_buffer(bytes, returned as usize, mem::size_of::<usize>())
+    }
+    /// Passive, bounded diagnostic evidence. Never used as an ownership proof.
+    /// Paths, arguments and arbitrary executable names cannot escape this API.
+    pub fn member_diagnostics(&self, leader: &Child) -> io::Result<serde_json::Value> {
+        let mut rows = Vec::new();
+        for pid in self.members()? {
+            let is_leader = pid == leader.id();
+            let mut row = serde_json::json!({
+                "pid":pid, "leader":is_leader, "membership":"unknown",
+                "wait":"unknown", "image_class":"unclassified"
+            });
+            let queried;
+            let process = if is_leader {
+                row["membership"] = "retained_leader".into();
+                leader.as_raw_handle() as HANDLE
+            } else {
+                // SAFETY: passive and non-inheritable. Membership is checked
+                // against the retained Job before inspecting this process.
+                let raw = unsafe {
+                    OpenProcess(
+                        PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_SYNCHRONIZE,
+                        0,
+                        pid,
+                    )
+                };
+                if raw.is_null() {
+                    row["open_error_code"] = io::Error::last_os_error().raw_os_error().into();
+                    rows.push(row);
+                    continue;
+                }
+                // SAFETY: the successful call transfers a CloseHandle owner.
+                queried = unsafe { OwnedHandle::from_raw_handle(raw) };
+                let mut contained = 0;
+                if unsafe {
+                    IsProcessInJob(
+                        queried.as_raw_handle(),
+                        self.0.as_raw_handle(),
+                        &mut contained,
+                    )
+                } == 0
+                {
+                    row["membership_error_code"] = io::Error::last_os_error().raw_os_error().into();
+                    rows.push(row);
+                    continue;
+                }
+                if contained == 0 {
+                    row["membership"] = "foreign".into();
+                    rows.push(row);
+                    continue;
+                }
+                row["membership"] = "verified".into();
+                queried.as_raw_handle()
+            };
+            // SAFETY: the retained leader or the scoped owned query handle is
+            // still live. A zero timeout neither waits nor signals the member.
+            match unsafe { WaitForSingleObject(process, 0) } {
+                WAIT_OBJECT_0 => row["wait"] = "exited".into(),
+                WAIT_TIMEOUT => row["wait"] = "live".into(),
+                WAIT_FAILED => {
+                    row["wait_error_code"] = io::Error::last_os_error().raw_os_error().into();
+                }
+                status => row["wait_status_code"] = status.into(),
+            }
+            let mut image = vec![0u16; 4096];
+            let mut length = image.len() as u32;
+            // SAFETY: initialized bounded UTF-16 output and a retained process
+            // handle. Only the static classification is returned to callers.
+            if unsafe { QueryFullProcessImageNameW(process, 0, image.as_mut_ptr(), &mut length) }
+                != 0
+            {
+                if let Some(image) = image.get(..length as usize)
+                    && let Ok(name) = String::from_utf16(image)
+                {
+                    row["image_class"] = image_class(&name).into();
+                }
+            } else {
+                row["image_error_code"] = io::Error::last_os_error().raw_os_error().into();
+            }
+            rows.push(row);
+        }
+        Ok(serde_json::json!({"complete":true, "member_count":rows.len(), "members":rows}))
     }
     pub fn terminate(&self) -> io::Result<()> {
         // SAFETY: this job contains only the tree this owner spawned.

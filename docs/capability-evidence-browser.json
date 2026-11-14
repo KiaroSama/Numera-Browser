@@ -68,13 +68,16 @@
     "page_runtime": {
       "artifact": "browser-page-rust/generated/runtime.js",
       "receipt": "browser-page-rust/generated/receipt.json",
-      "artifact_bytes": 828179,
-      "artifact_sha256": "3acc835a955ce8291263fdb3902a2802e91ac41cf66a1a71d12177d37e177cf3",
+      "artifact_bytes": 827882,
+      "artifact_sha256": "17f41961f6762e06978cd04fd8e2feccb05f145be18c7b81bbcf38d8978b639f",
+      "archived_browser_execution_artifact_sha256": "3acc835a955ce8291263fdb3902a2802e91ac41cf66a1a71d12177d37e177cf3",
+      "reproducibility_review": "docs/verification/browser-page-reproducibility-20261114.json",
       "authored_logic": "Rust; JavaScript is compiler-generated, without runtime WebAssembly/eval/Function compilation",
       "local_platform": "Linux",
+      "current_artifact_native_live": "Existing selected live case passed36.03s with Playwright five profiles, strict CSP, later pages and150k Unicode/memory growth. Fresh worker SHA25681ddab7af0da73bfcfcd6d9282728c4bedb481c36f03ac7e3dac2f748d845f79. See the linked reproducibility review for the exact log receipt; this is local Linux evidence.",
       "native_live": "Playwright1.64 five profiles42.40s, Patchright five38.81s, Camoufox158 Windows archetype53.32s, Playwright1.65 five37.08s; existing selected live ID only. Strict CSP, first external script, later pages and memory-growth/Unicode controls passed.",
       "differential": "On actual Chromium156 and Camoufox158,34 original probe cases and15 warmup/inspection/host/smoke utility cases per browser matched under strict CSP. Separate15 identity differential cases include all10 frozen configs and mode/seed controls.",
-      "validation": "Strict native all-target Clippy22.03s; existing init-script case13.92s and warmup case1.39s passed. Full serialized40 open and440 evaluate frames measured at most857774 and854627 bytes, retaining190802 bytes below unchanged1048576 limit. No new source IDs or test names."
+      "validation": "Current artifact: canonical Cargo cache, alternate cache and genuinely relocated checkout produce identical complete artifact and receipt bytes. Existing init-script case passed14.17s with10 original configurations and480 full frames;44 actual artifact/source/tool/receipt mutations refused. Full frames measure at most857477 open and854330 evaluate bytes, retaining191099 bytes below unchanged1048576 limit. Host, WASM and native-init strict lint passed. The native_live and differential entries describe the explicitly identified archived artifact; current_artifact_native_live records the separate fresh Playwright run. No new source IDs or test names."
     }
   },
   "outstanding": [

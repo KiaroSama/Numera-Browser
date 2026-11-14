@@ -132,6 +132,11 @@ pub fn proof_command(root: &Path, case: &Case, compile: bool, platform: &str) ->
         root.join("engine-rust/Cargo.toml")
     };
     let mut command = Command::new("cargo");
+    if platform == "win32" {
+        // VsDevCmd's documented telemetry gate; ownership remains strict for
+        // every process, including any helper started by another tool path.
+        command.env("VSCMD_SKIP_SENDTELEMETRY", "1");
+    }
     command
         .arg("test")
         .arg("--manifest-path")
@@ -147,6 +152,11 @@ pub fn proof_command(root: &Path, case: &Case, compile: bool, platform: &str) ->
     if !compile && platform == "win32" {
         command.arg("--message-format=json");
         super::compiler::configure(&mut command, true);
+    }
+    // This native HTTP fixture's clock seam is explicitly feature-gated in
+    // its Cargo target. It does not enable an application or SDK default.
+    if ["profile_read_parity", "first_run_failure"].contains(&case.target.as_str()) {
+        command.args(["--features", "test-support"]);
     }
     if case.target == "lib" || case.target == "desktop-updater" {
         command.arg("--lib");
@@ -352,7 +362,7 @@ pub fn native(root: &Path) -> Result<()> {
     let workflow = super::workflow::parse(&fs::read_to_string(
         root.join(".github/workflows/native-ci.yml"),
     )?)?;
-    super::compiler::cache_policy(&workflow["jobs"]["history"]["steps"])?;
+    workflow_contract(&workflow)?;
     let registry = Registry::read()?;
     let cases = registry.cases()?;
     let temporary = std::env::var_os("NUMERA_TEST_TEMP")
@@ -379,6 +389,69 @@ pub fn native(root: &Path) -> Result<()> {
         }
     }
     result
+}
+
+/// Both owning hosts are necessary: 91 shared controls plus six Linux-only
+/// and two Windows-only controls form 99 distinct historical cases.
+pub fn workflow_contract(workflow: &serde_json::Value) -> Result<()> {
+    let job = &workflow["jobs"]["history"];
+    if job["runs-on"] != "${{ matrix.os }}"
+        || job["strategy"]
+            != serde_json::json!({"fail-fast":false,"matrix":{"os":["ubuntu-24.04","windows-latest"]}})
+        || job["needs"] != "coverage"
+        || job["timeout-minutes"] != 60
+    {
+        return fail(
+            "Historical controls require both owning platforms without fail-fast cancellation",
+        );
+    }
+    let steps = &job["steps"];
+    super::compiler::cache_policy(steps)?;
+    let fetch = super::workflow::step_once(
+        steps,
+        "cargo fetch --manifest-path engine-rust/Cargo.toml --locked",
+        true,
+    )?;
+    let proof = super::workflow::step_once(steps, "ci native-history", true)?;
+    if fetch >= proof {
+        return fail("Historical mutation must follow explicit native dependency acquisition");
+    }
+    let artifact = steps
+        .as_array()
+        .ok_or("Historical steps missing")?
+        .iter()
+        .find(|step| step["name"] == "Preserve actual historical compiler diagnostics")
+        .ok_or("Historical failure artifact missing")?;
+    let paths = artifact["with"]["path"]
+        .as_str()
+        .ok_or("Historical artifact paths missing")?;
+    if artifact["if"] != "failure()"
+        || [
+            "build/history/",
+            "build/owned-command-failure-*.log",
+            "build/owned-members-*.json",
+            ".ci-work/logs/ci-owned_*.log",
+        ]
+        .iter()
+        .any(|path| !paths.lines().any(|line| line == *path))
+    {
+        return fail(
+            "Historical failures must retain actual compiler and owned-process diagnostics",
+        );
+    }
+    let mut counts = [0usize; 3];
+    for case in Registry::read()?.cases()? {
+        counts[match case.platform.as_deref() {
+            None => 0,
+            Some("linux") => 1,
+            Some("win32") => 2,
+            _ => return fail("Unreviewed historical owning platform"),
+        }] += 1;
+    }
+    if counts != [91, 6, 2] {
+        return fail("Original historical platform inventory differs");
+    }
+    Ok(())
 }
 pub fn hosted_identity(actions: &str, repository: &str, sha: &str, head: &str) -> Result<()> {
     if actions != "true"

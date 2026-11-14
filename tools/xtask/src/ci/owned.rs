@@ -112,6 +112,8 @@ pub fn run_streamed(
                     resources::require_natural_settlement(leader_exited, natural_settlement)
                 {
                     verdict = Some(error);
+                    #[cfg(windows)]
+                    retain_member_diagnostic(root, tree, leader_exited, natural_settlement);
                 }
                 #[cfg(windows)]
                 if let Some(scope) = accounting.take() {
@@ -188,5 +190,61 @@ pub fn limits(wall: Duration, idle: Duration, bytes: usize) -> capture::Limits {
         idle,
         bytes,
         cleanup: Duration::from_secs(10),
+    }
+}
+
+#[cfg(windows)]
+fn retain_member_diagnostic(
+    root: &Path,
+    tree: &numera_core::ownership::tree::OwnedTree,
+    leader_exited: bool,
+    natural: Option<bool>,
+) {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    // The core API returns numeric identities/states and static executable
+    // classes. It never returns argv, full paths or arbitrary error strings.
+    let mut members = tree.job_member_diagnostics().unwrap_or_else(|error| {
+        serde_json::json!({
+            "complete":false,"query_error_code":error.raw_os_error()
+        })
+    });
+    if let Some(rows) = members["members"].as_array_mut() {
+        let omitted = rows.len().saturating_sub(32);
+        rows.truncate(32);
+        members["omitted_members"] = omitted.into();
+    }
+    let evidence = serde_json::json!({"schema":1,"leader_pid":tree.pid(),"leader_exited":leader_exited,"natural_settlement":natural,"job":members});
+    let Ok(bytes) = serde_json::to_vec(&evidence) else {
+        return;
+    };
+    if bytes.len() > 16 * 1024 {
+        eprintln!("Owned Windows member evidence exceeded its diagnostic bound");
+        return;
+    }
+    eprintln!(
+        "Owned Windows settlement evidence: {}",
+        String::from_utf8_lossy(&bytes)
+    );
+    let relative = format!(
+        "build/owned-members-{}-{}.json",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    );
+    let path = root.join(&relative);
+    let retained = std::fs::create_dir_all(root.join("build")).and_then(|_| {
+        use std::io::Write;
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(path)?;
+        file.write_all(&bytes)
+    });
+    if retained.is_ok() {
+        eprintln!("Retained bounded Windows member evidence: {relative}");
+    } else {
+        eprintln!(
+            "Owned Windows member evidence could not be retained; original refusal remains fatal"
+        );
     }
 }

@@ -129,7 +129,10 @@ fn native_extension_paths_preserve_original_order_home_and_directory_filter()
         .collect();
     assert_eq!(json!(flags), expected["flags"]);
     assert!(extensions::paths(&[], Path::new("relative"), &home).is_err());
-    assert!(extensions::paths(&["~unknown/extension".into()], &cwd, &home).is_err());
+    // macOS supplies a real system account named "unknown". Use a distinct
+    // nonexistent account rather than treating that valid home as an error.
+    let missing = format!("~numera-missing-account-{}/extension", std::process::id());
+    assert!(extensions::paths(&[missing], &cwd, &home).is_err());
     temporary.cleanup()?;
     Ok(())
 }

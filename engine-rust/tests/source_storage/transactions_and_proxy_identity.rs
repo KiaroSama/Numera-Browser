@@ -5,7 +5,7 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = testing::with_observer(nth_failure(3), || {
+        let (status, _body) = testing::with_observer(nth_failure(3), || {
             http(
                 root,
                 "POST",
@@ -13,7 +13,7 @@ source_test!(
                 json!({"profiles":[{"name":"a"},{"name":"b"},{"name":"d"}]}),
             )
         });
-        assert!(status >= 500, "{body}");
+        assert!(status >= 500, "HTTP response status mismatch");
         assert!(json_files(root, "dashboard").is_empty());
         assert!(json_files(root, "profiles").is_empty());
     }
@@ -24,13 +24,13 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/batch",
             json!({"profiles":[{"name":"a"},{"name":"b"}]}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_eq!(json_files(root, "dashboard").len(), 2);
         assert_eq!(json_files(root, "profiles").len(), 2);
         assert_eq!(
@@ -186,14 +186,17 @@ source_test!(
             "/api/proxies",
             json!({"proxies":[{"type":"HTTP","host":"1.2.3.4","port":"8080"}]}),
         );
-        assert_eq!(status, 200, "{made}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/proxies/{}",
             made["proxies"][0]["id"].as_str().expect("id")
         );
         let before = http(root, "GET", "/api/proxies", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"port": "70000"}));
-        assert!([400, 422].contains(&status), "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"port": "70000"}));
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
         assert_eq!(http(root, "GET", "/api/proxies", Value::Null).1, before);
     }
 );
@@ -209,14 +212,17 @@ source_test!(
             "/api/proxies",
             json!({"proxies":[{"type":"HTTP","host":"1.2.3.4","port":"8080"}]}),
         );
-        assert_eq!(status, 200, "{made}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/proxies/{}",
             made["proxies"][0]["id"].as_str().expect("id")
         );
         let before = http(root, "GET", "/api/proxies", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"port": "notaport"}));
-        assert!([400, 422].contains(&status), "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"port": "notaport"}));
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
         assert_eq!(http(root, "GET", "/api/proxies", Value::Null).1, before);
     }
 );
@@ -232,14 +238,17 @@ source_test!(
             "/api/proxies",
             json!({"proxies":[{"type":"HTTP","host":"1.2.3.4","port":"8080"}]}),
         );
-        assert_eq!(status, 200, "{made}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/proxies/{}",
             made["proxies"][0]["id"].as_str().expect("id")
         );
         let before = http(root, "GET", "/api/proxies", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"type": "GOPHER"}));
-        assert!([400, 422].contains(&status), "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"type": "GOPHER"}));
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
         assert_eq!(http(root, "GET", "/api/proxies", Value::Null).1, before);
     }
 );
@@ -255,14 +264,17 @@ source_test!(
             "/api/proxies",
             json!({"proxies":[{"type":"HTTP","host":"1.2.3.4","port":"8080"}]}),
         );
-        assert_eq!(status, 200, "{made}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/proxies/{}",
             made["proxies"][0]["id"].as_str().expect("id")
         );
         let before = http(root, "GET", "/api/proxies", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"host": ""}));
-        assert!([400, 422].contains(&status), "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"host": ""}));
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
         assert_eq!(http(root, "GET", "/api/proxies", Value::Null).1, before);
     }
 );
@@ -278,14 +290,17 @@ source_test!(
             "/api/proxies",
             json!({"proxies":[{"type":"HTTP","host":"1.2.3.4","port":"8080"}]}),
         );
-        assert_eq!(status, 200, "{made}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/proxies/{}",
             made["proxies"][0]["id"].as_str().expect("id")
         );
         let before = http(root, "GET", "/api/proxies", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"country": "xyz"}));
-        assert!([400, 422].contains(&status), "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"country": "xyz"}));
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
         assert_eq!(http(root, "GET", "/api/proxies", Value::Null).1, before);
     }
 );
@@ -301,13 +316,13 @@ source_test!(
             "/api/proxies",
             json!({"proxies":[{"type":"HTTP","host":"1.2.3.4","port":"8080"}]}),
         );
-        assert_eq!(status, 200, "{made}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/proxies/{}",
             made["proxies"][0]["id"].as_str().expect("id")
         );
-        let (status, body) = http(root, "PUT", &uri, json!({"type":"SOCKS5","port":"1080"}));
-        assert_eq!(status, 200, "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"type":"SOCKS5","port":"1080"}));
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let got = http(root, "GET", "/api/proxies", Value::Null).1;
         assert_eq!(got[0]["type"], "SOCKS5");
         assert_eq!(got[0]["port"], "1080");
@@ -319,13 +334,16 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/proxies",
             json!({"text":"gopher://1.2.3.4:70"}),
         );
-        assert!([400, 422].contains(&status), "{body}");
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
         assert!(
             http(root, "GET", "/api/proxies", Value::Null)
                 .1
@@ -341,8 +359,8 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = http(root, "POST", "/api/proxies", json!({"text":"1.2.3.4:8080"}));
-        assert_eq!(status, 200, "{body}");
+        let (status, _body) = http(root, "POST", "/api/proxies", json!({"text":"1.2.3.4:8080"}));
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_eq!(
             http(root, "GET", "/api/proxies", Value::Null).1[0]["type"],
             "HTTP"

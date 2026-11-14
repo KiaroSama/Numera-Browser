@@ -99,6 +99,13 @@ impl Client {
         Self { runtime, app }
     }
     fn request(&self, method: &str, path: &str, body: Value) -> (u16, Value) {
+        let (status, bytes) = self.request_bytes(method, path, body);
+        (
+            status,
+            serde_json::from_slice(&bytes).expect("JSON response"),
+        )
+    }
+    fn request_bytes(&self, method: &str, path: &str, body: Value) -> (u16, Vec<u8>) {
         use axum::{
             body::{Body, to_bytes},
             http::Request,
@@ -125,10 +132,7 @@ impl Client {
             let bytes = to_bytes(response.into_body(), 1048576)
                 .await
                 .expect("response bytes");
-            (
-                status,
-                serde_json::from_slice(&bytes).expect("JSON response"),
-            )
+            (status, bytes.to_vec())
         })
     }
     fn batch(&self, n: usize) -> Value {
@@ -301,6 +305,21 @@ original!(
             counted(|| client.request("GET", "/api/profiles", Value::Null));
         assert_eq!(status, 200, "{rows}");
         assert_eq!(rows.as_array().expect("profiles").len(), 6);
+        for row in rows.as_array().expect("profiles") {
+            let id = row["id"].as_str().expect("id");
+            for directory in ["dashboard", "profiles"] {
+                let path = temp.path().join(directory).join(format!("{id}.json"));
+                assert_eq!(
+                    events
+                        .iter()
+                        .filter(|e| e.operation == "json-read" && e.path == path)
+                        .count(),
+                    1,
+                    "each healthy twin is read once per request: {}",
+                    path.display()
+                );
+            }
+        }
         assert!(reads(&events) >= 12, "actual twin reads were observed");
         assert!(
             reads(&events) <= 20,
@@ -312,6 +331,91 @@ original!(
                 .map(|e| &e.path)
                 .collect::<Vec<_>>()
         );
+
+        // The snapshot lasts for one request; a later dashboard edit still
+        // repairs repository authority, including fields not rendered by UI.
+        let id = rows[0]["id"].as_str().expect("id");
+        let dashboard = temp.path().join("dashboard").join(format!("{id}.json"));
+        let engine = temp.path().join("profiles").join(format!("{id}.json"));
+        let mut changed: Value =
+            serde_json::from_slice(&fs::read(&dashboard).expect("dashboard")).expect("JSON");
+        changed["name"] = "changed after first request".into();
+        numera_core::storage::atomic::write_json(&dashboard, &changed).expect("edit dashboard");
+        let (status, next) = client.request("GET", "/api/profiles", Value::Null);
+        assert_eq!(status, 200, "{next}");
+        assert!(
+            next.as_array()
+                .expect("profiles")
+                .iter()
+                .any(|row| row["id"] == id && row["name"] == changed["name"])
+        );
+        let repaired: Value =
+            serde_json::from_slice(&fs::read(&engine).expect("engine")).expect("JSON");
+        assert_eq!(repaired["name"], changed["name"]);
+
+        // A body ID does not authorize reuse of bytes read from another path.
+        // Missing canonical rows and duplicate IDs keep the original lookup.
+        let odd = temp.path().join("dashboard/odd-filename.json");
+        fs::rename(&dashboard, &odd).expect("move dashboard");
+        changed["name"] = "noncanonical row".into();
+        numera_core::storage::atomic::write_json(&odd, &changed).expect("edit odd row");
+        let (status, odd_rows) = client.request("GET", "/api/profiles", Value::Null);
+        assert_eq!(status, 200, "{odd_rows}");
+        assert!(
+            odd_rows
+                .as_array()
+                .expect("profiles")
+                .iter()
+                .any(|row| row["id"] == id && row["name"] == "noncanonical row")
+        );
+        let unchanged: Value =
+            serde_json::from_slice(&fs::read(&engine).expect("engine")).expect("JSON");
+        assert_eq!(unchanged, repaired);
+        changed["name"] = "canonical authority".into();
+        numera_core::storage::atomic::write_json(&dashboard, &changed)
+            .expect("restore canonical row");
+        let (status, duplicates) = client.request("GET", "/api/profiles", Value::Null);
+        assert_eq!(status, 200, "{duplicates}");
+        assert_eq!(
+            duplicates
+                .as_array()
+                .expect("profiles")
+                .iter()
+                .filter(|row| row["id"] == id)
+                .count(),
+            2
+        );
+        let canonical: Value =
+            serde_json::from_slice(&fs::read(&engine).expect("engine")).expect("JSON");
+        assert_eq!(canonical["name"], "canonical authority");
+
+        // Neither invalid bytes nor a genuine read failure can be hidden by a
+        // snapshot retained from an earlier successful request.
+        let healthy = fs::read(&dashboard).expect("healthy bytes");
+        let engine_before = fs::read(&engine).expect("engine bytes");
+        fs::write(&dashboard, [0xff]).expect("invalid UTF-8");
+        assert_eq!(
+            client.request_bytes("GET", "/api/profiles", Value::Null).0,
+            500
+        );
+        assert_eq!(fs::read(&engine).expect("unchanged engine"), engine_before);
+        fs::write(&dashboard, &healthy).expect("restore bytes");
+        let failed = testing::with_observer(
+            move |event| {
+                if event.operation == "json-read" && event.path == dashboard {
+                    Err(std::io::Error::new(
+                        std::io::ErrorKind::PermissionDenied,
+                        "injected stored-file read denial",
+                    ))
+                } else {
+                    Ok(Action::Continue)
+                }
+            },
+            || client.request_bytes("GET", "/api/profiles", Value::Null),
+        );
+        assert_eq!(failed.0, 500, "{:?}", failed.1);
+        assert_eq!(fs::read(&engine).expect("unchanged engine"), engine_before);
+        assert_eq!(client.request("GET", "/api/profiles", Value::Null).0, 200);
     }
 );
 original!(

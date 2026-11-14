@@ -167,7 +167,7 @@ source_test!(
             "/api/profiles/batch",
             json!({"profiles":[{"name":"p0"},{"name":"p1"},{"name":"p2"},{"name":"p3"}]}),
         );
-        assert_eq!(status, 200, "{made}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_eq!(
             http(
                 root,
@@ -179,7 +179,7 @@ source_test!(
             .0,
             200
         );
-        let (status, body) = testing::with_observer(nth_failure(5), || {
+        let (status, _body) = testing::with_observer(nth_failure(5), || {
             http(
                 root,
                 "POST",
@@ -187,7 +187,7 @@ source_test!(
                 json!({"profileIds":made["ids"]}),
             )
         });
-        assert!(status >= 500, "{body}");
+        assert!(status >= 500, "HTTP response status mismatch");
         assert!(
             http(root, "GET", "/api/profiles", Value::Null)
                 .1
@@ -222,13 +222,13 @@ source_test!(
                 1001.0,
             )
             .expect("note edit");
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/proxies/assign",
             json!({"profileIds":[id]}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let final_row = dash(root).get(id).expect("get").expect("profile");
         assert_eq!(final_row["proxy"]["host"], "1.1.1.1");
         assert_eq!(final_row["notes"], "edited first");
@@ -243,13 +243,13 @@ source_test!(
         let minutes = Value::String("Infinity".into());
         assert!(numera_core::browser::warmup_policy::validate(&minutes, None, None).is_err());
         let p = create(root, "w");
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             &format!("/api/profiles/{}/warmup", p["id"].as_str().expect("id")),
             json!({"minutes":minutes}),
         );
-        assert_eq!(status, 400, "{body}");
+        assert_eq!(status, 400, "HTTP response status mismatch");
     }
 );
 source_test!(
@@ -261,13 +261,13 @@ source_test!(
         let minutes = Value::String("NaN".into());
         assert!(numera_core::browser::warmup_policy::validate(&minutes, None, None).is_err());
         let p = create(root, "w");
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             &format!("/api/profiles/{}/warmup", p["id"].as_str().expect("id")),
             json!({"minutes":minutes}),
         );
-        assert_eq!(status, 400, "{body}");
+        assert_eq!(status, 400, "HTTP response status mismatch");
     }
 );
 source_test!(
@@ -279,13 +279,13 @@ source_test!(
         let minutes = Value::String("-1".into());
         assert!(numera_core::browser::warmup_policy::validate(&minutes, None, None).is_err());
         let p = create(root, "w");
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             &format!("/api/profiles/{}/warmup", p["id"].as_str().expect("id")),
             json!({"minutes":minutes}),
         );
-        assert_eq!(status, 400, "{body}");
+        assert_eq!(status, 400, "HTTP response status mismatch");
     }
 );
 source_test!(
@@ -297,13 +297,13 @@ source_test!(
         let minutes = Value::String("0".into());
         assert!(numera_core::browser::warmup_policy::validate(&minutes, None, None).is_err());
         let p = create(root, "w");
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             &format!("/api/profiles/{}/warmup", p["id"].as_str().expect("id")),
             json!({"minutes":minutes}),
         );
-        assert_eq!(status, 400, "{body}");
+        assert_eq!(status, 400, "HTTP response status mismatch");
     }
 );
 source_test!(
@@ -315,13 +315,13 @@ source_test!(
         let minutes = Value::String("1000000".into());
         assert!(numera_core::browser::warmup_policy::validate(&minutes, None, None).is_err());
         let p = create(root, "w");
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             &format!("/api/profiles/{}/warmup", p["id"].as_str().expect("id")),
             json!({"minutes":minutes}),
         );
-        assert_eq!(status, 400, "{body}");
+        assert_eq!(status, 400, "HTTP response status mismatch");
     }
 );
 source_test!(
@@ -333,13 +333,13 @@ source_test!(
         let minutes = Value::String("x".into());
         assert!(numera_core::browser::warmup_policy::validate(&minutes, None, None).is_err());
         let p = create(root, "w");
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             &format!("/api/profiles/{}/warmup", p["id"].as_str().expect("id")),
             json!({"minutes":minutes}),
         );
-        assert_eq!(status, 400, "{body}");
+        assert_eq!(status, 400, "HTTP response status mismatch");
     }
 );
 source_test!(
@@ -357,13 +357,13 @@ source_test!(
             .is_err()
         );
         let p = create(root, "w2");
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             &format!("/api/profiles/{}/warmup", p["id"].as_str().expect("id")),
             json!({"minutes":5,"preset":"not-a-preset"}),
         );
-        assert_eq!(status, 400, "{body}");
+        assert_eq!(status, 400, "HTTP response status mismatch");
         assert!(!root.join("sessions").exists() || json_files(root, "sessions").is_empty());
     }
 );

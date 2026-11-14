@@ -187,7 +187,7 @@ fn http_password(
 }
 fn create(root: &Path, name: &str) -> Value {
     let (status, value) = http(root, "POST", "/api/profiles", json!({"name":name}));
-    assert_eq!(status, 200, "{value}");
+    assert_eq!(status, 200, "HTTP response status mismatch");
     value
 }
 fn archive(path: &Path, record: Option<Value>, members: &[(&str, &[u8])]) {
@@ -478,10 +478,10 @@ fn wait_job(jobs: &numera_core::jobs::JobStore, id: &str) {
             .expect("job observation")
             .expect("job");
         if row["running"] == false {
-            assert_eq!(row["exit"], 0, "detached job failed: {row}");
+            assert_eq!(row["exit"], 0, "detached job failed");
             return;
         }
-        assert!(Instant::now() < end, "detached job did not settle: {row}");
+        assert!(Instant::now() < end, "detached job did not settle");
         thread::sleep(Duration::from_millis(10));
     }
 }

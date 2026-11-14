@@ -10,7 +10,7 @@
   "groups": [
     {
       "evidence": "docs/capability-evidence-browser.json",
-      "sha256": "405f1025f3abe233a015b46ad99a9db033c7f32b561e9a099705178ccd8e879a",
+      "sha256": "3d562016ea7c3efaaae827f8adbbab4dddfe14b67737f1719ccba170e9bf44e5",
       "legacy_ids": 84,
       "review_dispositions": {
         "implemented": 78,
@@ -37,7 +37,7 @@
     },
     {
       "evidence": "docs/capability-evidence-network.json",
-      "sha256": "c8e08361b7e1432e0639d6f6815061d94ca9d57420361b24fa392ed4e121d3ad",
+      "sha256": "0b8d91fbba5913dc090916b0f44cf5075385fe5fdb562bc29cf27fe00a89f691",
       "legacy_ids": 105,
       "review_dispositions": {
         "fused_or_typed_adaptation": 61,
@@ -55,7 +55,7 @@
     },
     {
       "evidence": "docs/capability-evidence-storage.json",
-      "sha256": "9dc7ae0904f8310e0e88a23b157021275d55c2fba884c8998db97b290d27a4d3",
+      "sha256": "f611fe9637dd3a9e3a453f760b13a4a3ec148b9d365d48471f84362d7361b89c",
       "legacy_ids": 285,
       "review_dispositions": {
         "reviewed_behavioral_mapping": 240,
@@ -74,9 +74,9 @@
   "generated_runtime": {
     "rust_sources": "browser-page-rust",
     "artifact": "browser-page-rust/generated/runtime.js",
-    "artifact_sha256": "3acc835a955ce8291263fdb3902a2802e91ac41cf66a1a71d12177d37e177cf3",
+    "artifact_sha256": "17f41961f6762e06978cd04fd8e2feccb05f145be18c7b81bbcf38d8978b639f",
     "receipt": "browser-page-rust/generated/receipt.json",
-    "largest_reviewed_sdk_frame_bytes": 857774,
+    "largest_reviewed_sdk_frame_bytes": 857477,
     "sdk_frame_limit_bytes": 1048576
   },
   "binding_boundary": "Minimal serialized native-to-WebView calls and the origin/top-frame-scoped Tauri update capability binding remain platform glue; application behavior, update authorization and state are Rust."

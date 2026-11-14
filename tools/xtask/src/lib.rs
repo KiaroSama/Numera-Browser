@@ -4,6 +4,7 @@ pub mod acceptance;
 pub mod artifact_identity;
 pub mod ci;
 pub mod product;
+pub mod product_diagnostics;
 pub mod progress;
 pub mod provision;
 pub mod resources;

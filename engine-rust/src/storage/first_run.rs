@@ -1,5 +1,5 @@
 #[path = "first_run_errors.rs"]
-mod errors;
+pub(super) mod errors;
 use super::locks::DataLock;
 use errors::CopyFailures;
 use serde::Serialize;
@@ -149,6 +149,8 @@ fn merge_dir(
     let entries = fs::read_dir(source)
         .and_then(|entries| entries.collect::<Result<Vec<_>, _>>())
         .map_err(|error| errors::at(error, source))?;
+    #[cfg(feature = "test-support")]
+    let entries = super::first_run_test_support::ordered(source, entries)?;
     if !merging {
         // copytree enumerates before creating a new destination. A failed
         // source read must not turn the next retry into a manual merge.

@@ -156,13 +156,13 @@ source_test!(
             &json!([{"name":"one","navigator":{"hardwareConcurrency":"8 cores"}}]),
         )
         .expect("export");
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/import",
             json!({"text":payload}),
         );
-        assert!(status < 500, "{body}");
+        assert!(status < 500, "HTTP response status mismatch");
     }
 );
 source_test!(

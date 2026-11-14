@@ -17,6 +17,12 @@ fn tolerated(error: io::Error, directory: bool) -> io::Result<()> {
     }) {
         return Ok(());
     }
+    // std currently classifies FlushFileBuffers ERROR_NOT_SUPPORTED as
+    // Uncategorized, although it is exactly the unsupported-object case.
+    #[cfg(windows)]
+    if error.raw_os_error() == Some(windows_sys::Win32::Foundation::ERROR_NOT_SUPPORTED as i32) {
+        return Ok(());
+    }
     #[cfg(not(unix))]
     let _ = directory;
     Err(error)

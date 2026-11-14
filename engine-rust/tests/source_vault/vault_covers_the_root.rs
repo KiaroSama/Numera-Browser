@@ -8,7 +8,10 @@ source_test!(
         let _engine = populated(root);
         enable(root, MASTER);
         for secret in ["ENGINE-SECRET", "DASHBOARD-SECRET", "POOL-SECRET"] {
-            assert!(leaked(root, secret).is_empty(), "{secret}");
+            assert!(
+                leaked(root, secret).is_empty(),
+                "plaintext secret remained readable"
+            );
         }
     }
 );

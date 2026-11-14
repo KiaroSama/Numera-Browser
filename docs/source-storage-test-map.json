@@ -49,7 +49,19 @@
     "clippy": "passed: cargo clippy --locked --manifest-path engine-rust/Cargo.toml --test source_storage --test source_performance --features native-product,test-support --no-default-features -- -D warnings",
     "log": "/tmp/source-storage-performance-final.log",
     "clippy_log": "/tmp/source-storage-performance-clippy-final.log",
-    "elapsed_seconds": 42.88
+    "elapsed_seconds": 42.88,
+    "later_targeted_followup": {
+      "reason": "Request-local HTTP snapshot and encrypted reconciliation controls; the earlier411-case transcript remains archived, not relabeled as a fresh whole-suite run.",
+      "tests": [
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence"
+      ],
+      "log": "/workspace/work/http-list-snapshot-review/snapshot-cipher-green.txt",
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0,
+      "elapsed_seconds": 3.22
+    }
   },
   "source_hashes": {
     "tests/test_archive_safety.py": "4c190bd0c468f5c4ed800d6db9aa35e1927921f34c07a92401fcee0914cc5f18",
@@ -3662,7 +3674,8 @@
       "original_fixtures": [
         "store"
       ],
-      "native_type": "#[test]"
+      "native_type": "#[test]",
+      "native_adaptation": "The same original case also routes an actual HTTP listing through the request-local snapshot: needed twin repair remains real and locked/equivalent randomized ciphertext bytes are preserved exactly. No new case ID/count/type."
     },
     {
       "python_id": "tests/test_two_store_convergence.py::test_the_same_secret_encrypted_twice_is_not_a_divergence",
@@ -3672,7 +3685,8 @@
       "original_fixtures": [
         "store"
       ],
-      "native_type": "#[test]"
+      "native_type": "#[test]",
+      "native_adaptation": "The same original case also routes an actual HTTP listing through the request-local snapshot: needed twin repair remains real and locked/equivalent randomized ciphertext bytes are preserved exactly. No new case ID/count/type."
     },
     {
       "python_id": "tests/test_two_store_convergence.py::test_the_api_listing_shows_the_reconciled_profile",

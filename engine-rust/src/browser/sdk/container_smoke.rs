@@ -73,6 +73,7 @@ impl Driver for Native {
     }
     fn perform(&mut self, phase: Phase) -> Pin<Box<dyn Future<Output = io::Result<Value>> + '_>> {
         Box::pin(async move {
+            eprintln!("Native image browser phase={phase:?} status=started");
             let result=async{
             match phase {
                 Phase::Start=>{let driver=NativeDriver::start(self.installation.take().ok_or_else(invalid)?).await?;self.driver=Some(driver);Ok(json!(self.executable))},
@@ -89,6 +90,14 @@ impl Driver for Native {
                 Phase::Stop=>{if let Some(driver)=self.driver.take(){driver.stop().await?;}self.browser.take();Ok(Value::Null)},
             }
         }.await;
+            eprintln!(
+                "Native image browser phase={phase:?} status={}",
+                if result.is_ok() {
+                    "completed"
+                } else {
+                    "failed"
+                }
+            );
             result.map_err(|_: playwright_rs::Error| {
                 io::Error::other("Native image browser phase failed")
             })

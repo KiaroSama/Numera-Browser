@@ -93,6 +93,7 @@ jobs:
     permissions:
       contents: read
       checks: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -109,3 +110,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: cargo xtask ci owned --wall 60 --idle 45 -- cargo xtask ci codeql-verdict
+      - name: Retain the authenticated build and analysis source subjects
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: codeql-verdict-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/numera-codeql-verdict/source-subject.json
+          if-no-files-found: warn
+          retention-days: 7

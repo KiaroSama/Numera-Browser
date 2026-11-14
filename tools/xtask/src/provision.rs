@@ -9,7 +9,7 @@ use std::{
     io::{self, Read, Write},
     path::{Component, Path, PathBuf},
     process::Command,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 pub fn pins() -> Result<Value> {
@@ -50,7 +50,6 @@ fn diagnostic(bytes: &[u8]) -> String {
 pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
     restrict_environment(command);
     command.env_remove("GH_TOKEN").env_remove("GITHUB_TOKEN");
-    let mut last = Instant::now();
     let mut natural = None;
     let mut partial = [Vec::new(), Vec::new()];
     let result = capture::run_observed_streamed(
@@ -63,10 +62,6 @@ pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
         },
         || false,
         |event, _| {
-            if last.elapsed() >= Duration::from_secs(30) {
-                println!("Vendor provisioning is still active");
-                last = Instant::now();
-            }
             if let capture::Observation::BeforeCleanup {
                 natural_settlement, ..
             } = event
@@ -74,7 +69,17 @@ pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
                 natural = natural_settlement;
             }
         },
-        |index, bytes| partial[index].extend_from_slice(bytes),
+        |index, bytes| {
+            partial[index].extend_from_slice(bytes);
+            crate::progress::completed(
+                if index == 0 {
+                    "vendor-stdout"
+                } else {
+                    "vendor-stderr"
+                },
+                bytes.len(),
+            );
+        },
     );
     let result = match result {
         Ok(output) => output,
@@ -248,7 +253,7 @@ pub fn extract(archive: &Path, destination: &Path, prefix: &str) -> Result<()> {
             .write(true)
             .create_new(true)
             .open(&target)?;
-        let copied = io::copy(&mut entry, &mut output)?;
+        let copied = crate::progress::copy(&mut entry, &mut output)?;
         if copied != entry.size() {
             return ci::fail("Vendor archive member is truncated");
         }

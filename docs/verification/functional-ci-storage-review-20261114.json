@@ -1,0 +1,2829 @@
+{
+  "schema": 1,
+  "ci_run": 43536453687,
+  "jobs": {
+    "linux": 132267500707,
+    "macos": 132267500611,
+    "windows": 132267500699
+  },
+  "source_reference": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+  "status": "focused_linux_passed_hosted_macos_windows_pending",
+  "test_names_added": 0,
+  "test_names_removed": 0,
+  "immutable_frozen_observations_modified": false,
+  "groups": [
+    {
+      "cause": "Ported whole-root equality disallowed source-required engine twins",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tests": [
+        "write_contract_boundaries damaged/read/view cases",
+        "write_contract_engine_shape legacy cases"
+      ],
+      "source_proof": "routes_profiles.py:list_profiles -> engine_store.list -> union _list_locked -> _repair -> coordinator.materialize_current",
+      "fix": "Preserve every original file byte; explicitly require only canonical readable engine twins, retain all original listing/name/count assertions. No product listing change."
+    },
+    {
+      "cause": "Noncanonical fixture root differs from resolved Windows observer paths",
+      "platforms": [
+        "windows"
+      ],
+      "tests": [
+        "archive_safety physical path 4",
+        "delete_rollback atomic restore",
+        "native repo_delete typed rollback",
+        "extension/native path fixtures using common helper"
+      ],
+      "fix": "Canonicalize only newly-owned TempDirectory root once, strip Rust verbatim prefix consistently with Python/product; normalize CWD in relative-path fixtures. Production containment unchanged."
+    },
+    {
+      "cause": "Exact resolved filename comparison rejects proven same-file case alias",
+      "platforms": [
+        "macos"
+      ],
+      "tests": [
+        "Fixture.json CLI/warmup paths",
+        "archive_safety existing cross-ID case"
+      ],
+      "fix": "Retain symlink and canonical-parent refusal. Permit differing filename spellings only with actual matching filesystem identity; fold actual same-file alias and retained different-file refusal into original case."
+    },
+    {
+      "cause": "Linux errno95 is not ENOTSUP on Mac; Windows ERROR_NOT_SUPPORTED50 remains ErrorKind::Uncategorized",
+      "platforms": [
+        "macos",
+        "windows"
+      ],
+      "tests": [
+        "vault_commit_protocol::a_filesystem_that_cannot_sync_this_object_is_tolerated_case_013"
+      ],
+      "fix": "Map frozen Linux errno label to libc::ENOTSUP on Unix/native50 on Windows; tolerate precisely Windows ERROR_NOT_SUPPORTED, preserve real sync failures."
+    },
+    {
+      "cause": "Frozen first-run snapshots capture one incidental readdir order; APFS rejects invalid UTF8 names",
+      "platforms": [
+        "linux",
+        "macos"
+      ],
+      "tests": [
+        "copytree_errors::new_subtree_errors_match_original_continuation_summaries_and_retry"
+      ],
+      "fix": "Replay authenticated entry order through scoped feature-only actual read_dir boundary, validating exact permutation. Retain physical FIFO/permission/copy/retry assertions plus alternate-order complete tuple/healthy-copy counterexample. Mac asserts actual EILSEQ/raw-byte diagnostic, then owns representable FIFO alias for copy/retry effects. Original data remains immutable. Historical case94 requires independent attribution review by Tools."
+    },
+    {
+      "cause": "Invalid sentinel PID u32::MAX is outside Mac pid_t",
+      "platforms": [
+        "macos"
+      ],
+      "tests": [
+        "jobs::a_dead_pid_is_dead_with_or_without_a_token"
+      ],
+      "fix": "Use real owned rendezvous child, check live creation token, reap actual exit, then assert dead with and without token."
+    },
+    {
+      "cause": "macOS has an actual system user named unknown; invalid byte extension directory cannot be created on APFS",
+      "platforms": [
+        "macos"
+      ],
+      "tests": [
+        "native_extension_paths_preserve_original_order_home_and_directory_filter",
+        "extension_admission::extension_setter_preserves_original_stored_set_admission_and_cache"
+      ],
+      "fix": "Use process-specific nonexistent account. Preserve raw OS-byte expansion and verify actual APFS EILSEQ leaves no entry; real representable extension effects retained."
+    },
+    {
+      "cause": "Frozen Linux glob/lock-limit/newline expectations differ from source platform semantics",
+      "platforms": [
+        "windows"
+      ],
+      "tests": [
+        "json_filename_selection_matches_original_storage_consumers",
+        "configured_lock_timeout_values_match_original_policy",
+        "exported_profile_bytes_match_original_text_format_and_preserve_refusals",
+        "schedule_text_admission_matches_original_without_replacing_bytes",
+        "mark_run_matches_original_result_claim_clearing_and_exact_bytes"
+      ],
+      "fix": "Bound only platform expectations to verified source Windows glob and DWORD wait limit; convert only source-writer text to CRLF, preserve refused/caller bytes exactly."
+    },
+    {
+      "cause": "Actual leader death can hide behind inherited pipe until RPC timeout",
+      "platforms": [
+        "windows"
+      ],
+      "tests": [
+        "scheduler::the_exit_code_of_a_finished_warm_up_is_recorded"
+      ],
+      "fix": "Fixture retains real leaf/watcher and proves live leader/leaf tokens plus captured whole tree, then leader exit and whole-tree settlement. Cloak owns independent proven passive Adapter wait correction; current Linux scheduler pass predates that correction."
+    }
+  ],
+  "sources": {
+    "engine-rust/Cargo.toml": "b0a78133010bac8e39eb4536c8fec2c611c70500a3406a3cacfaf1801f88c999",
+    "engine-rust/src/storage/mod.rs": "90ed6392e318ec2639bef7f61e9c934f9f26adccdea6d4f0d60c8160bfa92a80",
+    "engine-rust/src/storage/first_run.rs": "fbfc1e58ce715833d1f096b2e790538310708af3c3fcebf81da0586a1b57bd12",
+    "engine-rust/src/storage/first_run_errors.rs": "e4b6568a15ab459cc23ac1065092e05fc29a548204c7e3879f89351cdd11bacf",
+    "engine-rust/src/storage/first_run_test_support.rs": "238693542c0e0ba252337c37cca983cbc9e238f443a1477413f2f1d6f5ba7d73",
+    "engine-rust/src/storage/paths.rs": "85d572c196895517200e3150bc44486baa8b626ac62d170ba1f5089aa7dd8713",
+    "engine-rust/src/vault/durability.rs": "24c78df916a3285972ca1154495aa6393640bd67b096bd01563ef3d1526e32e7",
+    "engine-rust/tests/common/mod.rs": "2cfdb199876e14b3ffccba21bd19a7ad68d3944600887bcc2628f1a8bfafa852",
+    "engine-rust/tests/first_run_failure/copytree_errors.rs": "a3921a7dda24b50b64f4feb6a1ef0d38392db43928a530305b8d3a625797738a",
+    "engine-rust/tests/source_contracts/helpers.rs": "9a7b49a4acbb63403e4b0ff4878b0cdad3e1219fa63cf8b8c5fea34493a7e13b",
+    "engine-rust/tests/source_contracts/write_contract_boundaries.rs": "0f71c1eacbb482e2e87156a22800f592c8afe2574ee3d7c7854644224e4d1a9d",
+    "engine-rust/tests/source_contracts/write_contract_engine_shape.rs": "6e58b0e064a086691d0b09390c0f3cb9b86f43e99709192f361826b7cb1e9494",
+    "engine-rust/tests/source_storage/archive_safety.rs": "667be1537fad65c1b4036500626888dac72ecf93456450b8ce97c3c7ea6108f0",
+    "engine-rust/tests/source_storage/jobs.rs": "6c933572eff9f71759dccda47321de52c5d3656f71b6d9b43f329b5e140f7c0a",
+    "engine-rust/tests/source_storage/process.rs": "ef6127d23965068a6b6e61e8df73d00cad1b840cf17ed16408806dbc2287fd9b",
+    "engine-rust/tests/source_storage/scheduler.rs": "b35d4104cb5ba47d5ea8abfc2daea99ce75605452f04b2076acc7652284097a4",
+    "engine-rust/tests/source_storage/helper.rs": "b6d9af13b85dc7504d3c8129d91ec0f0697a9a0c484985e4931b747c947433d6",
+    "engine-rust/tests/source_vault.rs": "b8840b38fb4d0f223b6e906c69553612010f1dbb72a917c2250602ea5f5ba4ef",
+    "engine-rust/tests/support/platform_text.rs": "93ac23f8e55804d2f47979de70b499fc714f3917ccc1ca1a29eac2a193d03e06",
+    "engine-rust/tests/config_parity/extension_admission.rs": "64409d24de552b3d80ffae8ac969f00a860b743995e093acf2a491434338d6e8",
+    "engine-rust/tests/browser_extensions_parity.rs": "4fbc8176e3dd1e7304e4227db31d1d45641f9024049ff2c7b4f6e8f8e59f3002",
+    "engine-rust/tests/folder_parity.rs": "c304dfc03e5a794f7467fcf8746188d2d8f8c1dccba72019b8dd78791e737c91",
+    "engine-rust/tests/lock_interop_parity.rs": "5f7fa2d2111c6d6a8a7d427b1375ccc0e6647893a46b67620376dd8ff89c3d82",
+    "engine-rust/tests/profile_export_parity.rs": "492b05d0ce00488851bec52ac9102db2eeffa08a235eeee61545adf93294fe6d",
+    "engine-rust/tests/schedule_store_parity.rs": "fa377460febc8972b275025edd0e3ec483d8ad70ebebf0bb955e5185ddfc2dea",
+    "engine-rust/tests/repo_delete_parity.rs": "bc1da4dfcbce234ae9df165a4f5e84fdf47d027e18dd115d0b871c1793846638",
+    "engine-rust/tests/profile_backup_parity.rs": "80886d5a904d755ba53482a61842b375ff538d22bf076927ee8f7a48acfe8a59"
+  },
+  "ci_logs": {
+    "linux": {
+      "path": "/workspace/work/functional-ci-43536453687-linux.log",
+      "sha256": "a733f25a0a2bea21004edda45f2d3bbd08ef6dd7cdf141e518233b29d416f4fd"
+    },
+    "macos": {
+      "path": "/workspace/work/functional-ci-43536453687-macos.log",
+      "sha256": "562af38bbbd1335e40d2b93861e9bde9e5e1c472c3d4ac708ea0a398556d0cba"
+    },
+    "windows": {
+      "path": "/workspace/work/functional-ci-43536453687-windows.log",
+      "sha256": "084ae19a0f30cdcd8816ac8044605dc5447fa3f9801d3eb2d6f084e1e8b79b96"
+    }
+  },
+  "verification_logs": {
+    "/tmp/functional-storage-platform-focused.log": {
+      "sha256": "ad381d91c994248afe796fcb2ee3af2048a9698dd717df372c5efe1a40227ffa",
+      "passing_sections": [
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.30s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.07s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.68s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.22s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s"
+      ]
+    },
+    "/tmp/functional-storage-native-targeted.log": {
+      "sha256": "4182d53d1c632a6b64bbb0640ba75292fa4aad111c49b4703f8fb8bf3b86dcd5",
+      "passing_sections": [
+        "test result: ok. 270 passed; 0 failed; 0 ignored; 0 measured; 250 filtered out; finished in 2.24s",
+        "test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 360 filtered out; finished in 0.04s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 410 filtered out; finished in 0.05s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 410 filtered out; finished in 0.01s"
+      ]
+    },
+    "/tmp/functional-storage-native-followup.log": {
+      "sha256": "1e572a6e173e24515150dc292b400d649fd770ac3e81779159475101dd9155fc",
+      "passing_sections": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 410 filtered out; finished in 6.27s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 291 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 291 filtered out; finished in 1.53s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.69s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.97s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.62s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 42 filtered out; finished in 0.03s"
+      ]
+    },
+    "/tmp/functional-storage-strict-clippy.log": {
+      "sha256": "b2bb807ec93648ccea454391f0472be132106db3f8d34df82cc16564aff04c0f",
+      "passing_sections": []
+    },
+    "/tmp/functional-storage-coverage-gate.log": {
+      "sha256": "f0237e4fa4767f8248d0c8f4c8d2dbd855c85af7ce29be9ed000df7a1f278862",
+      "passing_sections": []
+    }
+  },
+  "verification_notes": [
+    "33 older native cases pass across9targets;270 write-contract cases+51archive+PID1+atomicdelete1 pass; followup scheduler1+Vault0131+vaultrootdiagnostic1+CLI6+nativetypeddelete1 pass:366successfulcaseexecutions, not fullsuite claim.",
+    "native-targeted log retains initial failed overstrict zombie alive control; final corrected whole-tree assertion passes in native-followup log.",
+    "Strict lib+source_http/source_storage/source_vault/source_contracts and all affected oldtargets passes11.53s.",
+    "Hosted Mac and Windows verification required; Linux run does not prove platform-specific branches.",
+    "No Cargo target active from this agent; geo-target released to Cloak.",
+    "Earlier coverage command returned a generic parse error while sources were being edited; independent current same-source validator passes. This is inventory evidence only."
+  ],
+  "reviewed_on": "2026-11-14",
+  "ci_job_urls": {
+    "linux": "https://github.com/KiaroSama/Numera-Browser/actions/runs/43536453687/job/132267500707",
+    "macos": "https://github.com/KiaroSama/Numera-Browser/actions/runs/43536453687/job/132267500611",
+    "windows": "https://github.com/KiaroSama/Numera-Browser/actions/runs/43536453687/job/132267500699"
+  },
+  "successful_executions": [
+    {
+      "crate": "engine-rust",
+      "target": "browser_extensions_parity",
+      "test": "native_extension_paths_preserve_original_order_home_and_directory_filter",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "browser_extensions_parity",
+      "test": "portable_backend_selection_matches_original_bundle_options_and_overrides",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "config_parity",
+      "test": "direct_settings_and_current_thread_replacement_match_original",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "config_parity",
+      "test": "extension_admission::extension_setter_preserves_original_stored_set_admission_and_cache",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "config_parity",
+      "test": "fallible_settings_reads_preserve_original_utf8_refusal_and_cache",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "config_parity",
+      "test": "malformed_settings_text_refuses_without_replacing_source_bytes",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "config_parity",
+      "test": "settings_instance_cache_matches_original_file_identity_and_detached_results",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "config_parity",
+      "test": "settings_read_merge_and_refusal_match_source_without_losing_unknown_keys",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "config_parity",
+      "test": "strict_reads::settings_getters_match_original_strict_text_admission_and_values",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "first_run_failure",
+      "test": "copytree_errors::new_subtree_errors_match_original_continuation_summaries_and_retry",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "first_run_failure",
+      "test": "failed_first_run_remains_retryable_and_never_overwrites_the_obstruction",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "first_run_failure",
+      "test": "fifo_import_matches_original_refusal_continuation_and_retry",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "first_run_failure",
+      "test": "profile_count::advisory_profile_count_matches_original_when_destination_scan_is_denied",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "folder_parity",
+      "test": "folder_name_whitespace_matches_original_operations",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "folder_parity",
+      "test": "folder_transactions_keep_profiles_and_follow_retired_names",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "folder_parity",
+      "test": "json_filename_selection_matches_original_storage_consumers",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "folder_parity",
+      "test": "malformed_folder_text_refuses_without_replacing_source_bytes",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "lock_interop_parity",
+      "test": "configured_lock_timeout_values_match_original_policy",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "lock_interop_parity",
+      "test": "configured_store_acquisitions_honor_original_lock_owners",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "lock_interop_parity",
+      "test": "enable_phase_projection_accepts_only_fixed_labels_and_bounded_utf8",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "lock_interop_parity",
+      "test": "native_session_lease_excludes_original_until_drop_and_reacquires_after_release",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "lock_interop_parity",
+      "test": "python_and_rust_contend_on_the_same_root_file_and_session",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "lock_interop_parity",
+      "test": "standalone_session_deletion_refuses_original_lease_then_preserves_profile_records",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "profile_backup_parity",
+      "test": "backup_carries_complete_profile_and_session_or_refuses_before_output",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "profile_backup_parity",
+      "test": "backup_refuses_its_own_session_destination_without_changing_existing_output",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "profile_export_parity",
+      "test": "exported_profile_bytes_match_original_text_format_and_preserve_refusals",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "profile_export_parity",
+      "test": "profile_export_refuses_to_drop_withheld_credentials",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "profile_export_parity",
+      "test": "withheld_text_admission_matches_original_without_replacing_bytes",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "repo_delete_parity",
+      "test": "deletion_removes_both_copies_and_refuses_unreadable_ownership",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "repo_delete_parity",
+      "test": "direct_session_paths_and_deletion_match_original_without_touching_profiles",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "schedule_store_parity",
+      "test": "mark_run_matches_original_result_claim_clearing_and_exact_bytes",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "schedule_store_parity",
+      "test": "schedule_claim_is_single_occurrence_and_record_clears_only_its_claim",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "schedule_store_parity",
+      "test": "schedule_text_admission_matches_original_without_replacing_bytes",
+      "result": "passed",
+      "log": "/tmp/functional-storage-platform-focused.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_a_bad_later_entry_refuses_the_whole_import",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_a_damaged_name_is_still_searchable_by_the_engine",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_a_damaged_record_does_not_take_a_read_path_down",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_a_damaged_stored_name_does_not_make_the_store_unwritable",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_a_deliberate_password_clear_still_clears",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_a_duplicate_name_still_conflicts",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_a_good_vendor_export_still_imports",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_a_numeric_stored_name_still_counts_as_taken",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_a_refused_request_never_answers_with_a_traceback",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_a_stale_revision_still_conflicts",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_an_export_from_a_newer_build_is_refused_by_version",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_an_ordinary_create_and_edit_still_work",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_an_unsupported_format_is_refused_rather_than_reinterpreted",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_an_untouched_proxy_password_is_preserved_across_an_edit",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_every_engine_twin_the_api_writes_satisfies_the_contract",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_every_listed_profile_has_the_display_fields_a_reader_dereferences",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_the_cli_import_exits_non_zero_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_the_damaged_bytes_on_disk_are_left_exactly_as_they_were",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_the_folder_survives_a_validated_write",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_the_healthy_record_is_still_editable_alongside_the_damaged_ones",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_the_healthy_record_is_still_listed_alongside_the_damaged_ones",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_the_repair_does_not_let_the_damage_be_written_back",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c000_the_update_route_refuses_the_same_way",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c001_a_damaged_record_does_not_take_a_read_path_down",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c001_the_cli_import_exits_non_zero_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c001_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c001_the_update_route_refuses_the_same_way",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c002_a_damaged_record_does_not_take_a_read_path_down",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c002_the_cli_import_exits_non_zero_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c002_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c002_the_update_route_refuses_the_same_way",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c003_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c004_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c005_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c006_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c007_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c008_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c009_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c010_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c011_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c012_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c013_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c014_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_boundaries::c015_the_create_route_refuses_by_field_without_writing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_bad_last_entry_is_named_by_its_position",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_bad_second_entry_leaves_the_first_one_unwritten",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_complete_record_is_charged_for_what_it_omits",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_config_change_does_not_commit_when_the_batch_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_fingerprint_that_is_not_one_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_fractional_device_pixel_ratio_is_still_accepted",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_healthy_profile_round_trips_unchanged_but_for_server_metadata",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_legitimate_edge_value_is_not_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_malformed_bookmark_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_non_finite_dimension_never_becomes_a_non_json_token",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_partial_dashboard_patch_is_not_charged_for_what_it_omits",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_proxy_that_cannot_be_one_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_refusal_never_quotes_the_password_back",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_a_valid_bookmark_list_still_saves",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_an_empty_fingerprint_mapping_is_refused_field_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_an_empty_name_and_no_proxy_are_still_legitimate",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_an_ordinary_resolution_is_left_alone",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_something_that_is_not_a_profile_at_all_is_named_as_such",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_the_merged_patch_is_what_gets_complete_validation",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_the_packed_resolution_cannot_walk_past_the_dimension_rule",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_the_three_shapes_are_told_apart_explicitly",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c000_validating_never_reassigns_the_password",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c001_a_fingerprint_that_is_not_one_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c001_a_fractional_device_pixel_ratio_is_still_accepted",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c001_a_legitimate_edge_value_is_not_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c001_a_malformed_bookmark_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c001_a_proxy_that_cannot_be_one_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c001_an_ordinary_resolution_is_left_alone",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c001_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c001_the_packed_resolution_cannot_walk_past_the_dimension_rule",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c002_a_fingerprint_that_is_not_one_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c002_a_fractional_device_pixel_ratio_is_still_accepted",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c002_a_legitimate_edge_value_is_not_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c002_a_malformed_bookmark_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c002_a_proxy_that_cannot_be_one_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c002_an_ordinary_resolution_is_left_alone",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c002_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c002_the_packed_resolution_cannot_walk_past_the_dimension_rule",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c003_a_fingerprint_that_is_not_one_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c003_a_fractional_device_pixel_ratio_is_still_accepted",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c003_a_legitimate_edge_value_is_not_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c003_a_malformed_bookmark_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c003_a_proxy_that_cannot_be_one_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c003_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c003_the_packed_resolution_cannot_walk_past_the_dimension_rule",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c004_a_fingerprint_that_is_not_one_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c004_a_fractional_device_pixel_ratio_is_still_accepted",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c004_a_legitimate_edge_value_is_not_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c004_a_malformed_bookmark_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c004_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c004_the_packed_resolution_cannot_walk_past_the_dimension_rule",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c005_a_fingerprint_that_is_not_one_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c005_a_fractional_device_pixel_ratio_is_still_accepted",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c005_a_legitimate_edge_value_is_not_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c005_a_malformed_bookmark_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c005_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c005_the_packed_resolution_cannot_walk_past_the_dimension_rule",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c006_a_fingerprint_that_is_not_one_is_refused_by_name",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c006_a_fractional_device_pixel_ratio_is_still_accepted",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c006_a_legitimate_edge_value_is_not_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c006_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c006_the_packed_resolution_cannot_walk_past_the_dimension_rule",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c007_a_legitimate_edge_value_is_not_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c007_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c008_a_legitimate_edge_value_is_not_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c008_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c009_a_legitimate_edge_value_is_not_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c009_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c010_a_legitimate_edge_value_is_not_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c010_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c011_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c012_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c013_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c014_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c015_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c016_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c017_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c018_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c019_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c020_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c021_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c022_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c023_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c024_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c025_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_complete_record::c026_the_core_write_path_refuses_the_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_bad_later_entry_refuses_the_whole_batch_over_http",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_batch_with_a_bad_second_entry_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_dashboard_proxy_is_checked_under_its_own_key_names",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_good_vendor_export_still_imports_from_the_cli",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_healthy_engine_profile_has_nothing_said_about_it",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_healthy_record_is_still_handed_back_by_identity",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_legacy_record_keeps_its_original_bytes",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_nested_collection_element_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_nested_number_is_refused_before_anything_is_written",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_proxy_field_that_is_not_text_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_proxy_that_is_not_a_proxy_is_refused_not_a_traceback",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_proxy_the_core_cannot_read_is_refused_over_http",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_record_with_no_name_key_gets_one_to_render",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_a_serialized_proxy_is_checked_the_same_way",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_an_edit_that_touches_nothing_numeric_still_saves",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_an_ordinary_proxy_still_saves",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_api_create_and_update_still_work",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_every_row_of_the_listing_has_a_name_the_dashboard_can_render",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_only_a_field_this_vocabulary_owns_is_supplied",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_supplying_a_missing_name_does_not_touch_the_stored_record",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_the_api_still_refuses_by_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_the_bounds_are_not_duplicated_per_shape",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_the_cli_import_door_refuses_the_same_nested_value_the_api_does",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_the_dashboard_payload_keeps_its_own_flat_names",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_the_health_page_renders_the_same_legacy_names",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_the_refusal_names_the_field_the_caller_actually_sent",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_the_serialized_engine_mapping_is_checked_the_same_way",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c000_validating_a_proxy_does_not_decide_what_to_do_with_its_secret",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c001_a_nested_collection_element_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c001_a_nested_number_is_refused_before_anything_is_written",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c001_a_proxy_field_that_is_not_text_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c001_the_api_still_refuses_by_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c001_the_refusal_names_the_field_the_caller_actually_sent",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c002_a_nested_collection_element_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c002_a_nested_number_is_refused_before_anything_is_written",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c002_a_proxy_field_that_is_not_text_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c002_the_api_still_refuses_by_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c002_the_refusal_names_the_field_the_caller_actually_sent",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c003_a_nested_collection_element_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c003_a_nested_number_is_refused_before_anything_is_written",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c003_a_proxy_field_that_is_not_text_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c003_the_api_still_refuses_by_field_and_writes_nothing",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c003_the_refusal_names_the_field_the_caller_actually_sent",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c004_a_nested_collection_element_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c004_a_nested_number_is_refused_before_anything_is_written",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c004_a_proxy_field_that_is_not_text_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c004_the_refusal_names_the_field_the_caller_actually_sent",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c005_a_nested_number_is_refused_before_anything_is_written",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c005_a_proxy_field_that_is_not_text_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c005_the_refusal_names_the_field_the_caller_actually_sent",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c006_a_nested_number_is_refused_before_anything_is_written",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c006_the_refusal_names_the_field_the_caller_actually_sent",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c007_a_nested_number_is_refused_before_anything_is_written",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c007_the_refusal_names_the_field_the_caller_actually_sent",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c008_a_nested_number_is_refused_before_anything_is_written",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c008_the_refusal_names_the_field_the_caller_actually_sent",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c009_a_nested_number_is_refused_before_anything_is_written",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c009_the_refusal_names_the_field_the_caller_actually_sent",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c010_a_nested_number_is_refused_before_anything_is_written",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_engine_shape::c010_the_refusal_names_the_field_the_caller_actually_sent",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_a_bad_entry_after_the_first_still_refuses_the_whole_import",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_a_huge_integer_in_a_native_import_is_refused_too",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_a_huge_integer_is_refused_on_every_write_route",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_a_missing_field_is_still_filled_in_coherently",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_a_non_string_tag_operand_is_refused_not_raised",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_a_proxy_a_vendor_actually_exports_still_arrives_whole",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_a_tag_operand_that_is_not_a_list_is_still_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_a_vendor_name_is_rendered_as_text_by_every_reader",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_a_vendor_number_outside_the_contract_is_refused_with_its_bounds",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_a_vendor_value_the_importer_cannot_read_is_never_a_traceback",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_an_empty_tag_operand_is_not_an_error",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_an_imported_profile_can_still_be_edited_afterwards",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_an_integer_inside_the_range_is_still_accepted",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_an_integer_past_the_decoder_limit_is_a_bad_request_not_a_crash",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_an_unrenderable_vendor_value_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_every_imported_profile_passes_the_same_schema_a_created_one_does",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_string_tag_operands_still_add_and_remove",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_the_importer_is_still_tolerant_about_the_name_a_vendor_uses",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_the_native_branch_holds_the_same_line",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c000_the_refusal_does_not_echo_the_whole_number_back",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c001_a_bad_entry_after_the_first_still_refuses_the_whole_import",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c001_a_huge_integer_is_refused_on_every_write_route",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c001_a_non_string_tag_operand_is_refused_not_raised",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c001_a_vendor_value_the_importer_cannot_read_is_never_a_traceback",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c001_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c001_an_unrenderable_vendor_value_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c001_the_importer_is_still_tolerant_about_the_name_a_vendor_uses",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c002_a_bad_entry_after_the_first_still_refuses_the_whole_import",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c002_a_non_string_tag_operand_is_refused_not_raised",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c002_a_vendor_value_the_importer_cannot_read_is_never_a_traceback",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c002_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c002_an_unrenderable_vendor_value_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c002_the_importer_is_still_tolerant_about_the_name_a_vendor_uses",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c003_a_bad_entry_after_the_first_still_refuses_the_whole_import",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c003_a_non_string_tag_operand_is_refused_not_raised",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c003_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c003_an_unrenderable_vendor_value_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c003_the_importer_is_still_tolerant_about_the_name_a_vendor_uses",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c004_a_bad_entry_after_the_first_still_refuses_the_whole_import",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c004_a_non_string_tag_operand_is_refused_not_raised",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c004_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c004_an_unrenderable_vendor_value_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c004_the_importer_is_still_tolerant_about_the_name_a_vendor_uses",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c005_a_bad_entry_after_the_first_still_refuses_the_whole_import",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c005_a_non_string_tag_operand_is_refused_not_raised",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c005_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c005_an_unrenderable_vendor_value_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c005_the_importer_is_still_tolerant_about_the_name_a_vendor_uses",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c006_a_bad_entry_after_the_first_still_refuses_the_whole_import",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c006_a_non_string_tag_operand_is_refused_not_raised",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c006_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c006_an_unrenderable_vendor_value_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c006_the_importer_is_still_tolerant_about_the_name_a_vendor_uses",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c007_a_bad_entry_after_the_first_still_refuses_the_whole_import",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c007_a_non_string_tag_operand_is_refused_not_raised",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c007_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c007_an_unrenderable_vendor_value_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c007_the_importer_is_still_tolerant_about_the_name_a_vendor_uses",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c008_a_bad_entry_after_the_first_still_refuses_the_whole_import",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c008_a_non_string_tag_operand_is_refused_not_raised",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c008_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c008_an_unrenderable_vendor_value_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c008_the_importer_is_still_tolerant_about_the_name_a_vendor_uses",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c009_a_non_string_tag_operand_is_refused_not_raised",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c009_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c009_the_importer_is_still_tolerant_about_the_name_a_vendor_uses",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c010_a_non_string_tag_operand_is_refused_not_raised",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c010_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c010_the_importer_is_still_tolerant_about_the_name_a_vendor_uses",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c011_a_non_string_tag_operand_is_refused_not_raised",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c011_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c011_the_importer_is_still_tolerant_about_the_name_a_vendor_uses",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c012_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c012_the_importer_is_still_tolerant_about_the_name_a_vendor_uses",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c013_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c014_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_contracts",
+      "test": "write_contract_entry_points::c015_an_integer_too_large_for_a_float_is_refused_by_field",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_device_name_with_an_extension_is_refused_too_case_022",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_device_name_with_an_extension_is_refused_too_case_023",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_device_name_with_an_extension_is_refused_too_case_024",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_device_name_with_an_extension_is_refused_too_case_025",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_hostile_archive_leaves_no_half_written_profile",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_leading_slash_is_neutralised_rather_than_escaping",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_linked_session_claim_stays_owned_instead_of_appearing_absent",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_malformed_profile_json_is_a_clear_error",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_normal_backup_still_round_trips",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_parent_traversal_member_cannot_escape_the_extension_folder",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_parent_traversal_member_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_sibling_prefix_member_cannot_escape_the_extension_folder",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_012",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_013",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_014",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_015",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_016",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_017",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_018",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_019",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_020",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_021",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::a_windows_drive_member_is_refused",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::an_archive_with_no_profile_json_is_a_clear_error",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::an_icon_path_cannot_point_at_a_sibling_directory",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::an_ordinary_extension_still_unpacks",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::archive_path_is_refused_before_probing_an_outside_target_case_043",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::archive_path_is_refused_before_probing_an_outside_target_case_044",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::archive_path_is_refused_before_probing_an_outside_target_case_045",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::json_replacement_never_overwrites_an_unowned_temporary_file",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::json_replacement_uses_private_file_permissions_on_posix",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_026",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_027",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_028",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_029",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_030",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_031",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_032",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_033",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_034",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::physical_check_keeps_links_before_parent_components_case_046",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::physical_check_keeps_links_before_parent_components_case_047",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::physical_sibling_is_refused_before_accessing_the_resolved_target",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::profile_id_requires_a_complete_portable_filename_case_035",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::profile_id_requires_a_complete_portable_filename_case_036",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::profile_id_requires_a_complete_portable_filename_case_037",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::profile_id_requires_a_complete_portable_filename_case_038",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::profile_id_requires_a_complete_portable_filename_case_039",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::profile_path_never_resolves_one_id_into_another",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::profile_path_rejects_an_escaping_suffix_before_filesystem_access",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "archive_safety::restore_replaces_the_session_rather_than_merging_into_it",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "jobs::a_dead_pid_is_dead_with_or_without_a_token",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "delete_rollback::the_metadata_comes_back_through_the_atomic_writer",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-targeted.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_storage",
+      "test": "scheduler::the_exit_code_of_a_finished_warm_up_is_recorded",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-followup.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_vault",
+      "test": "vault_commit_protocol::a_filesystem_that_cannot_sync_this_object_is_tolerated_case_013",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-followup.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "source_vault",
+      "test": "vault_covers_the_root::no_secret_is_readable_anywhere_after_enabling",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-followup.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "cli_cookie_parity",
+      "test": "alignment_versions::alignment_versions_match_original_decimal_captures",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-followup.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "cli_cookie_parity",
+      "test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-followup.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "cli_launch_parity",
+      "test": "foreground_launch_reuses_admission_and_native_backend_lifetime_policy",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-followup.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "cli_settings_parity",
+      "test": "settings_folder_token_and_schedule_services_match_original_verdicts",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-followup.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "cli_settings_parity",
+      "test": "shared_cli_open_uses_both_resume_passwords_before_exposing_stores",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-followup.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "cli_settings_parity",
+      "test": "strict_settings::settings_commands_preserve_original_decoding_refusals_and_early_errors",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-followup.log"
+    },
+    {
+      "crate": "engine-rust",
+      "target": "lib",
+      "test": "storage::repo_delete::tests::failed_delete_rollback_preserves_causes_and_actual_recovery_paths",
+      "result": "passed",
+      "log": "/tmp/functional-storage-native-followup.log"
+    }
+  ],
+  "execution_count": 366,
+  "execution_scope": {
+    "browser_extensions_parity": 2,
+    "config_parity": 7,
+    "first_run_failure": 4,
+    "folder_parity": 4,
+    "lock_interop_parity": 6,
+    "profile_backup_parity": 2,
+    "profile_export_parity": 3,
+    "repo_delete_parity": 2,
+    "schedule_store_parity": 3,
+    "source_contracts": 270,
+    "source_storage": 54,
+    "source_vault": 2,
+    "cli_cookie_parity": 2,
+    "cli_launch_parity": 1,
+    "cli_settings_parity": 3,
+    "lib": 1
+  },
+  "inventory_only_evidence": {
+    "kind": "same-source AST identity/kind/platform validation; not test execution",
+    "log": "/workspace/work/ci5-coverage-diagnostic.log",
+    "sha256": "d8b782dd6d2ddcef9c66864ade92ad6580587cb5ac35a44df13ae6b17a729d0c",
+    "applicable_counts": {
+      "linux": {
+        "engine_core": 2940,
+        "ownership": 380,
+        "tools": 643
+      },
+      "macos": {
+        "engine_core": 2934,
+        "ownership": 373,
+        "tools": 643
+      },
+      "windows": {
+        "engine_core": 2892,
+        "ownership": 340,
+        "tools": 643
+      }
+    },
+    "registered_gate_followup": "Tools will rebuild and run the registered gate after coherent changes; earlier existing-binary generic parse failure remains archived."
+  }
+}

@@ -24,6 +24,24 @@ quote = "=1.0.47"
 [dev-dependencies]
 numera-core = { path = "../../engine-rust", default-features = false, features = ["test-support"] }
 
+# The CLI is normally invoked through `cargo xtask` in the dev profile. Native
+# distributions contain several GiB of mandatory SDK/browser bytes; optimize
+# their hash and Deflate loops without changing any archive option or app build.
+[profile.dev.package.numera-xtask]
+opt-level = 3
+
+[profile.dev.package."sha2:0.11.1"]
+opt-level = 3
+
+[profile.dev.package.zip]
+opt-level = 3
+
+[profile.dev.package.flate2]
+opt-level = 3
+
+[profile.dev.package.zlib-rs]
+opt-level = 3
+
 [lints.clippy]
 unwrap_used = "deny"
 

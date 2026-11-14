@@ -142,7 +142,6 @@ source_test!(
         let source = fs::read_to_string(root().join("engine-rust/src/bin/engine.rs"))?;
         assert!(source.contains("--build-info"));
         assert!(source.contains("numera_core::native_build::identity"));
-        #[cfg(windows)]
         windows_signing_fixture()?;
         Ok(())
     }

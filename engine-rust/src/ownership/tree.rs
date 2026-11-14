@@ -130,6 +130,12 @@ impl OwnedTree {
     pub fn all_job_members_exited(&self) -> io::Result<bool> {
         self.job.all_members_exited(&self.child)
     }
+    /// A bounded passive snapshot for failure diagnostics, not a cleanup or
+    /// ownership proof. Executable identities are limited to static classes.
+    #[cfg(windows)]
+    pub fn job_member_diagnostics(&self) -> io::Result<serde_json::Value> {
+        self.job.member_diagnostics(&self.child)
+    }
     #[cfg(windows)]
     pub(crate) fn job_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
         self.job.handle()
@@ -176,14 +182,43 @@ impl OwnedTree {
             {
                 // A live reused leader is not ours. Unknown identity is not
                 // permission to send a process-group signal.
-                match started_at(self.child.id()) {
-                    Ok(Some(token)) if token != self.token => {
-                        return Err(io::Error::other("Process group leader identity changed"));
+                let mut uncertainty = None;
+                let may_signal = loop {
+                    if Instant::now() >= deadline
+                        && let Some(error) = uncertainty.take()
+                    {
+                        return Err(error);
                     }
-                    Err(error) => return Err(error),
-                    _ => {}
-                }
-                if let Err(error) = terminate_group(self.group)
+                    match started_at(self.child.id()) {
+                        Ok(Some(token)) if token != self.token => {
+                            return Err(io::Error::other("Process group leader identity changed"));
+                        }
+                        Ok(Some(_)) => break true,
+                        Ok(None) if uncertainty.is_none() => break true,
+                        Ok(None) => {}
+                        Err(error) => uncertainty = Some(error),
+                    }
+                    // An exiting leader can become temporarily unreadable
+                    // after a nonempty group snapshot. A denied birth query is
+                    // not absence or signal authority: retry only inside the
+                    // original deadline, requiring a matching birth or a
+                    // complete subsequent kernel proof that the group is empty.
+                    if self.observed_empty(deadline)? {
+                        break false;
+                    }
+                    if Instant::now() >= deadline {
+                        return Err(uncertainty.unwrap_or_else(|| {
+                            io::Error::other("Owned leader birth remains unknown")
+                        }));
+                    }
+                    thread::sleep(
+                        deadline
+                            .saturating_duration_since(Instant::now())
+                            .min(Duration::from_millis(10)),
+                    );
+                };
+                if may_signal
+                    && let Err(error) = terminate_group(self.group)
                     && !self.observed_empty(deadline)?
                 {
                     return Err(error);

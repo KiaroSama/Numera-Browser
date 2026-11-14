@@ -17,6 +17,7 @@ use axum::{
 };
 use serde_json::Value;
 use std::{
+    borrow::Cow,
     io,
     path::PathBuf,
     sync::Arc,
@@ -257,18 +258,28 @@ fn listing(
     let now = current_time()?;
     let lock = DataLock::transaction(&state.root)?;
     let _guard = lock.acquire_configured()?;
-    let mut profiles = state.dashboard.list()?;
-    let known = profiles
+    let snapshots = state.dashboard.list_for_reconciliation()?;
+    let known = snapshots
         .iter()
-        .filter_map(|profile| profile["id"].as_str())
+        .filter_map(|snapshot| snapshot.profile()["id"].as_str())
         .map(str::to_owned)
         .collect::<std::collections::BTreeSet<_>>();
+    let by_path = snapshots
+        .iter()
+        .map(|snapshot| (snapshot.path(), snapshot))
+        .collect::<std::collections::BTreeMap<_, _>>();
     // Reconcile known dashboard rows through repository authority as well as
     // adopting engine-only rows below. An HTTP read is the same union read as
     // the CLI; a changed shared field must repair its stored engine twin.
     for id in &known {
         let engine = ProfileRepo::raw(&state.engine.path(id, "profiles")?)?;
-        let dashboard = ProfileRepo::raw(&state.engine.path(id, "dashboard")?)?;
+        let path = state.engine.path(id, "dashboard")?;
+        let dashboard = match by_path.get(path.as_path()) {
+            Some(snapshot) => Some(snapshot.raw()?),
+            // Noncanonical spelling or a filename/body-ID mismatch must retain
+            // the original guarded lookup rather than reusing a different row.
+            None => ProfileRepo::raw(&path)?.map(Cow::Owned),
+        };
         if let Some(dashboard) = dashboard
             && (engine.as_ref().is_none_or(|engine| !truth(engine))
                 || state.engine.read_disagrees(
@@ -284,6 +295,10 @@ fn listing(
             }
         }
     }
+    let mut profiles = snapshots
+        .into_iter()
+        .map(|snapshot| snapshot.into_profile())
+        .collect::<Vec<_>>();
     let entries = match std::fs::read_dir(state.root.join("profiles")) {
         Ok(entries) => entries,
         Err(error) if error.kind() == io::ErrorKind::NotFound => {

@@ -5,6 +5,8 @@ mod common;
 mod compiler_artifact;
 #[path = "init_script_parity/contracts.rs"]
 mod contracts;
+#[path = "../../browser-page-rust/src/source_paths.rs"]
+mod source_paths;
 
 #[test]
 fn native_script_and_config_match_original_generator() -> Result<(), Box<dyn std::error::Error>> {

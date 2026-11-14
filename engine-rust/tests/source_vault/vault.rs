@@ -244,6 +244,7 @@ source_test!(
     saving_a_secret_while_locked_is_refused,
     "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused",
     {
+        missing_or_nontext_salt_never_unlocks_writers();
         let temp = common::TempDirectory::new("source-vault").expect("temporary root");
         let root = temp.path();
         let p = saved(root, "acct", 1, Some("s3cret"));
@@ -260,6 +261,75 @@ source_test!(
         assert_eq!(snapshot(root), before);
     }
 );
+fn missing_or_nontext_salt_never_unlocks_writers() {
+    let verifier = vault::encrypt(MASTER, "", "numera-vault-ok").expect("empty-salt control");
+    assert!(vault::check_password(MASTER, "", &verifier));
+    let mut accepted = Vec::new();
+    for writer in ["engine", "dashboard", "pool"] {
+        for salt in [
+            None,
+            Some(Value::Null),
+            Some(json!(17)),
+            Some(json!(false)),
+            Some(json!([])),
+            Some(json!({})),
+        ] {
+            let temp = common::TempDirectory::new("malformed-vault-salt").expect("owned root");
+            let root = temp.path();
+            let mut profile = saved(root, "salt-refusal", 21, Some("original-secret"));
+            pool(root, None)
+                .add_many(vec![pool_entry("original-host", json!("original-secret"))])
+                .expect("initial pool");
+            let mut descriptor = json!({"verifier":verifier});
+            if let Some(value) = &salt {
+                descriptor["salt"] = value.clone();
+            }
+            write(root, "config.json", json!({"vault":descriptor}));
+            assert!(
+                !repo(root, Some(MASTER))
+                    .unlocked()
+                    .expect("malformed descriptor stays locked")
+            );
+            let before = snapshot(root);
+            let result = match writer {
+                "engine" => {
+                    profile
+                        .proxy
+                        .as_mut()
+                        .expect("proxy")
+                        .set_password(Some("replacement-secret".into()));
+                    repo(root, Some(MASTER)).save(profile, 1001.0).map(|_| ())
+                }
+                "dashboard" => {
+                    let mut record = raw_pair(root, &profile.id).1;
+                    record["proxy"]["pass"] = "replacement-secret".into();
+                    dash(root, Some(MASTER))
+                        .save(record, Default::default(), None, Some("replace"), 1001.0)
+                        .map(|_| ())
+                }
+                "pool" => pool(root, Some(MASTER))
+                    .add_many(vec![pool_entry("new-host", json!("replacement-secret"))])
+                    .map(|_| ()),
+                _ => unreachable!("fixed writer inventory"),
+            };
+            match result {
+                Ok(()) => accepted.push(format!("{writer}: salt={salt:?}")),
+                Err(error) => {
+                    assert!(
+                        matches!(error, numera_core::storage::repo::RepoError::VaultLocked(_)),
+                        "Unexpected refusal: {error}"
+                    );
+                    assert_eq!(snapshot(root), before, "Refusal changed {writer} bytes");
+                    assert!(!root.join("vault-migration.json").exists());
+                }
+            }
+        }
+    }
+    assert!(
+        accepted.is_empty(),
+        "Malformed descriptors unlocked actual secret writers: {accepted:?}"
+    );
+}
 source_test!(
     non_secret_profiles_save_fine_while_locked,
     "tests/test_vault.py::test_non_secret_profiles_save_fine_while_locked",

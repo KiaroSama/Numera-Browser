@@ -694,7 +694,14 @@ impl Scanner<'_> {
         {
             return fail("Test module leaves the repository");
         }
-        let parsed = Rc::new(syn::parse_file(&fs::read_to_string(path)?)?);
+        let parsed = Rc::new(
+            syn::parse_file(&fs::read_to_string(path)?).map_err(|error| {
+                std::io::Error::other(format!(
+                    "Native test source {}: {error}",
+                    path.strip_prefix(self.root).unwrap_or(path).display()
+                ))
+            })?,
+        );
         self.files.insert(path.into(), parsed.clone());
         Ok(parsed)
     }
@@ -770,11 +777,17 @@ impl Scanner<'_> {
                         || item.mac.path.is_ident("source_cases") =>
                 {
                     let (mask, ignored) = masks(&item.attrs)?;
-                    let rows = if item.mac.path.is_ident("source_cases") {
-                        syn::parse2::<Matrix>(item.mac.tokens.clone())?.rows
+                    let parsed = if item.mac.path.is_ident("source_cases") {
+                        syn::parse2::<Matrix>(item.mac.tokens.clone()).map(|matrix| matrix.rows)
                     } else {
-                        vec![syn::parse2::<Single>(item.mac.tokens.clone())?]
+                        syn::parse2::<Single>(item.mac.tokens.clone()).map(|row| vec![row])
                     };
+                    let rows = parsed.map_err(|error| {
+                        std::io::Error::other(format!(
+                            "Native source-case declaration {}: {error}",
+                            path.strip_prefix(self.root).unwrap_or(path).display()
+                        ))
+                    })?;
                     for row in rows {
                         self.add(
                             location,

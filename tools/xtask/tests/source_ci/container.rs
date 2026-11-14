@@ -134,6 +134,29 @@ source_test!(
                 && !workflow.contains("--mount")
                 && !workflow.contains("--volume")
         );
+        let mut evidence = ci::container::PhaseEvidence::default();
+        assert!(
+            evidence
+                .observe(b"vendor password=synthetic-private\nNative image browser phase=Sta")
+                .is_empty()
+        );
+        assert_eq!(
+            evidence.observe(
+                b"rt status=started\nNative image browser phase=Launch status=completed\n"
+            ),
+            [
+                "Native image browser phase=Start status=started",
+                "Native image browser phase=Launch status=completed"
+            ]
+        );
+        assert!(evidence.observe(b"Native image browser phase=password=synthetic-private status=started\nNative image browser phase=Start status=started token=synthetic-private\n").is_empty());
+        let mut bounded = ci::container::PhaseEvidence::default();
+        assert!(bounded.observe(&vec![b'x'; 65536]).is_empty());
+        assert!(
+            bounded
+                .observe(b"\nNative image browser phase=Start status=started\n")
+                .is_empty()
+        );
         Ok(())
     }
 );

@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "review_date": "2026-11-14",
+  "source_run": 43536453687,
+  "source_checkout": "0f7dd89a6f6ecb0bee1f4969af799148e62e7fee",
+  "network": {
+    "macos_job": 132267500611,
+    "macos_result": "137 passed; 13 failed; 0 ignored; 150 total",
+    "windows_job": 132267500699,
+    "windows_result": "135 passed; 15 failed; 0 ignored; 150 total",
+    "common_symptoms": "SOCKS requests failed or timed out; CONNECT responses ended with UnexpectedEof at source_network/servers.rs:226.",
+    "cause": "The fixture accepts from a nonblocking listener, then uses blocking read_exact and duplex handlers without explicitly selecting blocking mode for accepted sockets. Socket-mode inheritance differs across operating systems. Forcing nonblocking accepted sockets on Linux reproduces both the hosted SOCKS request error and exact CONNECT UnexpectedEof.",
+    "changes": [
+      "Explicitly select blocking mode for every accepted fixture socket before protocol IO.",
+      "Recheck stop while holding the socket registry mutex, making late admission atomic with finish's shutdown sweep. The prior check outside the mutex allowed a late socket to miss shutdown while finish joined its handler.",
+      "The Windows extension flag case compares canonical filesystem path equality. Temporary paths contain mixed separator spellings; a raw substring comparison incorrectly rejected the same resolved directory."
+    ],
+    "paths": [
+      "engine-rust/tests/source_network/servers.rs",
+      "engine-rust/tests/source_network/extensions.rs"
+    ],
+    "red_cases": [
+      "proxy_check_socks::c000_a_socks_proxy_is_no_longer_reported_as_untestable",
+      "relay::c000_connect_tunnel_reaches_the_origin"
+    ],
+    "red_logs": [
+      "/workspace/work/network-cross-platform-red.log",
+      "/workspace/work/network-cross-platform-tunnel-red.log"
+    ],
+    "final_linux_result": "150 passed; 0 failed; 0 ignored; 0 filtered out; 6.98 seconds",
+    "final_linux_log": "/workspace/work/network-cross-platform-final.log",
+    "strict_clippy": "Actual core, source_network target and native browser worker passed in 1.43 seconds.",
+    "strict_clippy_log": "/workspace/work/network-cross-platform-clippy.log",
+    "limits": "Original case IDs, native TCP/protocol test types, assertions, two-worker execution and time limits remain. No backend or platform skips were added. Fresh macOS/Windows execution is still required."
+  },
+  "container": {
+    "job": 132267327022,
+    "step": "Require the real image browser without network or host cache",
+    "observed_failure": "Inner owned command exceeded idle deadline after 30011ms; idle30003ms; leader still running; stdout/stderr EOF false; both output byte counts zero.",
+    "cause_status": "Actual stalled phase remains unproved. Existing native phase logs were written only to a file inside the disposable container; the orchestrator also removed daemon state before propagating a capture failure.",
+    "diagnostic_changes": [
+      "The real native Driver::perform emits bounded static enum phase start/completed/failed messages, without vendor error text or arguments.",
+      "The orchestrator streams only exact allowlisted enum/status messages from each output stream, with a 64KiB input budget per stream. Fragmented lines are reconstructed; arbitrary text, invalid phases and secret-bearing suffixes are rejected.",
+      "After a capture error, a bounded docker logs --tail64 command runs before mandatory daemon-container removal and absence proof. Its wall10s/idle5s/64KiB bounds and exact same allowlist prevent raw vendor output from escaping."
+    ],
+    "paths": [
+      "engine-rust/src/browser/sdk/container_smoke.rs",
+      "tools/xtask/src/ci/container.rs",
+      "tools/xtask/tests/source_ci/container.rs"
+    ],
+    "unchanged_acceptance": "Inner wall60s/idle30s; outer wall120s/idle60s; real bundled Playwright1.65 Chromium; non-root user; network:none; no host mounts or caches; mandatory cleanup and unchanged existing source case counts.",
+    "local_checks": [
+      "An empty phase parser failed the existing container_ci_offline case; the implemented parser passed its fragmented-line, secret-suffix and byte-budget controls.",
+      "All 43 existing container_cases passed in 0.18 seconds; Tools all-targets strict Clippy passed in 9.96 seconds.",
+      "A host-only Rust diagnostic linked the actual native driver.rs and current generated Rust browser runtime, then completed the same nonpersistent launch/context/page/content/text/evaluate42/close/stop API sequence with Playwright1.65 and bundled Chromium. This does not establish container isolation or Docker acceptance.",
+      "The exact SHA-verified upstream Linux driver wheel has executable node/cli0755 and data0644 permissions, excluding an archive-permission hypothesis.",
+      "The local diagnostic Docker image build exhausted disk before execution because this daemon uses full-copy VFS layers. Its six exact owned cache records and diagnostic context were removed; Docker then reported zero images, containers, volumes and build-cache records. No local Docker smoke result is claimed."
+    ],
+    "logs": [
+      "/workspace/work/container-phase-evidence-red.log",
+      "/workspace/work/container-phase-evidence-green.log",
+      "/workspace/work/container-phase-tools-clippy.log",
+      "/workspace/work/container-smoke-diagnostic/host-api.log",
+      "/workspace/work/container-smoke-diagnostic/wheel-permissions.log",
+      "/workspace/work/container-smoke-diagnostic/image-build.log"
+    ],
+    "remaining": "Read the controlled phase evidence from the next real hosted image smoke, diagnose its actual blocked operation and retain every acceptance condition."
+  }
+}

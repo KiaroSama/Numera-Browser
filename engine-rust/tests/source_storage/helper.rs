@@ -8,6 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 fn adapter(root: &Path) -> Result<i32, Box<dyn std::error::Error>> {
+    fs::write(root.join("adapter-pid"), std::process::id().to_string())?;
     let mode = fs::read_to_string(root.join("adapter-mode")).unwrap_or_else(|_| "normal".into());
     if mode.trim() == "exit-immediate" {
         std::process::exit(1);
@@ -16,6 +17,8 @@ fn adapter(root: &Path) -> Result<i32, Box<dyn std::error::Error>> {
     std::thread::spawn(move || {
         loop {
             if let Ok(code) = fs::read_to_string(watched.join("adapter-exit")) {
+                fs::write(watched.join("adapter-exiting"), b"exit requested")
+                    .expect("owned exit rendezvous");
                 std::process::exit(code.trim().parse().unwrap_or(3));
             }
             std::thread::sleep(Duration::from_millis(10));

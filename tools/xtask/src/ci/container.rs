@@ -6,6 +6,49 @@ use std::{
     process::Command,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
+/// Bounded, allowlisted progress from the explicitly invoked native smoke.
+#[derive(Default)]
+pub struct PhaseEvidence {
+    bytes_seen: usize,
+    pending: Vec<u8>,
+}
+impl PhaseEvidence {
+    pub fn observe(&mut self, bytes: &[u8]) -> Vec<String> {
+        let count = bytes.len().min(65536usize.saturating_sub(self.bytes_seen));
+        self.bytes_seen += count;
+        self.pending.extend_from_slice(&bytes[..count]);
+        let mut lines = Vec::new();
+        while let Some(end) = self.pending.iter().position(|byte| *byte == b'\n') {
+            if let Ok(line) = std::str::from_utf8(&self.pending[..end]) {
+                let line = line.strip_suffix('\r').unwrap_or(line);
+                if let Some((phase, status)) = line
+                    .strip_prefix("Native image browser phase=")
+                    .and_then(|line| line.split_once(" status="))
+                    && matches!(
+                        phase,
+                        "Start"
+                            | "Launch"
+                            | "Context"
+                            | "Page"
+                            | "Content"
+                            | "Text"
+                            | "Evaluate"
+                            | "ClosePage"
+                            | "CloseContext"
+                            | "CloseBrowser"
+                            | "ConnectionCheck"
+                            | "Stop"
+                    )
+                    && matches!(status, "started" | "completed" | "failed")
+                {
+                    lines.push(line.to_owned());
+                }
+            }
+            self.pending.drain(..=end);
+        }
+        lines
+    }
+}
 pub fn smoke(root: &Path, image: &str, version: &str) -> Result<()> {
     if !numera_core::browser::container_smoke::exact_version(version) {
         return fail("Image must declare an exact Playwright release");
@@ -20,7 +63,8 @@ pub fn smoke(root: &Path, image: &str, version: &str) -> Result<()> {
     let nonce = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
     let name = format!("numera-browser-smoke-{}-{nonce}", std::process::id());
     let mut command = smoke_command(image, version, &name);
-    let result = owned::run(
+    let mut live = [PhaseEvidence::default(), PhaseEvidence::default()];
+    let result = owned::run_streamed(
         root,
         &mut command,
         owned::limits(
@@ -28,7 +72,30 @@ pub fn smoke(root: &Path, image: &str, version: &str) -> Result<()> {
             Duration::from_secs(30),
             1024 * 1024,
         ),
+        |stream, bytes| {
+            if let Some(evidence) = live.get_mut(stream) {
+                for line in evidence.observe(bytes) {
+                    eprintln!("{line}");
+                }
+            }
+        },
     );
+    // A timed-out Docker CLI may leave its daemon-owned container alive. Read
+    // bounded phase evidence before removal; vendor output is never forwarded.
+    if result.is_err()
+        && let Ok(output) = capture(
+            Command::new("docker").args(["logs", "--tail", "64", &name]),
+            Duration::from_secs(10),
+            Duration::from_secs(5),
+            65536,
+        )
+    {
+        for bytes in [&output.stdout, &output.stderr] {
+            for line in PhaseEvidence::default().observe(bytes) {
+                eprintln!("{line}");
+            }
+        }
+    }
     settle(&name)?;
     let output = result?.command;
     if output.exit != 0 {

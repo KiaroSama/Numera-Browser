@@ -8,10 +8,7 @@ use crate::{
     conversion::to_dashboard,
     models::Profile,
     validation,
-    vault::{
-        self,
-        policy::{VaultState, write_secret},
-    },
+    vault::policy::{SecretWriter, VaultState, write_secret},
 };
 use serde_json::Value;
 use std::{collections::HashMap, fs};
@@ -232,22 +229,9 @@ impl ProfileRepo {
         } else {
             Value::Null
         };
-        let salt = descriptor["salt"].as_str().unwrap_or("");
-        let password = self.password.as_deref().unwrap_or("");
-        let state = if descriptor.is_null() {
-            VaultState::Disabled
-        } else if !password.is_empty()
-            && vault::check_password(
-                password,
-                salt,
-                descriptor["verifier"].as_str().unwrap_or(""),
-            )
-        {
-            VaultState::Unlocked
-        } else {
-            VaultState::Locked
-        };
-        let seal = |value: &str| vault::encrypt(password, salt, value);
+        let writer = SecretWriter::new(self.password.as_deref(), &descriptor);
+        let state = writer.state();
+        let seal = |value: &str| writer.seal(value);
         let (left, right) = if let Some(proxy) = &profile.proxy {
             if proxy.password_intent() == "preserve" {
                 self.refuse_unresolved_secret(&profile.id, old, twin)?;

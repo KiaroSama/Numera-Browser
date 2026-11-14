@@ -32,6 +32,25 @@ pub fn child() -> ci::Result<bool> {
             }
         }
         "silent" => std::thread::sleep(Duration::from_secs(5)),
+        "vendor-silent" => std::thread::sleep(Duration::from_secs(45)),
+        "vendor-buffered" | "vendor-buffered-silent" => {
+            let mut command = command(
+                &name,
+                if mode == "vendor-buffered" {
+                    "writer"
+                } else {
+                    "vendor-silent"
+                },
+            )?;
+            let output = numera_xtask::provision::execute(&mut command, 50)?;
+            assert_eq!(output.exit, 0);
+            if mode == "vendor-buffered" {
+                assert!(
+                    String::from_utf8_lossy(&output.stdout)
+                        .contains("private retained child payload")
+                );
+            }
+        }
         "buffered" | "buffered-silent" => {
             let mut command = command(
                 &name,
@@ -85,6 +104,30 @@ pub fn controls() -> TestResult {
     assert!(result.is_err(), "Silent work manufactured activity");
     assert!(start.elapsed() < Duration::from_secs(9));
     assert!(!String::from_utf8_lossy(&observed).contains("Native build activity"));
+    let output = ci::owned::run(&root.0, &mut command(&name, "vendor-buffered")?, bounds())?;
+    assert_eq!(output.command.exit, 0);
+    assert!(String::from_utf8_lossy(&output.command.stderr).contains("operation=vendor-stdout"));
+    assert!(
+        !String::from_utf8_lossy(&output.command.stdout).contains("private retained child payload")
+    );
+    // Exceed the old 30-second timer. A timer-only heartbeat would retain the
+    // silent vendor command until the outer wall bound instead of idle refusal.
+    let started = Instant::now();
+    let mut observed = Vec::new();
+    let refused = ci::owned::run_streamed(
+        &root.0,
+        &mut command(&name, "vendor-buffered-silent")?,
+        ci::owned::limits(Duration::from_secs(40), Duration::from_secs(31), 65536),
+        |_, bytes| observed.extend_from_slice(bytes),
+    );
+    assert!(refused.is_err());
+    assert!(
+        started.elapsed() < Duration::from_secs(38),
+        "Silent vendor command escaped the original idle bound"
+    );
+    let observed = String::from_utf8_lossy(&observed);
+    assert!(!observed.contains("Vendor provisioning is still active"));
+    assert!(!observed.contains("Native build activity"));
 
     // The shipped copier must retain complete bytes, retry interrupted reads,
     // and expose write failure instead of counting an unaccepted write.

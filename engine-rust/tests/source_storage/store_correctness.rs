@@ -43,7 +43,7 @@ source_test!(
             "/api/profiles",
             json!({"name":"a","seed":4242}),
         );
-        assert_eq!(status, 200, "{made}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_eq!(made["seed"], 4242);
     }
 );
@@ -59,7 +59,7 @@ source_test!(
             "/api/profiles",
             json!({"name":"a","_new":true}),
         );
-        assert_eq!(status, 200, "{made}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert!(made.get("_new").is_none());
         assert!(
             raw(
@@ -83,8 +83,8 @@ source_test!(
         let mut patch = a.clone();
         patch["_new"] = true.into();
         patch["notes"] = "x".into();
-        let (status, body) = http(root, "PUT", &uri, patch);
-        assert_eq!(status, 200, "{body}");
+        let (status, _body) = http(root, "PUT", &uri, patch);
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let disk = raw(root, &format!("dashboard/{id}.json"));
         assert_eq!(disk["notes"], "x");
         assert!(disk.get("_new").is_none());
@@ -100,7 +100,7 @@ source_test!(
         let id = a["id"].as_str().expect("id");
         let uri = format!("/api/profiles/{id}");
         let (status, changed) = http(root, "PUT", &uri, json!({"name":"renamed"}));
-        assert_eq!(status, 200, "{changed}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_eq!(changed["id"], id);
         let listed = http(root, "GET", "/api/profiles", Value::Null).1;
         assert_eq!(listed.as_array().expect("rows").len(), 1);
@@ -119,8 +119,8 @@ source_test!(
         let id = a["id"].as_str().expect("id");
         let uri = format!("/api/profiles/{id}");
         for i in 0..5 {
-            let (status, body) = http(root, "PUT", &uri, json!({"name":format!("n{i}")}));
-            assert_eq!(status, 200, "{body}");
+            let (status, _body) = http(root, "PUT", &uri, json!({"name":format!("n{i}")}));
+            assert_eq!(status, 200, "HTTP response status mismatch");
         }
         assert_eq!(
             http(root, "GET", "/api/profiles", Value::Null)
@@ -146,8 +146,8 @@ source_test!(
         let mut patch = a.clone();
         assert!(a.get("status").is_some() && a.get("lastActive").is_some());
         patch["name"] = "inline".into();
-        let (status, body) = http(root, "PUT", &uri, patch);
-        assert_eq!(status, 200, "{body}");
+        let (status, _body) = http(root, "PUT", &uri, patch);
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let disk = raw(root, &format!("dashboard/{id}.json"));
         assert_eq!(disk["name"], "inline");
     }
@@ -163,7 +163,7 @@ source_test!(
         let uri = format!("/api/profiles/{id}");
         let b = create(root, "b");
         let (status, body) = http(root, "PUT", &uri, json!({"name":"moved","id":b["id"]}));
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_eq!(body["id"], id);
         assert_eq!(raw(root, &format!("dashboard/{id}.json"))["name"], "moved");
         assert_eq!(
@@ -207,7 +207,7 @@ source_test!(
             "/api/profiles",
             json!({"name":"a","nmae":"typo"}),
         );
-        assert_eq!(status, 422, "{body}");
+        assert_eq!(status, 422, "HTTP response status mismatch");
         assert!(body["detail"].as_str().expect("detail").contains("nmae"));
         assert!(
             http(root, "GET", "/api/profiles", Value::Null)
@@ -227,8 +227,8 @@ source_test!(
         let a = create(root, "a");
         let id = a["id"].as_str().expect("id");
         let uri = format!("/api/profiles/{id}");
-        let (status, body) = http(root, "PUT", &uri, json!({"name":"b","notez":"typo"}));
-        assert_eq!(status, 422, "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"name":"b","notez":"typo"}));
+        assert_eq!(status, 422, "HTTP response status mismatch");
         assert_eq!(raw(root, &format!("dashboard/{id}.json"))["name"], "a");
     }
 );
@@ -246,7 +246,10 @@ source_test!(
             "/api/profiles/bulk",
             json!({"ids":[id],"patch":{"folderr":"x"}}),
         );
-        assert!([400, 422].contains(&status), "{body}");
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
         assert!(body["detail"].as_str().expect("detail").contains("folderr"));
     }
 );
@@ -256,13 +259,16 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/batch",
             json!({"profiles":[{"name":"ok"},{"name":"bad","tagz":[]}]}),
         );
-        assert!([400, 422].contains(&status), "{body}");
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
         assert!(
             http(root, "GET", "/api/profiles", Value::Null)
                 .1
@@ -287,8 +293,8 @@ source_test!(
         .expect("strip server fields");
         shape["name"] = "full".into();
         assert!(!shape.as_object().expect("shape").is_empty());
-        let (status, body) = http(root, "POST", "/api/profiles", shape);
-        assert_eq!(status, 200, "{body}");
+        let (status, _body) = http(root, "POST", "/api/profiles", shape);
+        assert_eq!(status, 200, "HTTP response status mismatch");
     }
 );
 source_test!(
@@ -303,15 +309,15 @@ source_test!(
             "/api/profiles",
             json!({"name":"a","tags":["keep"]}),
         );
-        assert_eq!(status, 200, "{a}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let id = a["id"].as_str().expect("id");
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/bulk",
             json!({"ids":[id],"patch":{"addTags":["new"]}}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_eq!(
             raw(root, &format!("dashboard/{id}.json"))["tags"]
                 .as_array()
@@ -335,7 +341,7 @@ source_test!(
             "/api/profiles/import",
             json!({"text":serde_json::to_string(&json!([vendor_export()])).expect("export")}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_eq!(body["imported"], 1);
         let rows = http(root, "GET", "/api/profiles", Value::Null).1;
         let rows = rows.as_array().expect("profiles");
@@ -378,13 +384,13 @@ source_test!(
             .0,
             200
         );
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/import",
             json!({"text":serde_json::to_string(&json!([vendor_export()])).expect("export")}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_eq!(
             http(root, "GET", "/api/config", Value::Null).1["default_engine"],
             "camoufox"
@@ -425,7 +431,10 @@ source_test!(
         if status == 200 {
             assert_ne!(body["id"], "../../escaped");
         } else {
-            assert!([400, 422].contains(&status), "{body}");
+            assert!(
+                [400, 422].contains(&status),
+                "HTTP response status mismatch"
+            );
         }
         assert_eq!(json_files(root.parent().expect("parent"), ""), before);
     }
@@ -446,7 +455,10 @@ source_test!(
         if status == 200 {
             assert_ne!(body["id"], "..");
         } else {
-            assert!([400, 422].contains(&status), "{body}");
+            assert!(
+                [400, 422].contains(&status),
+                "HTTP response status mismatch"
+            );
         }
         assert_eq!(json_files(root.parent().expect("parent"), ""), before);
     }
@@ -467,7 +479,10 @@ source_test!(
         if status == 200 {
             assert_ne!(body["id"], "a/b");
         } else {
-            assert!([400, 422].contains(&status), "{body}");
+            assert!(
+                [400, 422].contains(&status),
+                "HTTP response status mismatch"
+            );
         }
         assert_eq!(json_files(root.parent().expect("parent"), ""), before);
     }
@@ -488,7 +503,10 @@ source_test!(
         if status == 200 {
             assert_ne!(body["id"], "C:/x");
         } else {
-            assert!([400, 422].contains(&status), "{body}");
+            assert!(
+                [400, 422].contains(&status),
+                "HTTP response status mismatch"
+            );
         }
         assert_eq!(json_files(root.parent().expect("parent"), ""), before);
     }
@@ -509,7 +527,10 @@ source_test!(
         if status == 200 {
             assert_ne!(body["id"], "");
         } else {
-            assert!([400, 422].contains(&status), "{body}");
+            assert!(
+                [400, 422].contains(&status),
+                "HTTP response status mismatch"
+            );
         }
         assert_eq!(json_files(root.parent().expect("parent"), ""), before);
     }
@@ -533,7 +554,10 @@ source_test!(
                 "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
             );
         } else {
-            assert!([400, 422].contains(&status), "{body}");
+            assert!(
+                [400, 422].contains(&status),
+                "HTTP response status mismatch"
+            );
         }
         assert_eq!(json_files(root.parent().expect("parent"), ""), before);
     }
@@ -559,13 +583,13 @@ source_test!(
         let root = temp.path();
         let a = create(root, "a");
         let id = a["id"].as_str().expect("id");
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/bulk",
             json!({"ids":[id],"patch":{"_trust":{"grade":"A"},"notes":"kept"}}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let disk = raw(root, &format!("dashboard/{id}.json"));
         assert_ne!(disk["_trust"], json!({"grade":"A"}));
         assert_eq!(disk["notes"], "kept");
@@ -577,13 +601,16 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/bulk",
             json!({"ids": "not-a-list", "patch": {}}),
         );
-        assert!([400, 422].contains(&status), "{body}");
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
     }
 );
 source_test!(
@@ -592,13 +619,16 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/bulk",
             json!({"ids": [1, 2], "patch": {}}),
         );
-        assert!([400, 422].contains(&status), "{body}");
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
     }
 );
 source_test!(
@@ -607,13 +637,16 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/bulk",
             json!({"ids": [], "patch": "not-an-object"}),
         );
-        assert!([400, 422].contains(&status), "{body}");
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
     }
 );
 source_test!(
@@ -622,13 +655,16 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/bulk",
             json!({"ids": [], "patch": 5}),
         );
-        assert!([400, 422].contains(&status), "{body}");
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
     }
 );
 source_test!(
@@ -637,13 +673,16 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/batch",
             json!({"profiles": "not-a-list"}),
         );
-        assert!([400, 422].contains(&status), "{body}");
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
     }
 );
 source_test!(
@@ -652,13 +691,16 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/batch",
             json!({"profiles": [1, 2]}),
         );
-        assert!([400, 422].contains(&status), "{body}");
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
     }
 );
 source_test!(
@@ -667,13 +709,16 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/batch",
             json!({"profiles": [{"name": "ok"}, "not-an-object"]}),
         );
-        assert!([400, 422].contains(&status), "{body}");
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
     }
 );
 source_test!(
@@ -692,13 +737,13 @@ source_test!(
             .0,
             200
         );
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles",
             json!({"name":"no engine named"}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_eq!(
             http(root, "GET", "/api/config", Value::Null).1["default_engine"],
             "camoufox"
@@ -721,13 +766,13 @@ source_test!(
             .0,
             200
         );
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles",
             json!({"name":"a","engine":"playwright"}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_eq!(
             http(root, "GET", "/api/config", Value::Null).1["default_engine"],
             "playwright"
@@ -742,13 +787,13 @@ source_test!(
         let root = temp.path();
         let a = create(root, "a");
         let id = a["id"].as_str().expect("id");
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/bulk",
             json!({"ids":[id],"patch":{"id":"hijacked"}}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert!(root.join(format!("dashboard/{id}.json")).is_file());
         assert!(!root.join("dashboard/hijacked.json").exists());
         assert_eq!(raw(root, &format!("dashboard/{id}.json"))["id"], id);
@@ -762,13 +807,16 @@ source_test!(
         let root = temp.path();
         let a = create(root, "a");
         let id = a["id"].as_str().expect("id");
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/bulk",
             json!({"ids":[id],"patch":{"tags":"not-a-list"}}),
         );
-        assert!([400, 422].contains(&status), "{body}");
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
         assert!(raw(root, &format!("dashboard/{id}.json"))["tags"].is_array());
     }
 );
@@ -779,13 +827,16 @@ source_test!(
         let temp = temp();
         let root = temp.path();
         let before = http(root, "GET", "/api/profiles", Value::Null).1;
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/batch",
             json!({"profiles":[{"name":"fine"},{"name":12345}]}),
         );
-        assert!([400, 422].contains(&status), "{body}");
+        assert!(
+            [400, 422].contains(&status),
+            "HTTP response status mismatch"
+        );
         assert_eq!(http(root, "GET", "/api/profiles", Value::Null).1, before);
     }
 );
@@ -795,14 +846,14 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/batch",
             json!({"profiles":[{"name":"a","id":"chosen-by-client"}]}),
         );
         if status < 400 {
-            assert_eq!(status, 200, "{body}");
+            assert_eq!(status, 200, "HTTP response status mismatch");
             assert!(
                 http(root, "GET", "/api/profiles", Value::Null)
                     .1
@@ -812,7 +863,10 @@ source_test!(
                     .all(|p| p["id"] != "chosen-by-client")
             );
         } else {
-            assert!([400, 422].contains(&status), "{body}");
+            assert!(
+                [400, 422].contains(&status),
+                "HTTP response status mismatch"
+            );
         }
     }
 );
@@ -822,13 +876,13 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/batch",
             json!({"profiles":[{"name":"one"},{"name":"two"}]}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let rows = http(root, "GET", "/api/profiles", Value::Null).1;
         let names = rows
             .as_array()

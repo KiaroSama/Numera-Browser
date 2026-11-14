@@ -682,6 +682,54 @@ fn native_transport_refuses_wrong_envelope_partial_frame_and_unresponsive_writer
         ));
         temporary.cleanup()?;
     }
+    for (mode, has_reply) in [
+        ("leader-exit-held-pipe", false),
+        ("final-reply-held-pipe", true),
+    ] {
+        let temporary = common::TempDirectory::new("browser-adapter-leader-exit")?;
+        let root = temporary.path();
+        let mut command = fixture::command(root, mode, json!({"root":root}))?;
+        let mut adapter = Adapter::spawn(
+            root,
+            "a",
+            "fixture-host",
+            &mut command,
+            Duration::from_secs(3),
+        )?;
+        let record = match claims::read(root, "a") {
+            claims::Claim::Record(record) => record,
+            _ => return Err("Admitted adapter claim absent".into()),
+        };
+        let started = Instant::now();
+        let response = adapter.call("navigate", Map::new(), Duration::from_secs(3));
+        let elapsed = started.elapsed();
+        if has_reply {
+            assert_eq!(response?["navigated"], true);
+        } else {
+            assert_eq!(
+                response
+                    .expect_err("An exited producer supplied a reply")
+                    .kind(),
+                std::io::ErrorKind::UnexpectedEof
+            );
+        }
+        let leaf: u32 = std::fs::read_to_string(root.join("held-pipe-child"))?.parse()?;
+        assert!(core::ownership::identity::started_at(leaf)?.is_some());
+        assert!(!core::ownership::tree::record_empty(&record)?);
+        assert_eq!(
+            claims::state(&claims::read(root, "a"), "fixture-host"),
+            claims::State::Busy
+        );
+        adapter.finish(Duration::from_secs(3))?;
+        assert!(core::ownership::tree::record_empty(&record)?);
+        assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
+        drop(adapter);
+        temporary.cleanup()?;
+        assert!(
+            elapsed < Duration::from_secs(1),
+            "A dead producer or accepted final reply was hidden until the RPC deadline"
+        );
+    }
     Ok(())
 }
 

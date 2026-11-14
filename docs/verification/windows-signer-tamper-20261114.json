@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "review_date": "2026-11-14",
+  "status": "Checked executable-section digest control implemented; fresh native Windows execution remains required.",
+  "observed_failure": {
+    "run": 43536453687,
+    "job": 132266996968,
+    "run_url": "https://github.com/KiaroSama/Numera-Browser/actions/runs/43536453687/job/132266996968",
+    "artifact_id": 14090846276,
+    "artifact_name": "windows-native-signing-0f7dd89a6f6ecb0bee1f4969af799148e62e7fee",
+    "test": "release_identity::c000_both_freezers_embed_identity_and_windows_uses_approved_icon",
+    "reported_tests": 1,
+    "failed_tests": 1,
+    "ignored_tests": 0,
+    "control_index": 0,
+    "mutated_byte": 64,
+    "pe_header_offset": 256,
+    "required_hresult": "0x80096010 (TRUST_E_BAD_DIGEST)",
+    "actual_hresult": "0x800b0100 (TRUST_E_NOSIGNATURE)",
+    "interpretation": "Windows rejected the altered DOS-stub image. The test incorrectly required this structural mutation to reach the image-digest comparison. This observation is not evidence that a changed signed image was accepted.",
+    "earlier_checks": "Signing, verification of the original file against the pinned certificate, and rejection of the wrong certificate pin completed before this control. The failure stopped the remaining file loop."
+  },
+  "change": {
+    "production_paths": [
+      "engine-rust/src/native_windows_sign.rs",
+      "engine-rust/src/native_windows_sign/platform.rs",
+      "engine-rust/src/native_windows_sign/pe.rs"
+    ],
+    "test_paths": [
+      "tools/xtask/tests/source_ci/build_identity.rs",
+      "tools/xtask/tests/source_ci/release_support.rs"
+    ],
+    "legacy_control": "The byte-64 mutation remains a separate categorical rejection check. It contributes no BAD_DIGEST evidence.",
+    "digest_control": "A read-only PE32/PE32+ selector validates DOS/PE/COFF headers, bounded optional header and data directories, complete section table, SizeOfHeaders, aligned bounded certificate table, and nonoverlapping bounded raw section ranges. It selects a byte inside a nonempty raw section having both code and executable characteristics, outside all headers and before the certificate table. The original and modified certificate blobs must remain identical.",
+    "strict_policy": "The selected executable-byte mutation must produce exactly TRUST_E_BAD_DIGEST. TRUST_E_NOSIGNATURE, another error, or successful verification still fails. Original-file verification, exact certificate pinning and wrong-pin rejection remain in the same signing loop. No trust-store or verification-policy bypass was added.",
+    "test_inventory": "No test names or counts were added. Portable parser controls are folded into the existing ReleaseIdentity case; its Windows branch still signs and verifies the real compiled executables."
+  },
+  "local_evidence": [
+    {
+      "check": "PE selector red control",
+      "result": "The existing literal offset assertion rejected a temporary selector returning byte 64.",
+      "log": "/tmp/numera-pe-control-red/output.log"
+    },
+    {
+      "check": "Actual selector and exact portable test helper on Linux",
+      "result": "PE32 and PE32+ selected literal raw executable offset 0x600; 50 malformed layouts were rejected; all input files remained unchanged.",
+      "log": "/tmp/numera-pe-control-red/green.log",
+      "limitation": "This proves parsing and file boundaries only, not Authenticode execution."
+    },
+    {
+      "check": "MSVC target strict Clippy over actual platform.rs and pe.rs in an isolated dependency harness",
+      "result": "Passed in 6.80 seconds including build-directory lock wait.",
+      "log": "/tmp/numera-signer-section-typecheck.log",
+      "limitation": "The Linux host typechecked the actual Windows FFI implementation without executing Windows APIs."
+    },
+    {
+      "check": "Existing maintained ReleaseIdentity case on Linux",
+      "result": "Passed: 1 test, 0 failed, 0 ignored, 642 filtered out. Tools all-targets strict Clippy also passed in 9.96 seconds.",
+      "log": "/workspace/work/windows-signer-portable-release-identity.log",
+      "limitation": "The Linux case executes the actual portable PE parser controls. Real signing remains mandatory only in its Windows branch and is not established by this run."
+    }
+  ],
+  "pending_evidence": "The fresh Windows product lane must execute the unchanged single ReleaseIdentity case, sign all real staged PEs, reject the wrong pin and byte-64 mutation, and obtain exact BAD_DIGEST for every selected executable-byte mutation."
+}

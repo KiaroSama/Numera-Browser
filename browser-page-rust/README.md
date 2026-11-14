@@ -21,6 +21,12 @@ Generated output is not an alternative authored implementation. The controller
 keeps its existing 1 MiB serialized SDK request limit for initialization and
 probe requests.
 
+The compiler remaps each locked dependency's actual source directory to its
+crate name and version. Registry cache hashes and mirror directory names must
+not enter the shipped program through panic locations. Verification compares
+the full artifact and receipt bytes; CI preserves compiler intermediates and
+their hashes when that comparison fails.
+
 Development parity compares the Rust exports with the original probes in a real
 browser. It does not add source test identities or substitute static expected
 objects for browser observations.

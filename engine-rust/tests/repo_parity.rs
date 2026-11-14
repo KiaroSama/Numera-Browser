@@ -202,6 +202,99 @@ fn public_divergence_reports_all_ordered_fields_without_mutation()
             }
         }
     }
+    // Full original public helpers were observed with independent JSON file
+    // reads. CPython's decoder shares its NaN constant: scalar NaN is unequal,
+    // while arrays/objects containing that same decoded object compare equal.
+    let numeric: Value =
+        serde_json::from_str(include_str!("fixtures/reconciliation-numeric.json"))?;
+    let numeric_cases = numeric["cases"]
+        .as_array()
+        .ok_or("Numeric observations missing")?;
+    assert_eq!(numeric_cases.len(), 19);
+    let healthy = cases
+        .iter()
+        .find(|case| case["label"] == "healthy")
+        .ok_or("Healthy source input missing")?;
+    let inputs = healthy["files"]
+        .as_object()
+        .ok_or("Healthy files missing")?;
+    let original_engine: Value = serde_json::from_slice(
+        &STANDARD.decode(
+            inputs["profiles/fixture00001.json"]
+                .as_str()
+                .ok_or("Engine input missing")?,
+        )?,
+    )?;
+    let original_dashboard: Value = serde_json::from_slice(
+        &STANDARD.decode(
+            inputs["dashboard/fixture00001.json"]
+                .as_str()
+                .ok_or("Dashboard input missing")?,
+        )?,
+    )?;
+    for (index, observation) in numeric_cases.iter().enumerate() {
+        let root = temporary.path().join(format!("numeric-{index}"));
+        fs::create_dir_all(root.join("profiles"))?;
+        fs::create_dir_all(root.join("dashboard"))?;
+        let left = numera_core::http::json_extended::parse(
+            observation["left"].as_str().ok_or("Numeric left missing")?,
+        )?;
+        let right = numera_core::http::json_extended::parse(
+            observation["right"]
+                .as_str()
+                .ok_or("Numeric right missing")?,
+        )?;
+        let mut engine = original_engine.clone();
+        let mut dashboard = original_dashboard.clone();
+        engine["name"] = left.clone();
+        dashboard["name"] = right.clone();
+        let engine_path = root.join("profiles/fixture00001.json");
+        let dashboard_path = root.join("dashboard/fixture00001.json");
+        let engine_bytes = serde_json::to_vec(&engine)?;
+        let dashboard_bytes = serde_json::to_vec(&dashboard)?;
+        fs::write(&engine_path, &engine_bytes)?;
+        fs::write(&dashboard_path, &dashboard_bytes)?;
+        let repo = ProfileRepo::new(root, None);
+        let actual = serde_json::to_value(repo.divergence("fixture00001", 1700000000.0)?)?;
+        assert!(
+            fs::read(&engine_path)? == engine_bytes,
+            "Numeric divergence changed engine bytes: case={index}"
+        );
+        assert!(
+            fs::read(&dashboard_path)? == dashboard_bytes,
+            "Numeric divergence changed dashboard bytes: case={index}"
+        );
+
+        engine = original_engine.clone();
+        dashboard = original_dashboard.clone();
+        engine["proxy"]["password"] = left;
+        dashboard["proxy"]["pass"] = right;
+        let engine_bytes = serde_json::to_vec(&engine)?;
+        let dashboard_bytes = serde_json::to_vec(&dashboard)?;
+        fs::write(&engine_path, &engine_bytes)?;
+        fs::write(&dashboard_path, &dashboard_bytes)?;
+        let allowed = match repo.refuse_conflicting_write("fixture00001", "preserve") {
+            Ok(()) => true,
+            Err(RepoError::Diverged(_)) => false,
+            Err(_) => return Err("Numeric secret guard returned an unrelated error".into()),
+        };
+        assert!(
+            Some(allowed) == observation["secret_write_allowed"].as_bool(),
+            "Numeric secret guard decision differs: case={index}"
+        );
+        assert!(
+            actual == observation["divergence"],
+            "Numeric divergence decision differs: case={index}"
+        );
+        assert!(
+            fs::read(&engine_path)? == engine_bytes,
+            "Numeric guard changed engine bytes: case={index}"
+        );
+        assert!(
+            fs::read(&dashboard_path)? == dashboard_bytes,
+            "Numeric guard changed dashboard bytes: case={index}"
+        );
+    }
     temporary.cleanup()?;
     Ok(())
 }

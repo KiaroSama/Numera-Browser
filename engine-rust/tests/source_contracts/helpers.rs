@@ -222,6 +222,44 @@ pub(super) fn legacy(root: &Path) {
         .expect("legacy bytes");
     }
 }
+pub(super) fn assert_listing_preserves_original_files(
+    root: &Path,
+    before: &BTreeMap<PathBuf, Vec<u8>>,
+    reconciles: bool,
+) {
+    let mut after = snapshot(root);
+    // The source engine's union listing materializes dashboard-only rows.
+    // Read repair must preserve every existing byte; an allowed engine twin
+    // is a distinct source behavior, not a rewrite of the damaged evidence.
+    let mut twins = BTreeSet::new();
+    if reconciles {
+        for path in before
+            .keys()
+            .filter(|path| path.parent() == Some(Path::new("dashboard")))
+        {
+            let twin = Path::new("profiles").join(path.file_name().expect("dashboard filename"));
+            if !before.contains_key(&twin) {
+                twins.insert(twin);
+            }
+        }
+    }
+    for twin in twins {
+        let bytes = after
+            .remove(&twin)
+            .expect("source union listing created its engine twin");
+        let profile =
+            Profile::from_record(&serde_json::from_slice::<Value>(&bytes).expect("engine JSON"))
+                .expect("readable engine twin");
+        assert_eq!(
+            twin.file_stem().and_then(|name| name.to_str()),
+            Some(profile.id.as_str())
+        );
+    }
+    assert_eq!(
+        &after, before,
+        "listing changed preexisting bytes or created an unexpected file"
+    );
+}
 pub(super) fn legacy_view(route: &str) {
     let tmp = common::TempDirectory::new("contract-legacy").expect("root");
     legacy(tmp.path());
@@ -246,7 +284,7 @@ pub(super) fn legacy_view(route: &str) {
             }
         }
     }
-    assert_eq!(snapshot(tmp.path()), before, "read repaired disk bytes");
+    assert_listing_preserves_original_files(tmp.path(), &before, route == "/api/profiles");
 }
 pub(super) fn revision(stale: bool) {
     let tmp = common::TempDirectory::new("contract-revision").expect("root");
@@ -888,7 +926,7 @@ pub(super) fn damaged_view(route: &str) {
     } else {
         assert_eq!(v["total"], 6);
     }
-    assert_eq!(snapshot(tmp.path()), before);
+    assert_listing_preserves_original_files(tmp.path(), &before, route == "/api/profiles");
 }
 pub(super) fn revision_disk(mode: &str) {
     let tmp = common::TempDirectory::new("contract-revision-disk").expect("root");

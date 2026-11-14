@@ -18,7 +18,15 @@ source_test!(
         assert_eq!(flags.len(), 2);
         assert!(flags[0].starts_with("--disable-extensions-except="));
         assert!(flags[1].starts_with("--load-extension="));
-        assert!(flags[1].contains(ext.to_str().expect("path")));
+        let selected = flags[1]
+            .strip_prefix("--load-extension=")
+            .expect("extension flag");
+        assert_eq!(
+            Path::new(selected)
+                .canonicalize()
+                .expect("selected directory"),
+            ext.canonicalize().expect("extension directory")
+        );
     }
 );
 source_test!(

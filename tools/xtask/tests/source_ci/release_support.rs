@@ -181,6 +181,195 @@ pub(super) fn codeql_case(damage: &str) -> TestResult {
     } else {
         assert!(result.is_err());
     }
+    codeql_source_case(damage)?;
+    Ok(())
+}
+fn codeql_source_case(damage: &str) -> TestResult {
+    use std::time::{Duration, Instant};
+    // Real, distinct Git commit objects: the integration commit has both PR
+    // parents but exactly the head's source tree. API-shaped fixtures are read
+    // through the same production validator used after authenticated gh calls.
+    let temp = Temp::new("codeql-source-subject")?;
+    let git = |args: &[&str]| -> ci::Result<String> {
+        Ok(String::from_utf8(ci::git(&temp.0, args)?)?.trim().into())
+    };
+    git(&["init", "--quiet"])?;
+    temp.write("source.txt", b"base source fixture\n")?;
+    git(&["add", "source.txt"])?;
+    let base_tree = git(&["write-tree"])?;
+    let commit = |tree: &str, parents: &[&str], message: &str| -> ci::Result<String> {
+        let mut args = vec![
+            "-c",
+            "user.name=CodeQL fixture",
+            "-c",
+            "user.email=codeql-fixture@example.invalid",
+            "commit-tree",
+            tree,
+            "-m",
+            message,
+        ];
+        for parent in parents {
+            args.extend(["-p", parent]);
+        }
+        git(&args)
+    };
+    let base_sha = commit(&base_tree, &[], "base")?;
+    temp.write("source.txt", b"reviewed source fixture\n")?;
+    git(&["add", "source.txt"])?;
+    let head_tree = git(&["write-tree"])?;
+    let head_sha = commit(&head_tree, &[&base_sha], "head")?;
+    let build_sha = commit(&head_tree, &[&base_sha, &head_sha], "integration")?;
+    git(&["update-ref", "HEAD", &build_sha])?;
+    git(&["reset", "--hard", "--quiet", &build_sha])?;
+    let context = evidence::CodeqlPrContext {
+        repository: "KiaroSama/Numera-Browser".into(),
+        event: "pull_request".into(),
+        reference: "refs/pull/76/merge".into(),
+        number: 76,
+        event_head: head_sha.clone(),
+        event_base: base_sha.clone(),
+        build_sha: build_sha.clone(),
+    };
+    let local = ci::codeql_local_source(&temp.0, Instant::now() + Duration::from_secs(30))?;
+    let pull = json!({"number":76,"state":"open","merge_commit_sha":build_sha,
+        "base":{"sha":base_sha,"repo":{"full_name":context.repository}},
+        "head":{"sha":head_sha,"repo":{"full_name":context.repository}}});
+    let merge = json!({"sha":build_sha,"tree":{"sha":head_tree},
+        "parents":[{"sha":base_sha},{"sha":head_sha}]});
+    let head = json!({"sha":head_sha,"tree":{"sha":head_tree}});
+    let verified = evidence::codeql_pr_subject(&context, &pull, &merge, &head, &local)?;
+    assert_ne!(verified.build_commit, verified.analysis_commit);
+    assert_eq!(verified.build_commit, build_sha);
+    assert_eq!(verified.analysis_commit, head_sha);
+    assert_eq!(verified.identical_tree, head_tree);
+    assert_ne!(head_tree, base_tree);
+    let reject = |c: &evidence::CodeqlPrContext,
+                  p: &Value,
+                  m: &Value,
+                  h: &Value,
+                  l: &evidence::CodeqlLocalSource| {
+        assert!(evidence::codeql_pr_subject(c, p, m, h, l).is_err());
+    };
+    match damage {
+        "None" => {
+            let checks = json!([{"check_runs":[{"id":42,"name":"CodeQL",
+                "app":{"slug":"github-advanced-security"},"head_sha":head_sha,
+                "status":"completed","conclusion":"success"}]}]);
+            assert_eq!(evidence::codeql(&checks, &verified.analysis_commit)?, 42);
+            assert!(evidence::codeql(&checks, &verified.build_commit).is_err());
+        }
+        "scanner-only" => {
+            for field in ["repository", "event", "reference"] {
+                let mut c = context.clone();
+                match field {
+                    "repository" => c.repository = "other/Numera-Browser".into(),
+                    "event" => c.event = "workflow_dispatch".into(),
+                    _ => c.reference = "refs/heads/main".into(),
+                }
+                reject(&c, &pull, &merge, &head, &local);
+            }
+            for pointer in ["/base/repo/full_name", "/head/repo/full_name"] {
+                let mut p = pull.clone();
+                *p.pointer_mut(pointer).ok_or("repository fixture absent")? = "other/repo".into();
+                reject(&context, &p, &merge, &head, &local);
+            }
+        }
+        "wrong-sha" => {
+            // A genuine merge with an integration-only source difference must
+            // refuse, even though both ordered parents are the expected ones.
+            let different_sha = commit(&base_tree, &[&base_sha, &head_sha], "changed merge")?;
+            let mut c = context.clone();
+            c.build_sha = different_sha.clone();
+            let mut p = pull.clone();
+            p["merge_commit_sha"] = different_sha.clone().into();
+            let mut m = merge.clone();
+            m["sha"] = different_sha.clone().into();
+            m["tree"]["sha"] = base_tree.clone().into();
+            git(&["reset", "--hard", "--quiet", &different_sha])?;
+            let changed_local =
+                ci::codeql_local_source(&temp.0, Instant::now() + Duration::from_secs(30))?;
+            reject(&c, &p, &m, &head, &changed_local);
+            for field in ["commit", "tree"] {
+                let mut l = local.clone();
+                if field == "commit" {
+                    l.commit = head_sha.clone();
+                } else {
+                    l.tree = base_tree.clone();
+                }
+                reject(&context, &pull, &merge, &head, &l);
+            }
+            let mut c = context.clone();
+            c.event_head.replace_range(..1, "A");
+            reject(&c, &pull, &merge, &head, &local);
+            git(&["reset", "--hard", "--quiet", &build_sha])?;
+            git(&["replace", &build_sha, &different_sha])?;
+            let replaced = ci::capture(
+                std::process::Command::new("git")
+                    .env_remove("GIT_NO_REPLACE_OBJECTS")
+                    .arg("-C")
+                    .arg(&temp.0)
+                    .args(["rev-parse", "HEAD^{tree}"]),
+                Duration::from_secs(30),
+                Duration::from_secs(30),
+                4096,
+            )?;
+            assert_eq!(replaced.exit, 0);
+            assert_eq!(String::from_utf8(replaced.stdout)?.trim(), base_tree);
+            let actual =
+                ci::codeql_local_source(&temp.0, Instant::now() + Duration::from_secs(30))?;
+            assert_eq!(actual.tree, head_tree);
+            assert!(actual.clean);
+            evidence::codeql_pr_subject(&context, &pull, &merge, &head, &actual)?;
+        }
+        "failed" => {
+            for parents in [
+                json!([{"sha":head_sha},{"sha":base_sha}]),
+                json!([{"sha":base_sha}]),
+                json!([{"sha":base_sha},{"sha":head_sha},{"sha":base_sha}]),
+                json!([{"sha":head_sha},{"sha":head_sha}]),
+                json!([{"sha":base_sha},{"sha":base_sha}]),
+            ] {
+                let mut m = merge.clone();
+                m["parents"] = parents;
+                reject(&context, &pull, &m, &head, &local);
+            }
+            let mut m = merge.clone();
+            m.as_object_mut().ok_or("merge object")?.remove("parents");
+            reject(&context, &pull, &m, &head, &local);
+        }
+        "pending" => {
+            temp.write("source.txt", b"uncommitted source difference\n")?;
+            let dirty = ci::codeql_local_source(&temp.0, Instant::now() + Duration::from_secs(30))?;
+            assert!(!dirty.clean);
+            reject(&context, &pull, &merge, &head, &dirty);
+            reject(&context, &Value::Null, &merge, &head, &local);
+            reject(&context, &pull, &Value::Null, &head, &local);
+            reject(&context, &pull, &merge, &Value::Null, &local);
+            let mut p = pull.clone();
+            p["state"] = "closed".into();
+            reject(&context, &p, &merge, &head, &local);
+            let mut p = pull.clone();
+            p["number"] = 77.into();
+            reject(&context, &p, &merge, &head, &local);
+        }
+        "newer-failure" => {
+            for pointer in ["/head/sha", "/base/sha", "/merge_commit_sha"] {
+                let mut p = pull.clone();
+                *p.pointer_mut(pointer).ok_or("freshness fixture absent")? = "b".repeat(40).into();
+                reject(&context, &p, &merge, &head, &local);
+            }
+            let mut m = merge.clone();
+            m["sha"] = head_sha.clone().into();
+            reject(&context, &pull, &m, &head, &local);
+            let mut h = head.clone();
+            h["sha"] = base_sha.clone().into();
+            reject(&context, &pull, &merge, &h, &local);
+            let mut h = head.clone();
+            h["tree"]["sha"] = base_tree.into();
+            reject(&context, &pull, &merge, &h, &local);
+        }
+        _ => return ci::fail("unknown CodeQL bridge fixture"),
+    }
     Ok(())
 }
 pub(super) fn macho() -> Vec<u8> {
@@ -718,8 +907,126 @@ pub(super) fn smoke(timeout: bool) -> TestResult {
     Ok(())
 }
 
-#[cfg(windows)]
 pub(super) fn windows_signing_fixture() -> TestResult {
+    pe_digest_control_boundaries()?;
+    #[cfg(windows)]
+    {
+        windows_signing_native_fixture()
+    }
+    #[cfg(not(windows))]
+    {
+        Ok(())
+    }
+}
+
+fn pe_digest_control_boundaries() -> TestResult {
+    use numera_core::native_windows_sign::digest_control_offset;
+    fn put16(bytes: &mut [u8], offset: usize, value: u16) {
+        bytes[offset..offset + 2].copy_from_slice(&value.to_le_bytes());
+    }
+    fn put32(bytes: &mut [u8], offset: usize, value: u32) {
+        bytes[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+    }
+    let temp = Temp::new("signed-pe-control-boundaries")?;
+    let path = temp.0.join("structural-only-fixture.exe");
+    for (magic, optional_size, directories) in [(0x20b, 240, 112), (0x10b, 224, 96)] {
+        // Hand-laid-out PE headers, not a cryptographically signed executable.
+        // Only the Windows branch below establishes real signature behavior.
+        let mut bytes = vec![0u8; 0x900];
+        bytes[..2].copy_from_slice(b"MZ");
+        put32(&mut bytes, 0x3c, 0x100);
+        bytes[0x100..0x104].copy_from_slice(b"PE\0\0");
+        put16(&mut bytes, 0x106, 2);
+        put16(&mut bytes, 0x114, optional_size);
+        put16(&mut bytes, 0x116, 2);
+        let optional = 0x118;
+        put16(&mut bytes, optional, magic);
+        put32(&mut bytes, optional + 60, 0x400);
+        put32(&mut bytes, optional + directories - 4, 16);
+        put32(&mut bytes, optional + directories + 32, 0x800);
+        put32(&mut bytes, optional + directories + 36, 0x100);
+        let table = optional + usize::from(optional_size);
+        for (index, raw, flags) in [(0, 0x400, 0x40000040), (1, 0x600, 0x60000020)] {
+            let section = table + index * 40;
+            put32(&mut bytes, section + 16, 0x200);
+            put32(&mut bytes, section + 20, raw);
+            put32(&mut bytes, section + 36, flags);
+        }
+        fs::write(&path, &bytes)?;
+        assert_eq!(
+            digest_control_offset(&path)?,
+            0x600,
+            "select actual executable bytes, not DOS/header data"
+        );
+        assert_eq!(fs::read(&path)?, bytes, "selector must be read-only");
+        let executable = table + 40;
+        let mut rejected = Vec::new();
+        for (offset, value) in [
+            (0x3c, u32::MAX),
+            (optional + 60, 0x200),
+            (optional + directories - 4, 4),
+            (optional + directories - 4, u32::MAX),
+            (optional + directories + 32, 0),
+            (optional + directories + 32, 0x200),
+            (optional + directories + 36, 0),
+            (optional + directories + 36, u32::MAX),
+            (table + 16, 0x300),
+            (executable + 16, 0),
+            (executable + 20, 0x200),
+            (executable + 20, 0x780),
+            (executable + 20, 0x880),
+            (executable + 20, u32::MAX - 15),
+            (executable + 36, 0x40000020),
+            (executable + 36, 0x60000040),
+        ] {
+            let mut changed = bytes.clone();
+            put32(&mut changed, offset, value);
+            rejected.push(changed);
+        }
+        for (offset, value) in [
+            (0x106, 0),
+            (0x106, 97),
+            (0x114, 2),
+            (0x116, 0),
+            (optional, 0),
+        ] {
+            let mut changed = bytes.clone();
+            put16(&mut changed, offset, value);
+            rejected.push(changed);
+        }
+        rejected.push(bytes[..0x100].to_vec());
+        let mut bad_signature = bytes.clone();
+        bad_signature[0x100] ^= 1;
+        rejected.push(bad_signature);
+        let mut bad_dos = bytes.clone();
+        bad_dos[0] ^= 1;
+        rejected.push(bad_dos);
+        let mut unaligned_certificate = bytes.clone();
+        put32(
+            &mut unaligned_certificate,
+            optional + directories + 32,
+            0x809,
+        );
+        put32(
+            &mut unaligned_certificate,
+            optional + directories + 36,
+            0x80,
+        );
+        rejected.push(unaligned_certificate);
+        for (index, changed) in rejected.into_iter().enumerate() {
+            fs::write(&path, &changed)?;
+            assert!(
+                digest_control_offset(&path).is_err(),
+                "malformed PE control {magic:x}/{index} admitted"
+            );
+            assert_eq!(fs::read(&path)?, changed, "refused selector changed bytes");
+        }
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+fn windows_signing_native_fixture() -> TestResult {
     use base64::{Engine, engine::general_purpose::STANDARD};
     use numera_core::native_windows_sign;
     let provenance: Value =

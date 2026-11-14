@@ -874,6 +874,8 @@ pub fn native_phase(root: &Path, phase: &str) -> Result<()> {
         Duration::from_secs(300),
         8 * 1024 * 1024,
     )?;
+    let report = root.join(format!("build/native-phase-{phase}.log"));
+    super::evidence::retain_test_diagnostics(&report, &output.stdout, &output.stderr)?;
     let mut progress = super::evidence::CargoProgress::default();
     for line in std::str::from_utf8(&output.stdout)?.lines() {
         if let Some(line) = progress.project(line) {

@@ -210,6 +210,19 @@ source_test!(
             root().join(".github/workflows/native-ci.yml"),
         )?)?;
         let job = &workflow["jobs"]["live"];
+        workflow::live_license_concurrency(&workflow)?;
+        for (key, value) in [
+            ("cancel-in-progress", json!(true)),
+            ("group", json!("shared-by-every-backend")),
+            (
+                "group",
+                json!("${{ github.run_id }}-${{ matrix.os }}-${{ matrix.engine }}"),
+            ),
+        ] {
+            let mut changed = workflow.clone();
+            changed["jobs"]["live"]["concurrency"][key] = value;
+            assert!(workflow::live_license_concurrency(&changed).is_err());
+        }
         assert_eq!(job["runs-on"], "${{ matrix.os }}");
         assert_eq!(
             job["strategy"]["matrix"]["os"],

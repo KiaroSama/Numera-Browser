@@ -2,6 +2,8 @@ use numera_core::storage::schedules::{ScheduleStore, due_schedules, next_run_at}
 use serde_json::Value;
 use std::fs;
 mod common;
+#[path = "support/platform_text.rs"]
+mod platform_text;
 
 #[test]
 fn schedule_text_admission_matches_original_without_replacing_bytes()
@@ -88,6 +90,13 @@ fn schedule_text_admission_matches_original_without_replacing_bytes()
             }
             Err(error) => return Err(error.into()),
         }
+        let after = after.map(|bytes| {
+            if Some(&bytes) == raw.as_ref() {
+                bytes
+            } else {
+                platform_text::written_bytes(bytes)
+            }
+        });
         assert_eq!(
             fs::read(&path).ok(),
             after,
@@ -146,6 +155,13 @@ fn mark_run_matches_original_result_claim_clearing_and_exact_bytes()
             Err(error) => return Err(error.into()),
         }
         let after: Option<Vec<u8>> = serde_json::from_value(case["after"].clone())?;
+        let after = after.map(|bytes| {
+            if Some(&bytes) == raw.as_ref() {
+                bytes
+            } else {
+                platform_text::written_bytes(bytes)
+            }
+        });
         assert_eq!(
             fs::read(&path).ok(),
             after,

@@ -174,6 +174,13 @@ fn fixture() -> io::Result<PathBuf> {
                 .arg(format!("dependency={}", deps.display()))
                 .arg("-o")
                 .arg(&binary);
+            #[cfg(windows)]
+            command.arg("--extern").arg(format!(
+                "getrandom={}",
+                library(&deps, "getrandom")
+                    .map_err(|error| error.to_string())?
+                    .display()
+            ));
             let output = capture::run(&mut command, limit(Duration::from_secs(60)))
                 .map_err(|error| error.to_string())?;
             if output.exit != 0 {

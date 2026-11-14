@@ -50,7 +50,8 @@ fn direct_session_paths_and_deletion_match_original_without_touching_profiles()
                 .find(|expected| expected["mode"] == row["mode"])
                 .ok_or("Current root resolution observation missing")?;
             let argument = if row["mode"] == "relative" {
-                root.strip_prefix(std::env::current_dir()?)?.to_path_buf()
+                root.strip_prefix(common::canonical_path(&std::env::current_dir()?)?)?
+                    .to_path_buf()
             } else {
                 fs::create_dir(root.join("alias"))?;
                 root.join("alias/../actual")

@@ -11,7 +11,7 @@ use std::{
     error::Error,
     ffi::OsString,
     fs::{self, File, OpenOptions},
-    io::Write,
+    io::{self, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
@@ -508,7 +508,7 @@ fn build_desktop(
     )?;
     let mut build = Command::new(cargo());
     build
-        .args(["tauri", "build", "--ci", "--config"])
+        .args(["tauri", "build", "--ci", "--verbose", "--config"])
         .arg(&config)
         .current_dir(root.join("desktop"))
         .env("CARGO_TARGET_DIR", work.join("target"));
@@ -538,9 +538,8 @@ fn build_desktop(
     } else {
         build.arg("--bundles").arg(bundles.join(","));
     }
-    if !build.status()?.success() {
-        return Err("native Tauri desktop/bundle build failed; install cargo-tauri and platform SDK/bundling prerequisites explicitly".into());
-    }
+    crate::product_diagnostics::execute(root, &mut build, &work.join("tauri-build.log"))
+        .map_err(|error| io::Error::other(error.to_string()))?;
     let shell = work
         .join("target/release")
         .join(if identity.platform == "windows" {
