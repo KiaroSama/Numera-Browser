@@ -1,4 +1,6 @@
 use super::*;
+#[path = "windows_cleanup.rs"]
+mod windows_cleanup;
 
 pub(super) struct RawChild(pub(super) std::process::Child);
 impl Drop for RawChild {
@@ -267,9 +269,18 @@ source_test!(
             claims::State::Busy
         );
         assert!(Session::admit(t.path(), "p", "source-host").is_err());
+        #[cfg(windows)]
+        let leaf = windows_cleanup::LeafWitness::retain(
+            browser,
+            token,
+            &session.tree_record().ok_or("Session Job missing")?,
+        )?;
         session.finish(Duration::from_secs(1))?;
+        #[cfg(windows)]
+        leaf.assert_exited();
         assert!(!process_running(browser, token)?);
         assert!(matches!(claims::read(t.path(), "p"), claims::Claim::Absent));
+        windows_cleanup::policy_controls()?;
         Ok(())
     }
 );

@@ -6,8 +6,10 @@ use std::{
     io::{self, Read, Write},
     path::Path,
     process::{Command, Stdio},
-    time::Duration,
+    time::{Duration, Instant},
 };
+#[path = "../common/windows_handle_diagnostics.rs"]
+mod windows_handle_diagnostics;
 fn resource_stage(stage: &'static str) -> Value {
     match numera_core::ownership::resources::snapshot() {
         Ok(sample) => json!({"stage":stage,"handles":sample.handles,"threads":sample.threads}),
@@ -106,6 +108,39 @@ fn vendor(root: &Path) -> io::Result<()> {
         log.flush()?;
         let method = r["method"].as_str().unwrap_or("");
         let id = r["id"].clone();
+        if method == "initialize" && mode.starts_with("init-diagnostic-") {
+            // Exercise the actual SDK stderr pipe beyond its retention cap. The
+            // driver must drain every write to reach this real protocol refusal.
+            let mut stderr = vec![b'x'; 3 * 65_536];
+            let private = b"MODULE_NOT_FOUND synthetic-private-sdk-marker path=fixture-private-path argv=fixture-private-argv guid=fixture-private-guid\n";
+            stderr[..private.len()].copy_from_slice(private);
+            let outside = b"SyntaxError: outside-retained-prefix\n";
+            stderr[65_536 + 64..65_536 + 64 + outside.len()].copy_from_slice(outside);
+            io::stderr().write_all(&stderr)?;
+            io::stderr().flush()?;
+            let (name, message) = match mode.as_str() {
+                "init-diagnostic-root-pattern" => (
+                    "TimeoutError",
+                    "Playwright initialization timeout after 30 seconds",
+                ),
+                "init-diagnostic-near-pattern" => (
+                    "TimeoutError",
+                    "Playwright initialization timeout after 30 seconds ",
+                ),
+                "init-diagnostic-object-pattern" => (
+                    "TimeoutError",
+                    "Timed out waiting for object fixture-private-guid",
+                ),
+                "init-diagnostic-refusal" => ("Error", "synthetic-private-sdk-marker"),
+                _ => return Err(io::Error::other("Unknown startup diagnostic fixture")),
+            };
+            send(
+                json!({"id":id,"error":{"error":{"name":name,"message":message,"stack":"synthetic-private-sdk-marker"}}}),
+            )?;
+            // Remain alive until the real driver's unchanged cleanup closes its
+            // input. A pre-cleanup try_wait must observe this process as running.
+            continue;
+        }
         let failing = (mode == "probe"
             && ((method == "goto" && r["params"]["url"] == "https://failure.fixture.test/")
                 || (method == "mouseWheel" && r["params"]["deltaY"].as_f64() == Some(-1.0))
@@ -348,6 +383,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             std::process::exit(status.code().unwrap_or(1));
         }
         Some("relay-failure") => {
+            let diagnostic_deadline = Instant::now() + Duration::from_secs(10);
             let root = Path::new(&args[1]);
             let mut p = numera_core::conversion::to_engine(
                 &serde_json::from_str(r#"{"id":"relay-profile","name":"relay","seed":1}"#)?,
@@ -377,6 +413,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             resource_stages.push(resource_stage("after-warmup-runtime-create"));
             drop(runtime);
             resource_stages.push(resource_stage("after-warmup-runtime-drop"));
+            let handles = windows_handle_diagnostics::Attribution::before(diagnostic_deadline);
             let guard = numera_core::ownership::resources::ResourceGuard::new()?;
             let session =
                 numera_core::ownership::session::Session::admit(root, &p.id, "resource-fixture")?;
@@ -403,6 +440,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             assert!(result.is_err());
             let cleanup = guard.finish();
             if cleanup.is_err() {
+                if let Some(attribution) = handles.on_failure(true) {
+                    eprintln!(
+                        "Windows own-handle attribution {} report={attribution}",
+                        windows_handle_diagnostics::LEGEND
+                    );
+                }
                 eprintln!(
                     "Relay-failure passive resource stages thread_ids_collected=false additional_queries=count-only samples={}",
                     json!(resource_stages)
@@ -413,6 +456,126 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 numera_core::ownership::claims::read(root, &p.id),
                 numera_core::ownership::claims::Claim::Absent
             ));
+
+            // Preserve the source's later failure window as well: a real
+            // authenticated-proxy relay already exists when SDK birth fails.
+            // The selected worker exists, so builtin preparation cannot end
+            // this scenario before launch::open has acquired that relay.
+            use numera_core::ownership::{
+                resources::{ResourceGuard, ResourceSnapshot, snapshot},
+                test_support::{Backend, with_backend},
+            };
+            use std::sync::{
+                Arc, Mutex,
+                atomic::{AtomicUsize, Ordering},
+            };
+            struct RefuseBirth {
+                calls: AtomicUsize,
+                spawned: AtomicUsize,
+                observed: Mutex<Option<ResourceSnapshot>>,
+                code: i32,
+            }
+            impl Backend for RefuseBirth {
+                fn before_spawn(&self) -> Option<io::Result<()>> {
+                    self.calls.fetch_add(1, Ordering::SeqCst);
+                    Some((|| {
+                        *self
+                            .observed
+                            .lock()
+                            .map_err(|_| io::Error::other("Relay observation poisoned"))? =
+                            Some(snapshot()?);
+                        Err(io::Error::from_raw_os_error(self.code))
+                    })())
+                }
+                fn spawned(&self, _record: &Value) -> Option<io::Result<()>> {
+                    self.spawned.fetch_add(1, Ordering::SeqCst);
+                    None
+                }
+            }
+            assert!(
+                fs::read_dir(root.join(".updates/work"))?.next().is_none(),
+                "Early builtin refusal retained update admission"
+            );
+            let handles = windows_handle_diagnostics::Attribution::before(diagnostic_deadline);
+            let guard = ResourceGuard::new()?;
+            let session =
+                numera_core::ownership::session::Session::admit(root, &p.id, "resource-fixture")?;
+            let before = snapshot()?;
+            let code = if cfg!(windows) { 5 } else { 13 };
+            let probe = Arc::new(RefuseBirth {
+                calls: AtomicUsize::new(0),
+                spawned: AtomicUsize::new(0),
+                observed: Mutex::new(None),
+                code,
+            });
+            let runtime = numera_core::browser::runtime::Runtime {
+                adapter: std::env::current_exe()?,
+                cwd: root.into(),
+                home: root.into(),
+                logs: root.join("logs"),
+                country: None,
+                relay: None,
+                binary_options: Default::default(),
+                deployment: None,
+                registry: None,
+            };
+            let result = with_backend(probe.clone(), || {
+                runtime.open(session, p.clone(), true, 1000.0)
+            });
+            let observed = *probe
+                .observed
+                .lock()
+                .map_err(|_| io::Error::other("Relay observation poisoned"))?;
+            let calls = probe.calls.load(Ordering::SeqCst);
+            let spawned = probe.spawned.load(Ordering::SeqCst);
+            let lease = numera_core::storage::locks::SessionLease::acquire(
+                &numera_core::storage::locks::SessionLease::path_for(root, &p.id)?,
+            );
+            let lease_free = lease.is_ok();
+            drop(lease);
+            let cleanup = guard.finish();
+            if cleanup.is_err() {
+                if let Some(attribution) = handles.on_failure(true) {
+                    eprintln!(
+                        "Windows own-handle attribution {} report={attribution}",
+                        windows_handle_diagnostics::LEGEND
+                    );
+                }
+                eprintln!(
+                    "Relay acquired-before-birth cleanup samples={}",
+                    json!({"before":before,"at_before_spawn":observed,"hook_calls":calls,"spawned":spawned,
+                        "after_refusal":resource_stage("after-acquired-relay-refusal")})
+                );
+            }
+            cleanup?;
+            let error = result.err().ok_or("Known pre-birth refusal was accepted")?;
+            assert_eq!(error.kind, "failed");
+            assert!(
+                error.message == io::Error::from_raw_os_error(code).to_string(),
+                "Relay startup failure replaced the original OS cause"
+            );
+            assert_eq!(
+                calls, 1,
+                "Pre-spawn relay observation was not reached exactly once"
+            );
+            assert_eq!(spawned, 0, "Known no-child refusal started an SDK");
+            assert!(
+                observed.is_some_and(|during| during.threads > before.threads),
+                "A real automatic relay worker did not exist before SDK birth"
+            );
+            assert!(matches!(
+                numera_core::ownership::claims::read(root, &p.id),
+                numera_core::ownership::claims::Claim::Absent
+            ));
+            assert!(
+                fs::read_dir(root.join(".updates/work"))?.next().is_none(),
+                "Proved no-child failure retained update admission"
+            );
+            assert!(
+                lease_free,
+                "Known no-child failure retained the session lease"
+            );
+            let _: Value = serde_json::from_str(&windows_handle_diagnostics::portable_controls())?;
             Ok(())
         }
         Some("resource") => {

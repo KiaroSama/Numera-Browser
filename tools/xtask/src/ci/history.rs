@@ -308,7 +308,8 @@ pub fn prove_cases_with_cleanup(
         })();
         swap.restore()?;
         result?;
-        if !swap.adaptations.is_empty() {
+        let macos_case = macos_cases().contains(case);
+        if !swap.adaptations.is_empty() || macos_case {
             let output = execute(false, case, &mut proof_command(root, case, false, platform))?;
             let mut evidence = super::evidence::Current::new([case.test.clone()])?;
             for line in std::str::from_utf8(&output.command.stdout)?.lines() {
@@ -324,6 +325,27 @@ pub fn prove_cases_with_cleanup(
                 receipt["status"] = "named-negative-and-restored-positive-verified".into();
             }
             swap.publish_adaptations(root, case)?;
+            if macos_case {
+                let directory = root.join("build/history");
+                fs::create_dir_all(&directory)?;
+                let path = directory.join(format!(
+                    "macos-proof-{}.json",
+                    super::sha(format!("{}:{}:{}", case.commit, case.target, case.test).as_bytes())
+                ));
+                fs::write(
+                    &path,
+                    serde_json::to_vec_pretty(&serde_json::json!({
+                        "schema":1,"mode":"owning-host-macos-history-proof","platform":"darwin",
+                        "target":case.target,"test":case.test,"primary_source_commit":case.commit,
+                        "selected_sources":case.files,"literal_selected_source_bytes":true,
+                        "assertion_source_sha256":super::digest(&root.join("engine-rust/src/ownership/macos_tests.rs"))?,
+                        "compile_exit":0,"negative_exit":negative_exit,"restored_exit":output.command.exit,
+                        "sources_byte_restored":true,"status":"named-negative-and-restored-positive-verified",
+                        "caller_adaptations":swap.adaptations
+                    }))?,
+                )?;
+                eprintln!("Verified actual macOS historical proof: {}", path.display());
+            }
         }
     }
     Ok(())
@@ -932,8 +954,18 @@ pub fn macos(root: &Path, phase: &str) -> Result<()> {
             return fail("Native macOS ownership acceptance failed");
         }
         if phase == "build" && index == 0 {
+            // Keep the Mac primaries outside the canonical99 registry while
+            // sharing cold compiler, named-negative and restored-positive
+            // verification and truthful source/caller adaptation receipts.
             for case in macos_cases() {
-                prove_case(root, &case)?;
+                // Each Mac primary must cold-compile, even though both target lib.
+                prove_cases_with(
+                    root,
+                    &[case],
+                    "darwin",
+                    &mut BTreeMap::new(),
+                    |compile, _, command| super::owned::run(root, command, proof_limits(compile)),
+                )?;
             }
         }
         if phase == "test" {

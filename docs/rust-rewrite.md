@@ -24,7 +24,11 @@ Browser-realm identity and probes also have Rust sources in
 [`browser-page-rust`](../browser-page-rust/README.md). The embedded JavaScript
 factory is compiler output, with source/tool hashes and deterministic regeneration
 checks. Actual browser comparisons preserve identity, probe failures and strict
-CSP behavior. No page CSP policy is relaxed to initialize this runtime.
+CSP behavior. The pinned host parser/printer reduces the generated factory to
+480,089 bytes while retaining the same WASM and intermediate hashes. All twelve
+exports, strict CSP, Unicode memory growth and 480 actual native SDK frames
+passed the [compiler review](verification/browser-page-printer-20261114.json).
+No page CSP policy is relaxed to initialize this runtime.
 
 [Current upstream review](upstream-review-20261114.json) distinguishes stable
 artifacts from source-only changes. Driver/browser generations remain separate.
@@ -33,6 +37,13 @@ font and WebGL preparation. CPU features require declared support in the selecte
 browser's properties; an older executable is not credited with unreleased engine
 features. Cloak retains license, acquisition consent and exclusive seed behavior;
 its proprietary binary is excluded from public bundles.
+
+Process ownership retains original kernel handles until cleanup is proved. The
+retained Windows owner requires observed descendants and the original
+leader to have exited, together with a fresh complete empty Job observation,
+within the existing deadline. A failed or unknown cleanup keeps its owner and
+claim for retry. These are scoped guarantees for the reviewed native owner;
+fresh hosted Windows execution remains part of acceptance.
 
 ## Maintained suites
 
@@ -106,7 +117,7 @@ record named execution evidence. Required acceptance includes ownership checks,
 complete product packaging, actual Windows signing-fixture execution and the
 full CI result for the exact current PR revision. An ancestor's green candidate
 matrix does not establish current product acceptance.
-The [current validation record](verification/functional-ci7-20261114.json)
+The [current validation record](verification/functional-ci8-20261114.json)
 distinguishes hosted results, local followup checks and remaining platform work.
 
 Repository CodeQL default setup is a separate administration setting. It still
@@ -119,7 +130,7 @@ Resolving the repository configuration and reviewing reported findings remain
 part of final CI acceptance.
 The [initial individual CodeQL review](verification/codeql-review-20261114.json),
 [full result review](verification/codeql-review-ci5-20261114.json) and
-[latest scan comparison](verification/codeql-review-ci6-20261114.json) record exact
+[latest scan comparison](verification/codeql-review-ci7-20261114.json) record exact
 source identities, confirmed defects and the remaining test-data or FFI-model
 findings. The latest scan retains the same 124 reviewed result identities and
 no longer reports the 152 logging sinks or four proved salt-admission defects;

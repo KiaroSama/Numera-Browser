@@ -45,7 +45,9 @@ pub(super) fn caller_replacement(
     source: &Source,
     patches: &[(&str, &str)],
 ) -> Result<Replacement> {
-    if !super::history::Registry::read()?.cases()?.contains(case) {
+    if !super::history::Registry::read()?.cases()?.contains(case)
+        && !super::history_callers::macos_session_caller(case, path, source, bytes)
+    {
         return fail("Unreviewed historical caller bridge case");
     }
     let mut changed = std::str::from_utf8(bytes)?.to_owned();
@@ -78,6 +80,7 @@ pub fn additional_callers(root: &Path, case: &Case) -> Result<Vec<(String, Repla
     let mut result = vault_callers(root, case)?;
     result.extend(atomic_callers(root, case)?);
     result.extend(super::history_callers::additional(root, case)?);
+    result.extend(super::history_capture::additional(root, case)?);
     let path = "engine-rust/src/http/profile_routes.rs";
     let sources = super::history::case_sources(case)?;
     let raw = sources

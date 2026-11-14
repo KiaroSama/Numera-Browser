@@ -219,6 +219,24 @@ fn validate_unit(value: &Value) -> io::Result<()> {
 pub fn read(path: &Path) -> io::Result<Report> {
     read_scoped(path, None)
 }
+/// Read the same complete receipt format within the caller's absolute budget.
+/// The lock wait and the returned parse must both fit the original deadline.
+pub fn read_before(path: &Path, deadline: Instant) -> io::Result<Report> {
+    let check = || {
+        if Instant::now() >= deadline {
+            Err(io::Error::new(
+                io::ErrorKind::TimedOut,
+                "Ownership receipt read exceeded its deadline",
+            ))
+        } else {
+            Ok(())
+        }
+    };
+    check()?;
+    let report = read_scoped_deadline(path, None, Some(deadline))?;
+    check()?;
+    Ok(report)
+}
 pub fn read_scoped(path: &Path, scope: Option<&str>) -> io::Result<Report> {
     read_scoped_deadline(path, scope, None)
 }
@@ -498,6 +516,35 @@ mod tests {
         initialize(&path)?;
         assert!(read(&path)?.complete);
         assert!(empty(&path)?);
+        assert!(read_before(&path, Instant::now() + Duration::from_secs(1))?.complete);
+        assert_eq!(
+            read_before(&path, Instant::now())
+                .err()
+                .map(|error| error.kind()),
+            Some(io::ErrorKind::TimedOut)
+        );
+        let (ready, wait) = std::sync::mpsc::channel();
+        let locked_path = path.clone();
+        let holder = std::thread::spawn(move || -> io::Result<()> {
+            let lock = DataLock::for_file(&locked_path)?;
+            let _guard = lock.acquire(Duration::from_secs(1))?;
+            ready.send(()).map_err(io::Error::other)?;
+            std::thread::sleep(Duration::from_millis(150));
+            Ok(())
+        });
+        wait.recv_timeout(Duration::from_secs(1))
+            .map_err(io::Error::other)?;
+        let start = Instant::now();
+        let refused = read_before(&path, start + Duration::from_millis(25));
+        assert!(
+            refused.is_err(),
+            "A contended receipt lock must respect the caller's deadline"
+        );
+        assert!(start.elapsed() < Duration::from_millis(100));
+        holder
+            .join()
+            .map_err(|_| io::Error::other("Receipt lock holder panicked"))??;
+        assert!(read_before(&path, Instant::now() + Duration::from_secs(1))?.complete);
         append(
             &path,
             &json!({"event":"pending","attempt":"a","argv":["DIAGNOSTIC-PRIVATE-ARG"],"path":"DIAGNOSTIC-PRIVATE-PATH"}),

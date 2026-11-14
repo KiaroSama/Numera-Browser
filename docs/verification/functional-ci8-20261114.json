@@ -1,0 +1,411 @@
+{
+  "schema": 1,
+  "reviewed_on": "2026-11-14",
+  "base_head": "369e93bfdca84021b66098a43656edb09ff65b07",
+  "actual_hosted_merge": "5b8f74aed64e5e53cf0f2c0ae93977c9d145dcf9",
+  "identical_hosted_tree": "5c74baca63249d2ac5d2c19014c8657157537879",
+  "scope": "Authenticated hosted369 observations, plus explicitly separate local followup verification for the next PR revision. A local check is not a fresh hosted Windows/macOS verdict.",
+  "hosted_functional": {
+    "macos": {
+      "job": 132355359478,
+      "job_conclusion": "success",
+      "summaries": 131,
+      "passed": 2934,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0,
+      "named_pass_lines": 2934,
+      "whole_job_log_sha256": "1ca89e5072424f9b20378e7a537a430f4384f7abd50803fb1d4e4532597facb3",
+      "log_normalization": "Authenticated decoded whole job log normalized toLF with one final newline; no log rows removed."
+    },
+    "linux": {
+      "job": 132355359493,
+      "job_conclusion": "success",
+      "summaries": 132,
+      "passed": 2940,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0,
+      "named_pass_lines": 2940,
+      "whole_job_log_sha256": "c4aa61a75bcbd10eff2b5958080e6650e0060ec3b73b89ee647997637ee22a47",
+      "log_normalization": "Authenticated decoded whole job log normalized toLF with one final newline; no log rows removed."
+    },
+    "windows": {
+      "job": 132355359508,
+      "job_conclusion": "failure",
+      "artifact_id": 14101989894,
+      "artifact_zip_sha256": "881b7d0b44f509a008fd5e14a62315362ab8b2505572bfa5991ff3e82c7e7b14",
+      "transcript_sha256": "f6ad18100a8f0e12a40ff83b004dc71cdcf795780d03e561587ebe5e9d7b3069",
+      "reported_named_cases": 2892,
+      "passed": 2860,
+      "failed": 32,
+      "ignored": 0,
+      "filtered_out": 0,
+      "summaries": 131,
+      "full_suite_finished": true,
+      "inner_wall_timeout": false,
+      "target_failures": {
+        "source_browser": {
+          "passed": 234,
+          "failed": 1
+        },
+        "source_network": {
+          "passed": 149,
+          "failed": 1
+        },
+        "source_ownership": {
+          "passed": 310,
+          "failed": 30
+        }
+      },
+      "source_vault": {
+        "passed": 292,
+        "failed": 0,
+        "seconds": 177.34
+      },
+      "source_storage": {
+        "passed": 411,
+        "failed": 0,
+        "seconds": 34.4
+      },
+      "outer_result": {
+        "native_phase": "required native verification failed, three Cargo targets failed",
+        "outer_owned": "Captured nested ownership remains incomplete; not a clean outer settlement",
+        "runner_cleanup": "vctip3376 terminated; no assertion that this identifies any tested descendant"
+      },
+      "failure_groups": {
+        "resource-equality-pending-handle-classification": {
+          "count": 27,
+          "proven": "The independent stdio diagnostic starts after baseline and raises clean/fault workers122→125, stable on second repeat. Held-writer workers show actual before_cleanup128 versus expected before+owner_extra127, a positive one-handle delta, matching the independent stdio cold124→125 increment. Three missing-report source IDs report122→126. No production leak or complete cache classification inferred.",
+          "not_proven": "Exact handle types, the two additional stable handles beyond the documented one NamedPipe filesystem cache, and the fourth retained handle in missing-report controls. Do not change equality/tolerances on this evidence alone."
+        },
+        "fixture-read-while-byte-range-locked": {
+          "count": 1,
+          "proven": "Current port calls fs::read while acquired Windows byte range denies ReadFile (error33), before child contention. Source3bf asserts physical st_ino while held, not file bytes.",
+          "authorized_correction": "Precreate sentinel and capture bytes+physical(device,inode) before acquisition; attribute-only actual ID while held; real child timeout then release and real success; exact same physical ID+bytes afterward. Existing public file_stat uses GetFileInformationByHandle volume/fileindex Windows and dev/ino Unix."
+        },
+        "fixture-hardcoded-native-kind-as-foreign": {
+          "count": 1,
+          "proven": "The case labeled other-platform kind always supplies job, which is native on Windows; a nonexistent named native Job can therefore be correctly Free.",
+          "authorized_correction": "Derive pgid with numericgroup on Windows, job with namedgroup on Unix; retain refusal assertions."
+        },
+        "fixture-cmd-forward-slash-path": {
+          "count": 1,
+          "proven": "cmd mklink /J receives ext.join(_locales/en), stderr Invalid switch - en before junction creation or product description.",
+          "authorized_correction": "Build actual path via ext.join(_locales).join(en), preserve catalog bytes and containment/read-refusal assertions."
+        },
+        "descendant-exit-after-successful-settle-pending": {
+          "count": 1,
+          "proven": "session.finish(1s) succeeded, but immediate birth-aware WaitForSingleObject process_running still true for descendant.",
+          "not_proven": "Whether asynchronous Job termination accounting or another product lifetime defect; no sleep/grace or predicate removal authorized."
+        },
+        "session-admit-residual-handle-pending-classification": {
+          "count": 1,
+          "proven": "122→123 occurs specifically during Session::admit; subsequent missing-worker refusal retains123, threads4 throughout.",
+          "not_proven": "Exact handle type/owner. Pinned std thread::current initializes atomic futex Parker and FLS, with no new OS thread/park HANDLE shown in that path."
+        }
+      },
+      "triage_receipt_sha256": "7ac7e95e4886ec5be6c135d6329d506de47d074cbb5d2bc4a22506a1b34be8cc"
+    }
+  },
+  "other_hosted_successes": {
+    "linux_product": 132351190427,
+    "macos_product": 132351190394,
+    "docker_offline_chromium": 132353572575,
+    "dashboard_195_including_actual_wasm": 132351190449,
+    "native_static_build_contracts": 132353572184,
+    "rust_advisories": 132351190476,
+    "tracked_and_history_secret_gate": 132351190524,
+    "linux_shell": 132353572338,
+    "windows_shell": 132353572340
+  },
+  "local_tools_followup": {
+    "strict_lint": {
+      "command": "cargo clippy --manifest-path tools/xtask/Cargo.toml --locked --offline --all-targets -- -D warnings",
+      "exit": 0,
+      "seconds": 10.64,
+      "log": "/workspace/work/ci8-case40-clippy.log",
+      "log_sha256": "b8f873074931aa72fcaeeeb7c3ebdd94c99d66c3b08e7f223ac4df26bbc6c652"
+    },
+    "default_build": {
+      "command": "cargo build --manifest-path tools/xtask/Cargo.toml --locked --offline --bin numera-xtask --lib",
+      "exit": 0,
+      "seconds": 44.14,
+      "log": "/workspace/work/ci8-case40-build.log",
+      "log_sha256": "d48ba761ac6c728c8ba02eb9d21838aca250391242fb46bcccb6cb3db25694b7"
+    },
+    "source_map": {
+      "command": "numera-xtask ci source-map-verify /workspace/work/ci8-case40-source643.log",
+      "exit": 0,
+      "count": 643,
+      "path": "docs/source-ci-test-map.json",
+      "sha256": "4aca2f9626d87d5c0c81d13734f7468eb3900dd47ebb63c4bd047c4fae854e09"
+    },
+    "coverage": {
+      "command": "numera-xtask ci coverage",
+      "exit": 0,
+      "log": "/workspace/work/ci8-case40-coverage.log",
+      "log_sha256": "8c32be672c8d4c9d3cd08406a5441f7fc4dfd874b170edfd0bbc14f0927fd8fb"
+    },
+    "tests": [
+      {
+        "command": "cargo test --manifest-path tools/xtask/Cargo.toml --locked --offline --bin numera-xtask -- --test-threads=2",
+        "passed": 6,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 0,
+        "seconds": 0.36,
+        "log": "/workspace/work/ci8-final-tooling6.log",
+        "log_sha256": "139392da647e3942ac5e85b5cab7b45f6a101d67a285bfca945f93e9ec7e2764"
+      },
+      {
+        "command": "cargo test --manifest-path tools/xtask/Cargo.toml --locked --offline --test source_ci -- --test-threads=2",
+        "passed": 643,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 0,
+        "seconds": 71.77,
+        "log": "/workspace/work/ci8-case40-source643.log",
+        "log_sha256": "0b4ea34c58c291ee61b886c752b30fcde15d87f5f9c1d55ef3dbd88d54bd180b"
+      },
+      {
+        "command": "cargo test --manifest-path tools/xtask/Cargo.toml --locked --offline --test source_acceptance -- --test-threads=2",
+        "passed": 123,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 0,
+        "seconds": 8.73,
+        "log": "/workspace/work/ci8-final-acceptance123.log",
+        "log_sha256": "a6bbced7b42b09a526ff1ae065ae499c45e65724f7ac7e4ba76cb0ad675ad472"
+      }
+    ],
+    "scope": "Final guarded case40 delta: original643 rerun, strict lint/defaultbuild/map/coverage current. Unchanged native6 and acceptance123 retain the prior coherent logs. No selected historical primary or registry case changed.",
+    "earlier_coherent_receipt_sha256": "bd3ec3ba2b3f7de719f46fda18af4bf7ab2ab124e0a1fced5f33ab5992fdeeb7",
+    "final_delta_receipt_sha256": "c0d37436b792969c2a66801823c1dcb1a90b0296c6b493841cee92c688a34903",
+    "case40_independence": {
+      "host": "linux",
+      "receipt": "/workspace/work/history-native-369/build/history/capture-abi-probe.json",
+      "receipt_sha256": "a7b104c8ab212a471a8fe64be3712e3f4507e724f97d458ecf64d97fc59b1924",
+      "caller_only_current_exit": 0,
+      "cold_compile_exit": 0,
+      "named_semantic_negative_exit": 101,
+      "byte_restored_current_exit": 0,
+      "literal_selected_primary_sha256": "aa93ca78468acf0874bf58cf6e1fbd3ca70c7990146ce36e92ff4c3285c51e54"
+    },
+    "case40_guard_controls": {
+      "command": "cargo test --manifest-path tools/xtask/Cargo.toml --locked --offline --test source_ci native_history::history_current_appended -- --exact",
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 642,
+      "seconds": 0.7,
+      "log": "/workspace/work/ci8-case40-case40-guards.log",
+      "log_sha256": "df65ea23aac09c27c02b3b9b454ce9c20de9da088a9a5b4fd5ebe2e196c083ca"
+    },
+    "final_windows_metadata": {
+      "command": "cargo clippy --manifest-path .ai/windows-ownership-check/Cargo.toml --locked --offline --target x86_64-pc-windows-msvc -- -D warnings",
+      "exit": 0,
+      "seconds": 0.5,
+      "windows_source_sha256": "fbbd85bf291b315163a0fb0efb862384a493a0c0ea8e3dad6999ec15def07225",
+      "tree_source_sha256": "c21a5c62581df8f9f8257fc7ba8637b32236d13f4fb1dbc8060548f97800c0ea",
+      "actual_leaf_witness_source_sha256": "31e3ffc0ac2541e1869cceaa5a6fb068886b5ca5b258ba96ea94cfc6e11489c2",
+      "log": "/workspace/work/ci8-final-windows-cleanup-msvc.log",
+      "log_sha256": "7e879cbde69d369c9c0a2e7fd87ae5bdf026362b2688de9a5a8d79c1240e7007",
+      "limitation": "Actual production and LeafWitness APIs are metadata/typechecked only. Receipt persistence signatures are fail-closed stubs. No Windows executable or runtime pass is claimed."
+    },
+    "final_source_freeze": {
+      "path": "/workspace/work/ci8-case40-tools-freeze.sha256",
+      "sha256": "6c4646f49782d383cd1a54e1f8d6b76cc5aa50527d53a99e4dc4d2deff1bd0fd",
+      "source_and_map_paths": 15
+    },
+    "original_source_kinds": {
+      "parameterized": 522,
+      "standard": 121
+    }
+  },
+  "local_fixture_followup": {
+    "passed_existing_cases": 3,
+    "cases": [
+      "native path components for the actual Windows mklink junction fixture",
+      "opposite-platform tree kind for foreign-kind refusal",
+      "physical file identity while the actual cross-process byte lock is held; sentinel contents checked before/after"
+    ],
+    "checks": [
+      {
+        "log": "fixture-network.log",
+        "sha256": "31d2be7e2dab9250f3a6f3a3d85dfcc15a1a6b91358fed2e2b509dc54dea7756"
+      },
+      {
+        "log": "fixture-foreign-kind.log",
+        "sha256": "854e92b2d70a5193dc09a048df83a2675944484b2c432e1192b11210b1fa31d9"
+      },
+      {
+        "log": "fixture-lock-identity.log",
+        "sha256": "413744f574c19803d0fe25dde8bd39ffc3edca91afe342acb7672349f885a278"
+      },
+      {
+        "log": "fixture-clippy.log",
+        "sha256": "fd0a52423a7691d737859d565c02a4349c715d8a4331064a6a2187a74c819317"
+      },
+      {
+        "log": "lock-identity-metadata.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "windows_runtime": "pending"
+  },
+  "compiler_followup": "browser-page-printer-20261114.json",
+  "remaining": {
+    "windows_product": "Actual Light/MSI/NSIS verification after child TEMP path correction. See windows-product-wix-20261114.json.",
+    "windows_functional": "Fresh hosted whole-suite runtime verdict after strict retained-process cleanup and test-only static handle attribution. Local624 does not establish Windows behavior. Original equalities and deadlines remain.",
+    "historical_controls": "Fresh hosted Mac caller bridge, Windows pre-cleanup final proof, and complete remaining Linux historical executions. Case40 exact caller bridge has cold compile/named RED/restored GREEN plus independent caller-only current GREEN; canonical99 controls unchanged.",
+    "sdk_acceptance": "Windows transport initialization, required valid current Cloak license, complete strict performance comparisons for all backends.",
+    "codeql": "Exact-head trusted verdict remains failure; old defaultPython configuration and reported116critical/4high aggregate findings are tracked in codeql-review-ci7-20261114.json. No suppression or query exclusion added.",
+    "repository_metadata": "Topics and description await an administration-capable repository connection; the current GitHub integration cannot write these settings."
+  },
+  "local_native_followup": {
+    "scope": "Focused post-CI369 fixture/diagnostic/Windows-cleanup/driver combined Linux proof; not full2940, not Windows behavioral execution",
+    "total_existing_executions": 624,
+    "tests": [
+      {
+        "scope": "source-browser",
+        "passed": 235,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 0,
+        "seconds": 40.13,
+        "log": "/workspace/work/fresh369-windows-review/combined-source-browser.log",
+        "log_sha256": "c1597c386f351cd1b6ba9cecf81ff2509d06969ef277672b37af9cff986ef631"
+      },
+      {
+        "scope": "protocol",
+        "passed": 8,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 0,
+        "seconds": 17.18,
+        "log": "/workspace/work/fresh369-windows-review/combined-protocol.log",
+        "log_sha256": "fd169b60dd4afcefe33a754c0057403138cca892dfee02683e3fa98a290cd045"
+      },
+      {
+        "scope": "init",
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 0,
+        "seconds": 6.38,
+        "log": "/workspace/work/fresh369-windows-review/combined-init.log",
+        "log_sha256": "fb7e0064c88873fd5cb2989e8b8269dfe1ebe0e2520ad2c78d5487a6aa42c09e"
+      }
+    ],
+    "ownership": {
+      "passed": 380,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0,
+      "seconds": 107.53,
+      "actual_outer_ci_owned_exit": 0,
+      "receipt": "/workspace/work/windows-forced-cleanup-design/final-proof/receipt.json",
+      "receipt_sha256": "69671be6a36f620c7d5b9196e29487a751f1ba61a6c1087422291cf2a40011a4",
+      "independent_named_log_check": {
+        "log": "/workspace/work/windows-cleanup-owned380.txt",
+        "sha256": "bfafecea2ca00cc67cb843b7c79332e0d73c16e3f38535b9860ff5090f42f0e7",
+        "exact_reported_names": 380,
+        "passed": 380,
+        "failed": 0,
+        "summary": "380 passed;0failed;0ignored;0filtered;107.53s"
+      }
+    },
+    "strict_lint": {
+      "scope": "lib + source_ownership + source_browser + browser_adapter_protocol + init_script_parity",
+      "exit": 0,
+      "seconds": 10.33,
+      "log": "/workspace/work/fresh369-windows-review/combined-clippy.log",
+      "log_sha256": "ffabf2145143b76594abb876551468615f97893c2714655d25476fd15fbb62ec"
+    },
+    "windows_metadata_only": {
+      "scope": "new std-only passive diagnostic module; exact file_stat identity operation separately",
+      "compiler": "rust1.99.1 x86_64-pc-windows-msvc clippy-driver --emit=metadata -Dwarnings; no dependency/Cargo changes",
+      "exit": 0,
+      "module_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "wrapper_sha256": "9877dd0714e1b765f8bd1833c1777e05d660185deb0b71878a08225b5bf1c57f",
+      "file_identity_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "windows_cleanup_final_metadata": "Owned by Tools/Cloak and recorded in ownership receipt; final c21a5c62 tree and LeafWitness strict pass0.50s",
+      "module_source_sha256": "fdf67c1f48ccbf45f66d9bbc8e0f96dca2f8c1b2192da6c395dae2dcb83c133b"
+    },
+    "portable_control": {
+      "scope": "shared module expired/noquery, UTF16 bounds, unknown-name privacy, static formatting plus existing-case JSON/schema/adversarial-field/value controls",
+      "standalone_exit": 0,
+      "compile_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "existing_case_execution": "original completion capture IDs in actual380; no new #[test] or source IDs"
+    },
+    "current_source_sha256": {
+      "engine-rust/tests/common/windows_handle_diagnostics.rs": "fdf67c1f48ccbf45f66d9bbc8e0f96dca2f8c1b2192da6c395dae2dcb83c133b",
+      "engine-rust/tests/source_ownership.rs": "9731858ab3268823ec4511dbd02e4dc560e2692888402a8c466acd162b383a3f",
+      "engine-rust/tests/source_ownership/helper.rs": "7215e4c0270446ec158b42540cbfbc993a52e799839162b858faf13d4b7a22d4",
+      "engine-rust/tests/source_ownership/kernel.rs": "0c8401c63f8b1ffad4b1a6fd7e9368279bb8a86631b8c63f60af9ced30a35b59",
+      "engine-rust/tests/source_ownership/receipt_failures.rs": "9748909ae69df7e05183e9aac8478abc8010b0ac0debbf576777e8cda10158ec",
+      "engine-rust/tests/source_browser/fixture.rs": "b0d21611493b5cab50392ba9486395f99879961767927d3e37fa81e72f649994",
+      "engine-rust/tests/source_network/webstore.rs": "66608b2b7c012bca4552d81fab8e76f2fe0b42651e6da55919a4f57dc23982c4",
+      "engine-rust/tests/source_ownership/locks.rs": "633edde1766a3f8797a484feb37b3ebf5f98cef9e01df3785066794bd7f30ff8",
+      "engine-rust/tests/source_ownership/trees.rs": "f20e79e7dac1d391ae891355c6df55854bb56d5728a3a8afa7264a60dd73a92f",
+      "engine-rust/src/ownership/tree.rs": "c21a5c62581df8f9f8257fc7ba8637b32236d13f4fb1dbc8060548f97800c0ea",
+      "engine-rust/src/ownership/windows.rs": "fbbd85bf291b315163a0fb0efb862384a493a0c0ea8e3dad6999ec15def07225",
+      "engine-rust/src/browser/sdk/driver.rs": "3a6f6a2c43425f3a40e745a0eb27782c4862e0f9e78836c53ea59a8865948996",
+      "engine-rust/tests/browser_adapter_protocol.rs": "c4987ce1d6ecd20e3bcfe30460b7bef0b8f0d87f7299fb9080bd18d644e528ea",
+      "engine-rust/tests/source_ownership/windows_cleanup.rs": "31e3ffc0ac2541e1869cceaa5a6fb068886b5ca5b258ba96ea94cfc6e11489c2",
+      "engine-rust/tests/source_ownership/orphans.rs": "1a7227421fdccca8d75d35ae51b102533e36d013477d802fe582e8715d90cc74"
+    },
+    "qualifications": [
+      "Linux execution binaries precede ONLY the root-authorized cfgWindows Drop &&let style change: tree.rs pre1f513ec74e788ca8cfdba03ed4d715799b1dd8a55e960149f9af305d16852ec7 to finalc21a5c62581df8f9f8257fc7ba8637b32236d13f4fb1dbc8060548f97800c0ea. No Unix code change; finalstyle checked by current scoped lint and actual Windows metadata. Exact source/diff retained by ownership receipt.",
+      "Handle table/type attribution is NON-ATOMIC: closure/reuse can race snapshot→duplicate/type. Complete status means the bounded query procedure finished, not atomic type/lifetime/ownership proof. No KsecDD/leak inference from type labels alone.",
+      "New diagnostic APIs never query ObjectNameInformation, global process handles, file contents, PIDs or liveness. Fixed static type/count schema only; no raw handles, names, usernames, paths or kernel pointers emitted.",
+      "Original resource equality predicates, retry/cancellation/error/exit policy and deadlines remain; no speculative warmup/tolerance. Windows real attribution/refusal/cache behavior awaits hosted execution.",
+      "The raw CI36932-failure diagnosis remains separately frozen at /workspace/work/fresh369-windows-functional-triage.json; this receipt does not relabel it GREEN."
+    ],
+    "complete_receipt_sha256": "fd9d6f1135edb3074195e38bfdb1754f467f805722856c13055106e7fcffbde5",
+    "ownership_receipt_sha256": "69671be6a36f620c7d5b9196e29487a751f1ba61a6c1087422291cf2a40011a4",
+    "fixture_receipt_sha256": "8a70042b2602ae337cbd51bd806d875fa2aa96f54a1223fc753d18c35db63d33"
+  },
+  "local_sdk_startup_diagnostics": {
+    "actual_timer_qualification": {
+      "schema": 1,
+      "registered_test": false,
+      "platform": "linux",
+      "elapsed_ns": 30034100962,
+      "native_initialization_timeout": "unchanged30s",
+      "observed_child_exit": 23,
+      "root_reply_pattern": true,
+      "complete_stderr": true,
+      "private_marker_absent": true
+    },
+    "timer_qualification_sha256": "c9ab02c4ad39e5f74e364d814f2a4882e568cdfab76d2211c152155ec492f9dd",
+    "integrated_receipt_sha256": "7e46781dc34d2a90581697ef1a16bc51f82306f4b9fdcdc564b01ff7d227818c",
+    "scope": "The same existing protocol case covers four fast actual-worker refusals, capped draining, static-only logging, pattern spoof refusal, file closure and original claim/cleanup checks. Separate actual30s timer qualification adds no registered test or maintained timeout. Current Windows initialization cause remains unknown pending hosted diagnostics.",
+    "preserved_initial_harness_failure": "First native timer observation was correct, but an outside literal JSON-spacing assertion failed. The first source and logs remain preserved; corrected serde_json parsing then passed a separately identified second actual run."
+  },
+  "performance_candidate": {
+    "adopted_into_this_revision": false,
+    "scope": "Separate immutable evaluated candidate: reviewed semantic fast paths plus package-only release codegen setting. These application/profile changes remain outside the PR worktree.",
+    "observations": 80,
+    "strict_gate": "refused; all five timing comparisons inconclusive; memory no-regression in four scenarios and create inconclusive",
+    "report_sha256": "4e255a0b2a558e145e1045d0363dd7b00c17b206ff5e5a3d814f5a40d07e04e2",
+    "next_step": "Localize row-dependent repeated physical path resolution before any new cause-focused proposal. No threshold, original7-pair count, scenario, deadline or acceptance gate relaxed."
+  },
+  "local_current_sdk_live": {
+    "existing_case": "selected_sdk_opens_real_persistent_context_in_native_owned_tree",
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 0,
+    "seconds": 34.07,
+    "playwright_core": "1.65.1",
+    "chromium": "159.0.8154.6",
+    "profiles": 5,
+    "checks": "Both pages, strict CSP and same-instance TLS/memory growth with150000Unicode characters. Current worker and fresh test executable assert embedded480089-byte D9 factory.",
+    "current_worker_sha256": "aebf238674086b47b893b6fb2f0bfb8e9a1534fabe861e91e3c67302ecd51779",
+    "receipt_sha256": "0c6ff31bf405ac69d2d814a3131f1bb4f42a9006f4143952bc248ca856042163",
+    "scope": "Original separately executed live case on Linux. No acquisition, CSP or timeout change; no Windows runtime or native performance verdict."
+  }
+}

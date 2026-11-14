@@ -30,6 +30,14 @@ pub enum Observation {
     /// At most one sample every 50 ms while capture is in progress. The
     /// accompanying borrowed owner retains the original Windows Job handle.
     Polling,
+    /// Initial sample for passive diagnostic work. It is not the final verdict;
+    /// all callbacks return before the final retained-owner proof and cleanup.
+    BeforeCleanupSample {
+        record: serde_json::Value,
+        leader_exited: bool,
+        natural_settlement: Option<bool>,
+        natural_reason: &'static str,
+    },
     BeforeCleanup {
         record: serde_json::Value,
         leader_exited: bool,
@@ -102,6 +110,83 @@ pub fn natural_settlement_report_with(
         }
     }
     (Some(false), exhausted)
+}
+
+#[cfg(any(windows, feature = "test-support"))]
+/// Refresh only a known nonempty pre-cleanup sample. No waiting or cleanup is
+/// permitted between these fresh complete-tree and retained-leader queries.
+pub fn refine_natural_settlement_with(
+    deadline: Instant,
+    initial: (Option<bool>, &'static str),
+    leader_exited: bool,
+    complete_empty: impl FnOnce() -> io::Result<bool>,
+    retained_leader_exited: impl FnOnce() -> io::Result<bool>,
+) -> (Option<bool>, &'static str) {
+    // An initial error is never turned into success by another observation.
+    if initial.0 != Some(false) || !leader_exited {
+        return initial;
+    }
+    if Instant::now() >= deadline {
+        return (Some(false), "original-deadline");
+    }
+    let empty = complete_empty();
+    if Instant::now() >= deadline {
+        return (Some(false), "original-deadline");
+    }
+    match empty {
+        Ok(true) => {}
+        Ok(false) => return (Some(false), "final-nonempty-tree"),
+        Err(_) => return (None, "final-empty-query-failed"),
+    }
+    let leader = retained_leader_exited();
+    if Instant::now() >= deadline {
+        return (Some(false), "original-deadline");
+    }
+    match leader {
+        Ok(true) => (Some(true), "fresh-empty-proof"),
+        Ok(false) => (Some(false), "final-leader-live"),
+        Err(_) => (None, "final-leader-query-failed"),
+    }
+}
+
+fn cleanup_observation(
+    tree: &mut OwnedTree,
+    deadline: Instant,
+    leader_exited: bool,
+    observe: &mut impl FnMut(Observation, &OwnedTree),
+) {
+    let initial = natural_settlement(tree, deadline, leader_exited);
+    observe(
+        Observation::BeforeCleanupSample {
+            record: tree.record(),
+            leader_exited,
+            natural_settlement: initial.0,
+            natural_reason: initial.1,
+        },
+        tree,
+    );
+    #[cfg(windows)]
+    let final_observation = {
+        let owner = std::cell::RefCell::new(&mut *tree);
+        refine_natural_settlement_with(
+            deadline,
+            initial,
+            leader_exited,
+            || owner.borrow().complete_job_empty(),
+            || Ok(owner.borrow_mut().child_mut().try_wait()?.is_some()),
+        )
+    };
+    #[cfg(not(windows))]
+    let final_observation = initial;
+    observe(
+        Observation::BeforeCleanup {
+            record: tree.record(),
+            leader_exited,
+            natural_settlement: final_observation.0,
+            natural_reason: final_observation.1,
+        },
+        tree,
+    );
 }
 
 fn natural_settlement(
@@ -346,17 +431,7 @@ pub(crate) fn run_observed_then(
                         .checked_add(limits.cleanup)
                         .ok_or_else(|| io::Error::other("Capture cleanup deadline overflow"))?;
                     cleanup_deadline = Some(cleanup_end);
-                    let (natural_settlement, natural_reason) =
-                        natural_settlement(&mut tree, end, true);
-                    observe(
-                        Observation::BeforeCleanup {
-                            record: tree.record(),
-                            leader_exited: true,
-                            natural_settlement,
-                            natural_reason,
-                        },
-                        &tree,
-                    );
+                    cleanup_observation(&mut tree, end, true, &mut observe);
                     cleanup_observed = true;
                     if let Err(error) =
                         tree.settle(cleanup_end.saturating_duration_since(Instant::now()))
@@ -467,17 +542,7 @@ pub(crate) fn run_observed_then(
     if !cleanup_observed {
         cleanup_deadline = Instant::now().checked_add(limits.cleanup);
         let leader_exited = tree.child_mut().try_wait().ok().flatten().is_some();
-        let (natural_settlement, natural_reason) =
-            natural_settlement(&mut tree, end, leader_exited);
-        observe(
-            Observation::BeforeCleanup {
-                record: tree.record(),
-                leader_exited,
-                natural_settlement,
-                natural_reason,
-            },
-            &tree,
-        );
+        cleanup_observation(&mut tree, end, leader_exited, &mut observe);
     }
     if cleanup_failed {
         return Err(Failure {

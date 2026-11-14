@@ -7,3 +7,7 @@ pub mod probes;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod source_paths;
 pub mod webrtc_rules;
+
+// Keep host compiler modules after the unchanged WASM module declarations.
+#[cfg(not(target_arch = "wasm32"))]
+pub mod printer;

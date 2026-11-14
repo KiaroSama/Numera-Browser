@@ -36,8 +36,9 @@ pub fn run_streamed(
             "win32"
         },
     )?;
+    let child_temporary = super::owned_paths::temporary_environment_path(temporary.path())?;
     for key in ["TMPDIR", "TMP", "TEMP"] {
-        command.env(key, temporary.path());
+        command.env(key, &child_temporary);
     }
     let log = numera_core::runtime_log::RuntimeLog::new(&root.join(".ci-work/logs"), "ci-owned");
     log.event("INFO", "ci-owned", "phase=spawn");
@@ -101,17 +102,14 @@ pub fn run_streamed(
                     diagnostic_failure = Some("Native memory observation lost an owned handle");
                 }
             }
-            Observation::BeforeCleanup {
+            Observation::BeforeCleanupSample {
                 leader_exited,
                 natural_settlement,
                 natural_reason,
                 ..
             } => {
                 observed = true;
-                if let Err(error) =
-                    resources::require_natural_settlement(leader_exited, natural_settlement)
-                {
-                    verdict = Some(error);
+                if resources::require_natural_settlement(leader_exited, natural_settlement).is_err() {
                     #[cfg(windows)]
                     retain_member_diagnostic(
                         root,
@@ -122,7 +120,7 @@ pub fn run_streamed(
                     );
                 }
                 let _ = natural_reason;
-                log.event("INFO", "ci-owned", "phase=settle-tree");
+                log.event("INFO", "ci-owned", "phase=initial-pre-cleanup-sample");
                 #[cfg(windows)]
                 if let Some(scope) = accounting.take() {
                     let (result, events) = scope.finish(
@@ -136,6 +134,20 @@ pub fn run_streamed(
                         diagnostic_failure = Some("Historical resource query handle did not close");
                     }
                 }
+            }
+            Observation::BeforeCleanup {
+                leader_exited,
+                natural_settlement,
+                natural_reason,
+                ..
+            } => {
+                if let Err(error) = resources::require_natural_settlement(leader_exited, natural_settlement) {
+                    verdict = Some(error);
+                }
+                log.message("INFO", "ci-owned", &format!(
+                    "phase=final-pre-cleanup-proof leader_exited={leader_exited} natural={natural_settlement:?} reason={natural_reason}"
+                ));
+                log.event("INFO", "ci-owned", "phase=settle-tree");
             }
         },
         |index, bytes| {
@@ -180,6 +192,7 @@ pub fn run_streamed(
         return fail("Native worker has no cleanup observation");
     }
     if let Some(error) = verdict {
+        retain_verdict_diagnostics(root, &output);
         return Err(error.into());
     }
     if let Some(message) = diagnostic_failure {
@@ -192,6 +205,36 @@ pub fn run_streamed(
         command: output,
         memory,
     })
+}
+fn retain_verdict_diagnostics(root: &Path, output: &capture::Output) {
+    use std::{
+        fs,
+        sync::atomic::{AtomicU64, Ordering},
+        time::{SystemTime, UNIX_EPOCH},
+    };
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0);
+    let path = root.join(format!(
+        "build/owned-command-failure-{}-{stamp}-{}.log",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    let reserved = fs::create_dir_all(root.join("build")).and_then(|_| {
+        fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+    });
+    if reserved.is_err()
+        || super::evidence::retain_test_diagnostics(&path, &output.stdout, &output.stderr).is_err()
+    {
+        // The command's original ownership refusal remains authoritative even
+        // if the bounded diagnostic cannot be persisted.
+        eprintln!("Owned command verdict transcript could not be retained");
+    }
 }
 fn retain_units_diagnostic(root: &Path, units: &Units) {
     use std::{
@@ -270,7 +313,7 @@ fn retain_member_diagnostic(
         rows.truncate(32);
         members["omitted_members"] = omitted.into();
     }
-    let evidence = serde_json::json!({"schema":1,"leader_pid":tree.pid(),"leader_exited":leader_exited,"natural_settlement":natural,"natural_reason":reason,"job":members});
+    let evidence = serde_json::json!({"schema":1,"phase":"initial-pre-cleanup-sample","leader_pid":tree.pid(),"leader_exited":leader_exited,"natural_settlement":natural,"natural_reason":reason,"job":members});
     let Ok(bytes) = serde_json::to_vec(&evidence) else {
         return;
     };

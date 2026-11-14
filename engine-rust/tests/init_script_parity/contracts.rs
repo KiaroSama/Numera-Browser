@@ -47,7 +47,8 @@ pub(super) fn artifact() -> Result<()> {
         ("path_remapping", json!([])),
         ("wasm2js_flags", json!(["-O"])),
         ("runtime_compilation", json!(true)),
-        ("minified", json!(true)),
+        ("minified", json!(false)),
+        ("source_printer", json!({})),
         ("compiler_javascript_bytes", json!(0)),
         ("input_wasm_sha256", json!("invalid")),
         ("binding_wasm_sha256", json!(null)),
@@ -61,6 +62,41 @@ pub(super) fn artifact() -> Result<()> {
             compiler_artifact::validate(root(), artifact, &changed).is_err(),
             "receipt field {key}"
         );
+    }
+    for (key, value) in [
+        ("name", json!("unreviewed")),
+        ("version", json!("0.157.0")),
+        ("mode", json!("semantic-minifier")),
+        ("source_type", json!("mjs")),
+        ("preserve_parentheses", json!(false)),
+        ("regex_pattern_validation", json!(false)),
+        ("semantic_transforms", json!(true)),
+        ("identifier_mangling", json!(true)),
+        ("ascii_only", json!(true)),
+    ] {
+        let mut changed = receipt.clone();
+        changed["source_printer"][key] = value;
+        assert!(
+            compiler_artifact::validate(root(), artifact, &changed).is_err(),
+            "printer policy field {key}"
+        );
+    }
+    for name in ["oxc_allocator", "oxc_codegen", "oxc_parser", "oxc_span"] {
+        let mut changed = receipt.clone();
+        changed["source_printer"]["crate_sha256"][name] = json!("0".repeat(64));
+        assert!(compiler_artifact::validate(root(), artifact, &changed).is_err());
+    }
+    let mut wrong_marker = artifact.to_vec();
+    wrong_marker[compiler_artifact::GENERATED_BANNER.len()] ^= 1;
+    for unframed in [
+        artifact[compiler_artifact::GENERATED_BANNER.len()..].to_vec(),
+        wrong_marker,
+        artifact[..artifact.len() - 1].to_vec(),
+    ] {
+        let mut matching_hash = receipt.clone();
+        matching_hash["artifact_sha256"] = compiler_artifact::digest(&unframed).into();
+        matching_hash["artifact_bytes"] = json!(unframed.len());
+        assert!(compiler_artifact::validate(root(), &unframed, &matching_hash).is_err());
     }
     for key in receipt.as_object().ok_or("receipt object")?.keys() {
         let mut missing = receipt.clone();
@@ -91,16 +127,18 @@ pub(super) fn artifact() -> Result<()> {
         serde_json::to_vec(&receipt)?,
     )?;
     compiler_artifact::check_generated(owned.path())?;
-    let source = owned.path().join("browser-page-rust/src/webrtc_rules.rs");
-    let original = fs::read(&source)?;
-    fs::write(
-        &source,
-        [original.as_slice(), b"\n// changed source\n"].concat(),
-    )?;
-    assert!(compiler_artifact::check_generated(owned.path()).is_err());
-    fs::remove_file(&source)?;
-    assert!(compiler_artifact::check_generated(owned.path()).is_err());
-    fs::write(&source, &original)?;
+    for relative in ["webrtc_rules.rs", "printer.rs"] {
+        let source = owned.path().join("browser-page-rust/src").join(relative);
+        let original = fs::read(&source)?;
+        fs::write(
+            &source,
+            [original.as_slice(), b"\n// changed source\n"].concat(),
+        )?;
+        assert!(compiler_artifact::check_generated(owned.path()).is_err());
+        fs::remove_file(&source)?;
+        assert!(compiler_artifact::check_generated(owned.path()).is_err());
+        fs::write(&source, &original)?;
+    }
     let extra = owned.path().join("browser-page-rust/src/unrecorded.rs");
     fs::write(&extra, b"// unrecorded source\n")?;
     assert!(compiler_artifact::check_generated(owned.path()).is_err());

@@ -244,9 +244,14 @@ source_test!(
         let t = temp("bad-claim-admission")?;
         profile(t.path(), "p")?;
         fs::create_dir_all(t.path().join("sessions"))?;
+        let foreign_tree = if cfg!(windows) {
+            json!({"kind":"pgid","group":3})
+        } else {
+            json!({"kind":"job","group":"numera-foreign"})
+        };
         fs::write(
             t.path().join("sessions/p.json"),
-            "{\"session\":\"a\",\"pid\":3,\"tree\":{\"kind\":\"job\",\"group\":\"numera-foreign\"}}",
+            serde_json::to_vec(&json!({"session":"a","pid":3,"tree":foreign_tree}))?,
         )?;
         assert_ne!(
             claims::state(&claims::read(t.path(), "p"), "source-host"),
@@ -662,6 +667,7 @@ source_test!(
         tree.settle(Duration::from_secs(2))?;
         assert!(tree.empty()?);
         assert!(recorded_tree::empty(&record)?);
+        natural_refinement::current_identity_control()?;
         Ok(())
     }
 );
@@ -686,9 +692,13 @@ source_test!(
         assert!(tree.empty()?);
         assert!(recorded_tree::empty(&record)?);
         settlement_policy_controls();
+        natural_refinement::controls()?;
         Ok(())
     }
 );
+
+#[path = "natural_refinement.rs"]
+mod natural_refinement;
 
 fn settlement_policy_controls() {
     use std::cell::Cell;

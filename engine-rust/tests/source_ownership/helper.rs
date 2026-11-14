@@ -15,6 +15,67 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+#[path = "../common/windows_handle_diagnostics.rs"]
+mod windows_handle_diagnostics;
+#[cfg(windows)]
+fn forced_cleanup_drop(root: &Path) -> Result<i32, Box<dyn std::error::Error>> {
+    use numera_core::ownership::{
+        capture, identity, recorded_tree,
+        test_support::{Backend, with_backend},
+    };
+    struct Denied;
+    impl Backend for Denied {
+        fn signal(&self, _: i32, _: bool) -> Option<io::Result<()>> {
+            Some(Err(io::Error::from_raw_os_error(5)))
+        }
+    }
+    let mut command = Command::new(std::env::current_exe()?);
+    command
+        .arg("tree")
+        .arg(root)
+        .arg("exit")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    let mut tree = OwnedTree::spawn(&mut command)?;
+    wait(&root.join("leader"))?;
+    tree.child_mut().wait()?;
+    let mut record = tree.record();
+    record["pidToken"] = record["token"].take();
+    let leaf: u32 = fs::read_to_string(root.join("descendant"))?.parse()?;
+    let token = identity::started_at(leaf)?;
+    assert!(identity::alive(leaf, token)?);
+    let before = descriptors()?;
+    with_backend(std::sync::Arc::new(Denied), || drop(tree));
+    let retained = descriptors()?;
+    assert_eq!(
+        retained,
+        before + 1,
+        "Failed Drop must retain original Child/Job and the verified leaf witness"
+    );
+    assert!(identity::alive(leaf, token)?);
+    assert!(!recorded_tree::empty(&record)?);
+    let failures = capture::retry_retained(Duration::from_secs(1));
+    assert!(
+        failures.is_empty(),
+        "Owned retry did not prove complete cleanup"
+    );
+    assert!(recorded_tree::empty(&record)?);
+    assert!(!identity::alive(leaf, token)?);
+    let after = descriptors()?;
+    // Pinned Rust1.99.1 (58cf8f9c), std/sys/process/windows.rs705:
+    // Child retains both pi.hProcess and pi.hThread even after wait; together
+    // with the original Job this exact completed owner cost is three handles.
+    assert_eq!(
+        after + 3,
+        before,
+        "Completed retry must close original Child process/thread, Job and every cleanup witness"
+    );
+    println!(
+        "{}",
+        serde_json::json!({"retained":true,"empty":true,"before":before,"after":after})
+    );
+    Ok(0)
+}
 fn adapter(root: &Path) -> Result<i32, Box<dyn std::error::Error>> {
     let mode = fs::read_to_string(root.join("adapter-mode")).unwrap_or_else(|_| "normal".into());
     let mut browser = None;
@@ -402,6 +463,8 @@ fn capture_initialization_diagnostic() -> io::Result<serde_json::Value> {
     }
 }
 fn fd_capture(timeout: bool) -> Result<i32, Box<dyn std::error::Error>> {
+    let handles =
+        windows_handle_diagnostics::Attribution::before(Instant::now() + Duration::from_secs(5));
     let before = descriptors()?;
     let initialization = capture_initialization_diagnostic()?;
     #[cfg(target_os = "linux")]
@@ -438,9 +501,12 @@ fn fd_capture(timeout: bool) -> Result<i32, Box<dyn std::error::Error>> {
     let threads_unchanged = Some(fs::read_dir("/proc/self/task")?.count() == threads_before);
     #[cfg(not(target_os = "linux"))]
     let threads_unchanged: Option<bool> = None;
+    let handle_attribution = handles.on_failure(before != after);
+    let handle_attribution_control: serde_json::Value =
+        serde_json::from_str(&windows_handle_diagnostics::portable_controls())?;
     println!(
         "{}",
-        serde_json::json!({"before":before,"after":after,"timed_out":timed_out,"threads_unchanged":threads_unchanged,"initialization":initialization})
+        serde_json::json!({"before":before,"after":after,"timed_out":timed_out,"threads_unchanged":threads_unchanged,"initialization":initialization,"handle_attribution":handle_attribution,"handle_attribution_control":handle_attribution_control})
     );
     Ok(0)
 }
@@ -450,6 +516,7 @@ fn fd_failure(marker: &Path) -> Result<i32, Box<dyn std::error::Error>> {
         test_support::{Backend, with_backend},
     };
     use std::sync::{Arc, Mutex};
+    let diagnostic_deadline = Instant::now() + Duration::from_secs(5);
     // Establish the OS handle cost of an owned, uncaptured child separately.
     let mut control = Command::new(std::env::current_exe()?);
     control
@@ -460,6 +527,7 @@ fn fd_failure(marker: &Path) -> Result<i32, Box<dyn std::error::Error>> {
         let mut warm = OwnedTree::spawn(&mut control)?;
         warm.settle(Duration::from_secs(2))?;
     }
+    let handles = windows_handle_diagnostics::Attribution::before(diagnostic_deadline);
     let baseline = descriptors()?;
     let owner_extra = {
         let mut tree = OwnedTree::spawn(&mut control)?;
@@ -524,12 +592,15 @@ fn fd_failure(marker: &Path) -> Result<i32, Box<dyn std::error::Error>> {
     let retained = failure.retained_record().is_some();
     let before_cleanup = descriptors()?;
     let elapsed = begin.elapsed();
+    let handle_attribution_before_cleanup =
+        handles.on_failure(before_cleanup != before + owner_extra);
     failure.settle(Duration::from_secs(2))?;
     drop(failure);
     let after_cleanup = descriptors()?;
+    let handle_attribution = handles.on_failure(after_cleanup != before);
     println!(
         "{}",
-        serde_json::json!({"before":before,"owner_extra":owner_extra,"before_cleanup":before_cleanup,"after_cleanup":after_cleanup,"writer_live":writer_live,"retained":retained,"elapsed_ms":elapsed.as_millis(),"initialization":initialization})
+        serde_json::json!({"before":before,"owner_extra":owner_extra,"before_cleanup":before_cleanup,"after_cleanup":after_cleanup,"writer_live":writer_live,"retained":retained,"elapsed_ms":elapsed.as_millis(),"initialization":initialization,"handle_attribution":handle_attribution,"handle_attribution_before_cleanup":handle_attribution_before_cleanup})
     );
     Ok(0)
 }
@@ -568,6 +639,8 @@ fn fd_pipe_failure(stage: &str) -> Result<i32, Box<dyn std::error::Error>> {
                 .then(|| Err(io::Error::other("controlled stderr read failure")))
         }
     }
+    let handles =
+        windows_handle_diagnostics::Attribution::before(Instant::now() + Duration::from_secs(5));
     let before = descriptors()?;
     let initialization = capture_initialization_diagnostic()?;
     let fault = Arc::new(Fault {
@@ -608,9 +681,11 @@ fn fd_pipe_failure(stage: &str) -> Result<i32, Box<dyn std::error::Error>> {
     let pid = record["pid"].as_u64().ok_or("no PID")? as u32;
     let child_live = identity::alive(pid, record["token"].as_u64())?;
     let after = descriptors()?;
+    let elapsed = begin.elapsed();
+    let handle_attribution = handles.on_failure(before != after);
     println!(
         "{}",
-        serde_json::json!({"before":before,"after":after,"child_live":child_live,"error":first,"prepared":fault.prepared.load(Ordering::SeqCst),"reads":fault.reads.load(Ordering::SeqCst),"elapsed_ms":begin.elapsed().as_millis(),"initialization":initialization})
+        serde_json::json!({"before":before,"after":after,"child_live":child_live,"error":first,"prepared":fault.prepared.load(Ordering::SeqCst),"reads":fault.reads.load(Ordering::SeqCst),"elapsed_ms":elapsed.as_millis(),"initialization":initialization,"handle_attribution":handle_attribution})
     );
     Ok(0)
 }
@@ -654,6 +729,8 @@ fn receipt_run(root: &Path, damage: &str) -> Result<i32, Box<dyn std::error::Err
                 .flatten()
         })
         .ok_or("receipt env absent")?;
+    let handles =
+        windows_handle_diagnostics::Attribution::before(Instant::now() + Duration::from_secs(5));
     let before = descriptors()?;
     let begin = Instant::now();
     let limits = || capture::Limits {
@@ -728,6 +805,7 @@ fn receipt_run(root: &Path, damage: &str) -> Result<i32, Box<dyn std::error::Err
     let diagnostic = answer.as_ref().err().map(ToString::to_string);
     let pending = units.pending();
     let after = descriptors()?;
+    let handle_attribution = handles.on_failure(damage != "leader" && before != after);
     let retained = answer
         .as_ref()
         .err()
@@ -759,7 +837,7 @@ fn receipt_run(root: &Path, damage: &str) -> Result<i32, Box<dyn std::error::Err
     units.settle(Duration::from_secs(1))?;
     println!(
         "{}",
-        serde_json::json!({"failed":failed,"diagnostic":diagnostic,"pending":pending,"retained_tree":retained,"producer_live":producer_live,"receipt_exists":receipt_exists,"before":before,"after":after,"elapsed_ms":elapsed.as_millis(),"before_retry_pending":before_retry_pending,"after_retry_pending":units.pending()})
+        serde_json::json!({"failed":failed,"diagnostic":diagnostic,"pending":pending,"retained_tree":retained,"producer_live":producer_live,"receipt_exists":receipt_exists,"before":before,"after":after,"elapsed_ms":elapsed.as_millis(),"before_retry_pending":before_retry_pending,"after_retry_pending":units.pending(),"handle_attribution":handle_attribution})
     );
     Ok(0)
 }
@@ -928,6 +1006,9 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
         }
         "panic-capture" => {
             use numera_core::ownership::{capture, identity, recorded_tree};
+            let handles = windows_handle_diagnostics::Attribution::before(
+                Instant::now() + Duration::from_secs(4),
+            );
             let before = descriptors()?;
             let mut child = Command::new(std::env::current_exe()?);
             child.arg("sleep");
@@ -956,9 +1037,12 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
                 record["pid"].as_u64().ok_or("pid")? as u32,
                 record["pidToken"].as_u64(),
             )?;
+            let tree_empty = recorded_tree::empty(&record)?;
+            let after = descriptors()?;
+            let handle_attribution = handles.on_failure(before != after);
             println!(
                 "{}",
-                serde_json::json!({"panicked":result.is_err(),"child_gone":gone,"tree_empty":recorded_tree::empty(&record)?,"before":before,"after":descriptors()?})
+                serde_json::json!({"panicked":result.is_err(),"child_gone":gone,"tree_empty":tree_empty,"before":before,"after":after,"handle_attribution":handle_attribution})
             );
             Ok(0)
         }
@@ -1048,9 +1132,44 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
         "cancellation-error" => cancellation_error(Path::new(&args[1])),
         #[cfg(unix)]
         "uncertain-spawn" => uncertain_spawn(Path::new(&args[1])),
+        #[cfg(windows)]
+        "forced-cleanup-drop" => forced_cleanup_drop(Path::new(&args[1])),
+        "match-current-record" => {
+            let path = Path::new(&args[1]);
+            wait(path)?;
+            let record: serde_json::Value = serde_json::from_slice(&fs::read(path)?)?;
+            let mut answers =
+                vec![numera_core::ownership::recorded_tree::current_record_matches(&record)?];
+            for field in ["pid", "pidToken", "group", "kind", "missing-birth"] {
+                let mut wrong = record.clone();
+                match field {
+                    "pid" => wrong["pid"] = (std::process::id() + 1).into(),
+                    "pidToken" => {
+                        wrong["pidToken"] = record["pidToken"]
+                            .as_u64()
+                            .unwrap_or(0)
+                            .wrapping_add(1)
+                            .into()
+                    }
+                    "group" => {
+                        wrong["tree"] = record["foreignTree"].clone();
+                    }
+                    "kind" => wrong["tree"]["kind"] = "unrelated".into(),
+                    _ => wrong["pidToken"] = serde_json::Value::Null,
+                }
+                answers
+                    .push(numera_core::ownership::recorded_tree::current_record_matches(&wrong)?);
+            }
+            println!("{}", serde_json::to_string(&answers)?);
+            Ok(0)
+        }
         "leaf" => {
             fs::write(&args[1], std::process::id().to_string())?;
-            thread::sleep(Duration::from_secs(30));
+            if let Some(release) = args.get(2) {
+                wait(Path::new(release))?;
+            } else {
+                thread::sleep(Duration::from_secs(30));
+            }
             Ok(0)
         }
         "lease-leaf" => {
@@ -1133,10 +1252,12 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
         "tree" => {
             let root = Path::new(&args[1]);
             let marker = root.join("descendant");
-            let mut child = Command::new(std::env::current_exe()?)
-                .arg("leaf")
-                .arg(&marker)
-                .spawn()?;
+            let mut command = Command::new(std::env::current_exe()?);
+            command.arg("leaf").arg(&marker);
+            if args[2] == "release" {
+                command.arg(root.join("release"));
+            }
+            let mut child = command.spawn()?;
             wait(&marker)?;
             fs::write(root.join("leader"), std::process::id().to_string())?;
             io::stdout().write_all(b"TAIL")?;

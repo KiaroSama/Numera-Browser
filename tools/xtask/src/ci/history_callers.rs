@@ -10,6 +10,26 @@ use quote::ToTokens;
 use std::{fs, path::Path};
 
 const HTTP: &str = "engine-rust/src/http/profile_routes.rs";
+const TREE: &str = "engine-rust/src/ownership/tree.rs";
+const SESSION: &str = "engine-rust/src/ownership/session.rs";
+const SESSION_CLASSIFIED: &str = "c35c543c0a84f47c8567ea32a921840ab1bd69a8592c0e8227fa74f44d71737d";
+const MACOS_TREE: &str = "201260e01da09fea13951ba61ab0265faa68499554d4cfefaf712a179dc8b36b";
+
+/// The separate owning-host Mac proof may adapt only this later Session
+/// caller. Its exact selected tree/test/commit never become a canonical99 row.
+pub(super) fn macos_session_caller(
+    case: &Case,
+    path: &str,
+    source: &Source,
+    current: &[u8],
+) -> bool {
+    path == SESSION
+        && source.commit == "897caadef85053d6d74896e901fc9a21f7baa6dd"
+        && source.sha256 == MACOS_TREE
+        && case.files.get(TREE) == Some(&source.sha256)
+        && super::history::macos_cases().contains(case)
+        && super::sha(current) == SESSION_CLASSIFIED
+}
 const CLOCK_FIXTURE: &str = "engine-rust/tests/profile_read_parity.rs";
 const CLOCK_CASE: &str = "relative_activity_http_matches_original_without_rewriting_storage";
 const CLOCK_SOURCE: &str = "2077705d1d09bc686361406d68b65ac99de9a049c6957bbd12974237c25935cd";
@@ -85,25 +105,23 @@ pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
     {
         result.push(recovery_transaction(root, case, source)?);
     }
-    if let Some(source) = sources
-        .get("engine-rust/src/ownership/tree.rs")
-        .filter(|source| {
-            source.sha256 == "2688b722ab3411a1a5528335a69b029a97e840cb79f7cb065d55735cefe6078b"
-        })
-    {
-        let path = "engine-rust/src/ownership/session.rs";
+    if let Some(source) = sources.get(TREE).filter(|source| {
+        [
+            "2688b722ab3411a1a5528335a69b029a97e840cb79f7cb065d55735cefe6078b",
+            MACOS_TREE,
+        ]
+        .contains(&source.sha256.as_str())
+    }) {
+        let path = SESSION;
         let session_hash = super::digest(&root.join(path))?;
         // The separately retained checkpoint already calls the public API and
         // retains admission on every error. Its exact bytes need no bridge.
-        if session_hash == "f0f57076e1a2e0d1d6c98e36b3212e08261447c6cbb5b9c382154860c0a94145" {
+        if source.sha256 != MACOS_TREE
+            && session_hash == "f0f57076e1a2e0d1d6c98e36b3212e08261447c6cbb5b9c382154860c0a94145"
+        {
             checked_caller(root, case, path, &session_hash)?;
         } else {
-            let bytes = checked_caller(
-                root,
-                case,
-                path,
-                "c35c543c0a84f47c8567ea32a921840ab1bd69a8592c0e8227fa74f44d71737d",
-            )?;
+            let bytes = checked_caller(root, case, path, SESSION_CLASSIFIED)?;
             let before = r#"        self.tree = Some(match OwnedTree::spawn_classified(command) {
             Ok(tree) => tree,
             Err(failure) => {

@@ -19,8 +19,112 @@ use tokio::{
     process::{Child, Command},
     task::JoinHandle,
 };
+const STARTUP_STDERR_LIMIT: usize = 65_536;
+
+#[derive(Default)]
+struct DiagnosticBytes {
+    bytes: Vec<u8>,
+    observed: u64,
+    eof: bool,
+    read_failed: bool,
+}
+impl DiagnosticBytes {
+    fn append(&mut self, bytes: &[u8]) {
+        self.observed = self.observed.saturating_add(bytes.len() as u64);
+        let keep = bytes
+            .len()
+            .min(STARTUP_STDERR_LIMIT.saturating_sub(self.bytes.len()));
+        self.bytes.extend_from_slice(&bytes[..keep]);
+    }
+    fn summary(&self) -> Value {
+        // These fixed byte signatures are observations, never a startup verdict.
+        // Neither matching bytes nor surrounding vendor text leave this boundary.
+        const SIGNATURES: &[(&str, &[u8])] = &[
+            ("node-module-not-found", b"MODULE_NOT_FOUND"),
+            ("node-esm-module-not-found", b"ERR_MODULE_NOT_FOUND"),
+            (
+                "node-unsupported-url-scheme",
+                b"ERR_UNSUPPORTED_ESM_URL_SCHEME",
+            ),
+            ("node-invalid-argument-type", b"ERR_INVALID_ARG_TYPE"),
+            ("node-syntax-error", b"SyntaxError:"),
+            ("node-reference-error", b"ReferenceError:"),
+            (
+                "dynamic-library-loader",
+                b"error while loading shared libraries:",
+            ),
+        ];
+        let signatures = SIGNATURES
+            .iter()
+            .filter(|(_, bytes)| {
+                self.bytes
+                    .windows(bytes.len())
+                    .any(|window| window == *bytes)
+            })
+            .map(|(label, _)| *label)
+            .collect::<Vec<_>>();
+        json!({
+            "observed_bytes":self.observed,
+            "captured_bytes":self.bytes.len(),
+            "truncated":self.observed > self.bytes.len() as u64,
+            "sample_complete":self.eof && !self.read_failed && self.observed == self.bytes.len() as u64,
+            "read_state":if self.eof {"eof"} else if self.read_failed {"read-error"} else {"reading"},
+            "signatures":signatures
+        })
+    }
+}
+fn initialization_timeout_pattern(error: &playwright_rs::Error) -> Option<&'static str> {
+    // This identifies a public message pattern only. A vendor TimeoutError can
+    // mimic the same text; the opaque error cannot prove a typed timer branch.
+    match error {
+        playwright_rs::Error::Timeout(message)
+            if message == "Playwright initialization timeout after 30 seconds" =>
+        {
+            Some("root-reply")
+        }
+        // Object-registration timeouts include an opaque GUID. The public error
+        // carries no typed provenance, so do not infer its origin from a prefix.
+        playwright_rs::Error::Timeout(_) => Some("unknown"),
+        _ => None,
+    }
+}
+fn report_initialization(
+    boundary: &'static str,
+    error: Option<&playwright_rs::Error>,
+    child: Value,
+    stderr: Value,
+) {
+    let summary = json!({
+        "boundary":boundary,
+        "category":error.map(super::error_category),
+        "timeout_pattern":error.and_then(initialization_timeout_pattern),
+        "child":child,
+        "stderr":stderr
+    });
+    // The native adapter discards worker stderr. Retain the same static-only
+    // summary in its already configured log directory as well as the smoke sink.
+    if let Some(directory) = std::env::var_os("NUMERA_ADAPTER_LOG_DIR") {
+        let log =
+            crate::runtime_log::RuntimeLog::file_only(&PathBuf::from(directory), "browser-driver");
+        log.message(
+            if error.is_some() { "ERROR" } else { "INFO" },
+            "numera.browser-adapter",
+            &format!("SDK initialization observation={summary}"),
+        );
+    }
+    // Reuse the bounded reporting sink with an entirely constructed message.
+    // Never pass the actual vendor error, stderr, paths, argv or GUIDs to it.
+    let safe = playwright_rs::Error::TransportError(format!(
+        "Native SDK initialization observation={summary}"
+    ));
+    super::container_smoke::report_failure(
+        crate::browser::container_smoke::Phase::Start,
+        &safe,
+        None,
+    );
+}
 struct DiagnosticOutput {
-    bytes: Arc<std::sync::Mutex<Vec<u8>>>,
+    bytes: Arc<std::sync::Mutex<DiagnosticBytes>>,
     starting: Arc<std::sync::atomic::AtomicBool>,
     task: JoinHandle<()>,
 }
@@ -124,48 +228,53 @@ impl Driver {
             .env_remove("NUMERA_UPDATE_ACTIVATION")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(if diagnostics {
-                Stdio::piped()
-            } else {
-                Stdio::null()
-            })
+            .stderr(Stdio::piped())
             .kill_on_drop(true)
             .spawn()?;
         let diagnostics = child.stderr.take().map(|mut stderr| {
-            let bytes = Arc::new(std::sync::Mutex::new(Vec::new()));
+            let bytes = Arc::new(std::sync::Mutex::new(DiagnosticBytes::default()));
             let captured = bytes.clone();
             let starting = Arc::new(std::sync::atomic::AtomicBool::new(true));
             let startup = starting.clone();
             let task = tokio::spawn(async move {
                 let mut buffer = [0; 8192];
-                while let Ok(count) = stderr.read(&mut buffer).await {
-                    if count == 0 {
-                        if startup.load(std::sync::atomic::Ordering::Acquire) {
-                            let evidence = captured
-                                .lock()
-                                .map(|bytes| bytes.clone())
-                                .unwrap_or_default();
-                            if !evidence.is_empty() {
-                                // A loader/Node failure can close stderr while
-                                // initialize still waits for its 30s response.
-                                // Preserve that actual evidence before the
-                                // unchanged outer idle budget can expire.
-                                let error = playwright_rs::Error::TransportError(
-                                    "Native SDK startup stderr closed".into(),
-                                );
-                                super::container_smoke::report_failure(
-                                    crate::browser::container_smoke::Phase::Start,
-                                    &error,
-                                    Some(&evidence),
-                                );
+                loop {
+                    let count = match stderr.read(&mut buffer).await {
+                        Ok(count) => count,
+                        Err(_) => {
+                            if let Ok(mut output) = captured.lock() {
+                                output.read_failed = true;
                             }
+                            break;
+                        }
+                    };
+                    if count == 0 {
+                        let summary = captured.lock().ok().and_then(|mut output| {
+                            output.eof = true;
+                            (diagnostics
+                                && startup.load(std::sync::atomic::Ordering::Acquire)
+                                && output.observed > 0)
+                                .then(|| output.summary())
+                        });
+                        // Release the capture lock before either file or console I/O.
+                        if let Some(summary) = summary {
+                            // Preserve smoke's early EOF evidence before an outer idle
+                            // deadline; this is an observation, not an error verdict.
+                            report_initialization(
+                                "startup-stderr-eof",
+                                None,
+                                json!({"state":"unavailable","sampled":false}),
+                                summary,
+                            );
                         }
                         break;
                     }
-                    if let Ok(mut output) = captured.lock() {
-                        let keep = count.min(65536usize.saturating_sub(output.len()));
-                        output.extend_from_slice(&buffer[..keep]);
+                    if let Ok(mut output) = captured.lock()
+                        && startup.load(std::sync::atomic::Ordering::Acquire)
+                    {
+                        output.append(&buffer[..count]);
                     }
+                    // Keep draining after the capture cap to avoid a blocked child.
                 }
             });
             DiagnosticOutput {
@@ -209,30 +318,37 @@ impl Driver {
         match initialized {
             Ok(playwright) => {
                 if let Some(diagnostics) = &driver.diagnostics {
+                    // Serialize the capture flag and buffer release with append:
+                    // no late read can refill the startup buffer after success.
+                    let mut output = diagnostics.bytes.lock().ok();
                     diagnostics
                         .starting
                         .store(false, std::sync::atomic::Ordering::Release);
+                    if let Some(output) = output.as_mut() {
+                        output.bytes = Vec::new();
+                    }
                 }
                 driver.playwright = Some(playwright);
                 Ok(driver)
             }
             Err(error) => {
-                let evidence = driver
+                // Observe the real child before the unchanged close/wait/kill path.
+                let child = match driver.child.try_wait() {
+                    Ok(Some(status)) => json!({
+                        "state":"exited","sampled":true,"success":status.success(),"code":status.code()
+                    }),
+                    Ok(None) => json!({"state":"running","sampled":true}),
+                    Err(error) => json!({
+                        "state":"query-failed","sampled":true,"os_error":error.raw_os_error()
+                    }),
+                };
+                let stderr = driver
                     .diagnostics
                     .as_ref()
-                    .map(|output| output.bytes.clone());
+                    .and_then(|output| output.bytes.lock().ok().map(|bytes| bytes.summary()))
+                    .unwrap_or_else(|| json!({"read_state":"unavailable"}));
                 let _ = driver.stop().await;
-                if let Some(evidence) = evidence {
-                    let stderr = evidence
-                        .lock()
-                        .map(|bytes| bytes.clone())
-                        .unwrap_or_default();
-                    super::container_smoke::report_failure(
-                        crate::browser::container_smoke::Phase::Start,
-                        &error,
-                        Some(&stderr),
-                    );
-                }
+                report_initialization("initialization-failed", Some(&error), child, stderr);
                 Err(error)
             }
         }

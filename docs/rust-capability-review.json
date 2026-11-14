@@ -74,10 +74,13 @@
   "generated_runtime": {
     "rust_sources": "browser-page-rust",
     "artifact": "browser-page-rust/generated/runtime.js",
-    "artifact_sha256": "17f41961f6762e06978cd04fd8e2feccb05f145be18c7b81bbcf38d8978b639f",
+    "artifact_sha256": "d9df186713bf3517efb0d9785b2f0aed40bab9d4edc35307690c90a47fb2d9ca",
     "receipt": "browser-page-rust/generated/receipt.json",
-    "largest_reviewed_sdk_frame_bytes": 857477,
-    "sdk_frame_limit_bytes": 1048576
+    "largest_reviewed_sdk_frame_bytes": 484016,
+    "sdk_frame_limit_bytes": 1048576,
+    "artifact_bytes": 480089,
+    "receipt_sha256": "2106e86dab77733ed6523ea630501327165336e7a014de5037c19df36bfbc645",
+    "verification": "docs/verification/browser-page-printer-20261114.json"
   },
   "binding_boundary": "Minimal serialized native-to-WebView calls and the origin/top-frame-scoped Tauri update capability binding remain platform glue; application behavior, update authorization and state are Rust."
 }

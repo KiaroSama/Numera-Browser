@@ -719,7 +719,7 @@ fn main() {{
     );
     Ok(())
 }
-fn compile(temp: &Temp, source: &str) -> ci::Result<PathBuf> {
+pub(super) fn compile(temp: &Temp, source: &str) -> ci::Result<PathBuf> {
     let file = temp.write("fixture.rs", source.as_bytes())?;
     let output = temp
         .0
@@ -1031,8 +1031,74 @@ source_test!(
         let temp = Temp::new("owned command")?;
         let executable = compile(
             &temp,
-            "fn main(){if std::env::args().nth(1).as_deref()==Some(\"idle\"){std::thread::sleep(std::time::Duration::from_secs(30));}else{println!(\"ready\");std::process::exit(7);}}",
+            r#"fn main(){
+                match std::env::args().nth(1).as_deref(){
+                    Some("idle")=>std::thread::sleep(std::time::Duration::from_secs(30)),
+                    Some("temp")=>{
+                        let paths=["TMPDIR","TMP","TEMP"].map(|key|std::path::PathBuf::from(std::env::var_os(key).expect("owned temp variable")));
+                        let physical=std::fs::canonicalize(&paths[0]).expect("owned temp exists");
+                        assert_eq!(std::fs::canonicalize(std::env::temp_dir()).expect("OS temp identity"),physical);
+                        std::fs::write(paths[0].join("owned-temp-marker"),b"same physical directory").expect("temp marker");
+                        for path in paths{
+                            assert_eq!(std::fs::canonicalize(&path).expect("temp identity"),physical);
+                            assert_eq!(std::fs::read(path.join("owned-temp-marker")).expect("shared marker"),b"same physical directory");
+                            #[cfg(windows)]
+                            assert!(matches!(path.components().next(),Some(std::path::Component::Prefix(prefix)) if matches!(prefix.kind(),std::path::Prefix::Disk(_)|std::path::Prefix::UNC(..))));
+                        }
+                        println!("owned-temp-ok");
+                    },
+                    _=>{println!("ready");std::process::exit(7);}
+                }
+            }"#,
         )?;
+        let directory = temp.0.join("legacy temporary with spaces");
+        fs::create_dir(&directory)?;
+        let physical = directory.canonicalize()?;
+        let exported = ci::owned_paths::temporary_environment_path(&physical)?;
+        assert_eq!(exported.canonicalize()?, physical);
+        assert!(ci::owned_paths::temporary_environment_path(&directory.join("missing")).is_err());
+        #[cfg(not(windows))]
+        assert_eq!(
+            ci::owned_paths::temporary_environment_path(&directory)?,
+            directory
+        );
+        #[cfg(windows)]
+        {
+            assert!(
+                matches!(exported.components().next(),Some(std::path::Component::Prefix(prefix)) if matches!(prefix.kind(),std::path::Prefix::Disk(_)|std::path::Prefix::UNC(..)))
+            );
+            let unsafe_name = physical.join("trailing space ");
+            fs::create_dir(&unsafe_name)?;
+            assert_eq!(
+                ci::owned_paths::temporary_environment_path(&unsafe_name)
+                    .expect_err("unsafe NT temporary path")
+                    .kind(),
+                io::ErrorKind::InvalidInput
+            );
+            fs::remove_dir(&unsafe_name)?;
+        }
+        let mut probe = Command::new(&executable);
+        probe.arg("temp");
+        let output = ci::owned::run(
+            &temp.0,
+            &mut probe,
+            ci::owned::limits(Duration::from_secs(10), Duration::from_secs(5), 4096),
+        )?;
+        assert_eq!(output.command.exit, 0);
+        assert_eq!(output.command.stdout, b"owned-temp-ok\n");
+        let exported = probe
+            .get_envs()
+            .filter_map(|(key, value)| {
+                ["TMPDIR", "TMP", "TEMP"]
+                    .iter()
+                    .any(|expected| key == *expected)
+                    .then_some(value)
+                    .flatten()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(exported.len(), 3);
+        assert!(exported.iter().all(|path| *path == exported[0]));
+        assert!(!Path::new(exported[0]).join("owned-temp-marker").exists());
         let output = ci::owned::run(
             &temp.0,
             &mut Command::new(&executable),

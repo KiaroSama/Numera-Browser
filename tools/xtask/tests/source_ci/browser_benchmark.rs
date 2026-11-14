@@ -550,13 +550,27 @@ impl Host {
 }
 impl browser::Observer for Host {
     fn register(&mut self) -> TestResult {
+        self.register_before(self.clock.saturating_add(2_000_000_000))
+    }
+    fn register_before(&mut self, deadline: u64) -> TestResult {
+        if matches!(
+            self.mode.as_str(),
+            "registration-consumes-wall" | "registration-late"
+        ) {
+            self.clock = deadline - u64::from(self.mode == "registration-consumes-wall");
+            self.events.push("intent");
+            return Ok(());
+        }
         let mode = self.mode.clone();
         let reads = &mut self.reads;
         let sleeps = &mut self.sleeps;
-        browser::registration(
+        let clock = std::cell::Cell::new(self.clock);
+        let result = browser::registration(
             42,
             4200,
-            || {
+            deadline,
+            || clock.get(),
+            |_| {
                 *reads += 1;
                 if mode == "absent" {
                     return ci::fail("Observer receipt absent");
@@ -572,11 +586,15 @@ impl browser::Observer for Host {
                     problem: None,
                 })
             },
-            || {
-                sleeps.push(10);
+            |duration| {
+                sleeps.push(u64::try_from(duration.as_millis())?);
+                clock.set(clock.get() + u64::try_from(duration.as_nanos())?);
                 Ok(())
             },
-        )?;
+            |_| Ok(true),
+        );
+        self.clock = clock.get();
+        result?;
         self.events.push("intent");
         Ok(())
     }
@@ -687,6 +705,287 @@ fn lifecycle(mode: &str) -> TestResult {
             &host.events[host.events.len() - 2..],
             ["process-close", "job-close"]
         );
+    }
+    if mode == "pending-self" {
+        parent_publication("delayed")?;
+    }
+    if mode == "incomplete-before" {
+        for publication in ["held-lock", "malformed", "expired"] {
+            parent_publication(publication)?;
+        }
+    }
+    if mode == "wrong-self" {
+        parent_publication("wrong-birth")?;
+    }
+    registration_deadline_controls(mode)?;
+    Ok(())
+}
+fn registration_deadline_controls(mode: &str) -> TestResult {
+    use std::cell::Cell;
+    if mode == "incomplete-before" {
+        let mut late = Host::new("registration-late");
+        assert!(browser::observe(&mut late, Duration::from_nanos(50)).is_err());
+        assert!(!late.events.contains(&"spawn"));
+        let mut consumed = Host::new("registration-consumes-wall");
+        assert!(browser::observe(&mut consumed, Duration::from_nanos(50)).is_err());
+        assert!(consumed.events.contains(&"spawn"));
+        assert!(!consumed.events.contains(&"peak"));
+        assert!(consumed.events.contains(&"sdk-cleanup"));
+    }
+    let cases: &[&str] = match mode {
+        "pending-self" => &["many-pending", "complete-without-self", "prior-reused-pid"],
+        "missing-self" => &["missing", "short-wall"],
+        "wrong-self" => &["wrong-birth", "wrong-tree", "verification-error"],
+        "incomplete-before" => &["expired", "late-read", "late-tree"],
+        "absent" => &["read-error"],
+        _ => &[],
+    };
+    for &case in cases {
+        let clock = Cell::new(0u64);
+        let reads = Cell::new(0usize);
+        let verified = Cell::new(0usize);
+        let pauses = std::cell::RefCell::new(Vec::new());
+        let deadline = match case {
+            "expired" => 0,
+            "short-wall" => 15_000_000,
+            _ => 90_000_000_000,
+        };
+        let result = browser::registration(
+            42,
+            4200,
+            deadline,
+            || clock.get(),
+            |end| {
+                assert_eq!(end, deadline.min(2_000_000_000));
+                reads.set(reads.get() + 1);
+                if case == "read-error" {
+                    return Err(
+                        io::Error::new(io::ErrorKind::PermissionDenied, "Receipt refused").into(),
+                    );
+                }
+                if case == "late-read" {
+                    clock.set(end);
+                }
+                let waiting = match case {
+                    "missing" | "short-wall" => true,
+                    "many-pending" | "complete-without-self" => reads.get() < 5,
+                    _ => false,
+                };
+                let mut trees = vec![json!({"pid":41,"pidToken":4100})];
+                if case == "prior-reused-pid" {
+                    trees.push(json!({"pid":42,"pidToken":4199}));
+                }
+                if !waiting {
+                    trees
+                        .push(json!({"pid":42,"pidToken":if case=="wrong-birth" {9999}else{4200}}));
+                }
+                Ok(Report {
+                    trees,
+                    complete: case != "many-pending" || !waiting,
+                    problem: None,
+                })
+            },
+            |duration| {
+                let nanoseconds = u64::try_from(duration.as_nanos())?;
+                assert!(nanoseconds > 0 && nanoseconds <= 10_000_000);
+                pauses.borrow_mut().push(nanoseconds);
+                clock.set(clock.get() + nanoseconds);
+                Ok(())
+            },
+            |_| {
+                verified.set(verified.get() + 1);
+                if case == "verification-error" {
+                    return Err(
+                        io::Error::new(io::ErrorKind::PermissionDenied, "Tree refused").into(),
+                    );
+                }
+                if case == "late-tree" {
+                    clock.set(2_000_000_000);
+                }
+                Ok(case != "wrong-tree")
+            },
+        );
+        if matches!(
+            case,
+            "many-pending" | "complete-without-self" | "prior-reused-pid"
+        ) {
+            let expected = if case == "prior-reused-pid" {
+                BTreeSet::from([(41, 4100), (42, 4199), (42, 4200)])
+            } else {
+                BTreeSet::from([(41, 4100), (42, 4200)])
+            };
+            assert_eq!(result?, expected);
+            assert_eq!(reads.get(), if case == "prior-reused-pid" { 1 } else { 5 });
+            assert_eq!(verified.get(), 1);
+            assert_eq!(
+                clock.get(),
+                if case == "prior-reused-pid" {
+                    0
+                } else {
+                    40_000_000
+                }
+            );
+        } else {
+            let error = result.expect_err("Invalid or late parent registration was accepted");
+            if matches!(case, "read-error" | "verification-error") {
+                assert_eq!(
+                    error.downcast_ref::<io::Error>().map(io::Error::kind),
+                    Some(io::ErrorKind::PermissionDenied)
+                );
+            }
+        }
+        match case {
+            "missing" => {
+                assert_eq!(clock.get(), 2_000_000_000);
+                assert_eq!(reads.get(), 200);
+            }
+            "short-wall" => {
+                assert_eq!(&*pauses.borrow(), &[10_000_000, 5_000_000]);
+                assert_eq!(clock.get(), 15_000_000);
+            }
+            "expired" => {
+                assert_eq!(reads.get(), 0);
+                assert_eq!(verified.get(), 0);
+            }
+            "wrong-birth" | "late-read" => {
+                assert_eq!(reads.get(), 1);
+                assert_eq!(verified.get(), 0);
+            }
+            "wrong-tree" | "late-tree" | "verification-error" => assert_eq!(verified.get(), 1),
+            _ => {}
+        }
+    }
+    Ok(())
+}
+fn parent_publication(publication: &str) -> TestResult {
+    // This is the real post-OS-spawn/pre-receipt hook. The observer must not
+    // mistake its parent's still-pending transfer for a missing identity.
+    let temp = Temp::new("observer parent publication")?;
+    let source = r#"
+use numera_xtask::ci::{self,browser_benchmark::{Native,observe}};
+use numera_core::ownership::{test_support::{self,Backend},unit_report};
+use serde_json::json;
+use std::{fs,io::{self,Write},path::{Path,PathBuf},process::Command,sync::Arc,time::{Duration,Instant}};
+struct Delay { root:PathBuf, mode:String }
+impl Backend for Delay {
+ fn spawned(&self,record:&serde_json::Value)->Option<io::Result<()>> {
+  Some((|| {
+   let report=PathBuf::from(std::env::var_os(unit_report::ENV).ok_or_else(||io::Error::other("Parent receipt missing"))?);
+   let lock=numera_core::storage::locks::DataLock::for_file(&report)?;
+   let held=if self.mode=="held-lock" {Some(lock.acquire(Duration::from_secs(1))?)}else{None};
+   let original=if matches!(self.mode.as_str(),"malformed"|"wrong-birth") {
+    let _guard=lock.acquire(Duration::from_secs(1))?;
+    let original=fs::read(&report)?;
+    if self.mode=="malformed" {
+     fs::OpenOptions::new().append(true).open(&report)?.write_all(b"{broken receipt\n")?;
+    }
+    Some(original)
+   }else{None};
+   if self.mode=="wrong-birth" {
+    let pending=String::from_utf8(original.as_ref().ok_or_else(||io::Error::other("Original receipt missing"))?.clone()).map_err(io::Error::other)?;
+    let attempt=pending.lines().filter_map(|line|serde_json::from_str::<serde_json::Value>(line).ok()).filter(|row|row["event"]=="pending").last().and_then(|row|row["attempt"].as_str().map(str::to_owned)).ok_or_else(||io::Error::other("Actual pending attempt missing"))?;
+    let mut wrong=record.clone();
+    wrong["token"]=(record["token"].as_u64().ok_or_else(||io::Error::other("Actual birth missing"))?+1).into();
+    unit_report::record_at(&report,&wrong,&attempt)?;
+   }
+   let deadline=Instant::now()+Duration::from_secs(3);
+   while !self.root.join("observer-started").is_file() {
+    if Instant::now()>=deadline {return Err(io::Error::other("Observer did not enter registration"));}
+    std::thread::sleep(Duration::from_millis(1));
+   }
+   std::thread::sleep(Duration::from_millis(80));
+   if self.mode!="delayed" {
+    let deadline=Instant::now()+Duration::from_millis(400);
+    while !self.root.join("observer-refused").is_file() && Instant::now()<deadline {
+     std::thread::sleep(Duration::from_millis(1));
+    }
+   }
+   if self.root.join("observer-refused").is_file() {
+    fs::write(self.root.join("refused-before-publication"),b"actual observer refused while publication held")?;
+   }
+   drop(held);
+   if let Some(original)=original {
+    let _guard=lock.acquire(Duration::from_secs(1))?;
+    fs::write(&report,original)?;
+   }
+   Ok(())
+  })())
+ }
+}
+fn main()->ci::Result<()> {
+ let args=std::env::args_os().skip(1).collect::<Vec<_>>();
+ let mode=args[0].to_str().ok_or("Mode missing")?;
+ let root=Path::new(&args[1]);
+ let publication=args[2].to_str().ok_or("Publication mode missing")?;
+ if mode=="app" {
+  fs::write(root.join("application-started"),b"actual application executed")?;
+  println!("{{\"ok\":true}}");return Ok(());
+ }
+ if mode=="observer" {
+  fs::write(root.join("observer-started"),b"actual observer entered")?;
+  let mut command=Command::new(std::env::current_exe()?);
+  command.arg("app").arg(root).arg(publication);
+  let report=std::env::var_os(unit_report::ENV).ok_or("Parent receipt missing")?;
+  let mut native=Native::new(command,report.into(),false)?;
+  let wall=if publication=="delayed" {Duration::from_secs(2)}else{Duration::from_millis(30)};
+  let result=observe(&mut native,wall);
+  match result {
+   Ok(sample)=>println!("{}",json!({"sample":sample.summary(),"payload":sample.payload})),
+   Err(error)=>{fs::write(root.join("observer-refused"),b"refused before application spawn")?;println!("{}",json!({"refused":true}));eprintln!("{error}");std::process::exit(1);}
+  }
+  return Ok(());
+ }
+ let mut command=Command::new(std::env::current_exe()?);
+ command.arg("observer").arg(root).arg(publication);
+ let output=test_support::with_backend(Arc::new(Delay{root:root.into(),mode:publication.into()}),||
+  ci::owned::run(root,&mut command,ci::owned::limits(Duration::from_secs(5),Duration::from_secs(5),16384)))?.command;
+ println!("{}",json!({"exit":output.exit,"stdout":String::from_utf8(output.stdout)?,"stderr":String::from_utf8(output.stderr)?}));
+ Ok(())
+}
+"#;
+    let executable = super::migration::compile(&temp, source)?;
+    fs::create_dir(temp.0.join("jobs"))?;
+    let report = temp.0.join("jobs/registration.units");
+    numera_core::ownership::unit_report::initialize(&report)?;
+    let output = ci::capture(
+        std::process::Command::new(executable)
+            .arg("parent")
+            .arg(&temp.0)
+            .arg(publication)
+            .env(numera_core::ownership::unit_report::ENV, &report),
+        Duration::from_secs(8),
+        Duration::from_secs(8),
+        32768,
+    )?;
+    assert_eq!(output.exit, 0, "Parent publication helper failed");
+    let answer = ci::decode(&output.stdout)?;
+    if publication == "delayed" && answer["exit"] != 0 {
+        assert!(
+            answer["stderr"].as_str()
+                == Some("Browser observer receipt registration or birth identity missing\n"),
+            "Observer refused outside the expected parent receipt boundary"
+        );
+        assert!(!temp.0.join("application-started").exists());
+    }
+    let observed = ci::decode(
+        answer["stdout"]
+            .as_str()
+            .ok_or("Observer stdout missing")?
+            .as_bytes(),
+    )?;
+    if publication == "delayed" {
+        assert_eq!(
+            answer["exit"], 0,
+            "Observer refused a genuine delayed parent publication"
+        );
+        assert!(temp.0.join("application-started").is_file());
+        assert_eq!(observed["payload"], json!({"ok":true}));
+        assert!(answer["stderr"].as_str().is_some_and(str::is_empty));
+    } else {
+        assert_eq!(answer["exit"], 1);
+        assert_eq!(observed["refused"], true);
+        assert!(!temp.0.join("application-started").exists());
+        assert!(temp.0.join("refused-before-publication").is_file());
     }
     Ok(())
 }

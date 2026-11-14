@@ -4,6 +4,7 @@ use std::{
     os::windows::io::{AsHandle, AsRawHandle, BorrowedHandle, FromRawHandle, OwnedHandle},
     process::Child,
     ptr,
+    time::Instant,
 };
 use windows_sys::Win32::{
     Foundation::{
@@ -24,13 +25,113 @@ use windows_sys::Win32::{
         },
         SystemServices::{JOB_OBJECT_QUERY, JOB_OBJECT_TERMINATE},
         Threading::{
-            OpenProcess, OpenThread, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE,
-            QueryFullProcessImageNameW, ResumeThread, THREAD_SUSPEND_RESUME, WaitForSingleObject,
+            GetCurrentProcess, OpenProcess, OpenThread, PROCESS_QUERY_LIMITED_INFORMATION,
+            PROCESS_SYNCHRONIZE, QueryFullProcessImageNameW, ResumeThread, THREAD_SUSPEND_RESUME,
+            WaitForSingleObject,
         },
     },
 };
 
 pub struct Job(OwnedHandle, String);
+
+struct ProcessWitness {
+    pid: u32,
+    handle: OwnedHandle,
+}
+#[derive(Default)]
+pub(super) struct CleanupWitnesses(Vec<ProcessWitness>);
+fn cleanup_before(deadline: Instant) -> io::Result<()> {
+    if Instant::now() >= deadline {
+        Err(io::Error::new(
+            io::ErrorKind::TimedOut,
+            "Windows cleanup exceeded its deadline",
+        ))
+    } else {
+        Ok(())
+    }
+}
+fn process_signaled(process: HANDLE) -> io::Result<bool> {
+    // SAFETY: caller retains the process handle; zero timeout never waits.
+    match unsafe { WaitForSingleObject(process, 0) } {
+        WAIT_OBJECT_0 => Ok(true),
+        WAIT_TIMEOUT => Ok(false),
+        WAIT_FAILED => Err(io::Error::last_os_error()),
+        _ => Err(io::Error::other("Process exit observation is incomplete")),
+    }
+}
+impl CleanupWitnesses {
+    pub(super) fn retain_members(
+        &mut self,
+        job: &Job,
+        leader: &Child,
+        deadline: Instant,
+    ) -> io::Result<()> {
+        cleanup_before(deadline)?;
+        let members = job.members()?;
+        cleanup_before(deadline)?;
+        // Allow an old terminating generation plus one complete current list.
+        // Refuse before opening more handles rather than truncate a proof.
+        let additional = members
+            .iter()
+            .filter(|pid| **pid != leader.id() && !self.0.iter().any(|known| known.pid == **pid))
+            .count();
+        if self.0.len().saturating_add(additional) > super::memory::MAX_PROCESSES * 2 {
+            return Err(io::Error::other("Retained cleanup witness bound exceeded"));
+        }
+        for pid in members {
+            cleanup_before(deadline)?;
+            if pid == leader.id() || self.0.iter().any(|known| known.pid == pid) {
+                // Retain and reuse that original verified process object; do
+                // not reopen an exiting member by PID on a cleanup retry.
+                continue;
+            }
+            // SAFETY: passive, non-inheritable rights; no per-PID signal power.
+            let raw = unsafe {
+                OpenProcess(
+                    PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_SYNCHRONIZE,
+                    0,
+                    pid,
+                )
+            };
+            if raw.is_null() {
+                return Err(io::Error::last_os_error());
+            }
+            // SAFETY: successful OpenProcess transfers a CloseHandle owner.
+            let handle = unsafe { OwnedHandle::from_raw_handle(raw) };
+            cleanup_before(deadline)?;
+            let mut member = 0;
+            // SAFETY: both retained handles and initialized output remain live.
+            if unsafe { IsProcessInJob(handle.as_raw_handle(), job.0.as_raw_handle(), &mut member) }
+                == 0
+            {
+                return Err(io::Error::last_os_error());
+            }
+            if member == 0 {
+                return Err(io::Error::other(
+                    "Cleanup process is not in the retained Job",
+                ));
+            }
+            // The retained kernel handle is the process identity. Keep the
+            // verified witness even if the next deadline check refuses.
+            self.0.push(ProcessWitness { pid, handle });
+            // Save a newly verified witness before checking an elapsed budget.
+            cleanup_before(deadline)?;
+        }
+        Ok(())
+    }
+    pub(super) fn all_signaled(&self, deadline: Instant) -> io::Result<bool> {
+        let mut all = true;
+        for witness in &self.0 {
+            cleanup_before(deadline)?;
+            all &= process_signaled(witness.handle.as_raw_handle())?;
+            cleanup_before(deadline)?;
+        }
+        Ok(all)
+    }
+    pub(super) fn clear_proved(&mut self) {
+        self.0.clear();
+    }
+}
 fn image_class(path: &str) -> &'static str {
     let name = path.rsplit(['\\', '/']).next().unwrap_or_default();
     match name.to_ascii_lowercase().as_str() {
@@ -162,6 +263,9 @@ impl Job {
     }
     pub fn empty(&self) -> io::Result<bool> {
         Ok(self.accounting()?.ActiveProcesses == 0)
+    }
+    pub fn complete_empty(&self) -> io::Result<bool> {
+        Ok(self.members()?.is_empty() && self.accounting()?.ActiveProcesses == 0)
     }
     fn accounting(&self) -> io::Result<JOBOBJECT_BASIC_ACCOUNTING_INFORMATION> {
         #[cfg(feature = "test-support")]
@@ -403,6 +507,35 @@ impl Job {
         }
         Ok(())
     }
+}
+
+/// Query an existing named Job for current-process membership, without adoption.
+pub fn named_contains_current(name: &str) -> io::Result<bool> {
+    if name.is_empty() || name.contains('\0') {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Job name is invalid",
+        ));
+    }
+    let wide: Vec<u16> = name.encode_utf16().chain(Some(0)).collect();
+    // SAFETY: bounded live Unicode name, query-only access, no inheritance.
+    let raw = unsafe { OpenJobObjectW(JOB_OBJECT_QUERY, 0, wide.as_ptr()) };
+    if raw.is_null() {
+        let error = io::Error::last_os_error();
+        return if matches!(error.raw_os_error(), Some(2 | 3)) {
+            Ok(false)
+        } else {
+            Err(error)
+        };
+    }
+    // SAFETY: a successful open transfers one CloseHandle owner.
+    let job = unsafe { OwnedHandle::from_raw_handle(raw) };
+    let mut contained = 0;
+    // SAFETY: the pseudo process handle is borrowed; the Job and output live.
+    if unsafe { IsProcessInJob(GetCurrentProcess(), job.as_raw_handle(), &mut contained) } == 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(contained != 0)
 }
 
 pub fn named_empty(name: &str) -> io::Result<bool> {

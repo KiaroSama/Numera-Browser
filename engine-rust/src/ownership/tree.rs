@@ -1,7 +1,7 @@
 #[cfg(unix)]
 use super::identity::started_at;
 #[cfg(windows)]
-use super::windows::{Job, resume};
+use super::windows::{CleanupWitnesses, Job, resume};
 use std::{
     io,
     process::{Child, Command},
@@ -10,13 +10,105 @@ use std::{
 };
 
 pub struct OwnedTree {
+    #[cfg(not(windows))]
     child: Child,
     #[cfg(windows)]
-    job: Job,
+    windows: Option<WindowsOwner>,
     #[cfg(unix)]
     group: i32,
     token: u64,
     settled: bool,
+}
+#[cfg(windows)]
+struct WindowsOwner {
+    child: Child,
+    job: Job,
+    witnesses: CleanupWitnesses,
+}
+
+/// Passive observation boundary for Windows cleanup and portable fault controls.
+#[cfg(any(windows, feature = "test-support"))]
+#[doc(hidden)]
+pub trait WindowsCleanup {
+    fn capture_members(&mut self, deadline: Instant) -> io::Result<()>;
+    fn complete_empty(&mut self) -> io::Result<bool>;
+    fn terminate(&mut self) -> io::Result<()>;
+    fn all_signaled(&mut self, deadline: Instant) -> io::Result<bool>;
+    fn leader_exited(&mut self) -> io::Result<bool>;
+}
+#[cfg(any(windows, feature = "test-support"))]
+fn windows_before(deadline: Instant) -> io::Result<()> {
+    if Instant::now() >= deadline {
+        Err(io::Error::new(
+            io::ErrorKind::TimedOut,
+            "Owned Windows cleanup exceeded its deadline",
+        ))
+    } else {
+        Ok(())
+    }
+}
+#[cfg(any(windows, feature = "test-support"))]
+#[doc(hidden)]
+pub fn settle_windows_with(deadline: Instant, kernel: &mut impl WindowsCleanup) -> io::Result<()> {
+    windows_before(deadline)?;
+    kernel.capture_members(deadline)?;
+    windows_before(deadline)?;
+    let empty = kernel.complete_empty()?;
+    windows_before(deadline)?;
+    if !empty {
+        // One request only. A failed signal/query never becomes success merely
+        // because a later accounting observation happens to be empty.
+        kernel.terminate()?;
+        windows_before(deadline)?;
+    }
+    loop {
+        // Reconcile members born between the first snapshot and termination.
+        // All handle waits are passive; no repeated termination is introduced.
+        kernel.capture_members(deadline)?;
+        windows_before(deadline)?;
+        let signaled = kernel.all_signaled(deadline)?;
+        windows_before(deadline)?;
+        let empty = kernel.complete_empty()?;
+        windows_before(deadline)?;
+        let leader = kernel.leader_exited()?;
+        windows_before(deadline)?;
+        if signaled && empty && leader {
+            return Ok(());
+        }
+        thread::sleep(
+            deadline
+                .saturating_duration_since(Instant::now())
+                .min(Duration::from_millis(20)),
+        );
+        windows_before(deadline)?;
+    }
+}
+#[cfg(windows)]
+impl WindowsCleanup for WindowsOwner {
+    fn capture_members(&mut self, deadline: Instant) -> io::Result<()> {
+        self.witnesses
+            .retain_members(&self.job, &self.child, deadline)
+    }
+    fn complete_empty(&mut self) -> io::Result<bool> {
+        #[cfg(feature = "test-support")]
+        if let Some(result) = super::test_support::group_empty(self.child.id() as i32) {
+            return result;
+        }
+        self.job.complete_empty()
+    }
+    fn terminate(&mut self) -> io::Result<()> {
+        #[cfg(feature = "test-support")]
+        if let Some(result) = super::test_support::signal(-(self.child.id() as i32), true) {
+            return result;
+        }
+        self.job.terminate()
+    }
+    fn all_signaled(&mut self, deadline: Instant) -> io::Result<bool> {
+        self.witnesses.all_signaled(deadline)
+    }
+    fn leader_exited(&mut self) -> io::Result<bool> {
+        Ok(self.child.try_wait()?.is_some())
+    }
 }
 enum SpawnFailure {
     #[cfg(windows)]
@@ -129,8 +221,11 @@ impl OwnedTree {
                 ));
             }
             Ok(Self {
-                child,
-                job,
+                windows: Some(WindowsOwner {
+                    child,
+                    job,
+                    witnesses: CleanupWitnesses::default(),
+                }),
                 token,
                 settled: false,
             })
@@ -172,12 +267,12 @@ impl OwnedTree {
         }
     }
     pub fn pid(&self) -> u32 {
-        self.child.id()
+        self.child().id()
     }
     pub fn record(&self) -> serde_json::Value {
         #[cfg(windows)]
         {
-            serde_json::json!({"pid":self.pid(),"token":self.token,"tree":{"kind":"job","group":self.job.name()}})
+            serde_json::json!({"pid":self.pid(),"token":self.token,"tree":{"kind":"job","group":self.windows().job.name()}})
         }
         #[cfg(unix)]
         {
@@ -185,37 +280,69 @@ impl OwnedTree {
         }
     }
     pub fn child_mut(&mut self) -> &mut Child {
-        &mut self.child
+        #[cfg(windows)]
+        {
+            &mut self
+                .windows
+                .as_mut()
+                .expect("Live owned Windows state")
+                .child
+        }
+        #[cfg(not(windows))]
+        {
+            &mut self.child
+        }
+    }
+    fn child(&self) -> &Child {
+        #[cfg(windows)]
+        {
+            &self.windows().child
+        }
+        #[cfg(not(windows))]
+        {
+            &self.child
+        }
+    }
+    #[cfg(windows)]
+    fn windows(&self) -> &WindowsOwner {
+        // Only a dying Drop shell may have taken this original state.
+        self.windows.as_ref().expect("Live owned Windows state")
     }
     #[cfg(windows)]
     pub fn peak_job_memory(&self) -> io::Result<u64> {
-        self.job.peak_memory()
+        self.windows().job.peak_memory()
     }
     /// An accounting-settlement hint, never an empty-tree proof. Every member
     /// must already be signaled; inaccessible or uncertain membership is Err.
     #[cfg(windows)]
     pub fn all_job_members_exited(&self) -> io::Result<bool> {
-        self.job.all_members_exited(&self.child)
+        self.windows().job.all_members_exited(self.child())
+    }
+    /// Fresh complete membership and accounting from the original retained Job.
+    /// This is passive; callers must separately prove retained-leader exit.
+    #[cfg(windows)]
+    pub fn complete_job_empty(&self) -> io::Result<bool> {
+        self.windows().job.complete_empty()
     }
     /// A bounded passive snapshot for failure diagnostics, not a cleanup or
     /// ownership proof. Executable identities are limited to static classes.
     #[cfg(windows)]
     pub fn job_member_diagnostics(&self) -> io::Result<serde_json::Value> {
-        self.job.member_diagnostics(&self.child)
+        self.windows().job.member_diagnostics(self.child())
     }
     #[cfg(windows)]
     pub(crate) fn job_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
-        self.job.handle()
+        self.windows().job.handle()
     }
     pub fn empty(&mut self) -> io::Result<bool> {
-        let _ = self.child.try_wait()?;
+        let _ = self.child_mut().try_wait()?;
         #[cfg(windows)]
         {
             #[cfg(feature = "test-support")]
             if let Some(result) = super::test_support::group_empty(self.pid() as i32) {
                 return result;
             }
-            self.job.empty()
+            self.windows().job.empty()
         }
         #[cfg(unix)]
         {
@@ -223,136 +350,134 @@ impl OwnedTree {
         }
     }
     pub fn settle(&mut self, budget: Duration) -> io::Result<()> {
-        if self.settled {
-            return Ok(());
+        #[cfg(windows)]
+        {
+            if self.settled {
+                return Ok(());
+            }
+            let deadline = Instant::now()
+                .checked_add(budget)
+                .ok_or_else(|| io::Error::other("Invalid tree cleanup budget"))?;
+            let owner = self.windows.as_mut().expect("Live owned Windows state");
+            settle_windows_with(deadline, owner)?;
+            owner.witnesses.clear_proved();
+            self.settled = true;
+            Ok(())
         }
-        let deadline = Instant::now()
-            .checked_add(budget)
-            .ok_or_else(|| io::Error::other("Invalid tree cleanup budget"))?;
-        #[cfg(unix)]
-        let mut signal_error = None;
-        if !self.observed_empty(deadline)? {
-            #[cfg(windows)]
-            {
-                #[cfg(feature = "test-support")]
-                let signalled = match super::test_support::signal(-(self.pid() as i32), true) {
-                    Some(result) => result,
-                    None => self.job.terminate(),
-                };
-                #[cfg(not(feature = "test-support"))]
-                let signalled = self.job.terminate();
-                if let Err(error) = signalled
-                    && !self.observed_empty(deadline)?
+        #[cfg(not(windows))]
+        {
+            if self.settled {
+                return Ok(());
+            }
+            let deadline = Instant::now()
+                .checked_add(budget)
+                .ok_or_else(|| io::Error::other("Invalid tree cleanup budget"))?;
+            #[cfg(unix)]
+            let mut signal_error = None;
+            if !self.observed_empty(deadline)? {
+                #[cfg(unix)]
+                {
+                    // A live reused leader is not ours. Unknown identity is not
+                    // permission to send a process-group signal.
+                    let mut uncertainty = None;
+                    let may_signal = loop {
+                        if Instant::now() >= deadline
+                            && let Some(error) = uncertainty.take()
+                        {
+                            return Err(error);
+                        }
+                        match started_at(self.child.id()) {
+                            Ok(Some(token)) if token != self.token => {
+                                return Err(io::Error::other(
+                                    "Process group leader identity changed",
+                                ));
+                            }
+                            Ok(Some(_)) => break true,
+                            Ok(None) if uncertainty.is_none() => break true,
+                            Ok(None) => {}
+                            Err(error) => uncertainty = Some(error),
+                        }
+                        // An exiting leader can become temporarily unreadable
+                        // after a nonempty group snapshot. A denied birth query is
+                        // not absence or signal authority: retry only inside the
+                        // original deadline, requiring a matching birth or a
+                        // complete subsequent kernel proof that the group is empty.
+                        if self.observed_empty(deadline)? {
+                            break false;
+                        }
+                        if Instant::now() >= deadline {
+                            return Err(uncertainty.unwrap_or_else(|| {
+                                io::Error::other("Owned leader birth remains unknown")
+                            }));
+                        }
+                        thread::sleep(
+                            deadline
+                                .saturating_duration_since(Instant::now())
+                                .min(Duration::from_millis(10)),
+                        );
+                    };
+                    if may_signal && let Err(error) = terminate_group(self.group) {
+                        // Refusal is not emptiness. Preserve the exact error and
+                        // observe only until the existing deadline; an exiting
+                        // group can disappear after the signal snapshot. Never
+                        // retry this signal or turn a live/unknown group free.
+                        signal_error = Some(error);
+                    }
+                }
+            }
+            loop {
+                #[cfg(unix)]
+                if Instant::now() >= deadline
+                    && let Some(error) = signal_error.take()
                 {
                     return Err(error);
                 }
-            }
-            #[cfg(unix)]
-            {
-                // A live reused leader is not ours. Unknown identity is not
-                // permission to send a process-group signal.
-                let mut uncertainty = None;
-                let may_signal = loop {
-                    if Instant::now() >= deadline
-                        && let Some(error) = uncertainty.take()
-                    {
-                        return Err(error);
-                    }
-                    match started_at(self.child.id()) {
-                        Ok(Some(token)) if token != self.token => {
-                            return Err(io::Error::other("Process group leader identity changed"));
-                        }
-                        Ok(Some(_)) => break true,
-                        Ok(None) if uncertainty.is_none() => break true,
-                        Ok(None) => {}
-                        Err(error) => uncertainty = Some(error),
-                    }
-                    // An exiting leader can become temporarily unreadable
-                    // after a nonempty group snapshot. A denied birth query is
-                    // not absence or signal authority: retry only inside the
-                    // original deadline, requiring a matching birth or a
-                    // complete subsequent kernel proof that the group is empty.
-                    if self.observed_empty(deadline)? {
-                        break false;
-                    }
-                    if Instant::now() >= deadline {
-                        return Err(uncertainty.unwrap_or_else(|| {
-                            io::Error::other("Owned leader birth remains unknown")
-                        }));
-                    }
-                    thread::sleep(
-                        deadline
-                            .saturating_duration_since(Instant::now())
-                            .min(Duration::from_millis(10)),
-                    );
-                };
-                if may_signal && let Err(error) = terminate_group(self.group) {
-                    // Refusal is not emptiness. Preserve the exact error and
-                    // observe only until the existing deadline; an exiting
-                    // group can disappear after the signal snapshot. Never
-                    // retry this signal or turn a live/unknown group free.
-                    signal_error = Some(error);
-                }
-            }
-        }
-        loop {
-            #[cfg(unix)]
-            if Instant::now() >= deadline
-                && let Some(error) = signal_error.take()
-            {
-                return Err(error);
-            }
-            let observed = self.observed_empty(deadline);
-            #[cfg(unix)]
-            let observed = observed.map_err(|error| signal_error.take().unwrap_or(error));
-            if observed? {
+                let observed = self.observed_empty(deadline);
                 #[cfg(unix)]
-                if signal_error.is_some() {
-                    // A complete group observation and this retained child's
-                    // actual exit are both required. Do not wait unboundedly
-                    // on a stale empty snapshot after a refused signal.
-                    if Instant::now() >= deadline
-                        && let Some(error) = signal_error.take()
-                    {
-                        return Err(error);
-                    }
-                    if matches!(self.child.try_wait(), Ok(Some(_))) {
+                let observed = observed.map_err(|error| signal_error.take().unwrap_or(error));
+                if observed? {
+                    #[cfg(unix)]
+                    if signal_error.is_some() {
+                        // A complete group observation and this retained child's
+                        // actual exit are both required. Do not wait unboundedly
+                        // on a stale empty snapshot after a refused signal.
+                        if Instant::now() >= deadline
+                            && let Some(error) = signal_error.take()
+                        {
+                            return Err(error);
+                        }
+                        if matches!(self.child.try_wait(), Ok(Some(_))) {
+                            self.settled = true;
+                            return Ok(());
+                        }
+                        // An error here remains an unknown child observation.
+                        // Retry only within the original window, preserving the
+                        // first signal error rather than replacing its OS code.
+                    } else {
+                        self.child.wait()?;
                         self.settled = true;
                         return Ok(());
                     }
-                    // An error here remains an unknown child observation.
-                    // Retry only within the original window, preserving the
-                    // first signal error rather than replacing its OS code.
-                } else {
-                    self.child.wait()?;
-                    self.settled = true;
-                    return Ok(());
                 }
-                #[cfg(windows)]
-                {
-                    self.child.wait()?;
-                    self.settled = true;
-                    return Ok(());
+                if Instant::now() >= deadline {
+                    #[cfg(unix)]
+                    if let Some(error) = signal_error.take() {
+                        return Err(error);
+                    }
+                    return Err(io::Error::new(
+                        io::ErrorKind::TimedOut,
+                        "Owned process tree is not proved empty; retain its claim",
+                    ));
                 }
+                thread::sleep(
+                    deadline
+                        .saturating_duration_since(Instant::now())
+                        .min(Duration::from_millis(20)),
+                );
             }
-            if Instant::now() >= deadline {
-                #[cfg(unix)]
-                if let Some(error) = signal_error.take() {
-                    return Err(error);
-                }
-                return Err(io::Error::new(
-                    io::ErrorKind::TimedOut,
-                    "Owned process tree is not proved empty; retain its claim",
-                ));
-            }
-            thread::sleep(
-                deadline
-                    .saturating_duration_since(Instant::now())
-                    .min(Duration::from_millis(20)),
-            );
         }
     }
-
+    #[cfg(not(windows))]
     fn observed_empty(&mut self, deadline: Instant) -> io::Result<bool> {
         loop {
             match self.empty() {
@@ -372,6 +497,25 @@ impl OwnedTree {
 }
 impl Drop for OwnedTree {
     fn drop(&mut self) {
+        #[cfg(windows)]
+        {
+            if self.windows.is_none() {
+                return;
+            }
+            if self.settle(Duration::from_secs(2)).is_err()
+                && let Some(windows) = self.windows.take()
+            {
+                // Disarm the shell before moving ORIGINAL owners to the
+                // existing retry queue, whose settlement runs unlocked.
+                self.settled = true;
+                super::capture::retain_tree(Self {
+                    windows: Some(windows),
+                    token: self.token,
+                    settled: false,
+                });
+            }
+        }
+        #[cfg(not(windows))]
         let _ = self.settle(Duration::from_secs(2));
     }
 }
