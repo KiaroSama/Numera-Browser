@@ -393,6 +393,26 @@ source_test!(
     {
         let documents = workflow_documents()?;
         release::release_workflows(&documents)?;
+        for reference in [
+            "${{ inputs.source_sha }}",
+            "refs/heads/unreviewed",
+            "${{ github.event.pull_request.head.sha }}",
+        ] {
+            let mut bad = documents.clone();
+            let steps = bad["release"]["jobs"]["review"]["steps"]
+                .as_array_mut()
+                .expect("release review steps");
+            let checkout = steps
+                .iter_mut()
+                .find(|step| {
+                    step["uses"]
+                        .as_str()
+                        .is_some_and(|s| s.starts_with("actions/checkout@"))
+                })
+                .expect("release checkout");
+            checkout["with"]["ref"] = reference.into();
+            assert!(release::release_workflows(&bad).is_err());
+        }
         let mut bad = documents.clone();
         bad["ci"]["on"] = json!({"push":{}});
         assert!(release::release_workflows(&bad).is_err());

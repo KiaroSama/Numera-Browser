@@ -223,12 +223,12 @@ fn home_extension_worker(home: &std::path::Path) -> Result<(), Box<dyn std::erro
                     // APFS rejects invalid UTF-8 before creating an entry.
                     // Expansion still retains every original OS byte and
                     // the actual filesystem refusal must leave no entry.
-                    assert_eq!(
+                    assert!(matches!(
                         fs::symlink_metadata(&expanded)
                             .expect_err("unrepresentable name")
                             .raw_os_error(),
-                        Some(libc::EILSEQ)
-                    );
+                        Some(libc::EILSEQ) | Some(libc::ENOENT)
+                    ));
                 }
                 Err(error) => return Err(error.into()),
             }

@@ -26,7 +26,7 @@ factory is compiler output, with source/tool hashes and deterministic regenerati
 checks. Actual browser comparisons preserve identity, probe failures and strict
 CSP behavior. No page CSP policy is relaxed to initialize this runtime.
 
-[Current upstream review](upstream-review-20261113.json) distinguishes stable
+[Current upstream review](upstream-review-20261114.json) distinguishes stable
 artifacts from source-only changes. Driver/browser generations remain separate.
 Camoufox includes native fingerprint-model, identity, geometry, locale, GeoIP,
 font and WebGL preparation. CPU features require declared support in the selected
@@ -115,9 +115,11 @@ workflow retains all security-extended queries and full SARIF evidence, and its
 independent verdict must not be replaced with a local successful process exit.
 Resolving the repository configuration and reviewing reported findings remain
 part of final CI acceptance.
-The [individual CodeQL review](verification/codeql-review-20261114.json) records
-the complete analyzed result set, source identity, confirmed defects and
-test-data or FFI-model findings; it is not a passing analysis verdict.
+The [initial individual CodeQL review](verification/codeql-review-20261114.json)
+and [fresh scan review](verification/codeql-review-ci5-20261114.json) record exact
+source identities, confirmed defects and the remaining test-data or FFI-model
+findings. The fresh scan no longer reports the 152 logging sinks or four proved
+salt-admission defects; these reviews are not a passing independent verdict.
 
 Performance compares the genuine `3bf1d8` native application checkpoint with the
 current native product, using the same current Rust SDK transport and resources.

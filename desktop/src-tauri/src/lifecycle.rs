@@ -153,6 +153,24 @@ fn engine_command(port: u16, resources: Option<&std::path::Path>) -> Result<Comm
     engine_command_at(port, dir, resources, std::env::var_os("NUMERA_ENGINE"))
 }
 
+#[cfg(target_os = "linux")]
+fn linux_shared_engine(resources: &std::path::Path) -> Option<std::path::PathBuf> {
+    // Preserve an AppImage's mount prefix. A dev/portable resource directory
+    // must never become an unrelated lookup under a host /usr/share tree.
+    let product = resources.file_name()?;
+    let lib = resources.parent()?;
+    let usr = lib.parent()?;
+    if lib.file_name()? != "lib" || usr.file_name()? != "usr" {
+        return None;
+    }
+    Some(
+        usr.join("share")
+            .join(product)
+            .join("engine")
+            .join(NATIVE_ENGINE),
+    )
+}
+
 fn engine_command_at(
     port: u16,
     dir: &std::path::Path,
@@ -173,12 +191,17 @@ fn engine_command_at(
     // application resource directory on Linux, installation root on Windows).
     let portable = dir.join("engine").join(NATIVE_ENGINE);
     let bundled = resources.map(|root| root.join("engine").join(NATIVE_ENGINE));
+    #[cfg(target_os = "linux")]
+    let shared = resources.and_then(linux_shared_engine);
+    #[cfg(not(target_os = "linux"))]
+    let shared: Option<std::path::PathBuf> = None;
     let selected = if portable.is_file() {
         Some((portable.clone(), true))
     } else {
         bundled
             .as_ref()
             .filter(|path| path.is_file())
+            .or_else(|| shared.as_ref().filter(|path| path.is_file()))
             .map(|path| (path.clone(), false))
     };
     if let Some((engine, is_portable)) = selected {
@@ -222,10 +245,14 @@ fn engine_command_at(
         return Ok(cmd);
     }
 
+    let shared_hint = shared
+        .as_ref()
+        .map(|path| format!("\n  {}", path.display()))
+        .unwrap_or_default();
     Err(format!(
-        "No native engine to run.\nLooked for:\n  {}\n  {}\nBuild the native product or set NUMERA_ENGINE to its executable.",
+        "No native engine to run.\nLooked for:\n  {}\n  {}{}\nBuild the native product or set NUMERA_ENGINE to its executable.",
         portable.display(),
-        bundled.as_ref().map(|path| path.display().to_string()).unwrap_or_else(|| "(no installed resource directory)".into())
+        bundled.as_ref().map(|path| path.display().to_string()).unwrap_or_else(|| "(no installed resource directory)".into()), shared_hint
     ))
 }
 

@@ -36,9 +36,17 @@ Regenerate from the repository root with Rust 1.99.1, the
 Linux x64 Binaryen 133 `wasm2js` executable:
 
 ```sh
+cargo install wasm-bindgen-cli --version =0.2.129 --locked
 cargo run --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- --wasm2js /path/to/wasm2js
 cargo run --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- --wasm2js /path/to/wasm2js --check
 ```
+
+Use the crates.io CLI installation above, matching CI. The GitHub prebuilt CLI
+reports the same version but embeds a Git commit suffix in the intermediate
+WASM `producers` section. That changes the full intermediate hash even when the
+final program is identical. The compiler retains every custom section and
+checks the full receipt; `target/browser-page-generated/receipt.actual.json`
+records the actual candidate receipt separately from the committed expectation.
 
 The checked-in `generated/runtime.js` is generated output, with its Rust inputs,
 tool hashes and target recorded in `generated/receipt.json`. CI requires a fresh

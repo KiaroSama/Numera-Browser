@@ -1,6 +1,12 @@
 //! Windows FFI boundary. All handles below are owned RAII values; pointers refer
 //! to bounded, live buffers for the duration of the synchronous Windows call.
 #![allow(unsafe_code)]
+#[path = "sip.rs"]
+mod sip;
+#[cfg(feature = "test-support")]
+pub(super) fn indirect_digest_controls(root: &std::path::Path) -> std::io::Result<()> {
+    sip::controls(root)
+}
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{
@@ -343,7 +349,6 @@ fn message_parameter(message: &Message, kind: u32) -> io::Result<Vec<usize>> {
 }
 pub(super) fn verify(path: &Path, expected: &str) -> io::Result<()> {
     regular(path)?;
-    verify_file_digest(path)?;
     let mut bytes = signed_blob(path)?;
     let blob = CRYPT_INTEGER_BLOB {
         cbData: bytes.len() as u32,
@@ -421,7 +426,8 @@ pub(super) fn verify(path: &Path, expected: &str) -> io::Result<()> {
     {
         return Err(last("Authenticode CMS signature verification failed"));
     }
-    Ok(())
+    sip::verify(path, &message)?;
+    verify_file_digest(path)
 }
 fn sign_file(path: &Path, certificate: &Certificate) -> io::Result<()> {
     // Embed only the selected signer. A memory-only public certificate store

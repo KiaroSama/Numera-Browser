@@ -7,7 +7,7 @@
   "binaryen_archive": "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz",
   "binaryen_archive_sha256": "2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489",
   "bindgen_glue_sha256": "0090b56b9c48971945bdc1abeb9a8b4be9be1bf808c80968524daca4bca0c07b",
-  "binding_wasm_sha256": "14bf50bdfbf642c91d797c4409e041c1797e81f45866f79abbd724dcf52ce6f8",
+  "binding_wasm_sha256": "065d5c4e44d0f1cb92e63f7be4119593cf8c4755def7e6c8075742fd112dd296",
   "bridge": [
     "generated module imports/exports become a synchronous classic factory",
     "generated Uint8Array and DataView caches observe non-detaching ArrayBuffer growth"
@@ -34,7 +34,7 @@
     "browser-page-rust/Cargo.lock": "317576e2b9c4ff958dc35e79b1e53e2f05943b1208767bcfc9b87253ce623d92",
     "browser-page-rust/Cargo.toml": "ba9d580cd5e9242f7375365f9651785e36cc7620d442569fbc7fbf607b4fbf11",
     "browser-page-rust/src/artifact.rs": "a9da1e5bd6ed7896a56b5a46178cae2d240243545e81f7727cbd21c3c15be2b8",
-    "browser-page-rust/src/bin/browser-page-build.rs": "5479f7f0828348ca396a26424c5c8a15f7a45384165e362b89856d489d62dfc5",
+    "browser-page-rust/src/bin/browser-page-build.rs": "24593d80d9ebda853fda2405113f23040a4ab44ab8ed4ce3e9f1d2d40fc540c2",
     "browser-page-rust/src/identity.rs": "13439ae3f2ccc78baf5eb782fe7151f91f0997b5866ab76fcc02230c8e4bc642",
     "browser-page-rust/src/lib.rs": "e22c11e60c83f8fe258d5fea75f016f4afc222e8c078564db87fe34dca2cf1e1",
     "browser-page-rust/src/probes.rs": "05e28abdc49f7f3902369207003d192e248fc4da1d6d8ee4980123623c9d311e",

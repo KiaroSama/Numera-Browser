@@ -106,6 +106,7 @@ pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
 fn download(url: &str, target: &Path, expected: &str, limit: u64) -> Result<()> {
     if ![
         "https://files.pythonhosted.org/packages/",
+        "https://registry.npmjs.org/playwright-core/-/",
         "https://github.com/daijro/",
         "https://codeload.github.com/daijro/camoufox/",
         "https://codeload.github.com/gorhill/uBlock/",
@@ -183,6 +184,12 @@ fn member(name: &str) -> Result<PathBuf> {
 /// Unpack regular bytes and materialize only contained vendor symlinks. The
 /// resulting resource tree contains no links and can be inventoried portably.
 pub fn extract(archive: &Path, destination: &Path, prefix: &str) -> Result<()> {
+    if archive
+        .extension()
+        .is_some_and(|extension| extension == "tgz")
+    {
+        return extract_package(archive, destination, prefix);
+    }
     fs::create_dir_all(
         destination
             .parent()
@@ -297,6 +304,89 @@ pub fn extract(archive: &Path, destination: &Path, prefix: &str) -> Result<()> {
         links = pending;
     }
     ci::fail("Vendor archive has unresolved or cyclic links")
+}
+
+/// The official platform-independent transport package contains regular files
+/// only. Read each member ourselves so tar links, special files, duplicate
+/// names and paths outside the declared package cannot reach the resource tree.
+fn extract_package(archive: &Path, destination: &Path, prefix: &str) -> Result<()> {
+    fs::create_dir_all(destination.parent().ok_or("Package parent missing")?)?;
+    fs::create_dir(destination)?;
+    let mut archive = tar::Archive::new(flate2::read::GzDecoder::new(fs::File::open(archive)?));
+    let mut names = BTreeSet::new();
+    let mut total = 0u64;
+    // Raw mode exposes extension headers instead of allowing tar to allocate
+    // unbounded GNU/PAX metadata before our size/type checks can run.
+    for (index, entry) in archive.entries()?.raw(true).enumerate() {
+        let mut entry = entry?;
+        if index >= 10_000 {
+            return ci::fail("Vendor package has too many entries");
+        }
+        let raw = entry.path_bytes();
+        let name = std::str::from_utf8(&raw)?;
+        let name = name
+            .strip_prefix(prefix)
+            .ok_or("Vendor package member has an unexpected prefix")?;
+        let size = entry.size();
+        total = total
+            .checked_add(size)
+            .ok_or("Vendor package size overflow")?;
+        if size > 16 * 1024 * 1024 || total > 128 * 1024 * 1024 {
+            return ci::fail("Expanded vendor package exceeds its bound");
+        }
+        if name.is_empty() && entry.header().entry_type().is_dir() && size == 0 {
+            continue;
+        }
+        let relative = member(name)?;
+        if !names.insert(relative.clone()) {
+            return ci::fail("Duplicate vendor package member");
+        }
+        let target = destination.join(relative);
+        let kind = entry.header().entry_type();
+        if kind.is_dir() && size == 0 {
+            fs::create_dir_all(target)?;
+        } else if kind.is_file() {
+            fs::create_dir_all(target.parent().ok_or("Package member parent missing")?)?;
+            let mut output = fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&target)?;
+            if crate::progress::copy(&mut entry, &mut output)? != size {
+                return ci::fail("Vendor package member is truncated");
+            }
+            output.flush()?;
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                fs::set_permissions(
+                    &target,
+                    fs::Permissions::from_mode(entry.header().mode()? & 0o777),
+                )?;
+            }
+        } else {
+            return ci::fail("Vendor package contains a link or special file");
+        }
+    }
+    if names.is_empty() {
+        return ci::fail("Vendor package is empty");
+    }
+    Ok(())
+}
+
+/// Check the extracted transport's actual identity before invoking vendor code.
+pub fn verify_driver(driver: &Path, version: &str, package: &str) -> Result<()> {
+    let mut bytes = Vec::new();
+    fs::File::open(driver.join("package/package.json"))?
+        .take(65_537)
+        .read_to_end(&mut bytes)?;
+    if bytes.len() > 65_536 || !driver.join("package/cli.js").is_file() {
+        return ci::fail("Vendor SDK package is incomplete or exceeds its bound");
+    }
+    let manifest: Value = serde_json::from_slice(&bytes)?;
+    if manifest["name"] != format!("{package}-core") || manifest["version"] != version {
+        return ci::fail("Actual SDK package differs from its reviewed version");
+    }
+    Ok(())
 }
 
 fn copy_tree(
@@ -509,6 +599,11 @@ fn provision(root: &Path, scratch: &Path) -> Result<()> {
             text(archive_pin, "sha256")?,
             256 * 1024 * 1024,
         )?;
+        if fs::metadata(&archive)?.len()
+            != archive_pin["size"].as_u64().ok_or("Wheel size missing")?
+        {
+            return ci::fail("Vendor SDK wheel differs from its reviewed size");
+        }
         let driver = root.join("drivers").join(backend);
         extract(
             &archive,
@@ -516,13 +611,31 @@ fn provision(root: &Path, scratch: &Path) -> Result<()> {
             &format!("{}/driver/", text(pin, "wheel_package")?),
         )?;
         fs::remove_file(archive)?;
+        if let Some(package) = pin.get("package_archive") {
+            let archive = scratch.join(format!("{backend}-package.tgz"));
+            download(
+                text(package, "url")?,
+                &archive,
+                text(package, "sha256")?,
+                32 * 1024 * 1024,
+            )?;
+            if fs::metadata(&archive)?.len()
+                != package["size"].as_u64().ok_or("Package size missing")?
+            {
+                return ci::fail("Vendor SDK package differs from its reviewed size");
+            }
+            // This directory was created inside our unpublished staging root.
+            // Replace only the carrier wheel's old package, retaining its exact
+            // platform Node binary and the separately pinned official package.
+            fs::remove_dir_all(driver.join("package"))?;
+            extract(&archive, &driver.join("package"), "package/")?;
+            fs::remove_file(archive)?;
+        }
+        verify_driver(&driver, text(pin, "version")?, text(pin, "wheel_package")?)?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
             fs::set_permissions(driver.join(node), fs::Permissions::from_mode(0o755))?;
-        }
-        if !driver.join("package/cli.js").is_file() {
-            return ci::fail("Vendor SDK wheel has no driver");
         }
         let output = execute(Command::new(driver.join(node)).arg("--version"), 10)?;
         let version = String::from_utf8(output.stdout)?.trim().to_owned();

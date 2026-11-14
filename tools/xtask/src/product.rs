@@ -488,6 +488,48 @@ fn build_inner(
     Ok(())
 }
 
+/// Linux deployment tools rewrite ELF files below usr/lib. Vendor trees are
+/// immutable data for our separately launched engine and belong in usr/share.
+pub fn desktop_bundle_resources(
+    platform: &str,
+    runtime: &Path,
+    product: &str,
+) -> io::Result<Value> {
+    if product.is_empty()
+        || matches!(product, "." | "..")
+        || product
+            .chars()
+            .any(|character| character.is_control() || matches!(character, '/' | '\\'))
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Desktop product resource name must be one component",
+        ));
+    }
+    let source = runtime.to_str().ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Desktop resource path is not Unicode",
+        )
+    })?;
+    match platform {
+        "linux" => {
+            let files = serde_json::Map::from_iter([(
+                format!("/usr/share/{product}/engine"),
+                json!(source),
+            )]);
+            Ok(json!({"resources":{},"linux":{"appimage":{"files":files},"deb":{"files":files}}}))
+        }
+        "macos" | "windows" => Ok(
+            json!({"resources":serde_json::Map::from_iter([(source.to_owned(),json!("engine/"))])}),
+        ),
+        _ => Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Unsupported native desktop resource platform",
+        )),
+    }
+}
+
 fn build_desktop(
     root: &Path,
     options: &Options,
@@ -500,11 +542,16 @@ fn build_desktop(
     let work = work.canonicalize()?;
     let config = work.join("tauri.product.json");
     let runtime = stage.join("engine").canonicalize()?;
-    let resource_map =
-        serde_json::Map::from_iter([(runtime.to_string_lossy().into_owned(), json!("engine/"))]);
+    let shell_config: Value =
+        serde_json::from_slice(&fs::read(root.join("desktop/src-tauri/tauri.conf.json"))?)?;
+    let product = shell_config["productName"]
+        .as_str()
+        .ok_or("Desktop product name missing")?;
+    let mut bundle = desktop_bundle_resources(&identity.platform, &runtime, product)?;
+    bundle["targets"] = json!(bundles);
     write_json(
         &config,
-        &json!({"build":{"frontendDist":root.join("dashboard/dist").canonicalize()?}, "bundle":{"resources":resource_map, "targets":bundles}}),
+        &json!({"build":{"frontendDist":root.join("dashboard/dist").canonicalize()?}, "bundle":bundle}),
     )?;
     let mut build = Command::new(cargo());
     build

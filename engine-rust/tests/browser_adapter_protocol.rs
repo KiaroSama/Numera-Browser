@@ -570,7 +570,7 @@ fn fixed_input_preserves_empty_partial_coalesced_and_bounded_frames()
             self.0.store(true, Ordering::Release);
         }
     }
-    for (chunks, invalid) in [
+    for (case_index, (chunks, invalid)) in [
         (vec![], false),
         (vec![b"{".to_vec()], true),
         (vec![b"{}".to_vec()], true),
@@ -579,7 +579,10 @@ fn fixed_input_preserves_empty_partial_coalesced_and_bounded_frames()
         (vec![vec![b'x'; 17]], true),
         (vec![b"[]\n".to_vec()], true),
         (vec![b"\xff\n".to_vec()], true),
-    ] {
+    ]
+    .into_iter()
+    .enumerate()
+    {
         let temporary = common::TempDirectory::new("fixed-native-input")?;
         let root = temporary.path();
         let ready = root.join("ready");
@@ -655,11 +658,77 @@ fn fixed_input_preserves_empty_partial_coalesced_and_bounded_frames()
             Ok(())
         });
         drop(input);
-        tree.settle(Duration::from_secs(5))?;
+        settle_input_fixture(&mut tree, case_index)?;
         result?;
         temporary.cleanup()?;
     }
     Ok(())
+}
+
+fn settle_input_fixture(
+    tree: &mut numera_core::ownership::tree::OwnedTree,
+    case_index: usize,
+) -> std::io::Result<()> {
+    #[cfg(unix)]
+    {
+        use numera_core::ownership::{observation, test_support};
+        use std::sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        };
+        #[derive(Default)]
+        struct Probe {
+            births: AtomicUsize,
+            signals: AtomicUsize,
+            groups: AtomicUsize,
+            last: AtomicUsize,
+        }
+        impl test_support::Backend for Probe {
+            fn birth(&self, _pid: u32) -> Option<std::io::Result<Option<u64>>> {
+                self.births.fetch_add(1, Ordering::Relaxed);
+                self.last.store(1, Ordering::Relaxed);
+                None
+            }
+            fn signal(&self, _target: i32, _force: bool) -> Option<std::io::Result<()>> {
+                self.signals.fetch_add(1, Ordering::Relaxed);
+                self.last.store(2, Ordering::Relaxed);
+                None
+            }
+            fn group_empty(&self, _group: i32) -> Option<std::io::Result<bool>> {
+                self.groups.fetch_add(1, Ordering::Relaxed);
+                self.last.store(3, Ordering::Relaxed);
+                None
+            }
+        }
+        let probe = Arc::new(Probe::default());
+        let start = Instant::now();
+        let result =
+            test_support::with_backend(probe.clone(), || tree.settle(Duration::from_secs(5)));
+        if let Err(error) = &result {
+            let signals = probe.signals.load(Ordering::Relaxed);
+            eprintln!(
+                "Input fixture teardown case={case_index} elapsed_ms={} birth_calls={} signal_calls={signals} group_calls={} last_boundary_code={} errno={:?} kind={:?} {}",
+                start.elapsed().as_millis(),
+                probe.births.load(Ordering::Relaxed),
+                probe.groups.load(Ordering::Relaxed),
+                probe.last.load(Ordering::Relaxed),
+                error.raw_os_error(),
+                error.kind(),
+                observation::diagnostic(
+                    i32::try_from(tree.pid()).unwrap_or(0),
+                    false,
+                    signals > 0,
+                    false
+                )
+            );
+        }
+        result
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = case_index;
+        tree.settle(Duration::from_secs(5))
+    }
 }
 
 #[test]

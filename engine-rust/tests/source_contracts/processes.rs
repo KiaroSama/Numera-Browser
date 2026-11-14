@@ -8,6 +8,19 @@ pub(super) struct Wire {
     reader: BufReader<TcpStream>,
 }
 impl Wire {
+    fn blocking(stream: TcpStream) -> Self {
+        // Darwin accepts inherit O_NONBLOCK from this bounded listener.
+        // The line protocol uses blocking reads with its own finite timeout.
+        stream
+            .set_nonblocking(false)
+            .expect("blocking event stream");
+        stream
+            .set_read_timeout(Some(Duration::from_secs(15)))
+            .expect("bounded event wait");
+        Self {
+            reader: BufReader::new(stream),
+        }
+    }
     pub fn say(&mut self, event: &str) {
         writeln!(self.reader.get_mut(), "{event}").expect("send event");
         self.reader.get_mut().flush().expect("flush event");
@@ -56,6 +69,16 @@ impl Wire {
         }
     }
 }
+#[cfg(unix)]
+#[allow(unsafe_code)]
+fn nonblocking(stream: &TcpStream) -> bool {
+    use std::os::fd::AsRawFd;
+    // SAFETY: the stream retains this live descriptor; F_GETFL accepts only
+    // the scalar descriptor/command and has no pointer or vararg output.
+    let flags = unsafe { libc::fcntl(stream.as_raw_fd(), libc::F_GETFL) };
+    assert!(flags >= 0, "event socket flags unavailable");
+    flags & libc::O_NONBLOCK != 0
+}
 pub(super) struct Peers {
     wire: BTreeMap<String, Wire>,
     children: Vec<Child>,
@@ -103,12 +126,7 @@ pub(super) fn processes(
         let port = std::env::var("NUMERA_SOURCE_CONTRACT_PORT").expect("child port");
         let stream =
             TcpStream::connect(format!("127.0.0.1:{port}")).expect("native parent rendezvous");
-        stream
-            .set_read_timeout(Some(Duration::from_secs(15)))
-            .expect("bounded child wait");
-        let mut wire = Wire {
-            reader: BufReader::new(stream),
-        };
+        let mut wire = Wire::blocking(stream);
         wire.say(&role);
         child(&root, &role, &mut wire);
         return;
@@ -143,12 +161,18 @@ pub(super) fn processes(
     while peers.wire.len() < 2 {
         match listener.accept() {
             Ok((stream, _)) => {
-                stream
-                    .set_read_timeout(Some(Duration::from_secs(15)))
-                    .expect("bounded parent wait");
-                let mut wire = Wire {
-                    reader: BufReader::new(stream),
-                };
+                #[cfg(unix)]
+                if key == "batch-rollback-race" {
+                    // Replay Darwin's inherited flag on every Unix host and
+                    // prove the actual kernel state changes before any read.
+                    stream.set_nonblocking(true).expect("inherited socket flag");
+                    assert!(nonblocking(&stream));
+                }
+                let mut wire = Wire::blocking(stream);
+                #[cfg(unix)]
+                if key == "batch-rollback-race" {
+                    assert!(!nonblocking(wire.reader.get_ref()));
+                }
                 let mut role = String::new();
                 wire.reader.read_line(&mut role).expect("child handshake");
                 peers.wire.insert(role.trim().to_owned(), wire);

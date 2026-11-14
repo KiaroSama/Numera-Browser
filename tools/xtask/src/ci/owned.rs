@@ -104,17 +104,25 @@ pub fn run_streamed(
             Observation::BeforeCleanup {
                 leader_exited,
                 natural_settlement,
+                natural_reason,
                 ..
             } => {
-                log.event("INFO", "ci-owned", "phase=settle-tree");
                 observed = true;
                 if let Err(error) =
                     resources::require_natural_settlement(leader_exited, natural_settlement)
                 {
                     verdict = Some(error);
                     #[cfg(windows)]
-                    retain_member_diagnostic(root, tree, leader_exited, natural_settlement);
+                    retain_member_diagnostic(
+                        root,
+                        tree,
+                        leader_exited,
+                        natural_settlement,
+                        natural_reason,
+                    );
                 }
+                let _ = natural_reason;
+                log.event("INFO", "ci-owned", "phase=settle-tree");
                 #[cfg(windows)]
                 if let Some(scope) = accounting.take() {
                     let (result, events) = scope.finish(
@@ -157,6 +165,7 @@ pub fn run_streamed(
     };
     let nested = units.settle(cleanup);
     if let Err(error) = nested {
+        retain_units_diagnostic(root, &units);
         temporary.retain();
         return Err(error.into());
     }
@@ -184,6 +193,52 @@ pub fn run_streamed(
         memory,
     })
 }
+fn retain_units_diagnostic(root: &Path, units: &Units) {
+    use std::{
+        fs,
+        io::Write,
+        sync::atomic::{AtomicU64, Ordering},
+    };
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    // This is an opt-in projection from the real receipt parser. Unknown
+    // record fields, argv, paths and arbitrary strings never enter the report.
+    // A failed cleanup must not acquire a fresh lock-wait budget for logging.
+    let diagnostic = units.diagnostic(Duration::ZERO).unwrap_or_else(
+        |error| serde_json::json!({"available":false,"query_error_code":error.raw_os_error()}),
+    );
+    let evidence = serde_json::json!({"schema":1,"kind":"nested-receipt","diagnostic":diagnostic});
+    let Ok(bytes) = serde_json::to_vec(&evidence) else {
+        return;
+    };
+    if bytes.len() > 65536 {
+        return;
+    }
+    eprintln!(
+        "Owned nested receipt evidence: {}",
+        String::from_utf8_lossy(&bytes)
+    );
+    // Reuse the retained member-evidence glob in every owning workflow.
+    let path = root.join(format!(
+        "build/owned-members-{}-units-{}.json",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    let written = fs::create_dir_all(root.join("build")).and_then(|_| {
+        let mut options = fs::OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let mut file = options.open(&path)?;
+        file.write_all(&bytes)?;
+        file.sync_all()
+    });
+    if written.is_ok() {
+        eprintln!("Retained nested receipt evidence: {}", path.display());
+    }
+}
 pub fn limits(wall: Duration, idle: Duration, bytes: usize) -> capture::Limits {
     capture::Limits {
         wall,
@@ -199,6 +254,7 @@ fn retain_member_diagnostic(
     tree: &numera_core::ownership::tree::OwnedTree,
     leader_exited: bool,
     natural: Option<bool>,
+    reason: &str,
 ) {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT: AtomicU64 = AtomicU64::new(0);
@@ -214,7 +270,7 @@ fn retain_member_diagnostic(
         rows.truncate(32);
         members["omitted_members"] = omitted.into();
     }
-    let evidence = serde_json::json!({"schema":1,"leader_pid":tree.pid(),"leader_exited":leader_exited,"natural_settlement":natural,"job":members});
+    let evidence = serde_json::json!({"schema":1,"leader_pid":tree.pid(),"leader_exited":leader_exited,"natural_settlement":natural,"natural_reason":reason,"job":members});
     let Ok(bytes) = serde_json::to_vec(&evidence) else {
         return;
     };

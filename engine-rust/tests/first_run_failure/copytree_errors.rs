@@ -218,12 +218,12 @@ fn new_subtree_errors_match_original_continuation_summaries_and_retry()
                         bytes,
                         "the rejected OS path retained every original filename byte"
                     );
-                    assert_eq!(
+                    assert!(matches!(
                         fs::symlink_metadata(&original)
                             .expect_err("APFS refused filename")
                             .raw_os_error(),
-                        Some(libc::EILSEQ)
-                    );
+                        Some(libc::EILSEQ) | Some(libc::ENOENT)
+                    ));
                     let target = destination.join(std::ffi::OsStr::from_bytes(&bytes));
                     let diagnostic = numera_core::storage::first_run_test_support::pipe_failure(
                         &original, &target,

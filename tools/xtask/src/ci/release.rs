@@ -631,6 +631,22 @@ pub fn release_workflows(workflows: &Value) -> Result<()> {
     let steps = release["jobs"]["review"]["steps"]
         .as_array()
         .ok_or("Independent release review missing")?;
+    let checkouts: Vec<_> = steps
+        .iter()
+        .filter(|step| {
+            step["uses"]
+                .as_str()
+                .is_some_and(|name| name.starts_with("actions/checkout@"))
+        })
+        .collect();
+    if checkouts.len() != 1
+        || checkouts[0]["with"]["ref"] != "${{ github.sha }}"
+        || checkouts[0]["with"]["persist-credentials"] != false
+    {
+        return fail(
+            "Artifact review must directly checkout its trusted run source without persisted credentials",
+        );
+    }
     let codeql = steps.iter().position(|step| {
         step["run"]
             .as_str()

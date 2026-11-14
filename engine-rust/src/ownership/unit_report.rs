@@ -1,6 +1,7 @@
 //! Versioned receipts keep interrupted trusted spawn transfers visibly pending.
 use crate::storage::locks::DataLock;
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::{self, OpenOptions},
@@ -16,6 +17,26 @@ pub struct Report {
     pub trees: Vec<Value>,
     pub complete: bool,
     pub problem: Option<String>,
+}
+struct ParsedReport {
+    report: Report,
+    diagnostic: Option<Value>,
+}
+fn identity_hash(value: &str) -> String {
+    Sha256::digest(value.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+/// Bounded metadata from the same receipt parser used for settlement. Unknown
+/// JSON fields, arbitrary names, paths and argument values are never copied.
+pub fn diagnostic(path: &Path, budget: Duration, scope: Option<&str>) -> io::Result<Value> {
+    let deadline = Instant::now()
+        .checked_add(budget)
+        .ok_or_else(|| io::Error::other("Invalid ownership diagnostic budget"))?;
+    read_parsed(path, scope, Some(deadline), true)?
+        .diagnostic
+        .ok_or_else(|| io::Error::other("Ownership diagnostic projection is missing"))
 }
 fn report_path() -> io::Result<Option<PathBuf>> {
     std::env::var_os(ENV)
@@ -167,6 +188,14 @@ fn read_scoped_deadline(
     scope: Option<&str>,
     deadline: Option<Instant>,
 ) -> io::Result<Report> {
+    Ok(read_parsed(path, scope, deadline, false)?.report)
+}
+fn read_parsed(
+    path: &Path,
+    scope: Option<&str>,
+    deadline: Option<Instant>,
+    capture_diagnostic: bool,
+) -> io::Result<ParsedReport> {
     let path = validate(path)?;
     let lock = DataLock::for_file(&path)?;
     let _guard = lock.acquire(deadline.map_or(Duration::from_secs(5), |deadline| {
@@ -184,20 +213,35 @@ fn read_scoped_deadline(
     let mut resolved = BTreeSet::new();
     let mut damaged = false;
     let mut header = false;
+    let mut lines = 0u64;
+    let mut header_events = 0u64;
+    let mut invalid_headers = 0u64;
+    let mut malformed_json = 0u64;
+    let mut invalid_events = 0u64;
+    let mut invalid_units = 0u64;
+    let mut tails = 0u64;
+    let mut pending_events = 0u64;
+    let mut unit_events = 0u64;
+    let mut cancelled_events = 0u64;
     for (number, line) in bytes.split_inclusive(|byte| *byte == b'\n').enumerate() {
+        lines += 1;
         if !line.ends_with(b"\n") {
             damaged = true;
+            tails += 1;
         }
         let value: Value = match serde_json::from_slice(line) {
             Ok(value) => value,
             Err(_) => {
                 damaged = true;
+                malformed_json += 1;
                 continue;
             }
         };
         if value["event"] == "header" {
+            header_events += 1;
             if number != 0 || header || value["version"].as_u64() != Some(2) {
                 damaged = true;
+                invalid_headers += 1;
             } else {
                 header = true;
             }
@@ -205,14 +249,17 @@ fn read_scoped_deadline(
         }
         let Some(attempt) = value["attempt"].as_str().filter(|value| !value.is_empty()) else {
             damaged = true;
+            invalid_events += 1;
             continue;
         };
         if !header {
             damaged = true;
+            invalid_events += 1;
             continue;
         }
         match value["event"].as_str() {
             Some("pending") => {
+                pending_events += 1;
                 let attempt_scope = match value.get("scope") {
                     None | Some(Value::Null) => None,
                     Some(Value::String(value)) if !value.is_empty() && value.len() <= 128 => {
@@ -220,6 +267,7 @@ fn read_scoped_deadline(
                     }
                     _ => {
                         damaged = true;
+                        invalid_events += 1;
                         continue;
                     }
                 };
@@ -227,14 +275,17 @@ fn read_scoped_deadline(
                     || pending.insert(attempt.to_owned(), attempt_scope).is_some()
                 {
                     damaged = true;
+                    invalid_events += 1;
                 }
             }
             Some("cancelled" | "unit") if pending.contains_key(attempt) => {
                 if value["event"] == "unit" {
                     if validate_unit(&value).is_err() {
                         damaged = true;
+                        invalid_units += 1;
                         continue;
                     }
+                    unit_events += 1;
                     let unit = json!({"pid":value["pid"],"pidToken":value["pidToken"],"tree":value["tree"]});
                     if scope.is_none_or(|scope| {
                         pending.get(attempt).and_then(Option::as_deref) == Some(scope)
@@ -242,11 +293,16 @@ fn read_scoped_deadline(
                     {
                         trees.push(unit);
                     }
+                } else {
+                    cancelled_events += 1;
                 }
                 pending.remove(attempt);
                 resolved.insert(attempt.to_owned());
             }
-            _ => damaged = true,
+            _ => {
+                damaged = true;
+                invalid_events += 1;
+            }
         }
     }
     let complete = header
@@ -254,12 +310,53 @@ fn read_scoped_deadline(
         && !pending
             .values()
             .any(|pending_scope| scope.is_none_or(|scope| pending_scope.as_deref() == Some(scope)));
-    Ok(Report {
-        trees,
-        complete,
-        problem: (!complete).then(|| {
-            "Ownership report is missing, damaged or has an unfinished spawn transfer".into()
-        }),
+    let diagnostic = capture_diagnostic.then(|| {
+    let pending_selected = pending
+        .values()
+        .filter(|pending_scope| scope.is_none_or(|scope| pending_scope.as_deref() == Some(scope)))
+        .count();
+    let pending_rows: Vec<_> = pending
+        .iter()
+        .take(32)
+        .map(|(attempt, scope)| json!({"attempt_hash":identity_hash(attempt),"scope_hash":scope.as_deref().map(identity_hash)}))
+        .collect();
+    let tree_rows: Vec<_> = trees
+        .iter()
+        .take(32)
+        .map(|tree| {
+            let mut row =
+                json!({"pid":tree["pid"],"birth":tree["pidToken"],"kind":tree["tree"]["kind"]});
+            if tree["tree"]["kind"] == "pgid" {
+                row["group"] = tree["tree"]["group"].clone();
+            } else {
+                row["group_hash"] = tree["tree"]["group"].as_str().map(identity_hash).into();
+            }
+            row
+        })
+        .collect();
+    json!({
+        "schema":1,"complete":complete,"header_valid":header,"damaged":damaged,
+        "bytes":bytes.len(),"lines":lines,"header_events":header_events,
+        "invalid_header_events":invalid_headers,"malformed_json_lines":malformed_json,
+        "invalid_event_lines":invalid_events,"invalid_unit_events":invalid_units,
+        "truncated_tail_lines":tails,"pending_events":pending_events,
+        "unit_events":unit_events,"cancelled_events":cancelled_events,
+        "resolved_attempts":resolved.len(),"pending_total":pending.len(),
+        "pending_selected":pending_selected,"selected_scope_hash":scope.map(identity_hash),
+        "pending":pending_rows,"omitted_pending":pending.len().saturating_sub(32),
+        "tree_count":trees.len(),"trees":tree_rows,"omitted_trees":trees.len().saturating_sub(32),
+        "kernel_state":"not_queried"
+    })
+    });
+    Ok(ParsedReport {
+        report: Report {
+            trees,
+            complete,
+            problem: (!complete).then(|| {
+                "Ownership report is missing, damaged or has an unfinished spawn transfer".into()
+            }),
+        },
+        diagnostic,
     })
 }
 pub fn for_job(record: &Value, root: &Path, id: &str) -> io::Result<Option<PathBuf>> {
@@ -362,9 +459,21 @@ mod tests {
         initialize(&path)?;
         assert!(read(&path)?.complete);
         assert!(empty(&path)?);
-        append(&path, &json!({"event":"pending","attempt":"a"}))?;
+        append(
+            &path,
+            &json!({"event":"pending","attempt":"a","argv":["DIAGNOSTIC-PRIVATE-ARG"],"path":"DIAGNOSTIC-PRIVATE-PATH"}),
+        )?;
         assert!(!read(&path)?.complete);
         assert!(!empty(&path)?);
+        let observed = diagnostic(&path, Duration::ZERO, None)?;
+        assert_eq!(observed["pending_total"], 1);
+        assert_eq!(observed["pending_selected"], 1);
+        assert_eq!(observed["malformed_json_lines"], 0);
+        assert_eq!(observed["header_valid"], true);
+        assert_eq!(observed["kernel_state"], "not_queried");
+        let serialized = observed.to_string();
+        assert!(!serialized.contains("DIAGNOSTIC-PRIVATE-ARG"));
+        assert!(!serialized.contains("DIAGNOSTIC-PRIVATE-PATH"));
         append(&path, &json!({"event":"cancelled","attempt":"a"}))?;
         assert!(read(&path)?.complete);
         append(
@@ -378,6 +487,16 @@ mod tests {
         assert!(!read_scoped(&path, Some("call"))?.complete);
         append(&path, &json!({"event":"cancelled","attempt":"local"}))?;
         assert!(read_scoped(&path, Some("call"))?.complete);
+        let scoped = diagnostic(&path, Duration::ZERO, Some("call"))?;
+        assert_eq!(scoped["complete"], true);
+        assert_eq!(scoped["pending_total"], 1);
+        assert_eq!(scoped["pending_selected"], 0);
+        assert_eq!(scoped["resolved_attempts"], 2);
+        assert_eq!(
+            scoped["selected_scope_hash"].as_str().map(str::len),
+            Some(64)
+        );
+        assert!(!scoped.to_string().contains("\"call\""));
         assert!(
             !read(&path)?.complete,
             "Local scope hid its parent's pending transfer"
@@ -387,6 +506,11 @@ mod tests {
             .open(&path)?
             .write_all(b"{")?;
         assert!(!read(&path)?.complete);
+        let tail = diagnostic(&path, Duration::ZERO, None)?;
+        assert_eq!(tail["complete"], false);
+        assert_eq!(tail["damaged"], true);
+        assert_eq!(tail["truncated_tail_lines"], 1);
+        assert_eq!(tail["malformed_json_lines"], 1);
         assert!(
             !read_scoped(&path, Some("call"))?.complete,
             "Scoped read hid global corruption"

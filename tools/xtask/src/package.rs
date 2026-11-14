@@ -15,8 +15,8 @@ use zip::{CompressionMethod, System, ZipWriter, write::SimpleFileOptions};
 const NOTICE: &str = "Numera Browser native acceptance candidate\n\n\
 This archive is a CLI/HTTP/MCP acceptance executable, not a complete desktop\n\
 distribution or an accepted Rust-only runtime. The included Rust browser runtime\n\
-supports Playwright and Patchright with explicitly provisioned vendor Node/SDK\n\
-and browser resources. Camoufox and Cloak still require migration. The web\n\
+supports Playwright, Patchright, Camoufox and Cloak with explicitly provisioned\n\
+vendor Node/SDK and browser resources. Cloak requires a valid license. The web\n\
 dashboard is not included. Do not replace a production installation with this\n\
 candidate. Passing compilation does not certify migration or release acceptance.\n\n\
 The matching tracked source archive and SHA256SUMS accompany this archive.\n\

@@ -73,12 +73,18 @@ above. Keep resources under this checkout so dashboard discovery can locate
 `dashboard/dist`, or place the built dashboard in the selected application
 location's `web/` directory. Complete product bundles configure this layout.
 
-Driver pins are Playwright **1.65.0**, Patchright **1.64.1**, Camoufox's Playwright
-transport **1.62.0**, and Cloak's Playwright transport **1.65.0**. Camoufox uses
+Driver pins are Playwright **1.65.1**, Patchright **1.64.1**, Camoufox's Playwright
+transport **1.62.0**, and Cloak's Playwright transport **1.65.1**. Camoufox uses
 browser **158.0.1-beta.41**, uBlock Origin **1.75.4** and the reviewed GeoIP data.
-See [current upstream review](upstream-review-20261113.json) for release/source
+See [current upstream review](upstream-review-20261114.json) for release/source
 compatibility limits. New source-only browser features are not assumed to exist
 in an older packaged engine.
+
+Playwright and Cloak use the separately pinned official `playwright-core` npm
+archive for their 1.65.1 transport, with Node from the reviewed platform wheel.
+The published Python 1.65.1 wheels still contain the older 1.65.0 transport;
+provisioning checks the extracted package's actual name and version. No Python
+or npm installation is needed to unpack or run these resources.
 
 CloakBrowser **156.0.8078.47.1** requires a valid vendor license key, including
 for headless CI. The vendor's free tier supports the current binary with one

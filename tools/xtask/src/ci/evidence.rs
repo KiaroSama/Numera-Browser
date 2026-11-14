@@ -227,6 +227,9 @@ pub struct Failure {
     panic_message: bool,
     listing: bool,
     invalid: bool,
+    required_values: Option<[String; 2]>,
+    value_index: usize,
+    values_started: bool,
 }
 impl Failure {
     pub fn new(name: &str, symptom: &str) -> Self {
@@ -244,7 +247,16 @@ impl Failure {
             panic_message: false,
             listing: false,
             invalid: false,
+            required_values: None,
+            value_index: 0,
+            values_started: false,
         }
+    }
+    /// Pin the immediate left/right diagnostics of this named assertion.
+    /// Values printed before its panic or in another section cannot satisfy it.
+    pub fn with_values(mut self, left: &str, right: &str) -> Self {
+        self.required_values = Some([format!("left: {left}"), format!("right: {right}")]);
+        self
     }
     pub fn accept(&mut self, line: &str) {
         if line.starts_with("running ") {
@@ -281,6 +293,15 @@ impl Failure {
             // values must not stand in for the required production assertion.
             self.symptomatic = line.contains(&self.symptom);
             self.panic_message = false;
+            self.values_started = true;
+        } else if self.inside
+            && self.values_started
+            && self.value_index < 2
+            && let Some(values) = &self.required_values
+            && !line.is_empty()
+        {
+            self.invalid |= line.trim() != values[self.value_index];
+            self.value_index += 1;
         } else if self.listing && !line.is_empty() {
             self.listed += 1;
             self.invalid |= line != format!("    {}", self.name);
@@ -296,6 +317,7 @@ impl Failure {
             || self.sections != 1
             || self.panics != 1
             || self.listed != 1
+            || (self.required_values.is_some() && self.value_index != 2)
         {
             return fail(
                 "Historical native regression did not fail at its required production assertion",

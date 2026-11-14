@@ -222,6 +222,27 @@ source_test!(
             resources::{self, FileRecord, Receipt, SourceOffer},
         };
         let temp = Temp::new("candidate layout with spaces")?;
+        let runtime = temp.0.join("staged engine with spaces");
+        let linux = product::desktop_bundle_resources("linux", &runtime, "Numera Browser")?;
+        assert_eq!(linux["resources"], json!({}));
+        for kind in ["appimage", "deb"] {
+            assert_eq!(
+                linux["linux"][kind]["files"],
+                json!({"/usr/share/Numera Browser/engine":runtime})
+            );
+        }
+        for platform in ["windows", "macos"] {
+            let bundle = product::desktop_bundle_resources(platform, &runtime, "Numera Browser")?;
+            assert_eq!(
+                bundle["resources"][runtime.to_str().ok_or("Resource path not Unicode")?],
+                "engine/"
+            );
+            assert!(bundle.get("linux").is_none());
+        }
+        for name in ["", ".", "..", "../escape", "x/y", "x\\y", "x\n"] {
+            assert!(product::desktop_bundle_resources("linux", &runtime, name).is_err());
+        }
+        assert!(product::desktop_bundle_resources("unknown", &runtime, "Numera Browser").is_err());
         product_diagnostics(&temp)?;
         let resources = temp.0.join("resources");
         fs::create_dir(&resources)?;

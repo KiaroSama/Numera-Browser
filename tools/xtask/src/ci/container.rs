@@ -12,6 +12,85 @@ pub struct PhaseEvidence {
     bytes_seen: usize,
     pending: Vec<u8>,
 }
+fn known_phase(phase: &str) -> bool {
+    matches!(
+        phase,
+        "Start"
+            | "Launch"
+            | "Context"
+            | "Page"
+            | "Content"
+            | "Text"
+            | "Evaluate"
+            | "ClosePage"
+            | "CloseContext"
+            | "CloseBrowser"
+            | "ConnectionCheck"
+            | "Stop"
+    )
+}
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields)]
+struct BrowserDiagnostic {
+    phase: String,
+    category: String,
+    message: String,
+}
+fn browser_diagnostic(line: &str) -> Option<String> {
+    const PREFIX: &str = "Native image browser diagnostic=";
+    const LIMIT: usize = 16 * 1024;
+    let mut diagnostic: BrowserDiagnostic =
+        serde_json::from_str(line.strip_prefix(PREFIX)?).ok()?;
+    if !known_phase(&diagnostic.phase)
+        || !matches!(
+            diagnostic.category.as_str(),
+            "io-not-found"
+                | "io-denied"
+                | "io-invalid-input"
+                | "io-invalid-data"
+                | "io-timeout"
+                | "io"
+                | "json"
+                | "protocol-library"
+                | "protocol-display"
+                | "protocol-profile-busy"
+                | "protocol-browser-crash"
+                | "protocol-validation"
+                | "protocol-launch"
+                | "protocol-target-closed"
+                | "protocol-browser-exit"
+                | "protocol-connection-closed"
+                | "protocol"
+                | "transport"
+                | "server"
+                | "launch"
+                | "connection"
+                | "target-closed"
+                | "channel-closed"
+                | "unknown-object"
+                | "object-not-found"
+                | "object-type"
+                | "timeout"
+                | "invalid-argument"
+                | "sdk"
+        )
+    {
+        return None;
+    }
+    diagnostic.message = numera_core::ownership::resources::redact_diagnostics(&diagnostic.message);
+    loop {
+        let json = serde_json::to_string(&diagnostic).ok()?;
+        let size = PREFIX.len() + json.len();
+        if size <= LIMIT {
+            return Some(format!("{PREFIX}{json}"));
+        }
+        let mut end = diagnostic.message.len().saturating_sub(size - LIMIT);
+        while !diagnostic.message.is_char_boundary(end) {
+            end -= 1;
+        }
+        diagnostic.message.truncate(end);
+    }
+}
 impl PhaseEvidence {
     pub fn observe(&mut self, bytes: &[u8]) -> Vec<String> {
         let count = bytes.len().min(65536usize.saturating_sub(self.bytes_seen));
@@ -24,24 +103,12 @@ impl PhaseEvidence {
                 if let Some((phase, status)) = line
                     .strip_prefix("Native image browser phase=")
                     .and_then(|line| line.split_once(" status="))
-                    && matches!(
-                        phase,
-                        "Start"
-                            | "Launch"
-                            | "Context"
-                            | "Page"
-                            | "Content"
-                            | "Text"
-                            | "Evaluate"
-                            | "ClosePage"
-                            | "CloseContext"
-                            | "CloseBrowser"
-                            | "ConnectionCheck"
-                            | "Stop"
-                    )
+                    && known_phase(phase)
                     && matches!(status, "started" | "completed" | "failed")
                 {
                     lines.push(line.to_owned());
+                } else if let Some(diagnostic) = browser_diagnostic(line) {
+                    lines.push(diagnostic);
                 }
             }
             self.pending.drain(..=end);

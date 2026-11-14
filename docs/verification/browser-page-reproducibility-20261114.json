@@ -154,5 +154,9 @@
         "sha256": "85b8a800b6dbac61e81ae515f648c62eae857c4a535385090f960ac1377ecb46"
       }
     }
+  },
+  "receipt_provenance_follow_up": {
+    "document": "docs/verification/browser-page-receipt-provenance-20261114.json",
+    "qualification": "The source-cache three-arm receipt hashes above describe that historical proof. The final runtime remains identical; the current receipt additionally matches the crates.io compiler provenance used by CI and includes the subsequent diagnostic-source hash."
   }
 }

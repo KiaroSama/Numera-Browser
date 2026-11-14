@@ -695,7 +695,7 @@ fn settlement_policy_controls() {
     let emptiness = Cell::new(0);
     let membership = Cell::new(0);
     assert_eq!(
-        capture::natural_settlement_with(
+        capture::natural_settlement_report_with(
             Instant::now() + Duration::from_secs(1),
             true,
             || {
@@ -707,7 +707,7 @@ fn settlement_policy_controls() {
                 Ok(true)
             },
         ),
-        Some(true)
+        (Some(true), "empty-proof")
     );
     assert_eq!(
         emptiness.get(),
@@ -718,7 +718,7 @@ fn settlement_policy_controls() {
 
     for unknown in [false, true] {
         let empty_queries = Cell::new(0);
-        let result = capture::natural_settlement_with(
+        let (result, reason) = capture::natural_settlement_report_with(
             Instant::now() + Duration::from_secs(1),
             true,
             || {
@@ -734,6 +734,14 @@ fn settlement_policy_controls() {
             },
         );
         assert_eq!(result, if unknown { None } else { Some(false) });
+        assert_eq!(
+            reason,
+            if unknown {
+                "member-query-failed"
+            } else {
+                "live-member"
+            }
+        );
         assert_eq!(
             empty_queries.get(),
             1,
@@ -762,13 +770,13 @@ fn settlement_policy_controls() {
 
     let started = Instant::now();
     assert_eq!(
-        capture::natural_settlement_with(
+        capture::natural_settlement_report_with(
             started + Duration::from_secs(3),
             true,
             || Ok(false),
             || Ok(true),
         ),
-        Some(false),
+        (Some(false), "accounting-cap"),
         "Exited members cannot replace the final empty-Job proof"
     );
     assert!(
@@ -778,7 +786,7 @@ fn settlement_policy_controls() {
 
     let membership = Cell::new(0);
     assert_eq!(
-        capture::natural_settlement_with(
+        capture::natural_settlement_report_with(
             Instant::now(),
             true,
             || Ok(false),
@@ -787,7 +795,7 @@ fn settlement_policy_controls() {
                 Ok(true)
             },
         ),
-        Some(false)
+        (Some(false), "original-deadline")
     );
     assert_eq!(
         membership.get(),
@@ -795,7 +803,7 @@ fn settlement_policy_controls() {
         "An exhausted caller deadline cannot acquire a new accounting budget"
     );
     assert_eq!(
-        capture::natural_settlement_with(
+        capture::natural_settlement_report_with(
             Instant::now() + Duration::from_secs(1),
             false,
             || Ok(false),
@@ -804,7 +812,7 @@ fn settlement_policy_controls() {
                 Ok(true)
             },
         ),
-        Some(false)
+        (Some(false), "leader-live")
     );
     assert_eq!(
         membership.get(),
@@ -812,13 +820,13 @@ fn settlement_policy_controls() {
         "A running producer cannot enter accounting settlement"
     );
     assert_eq!(
-        capture::natural_settlement_with(
+        capture::natural_settlement_report_with(
             Instant::now() + Duration::from_secs(1),
             true,
             || Err(io::Error::other("controlled uncertain Job emptiness")),
             || Ok(true),
         ),
-        None
+        (None, "empty-query-failed")
     );
 }
 source_test!(

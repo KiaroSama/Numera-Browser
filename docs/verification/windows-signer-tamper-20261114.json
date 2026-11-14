@@ -1,7 +1,18 @@
 {
   "schema": 1,
   "review_date": "2026-11-14",
-  "status": "Checked executable-section digest control implemented; fresh native Windows execution remains required.",
+  "status": "CI5 confirmed the checked executable-byte mutation also returns NOSIGNATURE. Independent authenticated-CMS versus native Windows SIP digest comparison is implemented and typechecked; fresh native Windows execution remains required.",
+  "ci5_failure": {
+    "source_head": "63b09f46a65071ca4bbb25862525151c866c0169",
+    "actual_checkout": "cb0fcc3239cd52ba21283516dbc9b9834db885cd",
+    "run": 43546474618,
+    "job": 132299303797,
+    "artifact_id": 14094871197,
+    "artifact_sha256": "45b9f2e82f42873f1e61ddcc673d85c217ab4b04c5e15233795c61bc3c662112",
+    "executable_byte": 1024,
+    "result": "1 test; 1 failed; 0 ignored; 0.33s. The real validated executable-section byte was rejected as0x800b0100, failing the required0x80096010 category.",
+    "conclusion": "DOS-stub structure alone does not explain the generic WinTrust result. It is insufficient to claim an explicit image-digest comparison from that error. NOSIGNATURE is still not accepted as BAD_DIGEST evidence."
+  },
   "observed_failure": {
     "run": 43536453687,
     "job": 132266996968,
@@ -24,7 +35,8 @@
     "production_paths": [
       "engine-rust/src/native_windows_sign.rs",
       "engine-rust/src/native_windows_sign/platform.rs",
-      "engine-rust/src/native_windows_sign/pe.rs"
+      "engine-rust/src/native_windows_sign/pe.rs",
+      "engine-rust/src/native_windows_sign/sip.rs"
     ],
     "test_paths": [
       "tools/xtask/tests/source_ci/build_identity.rs",
@@ -34,6 +46,16 @@
     "digest_control": "A read-only PE32/PE32+ selector validates DOS/PE/COFF headers, bounded optional header and data directories, complete section table, SizeOfHeaders, aligned bounded certificate table, and nonoverlapping bounded raw section ranges. It selects a byte inside a nonempty raw section having both code and executable characteristics, outside all headers and before the certificate table. The original and modified certificate blobs must remain identical.",
     "strict_policy": "The selected executable-byte mutation must produce exactly TRUST_E_BAD_DIGEST. TRUST_E_NOSIGNATURE, another error, or successful verification still fails. Original-file verification, exact certificate pinning and wrong-pin rejection remain in the same signing loop. No trust-store or verification-policy bypass was added.",
     "test_inventory": "No test names or counts were added. Portable parser controls are folded into the existing ReleaseIdentity case; its Windows branch still signs and verifies the real compiled executables."
+  },
+  "native_sip_comparison": {
+    "authentication_order": "The existing exact pinned certificate and CryptMsgControl CMS signature checks complete before expected content is read. After explicit image-digest comparison, unchanged WinVerifyTrust policy must still succeed for valid files.",
+    "expected_digest": "Require exact Authenticode inner-content OID, exact bounded DER envelope, PE-image data OID, SHA256 algorithm OID and32-byte digest. CryptDecodeObject uses default copying flags into aligned owned storage; all nested reads use checked offsets into that allocation.",
+    "actual_digest": "Windows CryptSIPRetrieveSubjectGuid and CryptSIPCreateIndirectData compute the actual PE image digest with an ephemeral RSA/AES CRYPT_VERIFYCONTEXT SHA256 provider. No custom Authenticode hash algorithm, persistent key container or trust-store mutation is introduced.",
+    "returned_algorithm": "Accept a returned SHA256 OID only as a checked string inside the owned output allocation or an exact alias of the still-live caller-owned SHA256+NUL input. Unknown/static/out-of-range pointers are refused safely without dereferencing them.",
+    "error_policy": "Only explicit inequality between authenticated expected and independently computed actual SHA256 bytes produces TrustFailure(BAD_DIGEST). Generic decoder, provider, parameter and pointer failures remain errors of their own category. NOSIGNATURE remains a failure.",
+    "controls": "The same existing Windows ReleaseIdentity case now includes actual native decode of independent literal DER, every truncated prefix, malformed/OID/hash-length/trailing/noncanonical framing controls, buffer-size/pointer/returned-algorithm checks, and actual missing/non-PE provider failures. Those controls precede the mandatory real three-PE signing and verification loop.",
+    "local_validation": "Actual platform.rs+pe.rs+sip.rs and featuretest-support controls passed MSVC-target strict Clippy in5.82s. Linux typechecking does not execute Windows cryptographic APIs.",
+    "log": "/workspace/work/windows-sip-typecheck-final.log"
   },
   "local_evidence": [
     {

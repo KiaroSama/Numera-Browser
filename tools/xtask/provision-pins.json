@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "reviewed_on": "2026-11-13",
+  "reviewed_on": "2026-11-14",
   "drivers": {
     "playwright": {
-      "version": "1.65.0",
+      "version": "1.65.1",
       "wheel_package": "playwright",
       "platforms": {
         "linux-x86_64": {
@@ -31,6 +31,12 @@
           "sha256": "ab22611318e8747477c949c81b055ee6e224ecedf66c2a794209c7fd0210a743",
           "size": 42664080
         }
+      },
+      "wheel_version": "1.65.0",
+      "package_archive": {
+        "url": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.65.1.tgz",
+        "sha256": "6f5a60be62a4fddfbe7d10c448d8fbd54547da3358f2f8a04211440471ee863e",
+        "size": 3232772
       }
     },
     "patchright": {
@@ -96,7 +102,7 @@
       }
     },
     "cloak": {
-      "version": "1.65.0",
+      "version": "1.65.1",
       "wheel_package": "playwright",
       "platforms": {
         "linux-x86_64": {
@@ -124,6 +130,12 @@
           "sha256": "ab22611318e8747477c949c81b055ee6e224ecedf66c2a794209c7fd0210a743",
           "size": 42664080
         }
+      },
+      "wheel_version": "1.65.0",
+      "package_archive": {
+        "url": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.65.1.tgz",
+        "sha256": "6f5a60be62a4fddfbe7d10c448d8fbd54547da3358f2f8a04211440471ee863e",
+        "size": 3232772
       }
     }
   },

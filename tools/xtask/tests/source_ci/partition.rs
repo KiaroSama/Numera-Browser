@@ -67,6 +67,26 @@ fn invalid((index, count): (i32, usize)) -> TestResult {
 }
 source_cases!("tests/test_python_source_partition.py::test_invalid_partition_never_becomes_an_empty_success",invalid,[partition_negative=>("-1-4",(-1,4)),partition_past=>("4-4",(4,4)),partition_zero=>("0-0",(0,0)),partition_five=>("0-5",(0,5))]);
 fn module_report(damage: &str) -> TestResult {
+    const WORKER: &str = "NUMERA_NATIVE_PHASE_DIAGNOSTIC_FIXTURE";
+    if damage == "None"
+        && let Ok(mode) = std::env::var(WORKER)
+    {
+        use std::io::Write;
+        let pid = std::process::id();
+        let token = numera_core::ownership::identity::started_at(pid)?.ok_or("worker birth")?;
+        println!("native fixture stdout marker pid={pid} birth={token}");
+        std::io::stdout().flush()?;
+        std::io::stderr()
+            .write_all(b"native compiler fixture marker\npassword=synthetic-native-")?;
+        std::io::stderr().flush()?;
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::io::stderr().write_all(b"partial-value\n")?;
+        std::io::stderr().flush()?;
+        if mode == "timeout" {
+            std::thread::sleep(std::time::Duration::from_secs(12));
+        }
+        std::process::exit(if mode == "success" { 0 } else { 7 });
+    }
     let temp = Temp::new("report")?;
     let modules = names(4);
     repo(&temp, &modules)?;
@@ -86,6 +106,70 @@ fn module_report(damage: &str) -> TestResult {
             fs::read_to_string(path.with_extension("stderr.log"))?,
             stderr
         );
+        // Exercise the production phase boundary with a real nonzero child
+        // and a real silent timeout. Neither can erase its partial transcript
+        // or become a successful command; redaction sees both flushed writes.
+        for mode in ["success", "nonzero", "timeout"] {
+            use std::{process::Command, time::Duration};
+            let name = std::thread::current()
+                .name()
+                .ok_or("fixture test name")?
+                .to_owned();
+            let mut command = Command::new(std::env::current_exe()?);
+            command
+                .args(["--exact", &name, "--nocapture", "--test-threads=1"])
+                .env(WORKER, mode);
+            let report = temp.0.join(format!("native-phase-{mode}.log"));
+            let captured = scope::capture_native_phase(
+                &mut command,
+                &report,
+                Duration::from_secs(8),
+                Duration::from_secs(4),
+                65536,
+            );
+            if mode == "timeout" {
+                assert!(
+                    captured.is_err(),
+                    "a timed-out producer acquired a clean verdict"
+                );
+            } else {
+                let output = captured?;
+                assert_eq!(
+                    output.exit,
+                    if mode == "success" { 0 } else { 7 },
+                    "a failed producer acquired a clean verdict"
+                );
+                assert_eq!(
+                    fs::read(&report)?,
+                    output.stdout,
+                    "complete stdout was not retained"
+                );
+            }
+            let stdout = fs::read_to_string(&report)?;
+            let stderr = fs::read_to_string(report.with_extension("stderr.log"))?;
+            assert!(stdout.contains("native fixture stdout marker"));
+            assert!(stderr.contains("native compiler fixture marker"));
+            assert!(!stderr.contains("synthetic-native-") && !stderr.contains("partial-value"));
+            let marker = stdout
+                .lines()
+                .find(|line| line.contains("native fixture stdout marker"))
+                .ok_or("worker identity missing")?;
+            let fields = marker.split_whitespace().collect::<Vec<_>>();
+            let pid = fields
+                .iter()
+                .find_map(|field| field.strip_prefix("pid="))
+                .ok_or("worker pid")?
+                .parse()?;
+            let token = fields
+                .iter()
+                .find_map(|field| field.strip_prefix("birth="))
+                .ok_or("worker birth")?
+                .parse()?;
+            assert!(
+                !numera_core::ownership::identity::alive(pid, Some(token))?,
+                "diagnostic capture abandoned its producer"
+            );
+        }
     }
     match damage {
         "missing" => {

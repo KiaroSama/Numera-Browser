@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "review_date": "2026-11-14",
-  "status": "Real bundler diagnostics enabled; actual AppImage failure cause awaits the next hosted run.",
+  "status": "Real bundler diagnostics identified vendor ELF rewriting; immutable resource relocation awaits fresh hosted AppImage proof.",
   "observed": {
     "run": 43536453687,
     "job": 132266996876,
@@ -22,6 +22,18 @@
       "https://static.crates.io/crates/tauri-bundler/tauri-bundler-2.10.4.crate",
       "https://v2.tauri.app/distribute/appimage/"
     ]
+  },
+  "resource_preservation": {
+    "actual_failure_job": 132299303850,
+    "observed_cause": "linuxdeploy scans bundled browser ELFs under usr/lib/Numera Browser/engine, fails Camoufox's libgkcodecs dependency and attempts strip/RPATH changes on immutable vendor bytes.",
+    "linuxdeploy_source": "https://github.com/linuxdeploy/linuxdeploy/blob/07333c6/src/core/appdir.cpp",
+    "linuxdeploy_blob_sha1": "8f31102db24bd55e7dd8fa29f27d873124d2afa2",
+    "scan_scope": "listSharedLibraries recursively scans usr/lib; listExecutables scans immediate usr/bin. Dependency exclusions do not preserve ELF byte identity.",
+    "tauri_file_map": "Pinned bundler2.10.4 uses target-package-path -> source. It removes a leading slash and recursively copies directories for linux.appimage.files and linux.deb.files. Standard bundle.resources maps to usr/lib/productName.",
+    "resource_resolver": "Tauri2.12.4 desktop.rs blob109f0f923f0fe5b26c9dbf607193409bd91cc6cc delegates to tauri-utils/platform.rs blob9a148d2eb82bd8c82cf3958d75b6a189b7d597b1. AppImage resource_dir uses APPDIR/usr/lib/package_info.name; codegen/context.rs blob2f4042c8ab33f876de4e224a00fb5902137e8671 sets that name from productName.",
+    "change": "Place the complete immutable engine tree at usr/share/Numera Browser/engine for AppImage and Debian files maps. Linux lifecycle resolves only the sibling share/productName from a validated usr/lib/productName resource path. Existing portable, macOS, Windows and legacy installed resource lookup remain available.",
+    "policy": "No dependency exclusions, vendor mutations, missing backends, installer omissions, receipt changes or wall/idle increases.",
+    "pending": "Existing layout and lifecycle controls plus a fresh hosted AppImage build must verify this relocation; local system libraries are insufficient for a full AppImage build."
   },
   "implementation": {
     "paths": [

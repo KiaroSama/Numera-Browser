@@ -19,6 +19,7 @@ fn planted(kind: &str, gated: bool) {
                 record: r,
                 leader_exited,
                 natural_settlement,
+                ..
             } = event
             {
                 record = Some(r);

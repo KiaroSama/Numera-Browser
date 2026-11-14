@@ -34,6 +34,14 @@
     "limits": "Original case IDs, native TCP/protocol test types, assertions, two-worker execution and time limits remain. No backend or platform skips were added. Fresh macOS/Windows execution is still required."
   },
   "container": {
+    "ci5_observation": {
+      "run": 43546474618,
+      "job": 132299856210,
+      "source_head": "63b09f46a65071ca4bbb25862525151c866c0169",
+      "actual_checkout": "cb0fcc3239cd52ba21283516dbc9b9834db885cd",
+      "result": "Real isolated image reached Start/started then Start/failed; Chromium Launch was never reached. Failure is localized to native SDK startup, not page evaluation or browser cleanup.",
+      "limitation": "Static phase evidence did not retain the underlying startup error; normal SDK policy still suppresses vendor messages. The actual startup cause is not yet established."
+    },
     "job": 132267327022,
     "step": "Require the real image browser without network or host cache",
     "observed_failure": "Inner owned command exceeded idle deadline after 30011ms; idle30003ms; leader still running; stdout/stderr EOF false; both output byte counts zero.",
@@ -64,6 +72,7 @@
       "/workspace/work/container-smoke-diagnostic/wheel-permissions.log",
       "/workspace/work/container-smoke-diagnostic/image-build.log"
     ],
-    "remaining": "Read the controlled phase evidence from the next real hosted image smoke, diagnose its actual blocked operation and retain every acceptance condition."
+    "next_diagnostic": "Only explicit container smoke now selects a bounded64KiB startup stderr drain owned by the real driver. It continues draining after its retention cap, is aborted and joined in stop, and is aborted in Drop. Nonempty stderr is reported at EOF while startup is pending, preserving actual loader/Node evidence before the unchanged30s watchdog can expire; this early report is disabled after successful initialization. Original startup error and stderr use static category plus compact JSON; complete messages are redacted and control-filtered before16KiB UTF8 clipping. Normal SDK/public errors and stderr-null policy remain unchanged. SourceBrowser235 passed17.97s; final core SDK/worker strictClippy passed8.88s. Native runtime evidence remains mandatory.",
+    "remaining": "Read the redacted SDK/Node startup diagnostic from the next real hosted image smoke, fix its actual startup cause and retain every acceptance condition."
   }
 }
