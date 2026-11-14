@@ -1088,6 +1088,7 @@ fn windows_signing_native_fixture() -> TestResult {
         assert_eq!(identity["source_sha"], expected);
     }
     let tmp = Temp::new("public-windows-signing")?;
+    native_windows_sign::indirect_digest_controls(&tmp.0)?;
     let stage = tmp.0.join("Numera Browser");
     fs::create_dir_all(stage.join("engine"))?;
     let paths = [

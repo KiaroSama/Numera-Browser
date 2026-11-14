@@ -35,6 +35,8 @@ pub enum Observation {
         leader_exited: bool,
         /// `None` means that kernel observation failed, rather than emptiness.
         natural_settlement: Option<bool>,
+        /// Static reason from the same observation, before any logging I/O.
+        natural_reason: &'static str,
     },
 }
 
@@ -48,42 +50,71 @@ pub fn natural_settlement_with(
     mut empty: impl FnMut() -> io::Result<bool>,
     mut all_exited: impl FnMut() -> io::Result<bool>,
 ) -> Option<bool> {
-    let observed = empty().ok()?;
+    natural_settlement_report_with(deadline, leader_exited, &mut empty, &mut all_exited).0
+}
+#[cfg(any(windows, feature = "test-support"))]
+pub fn natural_settlement_report_with(
+    deadline: Instant,
+    leader_exited: bool,
+    mut empty: impl FnMut() -> io::Result<bool>,
+    mut all_exited: impl FnMut() -> io::Result<bool>,
+) -> (Option<bool>, &'static str) {
+    let observed = match empty() {
+        Ok(observed) => observed,
+        Err(_) => return (None, "empty-query-failed"),
+    };
     if observed || !leader_exited {
-        return Some(observed);
+        return (
+            Some(observed),
+            if observed {
+                "empty-proof"
+            } else {
+                "leader-live"
+            },
+        );
     }
-    let end = Instant::now()
-        .checked_add(Duration::from_millis(249))?
-        .min(deadline);
+    let Some(cap) = Instant::now().checked_add(Duration::from_millis(249)) else {
+        return (None, "deadline-overflow");
+    };
+    let end = cap.min(deadline);
+    let exhausted = if deadline <= cap {
+        "original-deadline"
+    } else {
+        "accounting-cap"
+    };
     while Instant::now() < end {
-        if !all_exited().ok()? {
-            return Some(false);
+        match all_exited() {
+            Ok(true) => {}
+            Ok(false) => return (Some(false), "live-member"),
+            Err(_) => return (None, "member-query-failed"),
         }
         thread::sleep(
             end.saturating_duration_since(Instant::now())
                 .min(Duration::from_millis(5)),
         );
         if Instant::now() >= end {
-            return Some(false);
+            return (Some(false), exhausted);
         }
-        if empty().ok()? {
-            return Some(true);
+        match empty() {
+            Ok(true) => return (Some(true), "empty-proof"),
+            Ok(false) => {}
+            Err(_) => return (None, "empty-query-failed"),
         }
     }
-    Some(false)
+    (Some(false), exhausted)
 }
 
 fn natural_settlement(
     tree: &mut OwnedTree,
     deadline: Instant,
     leader_exited: bool,
-) -> Option<bool> {
+) -> (Option<bool>, &'static str) {
     #[cfg(windows)]
     {
         // Both callbacks borrow the same retained owner. RefCell serializes
         // the short passive queries without manufacturing another owner.
         let owner = std::cell::RefCell::new(tree);
-        natural_settlement_with(
+        natural_settlement_report_with(
             deadline,
             leader_exited,
             || owner.borrow_mut().empty(),
@@ -93,7 +124,11 @@ fn natural_settlement(
     #[cfg(not(windows))]
     {
         let _ = (deadline, leader_exited);
-        tree.empty().ok()
+        match tree.empty() {
+            Ok(true) => (Some(true), "empty-proof"),
+            Ok(false) => (Some(false), "nonempty-tree"),
+            Err(_) => (None, "empty-query-failed"),
+        }
     }
 }
 pub struct Failure {
@@ -308,11 +343,14 @@ pub(crate) fn run_observed_then(
                         .checked_add(limits.cleanup)
                         .ok_or_else(|| io::Error::other("Capture cleanup deadline overflow"))?;
                     cleanup_deadline = Some(cleanup_end);
+                    let (natural_settlement, natural_reason) =
+                        natural_settlement(&mut tree, end, true);
                     observe(
                         Observation::BeforeCleanup {
                             record: tree.record(),
                             leader_exited: true,
-                            natural_settlement: natural_settlement(&mut tree, end, true),
+                            natural_settlement,
+                            natural_reason,
                         },
                         &tree,
                     );
@@ -426,11 +464,14 @@ pub(crate) fn run_observed_then(
     if !cleanup_observed {
         cleanup_deadline = Instant::now().checked_add(limits.cleanup);
         let leader_exited = tree.child_mut().try_wait().ok().flatten().is_some();
+        let (natural_settlement, natural_reason) =
+            natural_settlement(&mut tree, end, leader_exited);
         observe(
             Observation::BeforeCleanup {
                 record: tree.record(),
                 leader_exited,
-                natural_settlement: natural_settlement(&mut tree, end, leader_exited),
+                natural_settlement,
+                natural_reason,
             },
             &tree,
         );

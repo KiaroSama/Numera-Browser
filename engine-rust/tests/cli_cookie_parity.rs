@@ -129,8 +129,24 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
             &mut output,
         )?;
         let (stdout, stderr) = output.into_parts();
+        let stdout = String::from_utf8(stdout)?;
+        // Only this command's filesystem argument uses native separators.
+        // Normalize that exact token to the immutable source observation;
+        // cookie values, URLs, refused inputs and all other output stay exact.
+        let stdout = if let Some(file) = file {
+            let argument = original
+                .get(3)
+                .and_then(Value::as_str)
+                .ok_or("Cookie file argument missing")?;
+            stdout.replace(
+                file.to_str().ok_or("Cookie file not Unicode")?,
+                &format!("fixture-files/{argument}"),
+            )
+        } else {
+            stdout
+        };
         assert_eq!(
-            String::from_utf8(stdout)?.replace(
+            stdout.replace(
                 native.to_str().ok_or("Cookie root not Unicode")?,
                 "fixture-files"
             ),
@@ -165,6 +181,13 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
         assert_eq!(outcome.payload, case["payload"], "{original:?}");
         if original[1] == "export" {
             let expected: Vec<u8> = serde_json::from_value(case["output_bytes"].clone())?;
+            // Source browser.py blob821d632f8665d12dab58bfd1a3551be7d198a112
+            // uses Path.write_text: every LF is translated, including the LF
+            // in an embedded CRLF. Never normalize the cookie content first.
+            #[cfg(windows)]
+            let expected = String::from_utf8(expected)?
+                .replace('\n', "\r\n")
+                .into_bytes();
             assert!(!expected.is_empty(), "Original export bytes missing");
             assert_eq!(
                 std::fs::read(file.ok_or("Export file missing")?)?,

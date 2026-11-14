@@ -13,6 +13,7 @@ fn fd_capture_control(timeout: bool) -> TestResult {
         String::from_utf8_lossy(&output.stderr)
     );
     let observation: Value = serde_json::from_slice(&output.stdout)?;
+    capture_initialization_evidence(&observation);
     assert_eq!(
         observation["before"], observation["after"],
         "captured pipe handles leaked"
@@ -49,6 +50,7 @@ fn live_writer_control() -> TestResult {
         String::from_utf8_lossy(&output.stderr)
     );
     let observation: Value = serde_json::from_slice(&output.stdout)?;
+    capture_initialization_evidence(&observation);
     assert_eq!(
         observation["writer_live"], true,
         "fixture killed its writer before accepting cancellation"

@@ -21,6 +21,7 @@ pub mod evidence;
 #[path = "../../../security-scan/src/contract.rs"]
 pub mod gitleaks_contract;
 pub mod history;
+pub mod history_callers;
 pub mod history_compat;
 pub mod mapping;
 pub mod memory;
@@ -188,6 +189,15 @@ pub fn capture(
     idle: Duration,
     bytes: usize,
 ) -> Result<capture::Output> {
+    capture_streamed(command, wall, idle, bytes, |_, _| {})
+}
+pub fn capture_streamed(
+    command: &mut Command,
+    wall: Duration,
+    idle: Duration,
+    bytes: usize,
+    mut on_chunk: impl FnMut(usize, &[u8]),
+) -> Result<capture::Output> {
     let result = capture::run_observed_streamed(
         command,
         capture::Limits {
@@ -206,7 +216,8 @@ pub fn capture(
                     "child-stderr"
                 },
                 bytes.len(),
-            )
+            );
+            on_chunk(stream, bytes);
         },
     );
     match result {

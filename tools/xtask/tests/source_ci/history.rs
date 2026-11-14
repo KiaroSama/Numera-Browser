@@ -389,6 +389,7 @@ source_test!(
 );
 
 fn caller_bridge_controls() -> TestResult {
+    clock_and_pool_caller_controls()?;
     let root = root();
     let cases = history::Registry::read()?.cases()?;
     let repo = cases
@@ -463,6 +464,106 @@ fn caller_bridge_controls() -> TestResult {
         fs::read(root.join("engine-rust/src/storage/atomic.rs"))?,
         before
     );
+    Ok(())
+}
+fn clock_and_pool_caller_controls() -> TestResult {
+    let root = root();
+    let cases = history::Registry::read()?.cases()?;
+    let clock = cases
+        .iter()
+        .find(|case| {
+            case.test == "relative_activity_http_matches_original_without_rewriting_storage"
+        })
+        .ok_or("Clock historical case missing")?;
+    let fixture = "engine-rust/tests/profile_read_parity.rs";
+    let before = fs::read(root.join(fixture))?;
+    let replacement =
+        ci::history_callers::clock_caller(clock, &before)?.ok_or("Clock caller bridge absent")?;
+    assert_eq!(replacement.receipt["before_sha256"], ci::sha(&before));
+    assert_eq!(
+        replacement.receipt["after_sha256"],
+        ci::sha(&replacement.bytes)
+    );
+    assert!(String::from_utf8_lossy(&replacement.bytes).contains("original_inputs"));
+    assert!(String::from_utf8_lossy(&replacement.bytes).contains("expected.len(), 24"));
+    assert!(
+        ci::history_callers::clock_caller(
+            clock,
+            &[before.as_slice(), b"\n// unknown fixture"].concat()
+        )
+        .is_err()
+    );
+    let symptom = "Relative activity HTTP status differs: \"true\"";
+    let valid = failed_transcript(&clock.test, symptom).replace(
+        "\n\nfailures:\n    ",
+        "\n  left: Number(500)\n right: Number(200)\n\nfailures:\n    ",
+    );
+    for (text, accepted) in [
+        (valid.clone(), true),
+        (valid.replace("Number(500)", "Number(401)"), false),
+        (valid.replace("Number(200)", "Number(201)"), false),
+        (valid.replace("  left: Number(500)\n", ""), false),
+        (
+            format!(
+                "  left: Number(500)\n right: Number(200)\n{}",
+                valid.replace("Number(500)", "Number(401)")
+            ),
+            false,
+        ),
+        (
+            valid.replace("differs: \"true\"", "differs: \"future\""),
+            false,
+        ),
+    ] {
+        let mut evidence = ci::history_callers::negative_evidence(clock);
+        for line in text.lines() {
+            evidence.accept(line);
+        }
+        assert_eq!(evidence.verify(101).is_ok(), accepted);
+    }
+    assert_eq!(fs::read(root.join(fixture))?, before);
+    let pool = cases
+        .iter()
+        .find(|case| case.target == "pool_parse_parity")
+        .ok_or("Pool historical case missing")?;
+    let before_pool = fs::read(root.join("engine-rust/src/pool.rs"))?;
+    let bridges = ci::history_callers::additional(&root, pool)?;
+    assert_eq!(bridges.len(), 2);
+    for (path, bridge) in bridges {
+        assert!(!pool.files.contains_key(&path) && !pool.companions.contains_key(&path));
+        assert_eq!(
+            bridge.receipt["before_sha256"],
+            ci::digest(&root.join(&path))?
+        );
+        assert_eq!(bridge.receipt["after_sha256"], ci::sha(&bridge.bytes));
+        if path.ends_with("acquisition_routes.rs") {
+            for field in [
+                "NUMERA_UPDATE_TOKEN",
+                "NUMERA_UPDATE_TICKET",
+                "NUMERA_UPDATE_ACTIVATION",
+                "NUMERA_NATIVE_JOB_GATE",
+            ] {
+                assert!(String::from_utf8_lossy(&bridge.bytes).contains(field));
+            }
+        } else {
+            assert!(
+                String::from_utf8_lossy(&bridge.bytes)
+                    .contains("driver.family().options_backend()")
+            );
+        }
+    }
+    assert_eq!(fs::read(root.join("engine-rust/src/pool.rs"))?, before_pool);
+    let path = "engine-rust/src/network/proxy_check.rs";
+    let source = pool.companions.get(path).ok_or("Relay companion absent")?;
+    let old = ci::git(&root, &["show", &format!("{}:{path}", source.commit)])?;
+    assert_eq!(ci::sha(&old), source.sha256);
+    let replacement = ci::history_callers::companion(pool, path, source, &old)?
+        .ok_or("Relay caller bridge absent")?;
+    assert!(String::from_utf8_lossy(&replacement.bytes).contains("Url::parse(&relay_url)"));
+    let mut primary = pool.clone();
+    primary.companions.remove(path);
+    primary.files.insert(path.into(), source.sha256.clone());
+    assert!(ci::history_callers::companion(&primary, path, source, &old)?.is_none());
     Ok(())
 }
 fn failure(damage: &str) -> TestResult {

@@ -18,6 +18,12 @@ impl Units {
     pub fn pending(&self) -> bool {
         self.path.is_some()
     }
+    pub fn diagnostic(&self, budget: Duration) -> io::Result<serde_json::Value> {
+        let Some(path) = &self.path else {
+            return Ok(serde_json::json!({"schema":1,"receipt_present":false}));
+        };
+        unit_report::diagnostic(path, budget, (!self.owned).then_some(self.scope.as_str()))
+    }
     pub fn new(root: &Path, command: &mut Command) -> io::Result<Self> {
         let mut nonce = [0u8; 16];
         getrandom::fill(&mut nonce)

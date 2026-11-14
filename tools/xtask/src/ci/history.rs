@@ -276,7 +276,7 @@ pub fn prove_cases_with_cleanup(
                 let output = execute(false, case, &mut proof_command(root, case, false, platform))?;
                 negative_exit = Some(output.command.exit);
                 scope.captured(&output.command.stdout, &output.command.stderr);
-                let mut evidence = super::evidence::Failure::new(&case.test, &case.symptom);
+                let mut evidence = super::history_callers::negative_evidence(case);
                 for raw in [&output.command.stdout, &output.command.stderr] {
                     let text = std::str::from_utf8(raw)?;
                     if !enabled {

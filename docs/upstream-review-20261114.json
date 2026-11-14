@@ -1,0 +1,401 @@
+{
+  "schema": 1,
+  "reviewed_on": "2026-11-14",
+  "previous_review": "upstream-review-20261113.json",
+  "sources": [
+    {
+      "repository": "microsoft/playwright",
+      "reviewed_source_head": "0ca0119fa29711a831c87f044cc3e3042ba79819",
+      "previous_source_head": "0ad21f1d34e40a51649a97e14da787172d68d073",
+      "releases_reviewed": [
+        {
+          "tag": "v1.65.1",
+          "published_at": "2026-11-13T21:46:58Z",
+          "prerelease": false,
+          "url": "https://github.com/microsoft/playwright/releases/tag/v1.65.1"
+        },
+        {
+          "tag": "v1.65.0",
+          "published_at": "2026-11-05T18:25:45Z",
+          "prerelease": false,
+          "url": "https://github.com/microsoft/playwright/releases/tag/v1.65.0"
+        },
+        {
+          "tag": "v1.64.1",
+          "published_at": "2026-10-14T11:51:33Z",
+          "prerelease": false,
+          "url": "https://github.com/microsoft/playwright/releases/tag/v1.64.1"
+        }
+      ],
+      "new_commits": [
+        {
+          "sha": "c359de03d277789e03a8b89571a698e2dd10a72b",
+          "date": "2026-11-13T22:49:48Z",
+          "message": "chore: allow new versions that fix high or critical advisories in check-dependency-age (#44110)"
+        },
+        {
+          "sha": "b5b158ae5cbc88324885505816221bca5e5f967c",
+          "date": "2026-11-13T23:11:05Z",
+          "message": "devops: add daily workflow that rolls npm dependencies with advisories (#44111)"
+        },
+        {
+          "sha": "66410bcd2101460de8cf713f8f135111add02c61",
+          "date": "2026-11-13T23:22:38Z",
+          "message": "feat(junit): add addFileAttribute and fileRoot options (#44107)"
+        },
+        {
+          "sha": "0ca0119fa29711a831c87f044cc3e3042ba79819",
+          "date": "2026-11-13T23:30:07Z",
+          "message": "chore(deps): bump dependencies with advisories (#44112)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        }
+      ],
+      "changed_files": [
+        ".claude/skills/playwright-audit-deps/audit-deps.mjs",
+        ".github/workflows/roll_deps.yml",
+        "AGENTS.md",
+        "docs/src/test-reporters-js.md",
+        "package-lock.json",
+        "packages/playwright/src/reporters/junit.ts",
+        "packages/playwright/types/test.d.ts",
+        "tests/playwright-test/reporter-junit.spec.ts",
+        "utils/check_dependency_age.js",
+        "utils/generate_types/overrides-test.d.ts"
+      ]
+    },
+    {
+      "repository": "Kaliiiiiiiiii-Vinyzu/patchright",
+      "reviewed_source_head": "521ad98adbb35e09c135864058428b117bf47be8",
+      "previous_source_head": "521ad98adbb35e09c135864058428b117bf47be8",
+      "releases_reviewed": [
+        {
+          "tag": "v1.64.1",
+          "published_at": "2026-10-15T13:33:38Z",
+          "prerelease": false,
+          "url": "https://github.com/Kaliiiiiiiiii-Vinyzu/patchright/releases/tag/v1.64.1"
+        },
+        {
+          "tag": "v1.64.0",
+          "published_at": "2026-10-14T14:40:22Z",
+          "prerelease": false,
+          "url": "https://github.com/Kaliiiiiiiiii-Vinyzu/patchright/releases/tag/v1.64.0"
+        },
+        {
+          "tag": "v1.63.0",
+          "published_at": "2026-09-08T18:44:47Z",
+          "prerelease": false,
+          "url": "https://github.com/Kaliiiiiiiiii-Vinyzu/patchright/releases/tag/v1.63.0"
+        }
+      ],
+      "new_commits": [],
+      "changed_files": []
+    },
+    {
+      "repository": "daijro/camoufox",
+      "reviewed_source_head": "e58d51733b588f89402eddc1241973d89b7fe8ad",
+      "previous_source_head": "df9ca1156abf94bf5e8e7764effd35d3a7b298f9",
+      "releases_reviewed": [
+        {
+          "tag": "font-bundle-v4",
+          "published_at": "2026-11-04T17:35:04Z",
+          "prerelease": false,
+          "url": "https://github.com/daijro/camoufox/releases/tag/font-bundle-v4"
+        },
+        {
+          "tag": "v158.0.1-beta.41",
+          "published_at": "2026-10-29T22:14:10Z",
+          "prerelease": false,
+          "url": "https://github.com/daijro/camoufox/releases/tag/v158.0.1-beta.41"
+        },
+        {
+          "tag": "v158.0-beta.40",
+          "published_at": "2026-10-19T22:38:51Z",
+          "prerelease": true,
+          "url": "https://github.com/daijro/camoufox/releases/tag/v158.0-beta.40"
+        }
+      ],
+      "new_commits": [
+        {
+          "sha": "18d3de72c20c241c2dfccb8588d44b46df9bd4aa",
+          "date": "2026-11-13T23:40:31Z",
+          "message": "release: fix the Windows x86_64 build and let every target build to the end (#1038)\n\n* release: install the 32-bit loader for the Windows x86_64 build\n\nMozilla's Wine runs midl.exe through /lib/ld-linux.so.2, which comes\nfrom libc6-i386. The Windows x86_64 builder only ever had it because\ninstalling clang-18 from apt.llvm.org pulled it in. #886 removed that\nstep, and the explicit 32-bit install runs only for non-x86_64 arches,\nso the next release failed at the first IDL file in accessible/:\n\n    /lib/ld-linux.so.2: could not open\n\nInstall it for every Windows target. The regression test runs the\nworkflow's install step for each Windows entry in the build matrix.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n* release: build every target even when one fails\n\nOnly a release builds Windows, macOS and arm64, and the first failed\nbuild cancelled the rest, so each release run could report at most one\nbroken target. publish-browser still needs every build to succeed, so a\nfailed target still publishes nothing.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>"
+        },
+        {
+          "sha": "e58d51733b588f89402eddc1241973d89b7fe8ad",
+          "date": "2026-11-14T01:26:27Z",
+          "message": "getter-cost-parity: fail the renderer strings only when they skip the round trip (#1039)\n\nRENDERER and UNMASKED_RENDERER_WEBGL cost stock's synchronous round trip\nto the GPU process, and that cost changes between browser sessions in\nstock and Camoufox alike. The worker already left them out for that.\nIn the page, main's run after #1038 read stock at 15.0 and 20.6 us and\nCamoufox at 31.3 and 35.0, just over the 2x bound, and the same code had\npassed on the pull request an hour earlier. A local run read Camoufox at\n12.0 and 20.0 us for the two strings in one session.\n\nThe spoof adds only a memoized lookup after the round trip, so a cost\nabove stock's says nothing about it. What the guard is there to catch, a\nspoof that skips the round trip, still fails: it would read a few\nhundred ns against stock's microseconds.\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>"
+        }
+      ],
+      "changed_files": [
+        ".github/workflows/release.yml",
+        "browser/tests/playwright/patches/getter-cost-parity.py",
+        "ci/tests/test_ci.py"
+      ]
+    },
+    {
+      "repository": "CloakHQ/CloakBrowser",
+      "reviewed_source_head": "0c110fab97ee98d7d4ba6c4f53d909cee08e92b6",
+      "previous_source_head": "0c110fab97ee98d7d4ba6c4f53d909cee08e92b6",
+      "releases_reviewed": [
+        {
+          "tag": "chromium-v156.0.8078.47.1-pro",
+          "published_at": "2026-11-03T18:16:17Z",
+          "prerelease": false,
+          "url": "https://github.com/CloakHQ/CloakBrowser/releases/tag/chromium-v156.0.8078.47.1-pro"
+        },
+        {
+          "tag": "chromium-v155.0.8059.39.2-pro",
+          "published_at": "2026-10-27T21:02:17Z",
+          "prerelease": false,
+          "url": "https://github.com/CloakHQ/CloakBrowser/releases/tag/chromium-v155.0.8059.39.2-pro"
+        },
+        {
+          "tag": "chromium-v155.0.8059.39.1-pro",
+          "published_at": "2026-10-20T18:15:39Z",
+          "prerelease": false,
+          "url": "https://github.com/CloakHQ/CloakBrowser/releases/tag/chromium-v155.0.8059.39.1-pro"
+        }
+      ],
+      "new_commits": [],
+      "changed_files": []
+    }
+  ],
+  "playwright_patch": {
+    "from": "1.65.0",
+    "to": "1.65.1",
+    "release_commit": "bbd948344ea9a60bf1e6f125c02ca99b2b51593b",
+    "published_at": "2026-11-13T21:46:58Z",
+    "release_url": "https://github.com/microsoft/playwright/releases/tag/v1.65.1",
+    "commits": [
+      {
+        "sha": "ecd87c96b62cb5a75feb708168066eaa614cc6c8",
+        "message": "cherry-pick(#43940): fix(transform): preserve decorated class static initialization"
+      },
+      {
+        "sha": "fb8e87f28ba2c35b8fa9b959c053e460570195ad",
+        "message": "cherry-pick(#43942): fix(test runner): correct test locations on Bun 1.4.4 and later"
+      },
+      {
+        "sha": "2076636b5ab71cf79e129a2258f03450b70e8292",
+        "message": "cherry-pick(#43920): docs(dotnet): document retrying failed tests"
+      },
+      {
+        "sha": "1bcafa52b4f5af6b64219bbf52025faa306b349c",
+        "message": "cherry-pick(#44003): docs(dotnet): document PlaywrightAssertionException and PlaywrightException"
+      },
+      {
+        "sha": "665671f9941f74cd515a266a7b70e34906682ccd",
+        "message": "cherry-pick(#44054): docs: release notes for v1.65 .NET"
+      },
+      {
+        "sha": "41087f2f447feb3558cebcf03600d6a9b62be3f1",
+        "message": "cherry-pick(#44059): fix(docker): upgrade base image packages during the build"
+      },
+      {
+        "sha": "2af2c4ecc874311ce3e7c5d27102585814f76eb1",
+        "message": "cherry-pick(#43933): devops: publish npm packages in dependency order and wait for them to go live"
+      },
+      {
+        "sha": "8a25cfb1d405f1f060bb27a170108aa16a4183af",
+        "message": "cherry-pick(#43979): devops: publish npm packages under a pending dist-tag, promote them once live"
+      },
+      {
+        "sha": "31cf0236d4af5b4f96291dd0d5d82866c3bad78a",
+        "message": "cherry-pick(#44009): devops: move the npm dist-tag in the publish workflow"
+      },
+      {
+        "sha": "661223866445cb09ff856785ff2d0233beab8950",
+        "message": "cherry-pick(#44077): devops: add publish_manual.yml workflow for patch releases"
+      },
+      {
+        "sha": "54575dd8bafcf403382d645c75e572683e697679",
+        "message": "cherry-pick(#44098): browser(chromium): roll to r1255, v159.0.8154.6"
+      },
+      {
+        "sha": "cb1c1d0e6bcd407d0c8b189ad828f560cb485476",
+        "message": "cherry-pick(#44051): test: do not depend on outline shorthand serialization order in highlight tests"
+      },
+      {
+        "sha": "bbd948344ea9a60bf1e6f125c02ca99b2b51593b",
+        "message": "chore: mark v1.65.1"
+      }
+    ],
+    "changed_files": [
+      ".github/workflows/publish_manual.yml",
+      ".github/workflows/publish_release.yml",
+      ".github/workflows/tests_primary.yml",
+      ".gitignore",
+      "README.md",
+      "docs/src/api/class-playwrightassertionexception.md",
+      "docs/src/api/class-playwrightexception.md",
+      "docs/src/release-notes-csharp.md",
+      "docs/src/test-assertions-csharp-java-python.md",
+      "docs/src/test-runners-csharp.md",
+      "package-lock.json",
+      "package.json",
+      "packages/isomorphic/deviceDescriptorsSource.json",
+      "packages/playwright-browser-chromium/package.json",
+      "packages/playwright-browser-firefox/package.json",
+      "packages/playwright-browser-webkit/package.json",
+      "packages/playwright-chromium/package.json",
+      "packages/playwright-client/package.json",
+      "packages/playwright-core/browsers.json",
+      "packages/playwright-core/package.json",
+      "packages/playwright-core/src/server/chromium/protocol.d.ts",
+      "packages/playwright-core/types/protocol.d.ts",
+      "packages/playwright-firefox/package.json",
+      "packages/playwright-test/package.json",
+      "packages/playwright-webkit/package.json",
+      "packages/playwright/package.json",
+      "packages/playwright/src/transform/babelBundle.ts",
+      "packages/playwright/src/transform/transform.ts",
+      "tests/library/locator-highlight.spec.ts",
+      "tests/mcp/cli-devtools.spec.ts",
+      "tests/mcp/devtools.spec.ts",
+      "tests/playwright-test/babel.spec.ts",
+      "tests/playwright-test/list-mode.spec.ts",
+      "tests/playwright-test/ui-mode-test-watch.spec.ts",
+      "utils/check_npm_packages.sh",
+      "utils/docker/Dockerfile.jammy",
+      "utils/docker/Dockerfile.noble",
+      "utils/docker/Dockerfile.resolute",
+      "utils/doclint/dotnetXmlDocumentation.js",
+      "utils/doclint/generateDotnetApi.js",
+      "utils/draft_patch_release_notes.js",
+      "utils/promote_npm_packages.js",
+      "utils/publish_all_packages.sh",
+      "utils/workspace.js"
+    ],
+    "integration": [
+      "Upgrade Playwright and Cloak transport packages to the official npm playwright-core1.65.1 archive, with exact SHA256/size and actual package-name/version checks. Retain the already reviewed platform-specific1.65.0 wheel only as a Node carrier; remove its old package inside private staging before extracting the separately pinned package. No Python or npm interpreter/package manager is installed.",
+      "Provision Chromium revision1255,159.0.8154.6 from the matching driver browser manifest. Keep Patchright1.64.1 and Camoufox's Playwright1.62.0 transport separate.",
+      "Apply the upstream runtime-image security package upgrade before installing image dependencies.",
+      "Review decorated-class transform, Bun test locations, .NET documentation, publishing order/dist-tags and generated CDP declarations. These do not add an authored JavaScript/TypeScript test runner to Numera."
+    ],
+    "verification": {
+      "wheel_bytes": "PASS: all five platform1.65.1 wheel sizes/SHA256 verified against the versioned PyPI record; embedded driver/browser versions inspected and mismatch recorded.",
+      "current_native_live": {
+        "result": "PASS: existing selected_sdk_opens_real_persistent_context_in_native_owned_tree,1 passed/0 ignored,35.22s; five profiles, both page origins, strict CSP and Unicode memory growth; real CLI/HTTP/cookie/cleanup roundtrips.",
+        "driver": "1.65.1",
+        "browser": "159.0.8154.6",
+        "worker_sha256": "c5fdab08309ec4e2e6a8bc829a5e9fa9b9bc921506843240ac970e022bc7e36c",
+        "runtime_sha256": "17f41961f6762e06978cd04fd8e2feccb05f145be18c7b81bbcf38d8978b639f",
+        "log_sha256": "7926b524ba710093cc03fd6aa9c1b176d3e0d3543e69af5c9139b0b1e6548319",
+        "source_binding": "Local diagnostic uses immutable63b09f head worker plus the explicitly reviewed typed-converter diff c71a59c50a5ee052b35bd00f40f764cdb43d0a56f5397d74ff78457d77a872c4; not a clean hosted-head claim."
+      },
+      "three_platform_ci": "pending next pushed head",
+      "transport_bytes": "PASS: npm archive SHA512 matches registry integrity; exact SHA256/size pinned and actual package/browsers manifests inspected.",
+      "extraction_regression": {
+        "before": "Existing package archive case failed101 with InvalidArchive/EOCD on valid official-package layout before tar support.",
+        "after": "Original6 binary tests PASS0.24s,13 malformed tar controls and wrong actual package/version controls folded into the existing case; no new IDs.",
+        "review": "Independent review required raw GNU/PAX metadata rejection before internal tar allocation, bounded directory payloads and meaningful metadata-followed-by-file controls."
+      },
+      "maintained_container_contracts": "PASS:43 existing source cases,0 ignored,0.33s, with the exact1.65.1 pin; source IDs and kinds unchanged.",
+      "release_contracts": "PASS:60 existing release_distribution cases,0 ignored,3.63s, including direct trusted checkout provenance.",
+      "strict_tools_lint": "PASS: all Tools targets with -D warnings,9.40s after final package controls.",
+      "actual_rust_extraction": {
+        "result": "PASS: production Rust extractor/manifest checker applied to the actual SHA-verified npm tarball; all116 files/13,971,424 bytes equal the independently extracted package; production owned vendor execution reports Version1.65.1.",
+        "probe_log_sha256": "2c10242da4546583ec67facbb6fb87f19079aec56c095730b3f652bbed8d74b3"
+      }
+    },
+    "published_wheel_mismatch": {
+      "policy": "Do not infer actual driver/browser version from the Python distribution label. All five SHA-verified1.65.1 wheels still embed playwright-core1.65.0/Chromium1254, so none is relabelled as the new transport.",
+      "platforms": {
+        "linux-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/f7/6c/11b3900a7fe1a70baf539a90a4ea217762c149a37ab70b61e7177fa981ed/playwright-1.65.1-py3-none-manylinux1_x86_64.whl",
+          "size": 53474168,
+          "sha256": "5660e0b050a5bd5672bf8e366ed2580288a3d3640ff9444436ed2d890d3dc442",
+          "python_distribution_version": "1.65.1",
+          "actual_driver_version": "1.65.0",
+          "package_manifest_sha256": "f5c29da29c2f96b8f77a58d93250b3ea60dbe3d8325491fb7519956f7f1d2d28",
+          "browser_manifest_sha256": "8058cd0e5bf0e9e20511a7052de42c1a89a8b9b36fa1b13da6d08b83d0c7f8b9",
+          "chromium": {
+            "name": "chromium",
+            "revision": "1254",
+            "installByDefault": true,
+            "browserVersion": "158.0.8127.18",
+            "title": "Chrome for Testing"
+          }
+        },
+        "linux-aarch64": {
+          "url": "https://files.pythonhosted.org/packages/14/fc/c1c491e57e36a6eb6f6705450ecc813e2a12bc1ac44f13853cd05a2d8067/playwright-1.65.1-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+          "size": 53145932,
+          "sha256": "0178cec62bfcc9c202f7d2c2c79c14ebac620c672f36ba31f0d7f0ee5ce87032",
+          "python_distribution_version": "1.65.1",
+          "actual_driver_version": "1.65.0",
+          "package_manifest_sha256": "f5c29da29c2f96b8f77a58d93250b3ea60dbe3d8325491fb7519956f7f1d2d28",
+          "browser_manifest_sha256": "8058cd0e5bf0e9e20511a7052de42c1a89a8b9b36fa1b13da6d08b83d0c7f8b9",
+          "chromium": {
+            "name": "chromium",
+            "revision": "1254",
+            "installByDefault": true,
+            "browserVersion": "158.0.8127.18",
+            "title": "Chrome for Testing"
+          }
+        },
+        "macos-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/7f/6a/f9209357831450dea440bc6f71cceb28e485c4f0ee4ffb48267a3d4c832e/playwright-1.65.1-py3-none-macosx_10_13_x86_64.whl",
+          "size": 50333789,
+          "sha256": "cd0eabebdadd45bd897a5465b358c26546cf0d7298492d66f609eec012a68de1",
+          "python_distribution_version": "1.65.1",
+          "actual_driver_version": "1.65.0",
+          "package_manifest_sha256": "f5c29da29c2f96b8f77a58d93250b3ea60dbe3d8325491fb7519956f7f1d2d28",
+          "browser_manifest_sha256": "8058cd0e5bf0e9e20511a7052de42c1a89a8b9b36fa1b13da6d08b83d0c7f8b9",
+          "chromium": {
+            "name": "chromium",
+            "revision": "1254",
+            "installByDefault": true,
+            "browserVersion": "158.0.8127.18",
+            "title": "Chrome for Testing"
+          }
+        },
+        "macos-aarch64": {
+          "url": "https://files.pythonhosted.org/packages/a6/cb/098c441446b7d468149837b7f490934072fa29bce302c5f1347fc7ebc305/playwright-1.65.1-py3-none-macosx_11_0_arm64.whl",
+          "size": 48815926,
+          "sha256": "5f9542db4d3bff9943510297c1de4252bf8ee62c47fd5f5af3213645035ba6d7",
+          "python_distribution_version": "1.65.1",
+          "actual_driver_version": "1.65.0",
+          "package_manifest_sha256": "f5c29da29c2f96b8f77a58d93250b3ea60dbe3d8325491fb7519956f7f1d2d28",
+          "browser_manifest_sha256": "8058cd0e5bf0e9e20511a7052de42c1a89a8b9b36fa1b13da6d08b83d0c7f8b9",
+          "chromium": {
+            "name": "chromium",
+            "revision": "1254",
+            "installByDefault": true,
+            "browserVersion": "158.0.8127.18",
+            "title": "Chrome for Testing"
+          }
+        },
+        "windows-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/6c/cc/f09f7a7f3ae3c4cd3cd2e6dc11b70f269e7fa018351e30339fb0d7c33ca4/playwright-1.65.1-py3-none-win_amd64.whl",
+          "size": 42673468,
+          "sha256": "f9ea4f4b4f70ecc27ef0bd46a1b929798f1a8bf68b3e771261fc098bc98e1a0b",
+          "python_distribution_version": "1.65.1",
+          "actual_driver_version": "1.65.0",
+          "package_manifest_sha256": "f5c29da29c2f96b8f77a58d93250b3ea60dbe3d8325491fb7519956f7f1d2d28",
+          "browser_manifest_sha256": "8058cd0e5bf0e9e20511a7052de42c1a89a8b9b36fa1b13da6d08b83d0c7f8b9",
+          "chromium": {
+            "name": "chromium",
+            "revision": "1254",
+            "installByDefault": true,
+            "browserVersion": "158.0.8127.18",
+            "title": "Chrome for Testing"
+          }
+        }
+      }
+    },
+    "transport_package": {
+      "url": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.65.1.tgz",
+      "sha256": "6f5a60be62a4fddfbe7d10c448d8fbd54547da3358f2f8a04211440471ee863e",
+      "size": 3232772,
+      "registry_integrity": "sha512-hqPpz7blSMPxWVdoeE1yiBSzXsKiVOd2k+kjCvmUywD2GPO2Dd9HfcWnq9NN0GHbNZDFgZ9JfBFr+X5/BLo0qw==",
+      "package_version": "1.65.1",
+      "chromium_revision": "1255",
+      "chromium_version": "159.0.8154.6"
+    }
+  },
+  "main_changes": {
+    "playwright": "Four main commits concern dependency advisory automation, development-only Hono/ip-address/js-yaml rolls, and unreleased JUnit reporter options. Numera uses a Rust test harness and the stable vendor driver, so those upstream test-runner scripts are reviewed without copying an npm runner or substituting main for the release.",
+    "camoufox": "Two main commits fix the upstream Firefox Windows cross-build's32-bit loader and keep every release target running, then calibrate only the upper timing bound for WebGL renderer round trips. Numera consumes the unchanged official158.0.1-beta.41 binary; its build matrix already has fail-fast:false. No unreleased browser patch or timing-test relaxation is claimed.",
+    "patchright": "Source head and stable release unchanged.",
+    "cloak": "Source head and Chromium156.0.8078.47.1 release unchanged. The valid-key requirement remains an explicit live-browser prerequisite."
+  }
+}

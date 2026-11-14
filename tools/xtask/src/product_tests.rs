@@ -346,6 +346,99 @@ fn vendor_archive_contracts() -> Result<(), Box<dyn Error>> {
     fs::write(&retained, b"caller state")?;
     assert!(crate::provision::extract(&archive, &output, "driver/").is_err());
     assert_eq!(fs::read(retained)?, b"caller state");
+    fn package_archive(entries: &[(&str, tar::EntryType, &[u8])]) -> io::Result<Vec<u8>> {
+        let gzip = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::fast());
+        let mut archive = tar::Builder::new(gzip);
+        for &(name, kind, bytes) in entries {
+            let mut header = tar::Header::new_gnu();
+            header.set_mode(0o644);
+            header.set_entry_type(kind);
+            header.set_size(bytes.len() as u64);
+            // Raw names deliberately include traversal controls which tar's
+            // safe fixture writer would otherwise reject before our reader.
+            assert!(name.len() < 100);
+            header.as_mut_bytes()[..name.len()].copy_from_slice(name.as_bytes());
+            header.set_cksum();
+            archive.append(&header, bytes)?;
+        }
+        archive.into_inner()?.finish()
+    }
+    let package_bytes = package_archive(&[
+        ("package/cli.js", tar::EntryType::Regular, b"vendor entry"),
+        (
+            "package/package.json",
+            tar::EntryType::Regular,
+            br#"{"name":"playwright-core","version":"1.65.1"}"#,
+        ),
+    ])?;
+    let archive = fixture.write("package.tgz", &package_bytes)?;
+    let unpacked = fixture.0.join("driver-package/package");
+    crate::provision::extract(&archive, &unpacked, "package/")
+        .map_err(|error| error as Box<dyn Error>)?;
+    assert_eq!(fs::read(unpacked.join("cli.js"))?, b"vendor entry");
+    assert!(crate::provision::extract(&archive, &unpacked, "package/").is_err());
+    let driver = unpacked.parent().ok_or("Fixture driver parent missing")?;
+    crate::provision::verify_driver(driver, "1.65.1", "playwright")
+        .map_err(|error| error as Box<dyn Error>)?;
+    for manifest in [
+        json!({"name":"playwright-core","version":"1.65.0"}),
+        json!({"name":"patchright-core","version":"1.65.1"}),
+        json!({"name":"playwright-core","version":null}),
+    ] {
+        fs::write(
+            unpacked.join("package.json"),
+            serde_json::to_vec(&manifest)?,
+        )?;
+        assert!(crate::provision::verify_driver(driver, "1.65.1", "playwright").is_err());
+    }
+    for (index, entries) in [
+        vec![("outside/cli.js", tar::EntryType::Regular, &b"x"[..])],
+        vec![("package/../escape", tar::EntryType::Regular, &b"x"[..])],
+        vec![("package//absolute", tar::EntryType::Regular, &b"x"[..])],
+        vec![("package/C:/escape", tar::EntryType::Regular, &b"x"[..])],
+        vec![("package/a\\b", tar::EntryType::Regular, &b"x"[..])],
+        vec![("package/link", tar::EntryType::Symlink, &b""[..])],
+        vec![("package/link", tar::EntryType::Link, &b""[..])],
+        vec![("package/fifo", tar::EntryType::Fifo, &b""[..])],
+        vec![("package/", tar::EntryType::Directory, &b"x"[..])],
+        vec![
+            (
+                "package/metadata",
+                tar::EntryType::new(b'L'),
+                &b"package/cli.js\0"[..],
+            ),
+            ("package/placeholder", tar::EntryType::Regular, &b"x"[..]),
+        ],
+        vec![
+            (
+                "package/metadata",
+                tar::EntryType::new(b'x'),
+                &b"23 path=package/cli.js\n"[..],
+            ),
+            ("package/placeholder", tar::EntryType::Regular, &b"x"[..]),
+        ],
+        vec![
+            ("package/a", tar::EntryType::Regular, &b"a"[..]),
+            ("package/a", tar::EntryType::Regular, &b"b"[..]),
+        ],
+        vec![],
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let archive = fixture.write(
+            &format!("bad-package-{index}.tgz"),
+            &package_archive(&entries)?,
+        )?;
+        assert!(
+            crate::provision::extract(
+                &archive,
+                &fixture.0.join(format!("bad-package-{index}")),
+                "package/"
+            )
+            .is_err()
+        );
+    }
     for (name, target) in [("escape", "../outside"), ("cycle", "cycle")] {
         let archive = fixture.0.join(format!("{name}.zip"));
         let mut writer = zip::ZipWriter::new(fs::File::create(&archive)?);

@@ -11,6 +11,7 @@ fn pipe_failure(stage: &str) -> TestResult {
         String::from_utf8_lossy(&output.stderr)
     );
     let observed: Value = serde_json::from_slice(&output.stdout)?;
+    capture_initialization_evidence(&observed);
     assert_eq!(
         observed["before"], observed["after"],
         "failure left a pipe or process handle open"

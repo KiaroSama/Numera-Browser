@@ -199,6 +199,22 @@ fn command(mode: &str) -> io::Result<Command> {
     command.arg(mode);
     Ok(command)
 }
+fn capture_initialization_evidence(report: &Value) {
+    #[cfg(windows)]
+    {
+        let phase = &report["initialization"];
+        eprintln!(
+            "Windows capture initialization cold={:?} rng_first={:?} rng_second={:?} stdio_first={:?} stdio_second={:?}",
+            phase["cold"].as_u64(),
+            phase["rng_first"].as_u64(),
+            phase["rng_second"].as_u64(),
+            phase["stdio_closed"][0].as_u64(),
+            phase["stdio_closed"][1].as_u64()
+        );
+    }
+    #[cfg(not(windows))]
+    let _ = report;
+}
 fn emit(payload: &str, code: i32) -> Result<capture::Output, capture::Failure> {
     let mut child = command("emit").map_err(capture::Failure::from)?;
     child.arg(payload).arg(code.to_string());

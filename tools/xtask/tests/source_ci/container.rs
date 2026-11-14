@@ -46,7 +46,7 @@ impl Controlled {
             fs::set_permissions(&executable, fs::Permissions::from_mode(0o700))?;
         }
         Ok(Self {
-            version: "1.65.0".into(),
+            version: "1.65.1".into(),
             root: false,
             executable,
             events: Vec::new(),
@@ -104,7 +104,7 @@ source_test!(
     "tests/test_container_browser_contract.py::test_container_definition_pins_client_to_literal_image",
     {
         let pin = pin()?;
-        assert_eq!(pin, "1.65.0");
+        assert_eq!(pin, "1.65.1");
         assert!(smoke::exact_version(&pin));
         let docker = fs::read_to_string(root().join("Dockerfile"))?;
         assert!(docker.contains("FROM ubuntu:24.04") && docker.contains("--verify-installation"));
@@ -119,7 +119,7 @@ source_test!(
     {
         let workflows = json!({"native-ci":workflow::parse(&fs::read_to_string(root().join(".github/workflows/native-ci.yml"))?)?,"container":workflow::parse(&fs::read_to_string(root().join(".github/workflows/container.yml"))?)?});
         ci::container::contract(&workflows)?;
-        let command = ci::container::smoke_command("numera-browser:ci", "1.65.0", "owned-fixture");
+        let command = ci::container::smoke_command("numera-browser:ci", "1.65.1", "owned-fixture");
         let args = command
             .get_args()
             .map(|arg| arg.to_string_lossy().into_owned())
@@ -150,6 +150,47 @@ source_test!(
             ]
         );
         assert!(evidence.observe(b"Native image browser phase=password=synthetic-private status=started\nNative image browser phase=Start status=started token=synthetic-private\n").is_empty());
+        let record = format!(
+            "Native image browser diagnostic={}\n",
+            json!({"phase":"Start","category":"protocol-library","message":"Missing library; password=synthetic-private"})
+        );
+        let mut diagnostic = ci::container::PhaseEvidence::default();
+        assert!(diagnostic.observe(&record.as_bytes()[..20]).is_empty());
+        let seen = diagnostic.observe(&record.as_bytes()[20..]);
+        assert_eq!(seen.len(), 1);
+        assert!(
+            seen[0].contains("Missing library")
+                && seen[0].contains("[REDACTED]")
+                && !seen[0].contains("synthetic-private")
+        );
+        for invalid in [
+            json!({"phase":"bad","category":"sdk","message":"refused"}),
+            json!({"phase":"Start","category":"raw-vendor","message":"refused"}),
+            json!({"phase":"Start","category":"sdk","message":"refused","extra":true}),
+            json!({"phase":"Start","category":"sdk","message":null}),
+            json!({"phase":"Start","category":"sdk"}),
+        ] {
+            let mut parser = ci::container::PhaseEvidence::default();
+            assert!(
+                parser
+                    .observe(format!("Native image browser diagnostic={invalid}\n").as_bytes())
+                    .is_empty()
+            );
+        }
+        assert!(ci::container::PhaseEvidence::default().observe(b"Native image browser diagnostic={\"phase\":\"Start\",\"phase\":\"Stop\",\"category\":\"sdk\",\"message\":\"duplicate\"}\n").is_empty());
+        let large = format!(
+            "Native image browser diagnostic={}\n",
+            json!({"phase":"Start","category":"sdk","message":"é".repeat(10000)})
+        );
+        let clipped = ci::container::PhaseEvidence::default().observe(large.as_bytes());
+        assert_eq!(clipped.len(), 1);
+        assert!(clipped[0].len() <= 16384 && !clipped[0].contains('\u{fffd}'));
+        let parsed: Value = serde_json::from_str(
+            clipped[0]
+                .strip_prefix("Native image browser diagnostic=")
+                .ok_or("Diagnostic prefix missing")?,
+        )?;
+        assert_eq!(parsed["phase"], "Start");
         let mut bounded = ci::container::PhaseEvidence::default();
         assert!(bounded.observe(&vec![b'x'; 65536]).is_empty());
         assert!(
@@ -170,7 +211,7 @@ fn resolve(pin: Option<&str>, conflict: bool) -> ci::Result<(i32, Value)> {
     };
     temp.write("Cargo.toml",format!("[package]\nname=\"numera_container_fixture\"\nversion=\"1.0.0\"\nedition=\"2024\"\n[workspace]\n[dependencies]\ndriver={{package=\"native_vendor_driver\",version=\"{selected}\"}}{extra}\n[patch.crates-io]\nold={{package=\"native_vendor_driver\",path=\"old\"}}\nnew={{package=\"native_vendor_driver\",path=\"new\"}}\n").as_bytes())?;
     temp.write("src/lib.rs", b"pub fn fixture() {}\n")?;
-    for (directory, version) in [("old", "1.65.0"), ("new", "1.66.0")] {
+    for (directory, version) in [("old", "1.65.1"), ("new", "1.66.0")] {
         temp.write(&format!("{directory}/Cargo.toml"),format!("[package]\nname=\"native_vendor_driver\"\nversion=\"{version}\"\nedition=\"2024\"\n").as_bytes())?;
         temp.write(&format!("{directory}/src/lib.rs"), b"pub fn driver() {}\n")?;
     }
@@ -208,7 +249,7 @@ source_test!(
     container_offline_pin,
     "tests/test_container_browser_contract.py::test_container_install_does_not_select_newer_client",
     {
-        let (exit, metadata) = resolve(Some("=1.65.0"), false)?;
+        let (exit, metadata) = resolve(Some("=1.65.1"), false)?;
         assert_eq!(exit, 0);
         assert_eq!(selected_version(&metadata), pin()?);
         Ok(())
@@ -228,7 +269,7 @@ source_test!(
     container_conflicting_pin,
     "tests/test_container_browser_contract.py::test_conflicting_client_requirement_is_refused",
     {
-        let (exit, _) = resolve(Some("=1.65.0"), true)?;
+        let (exit, _) = resolve(Some("=1.65.1"), true)?;
         assert_ne!(exit, 0);
         Ok(())
     }
@@ -425,7 +466,7 @@ source_test!(
     docker_browser_client,
     "tests/test_docker.py::test_the_browser_image_matches_the_playwright_client",
     {
-        assert_eq!(pin()?, "1.65.0");
+        assert_eq!(pin()?, "1.65.1");
         let source = fs::read_to_string(root().join("tools/xtask/src/provision.rs"))?;
         assert!(
             source.contains("package/cli.js")

@@ -349,6 +349,7 @@ fn main() -> Result<()> {
     let mut receipt_bytes = serde_json::to_vec_pretty(&receipt)?;
     receipt_bytes.push(b'\n');
     numera_browser_page::artifact::validate(repo, output.as_bytes(), &receipt)?;
+    fs::write(build.join("receipt.actual.json"), &receipt_bytes)?;
     let generated = options.output;
     if options.check {
         let artifact_matches = fs::read(generated.join("runtime.js"))? == output.as_bytes();

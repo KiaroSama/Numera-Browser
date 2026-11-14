@@ -12,6 +12,10 @@ mod platform;
 pub fn digest_control_offset(path: &Path) -> io::Result<u64> {
     pe::executable_byte(path)
 }
+#[cfg(all(windows, feature = "test-support"))]
+pub fn indirect_digest_controls(root: &Path) -> io::Result<()> {
+    platform::indirect_digest_controls(root)
+}
 
 fn fingerprint(value: &str) -> bool {
     value.len() == 64

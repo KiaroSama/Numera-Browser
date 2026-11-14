@@ -87,7 +87,6 @@ pub fn native_automatic(workflow: &Value) -> Result<()> {
         );
     }
     bounded_jobs(workflow)?;
-    native_failure_evidence(workflow)?;
     let build = &workflow["jobs"]["build"];
     if build.get("needs").is_some()
         || build.get("if").is_some()
@@ -350,6 +349,7 @@ pub fn coverage(root: &Path) -> Result<()> {
         root.join(".github/workflows/native-ci.yml"),
     )?)?;
     native_automatic(&native)?;
+    native_failure_evidence(&native)?;
     native_functional_fixture(&native)?;
     super::history::workflow_contract(&native)?;
     live_license_concurrency(&native)?;

@@ -560,5 +560,33 @@ mod tests {
         assert_eq!(args[1], env.home().join(".numera").into_os_string());
         assert!(!root.path().join("data").exists());
         assert!(!resources.path().join("data").exists());
+        #[cfg(target_os = "linux")]
+        {
+            let image = Scratch::new("installed AppImage with spaces");
+            let resources = image.path().join("usr/lib/Numera Browser");
+            let shared = image
+                .path()
+                .join("usr/share/Numera Browser/engine")
+                .join(NATIVE_ENGINE);
+            std::fs::create_dir_all(shared.parent().unwrap()).unwrap();
+            std::fs::write(&shared, b"immutable vendor engine fixture").unwrap();
+            let shell_dir = image.path().join("usr/bin");
+            let command = engine_command_at(45005, &shell_dir, Some(&resources), None).unwrap();
+            assert_eq!(command.get_program(), shared.as_os_str());
+            assert_eq!(
+                command.get_args().nth(1).unwrap(),
+                env.home().join(".numera").as_os_str()
+            );
+            assert!(!image.path().join("data").exists());
+            assert_eq!(
+                std::fs::read(&shared).unwrap(),
+                b"immutable vendor engine fixture"
+            );
+            assert_eq!(linux_shared_engine(&resources), Some(shared.clone()));
+            assert!(linux_shared_engine(&image.path().join("lib/Numera Browser")).is_none());
+            std::fs::remove_file(&shared).unwrap();
+            let error = engine_command_at(45005, &shell_dir, Some(&resources), None).unwrap_err();
+            assert!(error.contains(shared.to_str().unwrap()));
+        }
     }
 }

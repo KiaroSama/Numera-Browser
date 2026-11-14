@@ -853,6 +853,36 @@ pub fn native_command(root: &Path, phase: &str, targets: &[String]) -> Result<Co
     }
     Ok(command)
 }
+/// Capture the complete bounded phase transcript even when a timeout or
+/// cleanup failure prevents a command verdict. Chunk callbacks retain bytes
+/// only in memory; whole-message redaction precedes every diagnostic write.
+pub fn capture_native_phase(
+    command: &mut Command,
+    report: &Path,
+    wall: Duration,
+    idle: Duration,
+    bytes: usize,
+) -> Result<numera_core::ownership::capture::Output> {
+    let mut partial = [Vec::new(), Vec::new()];
+    let captured = super::capture_streamed(command, wall, idle, bytes, |stream, bytes| {
+        partial[stream].extend_from_slice(bytes);
+    });
+    let (stdout, stderr) =
+        super::evidence::retain_test_diagnostics(report, &partial[0], &partial[1])?;
+    let mut progress = super::evidence::CargoProgress::default();
+    for line in stdout.lines() {
+        if let Some(line) = progress.project(line) {
+            println!("{line}");
+        }
+    }
+    if let Err(error) = &captured {
+        eprintln!(
+            "Native phase failed before a complete command verdict: {error}\nCaptured stderr:\n{stderr}\nRetained diagnostic: {}",
+            report.display()
+        );
+    }
+    captured
+}
 pub fn native_phase(root: &Path, phase: &str) -> Result<()> {
     let inventory = super::coverage_inventory::validate(root)?;
     let registered = targets(root)?;
@@ -868,20 +898,14 @@ pub fn native_phase(root: &Path, phase: &str) -> Result<()> {
         })
         .collect::<Result<Vec<_>>>()?;
     let mut command = native_command(root, phase, &targets)?;
-    let output = capture(
+    let report = root.join(format!("build/native-phase-{phase}.log"));
+    let output = capture_native_phase(
         &mut command,
+        &report,
         Duration::from_secs(900),
         Duration::from_secs(300),
         8 * 1024 * 1024,
     )?;
-    let report = root.join(format!("build/native-phase-{phase}.log"));
-    super::evidence::retain_test_diagnostics(&report, &output.stdout, &output.stderr)?;
-    let mut progress = super::evidence::CargoProgress::default();
-    for line in std::str::from_utf8(&output.stdout)?.lines() {
-        if let Some(line) = progress.project(line) {
-            println!("{line}");
-        }
-    }
     if output.exit != 0 {
         return fail("Required native verification failed");
     }

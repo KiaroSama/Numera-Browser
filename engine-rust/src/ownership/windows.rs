@@ -34,7 +34,9 @@ fn image_class(path: &str) -> &'static str {
     let name = path.rsplit(['\\', '/']).next().unwrap_or_default();
     match name.to_ascii_lowercase().as_str() {
         "cargo.exe" => "cargo",
+        "cargo-fmt.exe" => "cargo-fmt",
         "rustc.exe" => "rustc",
+        "rustfmt.exe" => "rustfmt",
         "lld-link.exe" => "lld-link",
         "link.exe" => "link",
         "mspdbsrv.exe" => "mspdbsrv",
@@ -114,6 +116,9 @@ impl Job {
         Ok(())
     }
     pub fn empty(&self) -> io::Result<bool> {
+        Ok(self.accounting()?.ActiveProcesses == 0)
+    }
+    fn accounting(&self) -> io::Result<JOBOBJECT_BASIC_ACCOUNTING_INFORMATION> {
         #[cfg(feature = "test-support")]
         if let Some(result) = super::test_support::job_query() {
             result?;
@@ -132,7 +137,7 @@ impl Job {
         {
             return Err(io::Error::last_os_error());
         }
-        Ok(info.ActiveProcesses == 0)
+        Ok(info)
     }
     pub fn peak_memory(&self) -> io::Result<u64> {
         // SAFETY: retain this job handle after child reaping; the kernel keeps
@@ -243,8 +248,17 @@ impl Job {
     /// Passive, bounded diagnostic evidence. Never used as an ownership proof.
     /// Paths, arguments and arbitrary executable names cannot escape this API.
     pub fn member_diagnostics(&self, leader: &Child) -> io::Result<serde_json::Value> {
+        let members = self.members()?;
+        let accounting = match self.accounting() {
+            Ok(info) => serde_json::json!({
+                "active_processes":info.ActiveProcesses,
+                "total_processes":info.TotalProcesses,
+                "total_terminated_processes":info.TotalTerminatedProcesses
+            }),
+            Err(error) => serde_json::json!({"error_code":error.raw_os_error()}),
+        };
         let mut rows = Vec::new();
-        for pid in self.members()? {
+        for pid in members {
             let is_leader = pid == leader.id();
             let mut row = serde_json::json!({
                 "pid":pid, "leader":is_leader, "membership":"unknown",
@@ -319,7 +333,11 @@ impl Job {
             }
             rows.push(row);
         }
-        Ok(serde_json::json!({"complete":true, "member_count":rows.len(), "members":rows}))
+        Ok(serde_json::json!({
+            "complete":true, "member_count":rows.len(), "members":rows,
+            "accounting":accounting,
+            "observation_order":"member_ids_then_accounting_then_member_states"
+        }))
     }
     pub fn terminate(&self) -> io::Result<()> {
         // SAFETY: this job contains only the tree this owner spawned.

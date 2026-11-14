@@ -23,6 +23,9 @@ pub fn companion_replacement(
     source: &Source,
     historical: &[u8],
 ) -> Result<Option<Replacement>> {
+    if let Some(replacement) = super::history_callers::companion(case, path, source, historical)? {
+        return Ok(Some(replacement));
+    }
     if path != "engine-rust/src/cli/settings_commands.rs"
         || source.sha256 != "b061d6a64dd454340956b51273f09b75a123b4889f35e34cef1d99b073a34b1b"
         || case.companions.get(path) != Some(source)
@@ -35,7 +38,7 @@ pub fn companion_replacement(
     caller_replacement(case, path, historical, source, &[(before, after)]).map(Some)
 }
 
-fn caller_replacement(
+pub(super) fn caller_replacement(
     case: &Case,
     path: &str,
     bytes: &[u8],
@@ -74,6 +77,7 @@ fn caller_replacement(
 pub fn additional_callers(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>> {
     let mut result = vault_callers(root, case)?;
     result.extend(atomic_callers(root, case)?);
+    result.extend(super::history_callers::additional(root, case)?);
     let path = "engine-rust/src/http/profile_routes.rs";
     let sources = super::history::case_sources(case)?;
     let raw = sources
@@ -277,7 +281,12 @@ fn atomic_callers(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
     ])
 }
 
-fn checked_caller(root: &Path, case: &Case, path: &str, expected: &str) -> Result<Vec<u8>> {
+pub(super) fn checked_caller(
+    root: &Path,
+    case: &Case,
+    path: &str,
+    expected: &str,
+) -> Result<Vec<u8>> {
     if case.files.contains_key(path) || case.companions.contains_key(path) {
         return fail("Historical caller bridge overlaps a selected source");
     }

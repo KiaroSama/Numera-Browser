@@ -19,6 +19,30 @@ pub struct Native {
     page: Option<Page>,
     executable: PathBuf,
 }
+pub(super) fn report_failure(phase: Phase, error: &playwright_rs::Error, stderr: Option<&[u8]>) {
+    let whole = match stderr {
+        Some(stderr) => format!(
+            "{error}\nNative SDK startup stderr:\n{}",
+            String::from_utf8_lossy(stderr)
+        ),
+        None => error.to_string(),
+    };
+    let redacted = crate::ownership::resources::redact_diagnostics(&whole)
+        .chars()
+        .filter(|character| !character.is_control() || ['\n', '\r', '\t'].contains(character))
+        .collect::<String>();
+    let mut start = redacted.len().saturating_sub(16 * 1024);
+    while !redacted.is_char_boundary(start) {
+        start += 1;
+    }
+    let message = &redacted[start..];
+    eprintln!(
+        "Native image browser diagnostic={}",
+        json!({
+            "phase":format!("{phase:?}"), "category":super::error_category(error), "message":message
+        })
+    );
+}
 impl Native {
     pub fn new() -> io::Result<Self> {
         let bytes = std::fs::read("/app/browsers/manifest.json")?;
@@ -76,7 +100,7 @@ impl Driver for Native {
             eprintln!("Native image browser phase={phase:?} status=started");
             let result=async{
             match phase {
-                Phase::Start=>{let driver=NativeDriver::start(self.installation.take().ok_or_else(invalid)?).await?;self.driver=Some(driver);Ok(json!(self.executable))},
+                Phase::Start=>{let driver=NativeDriver::start_for_smoke(self.installation.take().ok_or_else(invalid)?).await?;self.driver=Some(driver);Ok(json!(self.executable))},
                 Phase::Launch=>{let playwright=self.driver.as_ref().ok_or_else(invalid)?.playwright()?;let browser=playwright.chromium();let response:Value=browser.channel().send("launch",json!({"executablePath":self.executable,"headless":true,"timeout":10000,"handleSIGINT":false,"handleSIGTERM":false,"handleSIGHUP":false})).await?;let guid=response["browser"]["guid"].as_str().ok_or_else(invalid)?;self.browser=Some(browser.connection().wait_for_typed::<Browser>(guid).await?);Ok(Value::Null)},
                 Phase::Context=>{self.context=Some(self.browser.as_ref().ok_or_else(invalid)?.new_context().await?);Ok(Value::Null)},
                 Phase::Page=>{self.page=Some(self.context.as_ref().ok_or_else(invalid)?.new_page().await?);Ok(Value::Null)},
@@ -98,7 +122,8 @@ impl Driver for Native {
                     "failed"
                 }
             );
-            result.map_err(|_: playwright_rs::Error| {
+            result.map_err(|error: playwright_rs::Error| {
+                report_failure(phase, &error, None);
                 io::Error::other("Native image browser phase failed")
             })
         })

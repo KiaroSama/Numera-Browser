@@ -47,4 +47,4 @@ jobs:
       - name: Require native health, authentication and persistent profile writes
         run: cargo xtask ci owned --wall 180 --idle 90 -- cargo xtask ci container-api numera-browser:ci
       - name: Require the real image browser without network or host cache
-        run: cargo xtask ci owned --wall 120 --idle 60 -- cargo xtask ci container-browser numera-browser:ci 1.65.0
+        run: cargo xtask ci owned --wall 120 --idle 60 -- cargo xtask ci container-browser numera-browser:ci 1.65.1

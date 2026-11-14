@@ -15,9 +15,15 @@ use std::{
     time::Duration,
 };
 use tokio::{
+    io::AsyncReadExt,
     process::{Child, Command},
     task::JoinHandle,
 };
+struct DiagnosticOutput {
+    bytes: Arc<std::sync::Mutex<Vec<u8>>>,
+    starting: Arc<std::sync::atomic::AtomicBool>,
+    task: JoinHandle<()>,
+}
 
 pub struct Installation {
     pub node: PathBuf,
@@ -86,6 +92,7 @@ pub struct Driver {
     connection: Arc<Connection>,
     dispatch: JoinHandle<()>,
     playwright: Option<Playwright>,
+    diagnostics: Option<DiagnosticOutput>,
 }
 impl Driver {
     pub(super) fn playwright(&self) -> io::Result<&Playwright> {
@@ -94,6 +101,15 @@ impl Driver {
             .ok_or_else(|| io::Error::other("SDK not initialized"))
     }
     pub async fn start(installation: Installation) -> playwright_rs::Result<Self> {
+        Self::start_inner(installation, false).await
+    }
+    pub(super) async fn start_for_smoke(installation: Installation) -> playwright_rs::Result<Self> {
+        Self::start_inner(installation, true).await
+    }
+    async fn start_inner(
+        installation: Installation,
+        diagnostics: bool,
+    ) -> playwright_rs::Result<Self> {
         let mut child = Command::new(installation.node)
             .arg(installation.cli)
             .arg("run-driver")
@@ -108,9 +124,56 @@ impl Driver {
             .env_remove("NUMERA_UPDATE_ACTIVATION")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
+            .stderr(if diagnostics {
+                Stdio::piped()
+            } else {
+                Stdio::null()
+            })
             .kill_on_drop(true)
             .spawn()?;
+        let diagnostics = child.stderr.take().map(|mut stderr| {
+            let bytes = Arc::new(std::sync::Mutex::new(Vec::new()));
+            let captured = bytes.clone();
+            let starting = Arc::new(std::sync::atomic::AtomicBool::new(true));
+            let startup = starting.clone();
+            let task = tokio::spawn(async move {
+                let mut buffer = [0; 8192];
+                while let Ok(count) = stderr.read(&mut buffer).await {
+                    if count == 0 {
+                        if startup.load(std::sync::atomic::Ordering::Acquire) {
+                            let evidence = captured
+                                .lock()
+                                .map(|bytes| bytes.clone())
+                                .unwrap_or_default();
+                            if !evidence.is_empty() {
+                                // A loader/Node failure can close stderr while
+                                // initialize still waits for its 30s response.
+                                // Preserve that actual evidence before the
+                                // unchanged outer idle budget can expire.
+                                let error = playwright_rs::Error::TransportError(
+                                    "Native SDK startup stderr closed".into(),
+                                );
+                                super::container_smoke::report_failure(
+                                    crate::browser::container_smoke::Phase::Start,
+                                    &error,
+                                    Some(&evidence),
+                                );
+                            }
+                        }
+                        break;
+                    }
+                    if let Ok(mut output) = captured.lock() {
+                        let keep = count.min(65536usize.saturating_sub(output.len()));
+                        output.extend_from_slice(&buffer[..keep]);
+                    }
+                }
+            });
+            DiagnosticOutput {
+                bytes,
+                starting,
+                task,
+            }
+        });
         let stdin = child
             .stdin
             .take()
@@ -133,6 +196,7 @@ impl Driver {
             connection,
             dispatch,
             playwright: None,
+            diagnostics,
         };
         let initialized = async {
             let object = driver.connection.initialize_playwright().await?;
@@ -144,11 +208,31 @@ impl Driver {
         .await;
         match initialized {
             Ok(playwright) => {
+                if let Some(diagnostics) = &driver.diagnostics {
+                    diagnostics
+                        .starting
+                        .store(false, std::sync::atomic::Ordering::Release);
+                }
                 driver.playwright = Some(playwright);
                 Ok(driver)
             }
             Err(error) => {
+                let evidence = driver
+                    .diagnostics
+                    .as_ref()
+                    .map(|output| output.bytes.clone());
                 let _ = driver.stop().await;
+                if let Some(evidence) = evidence {
+                    let stderr = evidence
+                        .lock()
+                        .map(|bytes| bytes.clone())
+                        .unwrap_or_default();
+                    super::container_smoke::report_failure(
+                        crate::browser::container_smoke::Phase::Start,
+                        &error,
+                        Some(&stderr),
+                    );
+                }
                 Err(error)
             }
         }
@@ -206,6 +290,10 @@ impl Driver {
         };
         self.dispatch.abort();
         let _ = (&mut self.dispatch).await;
+        if let Some(mut diagnostics) = self.diagnostics.take() {
+            diagnostics.task.abort();
+            let _ = (&mut diagnostics.task).await;
+        }
         self.playwright.take();
         result
     }
@@ -214,6 +302,9 @@ impl Drop for Driver {
     fn drop(&mut self) {
         self.connection.close_writer();
         self.dispatch.abort();
+        if let Some(diagnostics) = &self.diagnostics {
+            diagnostics.task.abort();
+        }
     }
 }
 

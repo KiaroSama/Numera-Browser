@@ -613,6 +613,21 @@ source_test!(
         );
         let diagnostics = tree.job_member_diagnostics()?;
         assert_eq!(diagnostics["complete"], true);
+        assert!(
+            diagnostics["accounting"]["active_processes"]
+                .as_u64()
+                .is_some_and(|n| n > 0)
+        );
+        assert!(
+            diagnostics["accounting"]["total_processes"]
+                .as_u64()
+                .is_some()
+        );
+        assert!(
+            diagnostics["accounting"]["total_terminated_processes"]
+                .as_u64()
+                .is_some()
+        );
         let rows = diagnostics["members"]
             .as_array()
             .ok_or("retained Job diagnostic rows absent")?;
@@ -626,7 +641,9 @@ source_test!(
                 row["image_class"].as_str(),
                 Some(
                     "cargo"
+                        | "cargo-fmt"
                         | "rustc"
+                        | "rustfmt"
                         | "lld-link"
                         | "link"
                         | "mspdbsrv"
@@ -661,7 +678,9 @@ source_test!(
         tree.settle(Duration::from_secs(2))?;
         assert!(tree.empty()?);
         assert!(tree.all_job_members_exited()?);
-        assert_eq!(tree.job_member_diagnostics()?["member_count"], 0);
+        let diagnostics = tree.job_member_diagnostics()?;
+        assert_eq!(diagnostics["member_count"], 0);
+        assert_eq!(diagnostics["accounting"]["active_processes"], 0);
         assert!(!identity::alive(tree.pid(), Some(token))?);
         assert!(recorded_tree::empty(&record)?);
         Ok(())
