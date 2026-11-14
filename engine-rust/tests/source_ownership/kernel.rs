@@ -596,6 +596,7 @@ source_test!(
     owned_tree_every_kernel32_call_is_bound_and_the_library_is_one_object,
     "tests/test_owned_tree.py::test_every_kernel32_call_is_bound_and_the_library_is_one_object",
     {
+        use numera_core::ownership::test_support;
         let mut child = command("sleep")?;
         child.stdout(Stdio::null()).stderr(Stdio::null());
         let mut tree = OwnedTree::spawn(&mut child)?;
@@ -606,10 +607,25 @@ source_test!(
         assert_eq!(identity::started_at(tree.pid())?, Some(token));
         assert!(identity::alive(tree.pid(), Some(token))?);
         assert!(!tree.empty()?);
+        assert!(
+            !tree.all_job_members_exited()?,
+            "A live member must forbid accounting settlement"
+        );
+        struct UncertainJob;
+        impl test_support::Backend for UncertainJob {
+            fn job_query(&self) -> Option<io::Result<()>> {
+                Some(Err(io::Error::other("controlled Job query uncertainty")))
+            }
+        }
+        assert!(
+            test_support::with_backend(Arc::new(UncertainJob), || tree.all_job_members_exited())
+                .is_err()
+        );
         assert!(!recorded_tree::empty(&record)?);
         let _peak = tree.peak_job_memory()?;
         tree.settle(Duration::from_secs(2))?;
         assert!(tree.empty()?);
+        assert!(tree.all_job_members_exited()?);
         assert!(!identity::alive(tree.pid(), Some(token))?);
         assert!(recorded_tree::empty(&record)?);
         Ok(())

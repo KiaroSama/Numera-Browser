@@ -649,7 +649,7 @@ pub fn archive(root: &Path, output: &Path, prefix: &str) -> Result<(), Box<dyn E
             format!("{prefix}/{name}"),
             options.unix_permissions(if executable { 0o755 } else { 0o644 }),
         )?;
-        std::io::copy(&mut File::open(path)?, &mut archive)?;
+        crate::progress::copy(&mut File::open(path)?, &mut archive)?;
     }
     archive.finish()?.sync_all()?;
     Ok(())

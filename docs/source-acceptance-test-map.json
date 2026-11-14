@@ -37,15 +37,16 @@
       "passed": 123,
       "failed": 0,
       "ignored": 0,
-      "elapsed_seconds": 1.42,
-      "verified_on": "2026-11-13",
-      "strict_lint": "passed: source_acceptance test target, -D warnings,12.09s",
+      "elapsed_seconds": 2.99,
+      "verified_on": "2026-11-14",
+      "strict_lint": "passed: source_acceptance test target, -D warnings,8.45s",
       "parallel_stress": {
         "threads": 64,
         "passed": 123,
         "failed": 0,
         "ignored": 0,
-        "elapsed_seconds": 1.45
+        "elapsed_seconds": 1.45,
+        "verified_on": "2026-11-13"
       }
     },
     "native_gate": {
@@ -919,7 +920,7 @@
       "native_type": "#[test]",
       "original_parameters": [],
       "original_fixtures": [],
-      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+      "adaptation": "Pins the independently reviewed complete template and exact10 rule/path groups (9 secret-literal groups with17 literal digests and1 path-only public PFX group). Retains documentation/SPKI checks; real native current-byte/provenance and isolated Git-history controls reject changed, restored, deleted, shallow/unborn and wrong-path signing material."
     },
     {
       "python_id": "tests/test_live_engine_contract.py::test_strict_secret_config_keeps_rules_but_removes_inherited_path_omissions[lf]",
@@ -938,7 +939,7 @@
         "tmp_path",
         "monkeypatch"
       ],
-      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+      "adaptation": "Actual pinned configuration preparation preserves the required official rules and nonpath selectors while removing inherited path omissions. LF/CRLF inputs retain checksum-before-mutation refusal; output must match the independently pinned reviewed template with only its exact canonical upstream path substituted and all10 rule/path/literal groups verified."
     },
     {
       "python_id": "tests/test_live_engine_contract.py::test_strict_secret_config_keeps_rules_but_removes_inherited_path_omissions[crlf]",
@@ -957,7 +958,7 @@
         "tmp_path",
         "monkeypatch"
       ],
-      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+      "adaptation": "Actual pinned configuration preparation preserves the required official rules and nonpath selectors while removing inherited path omissions. LF/CRLF inputs retain checksum-before-mutation refusal; output must match the independently pinned reviewed template with only its exact canonical upstream path substituted and all10 rule/path/literal groups verified."
     },
     {
       "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[5-unlink]",

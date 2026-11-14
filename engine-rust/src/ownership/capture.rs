@@ -37,6 +37,65 @@ pub enum Observation {
         natural_settlement: Option<bool>,
     },
 }
+
+/// Job accounting can lag already-signalled process handles briefly. This
+/// observation never waits for a live or uncertain member, never kills one,
+/// and cannot extend the original command wall deadline.
+#[cfg(any(windows, feature = "test-support"))]
+pub fn natural_settlement_with(
+    deadline: Instant,
+    leader_exited: bool,
+    mut empty: impl FnMut() -> io::Result<bool>,
+    mut all_exited: impl FnMut() -> io::Result<bool>,
+) -> Option<bool> {
+    let observed = empty().ok()?;
+    if observed || !leader_exited {
+        return Some(observed);
+    }
+    let end = Instant::now()
+        .checked_add(Duration::from_millis(249))?
+        .min(deadline);
+    while Instant::now() < end {
+        if !all_exited().ok()? {
+            return Some(false);
+        }
+        thread::sleep(
+            end.saturating_duration_since(Instant::now())
+                .min(Duration::from_millis(5)),
+        );
+        if Instant::now() >= end {
+            return Some(false);
+        }
+        if empty().ok()? {
+            return Some(true);
+        }
+    }
+    Some(false)
+}
+
+fn natural_settlement(
+    tree: &mut OwnedTree,
+    deadline: Instant,
+    leader_exited: bool,
+) -> Option<bool> {
+    #[cfg(windows)]
+    {
+        // Both callbacks borrow the same retained owner. RefCell serializes
+        // the short passive queries without manufacturing another owner.
+        let owner = std::cell::RefCell::new(tree);
+        natural_settlement_with(
+            deadline,
+            leader_exited,
+            || owner.borrow_mut().empty(),
+            || owner.borrow().all_job_members_exited(),
+        )
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (deadline, leader_exited);
+        tree.empty().ok()
+    }
+}
 pub struct Failure {
     error: io::Error,
     pending: Option<Box<OwnedTree>>,
@@ -253,7 +312,7 @@ pub(crate) fn run_observed_then(
                         Observation::BeforeCleanup {
                             record: tree.record(),
                             leader_exited: true,
-                            natural_settlement: tree.empty().ok(),
+                            natural_settlement: natural_settlement(&mut tree, end, true),
                         },
                         &tree,
                     );
@@ -371,7 +430,7 @@ pub(crate) fn run_observed_then(
             Observation::BeforeCleanup {
                 record: tree.record(),
                 leader_exited,
-                natural_settlement: tree.empty().ok(),
+                natural_settlement: natural_settlement(&mut tree, end, leader_exited),
             },
             &tree,
         );

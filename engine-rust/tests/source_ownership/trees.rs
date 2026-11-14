@@ -685,9 +685,142 @@ source_test!(
         tree.settle(Duration::from_secs(2))?;
         assert!(tree.empty()?);
         assert!(recorded_tree::empty(&record)?);
+        settlement_policy_controls();
         Ok(())
     }
 );
+
+fn settlement_policy_controls() {
+    use std::cell::Cell;
+    let emptiness = Cell::new(0);
+    let membership = Cell::new(0);
+    assert_eq!(
+        capture::natural_settlement_with(
+            Instant::now() + Duration::from_secs(1),
+            true,
+            || {
+                emptiness.set(emptiness.get() + 1);
+                Ok(emptiness.get() == 2)
+            },
+            || {
+                membership.set(membership.get() + 1);
+                Ok(true)
+            },
+        ),
+        Some(true)
+    );
+    assert_eq!(
+        emptiness.get(),
+        2,
+        "Accounting settlement needs a final empty-tree proof"
+    );
+    assert_eq!(membership.get(), 1);
+
+    for unknown in [false, true] {
+        let empty_queries = Cell::new(0);
+        let result = capture::natural_settlement_with(
+            Instant::now() + Duration::from_secs(1),
+            true,
+            || {
+                empty_queries.set(empty_queries.get() + 1);
+                Ok(false)
+            },
+            || {
+                if unknown {
+                    Err(io::Error::other("controlled inaccessible member"))
+                } else {
+                    Ok(false)
+                }
+            },
+        );
+        assert_eq!(result, if unknown { None } else { Some(false) });
+        assert_eq!(
+            empty_queries.get(),
+            1,
+            "A live or unknown member must forbid any accounting wait"
+        );
+    }
+
+    let membership = Cell::new(0);
+    assert_eq!(
+        capture::natural_settlement_with(
+            Instant::now() + Duration::from_secs(1),
+            true,
+            || Ok(false),
+            || {
+                membership.set(membership.get() + 1);
+                Ok(membership.get() == 1)
+            },
+        ),
+        Some(false)
+    );
+    assert_eq!(
+        membership.get(),
+        2,
+        "Every accounting retry must reject a newly live member"
+    );
+
+    let started = Instant::now();
+    assert_eq!(
+        capture::natural_settlement_with(
+            started + Duration::from_secs(3),
+            true,
+            || Ok(false),
+            || Ok(true),
+        ),
+        Some(false),
+        "Exited members cannot replace the final empty-Job proof"
+    );
+    assert!(
+        started.elapsed() < Duration::from_secs(1),
+        "Accounting that never settles must keep its 249ms cap"
+    );
+
+    let membership = Cell::new(0);
+    assert_eq!(
+        capture::natural_settlement_with(
+            Instant::now(),
+            true,
+            || Ok(false),
+            || {
+                membership.set(membership.get() + 1);
+                Ok(true)
+            },
+        ),
+        Some(false)
+    );
+    assert_eq!(
+        membership.get(),
+        0,
+        "An exhausted caller deadline cannot acquire a new accounting budget"
+    );
+    assert_eq!(
+        capture::natural_settlement_with(
+            Instant::now() + Duration::from_secs(1),
+            false,
+            || Ok(false),
+            || {
+                membership.set(membership.get() + 1);
+                Ok(true)
+            },
+        ),
+        Some(false)
+    );
+    assert_eq!(
+        membership.get(),
+        0,
+        "A running producer cannot enter accounting settlement"
+    );
+    assert_eq!(
+        capture::natural_settlement_with(
+            Instant::now() + Duration::from_secs(1),
+            true,
+            || Err(io::Error::other("controlled uncertain Job emptiness")),
+            || Ok(true),
+        ),
+        None
+    );
+}
 source_test!(
     owned_tree_ending_a_session_ends_the_whole_tree,
     "tests/test_owned_tree.py::test_ending_a_session_ends_the_whole_tree",

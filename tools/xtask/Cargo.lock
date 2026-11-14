@@ -1453,6 +1453,7 @@ dependencies = [
  "ed25519-dalek",
  "flate2",
  "numera-core",
+ "quote",
  "regex",
  "serde",
  "serde_json",

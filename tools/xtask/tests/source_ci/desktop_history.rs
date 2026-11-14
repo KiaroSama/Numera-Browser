@@ -43,7 +43,18 @@ fn proof((damage, platform): (&str, &str)) -> TestResult {
             return ci::fail("controlled owned runner failure");
         }
         let mut evidence = evidence::Failure::new(&case.test, &case.symptom);
-        for line in ["running 1 test".to_owned(),format!("test {} ... FAILED",case.test),if damage=="wrong-assertion"{"unrelated assertion".into()}else{case.symptom.clone()},"test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.01s".into()]{evidence.accept(&line);}
+        for line in failed_transcript(
+            &case.test,
+            if damage == "wrong-assertion" {
+                "unrelated assertion"
+            } else {
+                &case.symptom
+            },
+        )
+        .lines()
+        {
+            evidence.accept(line);
+        }
         if damage == "restore" {
             fs::remove_file(&path)?;
             fs::create_dir(&path)?;

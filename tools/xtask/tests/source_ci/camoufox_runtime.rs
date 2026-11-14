@@ -89,6 +89,17 @@ impl Runner for Commands {
     }
 }
 fn installed(missing: Vec<&'static str>) -> TestResult {
+    assert_eq!(
+        runtime::log_directory(Path::new("checkout"), None),
+        Path::new("checkout/build/logs")
+    );
+    assert_eq!(
+        runtime::log_directory(
+            Path::new("checkout"),
+            Some(std::ffi::OsStr::new("explicit logs"))
+        ),
+        Path::new("explicit logs")
+    );
     let temp = Temp::new("camo-runtime")?;
     let mut commands = Commands {
         missing: missing.clone(),
@@ -232,6 +243,27 @@ source_test!(
             "./.github/actions/native-candidate-acceptance",
             true,
         )?;
+        let evidence = job["steps"]
+            .as_array()
+            .ok_or("Live steps missing")?
+            .iter()
+            .find(|step| step["name"] == "Preserve complete selected backend evidence")
+            .ok_or("Live evidence upload missing")?;
+        assert_eq!(evidence["if"], "always()");
+        assert_eq!(evidence["with"]["if-no-files-found"], "error");
+        let paths = evidence["with"]["path"]
+            .as_str()
+            .ok_or("Evidence paths missing")?;
+        for path in [
+            ".ci-work/logs/ci-owned_*.log",
+            "build/selected-sdk.log",
+            "build/logs/camoufox-runtime_*.log",
+        ] {
+            assert!(
+                paths.lines().any(|line| line == path),
+                "Actual generated evidence path omitted"
+            );
+        }
         let acceptance = workflow::parse(&fs::read_to_string(
             root().join(".github/actions/native-candidate-acceptance/action.yml"),
         )?)?;

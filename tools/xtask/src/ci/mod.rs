@@ -21,6 +21,7 @@ pub mod evidence;
 #[path = "../../../security-scan/src/contract.rs"]
 pub mod gitleaks_contract;
 pub mod history;
+pub mod history_compat;
 pub mod mapping;
 pub mod memory;
 pub mod migration;
@@ -75,13 +76,25 @@ pub fn capture(
     idle: Duration,
     bytes: usize,
 ) -> Result<capture::Output> {
-    let result = capture::run(
+    let result = capture::run_observed_streamed(
         command,
         capture::Limits {
             wall,
             idle,
             bytes,
             cleanup: Duration::from_secs(10),
+        },
+        || false,
+        |_, _| {},
+        |stream, bytes| {
+            crate::progress::completed(
+                if stream == 0 {
+                    "child-stdout"
+                } else {
+                    "child-stderr"
+                },
+                bytes.len(),
+            )
         },
     );
     match result {

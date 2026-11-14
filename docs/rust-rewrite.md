@@ -107,6 +107,15 @@ complete product packaging, actual Windows signing-fixture execution and the
 full CI result for the exact current PR revision. An ancestor's green candidate
 matrix does not establish current product acceptance.
 
+Repository CodeQL default setup is a separate administration setting. It still
+expects the main branch's Python configuration, so a Rust-only pull request can
+report a missing Python configuration even when Rust extraction succeeds.
+Maintain that distinction during the language transition: the advanced Rust
+workflow retains all security-extended queries and full SARIF evidence, and its
+independent verdict must not be replaced with a local successful process exit.
+Resolving the repository configuration and reviewing reported findings remain
+part of final CI acceptance.
+
 Performance compares the genuine `3bf1d8` native application checkpoint with the
 current native product, using the same current Rust SDK transport and resources.
 The checkpoint has exactly two reviewed transport bridges; receipts pin their

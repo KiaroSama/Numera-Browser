@@ -413,9 +413,8 @@ impl Worker {
                 }
             }
             "inspect" => {
-                let expression = crate::page_runtime::expression(
-                    crate::page_runtime::Program::InspectIdentity,
-                );
+                let expression =
+                    crate::page_runtime::expression(crate::page_runtime::Program::InspectIdentity);
                 // Patchright identity probes must observe the page's main world.
                 let raw = evaluate_raw(page, &expression, &Value::Null, self.patchright).await?;
                 Ok(values::decode(&raw)?)

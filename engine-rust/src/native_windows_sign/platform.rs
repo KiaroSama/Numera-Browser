@@ -582,6 +582,10 @@ pub(super) fn sign(
         let copy = scratch.join(format!("tampered-{index}.exe"));
         fs::copy(&path, &copy)?;
         let mut output = fs::OpenOptions::new().read(true).write(true).open(&copy)?;
+        output.seek(SeekFrom::Start(0x3c))?;
+        let mut pe_offset = [0; 4];
+        output.read_exact(&mut pe_offset)?;
+        let pe_offset = u32::from_le_bytes(pe_offset);
         output.seek(SeekFrom::Start(64))?;
         let mut byte = [0];
         output.read_exact(&mut byte)?;
@@ -596,10 +600,16 @@ pub(super) fn sign(
                     .get_ref()
                     .and_then(|cause| cause.downcast_ref::<TrustFailure>())
                     .is_some_and(|cause| cause.0 as u32 == 0x80096010) => {}
-            _ => {
-                return Err(refusal(
-                    "Tampered Authenticode file was not rejected by its file digest",
-                ));
+            Err(error) => {
+                let detail: String = error.to_string().chars().take(256).collect();
+                return Err(io::Error::other(format!(
+                    "Authenticode tamper control {index} (byte 64, PE header {pe_offset}) expected BAD_DIGEST (0x80096010), but verification returned {detail}"
+                )));
+            }
+            Ok(()) => {
+                return Err(io::Error::other(format!(
+                    "Authenticode tamper control {index} (byte 64, PE header {pe_offset}) unexpectedly passed verification"
+                )));
             }
         }
         verify(&path, expected)?;
