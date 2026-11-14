@@ -8,7 +8,7 @@ struct Bundle {
 impl Bundle {
     fn new() -> Self {
         let dir = fresh();
-        let root = dir.path().join("portable/browsers");
+        let root = dir.path().join("portable").join("browsers");
         fs::create_dir_all(&root).expect("browser contract");
         let mut manifest = json!({});
         for name in ["playwright", "patchright", "camoufox", "cloak"] {
@@ -17,7 +17,8 @@ impl Bundle {
             fs::write(&path, name.as_bytes()).expect("browser contract");
             manifest[name] = json!({"executable":format!("{name}/browser.exe")});
         }
-        fs::create_dir_all(root.join("camoufox/addons/UBO")).expect("browser contract");
+        fs::create_dir_all(root.join("camoufox").join("addons").join("UBO"))
+            .expect("browser contract");
         fs::write(root.join("camoufox/addons/UBO/manifest.json"), b"{}").expect("browser contract");
         manifest["camoufox"]["addons"] = json!(["camoufox/addons/UBO"]);
         manifest["camoufox"]["version"] = json!("152.0.4");
@@ -62,11 +63,11 @@ source_test!(
         assert_ne!(a.options["executable_path"], p.options["executable_path"]);
         assert_eq!(
             a.options["executable_path"],
-            json!(b.root.join("playwright/browser.exe"))
+            json!(b.root.join("playwright").join("browser.exe"))
         );
         assert_eq!(
             p.options["executable_path"],
-            json!(b.root.join("patchright/browser.exe"))
+            json!(b.root.join("patchright").join("browser.exe"))
         );
     }
 );
@@ -108,12 +109,12 @@ source_test!(
             .expect("browser contract");
         assert_eq!(
             r.options["executable_path"],
-            json!(b.root.join("camoufox/browser.exe"))
+            json!(b.root.join("camoufox").join("browser.exe"))
         );
         assert_eq!(r.options["ff_version"], "152");
         assert_eq!(
             r.options["addons"],
-            json!([b.root.join("camoufox/addons/UBO")])
+            json!([b.root.join("camoufox").join("addons").join("UBO")])
         );
         assert_eq!(r.options["exclude_addons"], json!(["UBO"]));
     }
@@ -136,7 +137,8 @@ source_test!(
         assert_eq!(
             r.environment["CLOAKBROWSER_BINARY_PATH"],
             b.root
-                .join("cloak/browser.exe")
+                .join("cloak")
+                .join("browser.exe")
                 .to_str()
                 .expect("browser contract")
         );
@@ -202,7 +204,11 @@ source_test!(
         let cached = b
             .dir
             .path()
-            .join("writable-data/browser-cache/cloak/geoip/GeoLite2-City.mmdb");
+            .join("writable-data")
+            .join("browser-cache")
+            .join("cloak")
+            .join("geoip")
+            .join("GeoLite2-City.mmdb");
         assert_eq!(
             fs::read(&cached).expect("browser contract"),
             fs::read(&source).expect("browser contract")
@@ -241,7 +247,7 @@ source_test!(
     "tests/test_bundled_engines.py::test_broken_bundle_refuses_fallback_to_a_personal_cache[missing]",
     {
         let b = Bundle::new();
-        fs::remove_file(b.root.join("patchright/browser.exe")).expect("browser contract");
+        fs::remove_file(b.root.join("patchright").join("browser.exe")).expect("browser contract");
         assert!(b.select("patchright", BTreeMap::new()).is_err());
     }
 );

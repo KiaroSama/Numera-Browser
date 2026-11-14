@@ -21,6 +21,30 @@ fn process(pid: u32) -> io::Result<Option<libc::proc_bsdinfo>> {
     // SAFETY: this C record consists only of integer fields and byte arrays.
     let mut info: libc::proc_bsdinfo = unsafe { std::mem::zeroed() };
     let (returned, error) = process_observation(native, &mut info);
+    #[cfg(feature = "test-support")]
+    super::test_support::macos_observed(|| {
+        use super::test_support::{MacosBsdSample, MacosObservation};
+        MacosObservation::Process {
+            requested_pid: pid,
+            returned_bytes: returned,
+            errno: error,
+            fields_complete: returned == size_of::<libc::proc_bsdinfo>() as i32 && error == 0,
+            fields: MacosBsdSample {
+                pid: info.pbi_pid,
+                parent: info.pbi_ppid,
+                group: info.pbi_pgid,
+                status: info.pbi_status,
+                flags: info.pbi_flags,
+                // Apple's proc_info.h: PROC_FLAG_INEXIT = 4. Observation only.
+                in_exit: info.pbi_flags & 4 != 0,
+                uids: [info.pbi_uid, info.pbi_ruid, info.pbi_svuid],
+                gids: [info.pbi_gid, info.pbi_rgid, info.pbi_svgid],
+                exit_status: info.pbi_xstatus,
+                birth_seconds: info.pbi_start_tvsec,
+                birth_micros: info.pbi_start_tvusec,
+            },
+        }
+    });
     if returned == 0 && error == libc::ESRCH {
         return Ok(None);
     }
@@ -39,7 +63,17 @@ fn process(pid: u32) -> io::Result<Option<libc::proc_bsdinfo>> {
 }
 
 pub fn started_at(pid: u32) -> io::Result<Option<u64>> {
-    process(pid)?.map(|info| birth_token(&info)).transpose()
+    let result = process(pid).and_then(|value| value.map(|info| birth_token(&info)).transpose());
+    #[cfg(feature = "test-support")]
+    super::test_support::macos_observed(|| super::test_support::MacosObservation::Birth {
+        pid,
+        token: result.as_ref().ok().copied().flatten(),
+        error: result
+            .as_ref()
+            .err()
+            .map(|error| (error.kind(), error.raw_os_error())),
+    });
+    result
 }
 pub fn alive(pid: u32, token: Option<u64>) -> io::Result<bool> {
     let Some(info) = process(pid)? else {
@@ -114,6 +148,30 @@ fn birth_token(info: &libc::proc_bsdinfo) -> io::Result<u64> {
 
 fn group_query(group: i32, buffer: &mut [i32]) -> io::Result<usize> {
     let (returned, error) = group_observation(group, buffer);
+    #[cfg(feature = "test-support")]
+    super::test_support::macos_observed(|| {
+        // Retain at most 64 numeric PIDs from this already-filled buffer.
+        // A size hint, partial return or omitted PID is explicitly incomplete.
+        let bytes = usize::try_from(returned).unwrap_or(0);
+        let reported = bytes / size_of::<i32>();
+        let retained = reported.min(buffer.len()).min(64);
+        let omitted_pids = reported.saturating_sub(retained);
+        super::test_support::MacosObservation::Group {
+            group,
+            capacity: buffer.len(),
+            returned_bytes: returned,
+            errno: error,
+            sampled_pids: buffer[..retained].to_vec(),
+            omitted_pids,
+            incomplete_sample: returned < 0
+                || error != 0
+                || buffer.is_empty()
+                || reported == buffer.len()
+                || omitted_pids != 0
+                || !bytes.is_multiple_of(size_of::<i32>())
+                || bytes > size_of_val(buffer),
+        }
+    });
     if error != 0 {
         return Err(io::Error::from_raw_os_error(error));
     }

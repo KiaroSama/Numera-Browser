@@ -288,7 +288,11 @@ pub fn prove_cases_with_cleanup(
                 if enabled {
                     scope.for_each_line(|line| evidence.accept(line));
                 }
-                evidence.verify(output.command.exit)
+                let result = evidence.verify(output.command.exit);
+                if result.is_err() {
+                    retain_semantic_failure(root, case, "proof", &output.command);
+                }
+                result
             })();
             let after = if enabled { after_guard.run() } else { Ok(0) };
             drop(after_guard);
@@ -311,7 +315,7 @@ pub fn prove_cases_with_cleanup(
                 evidence.accept(line);
             }
             if let Err(error) = evidence.verify(output.command.exit) {
-                retain_compile_failure(root, case, &output.command)?;
+                retain_semantic_failure(root, case, "restored", &output.command);
                 return Err(error);
             }
             for receipt in &mut swap.adaptations {
@@ -323,6 +327,27 @@ pub fn prove_cases_with_cleanup(
         }
     }
     Ok(())
+}
+fn retain_semantic_failure(root: &Path, case: &Case, stage: &str, output: &super::capture::Output) {
+    let path = root.join("build/history").join(format!(
+        "{stage}-{}.log",
+        super::sha(format!("{}:{}", case.target, case.test).as_bytes())
+    ));
+    // A warmed target can still compile a different selected snapshot during
+    // its test command. Retain its actual compiler/libtest transcript before
+    // rejecting the result, rather than hiding an ABI error behind a verdict.
+    match super::evidence::retain_test_diagnostics(&path, &output.stdout, &output.stderr) {
+        Ok(_) => eprintln!(
+            "Historical {stage} rejected: {}::{} exit={}; retained diagnostic: {}",
+            case.target,
+            case.test,
+            output.exit,
+            path.display()
+        ),
+        Err(_) => eprintln!(
+            "Historical {stage} diagnostic could not be retained; the original proof failure remains fatal"
+        ),
+    }
 }
 
 fn retain_compile_failure(root: &Path, case: &Case, output: &super::capture::Output) -> Result<()> {
@@ -627,7 +652,9 @@ impl SourceSwap {
         fs::create_dir_all(&directory)?;
         let path = directory.join(format!(
             "adaptation-{}.json",
-            super::sha(format!("{}:{}", case.target, case.test).as_bytes())
+            // Several original proofs intentionally run the same named test
+            // against two distinct historical snapshots. Keep both receipts.
+            super::sha(format!("{}:{}:{}", case.commit, case.target, case.test).as_bytes())
         ));
         fs::write(&path, serde_json::to_vec_pretty(&self.adaptations)?)?;
         eprintln!(

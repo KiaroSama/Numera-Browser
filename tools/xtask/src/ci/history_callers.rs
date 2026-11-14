@@ -77,6 +77,66 @@ pub fn clock_caller(case: &Case, current: &[u8]) -> Result<Option<Replacement>> 
 pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>> {
     let sources = super::history::case_sources(case)?;
     let mut result = Vec::new();
+    if let Some(source) = sources
+        .get("engine-rust/src/vault/recovery.rs")
+        .filter(|source| {
+            source.sha256 == "a86dd9cb60e15f03b20fd0d56e4e1e1767df08cc40746b949a75f432a6b6512b"
+        })
+    {
+        result.push(recovery_transaction(root, case, source)?);
+    }
+    if let Some(source) = sources
+        .get("engine-rust/src/ownership/tree.rs")
+        .filter(|source| {
+            source.sha256 == "2688b722ab3411a1a5528335a69b029a97e840cb79f7cb065d55735cefe6078b"
+        })
+    {
+        let path = "engine-rust/src/ownership/session.rs";
+        let session_hash = super::digest(&root.join(path))?;
+        // The separately retained checkpoint already calls the public API and
+        // retains admission on every error. Its exact bytes need no bridge.
+        if session_hash == "f0f57076e1a2e0d1d6c98e36b3212e08261447c6cbb5b9c382154860c0a94145" {
+            checked_caller(root, case, path, &session_hash)?;
+        } else {
+            let bytes = checked_caller(
+                root,
+                case,
+                path,
+                "c35c543c0a84f47c8567ea32a921840ab1bd69a8592c0e8227fa74f44d71737d",
+            )?;
+            let before = r#"        self.tree = Some(match OwnedTree::spawn_classified(command) {
+            Ok(tree) => tree,
+            Err(failure) => {
+                // Spawn failures may retain an uncertain tree in capture quarantine.
+                // A positive no-child/empty proof permits the original owner
+                // to release admission; error kinds alone never provide it.
+                if !failure.settled
+                    && let Some(admission) = &mut self.admission
+                {
+                    admission.retain();
+                }
+                return Err(failure.error);
+            }
+        });"#;
+            let after = r#"        self.tree = Some(match OwnedTree::spawn(command) {
+            Ok(tree) => tree,
+            Err(error) => {
+                // The exact old tree API has no failure-stage proof. Retain
+                // admission conservatively for every error, regardless of kind.
+                if let Some(admission) = &mut self.admission {
+                    admission.retain();
+                }
+                return Err(error);
+            }
+        });"#;
+            let mut replacement =
+                caller_replacement(case, path, &bytes, source, &[(before, after)])?;
+            replacement.receipt["historical_source_path"] =
+                "engine-rust/src/ownership/tree.rs".into();
+            replacement.receipt["reason"] = "Only the later Session caller reverts to the exact old public spawn API. Every error conservatively retains admission; no error-kind exemption or selected tree mutation is permitted.".into();
+            result.push((path.into(), replacement));
+        }
+    }
     if case.target == "profile_read_parity"
         && sources.contains_key(HTTP)
         && let Some(replacement) = clock_caller(case, &fs::read(root.join(CLOCK_FIXTURE))?)?
@@ -170,6 +230,69 @@ pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
         result.push((path.into(), replacement));
     }
     Ok(result)
+}
+
+fn recovery_transaction(
+    root: &Path,
+    case: &Case,
+    source: &Source,
+) -> Result<(String, Replacement)> {
+    let path = "engine-rust/src/vault/transaction.rs";
+    let hash = super::digest(&root.join(path))?;
+    if ![
+        "09455cb29f59983d127ad06f7d18bfe767f1f673e8f7b3842b01cc430a31b51d",
+        // Same callers with the separately reviewed salt/verifier presence
+        // guard. All descriptor, admission and data operations remain intact.
+        "bf895fd1b47f7281e166285306ab5dc33e9a80da2ff8ec956c1e0a5ed1ff12d1",
+    ]
+    .contains(&hash.as_str())
+    {
+        return fail("Current transaction caller changed; review its historical error ABI");
+    }
+    let bytes = checked_caller(root, case, path, &hash)?;
+    let before = std::str::from_utf8(&bytes)?;
+    let patches = [
+        (
+            "recovery::{RecoveryError, caused_refusal, incomplete_for, refusal}",
+            "recovery::{RecoveryError, incomplete_for, refusal}",
+            1,
+        ),
+        (
+            "caused_refusal(format!(\"Vault salt randomness unavailable: {error}\"), error)",
+            "refusal(format!(\"Vault salt randomness unavailable: {error}\"))",
+            2,
+        ),
+        (
+            "caused_refusal(error.to_string(), error)",
+            "refusal(error.to_string())",
+            1,
+        ),
+        (
+            ".map_err(super::recovery::migration_failure)?",
+            ".map_err(|error| refusal(error.to_string()))?",
+            2,
+        ),
+        (
+            "return Err(super::recovery::rollback_failed(\n                error,\n                failures,\n                \"Vault migration failed\",\n            ));",
+            "let rollback = crate::storage::atomic::RollbackFailed { cause: io::Error::other(error), failures };\n            return Err(refusal(format!(\"Vault migration failed: {rollback}; journal retained\")));",
+            1,
+        ),
+    ];
+    let mut changed = before.to_owned();
+    for (old, new, count) in patches {
+        if changed.matches(old).count() != count {
+            return fail("Historical transaction error caller shape changed");
+        }
+        changed = changed.replace(old, new);
+    }
+    let mut replacement = caller_replacement(case, path, &bytes, source, &[(before, &changed)])?;
+    replacement.receipt["historical_source_path"] = "engine-rust/src/vault/recovery.rs".into();
+    replacement.receipt["historical_sources"] =
+        serde_json::to_value(super::history::case_sources(case)?)?;
+    replacement.receipt["caller_rewrites"] = serde_json::to_value(patches)?;
+    replacement.receipt["reason"] = "The old RecoveryError stores message/codes/role only. Adapt only later transaction error callers to its refusal constructor, preserving every message argument and the complete current RollbackFailed display. All selected recovery and rotation bytes, test vectors, file operations and descriptor guards remain unchanged.".into();
+    replacement.receipt["error_abi_limitation"] = "Newer typed cause-chain fields cannot be represented by the old RecoveryError. They are outside the five exercised config-read vectors. The separately retained caller-only five-vector GREEN, selected exact named RED and fully restored five-vector GREEN distinguish this caller ABI bridge from the selected defect.".into();
+    Ok((path.into(), replacement))
 }
 
 pub fn companion(

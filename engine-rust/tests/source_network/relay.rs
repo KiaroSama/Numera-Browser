@@ -294,6 +294,25 @@ source_test!(
     c000_the_tunnel_thread_ends_when_its_sockets_are_pulled,
     "tests/test_relay.py::test_the_tunnel_thread_ends_when_its_sockets_are_pulled",
     {
+        // A completed fixture handler must signal EOF even while the server's
+        // shutdown registry retains a socket clone. Otherwise duplex can wait
+        // for that peer forever while finish() waits for duplex to join.
+        {
+            let completed = Site::new();
+            let mut stream = TcpStream::connect(completed.server.address).expect("fixture socket");
+            stream
+                .set_read_timeout(Some(Duration::from_secs(3)))
+                .expect("fixture timeout");
+            stream
+                .write_all(
+                    b"GET /fixture-lifecycle HTTP/1.1\r\nHost: origin\r\nConnection: close\r\n\r\n",
+                )
+                .expect("fixture request");
+            let (status, body) = response(&mut stream);
+            assert_eq!(status, 200);
+            assert_eq!(body, "NUMERA_TEST_ORIGIN /fixture-lifecycle body=0");
+            assert_eq!(stream.read(&mut [0]).expect("completed handler EOF"), 0);
+        }
         let origin = Site::new();
         let mut up = HttpProxy::new();
         let mut relay = Relay::start(&up.model("s3cr3t pass")).expect("relay");

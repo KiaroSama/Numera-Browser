@@ -55,23 +55,25 @@ fn canceled_worker(authentication: bool) -> TestResult {
     let (entered, started) = mpsc::sync_channel(1);
     let (finish, release) = mpsc::sync_channel(1);
     let mut entered = Some(entered);
-    let target = if authentication {
-        root.join("tokens.json")
-    } else {
-        root.join("profiles")
-    };
+    // The real middleware authorizes even an unprotected request in its first
+    // blocking worker. The handler case must reach the following worker.
+    let stage_to_park = if authentication { 1 } else { 2 };
+    let mut blocking_stage = 0;
     let a = Admission::new(root, HOST)?;
     let app = h.app.clone();
     testing::with_observer(
         move |event| {
-            let matching = event.operation == "before-atomic-write"
-                && if authentication {
-                    event.path == target
-                } else {
-                    event.path.parent() == Some(target.as_path())
-                };
-            if matching && let Some(entered) = entered.take() {
-                entered.send(()).map_err(io::Error::other)?;
+            // Park the actual admitted worker before it takes an application
+            // transaction lock. Quiesce must see active work while the barrier
+            // is held, rather than racing its five-second timeout and rollback.
+            if event.operation == "before-owned-http-blocking-work" {
+                blocking_stage += 1;
+            }
+            if blocking_stage == stage_to_park
+                && event.operation == "before-owned-http-blocking-work"
+                && let Some(entered) = entered.take()
+            {
+                entered.send(blocking_stage).map_err(io::Error::other)?;
                 release
                     .recv_timeout(Duration::from_secs(5))
                     .map_err(io::Error::other)?;
@@ -102,6 +104,7 @@ fn canceled_worker(authentication: bool) -> TestResult {
                     task.abort();
                     return Err(Box::<dyn std::error::Error>::from(error));
                 }
+                assert_eq!(reached?, stage_to_park, "Wrong HTTP worker was parked");
                 task.abort();
                 assert!(task.await.is_err());
                 let busy = testing::with_observer(
@@ -119,6 +122,21 @@ fn canceled_worker(authentication: bool) -> TestResult {
                         return Err("abandoned worker did not settle".into());
                     }
                     tokio::time::sleep(Duration::from_millis(5)).await;
+                }
+                if !authentication {
+                    let rows =
+                        fs::read_dir(root.join("profiles"))?.collect::<io::Result<Vec<_>>>()?;
+                    let profiles = rows
+                        .iter()
+                        .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "json"))
+                        .collect::<Vec<_>>();
+                    assert_eq!(
+                        profiles.len(),
+                        1,
+                        "Canceled handler did not finish its actual write"
+                    );
+                    let profile: Value = serde_json::from_slice(&fs::read(profiles[0].path())?)?;
+                    assert_eq!(profile["name"], "Slow owned write");
                 }
                 let ticket = a.quiesce(None, || Ok(false))?;
                 a.resume(&ticket)?;
@@ -388,7 +406,7 @@ original!(
         let prepared = h.authorized("POST", "/api/updates/prepare", json!({}), TOKEN)?;
         assert_eq!(prepared.0, 200);
         assert_eq!(
-            Path::new(prepared.1["root"].as_str().ok_or("root missing")?),
+            Path::new(prepared.1["root"].as_str().ok_or("root missing")?).canonicalize()?,
             root.canonicalize()?
         );
         let ticket = "a".repeat(64);

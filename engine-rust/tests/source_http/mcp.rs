@@ -14,6 +14,57 @@ fn decoded(value: &Value) -> Value {
     serde_json::from_str(value["content"][0]["text"].as_str().expect("MCP text"))
         .expect("complete MCP payload")
 }
+
+/// Exercise the actual entrypoint's same-executable detach dispatch. Retain its
+/// outer tree until the caller has checked/stopped the durable job: closing a
+/// Windows capture Job first would correctly terminate the nested supervisor.
+fn detached_entry(
+    root: &Path,
+) -> Result<(Value, numera_core::ownership::tree::OwnedTree), Box<dyn std::error::Error>> {
+    use numera_core::ownership::{capture::Pipe, tree::OwnedTree};
+    use std::{
+        io::Write,
+        process::Stdio,
+        time::{Duration, Instant},
+    };
+    let mut command = Command::new(env!("CARGO_BIN_EXE_numera-engine"));
+    command
+        .arg("--data-dir")
+        .arg(root)
+        .arg("mcp")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+    let mut tree = OwnedTree::spawn(&mut command)?;
+    tree.child_mut().stdin.take().ok_or("MCP input missing")?.write_all(
+        (json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"bulk_create","arguments":{"count":5,"prefix":"Job","detach":true}}}).to_string()+"\n").as_bytes()
+    )?;
+    let mut pipe = Pipe::Out(tree.child_mut().stdout.take().ok_or("MCP output missing")?);
+    pipe.prepare()?;
+    let end = Instant::now() + Duration::from_secs(numera_core::mcp::CALL_TIMEOUT_SECONDS);
+    let mut bytes = Vec::new();
+    loop {
+        if Instant::now() >= end {
+            return Err("MCP detach response exceeded its deadline".into());
+        }
+        let mut buffer = [0u8; 4096];
+        match pipe.available(&mut buffer)? {
+            Some(0) => break,
+            Some(count) => {
+                bytes.extend_from_slice(&buffer[..count]);
+                if bytes.len() > numera_core::mcp::MAX_FRAME {
+                    return Err("MCP detach response exceeded its frame bound".into());
+                }
+            }
+            None => std::thread::sleep(Duration::from_millis(5)),
+        }
+    }
+    let reply: Value = serde_json::from_slice(&bytes)?;
+    assert_eq!(reply["id"], 1);
+    assert_eq!(reply["result"]["isError"], false, "{reply}");
+    Ok((decoded(&reply["result"]), tree))
+}
+
 fn frames(bytes: &[u8]) -> Vec<Value> {
     let mut output = Vec::new();
     numera_core::mcp::serve::<io::Error>(
@@ -161,20 +212,19 @@ source_test!(
     "tests/test_mcp.py::test_detach_comes_back_as_a_job_handle",
     {
         let t = fresh();
-        let handle = decoded(&call(
-            t.path(),
-            "bulk_create",
-            json!({"count":5,"prefix":"Job","detach":true}),
-        ));
+        let (handle, mut owner) = detached_entry(t.path())?;
         assert_eq!(handle["command"], "bulk-create");
         assert!(handle["pid"].as_u64().is_some_and(|pid| pid > 0));
         let shown = decoded(&call(t.path(), "jobs_show", json!({"id":handle["id"]})));
         assert_eq!(shown["id"], handle["id"]);
         assert!(
             ["starting", "running", "done", "failed"]
-                .contains(&shown["state"].as_str().expect("state"))
+                .contains(&shown["state"].as_str().expect("state")),
+            "{shown}"
         );
         call(t.path(), "jobs_stop", json!({"id":handle["id"]}));
+        owner.settle(std::time::Duration::from_secs(10))?;
+        assert!(owner.empty()?);
         Ok(())
     }
 );

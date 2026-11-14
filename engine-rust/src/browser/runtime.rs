@@ -8,7 +8,30 @@ use crate::{
     ownership::{ready::StartupFailed, session::Session},
 };
 use serde_json::{Map, Value};
-use std::{collections::BTreeMap, io, path::PathBuf, process::Command, sync::Arc};
+use std::{
+    collections::BTreeMap,
+    io,
+    path::{Path, PathBuf},
+    process::Command,
+    sync::Arc,
+};
+
+pub(crate) fn selected_sdk_command(adapter: &Path) -> io::Result<Command> {
+    // Only builtin commands are prepared here: arbitrary registered factories
+    // may install pre_exec callbacks that create their executable. Preserve
+    // unresolved/relative std lookup, including Windows' implicit .exe search.
+    #[cfg(windows)]
+    let exact = adapter
+        .extension()
+        .and_then(std::ffi::OsStr::to_str)
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("exe"));
+    #[cfg(not(windows))]
+    let exact = true;
+    if adapter.is_absolute() && exact {
+        std::fs::metadata(adapter)?;
+    }
+    Ok(Command::new(adapter))
+}
 
 /// Deployment-selected SDK transport and independently observed launch resources.
 /// Only the bounded native SDK protocol crosses this process boundary.
@@ -77,13 +100,13 @@ impl Runtime {
     }
 
     /// Start only the explicitly selected native SDK executable.
-    pub(crate) fn sdk_command(&self) -> Command {
-        let mut command = Command::new(&self.adapter);
+    pub(crate) fn sdk_command(&self) -> io::Result<Command> {
+        let mut command = selected_sdk_command(&self.adapter)?;
         command
             .env_remove("NUMERA_UPDATE_TOKEN")
             .env_remove("NUMERA_UPDATE_TICKET")
             .env_remove("NUMERA_UPDATE_ACTIVATION");
-        command
+        Ok(command)
     }
     pub fn open(
         &self,
@@ -241,7 +264,7 @@ impl Runtime {
                     now,
                 })
                 .map_err(fail)?,
-            None => self.sdk_command(),
+            None => self.sdk_command().map_err(fail)?,
         };
         command.env_remove("NUMERA_ADAPTER_GEOIP_DIR");
         command.envs(resources.environment);

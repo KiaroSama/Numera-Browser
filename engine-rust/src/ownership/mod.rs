@@ -9,6 +9,7 @@ mod macos;
 pub mod memory;
 pub mod observation;
 pub mod parent;
+mod pending_spawn;
 pub mod ready;
 pub mod recorded_tree;
 pub mod registry;

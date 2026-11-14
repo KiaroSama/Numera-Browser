@@ -108,6 +108,12 @@ source_test!(
         assert!(smoke::exact_version(&pin));
         let docker = fs::read_to_string(root().join("Dockerfile"))?;
         assert!(docker.contains("FROM ubuntu:24.04") && docker.contains("--verify-installation"));
+        assert!(
+            docker
+                .split_ascii_whitespace()
+                .any(|package| package == "libatomic1"),
+            "the bundled Node runtime requires libatomic.so.1"
+        );
         assert!(!docker.contains("pip install") && !docker.contains("npm"));
         ci::container::definition(&root())?;
         Ok(())

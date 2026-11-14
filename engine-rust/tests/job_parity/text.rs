@@ -12,6 +12,12 @@ fn job_text_admission_matches_original_without_replacing_identity_or_outcome()
         "../fixtures/characterization/job_text_admission_matches_original_without_replacing_identity_or_outcome.json"
     ))?;
     assert_eq!(cases.len(), 54, "Job text observations missing");
+    // Only a successful writer-created outcome uses the source platform's
+    // text newline translation. Caller-supplied identity/outcome bytes stay exact.
+    assert_eq!(
+        written_outcome_bytes(b"{\n  \"extra\": \"escaped\\ntext\"\n}", true),
+        b"{\r\n  \"extra\": \"escaped\\ntext\"\r\n}"
+    );
     for (index, case) in cases.iter().enumerate() {
         let root = temporary.path().join(format!("native-{index}"));
         let directory = root.join("jobs");
@@ -42,7 +48,13 @@ fn job_text_admission_matches_original_without_replacing_identity_or_outcome()
             "Job text admission differs: {index}"
         );
         for (path, key) in [(&record, "after_identity"), (&outcome, "after_outcome")] {
-            let expected: Option<Vec<u8>> = serde_json::from_value(case[key].clone())?;
+            let mut expected: Option<Vec<u8>> = serde_json::from_value(case[key].clone())?;
+            if key == "after_outcome"
+                && case["operation"] == "record_exit"
+                && case["result"].get("ok").is_some()
+            {
+                expected = expected.map(|bytes| written_outcome_bytes(&bytes, cfg!(windows)));
+            }
             let actual = match fs::read(path) {
                 Ok(bytes) => Some(bytes),
                 Err(error) if error.kind() == io::ErrorKind::NotFound => None,
@@ -53,4 +65,17 @@ fn job_text_admission_matches_original_without_replacing_identity_or_outcome()
     }
     temporary.cleanup()?;
     Ok(())
+}
+
+fn written_outcome_bytes(bytes: &[u8], windows: bool) -> Vec<u8> {
+    bytes
+        .iter()
+        .flat_map(|byte| {
+            if windows && *byte == b'\n' {
+                vec![b'\r', b'\n']
+            } else {
+                vec![*byte]
+            }
+        })
+        .collect()
 }

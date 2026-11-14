@@ -523,6 +523,44 @@ fn proof(platform: &str, failure: bool, invalid: bool) -> TestResult {
                 .to_string()
                 .contains("Historical native regression did not fail")
         );
+        // A warmed target can fail while compiling another selected snapshot.
+        // Keep that compiler error reviewable without counting it as semantic RED.
+        let secret = "r".repeat(1000);
+        let abi_failure = history::prove_cases_with(
+            &tmp.0,
+            std::slice::from_ref(&case),
+            "linux",
+            &mut inputs,
+            |compile, _, _| {
+                Ok(ci::owned::Output {
+                    command: capture::Output {
+                        exit: if compile { 0 } else { 101 },
+                        stdout: Vec::new(),
+                        stderr: if compile {
+                            Vec::new()
+                        } else {
+                            format!("error[E0603]: historical caller ABI is private\npassword={secret}\n").into_bytes()
+                        },
+                    },
+                    memory: Value::Null,
+                })
+            },
+        );
+        assert!(
+            abi_failure
+                .expect_err("A compiler exit must not count as the named assertion")
+                .to_string()
+                .contains("Historical native regression did not fail")
+        );
+        let retained = tmp.0.join("build/history").join(format!(
+            "proof-{}.stderr.log",
+            ci::sha(format!("{}:{}", case.target, case.test).as_bytes())
+        ));
+        let diagnostic = fs::read_to_string(retained)?;
+        assert!(diagnostic.contains("error[E0603]: historical caller ABI is private"));
+        assert!(diagnostic.contains("[REDACTED]"));
+        assert!(!diagnostic.contains(&secret));
+        assert_eq!(fs::read(&source)?, b"fixed");
         let (cache, diagnostic, _) = fixture(&tmp.0)?;
         let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             history::prove_cases_with(

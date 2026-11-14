@@ -8,6 +8,14 @@ use std::{
     process::{Command, Stdio},
     time::Duration,
 };
+fn resource_stage(stage: &'static str) -> Value {
+    match numera_core::ownership::resources::snapshot() {
+        Ok(sample) => json!({"stage":stage,"handles":sample.handles,"threads":sample.threads}),
+        Err(error) => {
+            json!({"stage":stage,"errno":error.raw_os_error(),"error_kind":format!("{:?}",error.kind())})
+        }
+    }
+}
 fn send(v: Value) -> io::Result<()> {
     let bytes = serde_json::to_vec(&v)?;
     let mut out = io::stdout().lock();
@@ -362,32 +370,45 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Tokio's Unix signal self-pipe belongs to the process and survives
             // each runtime. Establish that subsystem before measuring one
             // relay/session lifecycle, then require zero additional resources.
+            let mut resource_stages = vec![resource_stage("before-warmup-runtime")];
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()?;
+            resource_stages.push(resource_stage("after-warmup-runtime-create"));
             drop(runtime);
+            resource_stages.push(resource_stage("after-warmup-runtime-drop"));
             let guard = numera_core::ownership::resources::ResourceGuard::new()?;
             let session =
                 numera_core::ownership::session::Session::admit(root, &p.id, "resource-fixture")?;
-            let mut command = Command::new(root.join("missing-sdk-worker"));
-            let result = numera_core::browser::launch::open(
-                session,
-                p.clone(),
-                &mut command,
-                numera_core::browser::launch::PreparedLaunch {
-                    backend: "playwright",
-                    headless: true,
-                    extra_args: &[],
-                    cwd: root,
-                    home: root,
-                    country: None,
-                    relay: None,
-                    binary_options: Default::default(),
-                },
-                1000.0,
-            );
+            resource_stages.push(resource_stage("after-session-admit"));
+            // Builtin SDK preparation now refuses a definitely absent worker
+            // before any spawn intent or automatic relay is created.
+            let runtime = numera_core::browser::runtime::Runtime {
+                adapter: root.join(if cfg!(windows) {
+                    "missing-sdk-worker.exe"
+                } else {
+                    "missing-sdk-worker"
+                }),
+                cwd: root.into(),
+                home: root.into(),
+                logs: root.join("logs"),
+                country: None,
+                relay: None,
+                binary_options: Default::default(),
+                deployment: None,
+                registry: None,
+            };
+            let result = runtime.open(session, p.clone(), true, 1000.0);
+            resource_stages.push(resource_stage("after-open-refusal"));
             assert!(result.is_err());
-            guard.finish()?;
+            let cleanup = guard.finish();
+            if cleanup.is_err() {
+                eprintln!(
+                    "Relay-failure passive resource stages thread_ids_collected=false additional_queries=count-only samples={}",
+                    json!(resource_stages)
+                );
+            }
+            cleanup?;
             assert!(matches!(
                 numera_core::ownership::claims::read(root, &p.id),
                 numera_core::ownership::claims::Claim::Absent

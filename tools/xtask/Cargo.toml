@@ -20,6 +20,7 @@ tar = { version = "0.4.46", default-features = false }
 flate2 = "1.1.10"
 syn = { version = "=2.0.119", features = ["full", "visit"] }
 quote = "=1.0.47"
+dunce = "=1.0.5"
 
 [dev-dependencies]
 numera-core = { path = "../../engine-rust", default-features = false, features = ["test-support"] }

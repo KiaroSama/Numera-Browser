@@ -2,7 +2,50 @@
 //! This module and every hook call are absent without `test-support`.
 use std::{cell::RefCell, io, sync::Arc};
 
+/// Numeric fields from an existing macOS kernel read, never another query.
+#[derive(Clone, Debug)]
+pub struct MacosBsdSample {
+    pub pid: u32,
+    pub parent: u32,
+    pub group: u32,
+    pub status: u32,
+    pub flags: u32,
+    pub in_exit: bool,
+    pub uids: [u32; 3], // pbi_uid, pbi_ruid, pbi_svuid
+    pub gids: [u32; 3], // pbi_gid, pbi_rgid, pbi_svgid
+    pub exit_status: u32,
+    pub birth_seconds: u64,
+    pub birth_micros: u64,
+}
+
+/// Passive test diagnostics. These observations cannot override an OS result.
+#[derive(Clone, Debug)]
+pub enum MacosObservation {
+    Birth {
+        pid: u32,
+        token: Option<u64>,
+        error: Option<(io::ErrorKind, Option<i32>)>,
+    },
+    Process {
+        requested_pid: u32,
+        returned_bytes: i32,
+        errno: i32,
+        fields_complete: bool,
+        fields: MacosBsdSample,
+    },
+    Group {
+        group: i32,
+        capacity: usize,
+        returned_bytes: i32,
+        errno: i32,
+        sampled_pids: Vec<i32>,
+        omitted_pids: usize,
+        incomplete_sample: bool,
+    },
+}
+
 pub trait Backend: Send + Sync {
+    fn macos_observed(&self, _sample: &MacosObservation) {}
     fn before_admit(&self, _id: &str) -> Option<io::Result<()>> {
         None
     }
@@ -56,6 +99,12 @@ pub trait Backend: Send + Sync {
 thread_local! {static BACKEND:RefCell<Option<Arc<dyn Backend>>>=RefCell::new(None);}
 fn current() -> Option<Arc<dyn Backend>> {
     BACKEND.with(|backend| backend.borrow().clone())
+}
+#[cfg(target_os = "macos")]
+pub(crate) fn macos_observed(sample: impl FnOnce() -> MacosObservation) {
+    if let Some(backend) = current() {
+        backend.macos_observed(&sample());
+    }
 }
 pub fn with_backend<T>(backend: Arc<dyn Backend>, operation: impl FnOnce() -> T) -> T {
     with_context(Context(Some(backend)), operation)
