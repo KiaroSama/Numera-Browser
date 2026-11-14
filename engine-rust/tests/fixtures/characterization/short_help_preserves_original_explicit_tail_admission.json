@@ -1,0 +1,7494 @@
+{
+  "scopes": 81,
+  "rows": [
+    {
+      "argv": [
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "create",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "create",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "create",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "create",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "create",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "create",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "create",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "create",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "create",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "create",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "create",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "create",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "list",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "list",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "list",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "list",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "list",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "list",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "list",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "list",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "list",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "list",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "list",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "list",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "show",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "show",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "show",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "show",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "show",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "show",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "show",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "show",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "show",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "show",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "show",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "show",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "launch",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "launch",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "launch",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "launch",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "launch",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "launch",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "launch",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "launch",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "launch",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "launch",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "launch",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "launch",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "stop",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "stop",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "stop",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "stop",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "stop",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "stop",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "stop",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "stop",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "stop",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "stop",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "stop",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "stop",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "list",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "list",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "list",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "list",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "list",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "list",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "list",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "list",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "list",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "list",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "list",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "list",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "show",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "show",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "show",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "show",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "show",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "show",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "show",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "show",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "show",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "show",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "show",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "show",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "stop",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "stop",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "stop",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "stop",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "stop",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "stop",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "stop",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "stop",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "stop",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "stop",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "stop",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "stop",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "clear",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "clear",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "clear",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "clear",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "clear",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "clear",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "jobs",
+        "clear",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "clear",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "clear",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "clear",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "clear",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "jobs",
+        "clear",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "engines",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "engines",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "engines",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "engines",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "engines",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "engines",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "engines",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "engines",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "engines",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "engines",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "engines",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "engines",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "default-engine",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "default-engine",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "default-engine",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "default-engine",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "default-engine",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "default-engine",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "default-engine",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "default-engine",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "default-engine",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "default-engine",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "default-engine",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "default-engine",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "config",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "config",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "config",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "config",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "config",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "config",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "config",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "config",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "config",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "config",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "config",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "config",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "edit",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "edit",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "edit",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "edit",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "edit",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "edit",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "edit",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "edit",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "edit",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "edit",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "edit",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "edit",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "regen",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "regen",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "regen",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "regen",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "regen",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "regen",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "regen",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "regen",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "regen",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "regen",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "regen",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "regen",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "delete",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "delete",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "delete",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "delete",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "delete",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "export",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "export",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "export",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "export",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "export",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "export",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "export",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "export",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "export",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "export",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "export",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "export",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "import",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "import",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "import",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "import",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "import",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "backup",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "backup",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "backup",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "backup",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "backup",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "backup",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "backup",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "backup",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "backup",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "backup",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "backup",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "backup",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "restore",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "restore",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "restore",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "restore",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "restore",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "restore",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "restore",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "restore",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "restore",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "restore",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "restore",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "restore",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "collisions",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "collisions",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "collisions",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "collisions",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "collisions",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "collisions",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "collisions",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "collisions",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "collisions",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "collisions",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "collisions",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "collisions",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "health",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "health",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "health",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "health",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "health",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "health",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "health",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "health",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "health",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "health",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "health",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "health",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import-from",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import-from",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import-from",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import-from",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import-from",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import-from",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "import-from",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "import-from",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "import-from",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "import-from",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "import-from",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "import-from",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "list",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "list",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "list",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "list",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "list",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "list",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "list",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "list",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "list",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "list",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "list",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "list",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "export",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "export",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "export",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "export",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "export",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "export",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "export",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "export",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "export",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "export",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "export",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "export",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "import",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "import",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "import",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "import",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "import",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "import",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "cookies",
+        "import",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "import",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "import",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "import",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "import",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "cookies",
+        "import",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "check",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "check",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "check",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "check",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "check",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "check",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "check",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "check",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "check",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "check",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "check",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "check",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "proxy",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "proxy",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "proxy",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "proxy",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "proxy",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "test",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "test",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "test",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "test",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "test",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "test",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "proxy",
+        "test",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "proxy",
+        "test",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "proxy",
+        "test",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "proxy",
+        "test",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "proxy",
+        "test",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "proxy",
+        "test",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "list",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "list",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "list",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "list",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "list",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "list",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "list",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "list",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "list",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "list",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "list",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "list",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "add",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "add",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "add",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "add",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "add",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "add",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "add",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "add",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "add",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "add",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "add",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "add",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "edit",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "edit",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "edit",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "edit",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "edit",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "edit",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "edit",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "edit",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "edit",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "edit",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "edit",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "edit",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "list",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "list",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "list",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "list",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "list",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "list",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "list",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "list",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "list",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "list",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "list",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "list",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "create",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "create",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "create",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "create",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "create",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "create",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "create",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "create",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "create",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "create",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "create",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "create",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "revoke",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "revoke",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "revoke",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "revoke",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "revoke",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "revoke",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "token",
+        "revoke",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "revoke",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "revoke",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "revoke",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "revoke",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "token",
+        "revoke",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "tls",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "tls",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "tls",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "tls",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "tls",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "tls",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "tls",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "tls",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "tls",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "tls",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "tls",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "tls",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "dns",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "dns",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "dns",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "dns",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "dns",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "dns",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "dns",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "dns",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "dns",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "dns",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "dns",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "dns",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "trust",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "trust",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "trust",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "trust",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "trust",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "trust",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "trust",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "trust",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "trust",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "trust",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "trust",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "trust",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "align",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "align",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "align",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "align",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "align",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "align",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "align",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "align",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "align",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "align",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "align",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "align",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "bulk-create",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "bulk-create",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "bulk-create",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "bulk-create",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "bulk-create",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "bulk-create",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "bulk-create",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "bulk-create",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "bulk-create",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "bulk-create",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "bulk-create",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "bulk-create",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "warmup",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "warmup",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "warmup",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "warmup",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "warmup",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "warmup",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "warmup",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "warmup",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "warmup",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "warmup",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "warmup",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "warmup",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "list",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "list",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "list",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "list",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "list",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "list",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "list",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "list",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "list",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "list",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "list",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "list",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "add",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "update",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "update",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "update",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "update",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "update",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "update",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "update",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "update",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "update",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "update",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "update",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "update",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "remove",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "remove",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "remove",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "remove",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "remove",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "remove",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "remove",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "remove",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "remove",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "remove",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "remove",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "remove",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "run-due",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "run-due",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "run-due",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "run-due",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "run-due",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "run-due",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "schedule",
+        "run-due",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "run-due",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "run-due",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "run-due",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "run-due",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "schedule",
+        "run-due",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "attach",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "attach",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "attach",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "attach",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "attach",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "attach",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "attach",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "attach",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "attach",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "attach",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "attach",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "attach",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "list",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "list",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "list",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "list",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "list",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "list",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "list",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "list",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "list",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "list",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "list",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "list",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "add",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "add",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "add",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "add",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "add",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "add",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "add",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "add",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "add",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "add",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "add",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "add",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "remove",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "remove",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "remove",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "remove",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "remove",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "remove",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "remove",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "remove",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "remove",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "remove",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "remove",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "remove",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "install",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "install",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "install",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "install",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "install",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "install",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "install",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "install",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "install",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "install",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "install",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "install",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "installed",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "installed",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "installed",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "installed",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "installed",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "installed",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "installed",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "installed",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "installed",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "installed",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "installed",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "installed",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "uninstall",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "uninstall",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "uninstall",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "uninstall",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "uninstall",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "uninstall",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "uninstall",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "uninstall",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "uninstall",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "uninstall",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "uninstall",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "uninstall",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-list",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-list",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-list",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-list",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-list",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-list",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-list",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-list",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-list",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-list",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-list",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-list",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-add",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-add",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-add",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-add",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-add",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-add",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-add",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-add",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-add",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-add",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-add",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-add",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-remove",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-remove",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-remove",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-remove",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-remove",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-remove",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "ext",
+        "default-remove",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-remove",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-remove",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-remove",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-remove",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "ext",
+        "default-remove",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "apply",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "apply",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "apply",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "apply",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "apply",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "status",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "status",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "status",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "status",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "status",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "status",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "status",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "status",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "status",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "status",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "status",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "status",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "enable",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "enable",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "enable",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "enable",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "enable",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "enable",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "enable",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "enable",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "enable",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "enable",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "enable",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "enable",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "change",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "change",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "change",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "change",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "change",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "change",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "change",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "change",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "change",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "change",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "change",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "change",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "resume",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "resume",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "resume",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "resume",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "resume",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "resume",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "vault",
+        "resume",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "resume",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "resume",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "resume",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "resume",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "vault",
+        "resume",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "list",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "list",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "list",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "list",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "list",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "list",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "list",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "list",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "list",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "list",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "list",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "list",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "create",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "create",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "create",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "create",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "create",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "create",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "create",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "create",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "create",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "create",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "create",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "create",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "rename",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "rename",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "rename",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "rename",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "rename",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "rename",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "rename",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "rename",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "rename",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "rename",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "rename",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "rename",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "delete",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "delete",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "delete",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "delete",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "delete",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "delete",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "folder",
+        "delete",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "delete",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "delete",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "delete",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "delete",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "folder",
+        "delete",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "mcp",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "mcp",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "mcp",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "mcp",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "mcp",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "mcp",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "mcp",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "mcp",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "mcp",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "mcp",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "mcp",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "mcp",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "serve",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "serve",
+        "-h=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "serve",
+        "-h-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "serve",
+        "-h--help"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "serve",
+        "-hh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "serve",
+        "-hh-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "serve",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "serve",
+        "-hh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "serve",
+        "-h value"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "serve",
+        "-hx"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "serve",
+        "-hxy="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "serve",
+        "--help=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "-hy="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "-yh="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "-hyy-"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "-hyy"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "delete",
+        "-yhh"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "delete",
+        "-hyx="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "show",
+        "--help",
+        "-h="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "show",
+        "-h",
+        "-h="
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "show",
+        "--unknown",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "show",
+        "--json=bad",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "show",
+        "--password=fixture",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "unknown",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "--password",
+        "--",
+        "show",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "--password=-h=",
+        "show",
+        "--json",
+        "fixture"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": "-h=",
+        "command": "show",
+        "json": true,
+        "detach": false,
+        "ref": "fixture"
+      }
+    },
+    {
+      "argv": [
+        "edit",
+        "--notes=-h=",
+        "fixture",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "edit",
+        "json": true,
+        "detach": false,
+        "ref": "fixture",
+        "notes": "-h=",
+        "add_tag": null,
+        "proxy": null,
+        "country": null
+      }
+    },
+    {
+      "argv": [
+        "edit",
+        "--notes",
+        "-h=",
+        "fixture"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "show",
+        "--",
+        "-h="
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "show",
+        "json": false,
+        "detach": false,
+        "ref": "-h="
+      }
+    },
+    {
+      "argv": [
+        "--",
+        "show",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "show",
+        "-\u0661\u0662",
+        "-h="
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "show",
+        "-\u0661\u0662",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "--data-dir=-h=",
+        "show",
+        "-hh"
+      ],
+      "exit": 0
+    }
+  ]
+}

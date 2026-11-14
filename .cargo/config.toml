@@ -1,0 +1,6 @@
+[alias]
+xtask = "run --manifest-path tools/xtask/Cargo.toml --locked --"
+
+[env]
+# SDK resources are provisioned explicitly, never fetched as a compile side effect.
+PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD = "1"

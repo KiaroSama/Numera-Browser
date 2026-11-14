@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "reviewed_on": "2026-11-13",
+  "upstream_repository": "https://github.com/daijro/camoufox",
+  "base_source_commit": "079a6ce8249bab98063e5ac9241e3879a3e6578d",
+  "source_commit": "df9ca1156abf94bf5e8e7764effd35d3a7b298f9",
+  "released_browser": {
+    "version": "158.0.1-beta.41",
+    "executable_changed": false,
+    "cpu_emulation_claimed": false
+  },
+  "changes": [
+    {
+      "commit": "20916cc330b4c84df9a88d45e3af5128b30a53f4",
+      "scope": "native WebGL preparation",
+      "behavior": "For Firefox156+, copy WebGL2 values to WebGL1 only for shared non-string parameters; keep version strings distinct. Released158 extension and uniform-block-cap rules remain158 rules."
+    },
+    {
+      "commits": [
+        "21fdf1c",
+        "9c47338"
+      ],
+      "scope": "typed CPU prep, hardware coherence, seeded defaults and GPU filtering",
+      "browser_gate": "Both cpu:arch and cpu:manufacturer must be active str properties in the selected packaged properties.json. No new CPU config or preferences are sent to the official158 build. Explicit unsupported CPU requests fail before host probing or persistent-context launch.",
+      "new_preferences": [
+        "general.cpu_identity",
+        "media.libvpx.realtime_only"
+      ],
+      "source_default": "Intel0.8136 among unconstrained x86; hardware GPU/core constraints take precedence.",
+      "limitation": "Preparation parity is tested. Canvas/audio/Opus/wasm/NaN computation patches are not present or claimed in the pinned official browser."
+    },
+    {
+      "commit": "b09085c",
+      "scope": "native provisioning, owned by root",
+      "addon": "uBlock Origin1.75.4",
+      "url": "https://addons.mozilla.org/firefox/downloads/file/5203014/ublock_origin-1.75.4.xpi",
+      "sha256": "e2df503cce7cf5069130618c349695f62bdddb9eb8c189156d027269ae4ae267",
+      "runtime_downloads": false
+    },
+    {
+      "commits": [
+        "46a8d92",
+        "fe3a3f7",
+        "84da37b",
+        "df9ca115"
+      ],
+      "scope": "browser patches and build verification",
+      "limitation": "Routed-header order, driven-move/coalescing and font-verifier build changes require their upstream browser/build context; no unreleased executable patch is claimed."
+    }
+  ],
+  "fixtures": {
+    "webgl_draws": 24,
+    "webgl_conversions": 32,
+    "cpu_resolutions": 99,
+    "gpu_cpu_constraints": 1008,
+    "cpu_default_coherence_preferences": 6174,
+    "cpu_conditioned_model_draws": 12,
+    "source_expected_outputs": "Frozen from exact upstream Python AST during development; Rust runtime/tests never invoke Python. Released158 oracle backports only the exact20916cc shared-parameter AST statements onto c3ad3bf released extension policy."
+  },
+  "verification": {
+    "browser_policy": "passed: existing cdp_hint_commands_and_new_page_policy_match_original,99.75s; no new test IDs",
+    "actual_browser": "passed: selected_sdk_opens_real_persistent_context_in_native_owned_tree with official158, 57.74s; CLI/HTTP/cookies/ownership round trips retained",
+    "actual_browser_environment": "Managed-sandbox test only: HOME and XDG_CACHE_HOME are writable workspace directories; MOZ_DISABLE_CONTENT_SANDBOX=1 matches the earlier accepted live environment. No product defaults or sandbox flags changed.",
+    "strict_lint": "passed: browser_hints_parity test target with -D warnings, 11.73s"
+  }
+}

@@ -63,6 +63,11 @@ fn health_view(state: &Profiles) -> Result<Value, RepoError> {
         let id = record["id"]
             .as_str()
             .ok_or_else(|| RepoError::Io(io::Error::other("Stored profile ID is not text")))?;
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event(
+            "health-profile-conversion",
+            &state.root.join("dashboard").join(format!("{id}.json")),
+        )?;
         engines.insert(id.to_owned(), to_engine(record, now).ok());
     }
     let profiles = engines.values().flatten().cloned().collect::<Vec<_>>();
@@ -131,14 +136,14 @@ fn health_view(state: &Profiles) -> Result<Value, RepoError> {
     Ok(json!({"summary":summary,"profiles":rows}))
 }
 pub(super) async fn health(State(state): State<Arc<Profiles>>) -> Response {
-    match tokio::task::spawn_blocking(move || health_view(&state)).await {
+    match super::admission::blocking(move || health_view(&state)).await {
         Ok(Ok(value)) => Json(value).into_response(),
         Ok(Err(error)) => profile_errors::storage(error),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),
     }
 }
 pub(super) async fn collisions(State(state): State<Arc<Profiles>>) -> Response {
-    match tokio::task::spawn_blocking(move || collisions_view(&state)).await {
+    match super::admission::blocking(move || collisions_view(&state)).await {
         Ok(Ok(value)) => Json(value).into_response(),
         Ok(Err(error)) => profile_errors::storage(error),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),

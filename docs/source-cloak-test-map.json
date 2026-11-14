@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "baseline": "docs/rust-test-baseline.json",
+  "baseline_source_commit": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+  "suite": "source_cloak_consent",
+  "source_count": 9,
+  "implemented_count": 9,
+  "case_types": {"standard": 9},
+  "native_only": true,
+  "verification": {
+    "command": "cargo test --manifest-path engine-rust/Cargo.toml --locked --test source_cloak_consent",
+    "status": "passed",
+    "passed": 9,
+    "failed": 0,
+    "ignored": 0
+  },
+  "adaptations": [
+    "The source vendor fixture (SDK0.5.12 and exact146.0.7680.177.5 target) is represented by the typed Vendor trait. Native production uses the ported0.7.2 protocol, whose no-key/latest-only acquisition is unavailable without an existing exact pin and eligible vendor key; it never claims or purchases a key.",
+    "Launch preparation returns the environment owned by the future child (AUTO_UPDATE=false and the pinned existing binary), instead of changing process-global Python environment. Assertions cover the returned environment and preserve zero download calls.",
+    "Native production defaults the cache to the selected data root/browser-cache/cloak, honoring explicit vendor cache/binary overrides. Reading an offer creates no vendor cache or home files.",
+    "The shared-cache process case re-enters only its own named Rust test in a real independently captured child process. It executes the production Acquisition/cache-wide SessionLease and exits9 on WouldBlock before the vendor boundary; no additional reported test ID or Python helper is introduced.",
+    "The CLI/HTTP case calls the real parser/reflection/engines-command seam and real HTTP router. Its injected Service replaces only vendor/helper IO, matching the original run_cli seam; approval, exact-body, stale-offer, token-policy and admission decisions remain production code.",
+    "The separately ported three routes_acquisition source IDs are owned by the source_http suite and are not counted in this nine-case suite."
+  ],
+  "cases": [
+    {"python_id":"tests/test_cloak_consent.py::test_missing_binary_refuses_launch_without_vendor_network","rust_test":"missing_binary_refuses_launch_without_vendor_network","rust_file":"engine-rust/tests/source_cloak_consent.rs","original_type":"standard","native_type":"#[test]","status":"implemented","fault":"missing binary; zero vendor calls and no cache creation"},
+    {"python_id":"tests/test_cloak_consent.py::test_approval_is_bound_to_shown_exact_offer_and_not_persisted","rust_test":"approval_is_bound_to_shown_exact_offer_and_not_persisted","rust_file":"engine-rust/tests/source_cloak_consent.rs","original_type":"standard","native_type":"#[test]","status":"implemented","fault":"decline, wrong/stale exact offer and approval replay; cached launch never downloads"},
+    {"python_id":"tests/test_cloak_consent.py::test_explicit_binary_override_is_preserved_without_acquisition","rust_test":"explicit_binary_override_is_preserved_without_acquisition","rust_file":"engine-rust/tests/source_cloak_consent.rs","original_type":"standard","native_type":"#[test]","status":"implemented","fault":"user-owned binary override and missing override remain acquisition-disabled"},
+    {"python_id":"tests/test_cloak_consent.py::test_unpinned_keyed_or_custom_mirror_acquisition_is_unavailable","rust_test":"unpinned_keyed_or_custom_mirror_acquisition_is_unavailable","rust_file":"engine-rust/tests/source_cloak_consent.rs","original_type":"standard","native_type":"#[test]","status":"implemented","fault":"unpinned key or custom mirror cannot reach vendor downloader"},
+    {"python_id":"tests/test_cloak_consent.py::test_exact_paid_pin_is_honored_but_free_latest_never_downloads","rust_test":"exact_paid_pin_is_honored_but_free_latest_never_downloads","rust_file":"engine-rust/tests/source_cloak_consent.rs","original_type":"standard","native_type":"#[test]","status":"implemented","fault":"free/latest-only license refused before exact download; eligible paid exact pin passes"},
+    {"python_id":"tests/test_cloak_consent.py::test_same_cache_reentrant_acquisition_refuses_before_vendor_call","rust_test":"same_cache_reentrant_acquisition_refuses_before_vendor_call","rust_file":"engine-rust/tests/source_cloak_consent.rs","original_type":"standard","native_type":"#[test]","status":"implemented","fault":"same-process reentrant acquisition hits real cache-wide OS lease"},
+    {"python_id":"tests/test_cloak_consent.py::test_shared_vendor_cache_refuses_another_process_before_download","rust_test":"shared_vendor_cache_refuses_another_process_before_download","rust_file":"engine-rust/tests/source_cloak_consent.rs","original_type":"standard","native_type":"#[test]","status":"implemented","fault":"independent child acquisition refuses parent's real vendor-cache lease before downloader"},
+    {"python_id":"tests/test_cloak_consent.py::test_failed_acquisition_releases_only_its_cache_lease","rust_test":"failed_acquisition_releases_only_its_cache_lease","rust_file":"engine-rust/tests/source_cloak_consent.rs","original_type":"standard","native_type":"#[test]","status":"implemented","fault":"injected vendor OSError preserves failure and releases its lease so retry succeeds"},
+    {"python_id":"tests/test_cloak_consent.py::test_cli_and_http_use_the_same_exact_offer_and_separate_approval","rust_test":"cli_and_http_use_the_same_exact_offer_and_separate_approval","rust_file":"engine-rust/tests/source_cloak_consent.rs","original_type":"standard","native_type":"#[test]","status":"implemented","fault":"actual CLI offer equals HTTP; decline400/stale409 make no calls; approval200 has exact target"}
+  ]
+}

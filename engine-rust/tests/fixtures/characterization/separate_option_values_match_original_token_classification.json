@@ -1,0 +1,8014 @@
+[
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": false,
+      "detach": false,
+      "name": "fixture",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": null,
+      "seed": -12,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": false,
+      "detach": false,
+      "name": "fixture",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": null,
+      "seed": -12,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": false,
+      "detach": false,
+      "name": "fixture",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": null,
+      "seed": -1,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": false,
+      "detach": false,
+      "name": "fixture",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": null,
+      "seed": -1,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=-1_2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": false,
+      "detach": false,
+      "name": "fixture",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": null,
+      "seed": -12,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": false,
+      "detach": false,
+      "name": "fixture",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": null,
+      "seed": -12,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": false,
+      "detach": false,
+      "name": "fixture",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": null,
+      "seed": -12,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=-\u0661\u0662\r"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": false,
+      "detach": false,
+      "name": "fixture",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": null,
+      "seed": -12,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": false,
+      "detach": false,
+      "name": "fixture",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": null,
+      "seed": 0,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": false,
+      "detach": false,
+      "name": "fixture",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": null,
+      "seed": 0,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--seed=-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": -12
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": -12
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": -1
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": -1
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=-1_2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": -12
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": -12
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": -12
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=-\u0661\u0662\r"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": -12
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": 0
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": 0
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--seed=-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": -12,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": -12,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": -1,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": -1,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=-1_2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": -12,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": -12,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": -12,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=-\u0661\u0662\r"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": -12,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 0,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 0,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": -12,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": -12,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": -1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": -1,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=-1_2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": -12,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": -12,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": -12,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=-\u0661\u0662\r"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": -12,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 0,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 0,
+      "pad": 4,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--start=-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": -12,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": -12,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": -1,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": -1,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=-1_2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": -12,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": -12,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": -12,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=-\u0661\u0662\r"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": -12,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 0,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "bulk-create",
+      "json": false,
+      "detach": false,
+      "count": 2,
+      "os": null,
+      "locale": null,
+      "chrome": null,
+      "engine": null,
+      "prefix": "Profile",
+      "start": 1,
+      "pad": 0,
+      "tag": null,
+      "mobile": false,
+      "seed": null
+    }
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "bulk-create",
+      "--count=2",
+      "--pad=-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "jobs",
+      "json": false,
+      "detach": false,
+      "jobs_command": "show",
+      "id": "fixture",
+      "lines": -12
+    }
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "jobs",
+      "json": false,
+      "detach": false,
+      "jobs_command": "show",
+      "id": "fixture",
+      "lines": -12
+    }
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "jobs",
+      "json": false,
+      "detach": false,
+      "jobs_command": "show",
+      "id": "fixture",
+      "lines": -1
+    }
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "jobs",
+      "json": false,
+      "detach": false,
+      "jobs_command": "show",
+      "id": "fixture",
+      "lines": -1
+    }
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=-1_2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "jobs",
+      "json": false,
+      "detach": false,
+      "jobs_command": "show",
+      "id": "fixture",
+      "lines": -12
+    }
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "jobs",
+      "json": false,
+      "detach": false,
+      "jobs_command": "show",
+      "id": "fixture",
+      "lines": -12
+    }
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "jobs",
+      "json": false,
+      "detach": false,
+      "jobs_command": "show",
+      "id": "fixture",
+      "lines": -12
+    }
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=-\u0661\u0662\r"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "jobs",
+      "json": false,
+      "detach": false,
+      "jobs_command": "show",
+      "id": "fixture",
+      "lines": -12
+    }
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "jobs",
+      "json": false,
+      "detach": false,
+      "jobs_command": "show",
+      "id": "fixture",
+      "lines": 0
+    }
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "jobs",
+      "json": false,
+      "detach": false,
+      "jobs_command": "show",
+      "id": "fixture",
+      "lines": 0
+    }
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "jobs",
+      "show",
+      "fixture",
+      "--lines=-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "serve",
+      "json": false,
+      "detach": false,
+      "host": "127.0.0.1",
+      "port": -12,
+      "verbose": false
+    }
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "serve",
+      "json": false,
+      "detach": false,
+      "host": "127.0.0.1",
+      "port": -12,
+      "verbose": false
+    }
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "serve",
+      "json": false,
+      "detach": false,
+      "host": "127.0.0.1",
+      "port": -1,
+      "verbose": false
+    }
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "serve",
+      "json": false,
+      "detach": false,
+      "host": "127.0.0.1",
+      "port": -1,
+      "verbose": false
+    }
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=-1_2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "serve",
+      "json": false,
+      "detach": false,
+      "host": "127.0.0.1",
+      "port": -12,
+      "verbose": false
+    }
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "serve",
+      "json": false,
+      "detach": false,
+      "host": "127.0.0.1",
+      "port": -12,
+      "verbose": false
+    }
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "serve",
+      "json": false,
+      "detach": false,
+      "host": "127.0.0.1",
+      "port": -12,
+      "verbose": false
+    }
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=-\u0661\u0662\r"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "serve",
+      "json": false,
+      "detach": false,
+      "host": "127.0.0.1",
+      "port": -12,
+      "verbose": false
+    }
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "serve",
+      "json": false,
+      "detach": false,
+      "host": "127.0.0.1",
+      "port": 0,
+      "verbose": false
+    }
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "serve",
+      "json": false,
+      "detach": false,
+      "host": "127.0.0.1",
+      "port": 0,
+      "verbose": false
+    }
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "serve",
+      "--port=-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "attach",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "port": -12,
+      "engine": null,
+      "headless": false
+    }
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "attach",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "port": -12,
+      "engine": null,
+      "headless": false
+    }
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "attach",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "port": -1,
+      "engine": null,
+      "headless": false
+    }
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "attach",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "port": -1,
+      "engine": null,
+      "headless": false
+    }
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=-1_2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "attach",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "port": -12,
+      "engine": null,
+      "headless": false
+    }
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "attach",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "port": -12,
+      "engine": null,
+      "headless": false
+    }
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "attach",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "port": -12,
+      "engine": null,
+      "headless": false
+    }
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=-\u0661\u0662\r"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "attach",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "port": -12,
+      "engine": null,
+      "headless": false
+    }
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "attach",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "port": 0,
+      "engine": null,
+      "headless": false
+    }
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "attach",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "port": 0,
+      "engine": null,
+      "headless": false
+    }
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "attach",
+      "fixture",
+      "--port=-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -12.0,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -12.0,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -1.0,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -1.0,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "-.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -0.5,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=-.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -0.5,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "-.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -0.5,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=-.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -0.5,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "-\u0661.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -1.5,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=-\u0661.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -1.5,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=-1e2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -100.0,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=-1."
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -1.0,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=-1_2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -12.0,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -12.0,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -12.0,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=-\u0661\u0662\r"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": -12.0,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 0.0,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 0.0,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "+1.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 1.5,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=+1.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 1.5,
+      "site": null,
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--minutes=-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -12.0,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -12.0,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -1.0,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -1.0,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "-.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -0.5,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=-.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -0.5,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "-.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -0.5,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=-.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -0.5,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "-\u0661.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -1.5,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=-\u0661.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -1.5,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=-1e2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -100.0,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=-1."
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -1.0,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=-1_2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -12.0,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -12.0,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -12.0,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=-\u0661\u0662\r"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -12.0,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 0.0,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 0.0,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "+1.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.5,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=+1.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.5,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -12.0,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -12.0,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -1.0,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -1.0,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "-.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -0.5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=-.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -0.5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "-.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -0.5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=-.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -0.5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "-\u0661.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -1.5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=-\u0661.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -1.5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=-1e2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -100.0,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=-1."
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -1.0,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=-1_2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -12.0,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -12.0,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -12.0,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=-\u0661\u0662\r"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": -12.0,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": 0.0,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": 0.0,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "+1.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": 1.5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=+1.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": false,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": 1.0,
+      "minutes": 1.5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "fixture",
+      "--every=1",
+      "--minutes=-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "-\u0661\u0662"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=-\u0661\u0662"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "-1"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=-1"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=-\u0661\u0662\n"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "0"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=0"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--every=-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "-\u0661\u0662"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=-\u0661\u0662"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "-1"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=-1"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=-.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=-.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=-\u0661.\u0665"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=-"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=- value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=--unknown value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=-\u0661\u0662\n"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "0"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=0"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=+1.5"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "schedule",
+      "set",
+      "fixture",
+      "--minutes=-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-\u0661\u0662",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-\u0661\u0662",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-1",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-1",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "-.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-.5",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=-.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-.5",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "-.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-.\u0665",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=-.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-.\u0665",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "-\u0661.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-\u0661.\u0665",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=-\u0661.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-\u0661.\u0665",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=-1e2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-1e2",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=-1."
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-1.",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=-1_2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-1_2",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "-"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=-"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=--"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "--",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "- value"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "- value",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=- value"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "- value",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "--unknown value"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "--unknown value",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=--unknown value"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "--unknown value",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-\u0661\u0662\n",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-\u0661\u0662\n",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=-\u0661\u0662\r"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-\u0661\u0662\r",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "0",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "0",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "+1.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "+1.5",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=+1.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "+1.5",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=--json"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "--json",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "--minutes=2 value"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "--minutes=2 value",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=--minutes=2 value"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "--minutes=2 value",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=-h value"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-h value",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-\u0661\u0662"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-\u0661\u0662"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-1"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=-1"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-1"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "-.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-.5"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=-.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-.5"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "-.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-.\u0665"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=-.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-.\u0665"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "-\u0661.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-\u0661.\u0665"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=-\u0661.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-\u0661.\u0665"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "-1e2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=-1e2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-1e2"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "-1."
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=-1."
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-1."
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "-1_2"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=-1_2"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-1_2"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "-"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=-"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "--"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=--"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "--"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "- value"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "- value"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=- value"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "- value"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "--unknown value"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "--unknown value"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=--unknown value"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "--unknown value"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-\u0661\u0662\n"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=-\u0661\u0662\n"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-\u0661\u0662\n"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "-\u0661\u0662\r"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=-\u0661\u0662\r"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-\u0661\u0662\r"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "0"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=0"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "0"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "+1.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "+1.5"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=+1.5"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "+1.5"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=--json"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "--json"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "--minutes=2 value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=--minutes=2 value"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "--minutes=2 value"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "-h value"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site=-h value"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-h value"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "--data-dir",
+      "-\u0661\u0662",
+      "list"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": "-\u0661\u0662",
+      "password": null,
+      "command": "list",
+      "json": false,
+      "detach": false,
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "--password",
+      "- value",
+      "list"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": "- value",
+      "command": "list",
+      "json": false,
+      "detach": false,
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--se",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": false,
+      "detach": false,
+      "name": "fixture",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": null,
+      "seed": -12,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--co",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": false,
+      "detach": false,
+      "name": "fixture",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": "-\u0661\u0662",
+      "seed": null,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--notes",
+      "--co=two words"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes",
+      "-\u0661\u0662",
+      "--notes",
+      "last"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "last",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "warmup",
+      "fixture",
+      "--site",
+      "-\u0661\u0662",
+      "--site",
+      "-.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "warmup",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "minutes": 5,
+      "site": [
+        "-\u0661\u0662",
+        "-.\u0665"
+      ],
+      "preset": null,
+      "headless": false,
+      "engine": null
+    }
+  },
+  {
+    "argv": [
+      "schedule",
+      "add",
+      "--json",
+      "fixture",
+      "--every",
+      "-.\u0665"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "schedule",
+      "json": true,
+      "detach": false,
+      "schedule_command": "add",
+      "ref": "fixture",
+      "every": -0.5,
+      "minutes": 5,
+      "preset": null
+    }
+  },
+  {
+    "argv": [
+      "--",
+      "edit",
+      "fixture",
+      "--notes",
+      "-\u0661\u0662"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-\u0661\u0662",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--",
+      "--notes",
+      "-\u0661\u0662"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "--seed",
+      "-\u0661\u0662",
+      "fixture",
+      "--json"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": true,
+      "detach": false,
+      "name": "fixture",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": null,
+      "seed": -12,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "fixture",
+      "--notes",
+      "--json",
+      "tail"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "--password",
+      "--",
+      "list",
+      "health"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "--data-dir",
+      "--",
+      "list",
+      "health"
+    ],
+    "exit": 2
+  }
+]

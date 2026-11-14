@@ -9,9 +9,14 @@ use serde_json::json;
 pub(crate) fn storage(error: RepoError) -> Response {
     let message = error.to_string();
     match error {
-        RepoError::NameTaken(_) | RepoError::Diverged(_) | RepoError::SessionBusy(_) => {
+        RepoError::NameTaken(_) | RepoError::SessionBusy(_) => {
             detail(StatusCode::CONFLICT, message)
         }
+        RepoError::Diverged(_) => (
+            StatusCode::CONFLICT,
+            Json(json!({"detail":message,"kind":"ProfileDiverged"})),
+        )
+            .into_response(),
         RepoError::StaleProfile(_) => (
             StatusCode::CONFLICT,
             Json(json!({"detail":message,"kind":"StaleProfile"})),

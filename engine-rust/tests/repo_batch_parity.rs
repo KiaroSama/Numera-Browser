@@ -1,6 +1,55 @@
 use numera_core::{models::Profile, storage::repo::ProfileRepo};
 use serde_json::{Map, Value};
 use std::{fs, path::PathBuf};
+mod common;
+
+#[test]
+fn complete_batch_refusals_match_original_index_order_and_preserved_bytes()
+-> Result<(), Box<dyn std::error::Error>> {
+    let temporary = common::TempDirectory::new("indexed-batch-refusals")?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/complete_batch_refusals_match_original_index_order_and_preserved_bytes.json"
+    ))?;
+    assert_eq!(cases.len(), 10, "Indexed batch observations missing");
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        fs::create_dir_all(root.join("profiles"))?;
+        let config = b"{\"future\":{\"keep\":[true,17]}}";
+        let marker = b"\xffretained-invalid-text";
+        fs::write(root.join("config.json"), config)?;
+        fs::write(root.join("profiles/retained.json"), marker)?;
+        let input = case["profiles"].clone();
+        let profiles = input
+            .as_array()
+            .ok_or("Pending profiles missing")?
+            .iter()
+            .map(Profile::from_record)
+            .collect::<Result<Vec<_>, _>>()?;
+        let repo = ProfileRepo::new(root.clone(), None);
+        let result = repo.save_many(
+            profiles,
+            Map::from_iter([("default_engine".into(), "cloak".into())]),
+            case["policy"].as_str().ok_or("Policy missing")?,
+            1700000000.0,
+        );
+        assert_eq!(
+            result.err().map(|error| error.to_string()),
+            case["error"].as_str().map(str::to_owned),
+            "Complete indexed batch refusal differs: case={index}"
+        );
+        assert_eq!(input, case["profiles"], "Batch input changed");
+        assert_eq!(fs::read(root.join("config.json"))?, config);
+        assert_eq!(fs::read(root.join("profiles/retained.json"))?, marker);
+        for record in input.as_array().ok_or("Pending profiles missing")? {
+            let id = record["id"].as_str().ok_or("Pending id missing")?;
+            assert!(!root.join("profiles").join(format!("{id}.json")).exists());
+            assert!(!root.join("dashboard").join(format!("{id}.json")).exists());
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
 
 #[test]
 fn batch_names_and_config_commit_with_both_stores_or_not_at_all()

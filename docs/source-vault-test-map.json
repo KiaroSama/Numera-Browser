@@ -1,0 +1,3130 @@
+{
+  "schema": 1,
+  "baseline": "docs/rust-test-baseline.json",
+  "baseline_source_commit": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+  "suite": "source_vault",
+  "required_features": [
+    "test-support"
+  ],
+  "count": 292,
+  "files": {
+    "tests/test_locked_cli_and_vault.py": 8,
+    "tests/test_pooled_proxy_secret_intent.py": 16,
+    "tests/test_proxy_removal_intent.py": 25,
+    "tests/test_repo_secrets.py": 9,
+    "tests/test_vault.py": 12,
+    "tests/test_vault_active_descriptor.py": 62,
+    "tests/test_vault_commit_protocol.py": 26,
+    "tests/test_vault_completion_everywhere.py": 16,
+    "tests/test_vault_completion_invariant.py": 21,
+    "tests/test_vault_covers_the_root.py": 13,
+    "tests/test_vault_crash_recovery.py": 7,
+    "tests/test_vault_dashboard.py": 6,
+    "tests/test_vault_propagation.py": 12,
+    "tests/test_vault_read_isolation.py": 5,
+    "tests/test_vault_recovery_completeness.py": 18,
+    "tests/test_vault_recovery_integrity.py": 25,
+    "tests/test_vault_rotation.py": 7,
+    "tests/test_vault_transaction.py": 4
+  },
+  "case_types": {
+    "standard": 146,
+    "parameterized": 146
+  },
+  "native_only": true,
+  "verification": {
+    "status": "passed",
+    "command": "cargo test --locked --manifest-path engine-rust/Cargo.toml --features test-support --test source_vault",
+    "reported": 292,
+    "passed": 292,
+    "failed": 0,
+    "ignored": 0,
+    "elapsed_seconds": 203.35,
+    "targeted_followup": {
+      "case": "vault_propagation::the_password_never_appears_in_a_child_argv",
+      "reason": "Approved dynamic browser environment restriction helper extracted and updater-token protection added after full suite.",
+      "passed": 1,
+      "failed": 0
+    },
+    "source_oracle_processes": 0,
+    "individually_reported_cases": 292,
+    "mapping_set_equals_frozen_baseline_subset": true,
+    "clippy": "passed: cargo clippy --locked --manifest-path engine-rust/Cargo.toml --features test-support --lib --test source_vault --test source_performance --test repo_write_parity -- -D warnings",
+    "typed_rollback": {
+      "kind": "RollbackFailed",
+      "cause_chain": "primary syscall error and every failed restore remain inspectable",
+      "targeted_cases_passed": 2,
+      "full_suite_passed": 292
+    },
+    "log": "/tmp/vault-salt-descriptor-vault292-green.log",
+    "clippy_log": "/tmp/vault-salt-descriptor-clippy.log",
+    "working_tree_followup": "2026-11-14 typed salt descriptor fix; same292originalIDs/types, no fresh hosted-platform claim."
+  },
+  "source_hashes": {
+    "tests/test_locked_cli_and_vault.py": "655026144c4a7b070659a80fcc6c5ab40325e63a983729fec69d91d35a9f0abb",
+    "tests/test_pooled_proxy_secret_intent.py": "c33bf2a917a1d54cf3c3d070d3a36e828d94861201dadfd03e15a23b5de4733a",
+    "tests/test_proxy_removal_intent.py": "73e7088be30bd71a6847ed4ede1bace7a68ea707a8ba52433a37b5771607a987",
+    "tests/test_repo_secrets.py": "7330ad2a12b8e8d130200ffdec4d79907d534374c3ab8bbcb88adddcf22887e9",
+    "tests/test_vault.py": "31dbe79501be616880997e668ec75b8bd34ad546f03afc06d1ea1239fc225b9f",
+    "tests/test_vault_active_descriptor.py": "a9197be8f46036fca52b808bb86374dfc39a083f635b080e74cf16831aeb5663",
+    "tests/test_vault_commit_protocol.py": "be83439ee5eae3ea4ee0a39cbdc94684126cb3dc46a00b459a24d332907e4583",
+    "tests/test_vault_completion_everywhere.py": "bcdd6e4a4ef064cc50be664a78a6dfffce5e0c9feb89cfe9a3a5ea51852e880d",
+    "tests/test_vault_completion_invariant.py": "0cf25e4a2cb7e59e0a413fc248d2d04e56e794805480d8a41e7e5644b19c4567",
+    "tests/test_vault_covers_the_root.py": "cb13fb4b7a0a952c92a39e6b20341576ed961b8b320d1413d129b985174082d1",
+    "tests/test_vault_crash_recovery.py": "35081264766db6b6d89b867d56d6d08689afac6839545e20cb37febf8c1f5795",
+    "tests/test_vault_dashboard.py": "52a879163fd5833217cc1ea06196f0687e4fa3b7af5c41ac151fa40ff72b6cea",
+    "tests/test_vault_propagation.py": "2b2fb4dd983aba1915d5062695fdeec08049df9f1ab2a34b0ee65c8973c37123",
+    "tests/test_vault_read_isolation.py": "ab0ee3be86b0c38be520677c87824eed78b7bd4a100d166b0fdcb5d0b7439f97",
+    "tests/test_vault_recovery_completeness.py": "f94f4004e2278020fd7b47f12dd58988e61be00d70352228c405065051158711",
+    "tests/test_vault_recovery_integrity.py": "3a57c998155b9ebc5962ff3146b021e4e007861206969c3fb6214ff8ec6520a3",
+    "tests/test_vault_rotation.py": "a3f226f42a36acda01059f5f72f1fa5963e99a2d9096c6ae521a5079c1160964",
+    "tests/test_vault_transaction.py": "43bcf61b9dc81e2dea7e5253e67a14afd14942702674cd08cf39c5d58b8bf961"
+  },
+  "adaptations": [
+    "Each original parameter expansion is a separately reported Rust #[test]. Tests invoke real crypto, recovery, storage, HTTP/CLI domains and inspect owned filesystem effects; no Python runtime or parity oracle is invoked.",
+    "Native test-support observers run at real encryption, atomic commit, rollback restoration, data/config fsync, descriptor publication and cleanup boundaries. Observers are scoped by thread and explicitly propagated through worker-thread boundaries; product builds exclude them.",
+    "Hard exits use owned native subprocesses re-executing the exact same reported test case. A worker exits 73 at the original corresponding checkpoint; the parent verifies the exit and independently recovers/asserts all planted credentials. No helper tests or extra reported cases are introduced.",
+    "Concurrency cases use actual native root transaction locks and separate threads coordinated after a real credential commit, checking that the competing read/write remains blocked until the migration publishes its descriptor.",
+    "Native CLI child_command places the unlock in the child environment without argv exposure. The browser receives an already decrypted Profile and an actual bound native credential-relay endpoint; launch options use that relay without plaintext credentials. The production restrict_environment helper is called by real Adapter::spawn_admitted and tested dynamically to remove master/API/updater credentials while preserving unrelated settings.",
+    "Original optional cryptography/FastAPI skip conditions have no corresponding native skip: Rust crypto and HTTP dependencies are always present in this target.",
+    "Frozen Linux errno IDs remain stable on Windows; unsupported fsync cases inject equivalent native FlushFileBuffers errors (InvalidInput/Unsupported) while asserting the same tolerance contract.",
+    "Arbitrary fixture passwords and salts use stable synthetic old/new pairs across recovery modules to share the native KDF cache; wrong-password values, role assertions, source parameter IDs, data shapes and fault stages are preserved.",
+    "Original RollbackFailed exception assertions map to RecoveryErrorKind::RollbackFailed with the public atomic::RollbackFailed carrier; tests inspect original syscall errno, failed path/errno, Error::source chain and successful restoration of all other files."
+  ],
+  "cases": [
+    {
+      "python_id": "tests/test_locked_cli_and_vault.py::test_locked_pool_assign_refuses_and_changes_nothing",
+      "rust_test": "locked_cli_and_vault::locked_pool_assign_refuses_and_changes_nothing",
+      "rust_file": "engine-rust/tests/source_vault/locked_cli_and_vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "capsys"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_locked_cli_and_vault.py::test_unlocked_pool_assign_carries_the_real_credential",
+      "rust_test": "locked_cli_and_vault::unlocked_pool_assign_carries_the_real_credential",
+      "rust_file": "engine-rust/tests/source_vault/locked_cli_and_vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_locked_cli_and_vault.py::test_a_locked_plaintext_replacement_is_refused",
+      "rust_test": "locked_cli_and_vault::a_locked_plaintext_replacement_is_refused",
+      "rust_file": "engine-rust/tests/source_vault/locked_cli_and_vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
+      "rust_test": "locked_cli_and_vault::a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
+      "rust_file": "engine-rust/tests/source_vault/locked_cli_and_vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_locked_cli_and_vault.py::test_a_locked_non_secret_edit_still_works",
+      "rust_test": "locked_cli_and_vault::a_locked_non_secret_edit_still_works",
+      "rust_file": "engine-rust/tests/source_vault/locked_cli_and_vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_locked_cli_and_vault.py::test_an_unreadable_envelope_is_never_handed_out_as_a_password",
+      "rust_test": "locked_cli_and_vault::an_unreadable_envelope_is_never_handed_out_as_a_password",
+      "rust_file": "engine-rust/tests/source_vault/locked_cli_and_vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_locked_cli_and_vault.py::test_corrupt_ciphertext_counts_as_withheld_not_absent",
+      "rust_test": "locked_cli_and_vault::corrupt_ciphertext_counts_as_withheld_not_absent",
+      "rust_file": "engine-rust/tests/source_vault/locked_cli_and_vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_locked_cli_and_vault.py::test_cli_export_refuses_when_one_secret_is_unreadable",
+      "rust_test": "locked_cli_and_vault::cli_export_refuses_when_one_secret_is_unreadable",
+      "rust_file": "engine-rust/tests/source_vault/locked_cli_and_vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "capsys"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_an_explicit_clear_removes_the_password_and_keeps_the_proxy",
+      "rust_test": "pooled_proxy_secret_intent::an_explicit_clear_removes_the_password_and_keeps_the_proxy",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_an_omitted_password_is_left_alone",
+      "rust_test": "pooled_proxy_secret_intent::an_omitted_password_is_left_alone",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_a_new_password_replaces_the_old_one",
+      "rust_test": "pooled_proxy_secret_intent::a_new_password_replaces_the_old_one",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_an_unlocked_clear_removes_the_ciphertext",
+      "rust_test": "pooled_proxy_secret_intent::an_unlocked_clear_removes_the_ciphertext",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_a_locked_clear_is_refused_rather_than_guessed",
+      "rust_test": "pooled_proxy_secret_intent::a_locked_clear_is_refused_rather_than_guessed",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_an_edit_refuses_a_password_that_is_not_text[a boolean]",
+      "rust_test": "pooled_proxy_secret_intent::an_edit_refuses_a_password_that_is_not_text_case_005",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_an_edit_refuses_a_password_that_is_not_text[a float]",
+      "rust_test": "pooled_proxy_secret_intent::an_edit_refuses_a_password_that_is_not_text_case_006",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_an_edit_refuses_a_password_that_is_not_text[a list]",
+      "rust_test": "pooled_proxy_secret_intent::an_edit_refuses_a_password_that_is_not_text_case_007",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_an_edit_refuses_a_password_that_is_not_text[a number]",
+      "rust_test": "pooled_proxy_secret_intent::an_edit_refuses_a_password_that_is_not_text_case_008",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_an_edit_refuses_a_password_that_is_not_text[an object]",
+      "rust_test": "pooled_proxy_secret_intent::an_edit_refuses_a_password_that_is_not_text_case_009",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_create_refuses_the_same_shapes[a boolean]",
+      "rust_test": "pooled_proxy_secret_intent::create_refuses_the_same_shapes_case_010",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_create_refuses_the_same_shapes[a float]",
+      "rust_test": "pooled_proxy_secret_intent::create_refuses_the_same_shapes_case_011",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_create_refuses_the_same_shapes[a list]",
+      "rust_test": "pooled_proxy_secret_intent::create_refuses_the_same_shapes_case_012",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_create_refuses_the_same_shapes[a number]",
+      "rust_test": "pooled_proxy_secret_intent::create_refuses_the_same_shapes_case_013",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_create_refuses_the_same_shapes[an object]",
+      "rust_test": "pooled_proxy_secret_intent::create_refuses_the_same_shapes_case_014",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_pooled_proxy_secret_intent.py::test_the_shapes_that_are_meant_to_work_still_do",
+      "rust_test": "pooled_proxy_secret_intent::the_shapes_that_are_meant_to_work_still_do",
+      "rust_file": "engine-rust/tests/source_vault/pooled_proxy_secret_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_the_four_things_a_write_can_say",
+      "rust_test": "proxy_removal_intent::the_four_things_a_write_can_say",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_removing_a_proxy_removes_it_from_both_copies",
+      "rust_test": "proxy_removal_intent::removing_a_proxy_removes_it_from_both_copies",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_removing_a_divergent_proxy_is_allowed_and_settles_it",
+      "rust_test": "proxy_removal_intent::removing_a_divergent_proxy_is_allowed_and_settles_it",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+      "rust_test": "proxy_removal_intent::an_unrelated_edit_over_a_divergence_is_still_refused",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_a_locked_vault_refuses_a_removal_it_cannot_read",
+      "rust_test": "proxy_removal_intent::a_locked_vault_refuses_a_removal_it_cannot_read",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_an_unlocked_vault_removes_the_sealed_credential",
+      "rust_test": "proxy_removal_intent::an_unlocked_vault_removes_the_sealed_credential",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_a_profile_that_never_had_a_proxy_can_still_be_saved_locked",
+      "rust_test": "proxy_removal_intent::a_profile_that_never_had_a_proxy_can_still_be_saved_locked",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_the_python_path_refuses_the_same_removal",
+      "rust_test": "proxy_removal_intent::the_python_path_refuses_the_same_removal",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_the_python_path_allows_it_unlocked",
+      "rust_test": "proxy_removal_intent::the_python_path_allows_it_unlocked",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_the_python_path_removes_a_divergent_proxy_too",
+      "rust_test": "proxy_removal_intent::the_python_path_removes_a_divergent_proxy_too",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_a_proxy_the_caller_never_saw_may_not_be_removed[None-None]",
+      "rust_test": "proxy_removal_intent::a_proxy_the_caller_never_saw_may_not_be_removed_case_010",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_a_proxy_the_caller_never_saw_may_not_be_removed[u-None]",
+      "rust_test": "proxy_removal_intent::a_proxy_the_caller_never_saw_may_not_be_removed_case_011",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_a_proxy_the_caller_never_saw_may_not_be_removed[u-secret]",
+      "rust_test": "proxy_removal_intent::a_proxy_the_caller_never_saw_may_not_be_removed_case_012",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_the_dashboard_toggle_off_removes_the_proxy[None]",
+      "rust_test": "proxy_removal_intent::the_dashboard_toggle_off_removes_the_proxy_case_013",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_the_dashboard_toggle_off_removes_the_proxy[secret]",
+      "rust_test": "proxy_removal_intent::the_dashboard_toggle_off_removes_the_proxy_case_014",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_explicit_proxy_restore_after_stale_revision_commits_both_copies[None-host-other]",
+      "rust_test": "proxy_removal_intent::explicit_proxy_restore_after_stale_revision_commits_both_copies_case_015",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_explicit_proxy_restore_after_stale_revision_commits_both_copies[None-port-8082]",
+      "rust_test": "proxy_removal_intent::explicit_proxy_restore_after_stale_revision_commits_both_copies_case_016",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_explicit_proxy_restore_after_stale_revision_commits_both_copies[None-user-other-user]",
+      "rust_test": "proxy_removal_intent::explicit_proxy_restore_after_stale_revision_commits_both_copies_case_017",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_explicit_proxy_restore_after_stale_revision_commits_both_copies[secret-host-other]",
+      "rust_test": "proxy_removal_intent::explicit_proxy_restore_after_stale_revision_commits_both_copies_case_018",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_explicit_proxy_restore_after_stale_revision_commits_both_copies[secret-port-8082]",
+      "rust_test": "proxy_removal_intent::explicit_proxy_restore_after_stale_revision_commits_both_copies_case_019",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_explicit_proxy_restore_after_stale_revision_commits_both_copies[secret-user-other-user]",
+      "rust_test": "proxy_removal_intent::explicit_proxy_restore_after_stale_revision_commits_both_copies_case_020",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_read_distinguishes_known_passwordless_proxy_from_withheld[missing]",
+      "rust_test": "proxy_removal_intent::read_distinguishes_known_passwordless_proxy_from_withheld_case_021",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_read_distinguishes_known_passwordless_proxy_from_withheld[null]",
+      "rust_test": "proxy_removal_intent::read_distinguishes_known_passwordless_proxy_from_withheld_case_022",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_read_distinguishes_known_passwordless_proxy_from_withheld[empty]",
+      "rust_test": "proxy_removal_intent::read_distinguishes_known_passwordless_proxy_from_withheld_case_023",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxy_removal_intent.py::test_a_withheld_password_stays_null_on_read",
+      "rust_test": "proxy_removal_intent::a_withheld_password_stays_null_on_read",
+      "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_secrets.py::test_a_repo_create_under_an_unlocked_vault_leaves_no_plaintext",
+      "rust_test": "repo_secrets::a_repo_create_under_an_unlocked_vault_leaves_no_plaintext",
+      "rust_file": "engine-rust/tests/source_vault/repo_secrets.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_secrets.py::test_a_repo_edit_under_an_unlocked_vault_leaves_no_plaintext",
+      "rust_test": "repo_secrets::a_repo_edit_under_an_unlocked_vault_leaves_no_plaintext",
+      "rust_file": "engine-rust/tests/source_vault/repo_secrets.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_secrets.py::test_the_cli_edit_path_leaves_no_plaintext",
+      "rust_test": "repo_secrets::the_cli_edit_path_leaves_no_plaintext",
+      "rust_file": "engine-rust/tests/source_vault/repo_secrets.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_secrets.py::test_a_locked_notes_edit_keeps_both_ciphertexts_untouched",
+      "rust_test": "repo_secrets::a_locked_notes_edit_keeps_both_ciphertexts_untouched",
+      "rust_file": "engine-rust/tests/source_vault/repo_secrets.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
+      "rust_test": "repo_secrets::a_locked_password_replacement_is_refused_and_changes_nothing",
+      "rust_file": "engine-rust/tests/source_vault/repo_secrets.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_secrets.py::test_save_many_seals_every_secret",
+      "rust_test": "repo_secrets::save_many_seals_every_secret",
+      "rust_file": "engine-rust/tests/source_vault/repo_secrets.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_secrets.py::test_one_locked_replacement_refuses_the_whole_batch",
+      "rust_test": "repo_secrets::one_locked_replacement_refuses_the_whole_batch",
+      "rust_file": "engine-rust/tests/source_vault/repo_secrets.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_secrets.py::test_a_password_rotation_after_repo_writes_can_read_every_credential",
+      "rust_test": "repo_secrets::a_password_rotation_after_repo_writes_can_read_every_credential",
+      "rust_file": "engine-rust/tests/source_vault/repo_secrets.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_secrets.py::test_a_new_twin_is_born_with_created_and_an_edit_advances_updated_at",
+      "rust_test": "repo_secrets::a_new_twin_is_born_with_created_and_an_edit_advances_updated_at",
+      "rust_file": "engine-rust/tests/source_vault/repo_secrets.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault.py::test_round_trip",
+      "rust_test": "vault_cases::round_trip",
+      "rust_file": "engine-rust/tests/source_vault/vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault.py::test_wrong_password_raises",
+      "rust_test": "vault_cases::wrong_password_raises",
+      "rust_file": "engine-rust/tests/source_vault/vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault.py::test_verifier_checks_password",
+      "rust_test": "vault_cases::verifier_checks_password",
+      "rust_file": "engine-rust/tests/source_vault/vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault.py::test_enable_encrypts_existing_secret",
+      "rust_test": "vault_cases::enable_encrypts_existing_secret",
+      "rust_file": "engine-rust/tests/source_vault/vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault.py::test_unlocked_store_reads_the_secret_back",
+      "rust_test": "vault_cases::unlocked_store_reads_the_secret_back",
+      "rust_file": "engine-rust/tests/source_vault/vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault.py::test_locked_store_hides_the_secret",
+      "rust_test": "vault_cases::locked_store_hides_the_secret",
+      "rust_file": "engine-rust/tests/source_vault/vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault.py::test_wrong_password_leaves_store_locked",
+      "rust_test": "vault_cases::wrong_password_leaves_store_locked",
+      "rust_file": "engine-rust/tests/source_vault/vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused",
+      "rust_test": "vault_cases::saving_a_secret_while_locked_is_refused",
+      "rust_file": "engine-rust/tests/source_vault/vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]",
+      "native_adaptation": "Also exercises actual engine/dashboard/pool writes against missing/null/number/bool/array/object salt with a verifier valid under empty salt:18controls refuse without changing stored JSON. The existing case ID and all original assertions remain."
+    },
+    {
+      "python_id": "tests/test_vault.py::test_non_secret_profiles_save_fine_while_locked",
+      "rust_test": "vault_cases::non_secret_profiles_save_fine_while_locked",
+      "rust_file": "engine-rust/tests/source_vault/vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault.py::test_enable_is_idempotent_guard",
+      "rust_test": "vault_cases::enable_is_idempotent_guard",
+      "rust_file": "engine-rust/tests/source_vault/vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault.py::test_a_non_secret_edit_while_locked_keeps_the_password",
+      "rust_test": "vault_cases::a_non_secret_edit_while_locked_keeps_the_password",
+      "rust_file": "engine-rust/tests/source_vault/vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault.py::test_an_interrupted_save_does_not_truncate_a_profile",
+      "rust_test": "vault_cases::an_interrupted_save_does_not_truncate_a_profile",
+      "rust_file": "engine-rust/tests/source_vault/vault.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[False-bad-verifier]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_000",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[False-missing-verifier]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_001",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[False-foreign]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_002",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[False-false]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_003",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[False-list]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_004",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[False-dict]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_005",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[False-null]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_006",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[False-absent]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_007",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[True-bad-verifier]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_008",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[True-missing-verifier]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_009",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[True-foreign]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_010",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[True-false]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_011",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[True-list]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_012",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[True-dict]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_013",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[True-null]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_014",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_rotation_never_confirms_or_overwrites_a_damaged_active_descriptor[True-absent]",
+      "rust_test": "vault_active_descriptor::rotation_never_confirms_or_overwrites_a_damaged_active_descriptor_case_015",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_enable_checks_config_before_both_plaintext_and_cleanup_paths[False-old]",
+      "rust_test": "vault_active_descriptor::enable_checks_config_before_both_plaintext_and_cleanup_paths_case_016",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_enable_checks_config_before_both_plaintext_and_cleanup_paths[False-foreign]",
+      "rust_test": "vault_active_descriptor::enable_checks_config_before_both_plaintext_and_cleanup_paths_case_017",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_enable_checks_config_before_both_plaintext_and_cleanup_paths[False-bad-verifier]",
+      "rust_test": "vault_active_descriptor::enable_checks_config_before_both_plaintext_and_cleanup_paths_case_018",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_enable_checks_config_before_both_plaintext_and_cleanup_paths[False-false]",
+      "rust_test": "vault_active_descriptor::enable_checks_config_before_both_plaintext_and_cleanup_paths_case_019",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_enable_checks_config_before_both_plaintext_and_cleanup_paths[False-list]",
+      "rust_test": "vault_active_descriptor::enable_checks_config_before_both_plaintext_and_cleanup_paths_case_020",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_enable_checks_config_before_both_plaintext_and_cleanup_paths[False-dict]",
+      "rust_test": "vault_active_descriptor::enable_checks_config_before_both_plaintext_and_cleanup_paths_case_021",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_enable_checks_config_before_both_plaintext_and_cleanup_paths[True-old]",
+      "rust_test": "vault_active_descriptor::enable_checks_config_before_both_plaintext_and_cleanup_paths_case_022",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_enable_checks_config_before_both_plaintext_and_cleanup_paths[True-foreign]",
+      "rust_test": "vault_active_descriptor::enable_checks_config_before_both_plaintext_and_cleanup_paths_case_023",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_enable_checks_config_before_both_plaintext_and_cleanup_paths[True-bad-verifier]",
+      "rust_test": "vault_active_descriptor::enable_checks_config_before_both_plaintext_and_cleanup_paths_case_024",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_enable_checks_config_before_both_plaintext_and_cleanup_paths[True-false]",
+      "rust_test": "vault_active_descriptor::enable_checks_config_before_both_plaintext_and_cleanup_paths_case_025",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_enable_checks_config_before_both_plaintext_and_cleanup_paths[True-list]",
+      "rust_test": "vault_active_descriptor::enable_checks_config_before_both_plaintext_and_cleanup_paths_case_026",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_enable_checks_config_before_both_plaintext_and_cleanup_paths[True-dict]",
+      "rust_test": "vault_active_descriptor::enable_checks_config_before_both_plaintext_and_cleanup_paths_case_027",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_valid_transitions_preserve_all_values_and_reopen_twice[enable-absent-new-False]",
+      "rust_test": "vault_active_descriptor::valid_transitions_preserve_all_values_and_reopen_twice_case_028",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_valid_transitions_preserve_all_values_and_reopen_twice[enable-absent-new-True]",
+      "rust_test": "vault_active_descriptor::valid_transitions_preserve_all_values_and_reopen_twice_case_029",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_valid_transitions_preserve_all_values_and_reopen_twice[enable-null-new-True]",
+      "rust_test": "vault_active_descriptor::valid_transitions_preserve_all_values_and_reopen_twice_case_030",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_valid_transitions_preserve_all_values_and_reopen_twice[enable-new-new-False]",
+      "rust_test": "vault_active_descriptor::valid_transitions_preserve_all_values_and_reopen_twice_case_031",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_valid_transitions_preserve_all_values_and_reopen_twice[enable-new-new-True]",
+      "rust_test": "vault_active_descriptor::valid_transitions_preserve_all_values_and_reopen_twice_case_032",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_valid_transitions_preserve_all_values_and_reopen_twice[rotate-old-old-False]",
+      "rust_test": "vault_active_descriptor::valid_transitions_preserve_all_values_and_reopen_twice_case_033",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_valid_transitions_preserve_all_values_and_reopen_twice[rotate-old-old-True]",
+      "rust_test": "vault_active_descriptor::valid_transitions_preserve_all_values_and_reopen_twice_case_034",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_valid_transitions_preserve_all_values_and_reopen_twice[rotate-new-new-False]",
+      "rust_test": "vault_active_descriptor::valid_transitions_preserve_all_values_and_reopen_twice_case_035",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_valid_transitions_preserve_all_values_and_reopen_twice[rotate-new-old-True]",
+      "rust_test": "vault_active_descriptor::valid_transitions_preserve_all_values_and_reopen_twice_case_036",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_missing_password_preserves_evidence[enable-absent]",
+      "rust_test": "vault_active_descriptor::missing_password_preserves_evidence_case_037",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_missing_password_preserves_evidence[enable-new]",
+      "rust_test": "vault_active_descriptor::missing_password_preserves_evidence_case_038",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_missing_password_preserves_evidence[rotate-old]",
+      "rust_test": "vault_active_descriptor::missing_password_preserves_evidence_case_039",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_missing_password_preserves_evidence[rotate-new]",
+      "rust_test": "vault_active_descriptor::missing_password_preserves_evidence_case_040",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_successful_save_callback_must_really_persist_the_expected_descriptor[noop-enable-absent]",
+      "rust_test": "vault_active_descriptor::successful_save_callback_must_really_persist_the_expected_descriptor_case_041",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_successful_save_callback_must_really_persist_the_expected_descriptor[noop-rotate-old]",
+      "rust_test": "vault_active_descriptor::successful_save_callback_must_really_persist_the_expected_descriptor_case_042",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_successful_save_callback_must_really_persist_the_expected_descriptor[damaged-verifier-enable-absent]",
+      "rust_test": "vault_active_descriptor::successful_save_callback_must_really_persist_the_expected_descriptor_case_043",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_successful_save_callback_must_really_persist_the_expected_descriptor[damaged-verifier-rotate-old]",
+      "rust_test": "vault_active_descriptor::successful_save_callback_must_really_persist_the_expected_descriptor_case_044",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_invalid_utf8_refuses_without_losing_recovery_evidence[vault-migration.json]",
+      "rust_test": "vault_active_descriptor::invalid_utf8_refuses_without_losing_recovery_evidence_case_045",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_invalid_utf8_refuses_without_losing_recovery_evidence[proxies.json]",
+      "rust_test": "vault_active_descriptor::invalid_utf8_refuses_without_losing_recovery_evidence_case_046",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_journal_unlink_failure_is_not_silently_reported_as_completion",
+      "rust_test": "vault_active_descriptor::journal_unlink_failure_is_not_silently_reported_as_completion",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_damaged_config_is_not_treated_as_an_empty_fresh_install[\\xff]",
+      "rust_test": "vault_active_descriptor::damaged_config_is_not_treated_as_an_empty_fresh_install_case_048",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_damaged_config_is_not_treated_as_an_empty_fresh_install[{bad]",
+      "rust_test": "vault_active_descriptor::damaged_config_is_not_treated_as_an_empty_fresh_install_case_049",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_damaged_config_is_not_treated_as_an_empty_fresh_install[[]]",
+      "rust_test": "vault_active_descriptor::damaged_config_is_not_treated_as_an_empty_fresh_install_case_050",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_damaged_config_is_not_treated_as_an_empty_fresh_install[null]",
+      "rust_test": "vault_active_descriptor::damaged_config_is_not_treated_as_an_empty_fresh_install_case_051",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_abrupt_exit_can_recover_all_three_sites_and_reopen_twice[before-recovery]",
+      "rust_test": "vault_active_descriptor::abrupt_exit_can_recover_all_three_sites_and_reopen_twice_case_052",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_abrupt_exit_can_recover_all_three_sites_and_reopen_twice[profiles]",
+      "rust_test": "vault_active_descriptor::abrupt_exit_can_recover_all_three_sites_and_reopen_twice_case_053",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_abrupt_exit_can_recover_all_three_sites_and_reopen_twice[dashboard]",
+      "rust_test": "vault_active_descriptor::abrupt_exit_can_recover_all_three_sites_and_reopen_twice_case_054",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_abrupt_exit_can_recover_all_three_sites_and_reopen_twice[proxies.json]",
+      "rust_test": "vault_active_descriptor::abrupt_exit_can_recover_all_three_sites_and_reopen_twice_case_055",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_abrupt_exit_can_recover_all_three_sites_and_reopen_twice[before-config]",
+      "rust_test": "vault_active_descriptor::abrupt_exit_can_recover_all_three_sites_and_reopen_twice_case_056",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_abrupt_exit_can_recover_all_three_sites_and_reopen_twice[after-config]",
+      "rust_test": "vault_active_descriptor::abrupt_exit_can_recover_all_three_sites_and_reopen_twice_case_057",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_abrupt_exit_can_recover_all_three_sites_and_reopen_twice[before-config-sync]",
+      "rust_test": "vault_active_descriptor::abrupt_exit_can_recover_all_three_sites_and_reopen_twice_case_058",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_abrupt_exit_can_recover_all_three_sites_and_reopen_twice[after-config-sync]",
+      "rust_test": "vault_active_descriptor::abrupt_exit_can_recover_all_three_sites_and_reopen_twice_case_059",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_abrupt_exit_can_recover_all_three_sites_and_reopen_twice[before-cleanup]",
+      "rust_test": "vault_active_descriptor::abrupt_exit_can_recover_all_three_sites_and_reopen_twice_case_060",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_active_descriptor.py::test_abrupt_exit_can_recover_all_three_sites_and_reopen_twice[after-cleanup]",
+      "rust_test": "vault_active_descriptor::abrupt_exit_can_recover_all_three_sites_and_reopen_twice_case_061",
+      "rust_file": "engine-rust/tests/source_vault/vault_active_descriptor.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "descriptors"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_sync_failure_after_the_descriptor_lands_does_not_split_the_two",
+      "rust_test": "vault_commit_protocol::a_sync_failure_after_the_descriptor_lands_does_not_split_the_two",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "rotating",
+        "bench",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_the_retry_after_that_failure_does_not_report_success",
+      "rust_test": "vault_commit_protocol::the_retry_after_that_failure_does_not_report_success",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "rotating",
+        "bench",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_two_restarts_converge_on_one_readable_generation",
+      "rust_test": "vault_commit_protocol::two_restarts_converge_on_one_readable_generation",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "rotating",
+        "bench",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_clean_resume_moves_every_site",
+      "rust_test": "vault_commit_protocol::a_clean_resume_moves_every_site",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "rotating",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_half_moved_rotation_finishes_the_rest",
+      "rust_test": "vault_commit_protocol::a_half_moved_rotation_finishes_the_rest",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "rotating",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_wrong_password_refuses_and_keeps_the_record[master-two-wrong-old-moving away from]",
+      "rust_test": "vault_commit_protocol::a_wrong_password_refuses_and_keeps_the_record_case_005",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "rotating"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_wrong_password_refuses_and_keeps_the_record[wrong-new-master-one-new master password]",
+      "rust_test": "vault_commit_protocol::a_wrong_password_refuses_and_keeps_the_record_case_006",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "rotating"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_enable_syncs_the_data_and_the_descriptor_not_only_the_journal",
+      "rust_test": "vault_commit_protocol::enable_syncs_the_data_and_the_descriptor_not_only_the_journal",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_rotation_syncs_the_data_and_the_descriptor",
+      "rust_test": "vault_commit_protocol::rotation_syncs_the_data_and_the_descriptor",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "bench",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_regular_file_sync_failure_is_a_failure[13]",
+      "rust_test": "vault_commit_protocol::a_regular_file_sync_failure_is_a_failure_case_009",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_regular_file_sync_failure_is_a_failure[9]",
+      "rust_test": "vault_commit_protocol::a_regular_file_sync_failure_is_a_failure_case_010",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_regular_file_sync_failure_is_a_failure[5]",
+      "rust_test": "vault_commit_protocol::a_regular_file_sync_failure_is_a_failure_case_011",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_filesystem_that_cannot_sync_this_object_is_tolerated[22]",
+      "rust_test": "vault_commit_protocol::a_filesystem_that_cannot_sync_this_object_is_tolerated_case_012",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_filesystem_that_cannot_sync_this_object_is_tolerated[95]",
+      "rust_test": "vault_commit_protocol::a_filesystem_that_cannot_sync_this_object_is_tolerated_case_013",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_journal_this_build_cannot_trust_is_not_acted_on[<lambda>-a descriptor with no verifier]",
+      "rust_test": "vault_commit_protocol::a_journal_this_build_cannot_trust_is_not_acted_on_case_014",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "rotating"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_journal_this_build_cannot_trust_is_not_acted_on[<lambda>-a non-string verifier]",
+      "rust_test": "vault_commit_protocol::a_journal_this_build_cannot_trust_is_not_acted_on_case_015",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "rotating"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_journal_this_build_cannot_trust_is_not_acted_on[<lambda>-version 0]",
+      "rust_test": "vault_commit_protocol::a_journal_this_build_cannot_trust_is_not_acted_on_case_016",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "rotating"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_journal_this_build_cannot_trust_is_not_acted_on[<lambda>-a boolean version]",
+      "rust_test": "vault_commit_protocol::a_journal_this_build_cannot_trust_is_not_acted_on_case_017",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "rotating"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_journal_this_build_cannot_trust_is_not_acted_on[<lambda>-a string version]",
+      "rust_test": "vault_commit_protocol::a_journal_this_build_cannot_trust_is_not_acted_on_case_018",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "rotating"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_secret_file_of_the_wrong_shape_blocks_completion[proxies.json-null]",
+      "rust_test": "vault_commit_protocol::a_secret_file_of_the_wrong_shape_blocks_completion_case_019",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "rotating"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_secret_file_of_the_wrong_shape_blocks_completion[proxies.json-{\"not\": \"a list\"}]",
+      "rust_test": "vault_commit_protocol::a_secret_file_of_the_wrong_shape_blocks_completion_case_020",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "rotating"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_secret_file_of_the_wrong_shape_blocks_completion[profiles/p1.json-[]]",
+      "rust_test": "vault_commit_protocol::a_secret_file_of_the_wrong_shape_blocks_completion_case_021",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "rotating"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_secret_file_of_the_wrong_shape_blocks_completion[profiles/p1.json-12]",
+      "rust_test": "vault_commit_protocol::a_secret_file_of_the_wrong_shape_blocks_completion_case_022",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "rotating"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_failed_rollback_keeps_the_journal_and_names_the_files",
+      "rust_test": "vault_commit_protocol::a_failed_rollback_keeps_the_journal_and_names_the_files",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "rotating",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_migration_that_only_missed_its_cleanup_finishes_quietly",
+      "rust_test": "vault_commit_protocol::a_migration_that_only_missed_its_cleanup_finishes_quietly",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "rotating",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_commit_protocol.py::test_a_store_opens_normally_after_the_protocol_settles",
+      "rust_test": "vault_commit_protocol::a_store_opens_normally_after_the_protocol_settles",
+      "rust_file": "engine-rust/tests/source_vault/vault_commit_protocol.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "rotating",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_same_salt_foreign_ciphertext_is_refused_with_the_password",
+      "rust_test": "vault_completion_everywhere::same_salt_foreign_ciphertext_is_refused_with_the_password",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_same_salt_foreign_ciphertext_is_refused_without_a_password",
+      "rust_test": "vault_completion_everywhere::same_salt_foreign_ciphertext_is_refused_without_a_password",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_a_damaged_config_verifier_is_not_hidden_by_a_matching_salt",
+      "rust_test": "vault_completion_everywhere::a_damaged_config_verifier_is_not_hidden_by_a_matching_salt",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_the_ordinary_already_committed_case_completes_with_the_key",
+      "rust_test": "vault_completion_everywhere::the_ordinary_already_committed_case_completes_with_the_key",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_an_uninspectable_pool_entry_blocks_completion[[1, 2, \"x\"]-a pool of non-records]",
+      "rust_test": "vault_completion_everywhere::an_uninspectable_pool_entry_blocks_completion_case_004",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_an_uninspectable_pool_entry_blocks_completion[[{\"id\": \"x\", \"pass\": 5}]-a secret that is not a string]",
+      "rust_test": "vault_completion_everywhere::an_uninspectable_pool_entry_blocks_completion_case_005",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_an_uninspectable_pool_entry_blocks_completion[[{\"id\": \"x\", \"pass\": {\"nested\": \"no\"}}]-a secret that is an object]",
+      "rust_test": "vault_completion_everywhere::an_uninspectable_pool_entry_blocks_completion_case_006",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_a_legitimately_empty_pool_still_completes[[]-an empty pool]",
+      "rust_test": "vault_completion_everywhere::a_legitimately_empty_pool_still_completes_case_007",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_a_legitimately_empty_pool_still_completes[[{\"id\": \"x\", \"host\": \"h\"}]-a pool entry with no secret at all]",
+      "rust_test": "vault_completion_everywhere::a_legitimately_empty_pool_still_completes_case_008",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_a_legitimately_empty_pool_still_completes[[{\"id\": \"x\", \"pass\": \"\"}]-an explicitly empty secret]",
+      "rust_test": "vault_completion_everywhere::a_legitimately_empty_pool_still_completes_case_009",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_an_uninspectable_profile_node_blocks_completion[{\"id\": \"p1\", \"proxy\": 7}-a proxy node that is not an object]",
+      "rust_test": "vault_completion_everywhere::an_uninspectable_profile_node_blocks_completion_case_010",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_an_uninspectable_profile_node_blocks_completion[{\"id\": \"p1\", \"proxy\": {\"password\": 5}}-a secret that is not a string]",
+      "rust_test": "vault_completion_everywhere::an_uninspectable_profile_node_blocks_completion_case_011",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_an_uninspectable_profile_node_blocks_completion[{\"id\": \"p1\", \"proxy\": {\"password\": [\"a\"]}}-a secret that is a list]",
+      "rust_test": "vault_completion_everywhere::an_uninspectable_profile_node_blocks_completion_case_012",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_a_profile_with_nothing_to_protect_still_completes[{\"id\": \"p1\", \"name\": \"one\"}-a profile with no proxy at all]",
+      "rust_test": "vault_completion_everywhere::a_profile_with_nothing_to_protect_still_completes_case_013",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_a_profile_with_nothing_to_protect_still_completes[{\"id\": \"p1\", \"proxy\": {\"host\": \"h\", \"port\": 1}}-a proxy with no password]",
+      "rust_test": "vault_completion_everywhere::a_profile_with_nothing_to_protect_still_completes_case_014",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_everywhere.py::test_a_profile_with_nothing_to_protect_still_completes[{\"id\": \"p1\", \"proxy\": {\"password\": \"\"}}-an explicitly empty password]",
+      "rust_test": "vault_completion_everywhere::a_profile_with_nothing_to_protect_still_completes_case_015",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_everywhere.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "enabled"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_ciphertext_from_a_foreign_descriptor_is_refused",
+      "rust_test": "vault_completion_invariant::ciphertext_from_a_foreign_descriptor_is_refused",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_the_foreign_data_is_still_recoverable_afterwards",
+      "rust_test": "vault_completion_invariant::the_foreign_data_is_still_recoverable_afterwards",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_an_enable_whose_data_really_is_ours_completes",
+      "rust_test": "vault_completion_invariant::an_enable_whose_data_really_is_ours_completes",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_without_a_password_an_interrupted_enable_refuses",
+      "rust_test": "vault_completion_invariant::without_a_password_an_interrupted_enable_refuses",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_a_damaged_verifier_is_never_committed",
+      "rust_test": "vault_completion_invariant::a_damaged_verifier_is_never_committed",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_an_unusable_descriptor_is_refused[<lambda>-an empty verifier]",
+      "rust_test": "vault_completion_invariant::an_unusable_descriptor_is_refused_case_005",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_an_unusable_descriptor_is_refused[<lambda>-a null verifier]",
+      "rust_test": "vault_completion_invariant::an_unusable_descriptor_is_refused_case_006",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_an_unusable_descriptor_is_refused[<lambda>-a non-string verifier]",
+      "rust_test": "vault_completion_invariant::an_unusable_descriptor_is_refused_case_007",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_an_unusable_descriptor_is_refused[<lambda>-a salt that is not base64]",
+      "rust_test": "vault_completion_invariant::an_unusable_descriptor_is_refused_case_008",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_a_resume_does_not_finish_over_a_readable_credential[ordinary resume]",
+      "rust_test": "vault_completion_invariant::a_resume_does_not_finish_over_a_readable_credential_case_009",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_a_resume_does_not_finish_over_a_readable_credential[config already names the new key]",
+      "rust_test": "vault_completion_invariant::a_resume_does_not_finish_over_a_readable_credential_case_010",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_a_clean_resume_moves_every_site",
+      "rust_test": "vault_completion_invariant::a_clean_resume_moves_every_site",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_a_wrong_password_refuses_and_changes_nothing[master-bravo-wrong-old-old]",
+      "rust_test": "vault_completion_invariant::a_wrong_password_refuses_and_changes_nothing_case_012",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_a_wrong_password_refuses_and_changes_nothing[wrong-new-master-alpha-new]",
+      "rust_test": "vault_completion_invariant::a_wrong_password_refuses_and_changes_nothing_case_013",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_a_resume_with_no_passwords_refuses_and_keeps_the_salt",
+      "rust_test": "vault_completion_invariant::a_resume_with_no_passwords_refuses_and_keeps_the_salt",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_a_new_config_over_old_data_is_not_a_finished_rotation",
+      "rust_test": "vault_completion_invariant::a_new_config_over_old_data_is_not_a_finished_rotation",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_a_malformed_holder_container_blocks_completion[proxies.json-null]",
+      "rust_test": "vault_completion_invariant::a_malformed_holder_container_blocks_completion_case_016",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_a_malformed_holder_container_blocks_completion[proxies.json-{\"not\": \"a list\"}]",
+      "rust_test": "vault_completion_invariant::a_malformed_holder_container_blocks_completion_case_017",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_a_malformed_holder_container_blocks_completion[profiles/p1.json-[]]",
+      "rust_test": "vault_completion_invariant::a_malformed_holder_container_blocks_completion_case_018",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_a_root_with_no_secrets_at_all_completes",
+      "rust_test": "vault_completion_invariant::a_root_with_no_secrets_at_all_completes",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_completion_invariant.py::test_the_store_opens_twice_after_the_protocol_settles",
+      "rust_test": "vault_completion_invariant::the_store_opens_twice_after_the_protocol_settles",
+      "rust_file": "engine-rust/tests/source_vault/vault_completion_invariant.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "root",
+        "bench"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_covers_the_root.py::test_no_secret_is_readable_anywhere_after_enabling",
+      "rust_test": "vault_covers_the_root::no_secret_is_readable_anywhere_after_enabling",
+      "rust_file": "engine-rust/tests/source_vault/vault_covers_the_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_covers_the_root.py::test_the_root_reports_no_plaintext_secrets_left",
+      "rust_test": "vault_covers_the_root::the_root_reports_no_plaintext_secrets_left",
+      "rust_file": "engine-rust/tests/source_vault/vault_covers_the_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_covers_the_root.py::test_every_secret_bearing_file_is_in_the_site_table",
+      "rust_test": "vault_covers_the_root::every_secret_bearing_file_is_in_the_site_table",
+      "rust_file": "engine-rust/tests/source_vault/vault_covers_the_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_covers_the_root.py::test_a_failure_part_way_leaves_no_vault_and_nothing_converted",
+      "rust_test": "vault_covers_the_root::a_failure_part_way_leaves_no_vault_and_nothing_converted",
+      "rust_file": "engine-rust/tests/source_vault/vault_covers_the_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_covers_the_root.py::test_a_config_write_failure_also_rolls_the_secrets_back",
+      "rust_test": "vault_covers_the_root::a_config_write_failure_also_rolls_the_secrets_back",
+      "rust_file": "engine-rust/tests/source_vault/vault_covers_the_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_covers_the_root.py::test_unlocked_reads_give_back_the_real_secrets",
+      "rust_test": "vault_covers_the_root::unlocked_reads_give_back_the_real_secrets",
+      "rust_file": "engine-rust/tests/source_vault/vault_covers_the_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_covers_the_root.py::test_a_locked_read_yields_nothing_rather_than_the_ciphertext",
+      "rust_test": "vault_covers_the_root::a_locked_read_yields_nothing_rather_than_the_ciphertext",
+      "rust_file": "engine-rust/tests/source_vault/vault_covers_the_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_covers_the_root.py::test_saving_again_does_not_encrypt_twice",
+      "rust_test": "vault_covers_the_root::saving_again_does_not_encrypt_twice",
+      "rust_file": "engine-rust/tests/source_vault/vault_covers_the_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_covers_the_root.py::test_a_locked_edit_keeps_the_stored_secret",
+      "rust_test": "vault_covers_the_root::a_locked_edit_keeps_the_stored_secret",
+      "rust_file": "engine-rust/tests/source_vault/vault_covers_the_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_covers_the_root.py::test_pool_identity_survives_encryption",
+      "rust_test": "vault_covers_the_root::pool_identity_survives_encryption",
+      "rust_file": "engine-rust/tests/source_vault/vault_covers_the_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_covers_the_root.py::test_a_new_secret_while_locked_is_refused_not_written",
+      "rust_test": "vault_covers_the_root::a_new_secret_while_locked_is_refused_not_written",
+      "rust_file": "engine-rust/tests/source_vault/vault_covers_the_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_covers_the_root.py::test_a_pool_without_an_engine_store_still_works",
+      "rust_test": "vault_covers_the_root::a_pool_without_an_engine_store_still_works",
+      "rust_file": "engine-rust/tests/source_vault/vault_covers_the_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_covers_the_root.py::test_both_real_call_sites_give_the_pool_a_vault",
+      "rust_test": "vault_covers_the_root::both_real_call_sites_give_the_pool_a_vault",
+      "rust_file": "engine-rust/tests/source_vault/vault_covers_the_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_crash_recovery.py::test_a_journal_exists_before_the_first_destructive_write",
+      "rust_test": "vault_crash_recovery::a_journal_exists_before_the_first_destructive_write",
+      "rust_file": "engine-rust/tests/source_vault/vault_crash_recovery.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_crash_recovery.py::test_the_journal_never_holds_the_password_or_a_plaintext_secret",
+      "rust_test": "vault_crash_recovery::the_journal_never_holds_the_password_or_a_plaintext_secret",
+      "rust_file": "engine-rust/tests/source_vault/vault_crash_recovery.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_crash_recovery.py::test_the_secret_is_recoverable_after_a_hard_kill",
+      "rust_test": "vault_crash_recovery::the_secret_is_recoverable_after_a_hard_kill",
+      "rust_file": "engine-rust/tests/source_vault/vault_crash_recovery.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_crash_recovery.py::test_recovery_leaves_one_consistent_generation",
+      "rust_test": "vault_crash_recovery::recovery_leaves_one_consistent_generation",
+      "rust_file": "engine-rust/tests/source_vault/vault_crash_recovery.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_crash_recovery.py::test_the_journal_is_cleaned_up_after_recovery",
+      "rust_test": "vault_crash_recovery::the_journal_is_cleaned_up_after_recovery",
+      "rust_file": "engine-rust/tests/source_vault/vault_crash_recovery.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_crash_recovery.py::test_a_clean_enable_leaves_no_journal",
+      "rust_test": "vault_crash_recovery::a_clean_enable_leaves_no_journal",
+      "rust_file": "engine-rust/tests/source_vault/vault_crash_recovery.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_crash_recovery.py::test_ordinary_failure_still_rolls_back_and_leaves_no_journal",
+      "rust_test": "vault_crash_recovery::ordinary_failure_still_rolls_back_and_leaves_no_journal",
+      "rust_file": "engine-rust/tests/source_vault/vault_crash_recovery.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_dashboard.py::test_without_a_vault_nothing_changes",
+      "rust_test": "vault_dashboard::without_a_vault_nothing_changes",
+      "rust_file": "engine-rust/tests/source_vault/vault_dashboard.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_dashboard.py::test_an_unlocked_vault_encrypts_the_dashboard_copy_too",
+      "rust_test": "vault_dashboard::an_unlocked_vault_encrypts_the_dashboard_copy_too",
+      "rust_file": "engine-rust/tests/source_vault/vault_dashboard.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_dashboard.py::test_a_locked_vault_refuses_a_new_secret_rather_than_writing_it",
+      "rust_test": "vault_dashboard::a_locked_vault_refuses_a_new_secret_rather_than_writing_it",
+      "rust_file": "engine-rust/tests/source_vault/vault_dashboard.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_dashboard.py::test_editing_a_non_secret_field_while_locked_keeps_the_password",
+      "rust_test": "vault_dashboard::editing_a_non_secret_field_while_locked_keeps_the_password",
+      "rust_file": "engine-rust/tests/source_vault/vault_dashboard.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_dashboard.py::test_an_already_encrypted_value_is_not_encrypted_twice",
+      "rust_test": "vault_dashboard::an_already_encrypted_value_is_not_encrypted_twice",
+      "rust_file": "engine-rust/tests/source_vault/vault_dashboard.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_dashboard.py::test_a_profile_with_no_proxy_password_is_untouched",
+      "rust_test": "vault_dashboard::a_profile_with_no_proxy_password_is_untouched",
+      "rust_file": "engine-rust/tests/source_vault/vault_dashboard.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_propagation.py::test_serve_gets_an_unlocked_store_when_the_cli_was_unlocked",
+      "rust_test": "vault_propagation::serve_gets_an_unlocked_store_when_the_cli_was_unlocked",
+      "rust_file": "engine-rust/tests/source_vault/vault_propagation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_propagation.py::test_without_a_password_the_server_store_stays_locked",
+      "rust_test": "vault_propagation::without_a_password_the_server_store_stays_locked",
+      "rust_file": "engine-rust/tests/source_vault/vault_propagation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_propagation.py::test_a_child_inherits_the_unlock_by_environment",
+      "rust_test": "vault_propagation::a_child_inherits_the_unlock_by_environment",
+      "rust_file": "engine-rust/tests/source_vault/vault_propagation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_propagation.py::test_the_password_never_appears_in_a_child_argv",
+      "rust_test": "vault_propagation::the_password_never_appears_in_a_child_argv",
+      "rust_file": "engine-rust/tests/source_vault/vault_propagation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_propagation.py::test_a_backup_refuses_rather_than_dropping_the_password",
+      "rust_test": "vault_propagation::a_backup_refuses_rather_than_dropping_the_password",
+      "rust_file": "engine-rust/tests/source_vault/vault_propagation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_propagation.py::test_an_export_refuses_rather_than_dropping_the_password",
+      "rust_test": "vault_propagation::an_export_refuses_rather_than_dropping_the_password",
+      "rust_file": "engine-rust/tests/source_vault/vault_propagation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_propagation.py::test_unlocked_export_and_backup_still_carry_the_password",
+      "rust_test": "vault_propagation::unlocked_export_and_backup_still_carry_the_password",
+      "rust_file": "engine-rust/tests/source_vault/vault_propagation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_propagation.py::test_a_profile_without_a_secret_exports_while_locked",
+      "rust_test": "vault_propagation::a_profile_without_a_secret_exports_while_locked",
+      "rust_file": "engine-rust/tests/source_vault/vault_propagation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_propagation.py::test_a_locked_proxy_test_is_refused_not_recorded_as_failed",
+      "rust_test": "vault_propagation::a_locked_proxy_test_is_refused_not_recorded_as_failed",
+      "rust_file": "engine-rust/tests/source_vault/vault_propagation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_propagation.py::test_a_locked_assign_is_refused",
+      "rust_test": "vault_propagation::a_locked_assign_is_refused",
+      "rust_file": "engine-rust/tests/source_vault/vault_propagation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_propagation.py::test_unlocked_assign_still_works",
+      "rust_test": "vault_propagation::unlocked_assign_still_works",
+      "rust_file": "engine-rust/tests/source_vault/vault_propagation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_propagation.py::test_is_withheld_only_fires_on_a_real_locked_secret",
+      "rust_test": "vault_propagation::is_withheld_only_fires_on_a_real_locked_secret",
+      "rust_file": "engine-rust/tests/source_vault/vault_propagation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_read_isolation.py::test_a_dashboard_read_cannot_see_a_record_sealed_before_the_descriptor",
+      "rust_test": "vault_read_isolation::a_dashboard_read_cannot_see_a_record_sealed_before_the_descriptor",
+      "rust_file": "engine-rust/tests/source_vault/vault_read_isolation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_read_isolation.py::test_a_dashboard_listing_cannot_see_a_half_committed_migration",
+      "rust_test": "vault_read_isolation::a_dashboard_listing_cannot_see_a_half_committed_migration",
+      "rust_file": "engine-rust/tests/source_vault/vault_read_isolation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_read_isolation.py::test_a_pool_read_cannot_see_a_record_sealed_before_the_descriptor",
+      "rust_test": "vault_read_isolation::a_pool_read_cannot_see_a_record_sealed_before_the_descriptor",
+      "rust_file": "engine-rust/tests/source_vault/vault_read_isolation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_read_isolation.py::test_the_reads_still_work_with_no_migration_in_flight",
+      "rust_test": "vault_read_isolation::the_reads_still_work_with_no_migration_in_flight",
+      "rust_file": "engine-rust/tests/source_vault/vault_read_isolation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_read_isolation.py::test_the_engine_side_withheld_check_cannot_straddle_the_boundary",
+      "rust_test": "vault_read_isolation::the_engine_side_withheld_check_cannot_straddle_the_boundary",
+      "rust_file": "engine-rust/tests/source_vault/vault_read_isolation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_an_unfinished_enable_never_reports_an_enabled_vault[script0-before any secret was written]",
+      "rust_test": "vault_recovery_completeness::an_unfinished_enable_never_reports_an_enabled_vault_case_000",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_an_unfinished_enable_never_reports_an_enabled_vault[script1-after one secret file of three]",
+      "rust_test": "vault_recovery_completeness::an_unfinished_enable_never_reports_an_enabled_vault_case_001",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_an_unfinished_enable_is_refused_rather_than_served[script0]",
+      "rust_test": "vault_recovery_completeness::an_unfinished_enable_is_refused_rather_than_served_case_002",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_an_unfinished_enable_is_refused_rather_than_served[script1]",
+      "rust_test": "vault_recovery_completeness::an_unfinished_enable_is_refused_rather_than_served_case_003",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_the_password_finishes_an_interrupted_enable[script0]",
+      "rust_test": "vault_recovery_completeness::the_password_finishes_an_interrupted_enable_case_004",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_the_password_finishes_an_interrupted_enable[script1]",
+      "rust_test": "vault_recovery_completeness::the_password_finishes_an_interrupted_enable_case_005",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_finishing_an_interrupted_enable_is_idempotent",
+      "rust_test": "vault_recovery_completeness::finishing_an_interrupted_enable_is_idempotent",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_a_rotation_records_a_journal_at_all",
+      "rust_test": "vault_recovery_completeness::a_rotation_records_a_journal_at_all",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_an_interrupted_rotation_is_not_discarded",
+      "rust_test": "vault_recovery_completeness::an_interrupted_rotation_is_not_discarded",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_an_interrupted_rotation_can_be_finished",
+      "rust_test": "vault_recovery_completeness::an_interrupted_rotation_can_be_finished",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_a_crash_during_recovery_is_itself_recoverable",
+      "rust_test": "vault_recovery_completeness::a_crash_during_recovery_is_itself_recoverable",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_a_crash_after_the_commit_only_clears_the_journal",
+      "rust_test": "vault_recovery_completeness::a_crash_after_the_commit_only_clears_the_journal",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_a_failed_rollback_keeps_its_journal",
+      "rust_test": "vault_recovery_completeness::a_failed_rollback_keeps_its_journal",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_a_failed_resume_keeps_its_journal_even_when_rollback_works",
+      "rust_test": "vault_recovery_completeness::a_failed_resume_keeps_its_journal_even_when_rollback_works",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_no_journal_holds_a_password_or_a_plaintext_secret[script0-False]",
+      "rust_test": "vault_recovery_completeness::no_journal_holds_a_password_or_a_plaintext_secret_case_014",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_no_journal_holds_a_password_or_a_plaintext_secret[script1-False]",
+      "rust_test": "vault_recovery_completeness::no_journal_holds_a_password_or_a_plaintext_secret_case_015",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_no_journal_holds_a_password_or_a_plaintext_secret[script2-True]",
+      "rust_test": "vault_recovery_completeness::no_journal_holds_a_password_or_a_plaintext_secret_case_016",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_completeness.py::test_a_clean_enable_and_rotation_still_leave_nothing_behind",
+      "rust_test": "vault_recovery_completeness::a_clean_enable_and_rotation_still_leave_nothing_behind",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_completeness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_damaged_journal_is_unreadable_not_absent[{not json at all-invalid JSON]",
+      "rust_test": "vault_recovery_integrity::a_damaged_journal_is_unreadable_not_absent_case_000",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_damaged_journal_is_unreadable_not_absent[[]-a list]",
+      "rust_test": "vault_recovery_integrity::a_damaged_journal_is_unreadable_not_absent_case_001",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_damaged_journal_is_unreadable_not_absent[{}-an empty object]",
+      "rust_test": "vault_recovery_integrity::a_damaged_journal_is_unreadable_not_absent_case_002",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_damaged_journal_is_unreadable_not_absent[null-a null]",
+      "rust_test": "vault_recovery_integrity::a_damaged_journal_is_unreadable_not_absent_case_003",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_damaged_journal_is_unreadable_not_absent[payload4-no salt]",
+      "rust_test": "vault_recovery_integrity::a_damaged_journal_is_unreadable_not_absent_case_004",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_damaged_journal_is_unreadable_not_absent[payload5-a non-string salt]",
+      "rust_test": "vault_recovery_integrity::a_damaged_journal_is_unreadable_not_absent_case_005",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_damaged_journal_is_unreadable_not_absent[payload6-an empty salt]",
+      "rust_test": "vault_recovery_integrity::a_damaged_journal_is_unreadable_not_absent_case_006",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_damaged_journal_is_unreadable_not_absent[payload7-a rotation with no old key]",
+      "rust_test": "vault_recovery_integrity::a_damaged_journal_is_unreadable_not_absent_case_007",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_newer_journal_is_unsupported_not_absent[payload0]",
+      "rust_test": "vault_recovery_integrity::a_newer_journal_is_unsupported_not_absent_case_008",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_newer_journal_is_unsupported_not_absent[payload1]",
+      "rust_test": "vault_recovery_integrity::a_newer_journal_is_unsupported_not_absent_case_009",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_valid_journal_still_classifies_as_valid",
+      "rust_test": "vault_recovery_integrity::a_valid_journal_still_classifies_as_valid",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_no_journal_is_still_absent",
+      "rust_test": "vault_recovery_integrity::no_journal_is_still_absent",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_recovery_refuses_a_damaged_journal_and_keeps_it[{not json]",
+      "rust_test": "vault_recovery_integrity::recovery_refuses_a_damaged_journal_and_keeps_it_case_012",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_recovery_refuses_a_damaged_journal_and_keeps_it[[]]",
+      "rust_test": "vault_recovery_integrity::recovery_refuses_a_damaged_journal_and_keeps_it_case_013",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_recovery_refuses_a_damaged_journal_and_keeps_it[{}]",
+      "rust_test": "vault_recovery_integrity::recovery_refuses_a_damaged_journal_and_keeps_it_case_014",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_classification_never_writes",
+      "rust_test": "vault_recovery_integrity::classification_never_writes",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_an_unreadable_secret_file_blocks_completion",
+      "rust_test": "vault_recovery_integrity::an_unreadable_secret_file_blocks_completion",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_an_already_committed_descriptor_is_not_a_receipt_without_a_key",
+      "rust_test": "vault_recovery_integrity::an_already_committed_descriptor_is_not_a_receipt_without_a_key",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_config_that_disagrees_with_the_journal_is_named_not_guessed",
+      "rust_test": "vault_recovery_integrity::a_config_that_disagrees_with_the_journal_is_named_not_guessed",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_an_uncommitted_descriptor_is_not_adopted_without_a_key",
+      "rust_test": "vault_recovery_integrity::an_uncommitted_descriptor_is_not_adopted_without_a_key",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_real_sync_error_propagates",
+      "rust_test": "vault_recovery_integrity::a_real_sync_error_propagates",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_an_unsupported_sync_is_tolerated",
+      "rust_test": "vault_recovery_integrity::an_unsupported_sync_is_tolerated",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_beginning_a_journal_syncs_it",
+      "rust_test": "vault_recovery_integrity::beginning_a_journal_syncs_it",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_the_journal_records_its_format_version",
+      "rust_test": "vault_recovery_integrity::the_journal_records_its_format_version",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_recovery_integrity.py::test_a_store_that_is_already_open_refuses_after_a_migration_dies",
+      "rust_test": "vault_recovery_integrity::a_store_that_is_already_open_refuses_after_a_migration_dies",
+      "rust_file": "engine-rust/tests/source_vault/vault_recovery_integrity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_rotation.py::test_rotation_moves_every_secret_and_retires_the_old_password",
+      "rust_test": "vault_rotation::rotation_moves_every_secret_and_retires_the_old_password",
+      "rust_file": "engine-rust/tests/source_vault/vault_rotation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]",
+      "native_adaptation": "Also exercises6malformed-salt rotation controls using real empty-salt ciphertext/verifier; refusal precedes new salt randomness and journal publication, retains exact bytes and leaves no journal. The existing case ID and all original assertions remain."
+    },
+    {
+      "python_id": "tests/test_vault_rotation.py::test_the_cli_rotates",
+      "rust_test": "vault_rotation::the_cli_rotates",
+      "rust_file": "engine-rust/tests/source_vault/vault_rotation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_rotation.py::test_the_wrong_current_password_changes_nothing",
+      "rust_test": "vault_rotation::the_wrong_current_password_changes_nothing",
+      "rust_file": "engine-rust/tests/source_vault/vault_rotation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_rotation.py::test_a_failure_part_way_leaves_the_old_password_working",
+      "rust_test": "vault_rotation::a_failure_part_way_leaves_the_old_password_working",
+      "rust_file": "engine-rust/tests/source_vault/vault_rotation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_rotation.py::test_a_secret_this_build_cannot_open_stops_the_rotation",
+      "rust_test": "vault_rotation::a_secret_this_build_cannot_open_stops_the_rotation",
+      "rust_file": "engine-rust/tests/source_vault/vault_rotation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_rotation.py::test_rotating_without_a_vault_is_refused",
+      "rust_test": "vault_rotation::rotating_without_a_vault_is_refused",
+      "rust_file": "engine-rust/tests/source_vault/vault_rotation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_rotation.py::test_an_empty_new_password_is_refused",
+      "rust_test": "vault_rotation::an_empty_new_password_is_refused",
+      "rust_file": "engine-rust/tests/source_vault/vault_rotation.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_transaction.py::test_a_profile_write_cannot_land_inside_enable",
+      "rust_test": "vault_transaction::a_profile_write_cannot_land_inside_enable",
+      "rust_file": "engine-rust/tests/source_vault/vault_transaction.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_transaction.py::test_a_secret_write_cannot_land_inside_a_password_rotation",
+      "rust_test": "vault_transaction::a_secret_write_cannot_land_inside_a_password_rotation",
+      "rust_file": "engine-rust/tests/source_vault/vault_transaction.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_transaction.py::test_a_proxy_credential_write_cannot_land_inside_a_migration",
+      "rust_test": "vault_transaction::a_proxy_credential_write_cannot_land_inside_a_migration",
+      "rust_file": "engine-rust/tests/source_vault/vault_transaction.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_vault_transaction.py::test_two_simultaneous_enables_cannot_race_two_salts",
+      "rust_test": "vault_transaction::two_simultaneous_enables_cannot_race_two_salts",
+      "rust_file": "engine-rust/tests/source_vault/vault_transaction.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    }
+  ],
+  "mechanisms": {
+    "native_abrupt_exit_cases": 29,
+    "owned_native_crash_workers": 30,
+    "concurrency_file_cases": 9,
+    "actual_barrier_races": 8,
+    "normal_read_concurrency_control": 1,
+    "fault_feature": "test-support",
+    "product_fault_observer_compiled": false
+  },
+  "original_python_files_preserved": true
+}

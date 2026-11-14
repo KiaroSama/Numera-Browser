@@ -1,0 +1,235 @@
+[
+  {
+    "input": {
+      "numeraProfiles": null,
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format None; this build reads format 1. Re-export it from the install that wrote it."
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": false,
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format False; this build reads format 1. Re-export it from the install that wrote it."
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": true,
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "ok": [
+        {
+          "name": "preserved"
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": 0,
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format 0; this build reads format 1. Re-export it from the install that wrote it."
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": 1,
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "ok": [
+        {
+          "name": "preserved"
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": 1.0,
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "ok": [
+        {
+          "name": "preserved"
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": 2,
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format 2; this build reads format 1. It was written by a newer Numera - update this install, or re-export from that one."
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": 2.0,
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format 2.0; this build reads format 1. Re-export it from the install that wrote it."
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": -1,
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format -1; this build reads format 1. Re-export it from the install that wrote it."
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": 9223372036854775808,
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format 9223372036854775808; this build reads format 1. It was written by a newer Numera - update this install, or re-export from that one."
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": 18446744073709551616,
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format 18446744073709551616; this build reads format 1. It was written by a newer Numera - update this install, or re-export from that one."
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000; this build reads format 1. It was written by a newer Numera - update this install, or re-export from that one."
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000; this build reads format 1. Re-export it from the install that wrote it."
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": "1",
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format '1'; this build reads format 1. Re-export it from the install that wrote it."
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": "next",
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format 'next'; this build reads format 1. Re-export it from the install that wrote it."
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": [],
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format []; this build reads format 1. Re-export it from the install that wrote it."
+    }
+  },
+  {
+    "input": {
+      "numeraProfiles": {},
+      "profiles": [
+        {
+          "name": "preserved"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "this file says it is Numera export format {}; this build reads format 1. Re-export it from the install that wrote it."
+    }
+  }
+]

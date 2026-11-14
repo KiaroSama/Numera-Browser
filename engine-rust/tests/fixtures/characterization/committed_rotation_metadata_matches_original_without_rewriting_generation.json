@@ -1,0 +1,730 @@
+[
+  {
+    "files": {
+      "config.json": {
+        "vault": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA==",
+          "future": {
+            "format": 3
+          }
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      },
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      ],
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      }
+    },
+    "password": "fixture-new-master",
+    "attempts": [
+      {
+        "result": true,
+        "error": null,
+        "codes": [],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": false,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": false
+      },
+      {
+        "result": false,
+        "error": null,
+        "codes": [],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": false,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": false
+      }
+    ]
+  },
+  {
+    "files": {
+      "config.json": {
+        "vault": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      },
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      ],
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      }
+    },
+    "password": "fixture-new-master",
+    "attempts": [
+      {
+        "result": true,
+        "error": null,
+        "codes": [],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": false,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": false
+      },
+      {
+        "result": false,
+        "error": null,
+        "codes": [],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": false,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": false
+      }
+    ]
+  },
+  {
+    "files": {
+      "config.json": {
+        "vault": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA==",
+          "extra": null
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      },
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      ],
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      }
+    },
+    "password": "fixture-new-master",
+    "attempts": [
+      {
+        "result": true,
+        "error": null,
+        "codes": [],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": false,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": false
+      },
+      {
+        "result": false,
+        "error": null,
+        "codes": [],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": false,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": false
+      }
+    ]
+  },
+  {
+    "files": {
+      "config.json": {
+        "vault": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA==",
+          "label": "\u03b1 \u0641\u0627\u0631\u0633\u06cc"
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      },
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      ],
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      }
+    },
+    "password": "fixture-new-master",
+    "attempts": [
+      {
+        "result": true,
+        "error": null,
+        "codes": [],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": false,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": false
+      },
+      {
+        "result": false,
+        "error": null,
+        "codes": [],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": false,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": false
+      }
+    ]
+  },
+  {
+    "files": {
+      "config.json": {
+        "vault": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v9:fixture"
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      },
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      ],
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      }
+    },
+    "password": "fixture-new-master",
+    "attempts": [
+      {
+        "result": null,
+        "error": "A migration cannot be completed against this data root: the active descriptor is neither an allowed starting generation nor the journal's target; neither record has been discarded. Nothing has been committed and vault-migration.json is kept - it holds the descriptor those secrets belong to. Repair or restore the files named above, then open the store again.",
+        "codes": [
+          "descriptor_disagreement"
+        ],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": true,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": true
+      },
+      {
+        "result": null,
+        "error": "A migration cannot be completed against this data root: the active descriptor is neither an allowed starting generation nor the journal's target; neither record has been discarded. Nothing has been committed and vault-migration.json is kept - it holds the descriptor those secrets belong to. Repair or restore the files named above, then open the store again.",
+        "codes": [
+          "descriptor_disagreement"
+        ],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": true,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": true
+      }
+    ]
+  },
+  {
+    "files": {
+      "config.json": {
+        "vault": {
+          "salt": "EBESExQVFhcYGRobHB0eHw=="
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      },
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      ],
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      }
+    },
+    "password": "fixture-new-master",
+    "attempts": [
+      {
+        "result": null,
+        "error": "A migration cannot be completed against this data root: the active config has no usable vault descriptor. Nothing has been committed and vault-migration.json is kept - it holds the descriptor those secrets belong to. Repair or restore the files named above, then open the store again.",
+        "codes": [
+          "descriptor_unusable"
+        ],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": true,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": true
+      },
+      {
+        "result": null,
+        "error": "A migration cannot be completed against this data root: the active config has no usable vault descriptor. Nothing has been committed and vault-migration.json is kept - it holds the descriptor those secrets belong to. Repair or restore the files named above, then open the store again.",
+        "codes": [
+          "descriptor_unusable"
+        ],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": true,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": true
+      }
+    ]
+  },
+  {
+    "files": {
+      "config.json": {
+        "vault": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      },
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      ],
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      }
+    },
+    "password": "fixture-new-master",
+    "attempts": [
+      {
+        "result": null,
+        "error": "A migration cannot be completed against this data root: the active descriptor is neither an allowed starting generation nor the journal's target; neither record has been discarded. Nothing has been committed and vault-migration.json is kept - it holds the descriptor those secrets belong to. Repair or restore the files named above, then open the store again.",
+        "codes": [
+          "descriptor_disagreement"
+        ],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": true,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": true
+      },
+      {
+        "result": null,
+        "error": "A migration cannot be completed against this data root: the active descriptor is neither an allowed starting generation nor the journal's target; neither record has been discarded. Nothing has been committed and vault-migration.json is kept - it holds the descriptor those secrets belong to. Repair or restore the files named above, then open the store again.",
+        "codes": [
+          "descriptor_disagreement"
+        ],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": true,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": true
+      }
+    ]
+  },
+  {
+    "files": {
+      "config.json": {
+        "vault": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      },
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1DXxSIgI-61_YYzjgW6QQDCuqlEMzWuN-eZ2rQDC1sA92aM3ZYndezlJWWaFnk0gw=="
+        }
+      ],
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1DXxSIgI-61_YYzjgW6QQDCuqlEMzWuN-eZ2rQDC1sA92aM3ZYndezlJWWaFnk0gw=="
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1DXxSIgI-61_YYzjgW6QQDCuqlEMzWuN-eZ2rQDC1sA92aM3ZYndezlJWWaFnk0gw=="
+        }
+      }
+    },
+    "password": "fixture-new-master",
+    "attempts": [
+      {
+        "result": null,
+        "error": "A master-password rotation was interrupted, so some secrets are under the new password and some under the old one. Finish it with `numera vault resume`, which needs both passwords - they are the only way to tell the two apart, because both are ciphertext. This data root is not served until then, and the record of the new salt is kept.",
+        "codes": [
+          "needs_both_passwords"
+        ],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": true,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": true
+      },
+      {
+        "result": null,
+        "error": "A master-password rotation was interrupted, so some secrets are under the new password and some under the old one. Finish it with `numera vault resume`, which needs both passwords - they are the only way to tell the two apart, because both are ciphertext. This data root is not served until then, and the record of the new salt is kept.",
+        "codes": [
+          "needs_both_passwords"
+        ],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": true,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": true
+      }
+    ]
+  },
+  {
+    "files": {
+      "config.json": {
+        "vault": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      },
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      ],
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      }
+    },
+    "password": null,
+    "attempts": [
+      {
+        "result": null,
+        "error": "A master-password rotation was interrupted, so some secrets are under the new password and some under the old one. Finish it with `numera vault resume`, which needs both passwords - they are the only way to tell the two apart, because both are ciphertext. This data root is not served until then, and the record of the new salt is kept.",
+        "codes": [
+          "needs_both_passwords"
+        ],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": true,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": true
+      },
+      {
+        "result": null,
+        "error": "A master-password rotation was interrupted, so some secrets are under the new password and some under the old one. Finish it with `numera vault resume`, which needs both passwords - they are the only way to tell the two apart, because both are ciphertext. This data root is not served until then, and the record of the new salt is kept.",
+        "codes": [
+          "needs_both_passwords"
+        ],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": true,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": true
+      }
+    ]
+  },
+  {
+    "files": {
+      "config.json": {
+        "vault": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      },
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      ],
+      "profiles/a.json": {
+        "proxy": {
+          "password": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      },
+      "dashboard/a.json": {
+        "proxy": {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD016qGj0mTmePC3Ew7ouMV4iEkxKIkE1TL-AX0hnKPDYqcWPZq1kY0ixsqOzYoR4nA=="
+        }
+      }
+    },
+    "password": "fixture-wrong-master",
+    "attempts": [
+      {
+        "result": null,
+        "error": "A master-password rotation was interrupted, so some secrets are under the new password and some under the old one. Finish it with `numera vault resume`, which needs both passwords - they are the only way to tell the two apart, because both are ciphertext. This data root is not served until then, and the record of the new salt is kept.",
+        "codes": [
+          "needs_both_passwords"
+        ],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": true,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": true
+      },
+      {
+        "result": null,
+        "error": "A master-password rotation was interrupted, so some secrets are under the new password and some under the old one. Finish it with `numera vault resume`, which needs both passwords - they are the only way to tell the two apart, because both are ciphertext. This data root is not served until then, and the record of the new salt is kept.",
+        "codes": [
+          "needs_both_passwords"
+        ],
+        "role": null,
+        "unchanged": {
+          "config.json": true,
+          "vault-migration.json": true,
+          "proxies.json": true,
+          "profiles/a.json": true,
+          "dashboard/a.json": true
+        },
+        "journal": true
+      }
+    ]
+  }
+]

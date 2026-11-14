@@ -13,22 +13,20 @@ use std::{
 };
 mod common;
 
-fn helper(python: &std::ffi::OsStr, ready: &std::path::Path, release: &std::path::Path) -> Command {
-    let script = "import json,os,pathlib,time; p=pathlib.Path(os.environ['FIXTURE_READY']); t=p.with_suffix('.part'); t.write_text(json.dumps({'ok':True}),encoding='utf-8'); t.replace(p); stop=pathlib.Path(os.environ['FIXTURE_RELEASE']); deadline=time.monotonic()+10; exec('while not stop.exists() and time.monotonic()<deadline:\\n time.sleep(0.01)')";
-    let mut command = Command::new(python);
+fn helper(ready: &std::path::Path, release: &std::path::Path) -> std::io::Result<Command> {
+    let mut command = ownership_process::command("ready")?;
     command
-        .args(["-u", "-c", script])
-        .env("FIXTURE_READY", ready)
-        .env("FIXTURE_RELEASE", release)
+        .arg(ready)
+        .arg("ok")
+        .arg(release)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
-    command
+    Ok(command)
 }
 #[test]
 fn registry_reaps_only_owned_children_and_records_exact_schedule_occurrence()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("session-registry")?;
     let root = temporary.path();
     let store = DashboardStore::new(root.to_path_buf(), None);
@@ -49,7 +47,7 @@ fn registry_reaps_only_owned_children_and_records_exact_schedule_occurrence()
     let foreign = Registry::new(root.to_path_buf(), "fixture-host".into(), None)?;
     let ready = root.join("ready.json");
     let release = root.join("release");
-    let mut command = helper(&python, &ready, &release);
+    let mut command = helper(&ready, &release)?;
     assert!(registry.spawn(
         "a",
         &mut command,
@@ -121,3 +119,7 @@ fn registry_reaps_only_owned_children_and_records_exact_schedule_occurrence()
     temporary.cleanup()?;
     Ok(())
 }
+
+use numera_core as core;
+#[path = "common/ownership_process.rs"]
+mod ownership_process;

@@ -1,0 +1,436 @@
+[
+  {
+    "input": {
+      "screen": "1_920x1_080"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "\u0661\u0669\u0662\u0660x\u0661\u0660\u0668\u0660"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "\u06f1\u06f9\u06f2\u06f0x\u06f1\u06f0\u06f8\u06f0"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "\uff11\uff19\uff12\uff10x\uff11\uff10\uff18\uff10"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "\ud835\udfd9\ud835\udfe1\ud835\udfda\ud835\udfd8x\ud835\udfd9\ud835\udfd8\ud835\udfe0\ud835\udfd8"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "+\u0661_\u0669\u0662\u0660X+\u0661\u0660\u0668\u0660"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "1920x1080"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "+1920x+1080"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "001920x001080"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": " 1920 x 1080 "
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "\t1920\nx\r1080\t"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "\u00a01920\u00a0x\u00a01080\u00a0"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "1x1"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "65536x65536"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "1x65536"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "65536x1"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "6_5536x6_5536"
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": "0x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '0x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '0x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "1920x0"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x0'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x0'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "65537x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '65537x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '65537x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "1920x65537"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x65537'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x65537'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "-1x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '-1x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '-1x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "1920x-1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x-1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x-1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "-0x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '-0x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '-0x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "1__920x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1__920x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1__920x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "_1920x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '_1920x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '_1920x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "1920_x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920_x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920_x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "1920x_1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x_1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x_1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "1920x1080_"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x1080_'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x1080_'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "+x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '+x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '+x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "1920x+"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x+'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x+'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "+ 1920x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '+ 1920x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '+ 1920x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "1920x1080x1"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x1080x1'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x1080x1'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "1920"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got 'x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got 'x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "1920x"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1920x'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "1.0x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1.0x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1.0x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "1e3x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1e3x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '1e3x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "\u00b2x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '\u00b2x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '\u00b2x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "\u2160x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '\u2160x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '\u2160x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": "18446744073709551616x1080"
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '18446744073709551616x1080'. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got '18446744073709551616x1080'. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": ""
+    },
+    "core": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got ''. Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got ''. Nothing was written."
+    ]
+  },
+  {
+    "input": {
+      "screen": null
+    },
+    "core": [],
+    "http": []
+  },
+  {
+    "input": {
+      "screen": 17
+    },
+    "core": [
+      "profile: 'screen' must be text, not int (17). Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be str, got int"
+    ]
+  },
+  {
+    "input": {
+      "screen": true
+    },
+    "core": [
+      "profile: 'screen' must be text, not bool (True). Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be str, got bool"
+    ]
+  },
+  {
+    "input": {
+      "screen": []
+    },
+    "core": [
+      "profile: 'screen' must be text, not list ([]). Nothing was written."
+    ],
+    "http": [
+      "profile: 'screen' must be str, got list"
+    ]
+  }
+]

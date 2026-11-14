@@ -13,7 +13,7 @@ pub fn platform_version(os: &str, version: &str) -> Result<String, serde_json::E
     Ok(version.to_owned())
 }
 
-fn full_version(fp: &Fingerprint) -> String {
+pub fn full_version(fp: &Fingerprint) -> String {
     if fp.chrome_version.matches('.').count() == 3 {
         fp.chrome_version.clone()
     } else {
@@ -24,21 +24,54 @@ fn full_version(fp: &Fingerprint) -> String {
     }
 }
 
-pub fn metadata(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
+pub fn ua_brands(fp: &Fingerprint) -> Value {
     let major = fp.chrome_version.split('.').next().unwrap_or("");
+    json!([
+        {"brand":"Chromium", "version":major},
+        {"brand":"Google Chrome", "version":major},
+        {"brand":"Not-A.Brand", "version":"99"}
+    ])
+}
+
+fn format_brands(list: &Value) -> String {
+    list.as_array()
+        .into_iter()
+        .flatten()
+        .map(|brand| {
+            format!(
+                "\"{}\";v=\"{}\"",
+                brand["brand"].as_str().unwrap_or(""),
+                brand["version"].as_str().unwrap_or("")
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+pub fn sec_ch_ua(fp: &Fingerprint) -> String {
+    format_brands(&ua_brands(fp))
+}
+
+pub fn sends_client_hints(fp: &Fingerprint) -> bool {
+    fp.os != "ios"
+}
+
+pub fn metadata(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
     let full = full_version(fp);
-    let brands = [
-        ("Chromium", major),
-        ("Google Chrome", major),
-        ("Not-A.Brand", "99"),
-    ];
+    let brands = ua_brands(fp);
+    let full_versions = brands
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|brand| json!({"brand":brand["brand"], "version":if brand["brand"] == "Not-A.Brand" { "99.0.0.0" } else { &full }}))
+        .collect::<Vec<_>>();
     let arm = fp.os == "android"
         || fp.os == "ios"
         || fp.os == "macos" && fp.webgl_renderer.contains("Apple");
     let platform = fp.ch_platform.trim_matches('"');
     Ok(json!({
-        "brands": brands.iter().map(|(brand, version)| json!({"brand":brand,"version":version})).collect::<Vec<_>>(),
-        "fullVersionList": brands.iter().map(|(brand, _)| json!({"brand":brand,"version":if *brand == "Not-A.Brand" { "99.0.0.0" } else { &full }})).collect::<Vec<_>>(),
+        "brands": brands,
+        "fullVersionList": full_versions,
         "platform": if platform.is_empty() { if fp.os == "ios" { "iOS" } else { "Unknown" } } else { platform },
         "platformVersion": platform_version(&fp.os, &fp.os_version)?,
         "architecture": if arm { "arm" } else { "x86" }, "model": fp.device_model,
@@ -47,26 +80,12 @@ pub fn metadata(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
 }
 
 pub fn headers(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
-    if fp.os == "ios" {
+    if !sends_client_hints(fp) {
         return Ok(json!({"low":{},"high":{}}));
     }
     let m = metadata(fp)?;
-    let format_brands = |list: &Value| -> String {
-        list.as_array()
-            .into_iter()
-            .flatten()
-            .map(|b| {
-                format!(
-                    "\"{}\";v=\"{}\"",
-                    b["brand"].as_str().unwrap_or(""),
-                    b["version"].as_str().unwrap_or("")
-                )
-            })
-            .collect::<Vec<_>>()
-            .join(", ")
-    };
     let quoted = |name: &str| format!("\"{}\"", m[name].as_str().unwrap_or(""));
-    Ok(json!({"low":{"sec-ch-ua":format_brands(&m["brands"]),
+    Ok(json!({"low":{"sec-ch-ua":sec_ch_ua(fp),
         "sec-ch-ua-mobile":if fp.is_mobile { "?1" } else { "?0" },"sec-ch-ua-platform":quoted("platform")},
         "high":{"sec-ch-ua-platform-version":quoted("platformVersion"),"sec-ch-ua-arch":quoted("architecture"),
         "sec-ch-ua-bitness":quoted("bitness"),"sec-ch-ua-model":quoted("model"),
@@ -155,7 +174,11 @@ pub fn validate(fp: &Fingerprint) -> Result<Vec<String>, serde_json::Error> {
     if !(0..=20).contains(&fp.max_touch_points) {
         issues.push("maxTouchPoints outside the range real devices report".into());
     }
-    if !(0.5..=4.0).contains(&fp.device_pixel_ratio) {
+    if fp
+        .device_pixel_ratio
+        .as_f64()
+        .is_none_or(|value| !(0.5..=4.0).contains(&value))
+    {
         issues.push("devicePixelRatio outside the range real displays report".into());
     }
     if fp.os == "ios" && fp.device_memory.as_f64().is_some_and(|v| v != 0.0) {

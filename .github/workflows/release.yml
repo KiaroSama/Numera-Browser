@@ -1,0 +1,40 @@
+name: Review owner-signed native artifacts
+# No Git ref mutation or release publication is performed by this workflow.
+on:
+  workflow_call:
+    inputs:
+      source_sha:
+        type: string
+        required: true
+      run_id:
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+  checks: read
+jobs:
+  review:
+    if: github.event_name == 'workflow_dispatch' && github.actor == 'KiaroSama' && github.repository == 'KiaroSama/Numera-Browser' && inputs.source_sha == github.sha && inputs.run_id == github.run_id && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/migration/native-runtime-checkpoint-20261012')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+      - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Independently require CodeQL for the exact reviewed revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: cargo xtask ci codeql-verdict
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: owner-signed-*-${{ inputs.source_sha }}
+          path: build/owner-review
+          merge-multiple: true
+      - name: Verify all platform signatures and archive identities without publication
+        run: cargo xtask ci signed-product-review build/owner-review "${{ inputs.source_sha }}"

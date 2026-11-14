@@ -19,6 +19,7 @@ pub struct Session {
     _lease: SessionLease,
     tree: Option<OwnedTree>,
     claim: Option<String>,
+    admission: Option<super::update_admission::Reservation>,
 }
 
 impl Session {
@@ -30,14 +31,19 @@ impl Session {
                 "Session host identity is missing",
             ));
         }
-        let lease = SessionLease::acquire(&SessionLease::path_for(root, id)?)?;
         let lock = DataLock::transaction(root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
+        let admission = super::update_admission::Reservation::begin(root, "native-session")?;
+        let lease = SessionLease::acquire(&SessionLease::path_for(root, id)?)?;
         if claims::state(&claims::read(root, id), host) != claims::State::Free {
             return Err(io::Error::new(
                 io::ErrorKind::WouldBlock,
                 "This profile remains owned by a busy or unverifiable session; stop or repair it before opening",
             ));
+        }
+        #[cfg(feature = "test-support")]
+        if let Some(result) = super::test_support::admitted(root, id) {
+            result?;
         }
         Ok(Self {
             root: root.into(),
@@ -46,6 +52,7 @@ impl Session {
             _lease: lease,
             tree: None,
             claim: None,
+            admission: Some(admission),
         })
     }
 
@@ -58,7 +65,26 @@ impl Session {
                 "Session already owns a helper tree",
             ));
         }
-        self.tree = Some(OwnedTree::spawn(command)?);
+        if self.admission.is_none() {
+            return Err(io::Error::other("Session admission was already settled"));
+        }
+        let lock = DataLock::transaction(&self.root)?;
+        let _guard = lock.acquire_configured()?;
+        super::update_admission::assert_open_locked(&self.root)?;
+        self.tree = Some(match OwnedTree::spawn_classified(command) {
+            Ok(tree) => tree,
+            Err(failure) => {
+                // Spawn failures may retain an uncertain tree in capture quarantine.
+                // A positive no-child/empty proof permits the original owner
+                // to release admission; error kinds alone never provide it.
+                if !failure.settled
+                    && let Some(admission) = &mut self.admission
+                {
+                    admission.retain();
+                }
+                return Err(failure.error);
+            }
+        });
         let tree = self
             .tree
             .as_ref()
@@ -153,16 +179,23 @@ impl Session {
     }
 
     pub fn finish_with_status(&mut self, budget: Duration) -> io::Result<Option<i32>> {
+        let deadline = std::time::Instant::now()
+            .checked_add(budget)
+            .ok_or_else(|| io::Error::other("Invalid session cleanup budget"))?;
         let Some(tree) = self.tree.as_mut() else {
+            if let Some(admission) = &mut self.admission {
+                admission.release()?;
+                self.admission = None;
+            }
             return Ok(None);
         };
-        tree.settle(budget)?;
+        tree.settle(deadline.saturating_duration_since(std::time::Instant::now()))?;
         let code = tree
             .child_mut()
             .try_wait()?
             .map(|status| status.code().unwrap_or(-1));
         if let Some(claim) = &self.claim
-            && !claims::release(&self.root, &self.id, claim, tree)?
+            && !claims::release_before(&self.root, &self.id, claim, tree, deadline)?
         {
             return Err(io::Error::other(
                 "Session tree is empty but its claim could not be released; ownership remains unverified",
@@ -170,13 +203,27 @@ impl Session {
         }
         self.claim = None;
         self.tree = None;
+        if let Some(admission) = &mut self.admission {
+            admission.release()?;
+            self.admission = None;
+        }
         Ok(code)
     }
 }
 
 impl Drop for Session {
     fn drop(&mut self) {
-        // A failed cleanup leaves the durable claim, never an invented free slot.
-        let _ = self.finish(Duration::from_secs(2));
+        // A failed cleanup leaves both durable owners, never an invented free slot.
+        if self.finish(Duration::from_secs(2)).is_err() {
+            if let Some(admission) = &mut self.admission {
+                admission.retain();
+            }
+            // Keep the original kernel owner as well as its durable claim.
+            // In particular, a retained Windows Job must not be replaced by
+            // reopening a PID or a name after its last owned handle is lost.
+            if let Some(tree) = self.tree.take() {
+                super::capture::retain_tree(tree);
+            }
+        }
     }
 }

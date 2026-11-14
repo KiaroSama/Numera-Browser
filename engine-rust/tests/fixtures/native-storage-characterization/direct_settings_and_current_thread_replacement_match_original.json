@@ -1,0 +1,1152 @@
+[
+  {
+    "input": null,
+    "op": "set",
+    "value": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "error": null,
+    "disk": {
+      "selected": {
+        "nested": [
+          "\u03b1",
+          null
+        ]
+      }
+    },
+    "unchanged": false
+  },
+  {
+    "input": null,
+    "op": "engine",
+    "value": "unknown-but-stored",
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": "unknown-but-stored",
+    "error": null,
+    "disk": {
+      "default_engine": "unknown-but-stored"
+    },
+    "unchanged": false
+  },
+  {
+    "input": null,
+    "op": "headless",
+    "value": true,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": true,
+    "error": null,
+    "disk": {
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": null,
+    "op": "headless-read",
+    "value": null,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "input": "7b7d",
+    "op": "set",
+    "value": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "error": null,
+    "disk": {
+      "selected": {
+        "nested": [
+          "\u03b1",
+          null
+        ]
+      }
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b7d",
+    "op": "engine",
+    "value": "unknown-but-stored",
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": "unknown-but-stored",
+    "error": null,
+    "disk": {
+      "default_engine": "unknown-but-stored"
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b7d",
+    "op": "headless",
+    "value": true,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": true,
+    "error": null,
+    "disk": {
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b7d",
+    "op": "headless-read",
+    "value": null,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": {},
+    "unchanged": true
+  },
+  {
+    "input": "7b62726f6b656e",
+    "op": "set",
+    "value": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "error": null,
+    "disk": {
+      "selected": {
+        "nested": [
+          "\u03b1",
+          null
+        ]
+      }
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b62726f6b656e",
+    "op": "engine",
+    "value": "unknown-but-stored",
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": "unknown-but-stored",
+    "error": null,
+    "disk": {
+      "default_engine": "unknown-but-stored"
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b62726f6b656e",
+    "op": "headless",
+    "value": true,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": true,
+    "error": null,
+    "disk": {
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b62726f6b656e",
+    "op": "headless-read",
+    "value": null,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "input": "5b5d",
+    "op": "set",
+    "value": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "input": "5b5d",
+    "op": "engine",
+    "value": "unknown-but-stored",
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "input": "5b5d",
+    "op": "headless",
+    "value": true,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "input": "5b5d",
+    "op": "headless-read",
+    "value": null,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "input": "6e756c6c",
+    "op": "set",
+    "value": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "input": "6e756c6c",
+    "op": "engine",
+    "value": "unknown-but-stored",
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "input": "6e756c6c",
+    "op": "headless",
+    "value": true,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "input": "6e756c6c",
+    "op": "headless-read",
+    "value": null,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "input": "66616c7365",
+    "op": "set",
+    "value": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": false,
+    "unchanged": true
+  },
+  {
+    "input": "66616c7365",
+    "op": "engine",
+    "value": "unknown-but-stored",
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": false,
+    "unchanged": true
+  },
+  {
+    "input": "66616c7365",
+    "op": "headless",
+    "value": true,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": false,
+    "unchanged": true
+  },
+  {
+    "input": "66616c7365",
+    "op": "headless-read",
+    "value": null,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": false,
+    "unchanged": true
+  },
+  {
+    "input": "227465787422",
+    "op": "set",
+    "value": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": "text",
+    "unchanged": true
+  },
+  {
+    "input": "227465787422",
+    "op": "engine",
+    "value": "unknown-but-stored",
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": "text",
+    "unchanged": true
+  },
+  {
+    "input": "227465787422",
+    "op": "headless",
+    "value": true,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": "text",
+    "unchanged": true
+  },
+  {
+    "input": "227465787422",
+    "op": "headless-read",
+    "value": null,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": "text",
+    "unchanged": true
+  },
+  {
+    "input": "31",
+    "op": "set",
+    "value": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": 1,
+    "unchanged": true
+  },
+  {
+    "input": "31",
+    "op": "engine",
+    "value": "unknown-but-stored",
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": 1,
+    "unchanged": true
+  },
+  {
+    "input": "31",
+    "op": "headless",
+    "value": true,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": 1,
+    "unchanged": true
+  },
+  {
+    "input": "31",
+    "op": "headless-read",
+    "value": null,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": 1,
+    "unchanged": true
+  },
+  {
+    "input": "ff",
+    "op": "set",
+    "value": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "input": "ff",
+    "op": "engine",
+    "value": "unknown-but-stored",
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "input": "ff",
+    "op": "headless",
+    "value": true,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "input": "7b22667574757265223a207b226b657074223a205b225c75363565355c75363732635c7538613965222c20747275655d7d2c2022686561646c6573735f6c61756e6368223a2066616c73657d",
+    "op": "set",
+    "value": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": {
+      "nested": [
+        "\u03b1",
+        null
+      ]
+    },
+    "error": null,
+    "disk": {
+      "future": {
+        "kept": [
+          "\u65e5\u672c\u8a9e",
+          true
+        ]
+      },
+      "headless_launch": false,
+      "selected": {
+        "nested": [
+          "\u03b1",
+          null
+        ]
+      }
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a207b226b657074223a205b225c75363565355c75363732635c7538613965222c20747275655d7d2c2022686561646c6573735f6c61756e6368223a2066616c73657d",
+    "op": "engine",
+    "value": "unknown-but-stored",
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": "unknown-but-stored",
+    "error": null,
+    "disk": {
+      "future": {
+        "kept": [
+          "\u65e5\u672c\u8a9e",
+          true
+        ]
+      },
+      "headless_launch": false,
+      "default_engine": "unknown-but-stored"
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a207b226b657074223a205b225c75363565355c75363732635c7538613965222c20747275655d7d2c2022686561646c6573735f6c61756e6368223a2066616c73657d",
+    "op": "headless",
+    "value": true,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": true,
+    "error": null,
+    "disk": {
+      "future": {
+        "kept": [
+          "\u65e5\u672c\u8a9e",
+          true
+        ]
+      },
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a207b226b657074223a205b225c75363565355c75363732635c7538613965222c20747275655d7d2c2022686561646c6573735f6c61756e6368223a2066616c73657d",
+    "op": "headless-read",
+    "value": null,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": {
+      "future": {
+        "kept": [
+          "\u65e5\u672c\u8a9e",
+          true
+        ]
+      },
+      "headless_launch": false
+    },
+    "unchanged": true
+  },
+  {
+    "input": "7b22667574757265223a377d",
+    "op": "headless",
+    "value": null,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": {
+      "future": 7,
+      "headless_launch": false
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a377d",
+    "op": "headless",
+    "value": false,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": {
+      "future": 7,
+      "headless_launch": false
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a377d",
+    "op": "headless",
+    "value": 0,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": {
+      "future": 7,
+      "headless_launch": false
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a377d",
+    "op": "headless",
+    "value": 0.0,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": {
+      "future": 7,
+      "headless_launch": false
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a377d",
+    "op": "headless",
+    "value": "",
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": {
+      "future": 7,
+      "headless_launch": false
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a377d",
+    "op": "headless",
+    "value": [],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": {
+      "future": 7,
+      "headless_launch": false
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a377d",
+    "op": "headless",
+    "value": {},
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": false,
+    "error": null,
+    "disk": {
+      "future": 7,
+      "headless_launch": false
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a377d",
+    "op": "headless",
+    "value": true,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": true,
+    "error": null,
+    "disk": {
+      "future": 7,
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a377d",
+    "op": "headless",
+    "value": 1,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": true,
+    "error": null,
+    "disk": {
+      "future": 7,
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a377d",
+    "op": "headless",
+    "value": -1,
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": true,
+    "error": null,
+    "disk": {
+      "future": 7,
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a377d",
+    "op": "headless",
+    "value": "false",
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": true,
+    "error": null,
+    "disk": {
+      "future": 7,
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a377d",
+    "op": "headless",
+    "value": [
+      0
+    ],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": true,
+    "error": null,
+    "disk": {
+      "future": 7,
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a377d",
+    "op": "headless",
+    "value": {
+      "on": false
+    },
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": true,
+    "error": null,
+    "disk": {
+      "future": 7,
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b2272656d6f766564223a312c22667574757265223a327d",
+    "op": "replace",
+    "value": {
+      "replacement": [
+        "\u03b1",
+        true
+      ]
+    },
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "RuntimeError",
+    "disk": {
+      "removed": 1,
+      "future": 2
+    },
+    "unchanged": true
+  },
+  {
+    "input": "7b2272656d6f766564223a312c22667574757265223a327d",
+    "op": "replace",
+    "value": {
+      "replacement": [
+        "\u03b1",
+        true
+      ]
+    },
+    "mode": "owned",
+    "held": true,
+    "released": false,
+    "result": {
+      "replacement": [
+        "\u03b1",
+        true
+      ]
+    },
+    "error": null,
+    "disk": {
+      "replacement": [
+        "\u03b1",
+        true
+      ]
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b2272656d6f766564223a312c22667574757265223a327d",
+    "op": "replace",
+    "value": {
+      "replacement": [
+        "\u03b1",
+        true
+      ]
+    },
+    "mode": "other-root",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "RuntimeError",
+    "disk": {
+      "removed": 1,
+      "future": 2
+    },
+    "unchanged": true
+  },
+  {
+    "input": "7b2272656d6f766564223a312c22667574757265223a327d",
+    "op": "replace",
+    "value": {
+      "replacement": [
+        "\u03b1",
+        true
+      ]
+    },
+    "mode": "other-thread",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "RuntimeError",
+    "disk": {
+      "removed": 1,
+      "future": 2
+    },
+    "unchanged": true
+  },
+  {
+    "input": "7b2272656d6f766564223a312c22667574757265223a327d",
+    "op": "replace",
+    "value": {
+      "replacement": [
+        "\u03b1",
+        true
+      ]
+    },
+    "mode": "reentrant",
+    "held": true,
+    "released": false,
+    "result": {
+      "replacement": [
+        "\u03b1",
+        true
+      ]
+    },
+    "error": null,
+    "disk": {
+      "replacement": [
+        "\u03b1",
+        true
+      ]
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b2272656d6f766564223a312c22667574757265223a327d",
+    "op": "replace",
+    "value": {
+      "replacement": [
+        "\u03b1",
+        true
+      ]
+    },
+    "mode": "released",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "RuntimeError",
+    "disk": {
+      "removed": 1,
+      "future": 2
+    },
+    "unchanged": true
+  },
+  {
+    "input": "7b7d",
+    "op": "extensions",
+    "value": [
+      "/owned-fixture/extension"
+    ],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": [
+      "/owned-fixture/extension"
+    ],
+    "error": null,
+    "disk": {
+      "default_extensions": [
+        "/owned-fixture/extension"
+      ]
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b7d",
+    "op": "extensions",
+    "value": [
+      "/owned-fixture/extension",
+      "/owned-fixture/extension"
+    ],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": [
+      "/owned-fixture/extension",
+      "/owned-fixture/extension"
+    ],
+    "error": null,
+    "disk": {
+      "default_extensions": [
+        "/owned-fixture/extension",
+        "/owned-fixture/extension"
+      ]
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b7d",
+    "op": "extensions",
+    "value": [
+      "/owned-fixture/missing-extension"
+    ],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "ValueError",
+    "disk": {},
+    "unchanged": true
+  },
+  {
+    "input": "7b2264656661756c745f657874656e73696f6e73223a205b222f6f776e65642d666978747572652f6d697373696e672d657874656e73696f6e225d2c2022667574757265223a20377d",
+    "op": "extensions",
+    "value": [
+      "/owned-fixture/missing-extension"
+    ],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": [
+      "/owned-fixture/missing-extension"
+    ],
+    "error": null,
+    "disk": {
+      "default_extensions": [
+        "/owned-fixture/missing-extension"
+      ],
+      "future": 7
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b2264656661756c745f657874656e73696f6e73223a205b222f6f776e65642d666978747572652f6d697373696e672d657874656e73696f6e225d2c2022667574757265223a20377d",
+    "op": "extensions",
+    "value": [],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": [],
+    "error": null,
+    "disk": {
+      "default_extensions": [],
+      "future": 7
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b7d",
+    "op": "extensions",
+    "value": [],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": [],
+    "error": null,
+    "disk": {
+      "default_extensions": []
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b7d",
+    "op": "extensions",
+    "value": [
+      ""
+    ],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": [
+      ""
+    ],
+    "error": null,
+    "disk": {
+      "default_extensions": [
+        ""
+      ]
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b7d",
+    "op": "extensions",
+    "value": [
+      "https://fixture.invalid/extension"
+    ],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "ValueError",
+    "disk": {},
+    "unchanged": true
+  },
+  {
+    "input": "7b2264656661756c745f657874656e73696f6e73223a31377d",
+    "op": "extensions",
+    "value": [],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": {
+      "default_extensions": 17
+    },
+    "unchanged": true
+  },
+  {
+    "input": "5b5d",
+    "op": "extensions",
+    "value": [],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "TypeError",
+    "disk": [],
+    "unchanged": true
+  },
+  {
+    "input": "ff",
+    "op": "extensions",
+    "value": [],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "input": "ff",
+    "op": "extensions",
+    "value": [
+      "/owned-fixture/missing-extension"
+    ],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "disk": null,
+    "unchanged": true
+  },
+  {
+    "input": "ff",
+    "op": "extensions",
+    "value": [
+      "https://fixture.invalid/extension"
+    ],
+    "mode": "none",
+    "held": false,
+    "released": false,
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "disk": null,
+    "unchanged": true
+  }
+]

@@ -1,84 +1,47 @@
-name: Migration profile seam
-
+name: Native profile seam
 on:
   workflow_dispatch:
     inputs:
       scope:
-        description: Profile contracts or isolated identity script seam
+        description: Full native contracts or one isolated reviewed seam
         type: choice
         default: profiles
         options: [profiles, identity-script, browser-options, browser-admission, browser-resources, browser-ip, browser-hints, browser-cookies, browser-extensions, cookie-export]
-
 permissions:
   contents: read
-
+env:
+  CARGO_BUILD_JOBS: "2"
+  CARGO_INCREMENTAL: "0"
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
 jobs:
   profile:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    env:
-      CARGO_BUILD_JOBS: "2"
+        os: [ubuntu-24.04, windows-latest]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          persist-credentials: false
           fetch-depth: 0
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
+          toolchain: 1.99.1
           components: rustfmt, clippy
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.13.15"
-      - name: Source prerequisites
-        run: python -m pip install -e "engine[api,dev]" "fastapi==0.142.3" "starlette==1.7.0"
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: engine-rust
-      - name: Formatting
-        run: python scripts/migration/run_owned.py --wall 60 --idle 30 -- cargo fmt --manifest-path engine-rust/Cargo.toml --all --check
-      - name: Identity script contract
-        if: inputs.scope == 'identity-script'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test init_script_parity -- --test-threads=1
-      - name: Browser option contract
-        if: inputs.scope == 'browser-options'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_options_parity -- --test-threads=1
-      - name: Browser admission contract
-        if: inputs.scope == 'browser-admission'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_admission_parity -- --test-threads=1
-      - name: Browser resource contract
-        if: inputs.scope == 'browser-resources'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_resources_parity -- --test-threads=1
-      - name: Browser IP identity contract
-        if: inputs.scope == 'browser-ip'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_ip_parity -- --test-threads=1
-      - name: Browser hints contract
-        if: inputs.scope == 'browser-hints'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_hints_parity -- --test-threads=1
-      - name: Browser extension path contract
-        if: inputs.scope == 'browser-extensions'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_extensions_parity -- --test-threads=1
-      - name: Browser cookie policy contract
-        if: inputs.scope == 'browser-cookies'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test browser_cookies_parity -- --test-threads=1 --nocapture
-      - name: Cookie export contract
-        if: inputs.scope == 'cookie-export'
-        run: python scripts/migration/run_owned.py --wall 300 --idle 120 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test cookie_export_parity -- --test-threads=1
-      - name: Profile HTTP contracts
-        if: inputs.scope == 'profiles'
-        run: >-
-          python scripts/migration/run_owned.py --wall 600 --idle 120 --
-          cargo test --manifest-path engine-rust/Cargo.toml --locked
-          --test profile_write_parity --test http_fields_parity
-          --test profile_application_parity --test dashboard_error_kinds
-          --test profile_overview_parity --test profile_batch_parity
-          --test profile_http_import_parity --test ready_parity
-          --test session_ready_lifecycle --test session_registry_lifecycle
-          --test profile_http_delete_parity --test profile_delete_owned_session
-          --test browser_adapter_protocol --test browser_launch_admission --test init_script_parity --test browser_options_parity --test browser_admission_parity --test browser_resources_parity --test browser_ip_parity --test browser_hints_parity --test browser_startup_parity --test browser_cookies_parity --test browser_extensions_parity --test session_stop_http --test cookie_export_parity
-          --no-fail-fast -- --test-threads=2
-      - name: Native lint
-        if: inputs.scope == 'profiles'
-        run: python scripts/migration/run_owned.py --wall 600 --idle 120 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --all-targets -- -D warnings
+      - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - run: cargo xtask ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path engine-rust/Cargo.toml --all --check
+      - name: Compile the selected native seam before executing it
+        env:
+          NATIVE_SCOPE: ${{ inputs.scope }}
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci seam "$NATIVE_SCOPE" build
+        shell: bash
+      - name: Require every case in the selected native seam
+        env:
+          NATIVE_SCOPE: ${{ inputs.scope }}
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci seam "$NATIVE_SCOPE" test
+        shell: bash
+      - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser,test-support --all-targets -- -D warnings

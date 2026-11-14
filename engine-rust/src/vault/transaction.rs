@@ -5,7 +5,7 @@ use super::{
     encrypt,
     journal::JournalState,
     migration::Migration,
-    recovery::{RecoveryError, incomplete_for, refusal},
+    recovery::{RecoveryError, caused_refusal, incomplete_for, refusal},
 };
 use crate::storage::{atomic::write_json, locks::DataLock};
 use base64::{Engine, engine::general_purpose::STANDARD};
@@ -13,7 +13,7 @@ use serde_json::{Value, json};
 use std::{
     fs, io,
     path::Path,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 fn read_config(root: &Path) -> Result<Value, RecoveryError> {
@@ -35,17 +35,37 @@ fn read_config(root: &Path) -> Result<Value, RecoveryError> {
     })
 }
 
-fn new_descriptor(password: &str) -> Result<Value, RecoveryError> {
+fn new_descriptor(
+    root: &Path,
+    password: &str,
+    log: Option<&crate::runtime_log::RuntimeLog>,
+) -> Result<Value, RecoveryError> {
     let mut bytes = [0u8; 16];
-    getrandom::fill(&mut bytes)
-        .map_err(|error| refusal(format!("Vault salt randomness unavailable: {error}")))?;
+    if let Some(log) = log {
+        log.event("INFO", "vault", "Enable salt randomness requested");
+    }
+    #[cfg(feature = "test-support")]
+    super::testing::event("before-vault-salt-randomness", root).map_err(|error| {
+        caused_refusal(format!("Vault salt randomness unavailable: {error}"), error)
+    })?;
+    #[cfg(not(feature = "test-support"))]
+    let _ = root;
+    getrandom::fill(&mut bytes).map_err(|error| {
+        caused_refusal(format!("Vault salt randomness unavailable: {error}"), error)
+    })?;
+    if let Some(log) = log {
+        log.event("INFO", "vault", "Enable salt randomness acquired");
+    }
     let salt = STANDARD.encode(bytes);
-    let verifier =
-        encrypt(password, &salt, "numera-vault-ok").map_err(|error| refusal(error.to_string()))?;
+    if let Some(log) = log {
+        log.event("INFO", "vault", "Enable verifier encryption started");
+    }
+    let verifier = encrypt(password, &salt, "numera-vault-ok")
+        .map_err(|error| caused_refusal(error.to_string(), error))?;
     Ok(json!({"salt": salt, "verifier": verifier}))
 }
 
-fn begin(root: &Path, new: &Value, old: Option<&Value>) -> Result<(), RecoveryError> {
+pub fn begin(root: &Path, new: &Value, old: Option<&Value>) -> Result<(), RecoveryError> {
     let pid = std::process::id();
     let token = crate::ownership::identity::started_at(pid)?.ok_or_else(|| {
         refusal("Vault migration owner identity unavailable; nothing was written")
@@ -71,11 +91,27 @@ pub(crate) fn commit_and_verify(
     config["vault"] = descriptor.clone();
     let path = root.join("config.json");
     let lock = DataLock::for_file(&path)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
-    write_json(&path, &config)?;
+    let _guard = lock.acquire_configured()?;
+    #[cfg(feature = "test-support")]
+    let skip = super::testing::event("before-config", &path)? == super::testing::Action::Skip;
+    #[cfg(not(feature = "test-support"))]
+    let skip = false;
+    if !skip {
+        write_json(&path, &config)?;
+    }
+    #[cfg(feature = "test-support")]
+    super::testing::event("after-config", &path)?;
+    #[cfg(feature = "test-support")]
+    super::testing::event("before-config-sync", &path)?;
     sync_config(root)?;
+    #[cfg(feature = "test-support")]
+    super::testing::event("after-config-sync", &path)?;
     let persisted = read_config(root)?;
-    if persisted["vault"] != *descriptor {
+    let active = &persisted["vault"];
+    if !super::journal::usable_descriptor(active)
+        || active["salt"] != descriptor["salt"]
+        || active["verifier"] != descriptor["verifier"]
+    {
         return Err(refusal(
             "Persisted descriptor disagrees with the verified generation; recovery evidence retained",
         ));
@@ -90,8 +126,11 @@ pub(crate) fn commit_and_verify(
 /// Ordinary enable publishes a journal before any credential mutation. Failure
 /// restores exact bytes and syncs the restored generation before journal removal.
 pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
+    let log = crate::runtime_log::RuntimeLog::file_only(&root.join("logs"), "native-vault-enable");
+    log.event("INFO", "vault", "Enable lock requested");
     let lock = DataLock::transaction(root)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
+    log.event("INFO", "vault", "Enable lock acquired");
     if super::journal::classify(root).0 != JournalState::Absent {
         return Err(refusal(
             "An unresolved vault migration must be recovered before enabling a vault",
@@ -103,13 +142,19 @@ pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
             "A vault is already set up. Use `numera vault change` to rotate the master password.",
         ));
     }
-    let descriptor = new_descriptor(password)?;
+    log.event("INFO", "vault", "Enable config admitted");
+    log.event("INFO", "vault", "Enable descriptor derivation started");
+    let descriptor = new_descriptor(root, password, Some(&log))?;
+    log.event("INFO", "vault", "Enable descriptor derivation finished");
     begin(root, &descriptor, None)?;
+    #[cfg(feature = "test-support")]
+    super::testing::event("before-migration", root)?;
+    log.event("INFO", "vault", "Enable journal published");
     let mut step = Migration::new(root.to_owned());
     let result = (|| {
         let count = step
             .encrypt_all(password, descriptor["salt"].as_str().unwrap_or(""))
-            .map_err(|error| refusal(error.to_string()))?;
+            .map_err(super::recovery::migration_failure)?;
         commit_and_verify(
             root,
             &mut step,
@@ -118,9 +163,20 @@ pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
             password,
             "`vault enable`",
         )?;
+        log.event("INFO", "vault", "Enable commit verified");
         Ok(count)
     })();
-    finish(root, &mut step, result)
+    let result = finish(root, &mut step, result);
+    log.event(
+        if result.is_ok() { "INFO" } else { "ERROR" },
+        "vault",
+        if result.is_ok() {
+            "Enable completed"
+        } else {
+            "Enable failed"
+        },
+    );
+    result
 }
 
 fn finish(
@@ -131,10 +187,11 @@ fn finish(
     if let Err(error) = result {
         let failures = step.rollback();
         if !failures.is_empty() {
-            return Err(refusal(format!(
-                "Vault migration failed and {} file(s) could not be restored; journal retained",
-                failures.len()
-            )));
+            return Err(super::recovery::rollback_failed(
+                error,
+                failures,
+                "Vault migration failed",
+            ));
         }
         sync_data(root)?;
         sync_config(root)?;
@@ -150,7 +207,7 @@ pub fn rotate(root: &Path, old_password: &str, password: &str) -> Result<usize, 
         return Err(refusal("the new master password cannot be empty"));
     }
     let lock = DataLock::transaction(root)?;
-    let _guard = lock.acquire(Duration::from_secs(30))?;
+    let _guard = lock.acquire_configured()?;
     if super::journal::classify(root).0 != JournalState::Absent {
         return Err(refusal(
             "An unresolved vault migration must be recovered before rotating a vault",
@@ -163,26 +220,30 @@ pub fn rotate(root: &Path, old_password: &str, password: &str) -> Result<usize, 
             "There is no vault to rotate. Use `numera vault enable` first.",
         ));
     }
-    if !check_password(
-        old_password,
-        old["salt"].as_str().unwrap_or(""),
-        old["verifier"].as_str().unwrap_or(""),
-    ) {
+    let (Some(old_salt), Some(old_verifier)) = (old["salt"].as_str(), old["verifier"].as_str())
+    else {
+        return Err(refusal(
+            "The active vault descriptor needs text salt and verifier fields; nothing was changed",
+        ));
+    };
+    if !check_password(old_password, old_salt, old_verifier) {
         return Err(refusal("that is not the current master password"));
     }
-    let descriptor = new_descriptor(password)?;
+    let descriptor = new_descriptor(root, password, None)?;
     begin(root, &descriptor, Some(&old))?;
+    #[cfg(feature = "test-support")]
+    super::testing::event("before-migration", root)?;
     let mut step = Migration::new(root.to_owned());
     let result = (|| {
         let count = step
             .rekey_all(
                 old_password,
-                old["salt"].as_str().unwrap_or(""),
+                old_salt,
                 password,
                 descriptor["salt"].as_str().unwrap_or(""),
                 false,
             )
-            .map_err(|error| refusal(error.to_string()))?;
+            .map_err(super::recovery::migration_failure)?;
         commit_and_verify(
             root,
             &mut step,

@@ -1,0 +1,479 @@
+[
+  {
+    "files": {
+      "config.json": {},
+      "vault-migration.json": {
+        "new": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODzM0Lilea9HK10THcVTyNj6v0Q0T9mk4ZM_gaKykGjhcKWMHLMAJfdOgsOeSriPDww=="
+        },
+        "op": "enable",
+        "version": 1,
+        "pid": 0
+      }
+    },
+    "password": null,
+    "old": null,
+    "expected": {
+      "kind": "VaultIncomplete",
+      "codes": [
+        "no_password"
+      ],
+      "role": null,
+      "problems": [
+        {
+          "code": "no_password",
+          "detail": "no master password was supplied, so whether the stored secrets open with this descriptor cannot be established"
+        }
+      ]
+    }
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "fixture-secret"
+        }
+      ],
+      "config.json": {},
+      "vault-migration.json": {
+        "new": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODzM0Lilea9HK10THcVTyNj6v0Q0T9mk4ZM_gaKykGjhcKWMHLMAJfdOgsOeSriPDww=="
+        },
+        "op": "enable",
+        "version": 1,
+        "pid": 0
+      }
+    },
+    "password": null,
+    "old": null,
+    "expected": {
+      "kind": "VaultRecoveryRequired",
+      "codes": [],
+      "role": null,
+      "problems": []
+    }
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "fixture-secret"
+        }
+      ],
+      "config.json": {},
+      "vault-migration.json": {
+        "new": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODzM0Lilea9HK10THcVTyNj6v0Q0T9mk4ZM_gaKykGjhcKWMHLMAJfdOgsOeSriPDww=="
+        },
+        "op": "enable",
+        "version": 1,
+        "pid": 0
+      }
+    },
+    "password": "wrong-fixture-password",
+    "old": null,
+    "expected": {
+      "kind": "VaultLocked",
+      "codes": [],
+      "role": null,
+      "problems": []
+    }
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "enc:v9:fixture"
+        }
+      ],
+      "config.json": {},
+      "vault-migration.json": {
+        "new": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODzM0Lilea9HK10THcVTyNj6v0Q0T9mk4ZM_gaKykGjhcKWMHLMAJfdOgsOeSriPDww=="
+        },
+        "op": "enable",
+        "version": 1,
+        "pid": 0
+      }
+    },
+    "password": "fixture-recovery-master",
+    "old": null,
+    "expected": {
+      "kind": "VaultIncomplete",
+      "codes": [
+        "wrong_generation"
+      ],
+      "role": null,
+      "problems": [
+        {
+          "code": "wrong_generation",
+          "detail": "1 file(s) hold secrets this descriptor does not open: proxies.json"
+        }
+      ]
+    }
+  },
+  {
+    "files": {
+      "proxies.json": [
+        42
+      ],
+      "config.json": {},
+      "vault-migration.json": {
+        "new": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0ODzM0Lilea9HK10THcVTyNj6v0Q0T9mk4ZM_gaKykGjhcKWMHLMAJfdOgsOeSriPDww=="
+        },
+        "op": "enable",
+        "version": 1,
+        "pid": 0
+      }
+    },
+    "password": "fixture-recovery-master",
+    "old": null,
+    "expected": {
+      "kind": "VaultIncomplete",
+      "codes": [
+        "unreadable_files"
+      ],
+      "role": null,
+      "problems": [
+        {
+          "code": "unreadable_files",
+          "detail": "1 secret-bearing file(s) cannot be read: proxies.json"
+        }
+      ]
+    }
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1DXxSIgI-61_YYzjgW6QQDCuqlEMzWuN-eZ2rQDC1sA92aM3ZYndezlJWWaFnk0gw=="
+        }
+      ],
+      "config.json": {
+        "vault": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      }
+    },
+    "password": "fixture-new-master",
+    "old": null,
+    "expected": {
+      "kind": "VaultIncomplete",
+      "codes": [
+        "needs_both_passwords"
+      ],
+      "role": null,
+      "problems": [
+        {
+          "code": "needs_both_passwords",
+          "detail": "a resumed rotation needs both the old and the new master password"
+        }
+      ]
+    }
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1DXxSIgI-61_YYzjgW6QQDCuqlEMzWuN-eZ2rQDC1sA92aM3ZYndezlJWWaFnk0gw=="
+        }
+      ],
+      "config.json": {
+        "vault": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      }
+    },
+    "password": "fixture-wrong-new",
+    "old": "fixture-old-master",
+    "expected": {
+      "kind": "VaultLocked",
+      "codes": [],
+      "role": "new",
+      "problems": []
+    }
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1DXxSIgI-61_YYzjgW6QQDCuqlEMzWuN-eZ2rQDC1sA92aM3ZYndezlJWWaFnk0gw=="
+        }
+      ],
+      "config.json": {
+        "vault": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      }
+    },
+    "password": "fixture-new-master",
+    "old": "fixture-wrong-old",
+    "expected": {
+      "kind": "VaultLocked",
+      "codes": [],
+      "role": "old",
+      "problems": []
+    }
+  },
+  {
+    "files": {
+      "proxies.json": [
+        42
+      ],
+      "config.json": {
+        "vault": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      }
+    },
+    "password": "fixture-new-master",
+    "old": "fixture-old-master",
+    "expected": {
+      "kind": "VaultRecoveryRequired",
+      "codes": [],
+      "role": null,
+      "problems": []
+    }
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1DXxSIgI-61_YYzjgW6QQDCuqlEMzWuN-eZ2rQDC1sA92aM3ZYndezlJWWaFnk0gw=="
+        }
+      ],
+      "config.json": {
+        "vault": null,
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      }
+    },
+    "password": "fixture-new-master",
+    "old": "fixture-old-master",
+    "expected": {
+      "kind": "VaultIncomplete",
+      "codes": [
+        "descriptor_unusable"
+      ],
+      "role": null,
+      "problems": [
+        {
+          "code": "descriptor_unusable",
+          "detail": "the active config has no usable vault descriptor"
+        }
+      ]
+    }
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1DXxSIgI-61_YYzjgW6QQDCuqlEMzWuN-eZ2rQDC1sA92aM3ZYndezlJWWaFnk0gw=="
+        }
+      ],
+      "config.json": {
+        "vault": {},
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      }
+    },
+    "password": "fixture-new-master",
+    "old": "fixture-old-master",
+    "expected": {
+      "kind": "VaultIncomplete",
+      "codes": [
+        "descriptor_unusable"
+      ],
+      "role": null,
+      "problems": [
+        {
+          "code": "descriptor_unusable",
+          "detail": "the active config has no usable vault descriptor"
+        }
+      ]
+    }
+  },
+  {
+    "files": {
+      "proxies.json": [
+        {
+          "pass": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1DXxSIgI-61_YYzjgW6QQDCuqlEMzWuN-eZ2rQDC1sA92aM3ZYndezlJWWaFnk0gw=="
+        }
+      ],
+      "config.json": {
+        "vault": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw=="
+        },
+        "future": 7
+      },
+      "vault-migration.json": {
+        "version": 1,
+        "op": "rotate",
+        "old": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA=="
+        },
+        "new": {
+          "salt": "EBESExQVFhcYGRobHB0eHw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA=="
+        },
+        "pid": 0
+      }
+    },
+    "password": "fixture-new-master",
+    "old": "fixture-old-master",
+    "expected": {
+      "kind": "VaultIncomplete",
+      "codes": [
+        "descriptor_unusable"
+      ],
+      "role": null,
+      "problems": [
+        {
+          "code": "descriptor_unusable",
+          "detail": "the active config has no usable vault descriptor"
+        }
+      ]
+    }
+  },
+  {
+    "files": {
+      "config.json": {},
+      "vault-migration.json": {}
+    },
+    "password": null,
+    "old": null,
+    "expected": {
+      "kind": "JournalUnreadable",
+      "codes": [],
+      "role": null,
+      "problems": []
+    }
+  },
+  {
+    "files": {
+      "config.json": {},
+      "vault-migration.json": {
+        "version": 99
+      }
+    },
+    "password": null,
+    "old": null,
+    "expected": {
+      "kind": "JournalUnreadable",
+      "codes": [],
+      "role": null,
+      "problems": []
+    }
+  },
+  {
+    "files": {
+      "config.json": {},
+      "vault-migration.json": {
+        "version": 1,
+        "op": "enable",
+        "new": {
+          "salt": "bad"
+        }
+      }
+    },
+    "password": null,
+    "old": null,
+    "expected": {
+      "kind": "JournalUnreadable",
+      "codes": [],
+      "role": null,
+      "problems": []
+    }
+  }
+]

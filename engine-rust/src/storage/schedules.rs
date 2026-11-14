@@ -1,7 +1,7 @@
 use super::{atomic::write_json, locks::DataLock, repo::RepoError};
 use crate::conversion::truth;
 use serde_json::{Map, Value};
-use std::{fs, io, path::PathBuf, time::Duration};
+use std::{fs, io, path::PathBuf};
 
 pub const CLAIM_TTL_SECONDS: f64 = 12.0 * 60.0 * 60.0;
 const OWNED: &[&str] = &[
@@ -28,7 +28,13 @@ impl ScheduleStore {
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
             Err(error) => return Err(error.into()),
         };
-        let value = match serde_json::from_slice::<Value>(&bytes) {
+        let text = std::str::from_utf8(&bytes).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Stored schedules are not UTF-8; nothing was written",
+            )
+        })?;
+        let value = match serde_json::from_str::<Value>(text) {
             Ok(value) => value,
             Err(_) => return Ok(Vec::new()),
         };
@@ -54,7 +60,7 @@ impl ScheduleStore {
         let id = super::archive_paths::random_hex(6)?;
         let entry = serde_json::json!({"id":id,"profileId":profile_id,"everyHours":clean["everyHours"],"minutes":clean["minutes"],"preset":clean["preset"],"enabled":clean["enabled"],"lastRun":null,"createdAt":now});
         let lock = DataLock::for_file(&self.path)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let mut rows = self.list()?;
         if rows.iter().any(|row| row["id"] == id) {
             return Err(RepoError::Message(
@@ -78,7 +84,7 @@ impl ScheduleStore {
             ));
         }
         let lock = DataLock::for_file(&self.path)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let mut rows = self.list()?;
         for row in &mut rows {
             if row["id"] != id {
@@ -130,9 +136,18 @@ impl ScheduleStore {
         }
         self.apply(id, outcome)
     }
+    pub fn mark_run(&self, id: &str, when: f64) -> Result<Option<Value>, RepoError> {
+        let when = serde_json::Number::from_f64(when).ok_or_else(|| {
+            RepoError::Message("Schedule run time must be finite; nothing was written".into())
+        })?;
+        self.record(
+            id,
+            Map::from_iter([("lastRun".into(), Value::Number(when))]),
+        )
+    }
     fn apply(&self, id: &str, patch: Map<String, Value>) -> Result<Option<Value>, RepoError> {
         let lock = DataLock::for_file(&self.path)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let mut rows = self.list()?;
         let mut result = None;
         for row in &mut rows {
@@ -154,7 +169,7 @@ impl ScheduleStore {
     }
     pub fn delete(&self, id: &str) -> Result<bool, RepoError> {
         let lock = DataLock::for_file(&self.path)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         let mut rows = self.list()?;
         let before = rows.len();
         rows.retain(|row| row["id"] != id);
@@ -197,29 +212,8 @@ pub fn validate_schedule(patch: &Value, partial: bool) -> Result<Map<String, Val
     }
     if object.contains_key("minutes") || !partial {
         let raw = object.get("minutes").cloned().unwrap_or(5.into());
-        let minutes = number(&raw).map_err(|_| {
-            RepoError::Message(format!(
-                "'minutes': minutes must be a number, got {}",
-                crate::validation::repr(&raw)
-            ))
-        })?;
-        if !minutes.is_finite() {
-            return Err(RepoError::Message(
-                "'minutes': minutes must be a finite number".into(),
-            ));
-        }
-        if minutes <= 0.0 {
-            return Err(RepoError::Message(format!(
-                "'minutes': minutes must be greater than zero, got {}",
-                general_number(minutes)
-            )));
-        }
-        if minutes > 480.0 {
-            return Err(RepoError::Message(format!(
-                "'minutes': minutes must be at most 480 (8h), got {}",
-                general_number(minutes)
-            )));
-        }
+        let minutes = crate::browser::warmup_policy::validate(&raw, None, None)
+            .map_err(|error| RepoError::Message(format!("'minutes': {error}")))?;
         out.insert("minutes".into(), minutes.into());
     }
     if let Some(preset) = object.get("preset") {
@@ -229,15 +223,8 @@ pub fn validate_schedule(patch: &Value, partial: bool) -> Result<Map<String, Val
                 crate::validation::kind(preset)
             )));
         }
-        if let Some(text) = preset.as_str()
-            && !["ads", "crypto", "ecommerce", "general", "news", "social"]
-                .contains(&text.to_lowercase().as_str())
-        {
-            return Err(RepoError::Message(format!(
-                "'preset': unknown preset {}. Known: ads, crypto, ecommerce, general, news, social",
-                crate::validation::repr(preset)
-            )));
-        }
+        crate::browser::warmup_policy::validate(&1.into(), Some(preset), None)
+            .map_err(|error| RepoError::Message(format!("'preset': {error}")))?;
         out.insert("preset".into(), preset.clone());
     }
     if let Some(enabled) = object.get("enabled") {
@@ -291,31 +278,6 @@ fn number(value: &Value) -> Result<f64, RepoError> {
         _ => Err(RepoError::InvalidRecord(
             "Stored schedule time must be numeric".into(),
         )),
-    }
-}
-fn general_number(value: f64) -> String {
-    if value == 0.0 {
-        return if value.is_sign_negative() { "-0" } else { "0" }.into();
-    }
-    let scientific = format!("{value:.5e}");
-    let (mantissa, exponent) = scientific
-        .split_once('e')
-        .expect("Rust scientific format has an exponent");
-    let exponent: i32 = exponent.parse().expect("Rust exponent is numeric");
-    if !(-4..6).contains(&exponent) {
-        format!(
-            "{}e{:+03}",
-            mantissa.trim_end_matches('0').trim_end_matches('.'),
-            exponent
-        )
-    } else {
-        let places = (5 - exponent).max(0) as usize;
-        let fixed = format!("{value:.places$}");
-        if fixed.contains('.') {
-            fixed.trim_end_matches('0').trim_end_matches('.').into()
-        } else {
-            fixed
-        }
     }
 }
 pub fn next_run_at(schedule: &Value) -> Result<f64, RepoError> {

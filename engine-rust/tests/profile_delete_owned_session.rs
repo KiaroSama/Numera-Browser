@@ -8,18 +8,12 @@ use numera_core::{
     storage::dashboard::DashboardStore,
 };
 use serde_json::{Value, json};
-use std::{
-    collections::BTreeMap,
-    process::{Command, Stdio},
-    sync::Arc,
-    time::Duration,
-};
+use std::{collections::BTreeMap, process::Stdio, sync::Arc, time::Duration};
 use tower::ServiceExt;
 mod common;
 #[test]
 fn http_delete_stops_only_its_actual_registered_session_before_removing_profile()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
     let temporary = common::TempDirectory::new("http-owned-delete")?;
     let root = temporary.path();
     DashboardStore::new(root.to_path_buf(), None).save(
@@ -35,11 +29,10 @@ fn http_delete_stops_only_its_actual_registered_session_before_removing_profile(
         None,
     )?);
     let ready = root.join("ready.json");
-    let script = "import json,os,pathlib,threading; p=pathlib.Path(os.environ['FIXTURE_READY']); t=p.with_suffix('.part'); t.write_text(json.dumps({'ok':True}),encoding='utf-8'); t.replace(p); threading.Event().wait()";
-    let mut command = Command::new(python);
+    let mut command = ownership_process::command("ready")?;
     command
-        .args(["-u", "-c", script])
-        .env("FIXTURE_READY", &ready)
+        .arg(&ready)
+        .arg("ok")
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
@@ -95,3 +88,7 @@ fn http_delete_stops_only_its_actual_registered_session_before_removing_profile(
     temporary.cleanup()?;
     Ok(())
 }
+
+use numera_core as core;
+#[path = "common/ownership_process.rs"]
+mod ownership_process;

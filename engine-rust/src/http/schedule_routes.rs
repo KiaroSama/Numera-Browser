@@ -67,7 +67,7 @@ fn decorate(state: &ScheduleState, mut row: Value) -> Result<Value, RepoError> {
     Ok(row)
 }
 async fn list(State(state): State<Arc<ScheduleState>>) -> Response {
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         state
             .schedules
             .list()?
@@ -82,7 +82,7 @@ async fn list(State(state): State<Arc<ScheduleState>>) -> Response {
     }
 }
 async fn add(State(state): State<Arc<ScheduleState>>, ObjectBody(body): ObjectBody) -> Response {
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let Some(id) = body
             .get("profileId")
             .filter(|value| crate::conversion::truth(value))
@@ -129,7 +129,7 @@ async fn update(
     Path(id): Path<String>,
     ObjectBody(body): ObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || update_row(&state, &id, body)).await {
+    match super::admission::blocking(move || update_row(&state, &id, body)).await {
         Ok(Ok(response)) => response,
         _ => failure(),
     }
@@ -156,7 +156,7 @@ fn update_row(
     }
 }
 async fn delete(State(state): State<Arc<ScheduleState>>, Path(id): Path<String>) -> Response {
-    match tokio::task::spawn_blocking(move || state.schedules.delete(&id)).await {
+    match super::admission::blocking(move || state.schedules.delete(&id)).await {
         Ok(Ok(true)) => Json(json!({"ok":true})).into_response(),
         Ok(Ok(false)) => error(StatusCode::NOT_FOUND, "schedule not found"),
         _ => failure(),

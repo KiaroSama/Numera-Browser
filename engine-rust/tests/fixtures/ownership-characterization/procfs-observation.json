@@ -1,0 +1,62 @@
+{
+  "cases": [
+    {},
+    {
+      "101": "101 (fixture) S 1 123"
+    },
+    {
+      "101": "101 (fixture) Z 1 123"
+    },
+    {
+      "101": "101 (fixture) S 1 987"
+    },
+    {
+      "101": "101 (fixture) S 1 invalid"
+    },
+    {
+      "101": "101 (fixture) S 1"
+    },
+    {
+      "101": "incomplete stat"
+    },
+    {
+      "101": "101 (name with ) parentheses) S 1 123"
+    },
+    {
+      "101": "101 (fixture) S 1 invalid",
+      "102": "102 (fixture) S 1 123"
+    },
+    {
+      "101": "101 (fixture) S 1 invalid",
+      "102": "102 (fixture) S 1 987"
+    },
+    {
+      "101": null
+    },
+    {
+      "not-a-pid": "incomplete stat"
+    },
+    {
+      "101": "101 (fixture) Z 1 invalid"
+    },
+    {
+      "101": "101 (fixture) S 1 +123"
+    }
+  ],
+  "running": [
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true
+  ]
+}

@@ -1,0 +1,758 @@
+{
+  "schema": 1,
+  "review_date": "2026-11-14",
+  "status": "fresh68_raw_results_revalidated_no_new_confirmed_defect_trusted_verdict_still_failed",
+  "provenance": {
+    "repository": "KiaroSama/Numera-Browser",
+    "pull_request": 76,
+    "head_commit": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+    "actual_scanned_merge_commit": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+    "identical_head_and_merge_tree": "5912136069b70587970d3fee68d3e83361ef2671",
+    "ordered_merge_parents": [
+      "6b486e16653bca1b18eb0007238a50175421d54a",
+      "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6"
+    ],
+    "event_recorded_prior_merge": "cb0fcc3239cd52ba21283516dbc9b9834db885cd",
+    "event_note": "The stale pr.merge.sha event field is retained separately. Actual checkout-sha/tree and authenticated merge/head Git objects bind this scan; no source commit is relabeled.",
+    "workflow_run": 43553932142,
+    "analysis_job": 132322948388,
+    "analysis_steps": "success",
+    "artifact_id": 14098315507,
+    "artifact_name": "codeql-rust-43553932142-1",
+    "artifact_bytes": 11944447,
+    "artifact_zip_sha256": "ce55cf9672b19929f4b602a2c8421ced5c622ed57bf6c0519df05f30fbee0407",
+    "sarif_sha256": "e445d06ffe697f9b446cb75e681b047aadb788bf06b6cf29e794868e33fb1976",
+    "artifact_receipt_sarif_sha256": "e445d06ffe697f9b446cb75e681b047aadb788bf06b6cf29e794868e33fb1976",
+    "authenticated_metadata_sha256": "9ae8e5727001091fd1986037d42596431c0aac6ec648999b5d8fc9be772a4f05",
+    "prior_committed_review": "docs/verification/codeql-review-ci5-20261114.json",
+    "prior_review_sha256": "b52eaa655c35dd086135386554ddd80be5e268c4b8f9959cc5283ae19c409f6b"
+  },
+  "analysis": {
+    "evaluated_queries": 39,
+    "security_queries": 19,
+    "diagnostic_metric_queries": 20,
+    "evaluated_query_set_identical_to63": true,
+    "evaluated_query_receipt_sha256": "721f239d9fdcd12504f488b334a5108d2764b7aedfa1b8d74b99ac65722a4bdc",
+    "codeql_cli": "2.27.4",
+    "query_pack": "codeql/rust-queries0.1.46+1be292a1e54696ca543b4ad0f9b4537b9687caa7",
+    "rule_metadata_count": 28,
+    "raw_results": 124,
+    "by_rule": {
+      "rust/hard-coded-cryptographic-value": 120,
+      "rust/access-invalid-pointer": 4
+    },
+    "by_kind": {
+      "production": 13,
+      "test": 111
+    },
+    "classifications": {
+      "unreachable_salt_default": 7,
+      "unreachable_password_default": 3,
+      "unreachable_generated_descriptor_default": 1,
+      "intentional_isolated_test_input": 105,
+      "intentional_empty_salt_exploit_regression_fixture": 4,
+      "ffi_out_parameter_model_gap": 4
+    },
+    "full_code_flow_paths": 44,
+    "related_locations": 351,
+    "sarif_suppressions": 0,
+    "review_scope": "Complete124 raw Rust result identities and reported flows/guards. This does not claim a new audit of code not reported by these results, or complete extraction of every macro."
+  },
+  "comparison_with63": {
+    "added_result_identities": 0,
+    "removed_result_identities": 0,
+    "matched_result_identities": 124,
+    "matching_key": [
+      "rule",
+      "source_path",
+      "primaryLocationLineHash",
+      "primaryLocationStartColumnFingerprint"
+    ],
+    "ordered_flow_source_line_changes": 0,
+    "related_location_source_line_multiset_changes": 0,
+    "reported_and_flow_source_files": 40,
+    "changed_reported_source_files": [
+      {
+        "path": "engine-rust/src/native_windows_sign/platform.rs",
+        "change": "New SIP module/verification outside the reported identity function; reportedFFI sink shifts172→178; entire identity() bytes unchanged.",
+        "guard_function_sha256": "79563928ef72a680fcb51f0439d4c2c38b9c12195ac5f5404396dccf19a830ad"
+      },
+      {
+        "path": "engine-rust/tests/config_parity/extension_admission.rs",
+        "change": "Only APFS failed-creation lookup absence probe accepts observedENOENT alongEILSEQ; reported getpwuid_r function bytes unchanged.",
+        "guard_function_sha256": "0ab9ca283384fea7ead9192615a970af31791d16afd4d4c9a7f8ce622b871724"
+      }
+    ],
+    "dependency_guard_review": "All vault, descriptor/journal validation, recovery, crypto and home-path implementation bytes unchanged63→68; Cargo.lock unchanged. Cargo.toml only enables additional WindowsSIP/Catalog API namespaces. Prior unreachable-fallback contracts therefore retain their reviewed guards."
+  },
+  "trusted_aggregate": {
+    "check_id": 132322475221,
+    "app": "github-advanced-security",
+    "head_sha": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+    "status": "completed",
+    "conclusion": "failure",
+    "title": "1 configuration not found",
+    "summary": "**Warning**: Code scanning may not have found all the alerts introduced by this pull request, because 1 configuration present on `refs/heads/main` was not found:\n\n### Default setup\n\n* :question:&nbsp;&nbsp;`/language:python`\n\n\n### New alerts in code changed by this pull request\n\nSecurity Alerts:\n * 116 critical\n * 4 high\n\n\n_Alerts not introduced by this pull request might have been detected because the code changes were too large._\n\nSee annotations below for details.\n\n[View all branch alerts](/KiaroSama/Numera-Browser/security/code-scanning?query=pr%3A76+tool%3ACodeQL+is%3Aopen).",
+    "new_alert_counts": {
+      "critical": 116,
+      "high": 4
+    },
+    "count_note": "These are GitHub trusted aggregate NEW-alert counts, not raw Rust result counts or confirmed vulnerabilities. Earlier63 report had116critical/7high. No derivation from raw124 is asserted.",
+    "external_configuration_block": "Missing default-setup /language:python configuration on main remains; this review cannot change repository administration settings."
+  },
+  "source_bridge": {
+    "job_id": 132326065097,
+    "job_conclusion": "failure",
+    "receipt": {
+      "schema": 1,
+      "source_subject": {
+        "repository": "KiaroSama/Numera-Browser",
+        "build_commit": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+        "analysis_commit": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+        "identical_tree": "5912136069b70587970d3fee68d3e83361ef2671",
+        "base_parent": "6b486e16653bca1b18eb0007238a50175421d54a",
+        "head_parent": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+        "pull_request": 76
+      },
+      "trusted_check_id": null,
+      "trusted_verdict": "pending_or_unsuccessful"
+    },
+    "receipt_artifact": 14098300349,
+    "receipt_zip_sha256": "ee48e6b892d47ee78e7ae7ae759d299f666a961596a62040031b42775baa0722",
+    "receipt_sha256": "0a89bb684f9d0e55534800cea21379dd0896bf181173dae1da77c5cdf09b02dd",
+    "log_sha256": "44d3a30ff458345ba3d25fa3f0e640a26c1ef7070e888514b5e6fdc35231bc0d",
+    "interpretation": "Source identity bridge accepted exact68head/ec0merge/common-tree/ordered-parent subjects. Gate correctly refused the unsuccessful trusted exact-head CodeQL verdict; receipt trusted_check_id stays null and trusted_verdict pending_or_unsuccessful. It is not a successful CodeQL gate."
+  },
+  "extraction_limits": {
+    "metrics": {
+      "Elements extracted": 32473846,
+      "Elements unextracted": 0,
+      "Extraction errors": 0,
+      "Extraction warnings": 5,
+      "Files extracted - total": 15679,
+      "Files extracted - total user": 694,
+      "Files extracted - with errors": 4,
+      "Files extracted - without errors": 690,
+      "Files extracted - without errors %": 99,
+      "Inconsistencies - AST": 0,
+      "Inconsistencies - CFG": 0,
+      "Inconsistencies - Path resolution": 1168,
+      "Inconsistencies - SSA": 0,
+      "Inconsistencies - Type inference": 74,
+      "Inconsistencies - data flow": 0,
+      "Lines of code extracted": 183736,
+      "Lines of user code extracted": 183736,
+      "Macro calls - resolved": 66007,
+      "Macro calls - total": 67243,
+      "Macro calls - unresolved": 1236,
+      "Taint edges - number of edges": 297503,
+      "Taint reach - nodes tainted": 1020,
+      "Taint reach - per million nodes": 500,
+      "Taint reach - total non-summary nodes": 2037733,
+      "Taint sinks - cryptographic operations": 39,
+      "Taint sinks - query sinks": 17589,
+      "Taint sources - active": 540,
+      "Taint sources - disabled": 3780,
+      "Taint sources - sensitive data": 616
+    },
+    "warnings": [
+      {
+        "locations": [
+          {
+            "path": "desktop/src-tauri/src/main.rs",
+            "line": 67
+          }
+        ],
+        "message": "Extraction warning in /home/runner/work/Numera-Browser/Numera-Browser/desktop/src-tauri/src/main.rs with message expected expression"
+      },
+      {
+        "locations": [
+          {
+            "path": "desktop/src-tauri/src/main.rs",
+            "line": 67
+          }
+        ],
+        "message": "Extraction warning in /home/runner/work/Numera-Browser/Numera-Browser/desktop/src-tauri/src/main.rs with message macro expansion failed: the macro 'tauri::generate_context' expands to ERROR but a Expr was expected"
+      },
+      {
+        "locations": [
+          {
+            "path": "engine-rust/tests/browser_extensions_parity.rs",
+            "line": 92
+          }
+        ],
+        "message": "Extraction warning in /home/runner/work/Numera-Browser/Numera-Browser/engine-rust/tests/browser_extensions_parity.rs with message macro expansion failed for '$crate::format_args'"
+      },
+      {
+        "locations": [
+          {
+            "path": "engine-rust/tests/command_capture_lifecycle.rs",
+            "line": 67
+          }
+        ],
+        "message": "Extraction warning in /home/runner/work/Numera-Browser/Numera-Browser/engine-rust/tests/command_capture_lifecycle.rs with message macro expansion failed for '$crate::panic::panic_2021'"
+      },
+      {
+        "locations": [
+          {
+            "path": "engine-rust/tests/source_browser/registered_drivers.rs",
+            "line": 50
+          }
+        ],
+        "message": "Extraction warning in /home/runner/work/Numera-Browser/Numera-Browser/engine-rust/tests/source_browser/registered_drivers.rs with message macro expansion failed for '$crate::panic::panic_2021'"
+      }
+    ],
+    "comparison": "Same5 warning messages at same4source files as63; no new warning identity. CodeQL reports0Extraction errors but4Files extracted-with-errors (macro expansion limitations); retain both metrics without implying complete macro extraction."
+  },
+  "remediation": {
+    "new_source_changes": false,
+    "new_tests": false,
+    "query_exclusions": false,
+    "suppressions": false,
+    "reason": "No new finding identity or reachable defect established by the fresh results. Reviewed11productioncrypto fallback guards,4FFI contract flows and109testcrypto inputs remain as previously reviewed, including4deliberate empty-salt exploit-regression inputs. No diagnostic-only production rewrite is warranted."
+  },
+  "review_material": {
+    "format": "Incremental review against the committed full 63b09f46 result review; all 124 matching result identities, source lines and flows were revalidated.",
+    "full_review_sha256": "91c0072be62d2331b81cf5fadcfc28bb60aca0ee968593b9fa9ade1bdaca2bc5",
+    "full_review_scope": "The complete local review also records the unchanged individual justifications and flow locations; the authenticated SARIF artifact above provides the raw result data.",
+    "prior_review_path": "docs/verification/codeql-review-ci5-20261114.json",
+    "prior_review_sha256": "b52eaa655c35dd086135386554ddd80be5e268c4b8f9959cc5283ae19c409f6b",
+    "index_mapping_columns": [
+      "fresh_68_index",
+      "prior_63_index"
+    ],
+    "index_mapping": [
+      [
+        0,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        3,
+        7
+      ],
+      [
+        4,
+        8
+      ],
+      [
+        5,
+        9
+      ],
+      [
+        6,
+        10
+      ],
+      [
+        7,
+        11
+      ],
+      [
+        8,
+        12
+      ],
+      [
+        9,
+        13
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        11,
+        15
+      ],
+      [
+        12,
+        16
+      ],
+      [
+        13,
+        17
+      ],
+      [
+        14,
+        18
+      ],
+      [
+        15,
+        19
+      ],
+      [
+        16,
+        20
+      ],
+      [
+        17,
+        21
+      ],
+      [
+        18,
+        22
+      ],
+      [
+        19,
+        23
+      ],
+      [
+        20,
+        24
+      ],
+      [
+        21,
+        25
+      ],
+      [
+        22,
+        26
+      ],
+      [
+        23,
+        27
+      ],
+      [
+        24,
+        28
+      ],
+      [
+        25,
+        29
+      ],
+      [
+        26,
+        30
+      ],
+      [
+        27,
+        31
+      ],
+      [
+        28,
+        32
+      ],
+      [
+        29,
+        33
+      ],
+      [
+        30,
+        34
+      ],
+      [
+        31,
+        35
+      ],
+      [
+        32,
+        36
+      ],
+      [
+        33,
+        37
+      ],
+      [
+        34,
+        38
+      ],
+      [
+        35,
+        39
+      ],
+      [
+        36,
+        40
+      ],
+      [
+        37,
+        41
+      ],
+      [
+        38,
+        42
+      ],
+      [
+        39,
+        43
+      ],
+      [
+        40,
+        44
+      ],
+      [
+        41,
+        45
+      ],
+      [
+        42,
+        46
+      ],
+      [
+        43,
+        47
+      ],
+      [
+        44,
+        48
+      ],
+      [
+        45,
+        49
+      ],
+      [
+        46,
+        50
+      ],
+      [
+        47,
+        51
+      ],
+      [
+        48,
+        52
+      ],
+      [
+        49,
+        53
+      ],
+      [
+        50,
+        54
+      ],
+      [
+        51,
+        55
+      ],
+      [
+        52,
+        56
+      ],
+      [
+        53,
+        57
+      ],
+      [
+        54,
+        58
+      ],
+      [
+        55,
+        59
+      ],
+      [
+        56,
+        60
+      ],
+      [
+        57,
+        61
+      ],
+      [
+        58,
+        62
+      ],
+      [
+        59,
+        63
+      ],
+      [
+        60,
+        64
+      ],
+      [
+        61,
+        65
+      ],
+      [
+        62,
+        66
+      ],
+      [
+        63,
+        67
+      ],
+      [
+        64,
+        68
+      ],
+      [
+        65,
+        69
+      ],
+      [
+        66,
+        70
+      ],
+      [
+        67,
+        71
+      ],
+      [
+        68,
+        72
+      ],
+      [
+        69,
+        73
+      ],
+      [
+        70,
+        74
+      ],
+      [
+        71,
+        75
+      ],
+      [
+        72,
+        76
+      ],
+      [
+        73,
+        77
+      ],
+      [
+        74,
+        79
+      ],
+      [
+        75,
+        80
+      ],
+      [
+        76,
+        81
+      ],
+      [
+        77,
+        82
+      ],
+      [
+        78,
+        83
+      ],
+      [
+        79,
+        84
+      ],
+      [
+        80,
+        78
+      ],
+      [
+        81,
+        85
+      ],
+      [
+        82,
+        86
+      ],
+      [
+        83,
+        87
+      ],
+      [
+        84,
+        88
+      ],
+      [
+        85,
+        89
+      ],
+      [
+        86,
+        90
+      ],
+      [
+        87,
+        91
+      ],
+      [
+        88,
+        92
+      ],
+      [
+        89,
+        93
+      ],
+      [
+        90,
+        94
+      ],
+      [
+        91,
+        95
+      ],
+      [
+        92,
+        96
+      ],
+      [
+        93,
+        97
+      ],
+      [
+        94,
+        98
+      ],
+      [
+        95,
+        99
+      ],
+      [
+        96,
+        100
+      ],
+      [
+        97,
+        101
+      ],
+      [
+        98,
+        102
+      ],
+      [
+        99,
+        103
+      ],
+      [
+        100,
+        104
+      ],
+      [
+        101,
+        105
+      ],
+      [
+        102,
+        106
+      ],
+      [
+        103,
+        107
+      ],
+      [
+        104,
+        108
+      ],
+      [
+        105,
+        110
+      ],
+      [
+        106,
+        109
+      ],
+      [
+        107,
+        111
+      ],
+      [
+        108,
+        112
+      ],
+      [
+        109,
+        113
+      ],
+      [
+        110,
+        114
+      ],
+      [
+        111,
+        115
+      ],
+      [
+        112,
+        116
+      ],
+      [
+        113,
+        117
+      ],
+      [
+        114,
+        118
+      ],
+      [
+        115,
+        119
+      ],
+      [
+        116,
+        120
+      ],
+      [
+        117,
+        121
+      ],
+      [
+        118,
+        122
+      ],
+      [
+        119,
+        123
+      ],
+      [
+        120,
+        0
+      ],
+      [
+        121,
+        1
+      ],
+      [
+        122,
+        2
+      ],
+      [
+        123,
+        3
+      ]
+    ],
+    "reported_primary_source_sha256": {
+      "engine-rust/src/native_windows_sign/platform.rs": "d984e324cb64106fc750a61ef866335ad9ff9bd62dd2edffa6412e0ce99ac528",
+      "engine-rust/src/storage/home_path.rs": "f5099edd29a3060b0bf416b7d6c45529bc83c9732d06249ed510c5d142cac245",
+      "engine-rust/src/vault/completion.rs": "6afb445b3168deb47719368a1da833a2cd6701608c0b1b6addcc54db26c4ee1a",
+      "engine-rust/src/vault/recovery.rs": "812c6ba4971a60b0dfad2a6cf1f4b79f688335828c710423d98cbe8344b377e1",
+      "engine-rust/src/vault/rotation_recovery.rs": "0d199c253e17364d1a1096e23e0b0d8ac56f027049ff7b9abb976117afa65cd6",
+      "engine-rust/src/vault/transaction.rs": "bf895fd1b47f7281e166285306ab5dc33e9a80da2ff8ec956c1e0a5ed1ff12d1",
+      "engine-rust/tests/cli_settings_parity/named_home.rs": "09b60d9be3dbc3daa35b348e3b687a06eb1b80231933aa3cf60d8dbdd8338858",
+      "engine-rust/tests/config_parity/extension_admission.rs": "01e13a7c4089f8c9b6eec5a56748b6371a016d09cc511583a5a308c9f35b0653",
+      "engine-rust/tests/dashboard_vault_parity.rs": "ef6c10ab17c6237b94a8e6a3464c0a9dd735c34a5496c57fe41818c639cb1502",
+      "engine-rust/tests/lock_interop_parity.rs": "5f7fa2d2111c6d6a8a7d427b1375ccc0e6647893a46b67620376dd8ff89c3d82",
+      "engine-rust/tests/pool_vault_parity.rs": "6a7eddcda72d91fd822af6f94ac8f913bcd0a8d26965f3c3e1ef95607de84f5a",
+      "engine-rust/tests/recovery_parity.rs": "bf80885bfffdae2873e450e56d9ee0c015b71ca8c07374e94cca69a972a5deb3",
+      "engine-rust/tests/rotation_recovery_parity.rs": "f4edfe6d16229beb0d8cc8c788d5e7c38d594f684b5abe9cfe10f9ca573ffed3",
+      "engine-rust/tests/source_acceptance/export.rs": "6323ec09c0e6a5c08f094927701eede6c9b1ef408582e8262689c179dd418d66",
+      "engine-rust/tests/source_network/bulk_proxy_check_skips.rs": "29f751800e3d457833737cd045b6aadcc02b46137ba17a08c24db1b9cb87115a",
+      "engine-rust/tests/source_network/helpers.rs": "f7df33cf68de896fa2eb0d647b3a877834ee4f1fce1b9ea054771ec297e126d7",
+      "engine-rust/tests/source_network/relay.rs": "92fb169bb85ba99f544740cc675547e10e630c4f1e30ada686d633e6389292d2",
+      "engine-rust/tests/source_ownership/sessions.rs": "d63f8514791a656efa2a93e3cd2a347b3799dbb95b82822536bca016e207c17d",
+      "engine-rust/tests/source_performance.rs": "6ab50860870cb0dab930ef6a78613eb0ce39f682c8ff6403fdd8ad3ff9d818d6",
+      "engine-rust/tests/source_storage.rs": "92ab8f901c7bb4702d024e0dc46975e70f8b083c24866c7b39a9073f443d25e2",
+      "engine-rust/tests/source_storage/closure_pass.rs": "11c03f431511923621e523260b4e95f3b370c3536dc15cd2c55b38f028dce1ab",
+      "engine-rust/tests/source_storage/failure_atomicity.rs": "923524f009ef6de51924e46e78ee5d7b79d420f491227bb6b5b0c37a279195eb",
+      "engine-rust/tests/source_storage/resilient_and_guarded.rs": "f3a208d1371b517a3f97584b44bc90a53211ccb70b2ed39bdb32cc2832f13c89",
+      "engine-rust/tests/source_storage/two_store_convergence.rs": "ffa34dc23c4c0c05bb27c2b1ed9804d589250a727e00041637001ea774025e8c",
+      "engine-rust/tests/source_vault.rs": "b8840b38fb4d0f223b6e906c69553612010f1dbb72a917c2250602ea5f5ba4ef",
+      "engine-rust/tests/source_vault/vault.rs": "ff838589067d9172c0234b01f577c44b30c637981eb7147b04b5f20bf2782060",
+      "engine-rust/tests/source_vault/vault_completion_everywhere.rs": "a234b1e692261bdbb239796e4daf6a028c1a330533110105a9d0a97703b0ab93",
+      "engine-rust/tests/source_vault/vault_dashboard.rs": "b147f1db9fdb8bab88ceae643a0dbd2f9b3f3c43f3eb4854269943818c809a36",
+      "engine-rust/tests/source_vault/vault_rotation.rs": "322477c98bf10960ffb42dedcd56a784d3a9b8c84842f9d9de89d471d85522b7",
+      "engine-rust/tests/source_vault/vault_transaction.rs": "78b88e76686b02f776a63bd6e55042c9396b782b4ab49a53780fcad23913f1e0",
+      "engine-rust/tests/vault_enable_parity.rs": "bae6b2ee3db300a28c607485778216959ef3209def04a548b3c5c2b715eba7bb",
+      "engine-rust/tests/vault_rotate_parity.rs": "3c73756519e3a8180948ef85878b601d2ea3ae657c75047544dcb1155cc84694",
+      "tools/xtask/tests/source_ci/secret_review/bootstrap.rs": "e277c911c2607950e9941f8a99cb675c27170b3892356f823965e24e95c5e89b"
+    }
+  }
+}

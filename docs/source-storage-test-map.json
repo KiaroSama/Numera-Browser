@@ -1,0 +1,4084 @@
+{
+  "schema": 1,
+  "baseline": "docs/rust-test-baseline.json",
+  "baseline_source_commit": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+  "suite": "source_storage",
+  "required_features": [
+    "test-support",
+    "native-product"
+  ],
+  "count": 411,
+  "files": {
+    "tests/test_archive_safety.py": 51,
+    "tests/test_bulk.py": 24,
+    "tests/test_closure_pass.py": 33,
+    "tests/test_collision.py": 6,
+    "tests/test_compound_atomicity.py": 18,
+    "tests/test_delete_rollback.py": 4,
+    "tests/test_failure_atomicity.py": 18,
+    "tests/test_installation_lease.py": 3,
+    "tests/test_jobs.py": 5,
+    "tests/test_portable_root.py": 25,
+    "tests/test_proxypool.py": 22,
+    "tests/test_repo_authority.py": 15,
+    "tests/test_resilient_and_guarded.py": 27,
+    "tests/test_restore_race.py": 6,
+    "tests/test_scheduler.py": 31,
+    "tests/test_store.py": 6,
+    "tests/test_store_backup.py": 3,
+    "tests/test_store_correctness.py": 44,
+    "tests/test_transactions_and_proxy_identity.py": 21,
+    "tests/test_two_store_convergence.py": 38,
+    "tests/test_two_store_sync.py": 11
+  },
+  "case_types": {
+    "standard": 290,
+    "parameterized": 121
+  },
+  "native_only": true,
+  "verification": {
+    "status": "passed",
+    "command": "cargo test --locked --manifest-path engine-rust/Cargo.toml --test source_storage --test source_performance --features native-product,test-support --no-default-features -- --test-threads=8",
+    "reported": 411,
+    "passed": 411,
+    "failed": 0,
+    "ignored": 0,
+    "source_oracle_processes": 0,
+    "individually_reported_cases": 411,
+    "mapping_set_equals_frozen_baseline_subset": true,
+    "clippy": "passed: cargo clippy --locked --manifest-path engine-rust/Cargo.toml --test source_storage --test source_performance --features native-product,test-support --no-default-features -- -D warnings",
+    "log": "/tmp/source-storage-performance-final.log",
+    "clippy_log": "/tmp/source-storage-performance-clippy-final.log",
+    "elapsed_seconds": 42.88,
+    "later_targeted_followup": {
+      "reason": "Request-local HTTP snapshot and encrypted reconciliation controls; the earlier411-case transcript remains archived, not relabeled as a fresh whole-suite run.",
+      "tests": [
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence"
+      ],
+      "log": "/workspace/work/http-list-snapshot-review/snapshot-cipher-green.txt",
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0,
+      "elapsed_seconds": 3.22
+    }
+  },
+  "source_hashes": {
+    "tests/test_archive_safety.py": "4c190bd0c468f5c4ed800d6db9aa35e1927921f34c07a92401fcee0914cc5f18",
+    "tests/test_bulk.py": "454bbe76413834d8c45df2f4bce08d7469d366e7cbb1c989f7c4963be7d91afc",
+    "tests/test_closure_pass.py": "2404b31b182d2e5b7078ebc43d344f3b117ea2b5be7c0ce59fdf0922c5039782",
+    "tests/test_collision.py": "781ec7e8edf576ae8e9c26672616565bb2470ecd388ba2cb8c0efa62c0946209",
+    "tests/test_compound_atomicity.py": "03ea91828fd4be82f3c3b08e3aa651bf44309546289ee606ffcde06e972bc2ab",
+    "tests/test_delete_rollback.py": "a4e0921bd1b4b7700e07520ad0b375314d632bcc6247f83c89622fe6b525bbbd",
+    "tests/test_failure_atomicity.py": "7915e48120bfcb86dc45170e0e1aa542ac9a404d56b492be024d063169f120ce",
+    "tests/test_installation_lease.py": "81e4fd56e4ea4319b6a77df59abdb8b33a20ab68e0eabb88d5417d99f0aee749",
+    "tests/test_jobs.py": "25aa8253ea2a19e84f83b142623d46ea2c42b30d3489219e43ec4fdfafd1fa18",
+    "tests/test_portable_root.py": "43ab1e5a14c96e7246cceef39f8a0f4920e60e330dcfe0de3fcd4bafd5665a78",
+    "tests/test_proxypool.py": "d8100d94d8d88f8d361add2365d461ed4d24137987bc408168b09bc6bf92ebc9",
+    "tests/test_repo_authority.py": "4d7cd679f2e8dd64e45296457dbbe0de4cb465b3ff1ae268bd86bff8d9e989cd",
+    "tests/test_resilient_and_guarded.py": "3847e37021971271b0ebb95bfa15690546ea58d5d364904866e017dc7a6f078f",
+    "tests/test_restore_race.py": "496e2c7cc269ac2fcc22a98d0304c4b5948ffd3d25ea6b0bb3c9e19b1cac8704",
+    "tests/test_scheduler.py": "c0fdba09a4b91d0af16d9641764bf6135c99b193b6da0caf3002f037ec15d891",
+    "tests/test_store.py": "42e82ceea6846b8738dc0b62cd292e8766fa1b8a4974b1e25155942048218a94",
+    "tests/test_store_backup.py": "8b83ec99374aa2e72a70ff1b30976619024166e7f3a0f3673c07014a9d9fa50f",
+    "tests/test_store_correctness.py": "fd1a8cfb98a2bfe68a8be47b33a33b29dbed2df90ca9353a0b10d7c8831409e1",
+    "tests/test_transactions_and_proxy_identity.py": "751b942d4b26d02d8e7b709a87b22e2818c5002de2dc3cf01c679ad1a754a445",
+    "tests/test_two_store_convergence.py": "125a21cf4934d6769b71492fdcae4706ac680482e6395987e6578bb6bf911880",
+    "tests/test_two_store_sync.py": "f5faeacafa53e281b52603989627db12daa21dd80bae6a0258f0a628f1ac0926"
+  },
+  "adaptations": [
+    "Each original parameter expansion is a separately reported Rust #[test] with its exact frozen source ID. The native assertions execute actual storage, archive, crypto, HTTP, CLI-domain, process and installation APIs against owned temporary roots.",
+    "Python monkeypatches at filesystem operations correspond to explicit test-support callbacks at actual native reads, physical resolution, atomic create_new/replace, rollback, session rename/reclaim, copy, conversion and selection boundaries. Product builds exclude observer state and hook calls. Callbacks may fail, park, or reproduce the original no-op filesystem operation only under this feature.",
+    "Cross-process cases re-execute the exact Rust test under ownership::capture. Workers synchronize through bounded owned file rendezvous and execute real independent native repositories and OS locks; no Python interpreter, Python oracle, shell process stand-in, or extra helper test is used.",
+    "Scheduler activation runs the actual Runtime/Adapter/Registry and a compiled native SDK fixture; the fixture starts a real browser leaf inside the owned process tree. Startup, exit and shutdown assertions observe actual child lifetimes and durable schedule outcomes.",
+    "The source Python fallback-identity test inspected SHA256(ctimestr) implementation and stability across three interpreters. Native ownership uses stable kernel creation tokens and refuses unavailable birth identities. Its mapped case observes the same real PID token from three native children and asserts fail-closed unavailability; no fallback hash or fake PID is introduced.",
+    "Explicit path/environment discovery arguments replace global HOME/USERPROFILE/sys.frozen monkeypatches. An owned ordinary file occupying the required directory path provides a portable unwritable-directory failure even when the test process is privileged.",
+    "HTTP source fault cases that let OSError escape TestClient become actual native HTTP 500 responses, followed by the same exact rollback/no-write filesystem assertions. Response text is retained where native error responses are not JSON.",
+    "Pure network destination checks pass the original URL and a deterministic DNS observation through the actual parse/public-address/pinning function. Rebinding asserts that the validated address remains fixed and a later loopback resolution is refused. Private actual rotate requests exercise native refusal before connection.",
+    "Python numeric equality accepts integral float/int representations; native JSON assertions compare corresponding numeric values where the public model normalizes to float. Nonfinite in-memory values are inserted directly without serializing through JSON.",
+    "Installation tests use real shared/exclusive file locks and an owned copy of the actual native engine, checking activation refusal before a deliberately invalid CLI argument could be parsed. No process-global installation or user data is probed.",
+    "Original cryptography/FastAPI optional dependencies are native target dependencies, so none of the mapped tests is skipped."
+  ],
+  "cases": [
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_normal_backup_still_round_trips",
+      "rust_test": "archive_safety::a_normal_backup_still_round_trips",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_parent_traversal_member_is_refused",
+      "rust_test": "archive_safety::a_parent_traversal_member_is_refused",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_leading_slash_is_neutralised_rather_than_escaping",
+      "rust_test": "archive_safety::a_leading_slash_is_neutralised_rather_than_escaping",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_windows_drive_member_is_refused",
+      "rust_test": "archive_safety::a_windows_drive_member_is_refused",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_hostile_archive_leaves_no_half_written_profile",
+      "rust_test": "archive_safety::a_hostile_archive_leaves_no_half_written_profile",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_malformed_profile_json_is_a_clear_error",
+      "rust_test": "archive_safety::a_malformed_profile_json_is_a_clear_error",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_an_archive_with_no_profile_json_is_a_clear_error",
+      "rust_test": "archive_safety::an_archive_with_no_profile_json_is_a_clear_error",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_restore_replaces_the_session_rather_than_merging_into_it",
+      "rust_test": "archive_safety::restore_replaces_the_session_rather_than_merging_into_it",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_sibling_prefix_member_cannot_escape_the_extension_folder",
+      "rust_test": "archive_safety::a_sibling_prefix_member_cannot_escape_the_extension_folder",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_parent_traversal_member_cannot_escape_the_extension_folder",
+      "rust_test": "archive_safety::a_parent_traversal_member_cannot_escape_the_extension_folder",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_an_ordinary_extension_still_unpacks",
+      "rust_test": "archive_safety::an_ordinary_extension_still_unpacks",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_an_icon_path_cannot_point_at_a_sibling_directory",
+      "rust_test": "archive_safety::an_icon_path_cannot_point_at_a_sibling_directory",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_windows_device_name_is_not_a_usable_profile_id[CON]",
+      "rust_test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_012",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_windows_device_name_is_not_a_usable_profile_id[PRN]",
+      "rust_test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_013",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_windows_device_name_is_not_a_usable_profile_id[AUX]",
+      "rust_test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_014",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_windows_device_name_is_not_a_usable_profile_id[NUL]",
+      "rust_test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_015",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_windows_device_name_is_not_a_usable_profile_id[COM1]",
+      "rust_test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_016",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_windows_device_name_is_not_a_usable_profile_id[COM9]",
+      "rust_test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_017",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_windows_device_name_is_not_a_usable_profile_id[LPT1]",
+      "rust_test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_018",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_windows_device_name_is_not_a_usable_profile_id[LPT9]",
+      "rust_test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_019",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_windows_device_name_is_not_a_usable_profile_id[con]",
+      "rust_test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_020",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_windows_device_name_is_not_a_usable_profile_id[NuL]",
+      "rust_test": "archive_safety::a_windows_device_name_is_not_a_usable_profile_id_case_021",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_device_name_with_an_extension_is_refused_too[nul.json]",
+      "rust_test": "archive_safety::a_device_name_with_an_extension_is_refused_too_case_022",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_device_name_with_an_extension_is_refused_too[COM1.backup]",
+      "rust_test": "archive_safety::a_device_name_with_an_extension_is_refused_too_case_023",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_device_name_with_an_extension_is_refused_too[aux.tar.gz]",
+      "rust_test": "archive_safety::a_device_name_with_an_extension_is_refused_too_case_024",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_device_name_with_an_extension_is_refused_too[CON.txt]",
+      "rust_test": "archive_safety::a_device_name_with_an_extension_is_refused_too_case_025",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_names_that_merely_look_like_devices_are_fine[CONS]",
+      "rust_test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_026",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_names_that_merely_look_like_devices_are_fine[console]",
+      "rust_test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_027",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_names_that_merely_look_like_devices_are_fine[COM]",
+      "rust_test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_028",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_names_that_merely_look_like_devices_are_fine[COM10]",
+      "rust_test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_029",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_names_that_merely_look_like_devices_are_fine[LPT10]",
+      "rust_test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_030",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_names_that_merely_look_like_devices_are_fine[NULL]",
+      "rust_test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_031",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_names_that_merely_look_like_devices_are_fine[auxiliary]",
+      "rust_test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_032",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_names_that_merely_look_like_devices_are_fine[ab12cd34ef56]",
+      "rust_test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_033",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_names_that_merely_look_like_devices_are_fine[a-b_c]",
+      "rust_test": "archive_safety::names_that_merely_look_like_devices_are_fine_case_034",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_profile_id_requires_a_complete_portable_filename[valid\\n]",
+      "rust_test": "archive_safety::profile_id_requires_a_complete_portable_filename_case_035",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_profile_id_requires_a_complete_portable_filename[valid\\r\\n]",
+      "rust_test": "archive_safety::profile_id_requires_a_complete_portable_filename_case_036",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_profile_id_requires_a_complete_portable_filename[../escape]",
+      "rust_test": "archive_safety::profile_id_requires_a_complete_portable_filename_case_037",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_profile_id_requires_a_complete_portable_filename[a/b]",
+      "rust_test": "archive_safety::profile_id_requires_a_complete_portable_filename_case_038",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_profile_id_requires_a_complete_portable_filename[a\\\\b]",
+      "rust_test": "archive_safety::profile_id_requires_a_complete_portable_filename_case_039",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_json_replacement_never_overwrites_an_unowned_temporary_file",
+      "rust_test": "archive_safety::json_replacement_never_overwrites_an_unowned_temporary_file",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_profile_path_never_resolves_one_id_into_another",
+      "rust_test": "archive_safety::profile_path_never_resolves_one_id_into_another",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_a_linked_session_claim_stays_owned_instead_of_appearing_absent",
+      "rust_test": "archive_safety::a_linked_session_claim_stays_owned_instead_of_appearing_absent",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_archive_path_is_refused_before_probing_an_outside_target[../outside]",
+      "rust_test": "archive_safety::archive_path_is_refused_before_probing_an_outside_target_case_043",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_archive_path_is_refused_before_probing_an_outside_target[../records-evil/file]",
+      "rust_test": "archive_safety::archive_path_is_refused_before_probing_an_outside_target_case_044",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_archive_path_is_refused_before_probing_an_outside_target[child/../../outside]",
+      "rust_test": "archive_safety::archive_path_is_refused_before_probing_an_outside_target_case_045",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_physical_check_keeps_links_before_parent_components[archive]",
+      "rust_test": "archive_safety::physical_check_keeps_links_before_parent_components_case_046",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_physical_check_keeps_links_before_parent_components[profile]",
+      "rust_test": "archive_safety::physical_check_keeps_links_before_parent_components_case_047",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_physical_sibling_is_refused_before_accessing_the_resolved_target",
+      "rust_test": "archive_safety::physical_sibling_is_refused_before_accessing_the_resolved_target",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_profile_path_rejects_an_escaping_suffix_before_filesystem_access",
+      "rust_test": "archive_safety::profile_path_rejects_an_escaping_suffix_before_filesystem_access",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_archive_safety.py::test_json_replacement_uses_private_file_permissions_on_posix",
+      "rust_test": "archive_safety::json_replacement_uses_private_file_permissions_on_posix",
+      "rust_file": "engine-rust/tests/source_storage/archive_safety.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_absent_keys_are_left_alone",
+      "rust_test": "bulk::absent_keys_are_left_alone",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_engine_and_notes",
+      "rust_test": "bulk::engine_and_notes",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_setting_the_same_value_is_not_a_change",
+      "rust_test": "bulk::setting_the_same_value_is_not_a_change",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_locale_moves_timezone_and_languages",
+      "rust_test": "bulk::locale_moves_timezone_and_languages",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_unknown_locale_is_ignored",
+      "rust_test": "bulk::unknown_locale_is_ignored",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_tags_added_and_removed",
+      "rust_test": "bulk::tags_added_and_removed",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_tag_already_present_is_not_a_change",
+      "rust_test": "bulk::tag_already_present_is_not_a_change",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_proxy_can_be_set_and_explicitly_cleared",
+      "rust_test": "bulk::proxy_can_be_set_and_explicitly_cleared",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_regen_keeps_os_and_locale_but_changes_the_device",
+      "rust_test": "bulk::regen_keeps_os_and_locale_but_changes_the_device",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_regenerated_fingerprint_is_still_coherent",
+      "rust_test": "bulk::regenerated_fingerprint_is_still_coherent",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_select_by_tag",
+      "rust_test": "bulk::select_by_tag",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "three"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_select_by_name_or_id",
+      "rust_test": "bulk::select_by_name_or_id",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "three"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_select_never_returns_duplicates",
+      "rust_test": "bulk::select_never_returns_duplicates",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "three"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_select_all",
+      "rust_test": "bulk::select_all",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "three"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_select_nothing_by_default",
+      "rust_test": "bulk::select_nothing_by_default",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "three"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_generate_profiles_count_and_names",
+      "rust_test": "bulk::generate_profiles_count_and_names",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_generate_profiles_are_all_coherent",
+      "rust_test": "bulk::generate_profiles_are_all_coherent",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_generate_profiles_spread_across_oses",
+      "rust_test": "bulk::generate_profiles_spread_across_oses",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_generate_profiles_are_distinct_identities",
+      "rust_test": "bulk::generate_profiles_are_distinct_identities",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_generate_profiles_restricts_chrome_versions",
+      "rust_test": "bulk::generate_profiles_restricts_chrome_versions",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_generate_profiles_reproducible_with_seed",
+      "rust_test": "bulk::generate_profiles_reproducible_with_seed",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_generate_profiles_tags_and_engine",
+      "rust_test": "bulk::generate_profiles_tags_and_engine",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_a_version_override_keeps_the_android_ua_coherent",
+      "rust_test": "bulk::a_version_override_keeps_the_android_ua_coherent",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_bulk.py::test_a_version_override_leaves_a_desktop_ua_alone",
+      "rust_test": "bulk::a_version_override_leaves_a_desktop_ua_alone",
+      "rust_file": "engine-rust/tests/source_storage/bulk.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_detached_child_argv_carries_no_password[argv0]",
+      "rust_test": "closure_pass::a_detached_child_argv_carries_no_password_case_000",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_detached_child_argv_carries_no_password[argv1]",
+      "rust_test": "closure_pass::a_detached_child_argv_carries_no_password_case_001",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_detached_child_argv_carries_no_password[argv2]",
+      "rust_test": "closure_pass::a_detached_child_argv_carries_no_password_case_002",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_name_only_put_changes_only_the_name",
+      "rust_test": "closure_pass::a_name_only_put_changes_only_the_name",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_partial_put_preserves_server_owned_bookkeeping",
+      "rust_test": "closure_pass::a_partial_put_preserves_server_owned_bookkeeping",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_put_can_still_change_what_it_names",
+      "rust_test": "closure_pass::a_put_can_still_change_what_it_names",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_held_session_leaves_the_profile_entirely_intact",
+      "rust_test": "closure_pass::a_held_session_leaves_the_profile_entirely_intact",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_metadata_failure_puts_the_session_back",
+      "rust_test": "closure_pass::a_metadata_failure_puts_the_session_back",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_tombstone_that_cannot_be_reclaimed_still_commits",
+      "rust_test": "closure_pass::a_tombstone_that_cannot_be_reclaimed_still_commits",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_locked_pool_export_is_refused",
+      "rust_test": "closure_pass::a_locked_pool_export_is_refused",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_locked_bulk_rotate_is_refused",
+      "rust_test": "closure_pass::a_locked_bulk_rotate_is_refused",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_an_unlocked_export_still_carries_the_credential",
+      "rust_test": "closure_pass::an_unlocked_export_still_carries_the_credential",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_withheld_secret_does_not_dedupe_as_passwordless",
+      "rust_test": "closure_pass::a_withheld_secret_does_not_dedupe_as_passwordless",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_the_importer_keeps_the_protocol_the_export_declared[socks4-SOCKS4]",
+      "rust_test": "closure_pass::the_importer_keeps_the_protocol_the_export_declared_case_014",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_the_importer_keeps_the_protocol_the_export_declared[socks5-SOCKS5]",
+      "rust_test": "closure_pass::the_importer_keeps_the_protocol_the_export_declared_case_015",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_the_importer_keeps_the_protocol_the_export_declared[https-HTTPS]",
+      "rust_test": "closure_pass::the_importer_keeps_the_protocol_the_export_declared_case_016",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_the_importer_keeps_the_protocol_the_export_declared[http-HTTP]",
+      "rust_test": "closure_pass::the_importer_keeps_the_protocol_the_export_declared_case_017",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_bulk_update_that_fails_part_way_changes_nothing",
+      "rust_test": "closure_pass::a_bulk_update_that_fails_part_way_changes_nothing",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_an_import_that_fails_part_way_writes_nothing",
+      "rust_test": "closure_pass::an_import_that_fails_part_way_writes_nothing",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_successful_bulk_update_still_applies",
+      "rust_test": "closure_pass::a_successful_bulk_update_still_applies",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_folder_rename_and_a_profile_save_both_survive",
+      "rust_test": "closure_pass::a_folder_rename_and_a_profile_save_both_survive",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_only_globally_routable_destinations_are_allowed[http://100.64.0.1/rotate]",
+      "rust_test": "closure_pass::only_globally_routable_destinations_are_allowed_case_022",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_only_globally_routable_destinations_are_allowed[http://100.127.255.254/rotate]",
+      "rust_test": "closure_pass::only_globally_routable_destinations_are_allowed_case_023",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_only_globally_routable_destinations_are_allowed[http://127.0.0.1/rotate]",
+      "rust_test": "closure_pass::only_globally_routable_destinations_are_allowed_case_024",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_only_globally_routable_destinations_are_allowed[http://169.254.169.254/latest/]",
+      "rust_test": "closure_pass::only_globally_routable_destinations_are_allowed_case_025",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_only_globally_routable_destinations_are_allowed[http://10.0.0.5/rotate]",
+      "rust_test": "closure_pass::only_globally_routable_destinations_are_allowed_case_026",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_only_globally_routable_destinations_are_allowed[http://192.0.2.1/rotate]",
+      "rust_test": "closure_pass::only_globally_routable_destinations_are_allowed_case_027",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_only_globally_routable_destinations_are_allowed[http://[fc00::1]/rotate]",
+      "rust_test": "closure_pass::only_globally_routable_destinations_are_allowed_case_028",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_public_destination_is_allowed_and_pinned",
+      "rust_test": "closure_pass::a_public_destination_is_allowed_and_pinned",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_the_connection_is_pinned_to_the_address_that_was_validated",
+      "rust_test": "closure_pass::the_connection_is_pinned_to_the_address_that_was_validated",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_a_non_http_scheme_is_still_refused",
+      "rust_test": "closure_pass::a_non_http_scheme_is_still_refused",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_crypto_still_round_trips_after_all_of_this",
+      "rust_test": "closure_pass::crypto_still_round_trips_after_all_of_this",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_closure_pass.py::test_the_job_record_never_holds_the_password",
+      "rust_test": "closure_pass::the_job_record_never_holds_the_password",
+      "rust_file": "engine-rust/tests/source_storage/closure_pass.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_collision.py::test_unique_profiles_dont_collide",
+      "rust_test": "collision::unique_profiles_dont_collide",
+      "rust_file": "engine-rust/tests/source_storage/collision.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_collision.py::test_same_device_collides_even_with_different_seed",
+      "rust_test": "collision::same_device_collides_even_with_different_seed",
+      "rust_file": "engine-rust/tests/source_storage/collision.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_collision.py::test_identical_when_seed_also_matches",
+      "rust_test": "collision::identical_when_seed_also_matches",
+      "rust_file": "engine-rust/tests/source_storage/collision.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_collision.py::test_signature_ignores_the_seed",
+      "rust_test": "collision::signature_ignores_the_seed",
+      "rust_file": "engine-rust/tests/source_storage/collision.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_collision.py::test_summary_counts_clashing_profiles_not_groups",
+      "rust_test": "collision::summary_counts_clashing_profiles_not_groups",
+      "rust_file": "engine-rust/tests/source_storage/collision.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_collision.py::test_groups_are_most_linked_first",
+      "rust_test": "collision::groups_are_most_linked_first",
+      "rust_file": "engine-rust/tests/source_storage/collision.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_an_invalid_extension_leaves_the_earlier_config_fields_alone",
+      "rust_test": "compound_atomicity::an_invalid_extension_leaves_the_earlier_config_fields_alone",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_a_valid_compound_config_still_applies_every_field",
+      "rust_test": "compound_atomicity::a_valid_compound_config_still_applies_every_field",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_a_failed_create_does_not_move_the_default_engine",
+      "rust_test": "compound_atomicity::a_failed_create_does_not_move_the_default_engine",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_a_failing_bulk_create_writes_nothing",
+      "rust_test": "compound_atomicity::a_failing_bulk_create_writes_nothing",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_a_failing_import_writes_nothing",
+      "rust_test": "compound_atomicity::a_failing_import_writes_nothing",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_a_metadata_stamp_does_not_revert_a_concurrent_edit",
+      "rust_test": "compound_atomicity::a_metadata_stamp_does_not_revert_a_concurrent_edit",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_a_failing_assignment_assigns_nobody",
+      "rust_test": "compound_atomicity::a_failing_assignment_assigns_nobody",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_assignment_survives_a_concurrent_note_edit",
+      "rust_test": "compound_atomicity::assignment_survives_a_concurrent_note_edit",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_an_impossible_warmup_duration_is_refused_everywhere[inf]",
+      "rust_test": "compound_atomicity::an_impossible_warmup_duration_is_refused_everywhere_case_008",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_an_impossible_warmup_duration_is_refused_everywhere[nan]",
+      "rust_test": "compound_atomicity::an_impossible_warmup_duration_is_refused_everywhere_case_009",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_an_impossible_warmup_duration_is_refused_everywhere[-1]",
+      "rust_test": "compound_atomicity::an_impossible_warmup_duration_is_refused_everywhere_case_010",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_an_impossible_warmup_duration_is_refused_everywhere[0]",
+      "rust_test": "compound_atomicity::an_impossible_warmup_duration_is_refused_everywhere_case_011",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_an_impossible_warmup_duration_is_refused_everywhere[1000000]",
+      "rust_test": "compound_atomicity::an_impossible_warmup_duration_is_refused_everywhere_case_012",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_an_impossible_warmup_duration_is_refused_everywhere[x]",
+      "rust_test": "compound_atomicity::an_impossible_warmup_duration_is_refused_everywhere_case_013",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_an_unknown_preset_is_refused_before_a_browser_starts",
+      "rust_test": "compound_atomicity::an_unknown_preset_is_refused_before_a_browser_starts",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_a_schedule_cannot_store_a_duration_a_run_would_refuse",
+      "rust_test": "compound_atomicity::a_schedule_cannot_store_a_duration_a_run_would_refuse",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_two_processes_racing_one_due_occurrence_produce_one_claim",
+      "rust_test": "compound_atomicity::two_processes_racing_one_due_occurrence_produce_one_claim",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_compound_atomicity.py::test_two_first_runs_import_once",
+      "rust_test": "compound_atomicity::two_first_runs_import_once",
+      "rust_file": "engine-rust/tests/source_storage/compound_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_delete_rollback.py::test_a_failed_delete_puts_the_session_back",
+      "rust_test": "delete_rollback::a_failed_delete_puts_the_session_back",
+      "rust_file": "engine-rust/tests/source_storage/delete_rollback.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_delete_rollback.py::test_a_rollback_that_cannot_finish_names_the_tombstone",
+      "rust_test": "delete_rollback::a_rollback_that_cannot_finish_names_the_tombstone",
+      "rust_file": "engine-rust/tests/source_storage/delete_rollback.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_delete_rollback.py::test_the_metadata_comes_back_through_the_atomic_writer",
+      "rust_test": "delete_rollback::the_metadata_comes_back_through_the_atomic_writer",
+      "rust_file": "engine-rust/tests/source_storage/delete_rollback.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_delete_rollback.py::test_a_successful_delete_still_removes_everything",
+      "rust_test": "delete_rollback::a_successful_delete_still_removes_everything",
+      "rust_file": "engine-rust/tests/source_storage/delete_rollback.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_a_failed_migration_leaves_no_vault_and_no_half_encrypted_store",
+      "rust_test": "failure_atomicity::a_failed_migration_leaves_no_vault_and_no_half_encrypted_store",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_a_successful_migration_converts_everything_and_then_switches_on",
+      "rust_test": "failure_atomicity::a_successful_migration_converts_everything_and_then_switches_on",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_a_failed_engine_write_does_not_leave_the_dashboard_copy_ahead",
+      "rust_test": "failure_atomicity::a_failed_engine_write_does_not_leave_the_dashboard_copy_ahead",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_a_profile_the_engine_cannot_model_is_refused_not_half_written",
+      "rust_test": "failure_atomicity::a_profile_the_engine_cannot_model_is_refused_not_half_written",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_a_restore_that_cannot_finish_leaves_the_original_intact",
+      "rust_test": "failure_atomicity::a_restore_that_cannot_finish_leaves_the_original_intact",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_a_restore_that_succeeds_replaces_the_session_and_the_metadata",
+      "rust_test": "failure_atomicity::a_restore_that_succeeds_replaces_the_session_and_the_metadata",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_an_interrupted_write_leaves_the_previous_content[profile]",
+      "rust_test": "failure_atomicity::an_interrupted_write_leaves_the_previous_content_case_006",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_an_interrupted_write_leaves_the_previous_content[config]",
+      "rust_test": "failure_atomicity::an_interrupted_write_leaves_the_previous_content_case_007",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_an_interrupted_write_leaves_the_previous_content[schedules]",
+      "rust_test": "failure_atomicity::an_interrupted_write_leaves_the_previous_content_case_008",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_a_fast_child_keeps_its_outcome",
+      "rust_test": "failure_atomicity::a_fast_child_keeps_its_outcome",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_a_slow_child_also_keeps_both_halves",
+      "rust_test": "failure_atomicity::a_slow_child_also_keeps_both_halves",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_the_outcome_file_is_not_listed_as_a_second_job",
+      "rust_test": "failure_atomicity::the_outcome_file_is_not_listed_as_a_second_job",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_pruning_removes_both_halves",
+      "rust_test": "failure_atomicity::pruning_removes_both_halves",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_the_store_refuses_an_invalid_schedule_patch",
+      "rust_test": "failure_atomicity::the_store_refuses_an_invalid_schedule_patch",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_a_client_cannot_move_the_next_run",
+      "rust_test": "failure_atomicity::a_client_cannot_move_the_next_run",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_the_scheduler_can_still_write_its_own_outcome",
+      "rust_test": "failure_atomicity::the_scheduler_can_still_write_its_own_outcome",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_a_valid_patch_is_normalised_not_just_accepted",
+      "rust_test": "failure_atomicity::a_valid_patch_is_normalised_not_just_accepted",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_failure_atomicity.py::test_concurrent_schedule_writes_do_not_lose_each_other",
+      "rust_test": "failure_atomicity::concurrent_schedule_writes_do_not_lose_each_other",
+      "rust_file": "engine-rust/tests/source_storage/failure_atomicity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_installation_lease.py::test_source_checkout_does_not_claim_an_installation",
+      "rust_test": "installation_lease::source_checkout_does_not_claim_an_installation",
+      "rust_file": "engine-rust/tests/source_storage/installation_lease.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_installation_lease.py::test_entry_checks_activation_before_importing_cli",
+      "rust_test": "installation_lease::entry_checks_activation_before_importing_cli",
+      "rust_file": "engine-rust/tests/source_storage/installation_lease.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_installation_lease.py::test_shared_lease_refuses_exclusive_writer_and_activation_requires_nonce",
+      "rust_test": "installation_lease::shared_lease_refuses_exclusive_writer_and_activation_requires_nonce",
+      "rust_file": "engine-rust/tests/source_storage/installation_lease.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_jobs.py::test_a_recycled_pid_is_not_treated_as_the_original_process",
+      "rust_test": "jobs::a_recycled_pid_is_not_treated_as_the_original_process",
+      "rust_file": "engine-rust/tests/source_storage/jobs.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_jobs.py::test_terminate_never_signals_a_pid_that_is_no_longer_ours",
+      "rust_test": "jobs::terminate_never_signals_a_pid_that_is_no_longer_ours",
+      "rust_file": "engine-rust/tests/source_storage/jobs.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_jobs.py::test_a_dead_pid_is_dead_with_or_without_a_token",
+      "rust_test": "jobs::a_dead_pid_is_dead_with_or_without_a_token",
+      "rust_file": "engine-rust/tests/source_storage/jobs.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_jobs.py::test_a_job_record_stores_the_identity_beside_the_pid",
+      "rust_test": "jobs::a_job_record_stores_the_identity_beside_the_pid",
+      "rust_file": "engine-rust/tests/source_storage/jobs.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_jobs.py::test_the_fallback_identity_is_stable_across_processes",
+      "rust_test": "jobs::the_fallback_identity_is_stable_across_processes",
+      "rust_file": "engine-rust/tests/source_storage/jobs.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_an_explicit_dir_beats_everything",
+      "rust_test": "portable_root::an_explicit_dir_beats_everything",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_the_env_var_is_used_when_there_is_no_argument",
+      "rust_test": "portable_root::the_env_var_is_used_when_there_is_no_argument",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_a_writable_app_dir_is_preferred_so_the_app_stays_portable",
+      "rust_test": "portable_root::a_writable_app_dir_is_preferred_so_the_app_stays_portable",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_an_unwritable_app_dir_falls_back_to_home",
+      "rust_test": "portable_root::an_unwritable_app_dir_falls_back_to_home",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_the_pre_rename_directory_is_used_when_it_is_the_only_one",
+      "rust_test": "portable_root::the_pre_rename_directory_is_used_when_it_is_the_only_one",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_import_carries_profiles_pool_config_and_sessions",
+      "rust_test": "portable_root::import_carries_profiles_pool_config_and_sessions",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "legacy"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_import_never_overwrites_the_destination",
+      "rust_test": "portable_root::import_never_overwrites_the_destination",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "legacy"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_the_source_is_left_untouched",
+      "rust_test": "portable_root::the_source_is_left_untouched",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "legacy"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_it_runs_once_and_then_stops",
+      "rust_test": "portable_root::it_runs_once_and_then_stops",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "legacy",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_a_marker_is_written_even_with_nothing_to_import",
+      "rust_test": "portable_root::a_marker_is_written_even_with_nothing_to_import",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_importing_from_the_destination_itself_is_a_no_op",
+      "rust_test": "portable_root::importing_from_the_destination_itself_is_a_no_op",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "legacy",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_credentials_never_reach_the_log[connecting to http://alice:hunter2@gw.example:3128-hunter2]",
+      "rust_test": "portable_root::credentials_never_reach_the_log_case_011",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_credentials_never_reach_the_log[proxy pass=s3cr3t-value applied-s3cr3t-value]",
+      "rust_test": "portable_root::credentials_never_reach_the_log_case_012",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_credentials_never_reach_the_log[{\"password\": \"topsecret\"}-topsecret]",
+      "rust_test": "portable_root::credentials_never_reach_the_log_case_013",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_credentials_never_reach_the_log[Authorization: Bearer abcdef0123456789-abcdef0123456789]",
+      "rust_test": "portable_root::credentials_never_reach_the_log_case_014",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_credentials_never_reach_the_log[api_key: sk-live-9f8e7d6c5b4a-sk-live-9f8e7d6c5b4a]",
+      "rust_test": "portable_root::credentials_never_reach_the_log_case_015",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_redaction_leaves_ordinary_text_alone",
+      "rust_test": "portable_root::redaction_leaves_ordinary_text_alone",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_redaction_is_applied_by_the_handler_not_the_call_site",
+      "rust_test": "portable_root::redaction_is_applied_by_the_handler_not_the_call_site",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "fresh_logger"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_redaction_does_not_break_numeric_format_args",
+      "rust_test": "portable_root::redaction_does_not_break_numeric_format_args",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "fresh_logger"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_redaction_still_scrubs_string_args",
+      "rust_test": "portable_root::redaction_still_scrubs_string_args",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "fresh_logger"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_setup_reports_failure_instead_of_claiming_a_file",
+      "rust_test": "portable_root::setup_reports_failure_instead_of_claiming_a_file",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "capsys",
+        "fresh_logger"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_a_partly_failed_import_is_retried_on_the_next_run",
+      "rust_test": "portable_root::a_partly_failed_import_is_retried_on_the_next_run",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_an_existing_directory_is_merged_not_skipped",
+      "rust_test": "portable_root::an_existing_directory_is_merged_not_skipped",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_the_import_covers_everything_the_product_stores",
+      "rust_test": "portable_root::the_import_covers_everything_the_product_stores",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_portable_root.py::test_an_existing_but_unwritable_portable_dir_does_not_win",
+      "rust_test": "portable_root::an_existing_but_unwritable_portable_dir_does_not_win",
+      "rust_file": "engine-rust/tests/source_storage/portable_root.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_parse_host_port",
+      "rust_test": "proxypool::parse_host_port",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_parse_keeps_the_label_beside_the_country_code",
+      "rust_test": "proxypool::parse_keeps_the_label_beside_the_country_code",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_parse_host_port_user_pass",
+      "rust_test": "proxypool::parse_host_port_user_pass",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_parse_user_pass_at_host",
+      "rust_test": "proxypool::parse_user_pass_at_host",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_parse_scheme_and_socks",
+      "rust_test": "proxypool::parse_scheme_and_socks",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_parse_trailing_country_code",
+      "rust_test": "proxypool::parse_trailing_country_code",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_parse_rejects_junk",
+      "rust_test": "proxypool::parse_rejects_junk",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_parse_many_skips_bad_lines",
+      "rust_test": "proxypool::parse_many_skips_bad_lines",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_dashboard_engine_round_trip_preserves_identity",
+      "rust_test": "proxypool::dashboard_engine_round_trip_preserves_identity",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_import_shaped_profile_is_coherent",
+      "rust_test": "proxypool::import_shaped_profile_is_coherent",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_sticky_session_proxies_are_not_collapsed",
+      "rust_test": "proxypool::sticky_session_proxies_are_not_collapsed",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_export_re_imports_to_the_same_proxy[1.2.3.4:8080]",
+      "rust_test": "proxypool::export_re_imports_to_the_same_proxy_case_011",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_export_re_imports_to_the_same_proxy[http://1.2.3.4:8080]",
+      "rust_test": "proxypool::export_re_imports_to_the_same_proxy_case_012",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_export_re_imports_to_the_same_proxy[socks5://1.2.3.4:1080]",
+      "rust_test": "proxypool::export_re_imports_to_the_same_proxy_case_013",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_export_re_imports_to_the_same_proxy[user:pass@1.2.3.4:8080]",
+      "rust_test": "proxypool::export_re_imports_to_the_same_proxy_case_014",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_export_re_imports_to_the_same_proxy[socks5://user:pass@1.2.3.4:1080]",
+      "rust_test": "proxypool::export_re_imports_to_the_same_proxy_case_015",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_export_re_imports_to_the_same_proxy[1.2.3.4:8080:user:pass]",
+      "rust_test": "proxypool::export_re_imports_to_the_same_proxy_case_016",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_export_re_imports_to_the_same_proxy[1.2.3.4:8080:US]",
+      "rust_test": "proxypool::export_re_imports_to_the_same_proxy_case_017",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_export_re_imports_to_the_same_proxy[socks5://user:pass@1.2.3.4:1080:IT 1]",
+      "rust_test": "proxypool::export_re_imports_to_the_same_proxy_case_018",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_export_re_imports_to_the_same_proxy[1.2.3.4:8080:user:pass:DE]",
+      "rust_test": "proxypool::export_re_imports_to_the_same_proxy_case_019",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_export_keeps_a_password_containing_a_colon",
+      "rust_test": "proxypool::export_keeps_a_password_containing_a_colon",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_proxypool.py::test_export_does_not_repeat_the_country_when_a_label_carries_it",
+      "rust_test": "proxypool::export_does_not_repeat_the_country_when_a_label_carries_it",
+      "rust_file": "engine-rust/tests/source_storage/proxypool.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_a_successful_delete_leaves_no_tombstone",
+      "rust_test": "repo_authority::a_successful_delete_leaves_no_tombstone",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_a_tombstone_that_will_not_go_is_reported_not_swallowed",
+      "rust_test": "repo_authority::a_tombstone_that_will_not_go_is_reported_not_swallowed",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_a_failed_metadata_delete_puts_everything_back",
+      "rust_test": "repo_authority::a_failed_metadata_delete_puts_everything_back",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_a_rollback_that_also_fails_names_every_casualty",
+      "rust_test": "repo_authority::a_rollback_that_also_fails_names_every_casualty",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_a_cli_edit_can_clear_notes",
+      "rust_test": "repo_authority::a_cli_edit_can_clear_notes",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_removing_the_last_tag_reaches_both_copies",
+      "rust_test": "repo_authority::removing_the_last_tag_reaches_both_copies",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_clearing_urls_extensions_and_proxy_reaches_both_copies",
+      "rust_test": "repo_authority::clearing_urls_extensions_and_proxy_reaches_both_copies",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_apply_does_not_overwrite_an_edit_it_never_saw",
+      "rust_test": "repo_authority::apply_does_not_overwrite_an_edit_it_never_saw",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "capsys"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_pool_assign_does_not_overwrite_an_edit_it_never_saw",
+      "rust_test": "repo_authority::pool_assign_does_not_overwrite_an_edit_it_never_saw",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "capsys"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_a_failing_write_rolls_the_whole_patch_back",
+      "rust_test": "repo_authority::a_failing_write_rolls_the_whole_patch_back",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_patch_many_skips_a_profile_that_is_already_gone",
+      "rust_test": "repo_authority::patch_many_skips_a_profile_that_is_already_gone",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_a_delete_committing_before_the_lock_is_a_clean_miss",
+      "rust_test": "repo_authority::a_delete_committing_before_the_lock_is_a_clean_miss",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_a_rename_before_the_lease_refuses_the_delete",
+      "rust_test": "repo_authority::a_rename_before_the_lease_refuses_the_delete",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_a_delete_by_id_after_a_rename_still_works",
+      "rust_test": "repo_authority::a_delete_by_id_after_a_rename_still_works",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_repo_authority.py::test_reclaiming_a_deleted_session_does_not_block_the_data_root",
+      "rust_test": "repo_authority::reclaiming_a_deleted_session_does_not_block_the_data_root",
+      "rust_file": "engine-rust/tests/source_storage/repo_authority.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_a_profile_encrypted_under_another_key_does_not_hide_the_rest",
+      "rust_test": "resilient_and_guarded::a_profile_encrypted_under_another_key_does_not_hide_the_rest",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_an_unreadable_secret_reads_as_none_not_ciphertext",
+      "rust_test": "resilient_and_guarded::an_unreadable_secret_reads_as_none_not_ciphertext",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_a_proxy_with_an_unknown_field_still_loads",
+      "rust_test": "resilient_and_guarded::a_proxy_with_an_unknown_field_still_loads",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_a_non_numeric_core_count_does_not_raise[8 cores]",
+      "rust_test": "resilient_and_guarded::a_non_numeric_core_count_does_not_raise_case_003",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_a_non_numeric_core_count_does_not_raise[N/A]",
+      "rust_test": "resilient_and_guarded::a_non_numeric_core_count_does_not_raise_case_004",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_a_non_numeric_core_count_does_not_raise[]",
+      "rust_test": "resilient_and_guarded::a_non_numeric_core_count_does_not_raise_case_005",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_a_non_numeric_core_count_does_not_raise[None]",
+      "rust_test": "resilient_and_guarded::a_non_numeric_core_count_does_not_raise_case_006",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_a_non_numeric_core_count_does_not_raise[8.5]",
+      "rust_test": "resilient_and_guarded::a_non_numeric_core_count_does_not_raise_case_007",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_a_numeric_core_count_is_still_honoured",
+      "rust_test": "resilient_and_guarded::a_numeric_core_count_is_still_honoured",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_importing_a_file_with_one_bad_entry_is_a_4xx_not_a_500",
+      "rust_test": "resilient_and_guarded::importing_a_file_with_one_bad_entry_is_a_4xx_not_a_500",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_the_vault_key_is_derived_once_per_password_and_salt",
+      "rust_test": "resilient_and_guarded::the_vault_key_is_derived_once_per_password_and_salt",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_a_different_password_or_salt_derives_again",
+      "rust_test": "resilient_and_guarded::a_different_password_or_salt_derives_again",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_the_round_trip_still_works_across_store_instances",
+      "rust_test": "resilient_and_guarded::the_round_trip_still_works_across_store_instances",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_rotate_refuses_a_private_destination[http://127.0.0.1/rotate]",
+      "rust_test": "resilient_and_guarded::rotate_refuses_a_private_destination_case_013",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_rotate_refuses_a_private_destination[http://localhost:8787/rotate]",
+      "rust_test": "resilient_and_guarded::rotate_refuses_a_private_destination_case_014",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_rotate_refuses_a_private_destination[http://169.254.169.254/latest/meta-data/]",
+      "rust_test": "resilient_and_guarded::rotate_refuses_a_private_destination_case_015",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_rotate_refuses_a_private_destination[http://10.0.0.5/rotate]",
+      "rust_test": "resilient_and_guarded::rotate_refuses_a_private_destination_case_016",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_rotate_refuses_a_private_destination[http://192.168.1.1/rotate]",
+      "rust_test": "resilient_and_guarded::rotate_refuses_a_private_destination_case_017",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_rotate_refuses_a_private_destination[http://[::1]/rotate]",
+      "rust_test": "resilient_and_guarded::rotate_refuses_a_private_destination_case_018",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_rotate_still_allows_a_real_provider_url",
+      "rust_test": "resilient_and_guarded::rotate_still_allows_a_real_provider_url",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_rotate_still_refuses_a_non_http_scheme[ftp://example.com/x]",
+      "rust_test": "resilient_and_guarded::rotate_still_refuses_a_non_http_scheme_case_020",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_rotate_still_refuses_a_non_http_scheme[file:///etc/passwd]",
+      "rust_test": "resilient_and_guarded::rotate_still_refuses_a_non_http_scheme_case_021",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_rotate_still_refuses_a_non_http_scheme[gopher://x/]",
+      "rust_test": "resilient_and_guarded::rotate_still_refuses_a_non_http_scheme_case_022",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_an_empty_host_is_not_treated_as_loopback",
+      "rust_test": "resilient_and_guarded::an_empty_host_is_not_treated_as_loopback",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_real_loopback_still_needs_no_credential[127.0.0.1]",
+      "rust_test": "resilient_and_guarded::real_loopback_still_needs_no_credential_case_024",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_real_loopback_still_needs_no_credential[localhost]",
+      "rust_test": "resilient_and_guarded::real_loopback_still_needs_no_credential_case_025",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_resilient_and_guarded.py::test_real_loopback_still_needs_no_credential[::1]",
+      "rust_test": "resilient_and_guarded::real_loopback_still_needs_no_credential_case_026",
+      "rust_file": "engine-rust/tests/source_storage/resilient_and_guarded.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_restore_race.py::test_an_edit_that_succeeded_survives_a_failing_restore",
+      "rust_test": "restore_race::an_edit_that_succeeded_survives_a_failing_restore",
+      "rust_file": "engine-rust/tests/source_storage/restore_race.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_restore_race.py::test_a_write_cannot_land_inside_the_restore_transaction",
+      "rust_test": "restore_race::a_write_cannot_land_inside_the_restore_transaction",
+      "rust_file": "engine-rust/tests/source_storage/restore_race.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_restore_race.py::test_a_session_that_cannot_be_put_back_is_named_in_the_error",
+      "rust_test": "restore_race::a_session_that_cannot_be_put_back_is_named_in_the_error",
+      "rust_file": "engine-rust/tests/source_storage/restore_race.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_restore_race.py::test_a_restore_that_fails_before_the_lease_touches_nothing",
+      "rust_test": "restore_race::a_restore_that_fails_before_the_lease_touches_nothing",
+      "rust_file": "engine-rust/tests/source_storage/restore_race.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_restore_race.py::test_a_replaced_session_that_cannot_be_reclaimed_is_named",
+      "rust_test": "restore_race::a_replaced_session_that_cannot_be_reclaimed_is_named",
+      "rust_file": "engine-rust/tests/source_storage/restore_race.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_restore_race.py::test_reclaiming_a_replaced_session_does_not_block_the_data_root",
+      "rust_test": "restore_race::reclaiming_a_replaced_session_does_not_block_the_data_root",
+      "rust_file": "engine-rust/tests/source_storage/restore_race.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_add_and_list_round_trip",
+      "rust_test": "scheduler::add_and_list_round_trip",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_interval_is_floored",
+      "rust_test": "scheduler::interval_is_floored",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_delete",
+      "rust_test": "scheduler::delete",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_never_run_is_due_at_creation",
+      "rust_test": "scheduler::never_run_is_due_at_creation",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_next_run_is_last_plus_interval",
+      "rust_test": "scheduler::next_run_is_last_plus_interval",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_disabled_never_due",
+      "rust_test": "scheduler::disabled_never_due",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_mark_run_moves_next_due",
+      "rust_test": "scheduler::mark_run_moves_next_due",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_malformed_schedule_is_refused_not_stored[bad0]",
+      "rust_test": "scheduler::a_malformed_schedule_is_refused_not_stored_case_015",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_malformed_schedule_is_refused_not_stored[bad1]",
+      "rust_test": "scheduler::a_malformed_schedule_is_refused_not_stored_case_016",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_malformed_schedule_is_refused_not_stored[bad2]",
+      "rust_test": "scheduler::a_malformed_schedule_is_refused_not_stored_case_017",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_malformed_schedule_is_refused_not_stored[bad3]",
+      "rust_test": "scheduler::a_malformed_schedule_is_refused_not_stored_case_018",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_malformed_schedule_is_refused_not_stored[bad4]",
+      "rust_test": "scheduler::a_malformed_schedule_is_refused_not_stored_case_019",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_malformed_schedule_is_refused_not_stored[bad5]",
+      "rust_test": "scheduler::a_malformed_schedule_is_refused_not_stored_case_020",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_malformed_schedule_is_refused_not_stored[bad6]",
+      "rust_test": "scheduler::a_malformed_schedule_is_refused_not_stored_case_021",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_malformed_schedule_is_refused_not_stored[bad7]",
+      "rust_test": "scheduler::a_malformed_schedule_is_refused_not_stored_case_022",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_malformed_schedule_is_refused_not_stored[bad8]",
+      "rust_test": "scheduler::a_malformed_schedule_is_refused_not_stored_case_023",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_malformed_create_is_a_4xx_not_a_500[bad0]",
+      "rust_test": "scheduler::a_malformed_create_is_a_4xx_not_a_500_case_024",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_malformed_create_is_a_4xx_not_a_500[bad1]",
+      "rust_test": "scheduler::a_malformed_create_is_a_4xx_not_a_500_case_025",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_malformed_create_is_a_4xx_not_a_500[bad2]",
+      "rust_test": "scheduler::a_malformed_create_is_a_4xx_not_a_500_case_026",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_scheduler_owned_fields_cannot_be_patched",
+      "rust_test": "scheduler::scheduler_owned_fields_cannot_be_patched",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_valid_update_still_works",
+      "rust_test": "scheduler::a_valid_update_still_works",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "app_and_client"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_non_finite_interval_is_refused",
+      "rust_test": "scheduler::a_non_finite_interval_is_refused",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_tiny_interval_is_clamped_not_refused",
+      "rust_test": "scheduler::a_tiny_interval_is_clamped_not_refused",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_one_unusable_schedule_does_not_stop_the_others",
+      "rust_test": "scheduler::one_unusable_schedule_does_not_stop_the_others",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "app_and_client",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_warm_up_that_dies_immediately_is_not_recorded_as_run",
+      "rust_test": "scheduler::a_warm_up_that_dies_immediately_is_not_recorded_as_run",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "app_and_client",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_the_exit_code_of_a_finished_warm_up_is_recorded",
+      "rust_test": "scheduler::the_exit_code_of_a_finished_warm_up_is_recorded",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "app_and_client",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_shutdown_terminates_the_children_it_started",
+      "rust_test": "scheduler::shutdown_terminates_the_children_it_started",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "app_and_client",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_failed_materialisation_releases_the_claim",
+      "rust_test": "scheduler::a_failed_materialisation_releases_the_claim",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "app_and_client",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_spawn_that_cannot_start_releases_the_claim",
+      "rust_test": "scheduler::a_spawn_that_cannot_start_releases_the_claim",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "app_and_client",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_a_child_that_never_reports_ready_releases_the_claim",
+      "rust_test": "scheduler::a_child_that_never_reports_ready_releases_the_claim",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "app_and_client",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_scheduler.py::test_only_a_confirmed_start_advances_the_occurrence",
+      "rust_test": "scheduler::only_a_confirmed_start_advances_the_occurrence",
+      "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "app_and_client",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store.py::test_save_and_get",
+      "rust_test": "store::save_and_get",
+      "rust_file": "engine-rust/tests/source_storage/store.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store.py::test_resolve_by_name_and_id",
+      "rust_test": "store::resolve_by_name_and_id",
+      "rust_file": "engine-rust/tests/source_storage/store.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store.py::test_list_is_sorted_by_creation",
+      "rust_test": "store::list_is_sorted_by_creation",
+      "rust_file": "engine-rust/tests/source_storage/store.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store.py::test_delete",
+      "rust_test": "store::delete",
+      "rust_file": "engine-rust/tests/source_storage/store.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store.py::test_export_import_roundtrip",
+      "rust_test": "store::export_import_roundtrip",
+      "rust_file": "engine-rust/tests/source_storage/store.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store.py::test_user_data_dir_created",
+      "rust_test": "store::user_data_dir_created",
+      "rust_file": "engine-rust/tests/source_storage/store.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_backup.py::test_backup_then_restore_brings_back_profile_and_session",
+      "rust_test": "store_backup::backup_then_restore_brings_back_profile_and_session",
+      "rust_file": "engine-rust/tests/source_storage/store_backup.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_backup.py::test_backup_missing_profile_returns_none",
+      "rust_test": "store_backup::backup_missing_profile_returns_none",
+      "rust_file": "engine-rust/tests/source_storage/store_backup.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_backup.py::test_restore_with_new_id_makes_a_copy",
+      "rust_test": "store_backup::restore_with_new_id_makes_a_copy",
+      "rust_file": "engine-rust/tests/source_storage/store_backup.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_two_seedless_profiles_get_different_seeds",
+      "rust_test": "store_correctness::two_seedless_profiles_get_different_seeds",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_seed_is_stable_across_a_round_trip",
+      "rust_test": "store_correctness::a_seed_is_stable_across_a_round_trip",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_an_explicit_seed_is_never_overwritten",
+      "rust_test": "store_correctness::an_explicit_seed_is_never_overwritten",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_new_is_never_written_to_disk",
+      "rust_test": "store_correctness::new_is_never_written_to_disk",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_new_is_stripped_on_update_too",
+      "rust_test": "store_correctness::new_is_stripped_on_update_too",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_an_edit_changes_the_same_profile",
+      "rust_test": "store_correctness::an_edit_changes_the_same_profile",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_repeated_edits_do_not_accumulate_profiles",
+      "rust_test": "store_correctness::repeated_edits_do_not_accumulate_profiles",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_the_body_the_api_returns_is_accepted_back",
+      "rust_test": "store_correctness::the_body_the_api_returns_is_accepted_back",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_an_edit_cannot_move_a_profile_to_another_id",
+      "rust_test": "store_correctness::an_edit_cannot_move_a_profile_to_another_id",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_editing_a_profile_that_does_not_exist_is_a_404",
+      "rust_test": "store_correctness::editing_a_profile_that_does_not_exist_is_a_404",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_typo_is_refused_rather_than_persisted",
+      "rust_test": "store_correctness::a_typo_is_refused_rather_than_persisted",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_typo_on_update_is_refused_and_changes_nothing",
+      "rust_test": "store_correctness::a_typo_on_update_is_refused_and_changes_nothing",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_typo_in_a_bulk_patch_is_refused",
+      "rust_test": "store_correctness::a_typo_in_a_bulk_patch_is_refused",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_typo_in_a_batch_entry_is_refused",
+      "rust_test": "store_correctness::a_typo_in_a_batch_entry_is_refused",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_every_real_dashboard_field_is_still_accepted",
+      "rust_test": "store_correctness::every_real_dashboard_field_is_still_accepted",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_bulk_tag_helpers_are_not_unknown_fields",
+      "rust_test": "store_correctness::bulk_tag_helpers_are_not_unknown_fields",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_an_imported_profile_reloads_as_an_existing_one",
+      "rust_test": "store_correctness::an_imported_profile_reloads_as_an_existing_one",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_an_import_does_not_change_the_default_engine",
+      "rust_test": "store_correctness::an_import_does_not_change_the_default_engine",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_non_string_import_body_is_a_4xx_not_a_500",
+      "rust_test": "store_correctness::a_non_string_import_body_is_a_4xx_not_a_500",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_client_supplied_id_cannot_escape_the_data_directory[../../escaped]",
+      "rust_test": "store_correctness::a_client_supplied_id_cannot_escape_the_data_directory_case_019",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_client_supplied_id_cannot_escape_the_data_directory[..]",
+      "rust_test": "store_correctness::a_client_supplied_id_cannot_escape_the_data_directory_case_020",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_client_supplied_id_cannot_escape_the_data_directory[a/b]",
+      "rust_test": "store_correctness::a_client_supplied_id_cannot_escape_the_data_directory_case_021",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_client_supplied_id_cannot_escape_the_data_directory[C:/x]",
+      "rust_test": "store_correctness::a_client_supplied_id_cannot_escape_the_data_directory_case_022",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_client_supplied_id_cannot_escape_the_data_directory[]",
+      "rust_test": "store_correctness::a_client_supplied_id_cannot_escape_the_data_directory_case_023",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_client_supplied_id_cannot_escape_the_data_directory[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]",
+      "rust_test": "store_correctness::a_client_supplied_id_cannot_escape_the_data_directory_case_024",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_the_store_itself_refuses_a_dangerous_id",
+      "rust_test": "store_correctness::the_store_itself_refuses_a_dangerous_id",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_bulk_patch_cannot_write_private_metadata",
+      "rust_test": "store_correctness::a_bulk_patch_cannot_write_private_metadata",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_malformed_bulk_body_is_a_4xx_not_a_500[body0]",
+      "rust_test": "store_correctness::a_malformed_bulk_body_is_a_4xx_not_a_500_case_027",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_malformed_bulk_body_is_a_4xx_not_a_500[body1]",
+      "rust_test": "store_correctness::a_malformed_bulk_body_is_a_4xx_not_a_500_case_028",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_malformed_bulk_body_is_a_4xx_not_a_500[body2]",
+      "rust_test": "store_correctness::a_malformed_bulk_body_is_a_4xx_not_a_500_case_029",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_malformed_bulk_body_is_a_4xx_not_a_500[body3]",
+      "rust_test": "store_correctness::a_malformed_bulk_body_is_a_4xx_not_a_500_case_030",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_malformed_batch_body_is_a_4xx_not_a_500[body0]",
+      "rust_test": "store_correctness::a_malformed_batch_body_is_a_4xx_not_a_500_case_031",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_malformed_batch_body_is_a_4xx_not_a_500[body1]",
+      "rust_test": "store_correctness::a_malformed_batch_body_is_a_4xx_not_a_500_case_032",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_malformed_batch_body_is_a_4xx_not_a_500[body2]",
+      "rust_test": "store_correctness::a_malformed_batch_body_is_a_4xx_not_a_500_case_033",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_minimal_create_uses_the_default_without_rewriting_it",
+      "rust_test": "store_correctness::a_minimal_create_uses_the_default_without_rewriting_it",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_real_choice_does_move_the_default",
+      "rust_test": "store_correctness::a_real_choice_does_move_the_default",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_bulk_patch_cannot_rewrite_an_id",
+      "rust_test": "store_correctness::a_bulk_patch_cannot_rewrite_an_id",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_bulk_patch_cannot_break_a_list_field",
+      "rust_test": "store_correctness::a_bulk_patch_cannot_break_a_list_field",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_malformed_batch_writes_nothing_at_all",
+      "rust_test": "store_correctness::a_malformed_batch_writes_nothing_at_all",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_batch_cannot_carry_its_own_ids",
+      "rust_test": "store_correctness::a_batch_cannot_carry_its_own_ids",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_valid_batch_still_works",
+      "rust_test": "store_correctness::a_valid_batch_still_works",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_two_concurrent_pool_updates_both_survive",
+      "rust_test": "store_correctness::two_concurrent_pool_updates_both_survive",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_eight_concurrent_updates_all_persist",
+      "rust_test": "store_correctness::eight_concurrent_updates_all_persist",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_store_correctness.py::test_a_failed_write_leaves_the_previous_file_intact",
+      "rust_test": "store_correctness::a_failed_write_leaves_the_previous_file_intact",
+      "rust_file": "engine-rust/tests/source_storage/store_correctness.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_a_batch_that_fails_on_the_third_write_stores_none_of_them",
+      "rust_test": "transactions_and_proxy_identity::a_batch_that_fails_on_the_third_write_stores_none_of_them",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_a_successful_batch_still_writes_both_copies",
+      "rust_test": "transactions_and_proxy_identity::a_successful_batch_still_writes_both_copies",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c",
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_a_session_that_cannot_be_detached_is_reported",
+      "rust_test": "transactions_and_proxy_identity::a_session_that_cannot_be_detached_is_reported",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_a_removable_session_is_actually_removed",
+      "rust_test": "transactions_and_proxy_identity::a_removable_session_is_actually_removed",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_concurrent_folder_creates_both_survive",
+      "rust_test": "transactions_and_proxy_identity::concurrent_folder_creates_both_survive",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_a_rename_and_a_create_do_not_lose_each_other",
+      "rust_test": "transactions_and_proxy_identity::a_rename_and_a_create_do_not_lose_each_other",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_protocol_is_part_of_proxy_identity",
+      "rust_test": "transactions_and_proxy_identity::protocol_is_part_of_proxy_identity",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_the_same_proxy_twice_is_still_deduped",
+      "rust_test": "transactions_and_proxy_identity::the_same_proxy_twice_is_still_deduped",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_editing_a_proxy_is_validated_like_creating_one[patch0-a port outside the range]",
+      "rust_test": "transactions_and_proxy_identity::editing_a_proxy_is_validated_like_creating_one_case_008",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_editing_a_proxy_is_validated_like_creating_one[patch1-a port that is not a number]",
+      "rust_test": "transactions_and_proxy_identity::editing_a_proxy_is_validated_like_creating_one_case_009",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_editing_a_proxy_is_validated_like_creating_one[patch2-an unsupported type]",
+      "rust_test": "transactions_and_proxy_identity::editing_a_proxy_is_validated_like_creating_one_case_010",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_editing_a_proxy_is_validated_like_creating_one[patch3-an empty host]",
+      "rust_test": "transactions_and_proxy_identity::editing_a_proxy_is_validated_like_creating_one_case_011",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_editing_a_proxy_is_validated_like_creating_one[patch4-a malformed country]",
+      "rust_test": "transactions_and_proxy_identity::editing_a_proxy_is_validated_like_creating_one_case_012",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_a_valid_edit_still_applies",
+      "rust_test": "transactions_and_proxy_identity::a_valid_edit_still_applies",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_an_unsupported_text_scheme_is_refused_not_rewritten",
+      "rust_test": "transactions_and_proxy_identity::an_unsupported_text_scheme_is_refused_not_rewritten",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_a_bare_host_port_line_is_still_http",
+      "rust_test": "transactions_and_proxy_identity::a_bare_host_port_line_is_still_http",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "c"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_every_protocol_survives_the_cli_assignment[HTTP-http]",
+      "rust_test": "transactions_and_proxy_identity::every_protocol_survives_the_cli_assignment_case_016",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_every_protocol_survives_the_cli_assignment[HTTPS-https]",
+      "rust_test": "transactions_and_proxy_identity::every_protocol_survives_the_cli_assignment_case_017",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_every_protocol_survives_the_cli_assignment[SOCKS4-socks4]",
+      "rust_test": "transactions_and_proxy_identity::every_protocol_survives_the_cli_assignment_case_018",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_every_protocol_survives_the_cli_assignment[SOCKS5-socks5]",
+      "rust_test": "transactions_and_proxy_identity::every_protocol_survives_the_cli_assignment_case_019",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "parameterized",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_transactions_and_proxy_identity.py::test_an_ipv6_host_stays_bracketed",
+      "rust_test": "transactions_and_proxy_identity::an_ipv6_host_stays_bracketed",
+      "rust_file": "engine-rust/tests/source_storage/transactions_and_proxy_identity.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_dashboard_only_profile_is_listed",
+      "rust_test": "two_store_convergence::a_dashboard_only_profile_is_listed",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_an_engine_only_profile_is_still_listed",
+      "rust_test": "two_store_convergence::an_engine_only_profile_is_still_listed",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_dashboard_only_profile_resolves_with_its_secret_readable",
+      "rust_test": "two_store_convergence::a_dashboard_only_profile_resolves_with_its_secret_readable",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_name_disagreement_converges_on_the_dashboard",
+      "rust_test": "two_store_convergence::a_name_disagreement_converges_on_the_dashboard",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_shared_field_disagreement_converges_too",
+      "rust_test": "two_store_convergence::a_shared_field_disagreement_converges_too",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_healthy_profile_is_never_rewritten_by_a_listing",
+      "rust_test": "two_store_convergence::a_healthy_profile_is_never_rewritten_by_a_listing",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_repair_does_not_reset_a_field_only_the_engine_models",
+      "rust_test": "two_store_convergence::a_repair_does_not_reset_a_field_only_the_engine_models",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_two_different_proxy_passwords_are_reported_not_resolved",
+      "rust_test": "two_store_convergence::two_different_proxy_passwords_are_reported_not_resolved",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_locked_vault_keeps_both_ciphertexts_exactly",
+      "rust_test": "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]",
+      "native_adaptation": "The same original case also routes an actual HTTP listing through the request-local snapshot: needed twin repair remains real and locked/equivalent randomized ciphertext bytes are preserved exactly. No new case ID/count/type."
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_the_same_secret_encrypted_twice_is_not_a_divergence",
+      "rust_test": "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]",
+      "native_adaptation": "The same original case also routes an actual HTTP listing through the request-local snapshot: needed twin repair remains real and locked/equivalent randomized ciphertext bytes are preserved exactly. No new case ID/count/type."
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_the_api_listing_shows_the_reconciled_profile",
+      "rust_test": "two_store_convergence::the_api_listing_shows_the_reconciled_profile",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_direct_launch_is_refused_before_the_browser_starts",
+      "rust_test": "two_store_convergence::a_direct_launch_is_refused_before_the_browser_starts",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_the_refusal_leaves_no_claim_behind",
+      "rust_test": "two_store_convergence::the_refusal_leaves_no_claim_behind",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_an_ordinary_edit_cannot_settle_the_conflict",
+      "rust_test": "two_store_convergence::an_ordinary_edit_cannot_settle_the_conflict",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_dashboard_edit_cannot_settle_it_either",
+      "rust_test": "two_store_convergence::a_dashboard_edit_cannot_settle_it_either",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_replacing_the_password_resolves_it",
+      "rust_test": "two_store_convergence::replacing_the_password_resolves_it",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_removing_the_proxy_resolves_it_too",
+      "rust_test": "two_store_convergence::removing_the_proxy_resolves_it_too",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_name_lookup_never_answers_with_a_different_name",
+      "rust_test": "two_store_convergence::a_name_lookup_never_answers_with_a_different_name",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_an_engine_only_profile_gets_its_twin",
+      "rust_test": "two_store_convergence::an_engine_only_profile_gets_its_twin",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_adopting_an_engine_record_keeps_its_secret_encrypted",
+      "rust_test": "two_store_convergence::adopting_an_engine_record_keeps_its_secret_encrypted",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_resolving_an_engine_only_profile_repairs_it_too",
+      "rust_test": "two_store_convergence::resolving_an_engine_only_profile_repairs_it_too",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_secret_the_dashboard_has_lost_is_not_erased_by_an_unrelated_edit",
+      "rust_test": "two_store_convergence::a_secret_the_dashboard_has_lost_is_not_erased_by_an_unrelated_edit",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_secret_only_the_dashboard_has_is_propagated_not_refused",
+      "rust_test": "two_store_convergence::a_secret_only_the_dashboard_has_is_propagated_not_refused",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_dashboard_edit_cannot_settle_a_one_sided_secret_either",
+      "rust_test": "two_store_convergence::a_dashboard_edit_cannot_settle_a_one_sided_secret_either",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_locked_edit_leaves_each_ciphertext_exactly_as_it_found_it",
+      "rust_test": "two_store_convergence::a_locked_edit_leaves_each_ciphertext_exactly_as_it_found_it",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_password_can_be_cleared_while_the_proxy_stays",
+      "rust_test": "two_store_convergence::a_password_can_be_cleared_while_the_proxy_stays",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_an_explicit_clear_resolves_a_real_conflict",
+      "rust_test": "two_store_convergence::an_explicit_clear_resolves_a_real_conflict",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_clearing_a_password_needs_an_unlocked_vault",
+      "rust_test": "two_store_convergence::clearing_a_password_needs_an_unlocked_vault",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_the_api_answers_a_divergence_with_409",
+      "rust_test": "two_store_convergence::the_api_answers_a_divergence_with_409",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_the_api_answers_a_locked_clear_with_423",
+      "rust_test": "two_store_convergence::the_api_answers_a_locked_clear_with_423",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_bulk_edit_cannot_settle_a_conflict_and_stays_atomic",
+      "rust_test": "two_store_convergence::a_bulk_edit_cannot_settle_a_conflict_and_stays_atomic",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_locked_bulk_edit_leaves_each_ciphertext_alone",
+      "rust_test": "two_store_convergence::a_locked_bulk_edit_leaves_each_ciphertext_alone",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_bulk_edit_cannot_erase_a_one_sided_secret_either",
+      "rust_test": "two_store_convergence::a_bulk_edit_cannot_erase_a_one_sided_secret_either",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_a_healthy_bulk_edit_still_works",
+      "rust_test": "two_store_convergence::a_healthy_bulk_edit_still_works",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_either_side_of_a_conflict_can_be_chosen_explicitly",
+      "rust_test": "two_store_convergence::either_side_of_a_conflict_can_be_chosen_explicitly",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_the_shape_the_dashboard_sends_preserves_the_secret",
+      "rust_test": "two_store_convergence::the_shape_the_dashboard_sends_preserves_the_secret",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_the_dashboards_other_proxy_edits_still_go_through",
+      "rust_test": "two_store_convergence::the_dashboards_other_proxy_edits_still_go_through",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_convergence.py::test_the_api_can_choose_a_side_too",
+      "rust_test": "two_store_convergence::the_api_can_choose_a_side_too",
+      "rust_file": "engine-rust/tests/source_storage/two_store_convergence.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "store"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_sync.py::test_a_cli_edit_reaches_the_dashboard_copy",
+      "rust_test": "two_store_sync::a_cli_edit_reaches_the_dashboard_copy",
+      "rust_file": "engine-rust/tests/source_storage/two_store_sync.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_sync.py::test_a_cli_regen_reaches_the_dashboard_copy",
+      "rust_test": "two_store_sync::a_cli_regen_reaches_the_dashboard_copy",
+      "rust_file": "engine-rust/tests/source_storage/two_store_sync.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_sync.py::test_a_cli_delete_removes_both_copies",
+      "rust_test": "two_store_sync::a_cli_delete_removes_both_copies",
+      "rust_file": "engine-rust/tests/source_storage/two_store_sync.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_sync.py::test_a_cli_edit_keeps_dashboard_only_fields",
+      "rust_test": "two_store_sync::a_cli_edit_keeps_dashboard_only_fields",
+      "rust_file": "engine-rust/tests/source_storage/two_store_sync.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_sync.py::test_an_api_edit_is_visible_to_the_cli",
+      "rust_test": "two_store_sync::an_api_edit_is_visible_to_the_cli",
+      "rust_file": "engine-rust/tests/source_storage/two_store_sync.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "capsys"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_sync.py::test_two_simultaneous_same_name_creates_have_one_winner",
+      "rust_test": "two_store_sync::two_simultaneous_same_name_creates_have_one_winner",
+      "rust_file": "engine-rust/tests/source_storage/two_store_sync.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_sync.py::test_the_repo_refuses_a_duplicate_name",
+      "rust_test": "two_store_sync::the_repo_refuses_a_duplicate_name",
+      "rust_file": "engine-rust/tests/source_storage/two_store_sync.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_sync.py::test_a_restore_over_an_existing_id_replaces_both_copies",
+      "rust_test": "two_store_sync::a_restore_over_an_existing_id_replaces_both_copies",
+      "rust_file": "engine-rust/tests/source_storage/two_store_sync.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_sync.py::test_a_failed_restore_commit_leaves_both_copies_alone",
+      "rust_test": "two_store_sync::a_failed_restore_commit_leaves_both_copies_alone",
+      "rust_file": "engine-rust/tests/source_storage/two_store_sync.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_sync.py::test_an_import_of_an_existing_id_updates_both_copies",
+      "rust_test": "two_store_sync::an_import_of_an_existing_id_updates_both_copies",
+      "rust_file": "engine-rust/tests/source_storage/two_store_sync.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_two_store_sync.py::test_a_cli_note_and_an_api_tag_edit_both_survive",
+      "rust_test": "two_store_sync::a_cli_note_and_an_api_tag_edit_both_survive",
+      "rust_file": "engine-rust/tests/source_storage/two_store_sync.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    }
+  ]
+}

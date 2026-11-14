@@ -38,3 +38,170 @@ fn models_and_proxy_intent_match_source_oracle() -> Result<(), Box<dyn std::erro
     }
     Ok(())
 }
+
+#[test]
+fn optional_proxy_reads_match_original_without_rewriting_storage()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::storage::repo::ProfileRepo;
+    use std::fs;
+
+    let temporary = common::TempDirectory::new("optional proxy α")?;
+    // Immutable original observation; native operations and full assertions remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/native-storage-characterization/optional_proxy_reads_match_original_without_rewriting_storage.json"
+    ))?;
+    assert_eq!(cases.len(), 15, "Original proxy observations missing");
+    let root = temporary.path().join("native");
+    fs::create_dir_all(root.join("profiles"))?;
+    let repo = ProfileRepo::new(root.clone(), None);
+    for case in cases {
+        let input = &case["input"];
+        let id = input["id"].as_str().ok_or("Profile ID missing")?;
+        let path = root.join("profiles").join(format!("{id}.json"));
+        let before = serde_json::to_vec(input)?;
+        fs::write(&path, &before)?;
+        let model = Profile::from_record(input);
+        assert_eq!(
+            model.is_err(),
+            case["model_error"] == true,
+            "{} model verdict",
+            case["name"]
+        );
+        if let Ok(profile) = model {
+            assert_eq!(
+                serde_json::to_value(profile)?,
+                case["model"],
+                "{} model",
+                case["name"]
+            );
+        }
+        let stored = repo.get(id);
+        assert_eq!(
+            stored.is_err(),
+            case["stored_error"] == true,
+            "{} read verdict",
+            case["name"]
+        );
+        if let Ok(profile) = stored {
+            assert_eq!(
+                serde_json::to_value(profile)?,
+                case["stored"],
+                "{} read",
+                case["name"]
+            );
+        }
+        assert_eq!(
+            case["unchanged"], true,
+            "Original read rewrote {}",
+            case["name"]
+        );
+        assert_eq!(
+            fs::read(path)?,
+            before,
+            "Native read rewrote {}",
+            case["name"]
+        );
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+fn policy_gaps(record: &Value, table: &Value) -> Result<Value, Box<dyn std::error::Error>> {
+    use std::collections::BTreeSet;
+
+    let record = record
+        .as_object()
+        .ok_or("Serialized model must be an object")?;
+    let table = table.as_object().ok_or("Field policy must be an object")?;
+    let fields: BTreeSet<_> = record.keys().collect();
+    let rules: BTreeSet<_> = table.keys().collect();
+    let unexplained: BTreeSet<_> = table
+        .iter()
+        .filter(|(_, rule)| {
+            matches!(rule["kind"].as_str(), Some("owned" | "normalized"))
+                && rule["why"].as_str().is_none_or(|why| {
+                    why.chars()
+                        .all(|c| c.is_whitespace() || matches!(c, '\u{1c}'..='\u{1f}'))
+                })
+        })
+        .map(|(name, _)| name)
+        .collect();
+    Ok(json!({
+        "unpoliced": fields.difference(&rules).collect::<Vec<_>>(),
+        "phantom": rules.difference(&fields).collect::<Vec<_>>(),
+        "unexplained": unexplained,
+    }))
+}
+
+#[test]
+fn serialized_model_fields_have_exact_explained_source_policies()
+-> Result<(), Box<dyn std::error::Error>> {
+    let oracle: Value = serde_json::from_str(include_str!("fixtures/models.json"))?;
+    let case = oracle["cases"]
+        .as_array()
+        .ok_or("Model cases missing")?
+        .iter()
+        .find(|case| case["operation"] == "profile")
+        .ok_or("Original profile fixture missing")?;
+    let profile = Profile::from_record(&case["input"])?;
+    let proxy = profile
+        .proxy
+        .as_ref()
+        .ok_or("Original proxy fixture missing")?;
+    let record = serde_json::to_value(&profile)?;
+    assert_eq!(
+        serde_json::to_value(proxy)?,
+        proxy.to_record(),
+        "Proxy intent metadata leaked into storage"
+    );
+    let policy: Value = serde_json::from_str(include_str!("../src/field_policy.json"))?;
+    let empty = json!({"unpoliced": [], "phantom": [], "unexplained": []});
+    for (name, record) in [
+        ("Profile", &record),
+        ("Fingerprint", &record["fingerprint"]),
+        ("Proxy", &record["proxy"]),
+    ] {
+        assert_eq!(
+            policy_gaps(record, &policy["policy"]["tables"][name])?,
+            empty,
+            "Serialized {name} field policy differs"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn policy_coverage_guard_detects_new_removed_and_unexplained_fields()
+-> Result<(), Box<dyn std::error::Error>> {
+    let record = json!({"new_field": null, "owned": null, "normalized": null});
+    for reason in [
+        "",
+        " \t\r\n",
+        "\u{1c}\u{1d}\u{1e}\u{1f}",
+        "\u{85}\u{a0}\u{2003}\u{3000}",
+    ] {
+        let policy = json!({
+            "gone": {"kind": "text"},
+            "owned": {"kind": "owned", "why": reason},
+            "normalized": {"kind": "normalized", "why": reason},
+        });
+        assert_eq!(
+            policy_gaps(&record, &policy)?,
+            json!({
+                "unpoliced": ["new_field"],
+                "phantom": ["gone"],
+                "unexplained": ["normalized", "owned"],
+            })
+        );
+    }
+    assert_eq!(
+        policy_gaps(
+            &json!({"owned": null}),
+            &json!({"owned": {"kind": "owned", "why": "Stamped by writer"}})
+        )?,
+        json!({"unpoliced": [], "phantom": [], "unexplained": []})
+    );
+    Ok(())
+}
+
+mod common;

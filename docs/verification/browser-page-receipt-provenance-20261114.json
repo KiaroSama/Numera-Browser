@@ -1,0 +1,154 @@
+{
+  "schema": 1,
+  "date": "2026-11-14",
+  "subject": "Exact crates.io binding-compiler provenance for the browser receipt",
+  "source_commit": "63b09f46a65071ca4bbb25862525151c866c0169",
+  "ci": {
+    "run_id": 43546474618,
+    "job_id": 132299856147,
+    "checkout_commit": "cb0fcc3239cd52ba21283516dbc9b9834db885cd",
+    "artifact_id": 14094084407,
+    "artifact_sha256": "10fb763a937cfc2f440e381680e664eacb86998e48e9e1834ac697d55808db21",
+    "comparison": {
+      "artifact_matches": true,
+      "receipt_matches": false,
+      "reported_different_field": "binding_wasm_sha256"
+    }
+  },
+  "cause": {
+    "old_local_producers": {
+      "processed-by": [
+        [
+          "walrus",
+          "0.27.2"
+        ],
+        [
+          "wasm-bindgen",
+          "0.2.129 (165586f85)"
+        ]
+      ]
+    },
+    "ci_producers": {
+      "processed-by": [
+        [
+          "walrus",
+          "0.27.2"
+        ],
+        [
+          "wasm-bindgen",
+          "0.2.129"
+        ]
+      ]
+    },
+    "old_binding_sha256": "14bf50bdfbf642c91d797c4409e041c1797e81f45866f79abbd724dcf52ce6f8",
+    "ci_binding_sha256": "065d5c4e44d0f1cb92e63f7be4119593cf8c4755def7e6c8075742fd112dd296",
+    "observation": "All bound-WASM sections except the producers custom section are byte-identical. Both executables report wasm-bindgen0.2.129; GitHub prebuilt and crates.io installation differ in recorded build provenance."
+  },
+  "acquisition": {
+    "recipe": "cargo install wasm-bindgen-cli --version =0.2.129 --locked",
+    "source": "registry+https://github.com/rust-lang/crates.io-index",
+    "crate_sha256": "5fd044ed178958a277eeaf21f3d384287b0f4428d38c019141df01da9c03168c",
+    "registry_checksum_matches": true,
+    "yanked": false,
+    "published_source_commit": "165586f854c852bcbc4d14d8a75a0a0e0d0abc12",
+    "published_lock_sha256": "e1d658381b01def5f91618c10958aad4a3965abb3ff8265526434b833076e887",
+    "local_executable_sha256": "3c57a8694d74ae503eaaac2b0c1cde8512e406debabe5de12f57ad5b48ac9aca",
+    "old_prebuilt_executable_sha256": "fb59da714982a04273e9e4b09a85e523e5dd04de35b1a4a8b1641785ee7a71cf",
+    "limitation": "The CI compiler executable was not retained. Its recorded producer provenance and every complete emitted intermediate were compared; no cross-host executable-binary identity is claimed."
+  },
+  "verification": {
+    "complete_ci_intermediate_comparison": [
+      {
+        "path": "target/wasm32-unknown-unknown/release/numera_browser_page.wasm",
+        "equal": true,
+        "sha256": "5ad97d9bdb0adcd601678ab314d45d9e812fb1180dcbadc8c105b126c96cddcd",
+        "bytes": 883142
+      },
+      {
+        "path": "target/browser-page-generated/numera_browser_page_bg.wasm",
+        "equal": true,
+        "sha256": "065d5c4e44d0f1cb92e63f7be4119593cf8c4755def7e6c8075742fd112dd296",
+        "bytes": 163235
+      },
+      {
+        "path": "target/browser-page-generated/numera_browser_page.js",
+        "equal": true,
+        "sha256": "0090b56b9c48971945bdc1abeb9a8b4be9be1bf808c80968524daca4bca0c07b",
+        "bytes": 33615
+      },
+      {
+        "path": "target/browser-page-generated/compiled.js",
+        "equal": true,
+        "sha256": "e0ac9d6bce6225517fcb0fd97b42fb0e6a7133ff8f887257448dd464c863e58e",
+        "bytes": 798883
+      }
+    ],
+    "runtime_sha256": "17f41961f6762e06978cd04fd8e2feccb05f145be18c7b81bbcf38d8978b639f",
+    "runtime_bytes": 827882,
+    "runtime_unchanged": true,
+    "canonical_receipt_sha256": "90bf135619e7f2d75646a16773b847bd1db78606e503cbc0c57d0e725999be0f",
+    "candidate_receipt_equals_canonical": true,
+    "receipt_comparison_scope": "The original CI archive retained its committed expected receipt, not its in-memory candidate. Every dynamic hash was recovered from complete CI intermediates; all fixed fields passed the actual compiler validator, all original source hashes matched. The authentic local replay now retains and compares the complete candidate receipt directly.",
+    "changed_receipt_fields": [
+      "binding_wasm_sha256",
+      "source_sha256.browser-page-rust/src/bin/browser-page-build.rs"
+    ],
+    "diagnostic_source_change": "Write receipt.actual.json after successful source/tool policy validation and retain it in the existing CI failure artifact beside the expectation.",
+    "positive_check_exit": 0,
+    "wrong_prebuilt_producer_exit": 1,
+    "wrong_producer_comparison": {
+      "artifact_matches": true,
+      "receipt_matches": false,
+      "different_field": "binding_wasm_sha256"
+    },
+    "restored_positive_check_exit": 0,
+    "existing_init_case": {
+      "name": "native_script_and_config_match_original_generator",
+      "passed": 1,
+      "runtime_seconds": 16.51,
+      "scope": "Original10canonical configurations,480 complete frames and existing real stale-artifact/source/tool refusal controls."
+    },
+    "host_strict_clippy": "passed0.22s -D warnings",
+    "actionlint": "passed",
+    "preserved": [
+      "all WASM custom sections",
+      "complete intermediate hashes",
+      "full output and receipt byte comparison",
+      "all source/tool policy checks",
+      "test IDs/types/counts"
+    ],
+    "hosted_rerun": "pending"
+  },
+  "private_evidence": {
+    "directory": "/workspace/work/browser-page-receipt-63b",
+    "logs": {
+      "acquisition.log": {
+        "sha256": "c36d86ed558a4c8e2a94cac3bf311df646d10d82b4c9f5f594745ee50517bd00"
+      },
+      "host-build.log": {
+        "sha256": "13065a8337c1b8b6482ebfccd315e9d7670df40971e1d7784c628e19d47be655"
+      },
+      "canonical-build.log": {
+        "sha256": "c55d676843f52f323d3d1b165af8f4d062578a333c6fe366a9f5654d095a6061"
+      },
+      "check-positive.log": {
+        "sha256": "7c54a916630bc8fe1253ccd8e2f389a04592efb65dcffec95f2d01ccb3aa10f6"
+      },
+      "check-wrong-producer.log": {
+        "sha256": "75a715af5e59d711bc8675d4399b5b839531327ee736a1c5478cb39223ea651f"
+      },
+      "check-restored-positive.log": {
+        "sha256": "7c54a916630bc8fe1253ccd8e2f389a04592efb65dcffec95f2d01ccb3aa10f6"
+      },
+      "host-clippy.log": {
+        "sha256": "173a5c17e45775e7e5f5817ed7fd2185d0025143e3a8c5804a891d10ca019cbc"
+      },
+      "init-parity.log": {
+        "sha256": "0019bb2201ca5812d954c86f01242d0889962e33c18f7e0a75c0958e6259e943"
+      },
+      "actionlint.log": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  }
+}

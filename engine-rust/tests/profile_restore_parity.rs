@@ -5,6 +5,112 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
+mod common;
+
+#[test]
+fn restore_copy_candidates_match_original_existing_name_ownership()
+-> Result<(), Box<dyn std::error::Error>> {
+    let temporary = common::TempDirectory::new("restore-name-ownership")?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let observed: Value = serde_json::from_str(include_str!(
+        "fixtures/characterization/restore_copy_candidates_match_original_existing_name_ownership.json"
+    ))?;
+    let archive = STANDARD.decode(observed["archive"].as_str().ok_or("Archive missing")?)?;
+    let cases = observed["cases"]
+        .as_array()
+        .ok_or("Restore observations missing")?;
+    assert_eq!(cases.len(), 12, "Restore ownership observations missing");
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        fs::create_dir_all(root.join("profiles"))?;
+        let initial = case["initial"]
+            .as_object()
+            .ok_or("Initial records missing")?;
+        for (relative, record) in initial {
+            let path = root.join(relative);
+            fs::create_dir_all(path.parent().ok_or("Record parent missing")?)?;
+            fs::write(path, serde_json::to_vec(record)?)?;
+        }
+        let untouched: Vec<_> = initial
+            .keys()
+            .filter(|relative| !relative.ends_with("/fixture-restore.json"))
+            .map(|relative| Ok((relative, fs::read(root.join(relative))?)))
+            .collect::<Result<_, std::io::Error>>()?;
+        let session = root.join("user-data/fixture-restore");
+        fs::create_dir_all(&session)?;
+        fs::write(session.join("stale.bin"), b"old session must be replaced")?;
+        let source = root.join("incoming.zip");
+        fs::write(&source, &archive)?;
+        let restored = ProfileRepo::new(root.clone(), None).restore(
+            &source,
+            false,
+            "fixture-host",
+            1700000000.0,
+        )?;
+        assert_eq!(
+            serde_json::to_value(restored)?,
+            case["result"],
+            "Restore candidate ownership differs: {}",
+            case["label"]
+        );
+        let mut written = Map::new();
+        for kind in ["profiles", "dashboard"] {
+            for entry in fs::read_dir(root.join(kind))? {
+                let path = entry?.path();
+                if path
+                    .extension()
+                    .is_some_and(|extension| extension == "json")
+                {
+                    written.insert(
+                        path.strip_prefix(&root)?
+                            .to_str()
+                            .ok_or("Record path is not UTF8")?
+                            .replace('\\', "/"),
+                        serde_json::from_slice(&fs::read(path)?)?,
+                    );
+                }
+            }
+        }
+        assert_eq!(
+            Value::Object(written),
+            case["written"],
+            "Restore records differ: {}",
+            case["label"]
+        );
+        for (relative, bytes) in untouched {
+            assert_eq!(
+                fs::read(root.join(relative))?,
+                bytes,
+                "Unrelated restore record changed"
+            );
+        }
+        let mut files = Map::new();
+        session_files(&session, &session, &mut files)?;
+        assert_eq!(
+            Value::Object(files),
+            serde_json::json!({
+                "Default/restore.bin": STANDARD.encode(b"\x00\xffrestored session\r\n")
+            })
+        );
+        assert_eq!(
+            fs::read(source)?,
+            archive,
+            "Restore changed its input archive"
+        );
+        for directory in [&root, &root.join("user-data")] {
+            assert!(
+                !fs::read_dir(directory)?.any(|entry| entry.is_ok_and(|entry| {
+                    let name = entry.file_name();
+                    let name = name.to_string_lossy();
+                    name.starts_with("numera-restore-") || name.contains(".replaced-")
+                })),
+                "Restore left staging or replaced session residue"
+            );
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
 
 fn session_files(base: &Path, dir: &Path, found: &mut Map<String, Value>) -> std::io::Result<()> {
     if !dir.exists() {

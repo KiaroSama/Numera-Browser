@@ -1,0 +1,3212 @@
+{
+  "cases": [
+    {
+      "name": "empty",
+      "cookies": [],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n"
+      },
+      "json": "{\n  \"cookies\": [],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "ordinary",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t-1\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": -1.0,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "flags",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "secure": true,
+          "httpOnly": true
+        },
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": "fixture.test",
+          "path": "/account",
+          "expires": -1.0,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n#HttpOnly_.fixture.test\tTRUE\t/\tTRUE\t-1\tfixture\tsynthetic\nfixture.test\tFALSE\t/account\tFALSE\t-1\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": -1.0,\n      \"secure\": true,\n      \"httpOnly\": true\n    },\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \"fixture.test\",\n      \"path\": \"/account\",\n      \"expires\": -1.0,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "unicode-controls",
+      "cookies": [
+        {
+          "name": "\u03b1 \u0641\u0627\u0631\u0633\u06cc \ud83d\ude00",
+          "value": "tab\tline\ncarriage\r",
+          "domain": ".fixture.test",
+          "path": "/space path",
+          "expires": -1.0,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/space path\tFALSE\t-1\t\u03b1 \u0641\u0627\u0631\u0633\u06cc \ud83d\ude00\ttab\tline\ncarriage\r\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"\\u03b1 \\u0641\\u0627\\u0631\\u0633\\u06cc \\ud83d\\ude00\",\n      \"value\": \"tab\\tline\\ncarriage\\r\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/space path\",\n      \"expires\": -1.0,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "duplicates",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "secure": false,
+          "httpOnly": false
+        },
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t-1\tfixture\tsynthetic\n.fixture.test\tTRUE\t/\tFALSE\t-1\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": -1.0,\n      \"secure\": false,\n      \"httpOnly\": false\n    },\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": -1.0,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "expiry-5",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 0,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t-1\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": 0,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "expiry-6",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": null,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t-1\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": null,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "expiry-7",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -0.0,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t-1\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": -0.0,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "expiry-8",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1.75,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t1\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": 1.75,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "expiry-9",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.75,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t-1\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": -1.75,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "expiry-10",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1893456000.5,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t1893456000\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": 1893456000.5,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "expiry-11",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 9223372036854775808,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t9223372036854775808\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": 9223372036854775808,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "expiry-12",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 10000000000000000000000000000000000000000,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t10000000000000000000000000000000000000000\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": 10000000000000000000000000000000000000000,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "expiry-13",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": "00123",
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t123\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": \"00123\",\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "expiry-14",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": "-00123",
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t-123\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": \"-00123\",\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "expiry-15",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": true,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t1\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": true,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "defaults",
+      "cookies": [
+        {
+          "name": "fixture",
+          "domain": "fixture.test"
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\nfixture.test\tFALSE\t/\tFALSE\t-1\tfixture\t\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"domain\": \"fixture.test\"\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "invalid-17",
+      "cookies": [
+        {
+          "name": "fixture"
+        }
+      ],
+      "expected": {
+        "failed": true
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\"\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "invalid-18",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": null,
+          "path": "/",
+          "expires": -1.0,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "failed": true
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": null,\n      \"path\": \"/\",\n      \"expires\": -1.0,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "invalid-19",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": null,
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "failed": true
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": null,\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": -1.0,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "invalid-20",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": "bad",
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "failed": true
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": \"bad\",\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "invalid-21",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": [],
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t-1\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": [],\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "invalid-22",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": {},
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "text": "# Netscape HTTP Cookie File\n# Exported by Numera \u2014 https://github.com/KiaroSama/Numera\n\n.fixture.test\tTRUE\t/\tFALSE\t-1\tfixture\tsynthetic\n"
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": \"/\",\n      \"expires\": {},\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    },
+    {
+      "name": "invalid-23",
+      "cookies": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": null,
+          "expires": -1.0,
+          "secure": false,
+          "httpOnly": false
+        }
+      ],
+      "expected": {
+        "failed": true
+      },
+      "json": "{\n  \"cookies\": [\n    {\n      \"name\": \"fixture\",\n      \"value\": \"synthetic\",\n      \"domain\": \".fixture.test\",\n      \"path\": null,\n      \"expires\": -1.0,\n      \"secure\": false,\n      \"httpOnly\": false\n    }\n  ],\n  \"origins\": []\n}"
+    }
+  ],
+  "parse_cases": [
+    {
+      "name": "",
+      "text": "",
+      "expected": {
+        "cookies": []
+      }
+    },
+    {
+      "name": "ordinary",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "http-only",
+      "text": "#HttpOnly_.fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": true,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "comment",
+      "text": "# ignored\n.fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "whitespace-fallback",
+      "text": ".fixture.test TRUE /account TRUE 1893456000.5 fixture synthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "extra-columns",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic\tignored",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "empty-value",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\t",
+      "expected": {
+        "cookies": []
+      }
+    },
+    {
+      "name": "empty-name",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\t\tsynthetic",
+      "expected": {
+        "cookies": []
+      }
+    },
+    {
+      "name": "negative-expiry",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t-1\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": -1.0,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "bad-expiry",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\tnot-a-date\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": -1.0,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "arabic-digits",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t\u0661\u0662\u0663.\u0665\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 123.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "superscript-refusal",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t\u00b2\tfixture\tsynthetic",
+      "expected": {
+        "failed": true
+      }
+    },
+    {
+      "name": "dot-only",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t.\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": -1.0,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\t\u03b1 \u0641\u0627\u0631\u0633\u06cc \ud83d\ude00\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "\u03b1 \u0641\u0627\u0631\u0633\u06cc \ud83d\ude00",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "line-14",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic\r\n.fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          },
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "line-15",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic\r.fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          },
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "line-16",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic\u000b.fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          },
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "line-17",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic\f.fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          },
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "line-18",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic\u001c.fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          },
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "line-19",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic\u001d.fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          },
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "line-20",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic\u001e.fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          },
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "line-21",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic\u0085.fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          },
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "line-22",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic\u2028.fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          },
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    },
+    {
+      "name": "line-23",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic\u2029.fixture.test\tTRUE\t/account\tTRUE\t1893456000.5\tfixture\tsynthetic",
+      "expected": {
+        "cookies": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          },
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/account",
+            "expires": 1893456000.5,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax"
+          }
+        ]
+      }
+    }
+  ],
+  "normalization": {
+    "normalize": [
+      {
+        "input": null,
+        "expected": null
+      },
+      {
+        "input": "bad",
+        "expected": null
+      },
+      {
+        "input": [],
+        "expected": null
+      },
+      {
+        "input": {},
+        "expected": null
+      },
+      {
+        "input": {
+          "name": "missing-domain"
+        },
+        "expected": null
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": "",
+          "host": "fallback.test"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": "fallback.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": 1,
+          "value": null,
+          "domain": ".fixture.test",
+          "path": ""
+        },
+        "expected": {
+          "name": "1",
+          "value": "None",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": true,
+          "value": [
+            "\u03b1",
+            true,
+            null
+          ],
+          "domain": ".fixture.test"
+        },
+        "expected": {
+          "name": "True",
+          "value": "['\u03b1', True, None]",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": {
+            "a": "synthetic",
+            "b": [
+              1,
+              false
+            ]
+          },
+          "domain": ".fixture.test"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "{'a': 'synthetic', 'b': [1, False]}",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "secure": true,
+          "httpOnly": "yes",
+          "sameSite": "no_restriction"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": true,
+          "secure": true,
+          "sameSite": "None"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "secure": false,
+          "sameSite": "None"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "sameSite": "STRICT"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Strict"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "sameSite": "unknown"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": null
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": ""
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": 0
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": false
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": true
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": -0.0
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": -1
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": 1.25
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1.25,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "\u0661\u0662\u0663.\u0665"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 123.5,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "1_234.5"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1234.5,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "1__2"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "bad"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": []
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": {}
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-01-01T00:00:00Z"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1798761600.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-01-01T03:00:00+03:00"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1798761600.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-01-01"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1798761600.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "20270101T000000"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1798761600.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-W01-1T00:00:00+00:00"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1799020800.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-01-01\ud83d\udc0800:00:00.1234567+00:00"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1798761600.123456,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-01-01T00:00:00+00:00:30.5"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1798761569.5,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-02-30T00:00:00Z"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-01-01T00:00:00+01:60"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1798754400.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-01-01T00:00:00-01:60"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1798768800.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-01-01T00:00:00+00:00:99"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1798761501.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-01-01T00:00:00+00:00:00.5"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1798761599.5,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-01-01T00:00:00-00:00:00.5"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1798761600.5,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-01-01T00:00:00+24:00"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-01-01T00:00:00-24:00"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "2027-01-01T24:00:00+00:00"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expirationDate": "2027-01-01T00:00:00Z"
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1798761600.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": null,
+          "expirationDate": 123
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      {
+        "input": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "expires": "bad",
+          "session": true
+        },
+        "expected": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      }
+    ],
+    "parse": [
+      {
+        "text": "",
+        "expected": []
+      },
+      {
+        "text": "   ",
+        "expected": []
+      },
+      {
+        "text": "{}",
+        "expected": []
+      },
+      {
+        "text": "null",
+        "expected": []
+      },
+      {
+        "text": "true",
+        "expected": []
+      },
+      {
+        "text": "12",
+        "expected": []
+      },
+      {
+        "text": "\"plain\"",
+        "expected": []
+      },
+      {
+        "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\"}",
+        "expected": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/",
+            "expires": -1.0,
+            "httpOnly": false,
+            "secure": false,
+            "sameSite": "Lax"
+          }
+        ]
+      },
+      {
+        "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\"}, null, {\"name\": \"missing\"}]",
+        "expected": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/",
+            "expires": -1.0,
+            "httpOnly": false,
+            "secure": false,
+            "sameSite": "Lax"
+          }
+        ]
+      },
+      {
+        "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\"}], \"origins\": []}",
+        "expected": [
+          {
+            "name": "fixture",
+            "value": "synthetic",
+            "domain": ".fixture.test",
+            "path": "/",
+            "expires": -1.0,
+            "httpOnly": false,
+            "secure": false,
+            "sameSite": "Lax"
+          }
+        ]
+      },
+      {
+        "text": "{\"cookies\": null}",
+        "expected": []
+      },
+      {
+        "text": "{\"cookies\": {}}",
+        "expected": []
+      },
+      {
+        "text": "{\"cookies\": \"bad\"}",
+        "expected": []
+      },
+      {
+        "text": "not JSON",
+        "expected": []
+      }
+    ]
+  },
+  "whitespace": [
+    {
+      "name": "json-padding-001c",
+      "text": "\u001c{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\"}\u001c",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": []
+    },
+    {
+      "name": "netscape-padding-001c",
+      "text": "\u001c.fixture.test\tTRUE\t/account\tTRUE\t1893456000\tfixture\tsynthetic\u001c",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ]
+    },
+    {
+      "name": "json-padding-001d",
+      "text": "\u001d{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\"}\u001d",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": []
+    },
+    {
+      "name": "netscape-padding-001d",
+      "text": "\u001d.fixture.test\tTRUE\t/account\tTRUE\t1893456000\tfixture\tsynthetic\u001d",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ]
+    },
+    {
+      "name": "json-padding-001e",
+      "text": "\u001e{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\"}\u001e",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": []
+    },
+    {
+      "name": "netscape-padding-001e",
+      "text": "\u001e.fixture.test\tTRUE\t/account\tTRUE\t1893456000\tfixture\tsynthetic\u001e",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ]
+    },
+    {
+      "name": "json-padding-001f",
+      "text": "\u001f{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\"}\u001f",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": []
+    },
+    {
+      "name": "netscape-padding-001f",
+      "text": "\u001f.fixture.test\tTRUE\t/account\tTRUE\t1893456000\tfixture\tsynthetic\u001f",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ]
+    },
+    {
+      "name": "unit-separator-fields",
+      "text": ".fixture.test\u001fTRUE\u001f/account\u001fTRUE\u001f1893456000\u001ffixture\u001fsynthetic",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ]
+    },
+    {
+      "name": "repeated-unit-separator-fields",
+      "text": ".fixture.test\u001f \u001fTRUE\u001f \u001f/account\u001f \u001fTRUE\u001f \u001f1893456000\u001f \u001ffixture\u001f \u001fsynthetic",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": [
+        {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ]
+    },
+    {
+      "name": "tab-value-preserves-unit-separator",
+      "text": ".fixture.test\tTRUE\t/account\tTRUE\t1893456000\tfixture\tsynthetic\u001finside",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "synthetic\u001finside",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": [
+        {
+          "name": "fixture",
+          "value": "synthetic\u001finside",
+          "domain": ".fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ]
+    },
+    {
+      "name": "json-value-preserves-unit-separator",
+      "text": "{\"name\": \"fixture\", \"value\": \"\\u001f\", \"domain\": \".fixture.test\"}",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "\u001f",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": []
+    },
+    {
+      "name": "json-nonspace-escape",
+      "text": "\u001b{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\"}\u001b",
+      "parsed": [],
+      "netscape": []
+    },
+    {
+      "name": "netscape-nonspace-escape",
+      "text": "\u001b.fixture.test\tTRUE\t/account\tTRUE\t1893456000\tfixture\tsynthetic\u001b",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "synthetic\u001b",
+          "domain": "\u001b.fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": [
+        {
+          "name": "fixture",
+          "value": "synthetic\u001b",
+          "domain": "\u001b.fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ]
+    },
+    {
+      "name": "json-nonspace-zero-width-space",
+      "text": "\u200b{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\"}\u200b",
+      "parsed": [],
+      "netscape": []
+    },
+    {
+      "name": "netscape-nonspace-zero-width-space",
+      "text": "\u200b.fixture.test\tTRUE\t/account\tTRUE\t1893456000\tfixture\tsynthetic\u200b",
+      "parsed": [
+        {
+          "name": "fixture",
+          "value": "synthetic\u200b",
+          "domain": "\u200b.fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ],
+      "netscape": [
+        {
+          "name": "fixture",
+          "value": "synthetic\u200b",
+          "domain": "\u200b.fixture.test",
+          "path": "/account",
+          "expires": 1893456000.0,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        }
+      ]
+    }
+  ],
+  "expiry_overflow": [
+    {
+      "name": "positive-expires",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expires": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+      },
+      "normalized": {
+        "failed": true
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+          "expected": {
+            "failed": true
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]",
+          "expected": {
+            "failed": true
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]}",
+          "expected": {
+            "failed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "negative-expires",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expires": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+      },
+      "normalized": {
+        "failed": true
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+          "expected": {
+            "failed": true
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]",
+          "expected": {
+            "failed": true
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]}",
+          "expected": {
+            "failed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "positive-expiration-date",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expirationDate": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+      },
+      "normalized": {
+        "failed": true
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expirationDate\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+          "expected": {
+            "failed": true
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expirationDate\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]",
+          "expected": {
+            "failed": true
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expirationDate\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]}",
+          "expected": {
+            "failed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "negative-expiration-date",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expirationDate": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+      },
+      "normalized": {
+        "failed": true
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expirationDate\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+          "expected": {
+            "failed": true
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expirationDate\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]",
+          "expected": {
+            "failed": true
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expirationDate\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]}",
+          "expected": {
+            "failed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "finite-positive",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expires": 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+      },
+      "normalized": {
+        "failed": false,
+        "value": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1e+308,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": 1e+308,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": 1e+308,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": 1e+308,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "finite-negative",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expires": -100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+      },
+      "normalized": {
+        "failed": false,
+        "value": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1e+308,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": -100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1e+308,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": -100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1e+308,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": -100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1e+308,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "session-positive",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expires": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "session": true
+      },
+      "normalized": {
+        "failed": false,
+        "value": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"session\": true}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"session\": true}]",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"session\": true}]}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "session-negative",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expires": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        "session": true
+      },
+      "normalized": {
+        "failed": false,
+        "value": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"session\": true}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"session\": true}]",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"session\": true}]}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "expires-precedence",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expires": 1,
+        "expirationDate": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+      },
+      "normalized": {
+        "failed": false,
+        "value": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 1, \"expirationDate\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": 1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 1, \"expirationDate\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": 1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 1, \"expirationDate\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": 1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "null-precedence",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expires": null,
+        "expirationDate": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+      },
+      "normalized": {
+        "failed": false,
+        "value": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": null, \"expirationDate\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": null, \"expirationDate\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": null, \"expirationDate\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "zero-precedence",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expires": 0,
+        "expirationDate": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+      },
+      "normalized": {
+        "failed": false,
+        "value": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 0, \"expirationDate\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 0, \"expirationDate\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 0, \"expirationDate\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "malformed-text",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expires": "bad"
+      },
+      "normalized": {
+        "failed": false,
+        "value": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": \"bad\"}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": \"bad\"}]",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": \"bad\"}]}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "malformed-list",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expires": []
+      },
+      "normalized": {
+        "failed": false,
+        "value": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": []}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": []}]",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": []}]}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "boolean",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expires": true
+      },
+      "normalized": {
+        "failed": false,
+        "value": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": true}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": 1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": true}]",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": 1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": true}]}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": 1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "fractional",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test",
+        "expires": 1.25
+      },
+      "normalized": {
+        "failed": false,
+        "value": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": 1.25,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 1.25}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": 1.25,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 1.25}]",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": 1.25,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\", \"expires\": 1.25}]}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": 1.25,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "missing",
+      "input": {
+        "name": "fixture",
+        "value": "synthetic",
+        "domain": ".fixture.test"
+      },
+      "normalized": {
+        "failed": false,
+        "value": {
+          "name": "fixture",
+          "value": "synthetic",
+          "domain": ".fixture.test",
+          "path": "/",
+          "expires": -1.0,
+          "httpOnly": false,
+          "secure": false,
+          "sameSite": "Lax"
+        }
+      },
+      "parsed": [
+        {
+          "text": "{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\"}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "[{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\"}]",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        },
+        {
+          "text": "{\"cookies\": [{\"name\": \"fixture\", \"value\": \"synthetic\", \"domain\": \".fixture.test\"}]}",
+          "expected": {
+            "failed": false,
+            "value": [
+              {
+                "name": "fixture",
+                "value": "synthetic",
+                "domain": ".fixture.test",
+                "path": "/",
+                "expires": -1.0,
+                "httpOnly": false,
+                "secure": false,
+                "sameSite": "Lax"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,9 @@
 use numera_core::ownership::claims::{self, Claim, State};
 use serde_json::Value;
-use std::{fs, path::PathBuf};
+use std::fs;
+mod common;
+#[path = "claim_parity/diagnostics.rs"]
+mod diagnostics;
 
 #[test]
 fn unreadable_and_unverifiable_claims_never_admit_a_second_session()
@@ -8,9 +11,8 @@ fn unreadable_and_unverifiable_claims_never_admit_a_second_session()
     let fixture: Value = serde_json::from_str(include_str!("fixtures/claims.json"))?;
     let cases = fixture["cases"].as_array().ok_or("Missing claim cases")?;
     assert!(!cases.is_empty());
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("target/test-temp")
-        .join(format!("claims-{}", std::process::id()));
+    let temporary = common::TempDirectory::new("claims")?;
+    let root = temporary.path();
     fs::create_dir_all(root.join("sessions"))?;
     let result = (|| -> Result<(), Box<dyn std::error::Error>> {
         for case in cases {
@@ -21,7 +23,7 @@ fn unreadable_and_unverifiable_claims_never_admit_a_second_session()
                 } else if path.exists() {
                     fs::remove_file(&path)?;
                 }
-                claims::read(&root, "fixture-profile")
+                claims::read(root, "fixture-profile")
             } else if case["input"].is_null() {
                 Claim::Absent
             } else {
@@ -41,6 +43,6 @@ fn unreadable_and_unverifiable_claims_never_admit_a_second_session()
         }
         Ok(())
     })();
-    fs::remove_dir_all(root)?;
+    temporary.cleanup()?;
     result
 }

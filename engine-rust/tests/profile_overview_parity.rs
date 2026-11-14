@@ -9,6 +9,41 @@ use tower::ServiceExt;
 mod common;
 
 #[test]
+fn collision_groups_and_summary_match_original_occurrences()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::{collision, models::Profile};
+
+    let temporary = common::TempDirectory::new("collision-summary")?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/collision_groups_and_summary_match_original_occurrences.json"
+    ))?;
+    assert_eq!(cases.len(), 10, "Collision summary observations missing");
+    for case in cases {
+        let profiles = case["profiles"]
+            .as_array()
+            .ok_or("Collision profiles missing")?
+            .iter()
+            .map(Profile::from_record)
+            .collect::<Result<Vec<_>, _>>()?;
+        assert_eq!(
+            serde_json::json!(collision::find(&profiles)),
+            case["groups"],
+            "Collision occurrence groups: {}",
+            case["name"]
+        );
+        assert_eq!(
+            collision::summary(&profiles),
+            case["summary"],
+            "Collision occurrence summary: {}",
+            case["name"]
+        );
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
+#[test]
 fn profile_health_and_collisions_preserve_source_readonly_outcomes()
 -> Result<(), Box<dyn std::error::Error>> {
     let runtime = tokio::runtime::Builder::new_current_thread()
@@ -52,6 +87,15 @@ fn profile_health_and_collisions_preserve_source_readonly_outcomes()
                 ),
             )
             .await??;
+            // Full application startup creates the source store directories.
+            // Restore this read-only fixture's absent-engine precondition only
+            // after proving startup did not materialize an engine record.
+            let engine_directory = root.join("profiles");
+            assert!(
+                fs::read_dir(&engine_directory)?.next().is_none(),
+                "Overview startup materialized an engine copy",
+            );
+            fs::remove_dir(&engine_directory)?;
             let response = tokio::time::timeout(
                 Duration::from_secs(5),
                 app.oneshot(

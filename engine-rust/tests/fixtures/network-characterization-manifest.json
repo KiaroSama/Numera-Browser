@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "baseline_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+  "baseline_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+  "source_trees": {
+    "engine/numera": "25cd7f34689e4a1688c426fdb7d4a6c4b898998e",
+    "engine/tests": "ec1a33ab13ca6ee1dd6e7c629de4118ab848c82a"
+  },
+  "source_activation": "scripts/migration/baseline_source.py verifies Git blob identities before temporary observation",
+  "runtime": "fixtures are immutable input/output observations only; native tests never execute Python",
+  "fixtures": [
+    {
+      "file": "engine-rust/tests/fixtures/network-characterization/proxy-echo.json",
+      "bytes": 16044,
+      "sha256": "8f3e77b8f24ab6c00bf9c7b848014ba6cabede545cefef9cfc7ba1110f10142d",
+      "observer_git_blob": "42cd61285b6c95a3c8c4e473c448b7b236a4cb17",
+      "observer_source": "engine-rust/src/network/tests.rs",
+      "observer_sha256": "6a15fece0111d7c79b69443820115bddf2dc983fad7c329f5f9377bda09a43ed",
+      "rows": 99,
+      "path_normalization": "Owned root -> @ROOT@; path separators -> @SEP@ only in strings containing root; percent-encoded root -> @ROOT_URL@; embedded config JSON materialized natively."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/network-characterization/relay-request.json",
+      "bytes": 23205,
+      "sha256": "4446c3ead7734e7acbecea57fca4dcab661fe3df9126497e77d064dba0efa563",
+      "observer_git_blob": "f961d70b681c55950a6be743b44868a3c226456d",
+      "observer_source": "engine-rust/tests/relay_request_parity.rs",
+      "observer_sha256": "5821fbd1a70bf32200d7d7d06e3736a0cb6a1af6a5bc2c073ea4d6e4312d3193",
+      "rows": 19,
+      "path_normalization": "Owned root -> @ROOT@; path separators -> @SEP@ only in strings containing root; percent-encoded root -> @ROOT_URL@; embedded config JSON materialized natively."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/network-characterization/relay-handshake.json",
+      "bytes": 26324,
+      "sha256": "63ed8a90b0e0d7348b4fa73c7a96b2d5381e4e21d8c2cb34fc66c585b860707f",
+      "observer_git_blob": "9100131a67ee41cfa2276e5f133f4a3d709f67c9",
+      "observer_source": "engine-rust/tests/relay_request_parity/handshake.rs",
+      "observer_sha256": "621760e3c71499c53c28081a6536579f3ed6b567762061eb863e99aa1d3c5855",
+      "rows": 63,
+      "path_normalization": "Owned root -> @ROOT@; path separators -> @SEP@ only in strings containing root; percent-encoded root -> @ROOT_URL@; embedded config JSON materialized natively."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/network-characterization/timezone-grades.json",
+      "bytes": 318622,
+      "sha256": "ddfaf206b67a5bc3f7a5cf1e4652a3bade64ae1b2d9ad2e585449418c40df9f4",
+      "observer_git_blob": "b6ad2976199e9856a8e32bfb8ed3ac672413f9e0",
+      "observer_source": "engine-rust/tests/browser_ip_parity.rs",
+      "observer_sha256": "d8d0c38960d506acf05b92de20469a3fd06c063fc74ea28d7122ff92ac43ae88",
+      "rows": 103,
+      "path_normalization": "Owned root -> @ROOT@; path separators -> @SEP@ only in strings containing root; percent-encoded root -> @ROOT_URL@; embedded config JSON materialized natively."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/network-characterization/extension-text.json",
+      "bytes": 14333,
+      "sha256": "e5df5364af311cf9b85acc8d8abe13df2c6111922ccdf084a985339d4903a6f6",
+      "observer_git_blob": "737241767b05bd3523699bddea45296929361e2a",
+      "observer_source": "engine-rust/tests/extension_resources_parity.rs",
+      "observer_sha256": "55781a4d5282aca87de3745d8e606ec915819caecf3c64218e0664fae8385043",
+      "rows": 72,
+      "path_normalization": "Owned root -> @ROOT@; path separators -> @SEP@ only in strings containing root; percent-encoded root -> @ROOT_URL@; embedded config JSON materialized natively."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/network-characterization/extension-utf8.json",
+      "bytes": 9943,
+      "sha256": "032e95d20cda0b6364ff3e0a780b955db6dbdf94b3415c53416e2eac67bc806c",
+      "observer_git_blob": "737241767b05bd3523699bddea45296929361e2a",
+      "observer_source": "engine-rust/tests/extension_resources_parity.rs",
+      "observer_sha256": "f4d8015dd635572082ebe8c0dc3ea628c43d370b4843f41d0d0ebeebe1375351",
+      "rows": 24,
+      "path_normalization": "Owned root -> @ROOT@; path separators -> @SEP@ only in strings containing root; percent-encoded root -> @ROOT_URL@; embedded config JSON materialized natively."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/network-characterization/extension-ranking.json",
+      "bytes": 201497,
+      "sha256": "18979b9df2b05466a96d9344ff2389faf9f963993797ee6fdf61b08cc1cafe55",
+      "observer_git_blob": "737241767b05bd3523699bddea45296929361e2a",
+      "observer_source": "engine-rust/tests/extension_resources_parity.rs",
+      "observer_sha256": "9e928dbeeaa4344044d226563ce5239347ec3cc1ccd7312bae80bc59934b249f",
+      "rows": 136,
+      "path_normalization": "Owned root -> @ROOT@; path separators -> @SEP@ only in strings containing root; percent-encoded root -> @ROOT_URL@; embedded config JSON materialized natively."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/network-characterization/extension-icon-http.json",
+      "bytes": 6291,
+      "sha256": "5ec53fc854a13605083ec30470a47c1c42e78629526c055367639837c612ec0f",
+      "observer_git_blob": "63d439550041f54c58151e287ff7b6379d83880b",
+      "observer_source": "engine-rust/tests/extension_routes_parity/icons.rs",
+      "observer_sha256": "0b19a94f9a4c5efd9a335f75a4c635e1d395435d6df715bdf9ba788437e55a46",
+      "rows": 17,
+      "path_normalization": "Owned root -> @ROOT@; path separators -> @SEP@ only in strings containing root; percent-encoded root -> @ROOT_URL@; embedded config JSON materialized natively."
+    }
+  ],
+  "behavior_delta": {
+    "source": "engine/tests/test_relay.py::test_socks5_wrong_password_is_reported_not_swallowed",
+    "explanation": "Current source3418 contract requires precise refusal reason in HTTP502body; retains baseline handshake send/receive bytes and original error strings, updates only exact native response framing to include that original error."
+  },
+  "verification": {
+    "integration_tests": 10,
+    "native_network_unit_tests": 10,
+    "failed": 0,
+    "ignored": 0,
+    "python_runtime": false,
+    "clippy": "passed -D warnings",
+    "retained_integration_names": {
+      "relay_request_parity": 2,
+      "extension_routes_parity": 2,
+      "extension_resources_parity": 4,
+      "browser_ip_parity": 2
+    }
+  }
+}

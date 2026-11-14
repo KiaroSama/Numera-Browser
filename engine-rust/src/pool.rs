@@ -2,8 +2,16 @@ pub use crate::pool_normalize::{normalize, normalize_many, validate_rotate_url};
 use serde_json::{Value, json};
 use std::io;
 
+pub(crate) fn whitespace(character: char) -> bool {
+    character.is_whitespace() || matches!(character, '\u{1c}'..='\u{1f}')
+}
+
+pub(crate) fn trim(value: &str) -> &str {
+    value.trim_matches(whitespace)
+}
+
 fn country_label(value: &str) -> (Option<String>, Option<String>) {
-    let value = value.trim();
+    let value = trim(value);
     let mut letters = value.chars();
     let (Some(a), Some(b)) = (letters.next(), letters.next()) else {
         return (None, None);
@@ -16,7 +24,7 @@ fn country_label(value: &str) -> (Option<String>, Option<String>) {
     if rest.is_empty() {
         return (Some(country), None);
     }
-    let label = rest.trim_start_matches(|c: char| c.is_whitespace() || "._-".contains(c));
+    let label = rest.trim_start_matches(|c: char| whitespace(c) || "._-".contains(c));
     if label.len() < rest.len() && !label.is_empty() {
         (Some(country), Some(value.into()))
     } else {
@@ -25,7 +33,7 @@ fn country_label(value: &str) -> (Option<String>, Option<String>) {
 }
 
 pub fn parse_line(line: &str) -> Option<Value> {
-    let line = line.trim();
+    let line = trim(line);
     if line.is_empty() || line.starts_with('#') {
         return None;
     }
@@ -56,7 +64,7 @@ pub fn parse_line(line: &str) -> Option<Value> {
     if port.is_empty() || !port.chars().all(is_digit) {
         return None;
     }
-    let host = parts[0].trim();
+    let host = trim(parts[0]);
     if host.is_empty() {
         return None;
     }
@@ -122,14 +130,38 @@ pub(crate) fn decimal_ascii(text: &str) -> Option<String> {
     Some(out)
 }
 
-pub fn to_line(proxy: &Value) -> io::Result<String> {
-    let kind = proxy["type"].as_str().unwrap_or("HTTP").to_uppercase();
-    let scheme = match kind.as_str() {
-        "HTTPS" => "https",
-        "SOCKS4" => "socks4",
-        "SOCKS5" => "socks5",
-        _ => "http",
+pub fn server_url(kind: &str, host: &str, port: &str) -> io::Result<String> {
+    let scheme = scheme(kind)?;
+    let host = if host.contains(':') && !host.starts_with('[') {
+        format!("[{host}]")
+    } else {
+        host.into()
     };
+    let tail = if port.trim().is_empty() {
+        String::new()
+    } else {
+        format!(":{port}")
+    };
+    Ok(format!("{scheme}://{host}{tail}"))
+}
+fn scheme(kind: &str) -> io::Result<&'static str> {
+    match kind.to_uppercase().as_str() {
+        "HTTP" | "" => Ok("http"),
+        "HTTPS" => Ok("https"),
+        "SOCKS4" => Ok("socks4"),
+        "SOCKS5" => Ok("socks5"),
+        _ => Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!(
+                "unsupported proxy type {}; expected one of ['HTTP', 'HTTPS', 'SOCKS4', 'SOCKS5']",
+                crate::validation::repr(&Value::String(kind.into()))
+            ),
+        )),
+    }
+}
+pub fn to_line(proxy: &Value) -> io::Result<String> {
+    // Export retains the original fallback for unknown legacy pool types.
+    let scheme = scheme(proxy["type"].as_str().unwrap_or("HTTP")).unwrap_or("http");
     let mut host = proxy["host"]
         .as_str()
         .ok_or_else(|| io::Error::other("Proxy host is not text"))?
@@ -182,7 +214,13 @@ pub fn identity(entry: &Value) -> Value {
 
 pub fn parse_many(text: &str) -> Vec<Value> {
     text.replace(',', "\n")
-        .lines()
+        .split(|character| {
+            matches!(
+                character,
+                '\n' | '\r' | '\u{b}' | '\u{c}' | '\u{1c}'
+                    ..='\u{1e}' | '\u{85}' | '\u{2028}' | '\u{2029}'
+            )
+        })
         .filter_map(parse_line)
         .collect()
 }

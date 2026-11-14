@@ -1,0 +1,442 @@
+name: Native CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  CARGO_BUILD_JOBS: "2"
+  CARGO_INCREMENTAL: "0"
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  VSCMD_SKIP_SENDTELEMETRY: "1"
+  CARGO_PROFILE_TEST_DEBUG: "0"
+  NUMERA_MAX_TEST_WORKERS: "2"
+
+jobs:
+  build:
+    name: Native product (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            os: ubuntu-24.04
+          - platform: windows
+            os: windows-latest
+          - platform: macos
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+          targets: wasm32-unknown-unknown
+      - name: Disable optional Visual Studio DevCmd telemetry on Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        run: echo 'VSCMD_SKIP_SENDTELEMETRY=1' >> "$GITHUB_ENV"
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: |
+            engine-rust
+            dashboard
+            desktop/src-tauri
+            tools/xtask
+          save-if: ${{ runner.os != 'Windows' }}
+          cache-workspace-crates: false
+      - name: Always compile both real native application binaries first
+        run: cargo build --manifest-path engine-rust/Cargo.toml --locked --release --no-default-features --features native-product,native-browser --bin numera-engine --bin numera-browser-runtime
+      - name: Compile native build and ownership tooling
+        run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Verify real Windows native signing with an ephemeral fixture certificate
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          directory="$RUNNER_TEMP/numera-ci-owner"
+          mkdir "$directory"
+          cp tools/xtask/target/debug/numera-xtask.exe "$directory/numera-xtask.exe"
+          "$directory/numera-xtask.exe" ci counted-tests 1 build/windows-native-signing.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_ci release_identity::c000_both_freezers_embed_identity_and_windows_uses_approved_icon -- --exact --test-threads=1 --color=never
+      - name: Preserve the actual Windows native signing test report
+        if: always() && runner.os == 'Windows'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: windows-native-signing-${{ github.sha }}
+          path: build/windows-native-signing*
+          if-no-files-found: error
+          retention-days: 7
+      - name: Install Linux desktop bundling libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev build-essential file patchelf
+      - name: Provision native Rust packaging tools
+        run: |
+          cargo xtask ci owned --wall 900 --idle 300 -- cargo install tauri-cli --version 2.12.4 --locked
+          cargo xtask ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Explicitly acquire the reviewed vendor resources and source offers
+        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "${{ runner.temp }}/numera-resources"
+      - name: Build unsigned native desktop installers and portable server
+        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask build-product build/native-product --resources "${{ runner.temp }}/numera-resources"
+      - name: Preserve complete failed native packaging evidence
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-product-diagnostics-${{ matrix.platform }}-${{ github.sha }}
+          path: |
+            build/native-product/.desktop-build/tauri-build*.log
+            build/native-product/.desktop-build/tauri.product.json
+            build/native-product/**/PROVENANCE.json
+            build/native-product/**/FILES.json
+            build/native-product/distribution.json
+            build/native-phase-*.log
+            build/owned-command-failure-*.log
+            build/owned-members-*.json
+            .ci-work/logs/ci-owned_*.log
+            engine-rust/target/cargo-timings/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Preserve reviewable unsigned artifacts, exact source and receipts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-product-${{ matrix.platform }}-${{ github.sha }}
+          path: |
+            build/native-product/*.zip
+            build/native-product/*.json
+            build/native-product/SHA256SUMS
+            build/native-product/installers/
+          if-no-files-found: error
+          retention-days: 7
+
+  coverage:
+    name: Maintained native suite inventory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: tools/xtask
+      - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - run: cargo xtask ci owned --wall 120 --idle 60 -- cargo xtask ci coverage
+
+  static:
+    name: Native static analysis and build contracts
+    needs: coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: |
+            engine-rust
+            tools/xtask
+            browser-page-rust
+      - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - run: cargo xtask ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path engine-rust/Cargo.toml --all --check
+      - run: cargo xtask ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path tools/xtask/Cargo.toml --all --check
+      - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --all-targets --features native-product,native-browser,test-support -- -D warnings
+      - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path tools/xtask/Cargo.toml --locked --all-targets -- -D warnings
+      - name: Check authored browser Rust formatting
+        run: cargo xtask ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path browser-page-rust/Cargo.toml --all --check
+      - name: Check the browser page compiler host binary
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- -D warnings
+      - name: Check the actual browser WASM library
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --release --target wasm32-unknown-unknown --lib -- -D warnings
+      - name: Install the exact browser binding compiler
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Acquire the checksum-verified official Binaryen compiler
+        run: |
+          set -euo pipefail
+          directory="$RUNNER_TEMP/numera-binaryen-133"
+          mkdir "$directory"
+          curl --fail --location --proto '=https' --proto-redir '=https' --connect-timeout 10 --max-time 120 https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz --output "$directory/download.tar.gz"
+          echo "2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489  $directory/download.tar.gz" | sha256sum --check --strict
+          tar -xzf "$directory/download.tar.gz" -C "$directory" binaryen-version_133/bin/wasm2js
+          echo "52597efec0ad2416f8b5c245864960e775b8ffc94c751cc0b016c4b4986d3bcb  $directory/binaryen-version_133/bin/wasm2js" | sha256sum --check --strict
+      - name: Recompile and verify committed browser code and source receipt
+        id: browser-page-compile
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo run --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- --check --wasm2js "$RUNNER_TEMP/numera-binaryen-133/binaryen-version_133/bin/wasm2js"
+      - name: Record exact browser compiler failure hashes
+        if: failure() && steps.browser-page-compile.outcome == 'failure'
+        run: |
+          mkdir -p build/browser-page-repro
+          sha256sum browser-page-rust/generated/runtime.js browser-page-rust/generated/receipt.json browser-page-rust/target/browser-page-generated/receipt.actual.json browser-page-rust/target/wasm32-unknown-unknown/release/numera_browser_page.wasm browser-page-rust/target/browser-page-generated/numera_browser_page_bg.wasm browser-page-rust/target/browser-page-generated/numera_browser_page.js browser-page-rust/target/browser-page-generated/compiled.js > build/browser-page-repro/sha256.txt
+      - name: Preserve actual browser compiler failure outputs
+        if: failure() && steps.browser-page-compile.outcome == 'failure'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: browser-page-repro-${{ github.sha }}
+          path: |
+            build/browser-page-repro/sha256.txt
+            browser-page-rust/generated/runtime.js
+            browser-page-rust/generated/receipt.json
+            browser-page-rust/target/browser-page-generated/receipt.actual.json
+            browser-page-rust/target/wasm32-unknown-unknown/release/numera_browser_page.wasm
+            browser-page-rust/target/browser-page-generated/numera_browser_page_bg.wasm
+            browser-page-rust/target/browser-page-generated/numera_browser_page.js
+            browser-page-rust/target/browser-page-generated/compiled.js
+          if-no-files-found: error
+          retention-days: 7
+      - run: cargo xtask ci counted-tests 6 build/xtask-unit.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --bin numera-xtask -- --test-threads=2 --color=never
+      - run: cargo xtask ci counted-tests 643 build/source-ci.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_ci -- --test-threads=2 --color=never
+      - run: cargo xtask ci counted-tests 123 build/source-acceptance.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_acceptance -- --test-threads=2 --color=never
+
+  functional:
+    name: Native functional cases (${{ matrix.os }})
+    needs: [coverage, dashboard]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      NUMERA_NATIVE_CANDIDATE: ${{ github.workspace }}/engine-rust/target/debug/numera-engine${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+      NUMERA_NATIVE_ENGINE: ${{ github.workspace }}/engine-rust/target/debug/numera-engine${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+      NUMERA_BROWSER_RUNTIME: ${{ github.workspace }}/engine-rust/target/debug/numera-browser-runtime${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: |
+            engine-rust
+            tools/xtask
+          save-if: ${{ runner.os != 'Windows' }}
+          cache-workspace-crates: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dashboard-dist
+          path: dashboard/dist
+      - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci native-phase build
+      - name: Compile the actual native supervisor and browser fixtures
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo build --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser,test-support --bin numera-engine --bin numera-browser-runtime
+      - run: cargo xtask ci owned --wall 1800 --idle 180 -- cargo xtask ci native-phase test
+      - name: Preserve complete failed functional test evidence
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-functional-${{ matrix.os }}-${{ github.sha }}
+          path: |
+            build/native-phase-*.log
+            build/owned-command-failure-*.log
+            build/owned-members-*.json
+            .ci-work/logs/ci-owned_*.log
+          if-no-files-found: error
+
+  live:
+    name: Required real SDK (${{ matrix.os }}, ${{ matrix.engine }})
+    needs: [coverage, dashboard]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    concurrency:
+      group: ${{ matrix.engine == 'cloak' && 'numera-cloak-vendor-seat' || format('numera-sdk-{0}-{1}-{2}', github.run_id, matrix.os, matrix.engine) }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+        engine: [playwright, patchright, camoufox, cloak]
+    env:
+      CLOAKBROWSER_VERSION: "156.0.8078.47.1"
+      CLOAKBROWSER_LICENSE_KEY: ${{ matrix.engine == 'cloak' && secrets.CLOAKBROWSER_LICENSE_KEY || '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: |
+            engine-rust
+            tools/xtask
+      - name: Install Linux browser runtime libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgtk-3-0t64 libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 libnss3 libasound2t64 libgbm1 libxt6 libxtst6 libdbus-glib-1-2
+      - name: Compile real application and browser worker
+        run: cargo build --manifest-path engine-rust/Cargo.toml --locked --release --no-default-features --features native-product,native-browser --bin numera-engine --bin numera-browser-runtime
+      - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Explicitly provision reviewed drivers and matching browsers
+        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "${{ runner.temp }}/numera-live-resources"
+      - name: Install Firefox system dependencies
+        if: runner.os == 'Linux' && matrix.engine == 'camoufox'
+        env:
+          NUMERA_TEST_ENGINE: camoufox
+        run: cargo xtask ci owned --wall 300 --idle 120 -- cargo xtask ci camoufox-runtime "${{ runner.temp }}/numera-live-resources"
+      - name: Require the selected backend and its exact consent-controlled resources
+        run: cargo xtask ci owned --wall 1200 --idle 180 -- cargo xtask ci prepare-live "engine-rust/target/release/numera-browser-runtime${{ runner.os == 'Windows' && '.exe' || '' }}" "engine-rust/target/release/numera-engine${{ runner.os == 'Windows' && '.exe' || '' }}" "${{ runner.temp }}/numera-live-resources" "${{ matrix.engine }}" "${{ runner.temp }}/numera-live-data" "${{ github.env }}"
+      - name: Require native SDK, independent application acceptance and native checkpoint comparison
+        uses: ./.github/actions/native-candidate-acceptance
+        with:
+          engine: ${{ matrix.engine }}
+      - name: Preserve complete selected backend evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-live-${{ matrix.os }}-${{ matrix.engine }}-${{ github.sha }}
+          path: |
+            .ci-work/logs/ci-owned_*.log
+            build/selected-sdk.log
+            build/selected-sdk.stderr.log
+            build/logs/camoufox-runtime_*.log
+            build/native-candidate/entry-performance.json
+            build/native-candidate/browser-performance.json
+            build/owned-command-failure-*.log
+            build/owned-members-*.json
+            engine-rust/target/release/*.build.json
+            ${{ runner.temp }}/numera-native-checkpoint.receipt.json
+            ${{ runner.temp }}/numera-native-checkpoint.target/release/*.build.json
+          if-no-files-found: error
+
+  history:
+    name: Exact historical native negative controls (${{ matrix.os }})
+    needs: coverage
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: |
+            engine-rust
+            tools/xtask
+          save-if: false
+          cache-workspace-crates: false
+      - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Fetch the independently pinned native dependency graph before offline historical mutation
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo fetch --manifest-path engine-rust/Cargo.toml --locked
+      - run: cargo xtask ci owned --wall 3600 --idle 300 -- cargo xtask ci native-history
+      - name: Preserve actual historical compiler diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-history-diagnostics-${{ matrix.os }}-${{ github.sha }}
+          path: |
+            build/history/
+            build/owned-command-failure-*.log
+            build/owned-members-*.json
+            .ci-work/logs/ci-owned_*.log
+          if-no-files-found: warn
+          retention-days: 7
+
+  secrets:
+    name: Redacted tracked-content and history secret gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: tools/xtask
+      - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Acquire checksum-verified official scanner
+        run: |
+          set -euo pipefail
+          directory="$RUNNER_TEMP/gitleaks-8.30.1"
+          mkdir "$directory"
+          curl --fail --location --connect-timeout 10 --max-time 60 https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz --output "$directory/download.tar.gz"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $directory/download.tar.gz" | sha256sum --check --strict
+          tar -xzf "$directory/download.tar.gz" -C "$directory" gitleaks
+          curl --fail --location --connect-timeout 10 --max-time 60 https://raw.githubusercontent.com/gitleaks/gitleaks/v8.30.1/config/gitleaks.toml --output "$directory/official-original.toml"
+          cp "$directory/official-original.toml" "$directory/official.toml"
+      - run: cargo xtask ci owned --wall 60 --idle 30 -- cargo xtask ci secret-config "$RUNNER_TEMP/gitleaks-8.30.1/official.toml" "$RUNNER_TEMP/gitleaks-8.30.1/strict.toml"
+      - run: cargo xtask ci owned --wall 60 --idle 30 -- cargo xtask ci stage-tracked "$RUNNER_TEMP/numera-tracked-scan"
+      - run: cargo xtask ci owned --wall 300 --idle 120 -- "$RUNNER_TEMP/gitleaks-8.30.1/gitleaks" dir "$RUNNER_TEMP/numera-tracked-scan" --config "$RUNNER_TEMP/gitleaks-8.30.1/strict.toml" --redact=100 --ignore-gitleaks-allow --gitleaks-ignore-path "$RUNNER_TEMP/no-secret-exclusions" --timeout 240 --no-banner
+      - name: Require complete history and the actual Git producer verdict
+        run: env GITHUB_EVENT_NAME=workflow_dispatch cargo run --manifest-path tools/security-scan/Cargo.toml --locked -- "$GITHUB_WORKSPACE" "$RUNNER_TEMP/gitleaks-8.30.1/gitleaks" "$RUNNER_TEMP/gitleaks-8.30.1/official-original.toml" "$GITHUB_WORKSPACE/scripts/ci/gitleaks.toml"
+
+  dashboard:
+    uses: ./.github/workflows/dashboard.yml
+  docker:
+    needs: coverage
+    uses: ./.github/workflows/container.yml
+  desktop-contracts:
+    needs: coverage
+    uses: ./.github/workflows/desktop-contracts.yml
+  codeql:
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+      pull-requests: read
+      security-events: write
+    uses: ./.github/workflows/codeql.yml
+  dependencies:
+    uses: ./.github/workflows/dependency-review.yml
+
+  required:
+    name: Required native verification
+    if: always()
+    needs: [build, coverage, static, functional, live, history, secrets, dashboard, docker, desktop-contracts, codeql, dependencies]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: tools/xtask
+      - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Reject every failed or skipped required tier
+        env:
+          NUMERA_NEEDS_JSON: ${{ toJson(needs) }}
+        run: cargo xtask ci required

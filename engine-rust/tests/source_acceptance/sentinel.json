@@ -1,0 +1,62 @@
+{
+  "name": "sentinel profile",
+  "folder": "Client work",
+  "os": "macOS",
+  "engine": "camoufox",
+  "browser": "Chrome",
+  "browserVersion": "127.0.6533.120",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.6533.120 Safari/537.36",
+  "screen": "2560x1440",
+  "cores": 12,
+  "memory": 32,
+  "webglVendor": "Google Inc. (Apple)",
+  "webglRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified)",
+  "canvas": "Off",
+  "webrtc": "Disabled",
+  "audio": "Off",
+  "fonts": "Real",
+  "clientRects": "Off",
+  "webglImage": "Off",
+  "mediaDevices": "Real",
+  "locale": "de-DE",
+  "timezone": "Europe/Berlin",
+  "geo": "Allow",
+  "mediaVideo": 2,
+  "mediaAudio": 3,
+  "mediaSpeakers": 4,
+  "fontList": "Sentinel Sans\nSentinel Serif",
+  "osVersion": "14.5",
+  "deviceModel": "MacBookPro18,3",
+  "maxTouchPoints": 0,
+  "devicePixelRatio": 2.0,
+  "seed": 424242,
+  "dnt": true,
+  "notes": "sentinel notes",
+  "tags": [
+    "sentinel-tag"
+  ],
+  "startupUrls": "https://example.test/search?q=red,blue\nhttps://second.test/",
+  "extensions": "C:\\ext\\sentinel",
+  "launchArgs": "--sentinel-flag",
+  "bookmarks": "Sentinel | https://bookmarked.test/",
+  "dns": "1.1.1.1",
+  "ipBased": [
+    "timezone",
+    "geolocation"
+  ],
+  "clearOnStart": [
+    "cookies",
+    "history"
+  ],
+  "switchedOff": [
+    "googleServices"
+  ],
+  "proxy": {
+    "type": "SOCKS5",
+    "host": "gw.sentinel.test",
+    "port": "1080",
+    "user": "sentinel-user",
+    "pass": "sentinel-pass",
+    "country": "DE"
+  }
+}

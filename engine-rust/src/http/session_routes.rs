@@ -46,7 +46,7 @@ pub(super) async fn stop_profile(
     State(state): State<Arc<Profiles>>,
     Path(id): Path<String>,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || stop(&state, &id)).await {
+    match super::admission::blocking(move || stop(&state, &id)).await {
         Ok(Ok(response)) => response,
         Ok(Err(error)) => profile_errors::storage(error),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),

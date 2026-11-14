@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "review_date": "2026-11-14",
+  "status": "Actual macOS ARM64 product job succeeded. Linux AppImage, Windows signer and complete required CI remain separate pending or failed gates.",
+  "source": {
+    "repository": "KiaroSama/Numera-Browser",
+    "pull_request": 76,
+    "workflow": "Native CI",
+    "run": 43546474618,
+    "attempt": 1,
+    "event": "pull_request",
+    "head_sha": "63b09f46a65071ca4bbb25862525151c866c0169",
+    "actual_checkout_and_github_sha": "cb0fcc3239cd52ba21283516dbc9b9834db885cd",
+    "head_tree": "e25f5e2d40e0b6f42a2220a56aa17e7f50dbed6f",
+    "checkout_tree": "e25f5e2d40e0b6f42a2220a56aa17e7f50dbed6f",
+    "tree_equality_verified": true,
+    "subject_note": "The workflow run head is63b; authenticated checkout logs show the actual PR merge commitcb0. Product identity/source filenames use the actual checkout cb0; this report does not relabel it as63b. The two commit-tree receipts are retained alongside the log."
+  },
+  "job": {
+    "id": 132299303656,
+    "name": "Native product (macos)",
+    "url": "https://github.com/KiaroSama/Numera-Browser/actions/runs/43546474618/job/132299303656",
+    "runner_name": "GitHub Actions1000064884",
+    "status": "completed",
+    "conclusion": "success",
+    "started_at": "2026-11-14T02:29:44Z",
+    "completed_at": "2026-11-14T03:10:40Z",
+    "product_step_started_at": "2026-11-14T02:50:09Z",
+    "product_step_completed_at": "2026-11-14T03:06:18Z",
+    "product_step_seconds": 969,
+    "unchanged_product_bounds": "wall1800s/idle300s",
+    "completed_work": [
+      "Compiled both real native application binaries and native build tooling.",
+      "Provisioned the pinned Rust packaging tools and hash-inventoried vendor resources/source offers.",
+      "Built native server, Rust/WASM dashboard and the actual Tauri desktop application.",
+      "Tauri reported both Numera Browser.app and Numera Browser_0.36.0_aarch64.dmg; logged sizes5.26GiB and2.53GiB.",
+      "Product command completed its identity, installation/inventory and archive checks, then uploaded portable/source archives, installer files and receipts."
+    ],
+    "signing": "Unsigned review artifacts; this is not owner-signed publication, notarization or authorization to merge/release."
+  },
+  "artifact": {
+    "id": 14095831386,
+    "name": "native-product-macos-cb0fcc3239cd52ba21283516dbc9b9834db885cd",
+    "size_in_bytes": 8265150250,
+    "api_reported_digest": "sha256:4829ef072a6fbbdbc4be893b64db9768b53482509dc83ad36ee901c22e5464bc",
+    "created_at": "2026-11-14T03:10:00Z",
+    "expires_at": "2026-11-21T03:06:19Z",
+    "api_url": "https://api.github.com/repos/KiaroSama/Numera-Browser/actions/artifacts/14095831386",
+    "download_policy": "The8.27GB product artifact was not downloaded to the constrained workspace. Size/digest are authenticated GitHub API metadata, not a claimed local byte-hash verification."
+  },
+  "retained_evidence": {
+    "directory": "/workspace/work/ci5-macos-product",
+    "complete_decoded_job_log": "job.log",
+    "log_utf8_bytes": 417813,
+    "log_sha256": "278da9bedb742ddc2ac784f7d5bb5ea78753d571b7239ad6687d86dc2748d847",
+    "job_metadata": "job-metadata.json",
+    "run_metadata": "run-metadata.json",
+    "artifact_metadata": "artifact-metadata.json",
+    "step_timestamps": "product-steps.json",
+    "commit_receipts": ["checkout-commit.json", "head-commit.json"],
+    "retrieval": "Authenticated GitHub connector supplied the complete decoded job log; authenticated REST calls supplied job/run/commit metadata. A direct gh log redirect returned403, so its empty output was replaced with the complete connector response. No large product download was attempted."
+  },
+  "limits": "This proves this actual macOS product build and upload at the stated source/pins. Later source or vendor-pin changes require fresh native-host verification; it does not make failing Linux, Windows, Docker, performance or security gates successful."
+}

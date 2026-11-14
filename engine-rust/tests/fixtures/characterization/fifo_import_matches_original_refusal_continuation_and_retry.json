@@ -1,0 +1,154 @@
+[
+  {
+    "source": "/workspace/work/native-characterization-m48wv43v/cases/0/source \u65e5\u672c\u8a9e",
+    "destination": "/workspace/work/native-characterization-m48wv43v/cases/0/destination with spaces",
+    "pipe": "profiles/pipe.json",
+    "first": {
+      "source": "/workspace/work/native-characterization-m48wv43v/cases/0/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-m48wv43v/cases/0/destination with spaces",
+      "copied": [
+        "schedules.json"
+      ],
+      "skipped": [],
+      "failed": [
+        "profiles: `/workspace/work/native-characterization-m48wv43v/cases/0/source \u65e5\u672c\u8a9e/profiles/pipe.json` is a named pipe"
+      ],
+      "profiles": 0
+    },
+    "marked": false,
+    "again": {
+      "source": "/workspace/work/native-characterization-m48wv43v/cases/0/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-m48wv43v/cases/0/destination with spaces",
+      "copied": [
+        "profiles (1)"
+      ],
+      "skipped": [
+        "schedules.json"
+      ],
+      "failed": [],
+      "profiles": 1
+    },
+    "written": [
+      114,
+      101,
+      116,
+      114,
+      105,
+      101,
+      100
+    ]
+  },
+  {
+    "source": "/workspace/work/native-characterization-m48wv43v/cases/1/source \u65e5\u672c\u8a9e",
+    "destination": "/workspace/work/native-characterization-m48wv43v/cases/1/destination with spaces",
+    "pipe": "profiles/pipe.json",
+    "first": {
+      "source": "/workspace/work/native-characterization-m48wv43v/cases/1/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-m48wv43v/cases/1/destination with spaces",
+      "copied": [
+        "schedules.json"
+      ],
+      "skipped": [
+        "profiles (1 already here)"
+      ],
+      "failed": [],
+      "profiles": 1
+    },
+    "marked": true,
+    "again": null,
+    "written": [
+      100,
+      101,
+      115,
+      116,
+      105,
+      110,
+      97,
+      116,
+      105,
+      111,
+      110,
+      32,
+      119,
+      105,
+      110,
+      115
+    ]
+  },
+  {
+    "source": "/workspace/work/native-characterization-m48wv43v/cases/2/source \u65e5\u672c\u8a9e",
+    "destination": "/workspace/work/native-characterization-m48wv43v/cases/2/destination with spaces",
+    "pipe": "tokens.json",
+    "first": {
+      "source": "/workspace/work/native-characterization-m48wv43v/cases/2/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-m48wv43v/cases/2/destination with spaces",
+      "copied": [
+        "schedules.json"
+      ],
+      "skipped": [],
+      "failed": [
+        "tokens.json: `/workspace/work/native-characterization-m48wv43v/cases/2/source \u65e5\u672c\u8a9e/tokens.json` is a named pipe"
+      ],
+      "profiles": 0
+    },
+    "marked": false,
+    "again": {
+      "source": "/workspace/work/native-characterization-m48wv43v/cases/2/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-m48wv43v/cases/2/destination with spaces",
+      "copied": [
+        "tokens.json"
+      ],
+      "skipped": [
+        "schedules.json"
+      ],
+      "failed": [],
+      "profiles": 0
+    },
+    "written": [
+      114,
+      101,
+      116,
+      114,
+      105,
+      101,
+      100
+    ]
+  },
+  {
+    "source": "/workspace/work/native-characterization-m48wv43v/cases/3/source \u65e5\u672c\u8a9e",
+    "destination": "/workspace/work/native-characterization-m48wv43v/cases/3/destination with spaces",
+    "pipe": "tokens.json",
+    "first": {
+      "source": "/workspace/work/native-characterization-m48wv43v/cases/3/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-m48wv43v/cases/3/destination with spaces",
+      "copied": [
+        "schedules.json"
+      ],
+      "skipped": [
+        "tokens.json"
+      ],
+      "failed": [],
+      "profiles": 0
+    },
+    "marked": true,
+    "again": null,
+    "written": [
+      100,
+      101,
+      115,
+      116,
+      105,
+      110,
+      97,
+      116,
+      105,
+      111,
+      110,
+      32,
+      119,
+      105,
+      110,
+      115
+    ]
+  }
+]

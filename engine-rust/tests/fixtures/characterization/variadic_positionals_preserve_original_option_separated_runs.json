@@ -1,0 +1,2668 @@
+{
+  "occurrences": 8,
+  "rows": [
+    {
+      "argv": [
+        "delete",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "first",
+        "second",
+        "--json",
+        "third"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "--json",
+        "first",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "delete",
+        "json": true,
+        "detach": false,
+        "ref": [
+          "first",
+          "second"
+        ],
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "delete",
+        "first",
+        "second",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "delete",
+        "json": true,
+        "detach": false,
+        "ref": [
+          "first",
+          "second"
+        ],
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "delete",
+        "first",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "delete",
+        "json": true,
+        "detach": false,
+        "ref": [
+          "first"
+        ],
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "delete",
+        "--json"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "first",
+        "--",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "delete",
+        "json": false,
+        "detach": false,
+        "ref": [
+          "first",
+          "second"
+        ],
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "delete",
+        "first",
+        "--json",
+        "--",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "--",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "delete",
+        "json": false,
+        "detach": false,
+        "ref": [
+          "first",
+          "--json",
+          "second"
+        ],
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "delete",
+        "first",
+        "--json",
+        "second",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "delete",
+        "-h",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "delete",
+        "first",
+        "--json",
+        "second",
+        "--unknown"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "first",
+        "--json",
+        "second",
+        "--json=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "-\u0661\u0662",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "first",
+        "--json",
+        "-\u0661\u0662"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "first",
+        "--json",
+        "--unknown value"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "first",
+        "--json",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "first",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "delete",
+        "json": false,
+        "detach": false,
+        "ref": [
+          "first"
+        ],
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "delete",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "--json",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "first",
+        "second",
+        "--json",
+        "third"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "--json",
+        "first",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "remove",
+        "id": [
+          "first",
+          "second"
+        ]
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "first",
+        "second",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "remove",
+        "id": [
+          "first",
+          "second"
+        ]
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "first",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "remove",
+        "id": [
+          "first"
+        ]
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "--json"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "first",
+        "--",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "remove",
+        "id": [
+          "first",
+          "second"
+        ]
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "first",
+        "--json",
+        "--",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "--",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "remove",
+        "id": [
+          "first",
+          "--json",
+          "second"
+        ]
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "first",
+        "--json",
+        "second",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "-h",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "first",
+        "--json",
+        "second",
+        "--unknown"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "first",
+        "--json",
+        "second",
+        "--json=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "-\u0661\u0662",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "first",
+        "--json",
+        "-\u0661\u0662"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "first",
+        "--json",
+        "--unknown value"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "first",
+        "--json",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "first",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "remove",
+        "id": [
+          "first"
+        ]
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "remove",
+        "--json",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "first",
+        "second",
+        "--json",
+        "third"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "--json",
+        "first",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "rotate",
+        "id": [
+          "first",
+          "second"
+        ]
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "first",
+        "second",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "rotate",
+        "id": [
+          "first",
+          "second"
+        ]
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "first",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "rotate",
+        "id": [
+          "first"
+        ]
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "--json"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "first",
+        "--",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "rotate",
+        "id": [
+          "first",
+          "second"
+        ]
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "first",
+        "--json",
+        "--",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "--",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "rotate",
+        "id": [
+          "first",
+          "--json",
+          "second"
+        ]
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "first",
+        "--json",
+        "second",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "-h",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "first",
+        "--json",
+        "second",
+        "--unknown"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "first",
+        "--json",
+        "second",
+        "--json=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "-\u0661\u0662",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "first",
+        "--json",
+        "-\u0661\u0662"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "first",
+        "--json",
+        "--unknown value"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "first",
+        "--json",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "first",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "rotate",
+        "id": [
+          "first"
+        ]
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "rotate",
+        "--json",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "first",
+        "second",
+        "--json",
+        "third"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "--json",
+        "first",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "archive",
+        "id": [
+          "first",
+          "second"
+        ],
+        "restore": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "first",
+        "second",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "archive",
+        "id": [
+          "first",
+          "second"
+        ],
+        "restore": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "first",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "archive",
+        "id": [
+          "first"
+        ],
+        "restore": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "--json"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "first",
+        "--",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "archive",
+        "id": [
+          "first",
+          "second"
+        ],
+        "restore": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "first",
+        "--json",
+        "--",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "--",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "archive",
+        "id": [
+          "first",
+          "--json",
+          "second"
+        ],
+        "restore": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "first",
+        "--json",
+        "second",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "-h",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "first",
+        "--json",
+        "second",
+        "--unknown"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "first",
+        "--json",
+        "second",
+        "--json=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "-\u0661\u0662",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "first",
+        "--json",
+        "-\u0661\u0662"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "first",
+        "--json",
+        "--unknown value"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "first",
+        "--json",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "first",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "archive",
+        "id": [
+          "first"
+        ],
+        "restore": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "archive",
+        "--json",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "second",
+        "--json",
+        "third"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "--json",
+        "first",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "export",
+        "id": [
+          "first",
+          "second"
+        ],
+        "file": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "second",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "export",
+        "id": [
+          "first",
+          "second"
+        ],
+        "file": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "export",
+        "id": [
+          "first"
+        ],
+        "file": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "export",
+        "id": [],
+        "file": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "export"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "export",
+        "id": [],
+        "file": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "--",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "export",
+        "id": [
+          "first",
+          "second"
+        ],
+        "file": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "--json",
+        "--",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "--",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "export",
+        "id": [
+          "first",
+          "--json",
+          "second"
+        ],
+        "file": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "--json",
+        "second",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "-h",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "--json",
+        "second",
+        "--unknown"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "--json",
+        "second",
+        "--json=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "-\u0661\u0662",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "--json",
+        "-\u0661\u0662"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "--json",
+        "--unknown value"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "--json",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "export",
+        "id": [
+          "first"
+        ],
+        "file": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "export",
+        "id": [],
+        "file": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "--json",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "export",
+        "id": [],
+        "file": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "first",
+        "second",
+        "--json",
+        "third"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "--json",
+        "first",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "test",
+        "id": [
+          "first",
+          "second"
+        ],
+        "all": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "first",
+        "second",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "test",
+        "id": [
+          "first",
+          "second"
+        ],
+        "all": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "first",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "test",
+        "id": [
+          "first"
+        ],
+        "all": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "test",
+        "id": [],
+        "all": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "test"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "test",
+        "id": [],
+        "all": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "first",
+        "--",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "test",
+        "id": [
+          "first",
+          "second"
+        ],
+        "all": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "first",
+        "--json",
+        "--",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "--",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "test",
+        "id": [
+          "first",
+          "--json",
+          "second"
+        ],
+        "all": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "first",
+        "--json",
+        "second",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "-h",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "first",
+        "--json",
+        "second",
+        "--unknown"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "first",
+        "--json",
+        "second",
+        "--json=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "-\u0661\u0662",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "first",
+        "--json",
+        "-\u0661\u0662"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "first",
+        "--json",
+        "--unknown value"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "first",
+        "--json",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "first",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "test",
+        "id": [
+          "first"
+        ],
+        "all": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "test",
+        "id": [],
+        "all": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "test",
+        "--json",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "test",
+        "id": [],
+        "all": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "first",
+        "second",
+        "--json",
+        "third"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "--json",
+        "first",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "assign",
+        "ref": [
+          "first",
+          "second"
+        ],
+        "tag": null,
+        "all": false,
+        "proxy_id": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "first",
+        "second",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "assign",
+        "ref": [
+          "first",
+          "second"
+        ],
+        "tag": null,
+        "all": false,
+        "proxy_id": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "first",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "assign",
+        "ref": [
+          "first"
+        ],
+        "tag": null,
+        "all": false,
+        "proxy_id": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "assign",
+        "ref": [],
+        "tag": null,
+        "all": false,
+        "proxy_id": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "assign"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "assign",
+        "ref": [],
+        "tag": null,
+        "all": false,
+        "proxy_id": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "first",
+        "--",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "assign",
+        "ref": [
+          "first",
+          "second"
+        ],
+        "tag": null,
+        "all": false,
+        "proxy_id": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "first",
+        "--json",
+        "--",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "--",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "assign",
+        "ref": [
+          "first",
+          "--json",
+          "second"
+        ],
+        "tag": null,
+        "all": false,
+        "proxy_id": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "first",
+        "--json",
+        "second",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "-h",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "first",
+        "--json",
+        "second",
+        "--unknown"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "first",
+        "--json",
+        "second",
+        "--json=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "-\u0661\u0662",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "first",
+        "--json",
+        "-\u0661\u0662"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "first",
+        "--json",
+        "--unknown value"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "first",
+        "--json",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "first",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "assign",
+        "ref": [
+          "first"
+        ],
+        "tag": null,
+        "all": false,
+        "proxy_id": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "assign",
+        "ref": [],
+        "tag": null,
+        "all": false,
+        "proxy_id": null
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "assign",
+        "--json",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": true,
+        "detach": false,
+        "pool_command": "assign",
+        "ref": [],
+        "tag": null,
+        "all": false,
+        "proxy_id": null
+      }
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "second",
+        "--json",
+        "third"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "--json",
+        "first",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": true,
+        "detach": false,
+        "ref": [
+          "first",
+          "second"
+        ],
+        "tag": null,
+        "all": false,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": null,
+        "startup_url": null,
+        "extension": null,
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "second",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": true,
+        "detach": false,
+        "ref": [
+          "first",
+          "second"
+        ],
+        "tag": null,
+        "all": false,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": null,
+        "startup_url": null,
+        "extension": null,
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": true,
+        "detach": false,
+        "ref": [
+          "first"
+        ],
+        "tag": null,
+        "all": false,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": null,
+        "startup_url": null,
+        "extension": null,
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "apply",
+        "--json"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": true,
+        "detach": false,
+        "ref": [],
+        "tag": null,
+        "all": false,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": null,
+        "startup_url": null,
+        "extension": null,
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "apply"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": false,
+        "detach": false,
+        "ref": [],
+        "tag": null,
+        "all": false,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": null,
+        "startup_url": null,
+        "extension": null,
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "--",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": false,
+        "detach": false,
+        "ref": [
+          "first",
+          "second"
+        ],
+        "tag": null,
+        "all": false,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": null,
+        "startup_url": null,
+        "extension": null,
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "--json",
+        "--",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "--",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": false,
+        "detach": false,
+        "ref": [
+          "first",
+          "--json",
+          "second"
+        ],
+        "tag": null,
+        "all": false,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": null,
+        "startup_url": null,
+        "extension": null,
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "--json",
+        "second",
+        "-h"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "apply",
+        "-h",
+        "first",
+        "--json",
+        "second"
+      ],
+      "exit": 0
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "--json",
+        "second",
+        "--unknown"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "--json",
+        "second",
+        "--json=bad"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "-\u0661\u0662",
+        "--json",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "--json",
+        "-\u0661\u0662"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "--json",
+        "--unknown value"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "--json",
+        "--"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": false,
+        "detach": false,
+        "ref": [
+          "first"
+        ],
+        "tag": null,
+        "all": false,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": null,
+        "startup_url": null,
+        "extension": null,
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "apply",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": false,
+        "detach": false,
+        "ref": [],
+        "tag": null,
+        "all": false,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": null,
+        "startup_url": null,
+        "extension": null,
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "apply",
+        "--json",
+        "--"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": true,
+        "detach": false,
+        "ref": [],
+        "tag": null,
+        "all": false,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": null,
+        "startup_url": null,
+        "extension": null,
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "delete",
+        "first",
+        "-y",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "delete",
+        "-y",
+        "first",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "delete",
+        "json": false,
+        "detach": false,
+        "ref": [
+          "first",
+          "second"
+        ],
+        "yes": true
+      }
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "--notes=second",
+        "third"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "--notes=first",
+        "second",
+        "third"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": false,
+        "detach": false,
+        "ref": [
+          "second",
+          "third"
+        ],
+        "tag": null,
+        "all": false,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": "first",
+        "startup_url": null,
+        "extension": null,
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "--notes",
+        "second",
+        "third"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "apply",
+        "first",
+        "second",
+        "--notes",
+        "third"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "apply",
+        "json": false,
+        "detach": false,
+        "ref": [
+          "first",
+          "second"
+        ],
+        "tag": null,
+        "all": false,
+        "engine": null,
+        "proxy": null,
+        "country": null,
+        "locale": null,
+        "timezone": null,
+        "notes": "third",
+        "startup_url": null,
+        "extension": null,
+        "add_tag": null,
+        "remove_tag": null,
+        "regen": false,
+        "yes": false
+      }
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "first",
+        "--file=fixture",
+        "second"
+      ],
+      "exit": 2
+    },
+    {
+      "argv": [
+        "pool",
+        "export",
+        "--file=fixture",
+        "first",
+        "second"
+      ],
+      "exit": 0,
+      "values": {
+        "data_dir": null,
+        "password": null,
+        "command": "pool",
+        "json": false,
+        "detach": false,
+        "pool_command": "export",
+        "id": [
+          "first",
+          "second"
+        ],
+        "file": "fixture"
+      }
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+[
+  {
+    "result": true,
+    "primary": null,
+    "failures": [],
+    "recovery": false,
+    "preserved": [
+      false,
+      false,
+      true
+    ],
+    "session": false,
+    "tombs": 0,
+    "intact": false
+  },
+  {
+    "result": null,
+    "primary": "metadata is read-only",
+    "failures": [],
+    "recovery": false,
+    "preserved": [
+      true,
+      true,
+      true
+    ],
+    "session": true,
+    "tombs": 0,
+    "intact": true
+  },
+  {
+    "result": null,
+    "primary": "metadata is read-only",
+    "failures": [
+      "session"
+    ],
+    "recovery": true,
+    "preserved": [
+      true,
+      true,
+      true
+    ],
+    "session": false,
+    "tombs": 1,
+    "intact": true
+  },
+  {
+    "result": null,
+    "primary": "metadata is read-only",
+    "failures": [
+      "dashboard",
+      "session"
+    ],
+    "recovery": true,
+    "preserved": [
+      false,
+      true,
+      true
+    ],
+    "session": false,
+    "tombs": 1,
+    "intact": true
+  }
+]

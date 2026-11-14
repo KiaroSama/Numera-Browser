@@ -1,0 +1,82 @@
+[
+  {
+    "input": null,
+    "seconds": 30.0
+  },
+  {
+    "input": "",
+    "seconds": 30.0
+  },
+  {
+    "input": "0",
+    "seconds": 0.0
+  },
+  {
+    "input": "-0",
+    "seconds": -0.0
+  },
+  {
+    "input": "0.05",
+    "seconds": 0.05
+  },
+  {
+    "input": " 0.125 ",
+    "seconds": 0.125
+  },
+  {
+    "input": "1_0",
+    "seconds": 10.0
+  },
+  {
+    "input": "\u0661.\u0665",
+    "seconds": 1.5
+  },
+  {
+    "input": "1e-3",
+    "seconds": 0.001
+  },
+  {
+    "input": "-1",
+    "seconds": 30.0
+  },
+  {
+    "input": "nan",
+    "seconds": 30.0
+  },
+  {
+    "input": "inf",
+    "seconds": 30.0
+  },
+  {
+    "input": "-inf",
+    "seconds": 30.0
+  },
+  {
+    "input": "broken",
+    "seconds": 30.0
+  },
+  {
+    "input": "1__0",
+    "seconds": 30.0
+  },
+  {
+    "input": "1e999",
+    "seconds": 30.0
+  },
+  {
+    "input": "0x10",
+    "seconds": 30.0
+  },
+  {
+    "input": "\u001c1\u001f",
+    "seconds": 30.0
+  },
+  {
+    "input": "9223372036.0",
+    "seconds": 9223372036.0
+  },
+  {
+    "input": "9223372037.0",
+    "seconds": 30.0
+  }
+]

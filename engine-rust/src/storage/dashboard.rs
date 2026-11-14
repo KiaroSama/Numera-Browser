@@ -10,17 +10,76 @@ use super::{
 use crate::{
     conversion::{self, truth, value_text},
     validation,
-    vault::{
-        self,
-        policy::{VaultState, write_secret},
-    },
+    vault::{self, policy::write_secret},
 };
 use serde_json::{Map, Value};
-use std::{fs, io, path::PathBuf, time::Duration};
+use std::{
+    borrow::Cow,
+    fs, io,
+    path::{Path, PathBuf},
+};
+
+fn read_text(path: &Path) -> io::Result<String> {
+    #[cfg(feature = "test-support")]
+    crate::vault::testing::event("json-read", path)?;
+    fs::read_to_string(path).map_err(|error| {
+        if error.kind() == io::ErrorKind::InvalidData {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "Stored dashboard file {} is not valid UTF-8",
+                    path.display()
+                ),
+            )
+        } else {
+            error
+        }
+    })
+}
 
 pub struct DashboardStore {
     pub(crate) root: PathBuf,
     pub(crate) repo: ProfileRepo,
+}
+/// One request-local disk observation. Only proxy.pass can change when the
+/// public view is decrypted; retain that original field without cloning every
+/// plaintext dashboard tree.
+pub(crate) struct DashboardRead {
+    path: PathBuf,
+    profile: Value,
+    original_pass: Option<Option<Value>>,
+}
+impl DashboardRead {
+    pub(crate) fn path(&self) -> &Path {
+        &self.path
+    }
+    pub(crate) fn profile(&self) -> &Value {
+        &self.profile
+    }
+    pub(crate) fn raw(&self) -> Result<Cow<'_, Value>, RepoError> {
+        let Some(original) = &self.original_pass else {
+            return Ok(Cow::Borrowed(&self.profile));
+        };
+        let mut raw = self.profile.clone();
+        let proxy = raw
+            .get_mut("proxy")
+            .and_then(Value::as_object_mut)
+            .ok_or_else(|| {
+                RepoError::InvalidRecord("Stored dashboard proxy shape changed".into())
+            })?;
+        match original {
+            Some(value) => {
+                proxy.insert("pass".into(), value.clone());
+            }
+            None => {
+                proxy.remove("pass");
+            }
+        }
+        Ok(Cow::Owned(raw))
+    }
+    pub(crate) fn into_profile(self) -> Value {
+        self.profile
+    }
 }
 impl DashboardStore {
     pub fn new(root: PathBuf, password: Option<String>) -> Self {
@@ -30,64 +89,67 @@ impl DashboardStore {
         }
     }
     pub fn get_meta(&self) -> Result<Value, RepoError> {
-        let bytes = match fs::read(self.root.join("dashboard-config.json")) {
-            Ok(bytes) => bytes,
+        let text = match read_text(&self.root.join("dashboard-config.json")) {
+            Ok(text) => text,
             Err(error) if error.kind() == io::ErrorKind::NotFound => {
                 return Ok(serde_json::json!({}));
             }
             Err(error) => return Err(error.into()),
         };
-        Ok(serde_json::from_slice(&bytes).unwrap_or_else(|_| serde_json::json!({})))
+        Ok(crate::http::json_extended::parse(&text).unwrap_or_else(|_| serde_json::json!({})))
     }
     pub fn set_meta(&self, metadata: Value) -> Result<Value, RepoError> {
         let path = self.root.join("dashboard-config.json");
         let lock = DataLock::for_file(&path)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         super::atomic::write_json(&path, &metadata)?;
         Ok(metadata)
     }
     pub fn delete(&self, id: &str, host: &str, now: f64) -> Result<bool, RepoError> {
         self.repo.delete(id, host, now)
     }
-    fn decrypted(&self, mut record: Value) -> Value {
+    fn decrypted(&self, mut record: Value) -> Result<Value, RepoError> {
         if record["proxy"].is_object() {
-            let secret = record["proxy"]["pass"].as_str();
-            let value = secret.map_or_else(
-                || Some(String::new()),
-                |secret| self.repo.readable_secret(Some(secret)),
-            );
+            let value = match record["proxy"]["pass"].as_str() {
+                Some(secret) => self.repo.readable_secret(Some(secret))?,
+                None => Some(String::new()),
+            };
             record["proxy"]["pass"] = value.map_or(Value::Null, Value::String);
         }
-        record
+        Ok(record)
     }
     pub fn get(&self, id: &str) -> Result<Option<Value>, RepoError> {
         if safe_id(id).is_err() {
             return Ok(None);
         }
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
-        let bytes = match fs::read(self.repo.path(id, "dashboard")?) {
-            Ok(bytes) => bytes,
+        let text = match read_text(&self.repo.path(id, "dashboard")?) {
+            Ok(text) => text,
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
             Err(error) => return Err(error.into()),
         };
-        let record = serde_json::from_slice(&bytes).map_err(|_| {
+        let record = crate::http::json_extended::parse(&text).map_err(|_| {
             RepoError::InvalidRecord("Stored dashboard profile cannot be decoded".into())
         })?;
-        Ok(Some(self.decrypted(record)))
+        self.decrypted(record).map(Some)
     }
     pub fn raw(&self, id: &str) -> Result<Option<Value>, RepoError> {
         if safe_id(id).is_err() {
             return Ok(None);
         }
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
-        Ok(ProfileRepo::raw(&self.repo.path(id, "dashboard")?))
+        let _guard = lock.acquire_configured()?;
+        Ok(ProfileRepo::raw(&self.repo.path(id, "dashboard")?)?)
     }
     pub fn list(&self) -> Result<Vec<Value>, RepoError> {
+        self.list_for_reconciliation()
+            .map(|rows| rows.into_iter().map(DashboardRead::into_profile).collect())
+    }
+    pub(crate) fn list_for_reconciliation(&self) -> Result<Vec<DashboardRead>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         let entries = match fs::read_dir(self.root.join("dashboard")) {
             Ok(entries) => entries,
@@ -100,17 +162,28 @@ impl DashboardStore {
         paths.sort();
         let mut records = Vec::new();
         for path in paths {
-            if path.extension().is_some_and(|ext| ext == "json")
-                && let Ok(record) = serde_json::from_slice::<Value>(&fs::read(path)?)
+            if super::paths::json_filename(&path)
+                && let Ok(record) = crate::http::json_extended::parse(&read_text(&path)?)
             {
-                records.push(self.decrypted(record));
+                let original = record
+                    .get("proxy")
+                    .filter(|proxy| proxy.is_object())
+                    .map(|proxy| proxy.get("pass").cloned());
+                let profile = self.decrypted(record)?;
+                let original_pass =
+                    original.filter(|pass| profile["proxy"].get("pass") != pass.as_ref());
+                records.push(DashboardRead {
+                    path,
+                    profile,
+                    original_pass,
+                });
             }
         }
         records.sort_by(|left, right| {
-            left["_created"]
+            left.profile["_created"]
                 .as_f64()
                 .unwrap_or(0.0)
-                .total_cmp(&right["_created"].as_f64().unwrap_or(0.0))
+                .total_cmp(&right.profile["_created"].as_f64().unwrap_or(0.0))
         });
         Ok(records)
     }
@@ -127,53 +200,39 @@ impl DashboardStore {
             .to_owned();
         let old = match previous {
             Some((_, engine)) => engine.clone(),
-            None => ProfileRepo::raw(&self.repo.path(&id, "profiles")?).unwrap_or(Value::Null),
+            None => ProfileRepo::raw(&self.repo.path(&id, "profiles")?)?.unwrap_or(Value::Null),
         };
         let stored = match previous {
             Some((dashboard, _)) => dashboard.clone(),
-            None => ProfileRepo::raw(&self.repo.path(&id, "dashboard")?).unwrap_or(Value::Null),
+            None => ProfileRepo::raw(&self.repo.path(&id, "dashboard")?)?.unwrap_or(Value::Null),
         };
         let engine_secret = old["proxy"]["password"].as_str();
         let dash_secret = stored["proxy"]["pass"].as_str();
-        let config = Value::Object(ConfigStore::new(self.root.clone()).read());
-        let descriptor = &config["vault"];
-        let password = self.repo.password.as_deref().unwrap_or("");
-        let salt = descriptor["salt"].as_str().unwrap_or("");
-        let state = if descriptor.is_null() {
-            VaultState::Disabled
-        } else if !password.is_empty()
-            && vault::check_password(
-                password,
-                salt,
-                descriptor["verifier"].as_str().unwrap_or(""),
-            )
-        {
-            VaultState::Unlocked
-        } else {
-            VaultState::Locked
-        };
-        let seal = |value: &str| vault::encrypt(password, salt, value);
         if intent == "preserve" {
-            let missing =
-                engine_secret.is_none_or(str::is_empty) || dash_secret.is_none_or(str::is_empty);
-            let readable = self.repo.readable_secret(engine_secret).is_some()
-                && self.repo.readable_secret(dash_secret).is_some();
-            if !self.repo.same_secret(engine_secret, dash_secret)
-                && !(engine_secret.is_none_or(str::is_empty)
-                    && dash_secret.is_none_or(str::is_empty))
-                && (missing || readable)
-            {
-                return Err(ProfileRepo::diverged(&id, "password"));
-            }
+            self.repo
+                .refuse_unresolved_secret(&id, engine_secret, dash_secret)?;
         }
-        if intent == "remove" {
-            if old["proxy"]
+        if intent == "remove"
+            && old["proxy"]
                 .as_object()
                 .is_some_and(|proxy| !proxy.is_empty())
-                && !truth(&stored["proxy"])
-            {
-                return Err(ProfileRepo::diverged(&id, "proxy"));
-            }
+            && !truth(&stored["proxy"])
+        {
+            return Err(ProfileRepo::diverged(&id, "proxy"));
+        }
+        let descriptor = if intent == "remove"
+            || record["proxy"].is_object()
+                && intent != "preserve"
+                && (intent == "clear" || record["proxy"]["pass"].is_string())
+        {
+            self.repo.vault()?.unwrap_or(Value::Null)
+        } else {
+            Value::Null
+        };
+        let writer = vault::policy::SecretWriter::new(self.repo.password.as_deref(), &descriptor);
+        let state = writer.state();
+        let seal = |value: &str| writer.seal(value);
+        if intent == "remove" {
             for secret in [engine_secret, dash_secret] {
                 write_secret(state, Some(""), secret, seal)
                     .map_err(|error| RepoError::VaultLocked(error.to_string()))?;
@@ -206,7 +265,12 @@ impl DashboardStore {
                 problems.join("; ")
             )));
         }
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("before-dashboard-conversion", &self.repo.path(&id, "dashboard")?)
+            .map_err(|error| RepoError::UnconvertibleProfile(format!("profile {id} cannot be converted for the engine, so neither copy was written: {error}")))?;
         let profile=conversion::to_engine(&record,now).map_err(|error|RepoError::UnconvertibleProfile(format!("profile {id} cannot be converted for the engine, so neither copy was written: {error}")))?;
+        // Mirroring reaches the engine secret gate even when no credential was supplied.
+        self.repo.vault()?;
         let mut twin = serde_json::to_value(profile)
             .map_err(|_| RepoError::Message("Engine twin cannot be serialized".into()))?;
         if twin["proxy"].is_object() {
@@ -229,7 +293,7 @@ impl DashboardStore {
         now: f64,
     ) -> Result<Value, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         let object = record.as_object_mut().ok_or_else(|| {
             RepoError::InvalidRecord("Dashboard profile must be an object".into())
@@ -243,7 +307,7 @@ impl DashboardStore {
             .to_owned();
         let path = self.repo.path(&id, "dashboard")?;
         let file = DataLock::for_file(&path)?;
-        let _file = file.acquire(Duration::from_secs(30))?;
+        let _file = file.acquire_configured()?;
         let held = self.repo.held_names()?;
         if let Some(name) = record["name"].as_str().filter(|name| !name.is_empty()) {
             let own = held
@@ -265,7 +329,7 @@ impl DashboardStore {
             .ok_or_else(|| RepoError::InvalidRecord("Dashboard profile lost object shape".into()))?
             .entry("_created")
             .or_insert(now.into());
-        let stored = ProfileRepo::raw(&path).unwrap_or(Value::Null);
+        let stored = ProfileRepo::raw(&path)?.unwrap_or(Value::Null);
         if let Some(expected) = expect_rev
             && let Some(current) = stored.get("_rev").filter(|value| !value.is_null())
             && value_text(current) != value_text(expected)
@@ -310,7 +374,7 @@ impl DashboardStore {
             .collect::<Result<Vec<_>, _>>()?;
         let _guards = locks
             .iter()
-            .map(|lock| lock.acquire(Duration::from_secs(30)))
+            .map(|lock| lock.acquire_configured())
             .collect::<Result<Vec<_>, _>>()?;
         let mut batch = Batch::default();
         let result = (|| -> Result<(), RepoError> {
@@ -322,7 +386,7 @@ impl DashboardStore {
                 batch.write(&self.repo.path(id, "profiles")?, twin)?;
             }
             if !changes.is_empty() {
-                let mut config = ConfigStore::new(self.root.clone()).read();
+                let mut config = ConfigStore::new(self.root.clone()).set_many(Map::new())?;
                 config.extend(changes);
                 batch.write(&config_path, &Value::Object(config))?;
             }
@@ -348,7 +412,7 @@ impl DashboardStore {
         now: f64,
     ) -> Result<Vec<Value>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         let mut held = self.repo.held_names()?;
         let mut named = Vec::new();
@@ -396,7 +460,9 @@ impl DashboardStore {
                 .to_owned();
             let stored = match pending.get(&id) {
                 Some((dashboard, _)) => dashboard.clone(),
-                None => ProfileRepo::raw(&self.repo.path(&id, "dashboard")?).unwrap_or(Value::Null),
+                None => {
+                    ProfileRepo::raw(&self.repo.path(&id, "dashboard")?)?.unwrap_or(Value::Null)
+                }
             };
             let chosen = intent.unwrap_or_else(|| conversion::secret_intent(&record));
             let (mut record, twin) = self.prepare(record, chosen, now, pending.get(&id))?;
@@ -415,12 +481,12 @@ impl DashboardStore {
         now: f64,
     ) -> Result<Option<Value>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         let path = self.repo.path(id, "dashboard")?;
         let file = DataLock::for_file(&path)?;
-        let _file = file.acquire(Duration::from_secs(30))?;
-        let Some(stored) = ProfileRepo::raw(&path).filter(truth) else {
+        let _file = file.acquire_configured()?;
+        let Some(stored) = ProfileRepo::raw(&path)?.filter(truth) else {
             return Ok(None);
         };
         let (merged, changes) = apply(stored)?;
@@ -436,7 +502,7 @@ impl DashboardStore {
         now: f64,
     ) -> Result<Vec<Value>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
-        let _guard = lock.acquire(Duration::from_secs(30))?;
+        let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
         let mut pending = Vec::new();
         for id in ids {

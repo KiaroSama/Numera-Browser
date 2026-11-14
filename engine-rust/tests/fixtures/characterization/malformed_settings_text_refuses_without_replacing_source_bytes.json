@@ -1,0 +1,245 @@
+[
+  {
+    "input": "ff",
+    "changes": {
+      "headless_launch": true
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": null,
+    "unchanged": true
+  },
+  {
+    "input": "ff",
+    "changes": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": null,
+    "unchanged": true
+  },
+  {
+    "input": "7b22667574757265223a22c328227d",
+    "changes": {
+      "headless_launch": true
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": null,
+    "unchanged": true
+  },
+  {
+    "input": "7b22667574757265223a22c328227d",
+    "changes": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": null,
+    "unchanged": true
+  },
+  {
+    "input": "7b22667574757265223a22e282",
+    "changes": {
+      "headless_launch": true
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": null,
+    "unchanged": true
+  },
+  {
+    "input": "7b22667574757265223a22e282",
+    "changes": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": null,
+    "unchanged": true
+  },
+  {
+    "input": "7b62726f6b656e",
+    "changes": {
+      "headless_launch": true
+    },
+    "result": {
+      "headless_launch": true
+    },
+    "error": null,
+    "written": {
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b62726f6b656e",
+    "changes": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "result": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "error": null,
+    "written": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "unchanged": false
+  },
+  {
+    "input": null,
+    "changes": {
+      "headless_launch": true
+    },
+    "result": {
+      "headless_launch": true
+    },
+    "error": null,
+    "written": {
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": null,
+    "changes": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "result": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "error": null,
+    "written": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b7d",
+    "changes": {
+      "headless_launch": true
+    },
+    "result": {
+      "headless_launch": true
+    },
+    "error": null,
+    "written": {
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b7d",
+    "changes": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "result": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "error": null,
+    "written": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "unchanged": false
+  },
+  {
+    "input": "5b5d",
+    "changes": {
+      "headless_launch": true
+    },
+    "result": null,
+    "error": "AttributeError",
+    "written": [],
+    "unchanged": true
+  },
+  {
+    "input": "5b5d",
+    "changes": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "result": null,
+    "error": "AttributeError",
+    "written": [],
+    "unchanged": true
+  },
+  {
+    "input": "6e756c6c",
+    "changes": {
+      "headless_launch": true
+    },
+    "result": null,
+    "error": "AttributeError",
+    "written": null,
+    "unchanged": true
+  },
+  {
+    "input": "6e756c6c",
+    "changes": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "result": null,
+    "error": "AttributeError",
+    "written": null,
+    "unchanged": true
+  },
+  {
+    "input": "7b22667574757265223a207b226b657074223a205b22e697a5e69cace8aa9e222c20747275655d7d2c2022686561646c6573735f6c61756e6368223a2066616c73657d",
+    "changes": {
+      "headless_launch": true
+    },
+    "result": {
+      "future": {
+        "kept": [
+          "\u65e5\u672c\u8a9e",
+          true
+        ]
+      },
+      "headless_launch": true
+    },
+    "error": null,
+    "written": {
+      "future": {
+        "kept": [
+          "\u65e5\u672c\u8a9e",
+          true
+        ]
+      },
+      "headless_launch": true
+    },
+    "unchanged": false
+  },
+  {
+    "input": "7b22667574757265223a207b226b657074223a205b22e697a5e69cace8aa9e222c20747275655d7d2c2022686561646c6573735f6c61756e6368223a2066616c73657d",
+    "changes": {
+      "default_engine": "patchright",
+      "future": null
+    },
+    "result": {
+      "future": null,
+      "headless_launch": false,
+      "default_engine": "patchright"
+    },
+    "error": null,
+    "written": {
+      "future": null,
+      "headless_launch": false,
+      "default_engine": "patchright"
+    },
+    "unchanged": false
+  }
+]

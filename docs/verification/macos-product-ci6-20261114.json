@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "review_date": "2026-11-14",
+  "status": "Actual macOS ARM64 product and artifact upload succeeded at CI6; unsigned review artifacts only.",
+  "source": {
+    "repository": "KiaroSama/Numera-Browser",
+    "pull_request": 76,
+    "run": 43553932142,
+    "event": "pull_request",
+    "head_sha": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+    "actual_checkout_and_github_sha": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+    "head_tree": "5912136069b70587970d3fee68d3e83361ef2671",
+    "checkout_tree": "5912136069b70587970d3fee68d3e83361ef2671",
+    "tree_equality_verified": true
+  },
+  "job": {
+    "id": 132322948422,
+    "url": "https://github.com/KiaroSama/Numera-Browser/actions/runs/43553932142/job/132322948422",
+    "conclusion": "success",
+    "runner_name": "GitHub Actions 1000065069",
+    "started_at": "2026-11-14T03:59:46Z",
+    "completed_at": "2026-11-14T04:23:13Z",
+    "product_step_started_at": "2026-11-14T04:03:07Z",
+    "product_step_completed_at": "2026-11-14T04:18:45Z",
+    "product_step_seconds": 938,
+    "unchanged_product_bounds": "wall1800s/idle300s",
+    "completed_work": [
+      "Both real native binaries and native tooling compiled; pinned resources/source offers were provisioned.",
+      "The native product command built the Rust/WASM dashboard, server and Tauri desktop application.",
+      "Tauri produced Numera Browser.app and Numera Browser_0.36.0_aarch64.dmg, then product identity/inventory/archive checks and artifact upload completed."
+    ]
+  },
+  "artifact": {
+    "id": 14098741244,
+    "name": "native-product-macos-ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+    "size_in_bytes": 8278918309,
+    "api_reported_digest": "sha256:910f6f0e9e54b15f8772d55f9581b1807da621911f7e1f0d4955f6ef5dd55cdf",
+    "created_at": "2026-11-14T04:22:32Z",
+    "download_policy": "Authenticated GitHub API metadata only. This8.28GB archive was not downloaded into the constrained workspace; its bytes were not locally hashed."
+  },
+  "retained_evidence": {
+    "directory": "/workspace/work/ci6-macos-product",
+    "complete_decoded_job_log": "job.log",
+    "log_utf8_bytes": 224119,
+    "log_sha256": "2c1b96645857f10d197dba879498eca4f84d1f0c604ba9b507afc5f68599a238",
+    "metadata": [
+      "job-metadata.json",
+      "run-metadata.json",
+      "artifact-metadata.json"
+    ],
+    "commit_receipts": [
+      "checkout-commit.json",
+      "head-commit.json"
+    ],
+    "retrieval": "Authenticated GitHub connector supplied the complete decoded log; authenticated REST calls supplied source/run/job receipts."
+  },
+  "limits": "This proves this unsigned macOS product build at its stated source/pins. It does not establish notarization, owner signing, release publication, merge authorization, or success of other CI gates."
+}

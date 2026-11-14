@@ -1,6 +1,6 @@
 //! Native persistence adapters; application reconciliation remains separately gated.
 mod archive;
-pub(crate) mod archive_paths;
+pub mod archive_paths;
 pub mod atomic;
 mod backup;
 pub mod config;
@@ -11,13 +11,19 @@ pub mod extension_install;
 pub mod extension_package;
 pub mod extensions;
 pub mod first_run;
+#[cfg(feature = "test-support")]
+pub mod first_run_test_support;
+#[cfg(target_os = "linux")]
+mod first_run_xattrs;
 pub mod folders;
+pub mod home_path;
 pub mod locks;
 pub mod paths;
 pub mod pool;
 pub mod repo;
 mod repo_delete;
 mod repo_lookup;
+mod repo_reconcile;
 mod repo_write;
 mod restore;
 pub mod schedules;

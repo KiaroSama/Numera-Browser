@@ -1,0 +1,431 @@
+[
+  {
+    "mode": "new",
+    "source": "/workspace/work/native-characterization-xadkjdk2/new/source \u65e5\u672c\u8a9e",
+    "destination": "/workspace/work/native-characterization-xadkjdk2/new/destination with spaces",
+    "first": {
+      "source": "/workspace/work/native-characterization-xadkjdk2/new/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-xadkjdk2/new/destination with spaces",
+      "copied": [
+        "profiles (1)"
+      ],
+      "skipped": [],
+      "failed": [],
+      "profiles": 0
+    },
+    "written": {
+      "profiles": null,
+      "profiles/branch": null,
+      "profiles/branch/.locks": null,
+      "profiles/branch/deeper": null,
+      "profiles/branch/.locks/state.lock": [
+        0,
+        255,
+        114,
+        101,
+        116,
+        97,
+        105,
+        110,
+        101,
+        100,
+        32,
+        115,
+        116,
+        97,
+        116,
+        101,
+        13,
+        10
+      ],
+      "profiles/branch/.locks/nested": null,
+      "profiles/branch/deeper/.locks": null,
+      "profiles/branch/deeper/ordinary.bin": [
+        111,
+        114,
+        100,
+        105,
+        110,
+        97,
+        114,
+        121,
+        0
+      ],
+      "profiles/branch/deeper/.locks/deep.lock": [
+        100,
+        101,
+        101,
+        112,
+        32,
+        115,
+        116,
+        97,
+        116,
+        101
+      ],
+      "profiles/branch/.locks/nested/empty.lock": []
+    },
+    "before": {
+      "profiles": null,
+      "profiles/.locks": null,
+      "profiles/branch": null,
+      "profiles/.locks/root.lock": [
+        105,
+        103,
+        110,
+        111,
+        114,
+        101,
+        100,
+        32,
+        109,
+        101,
+        114,
+        103,
+        101,
+        32,
+        108,
+        111,
+        99,
+        107
+      ],
+      "profiles/branch/.locks": null,
+      "profiles/branch/deeper": null,
+      "profiles/branch/.locks/state.lock": [
+        0,
+        255,
+        114,
+        101,
+        116,
+        97,
+        105,
+        110,
+        101,
+        100,
+        32,
+        115,
+        116,
+        97,
+        116,
+        101,
+        13,
+        10
+      ],
+      "profiles/branch/.locks/nested": null,
+      "profiles/branch/deeper/.locks": null,
+      "profiles/branch/deeper/ordinary.bin": [
+        111,
+        114,
+        100,
+        105,
+        110,
+        97,
+        114,
+        121,
+        0
+      ],
+      "profiles/branch/deeper/.locks/deep.lock": [
+        100,
+        101,
+        101,
+        112,
+        32,
+        115,
+        116,
+        97,
+        116,
+        101
+      ],
+      "profiles/branch/.locks/nested/empty.lock": []
+    },
+    "again": {
+      "source": "/workspace/work/native-characterization-xadkjdk2/new/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-xadkjdk2/new/destination with spaces",
+      "copied": [],
+      "skipped": [
+        "profiles (1 already here)"
+      ],
+      "failed": [],
+      "profiles": 0
+    }
+  },
+  {
+    "mode": "mixed",
+    "source": "/workspace/work/native-characterization-xadkjdk2/mixed/source \u65e5\u672c\u8a9e",
+    "destination": "/workspace/work/native-characterization-xadkjdk2/mixed/destination with spaces",
+    "first": {
+      "source": "/workspace/work/native-characterization-xadkjdk2/mixed/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-xadkjdk2/mixed/destination with spaces",
+      "copied": [
+        "profiles (1)"
+      ],
+      "skipped": [],
+      "failed": [],
+      "profiles": 0
+    },
+    "written": {
+      "profiles": null,
+      "profiles/branch": null,
+      "profiles/branch/.locks": null,
+      "profiles/branch/deeper": null,
+      "profiles/branch/.locks/state.lock": [
+        100,
+        101,
+        115,
+        116,
+        105,
+        110,
+        97,
+        116,
+        105,
+        111,
+        110,
+        32,
+        119,
+        105,
+        110,
+        115
+      ],
+      "profiles/branch/deeper/.locks": null,
+      "profiles/branch/deeper/ordinary.bin": [
+        111,
+        114,
+        100,
+        105,
+        110,
+        97,
+        114,
+        121,
+        0
+      ],
+      "profiles/branch/deeper/.locks/deep.lock": [
+        100,
+        101,
+        101,
+        112,
+        32,
+        115,
+        116,
+        97,
+        116,
+        101
+      ]
+    },
+    "before": {
+      "profiles": null,
+      "profiles/.locks": null,
+      "profiles/branch": null,
+      "profiles/.locks/root.lock": [
+        105,
+        103,
+        110,
+        111,
+        114,
+        101,
+        100,
+        32,
+        109,
+        101,
+        114,
+        103,
+        101,
+        32,
+        108,
+        111,
+        99,
+        107
+      ],
+      "profiles/branch/.locks": null,
+      "profiles/branch/deeper": null,
+      "profiles/branch/.locks/state.lock": [
+        0,
+        255,
+        114,
+        101,
+        116,
+        97,
+        105,
+        110,
+        101,
+        100,
+        32,
+        115,
+        116,
+        97,
+        116,
+        101,
+        13,
+        10
+      ],
+      "profiles/branch/.locks/nested": null,
+      "profiles/branch/deeper/.locks": null,
+      "profiles/branch/deeper/ordinary.bin": [
+        111,
+        114,
+        100,
+        105,
+        110,
+        97,
+        114,
+        121,
+        0
+      ],
+      "profiles/branch/deeper/.locks/deep.lock": [
+        100,
+        101,
+        101,
+        112,
+        32,
+        115,
+        116,
+        97,
+        116,
+        101
+      ],
+      "profiles/branch/.locks/nested/empty.lock": []
+    },
+    "again": {
+      "source": "/workspace/work/native-characterization-xadkjdk2/mixed/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-xadkjdk2/mixed/destination with spaces",
+      "copied": [],
+      "skipped": [
+        "profiles (1 already here)"
+      ],
+      "failed": [],
+      "profiles": 0
+    }
+  },
+  {
+    "mode": "existing",
+    "source": "/workspace/work/native-characterization-xadkjdk2/existing/source \u65e5\u672c\u8a9e",
+    "destination": "/workspace/work/native-characterization-xadkjdk2/existing/destination with spaces",
+    "first": {
+      "source": "/workspace/work/native-characterization-xadkjdk2/existing/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-xadkjdk2/existing/destination with spaces",
+      "copied": [
+        "profiles (1)"
+      ],
+      "skipped": [],
+      "failed": [],
+      "profiles": 0
+    },
+    "written": {
+      "profiles": null,
+      "profiles/branch": null,
+      "profiles/branch/.locks": null,
+      "profiles/branch/deeper": null,
+      "profiles/branch/.locks/state.lock": [
+        100,
+        101,
+        115,
+        116,
+        105,
+        110,
+        97,
+        116,
+        105,
+        111,
+        110,
+        32,
+        119,
+        105,
+        110,
+        115
+      ],
+      "profiles/branch/deeper/ordinary.bin": [
+        111,
+        114,
+        100,
+        105,
+        110,
+        97,
+        114,
+        121,
+        0
+      ]
+    },
+    "before": {
+      "profiles": null,
+      "profiles/.locks": null,
+      "profiles/branch": null,
+      "profiles/.locks/root.lock": [
+        105,
+        103,
+        110,
+        111,
+        114,
+        101,
+        100,
+        32,
+        109,
+        101,
+        114,
+        103,
+        101,
+        32,
+        108,
+        111,
+        99,
+        107
+      ],
+      "profiles/branch/.locks": null,
+      "profiles/branch/deeper": null,
+      "profiles/branch/.locks/state.lock": [
+        0,
+        255,
+        114,
+        101,
+        116,
+        97,
+        105,
+        110,
+        101,
+        100,
+        32,
+        115,
+        116,
+        97,
+        116,
+        101,
+        13,
+        10
+      ],
+      "profiles/branch/.locks/nested": null,
+      "profiles/branch/deeper/.locks": null,
+      "profiles/branch/deeper/ordinary.bin": [
+        111,
+        114,
+        100,
+        105,
+        110,
+        97,
+        114,
+        121,
+        0
+      ],
+      "profiles/branch/deeper/.locks/deep.lock": [
+        100,
+        101,
+        101,
+        112,
+        32,
+        115,
+        116,
+        97,
+        116,
+        101
+      ],
+      "profiles/branch/.locks/nested/empty.lock": []
+    },
+    "again": {
+      "source": "/workspace/work/native-characterization-xadkjdk2/existing/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-xadkjdk2/existing/destination with spaces",
+      "copied": [],
+      "skipped": [
+        "profiles (1 already here)"
+      ],
+      "failed": [],
+      "profiles": 0
+    }
+  }
+]

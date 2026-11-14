@@ -1,0 +1,666 @@
+[
+  {
+    "stdout": "unparsed",
+    "stderr": "\tfixture\t",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\nfixture\n",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u000bfixture\u000b",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\ffixture\f",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\rfixture\r",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u001cfixture\u001c",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u001dfixture\u001d",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u001efixture\u001e",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u001ffixture\u001f",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": " fixture ",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u0085fixture\u0085",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u00a0fixture\u00a0",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u1680fixture\u1680",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u2000fixture\u2000",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u2001fixture\u2001",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u2002fixture\u2002",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u2003fixture\u2003",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u2004fixture\u2004",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u2005fixture\u2005",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u2006fixture\u2006",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u2007fixture\u2007",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u2008fixture\u2008",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u2009fixture\u2009",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u200afixture\u200a",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u2028fixture\u2028",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u2029fixture\u2029",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u202ffixture\u202f",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u205ffixture\u205f",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u3000fixture\u3000",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": " ",
+    "exit": 2,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"command failed\", \"exit\": 2}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "\u001c",
+    "exit": 3,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"command failed\", \"exit\": 3}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "",
+    "stderr": "",
+    "exit": 4,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"command failed\", \"exit\": 4}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "\u001c",
+    "stderr": "",
+    "exit": 5,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"command failed\", \"exit\": 5}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "unparsed",
+    "stderr": "",
+    "exit": 6,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"unparsed\", \"exit\": 6}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "\u001cfixture\u001f",
+    "stderr": "",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"fixture\", \"exit\": 7}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": "stdout",
+    "stderr": "stderr",
+    "exit": 8,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"stderr\", \"exit\": 8}"
+        }
+      ],
+      "isError": true
+    }
+  },
+  {
+    "stdout": " {\"ok\":false} ",
+    "stderr": "ignored",
+    "exit": 1,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"ok\": false}"
+        }
+      ],
+      "isError": false,
+      "structuredContent": {
+        "ok": false
+      },
+      "_meta": {
+        "exitCode": 1
+      }
+    }
+  },
+  {
+    "stdout": "[]",
+    "stderr": "ignored",
+    "exit": 2,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "[]"
+        }
+      ],
+      "isError": false,
+      "structuredContent": {
+        "result": []
+      },
+      "_meta": {
+        "exitCode": 2
+      }
+    }
+  },
+  {
+    "stdout": "\"text\"",
+    "stderr": "ignored",
+    "exit": 3,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "\"text\""
+        }
+      ],
+      "isError": false,
+      "structuredContent": {
+        "result": "text"
+      },
+      "_meta": {
+        "exitCode": 3
+      }
+    }
+  },
+  {
+    "stdout": "0",
+    "stderr": "ignored",
+    "exit": 4,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "0"
+        }
+      ],
+      "isError": false,
+      "structuredContent": {
+        "result": 0
+      },
+      "_meta": {
+        "exitCode": 4
+      }
+    }
+  },
+  {
+    "stdout": "false",
+    "stderr": "ignored",
+    "exit": 5,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "false"
+        }
+      ],
+      "isError": false,
+      "structuredContent": {
+        "result": false
+      },
+      "_meta": {
+        "exitCode": 5
+      }
+    }
+  },
+  {
+    "stdout": "null",
+    "stderr": "ignored",
+    "exit": 6,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "null"
+        }
+      ],
+      "isError": false,
+      "structuredContent": {
+        "result": null
+      },
+      "_meta": {
+        "exitCode": 6
+      }
+    }
+  },
+  {
+    "stdout": " {\"text\":\"\u0641\u0627\u0631\u0633\u06cc\ud83d\ude00\"} ",
+    "stderr": "ignored",
+    "exit": 7,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"text\": \"\\u0641\\u0627\\u0631\\u0633\\u06cc\\ud83d\\ude00\"}"
+        }
+      ],
+      "isError": false,
+      "structuredContent": {
+        "text": "\u0641\u0627\u0631\u0633\u06cc\ud83d\ude00"
+      },
+      "_meta": {
+        "exitCode": 7
+      }
+    }
+  },
+  {
+    "stdout": "{\"error\":\"verdict\"}",
+    "stderr": "\u001c",
+    "exit": 9,
+    "expected": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\": \"verdict\"}"
+        }
+      ],
+      "isError": false,
+      "structuredContent": {
+        "error": "verdict"
+      },
+      "_meta": {
+        "exitCode": 9
+      }
+    }
+  }
+]

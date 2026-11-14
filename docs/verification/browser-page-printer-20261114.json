@@ -1,0 +1,317 @@
+{
+  "schema": 1,
+  "reviewed_on": "2026-11-14",
+  "base_head": "369e93bfdca84021b66098a43656edb09ff65b07",
+  "scope": "Hash-bound compiler and browser verification for the following revision. Native performance and hosted platform acceptance are separate gates.",
+  "artifact": {
+    "bytes": 480089,
+    "sha256": "d9df186713bf3517efb0d9785b2f0aed40bab9d4edc35307690c90a47fb2d9ca",
+    "receipt_sha256": "2106e86dab77733ed6523ea630501327165336e7a014de5037c19df36bfbc645",
+    "previous_bytes": 827882,
+    "saved_bytes": 347793,
+    "generated_by_actual_modified_compiler": true,
+    "outside_artifact_copied": false
+  },
+  "printer_policy": {
+    "ascii_only": false,
+    "crate_sha256": {
+      "oxc_allocator": "9f65d07f047239a6535aee5f9eb5f741ce9d7a19c13d3f5d68a507878368f847",
+      "oxc_codegen": "4e96b922b09e06196c28df4bc860b692957246ebf705fe1f49198871e0c91d81",
+      "oxc_parser": "7abfa2897dd082cd208a089692dd40e2e00166015de6993398689025ce8ea0ed",
+      "oxc_span": "ac083572f49ac3941fb954304666da42e44e9154abbdd32fd9b594fd269a952c"
+    },
+    "identifier_mangling": false,
+    "mode": "parse_expression+CodegenOptions::minify+print_expression",
+    "name": "oxc",
+    "preserve_parentheses": true,
+    "regex_pattern_validation": true,
+    "semantic_transforms": false,
+    "source_type": "cjs",
+    "version": "0.158.0"
+  },
+  "intermediates": {
+    "input_wasm": {
+      "path": "browser-page-rust/target/wasm32-unknown-unknown/release/numera_browser_page.wasm",
+      "sha256": "5ad97d9bdb0adcd601678ab314d45d9e812fb1180dcbadc8c105b126c96cddcd",
+      "unchanged_from_original_receipt": true
+    },
+    "binding_wasm": {
+      "path": "browser-page-rust/target/browser-page-generated/numera_browser_page_bg.wasm",
+      "sha256": "065d5c4e44d0f1cb92e63f7be4119593cf8c4755def7e6c8075742fd112dd296",
+      "unchanged_from_original_receipt": true
+    },
+    "bindgen_glue": {
+      "path": "browser-page-rust/target/browser-page-generated/numera_browser_page.js",
+      "sha256": "0090b56b9c48971945bdc1abeb9a8b4be9be1bf808c80968524daca4bca0c07b",
+      "unchanged_from_original_receipt": true
+    },
+    "binaryen_javascript": {
+      "path": "browser-page-rust/target/browser-page-generated/compiled.js",
+      "sha256": "e0ac9d6bce6225517fcb0fd97b42fb0e6a7133ff8f887257448dd464c863e58e",
+      "unchanged_from_original_receipt": true
+    }
+  },
+  "lock_graph": {
+    "old_packages": 38,
+    "new_packages": 110,
+    "previous_package_versions_sources_checksums_changed": [],
+    "wasm_normal_build_dependency_tree_identical": true,
+    "lock_dependency_changes": [
+      "serde host graph adds serde_derive edge",
+      "serde_derive and wasm-bindgen-macro-support syn references explicitly qualify existing3.0.10 because host Oxc adds syn2.0.119"
+    ],
+    "wasm_normal_build_FEATURE_tree_identical": true
+  },
+  "verification": {
+    "actual_regeneration": "PASS; host25.38s plus targetWASM24.62s",
+    "exact_full_artifact_and_receipt_checks": [
+      {
+        "log": "check-1.log",
+        "result": "PASS"
+      },
+      {
+        "log": "check-2.log",
+        "result": "PASS"
+      }
+    ],
+    "literal_controls": {
+      "producer": "actual production printer via exact producer library fingerprint",
+      "passed": 24,
+      "failed": 0,
+      "report": "proof/literal-controls.json"
+    },
+    "parser_negative_guards": {
+      "production_printer": true,
+      "regex_policy": true,
+      "controls": [
+        {
+          "case": "extra-expression",
+          "exit": 1,
+          "refused": true
+        },
+        {
+          "case": "invalid-regex-pattern",
+          "exit": 1,
+          "refused": true
+        },
+        {
+          "case": "oversized-input",
+          "exit": 1,
+          "refused": true
+        }
+      ]
+    },
+    "chromium": {
+      "transport": "Playwright1.65.1",
+      "browser": "159.0.8154.6",
+      "identity_cases": 15,
+      "probe_cases": 34,
+      "utility_cases": 15,
+      "all_twelve_exports": true,
+      "final_hash_asserted_in_every_harness": true
+    },
+    "five_profile_csp_unicode_growth": [
+      {
+        "profile": "windows-1",
+        "browser": "chromium",
+        "version": "159.0.8154.6",
+        "strict_csp": "default-src 'none'; script-src 'self'; object-src 'none'",
+        "first_script": true,
+        "csp_controls": {
+          "evalBlocked": true,
+          "functionBlocked": true,
+          "wasmBlocked": true
+        },
+        "tls": {
+          "ja3": "771,4865-4866-4867,0-10,29,0",
+          "ja3Hash": "compiler-fixture",
+          "ja4": "t13d1516h2_fixture",
+          "http2": "h2-fixture",
+          "grease": true,
+          "greaseKnown": true,
+          "cipherCount": 3
+        },
+        "memory_growth": {
+          "before": 1179648,
+          "explicit": 1310720,
+          "after": 1966080
+        },
+        "unicode_after_growth": "after-growth-λ",
+        "module_bytes": 480089,
+        "runtime_compilation": false,
+        "page_errors": []
+      },
+      {
+        "profile": "macos-1",
+        "browser": "chromium",
+        "version": "159.0.8154.6",
+        "strict_csp": "default-src 'none'; script-src 'self'; object-src 'none'",
+        "first_script": true,
+        "csp_controls": {
+          "evalBlocked": true,
+          "functionBlocked": true,
+          "wasmBlocked": true
+        },
+        "tls": {
+          "ja3": "771,4865-4866-4867,0-10,29,0",
+          "ja3Hash": "compiler-fixture",
+          "ja4": "t13d1516h2_fixture",
+          "http2": "h2-fixture",
+          "grease": true,
+          "greaseKnown": true,
+          "cipherCount": 3
+        },
+        "memory_growth": {
+          "before": 1179648,
+          "explicit": 1310720,
+          "after": 1966080
+        },
+        "unicode_after_growth": "after-growth-λ",
+        "module_bytes": 480089,
+        "runtime_compilation": false,
+        "page_errors": []
+      },
+      {
+        "profile": "linux-1",
+        "browser": "chromium",
+        "version": "159.0.8154.6",
+        "strict_csp": "default-src 'none'; script-src 'self'; object-src 'none'",
+        "first_script": true,
+        "csp_controls": {
+          "evalBlocked": true,
+          "functionBlocked": true,
+          "wasmBlocked": true
+        },
+        "tls": {
+          "ja3": "771,4865-4866-4867,0-10,29,0",
+          "ja3Hash": "compiler-fixture",
+          "ja4": "t13d1516h2_fixture",
+          "http2": "h2-fixture",
+          "grease": true,
+          "greaseKnown": true,
+          "cipherCount": 3
+        },
+        "memory_growth": {
+          "before": 1179648,
+          "explicit": 1310720,
+          "after": 1966080
+        },
+        "unicode_after_growth": "after-growth-λ",
+        "module_bytes": 480089,
+        "runtime_compilation": false,
+        "page_errors": []
+      },
+      {
+        "profile": "android-1",
+        "browser": "chromium",
+        "version": "159.0.8154.6",
+        "strict_csp": "default-src 'none'; script-src 'self'; object-src 'none'",
+        "first_script": true,
+        "csp_controls": {
+          "evalBlocked": true,
+          "functionBlocked": true,
+          "wasmBlocked": true
+        },
+        "tls": {
+          "ja3": "771,4865-4866-4867,0-10,29,0",
+          "ja3Hash": "compiler-fixture",
+          "ja4": "t13d1516h2_fixture",
+          "http2": "h2-fixture",
+          "grease": true,
+          "greaseKnown": true,
+          "cipherCount": 3
+        },
+        "memory_growth": {
+          "before": 1179648,
+          "explicit": 1310720,
+          "after": 1966080
+        },
+        "unicode_after_growth": "after-growth-λ",
+        "module_bytes": 480089,
+        "runtime_compilation": false,
+        "page_errors": []
+      },
+      {
+        "profile": "ios-1",
+        "browser": "chromium",
+        "version": "159.0.8154.6",
+        "strict_csp": "default-src 'none'; script-src 'self'; object-src 'none'",
+        "first_script": true,
+        "csp_controls": {
+          "evalBlocked": true,
+          "functionBlocked": true,
+          "wasmBlocked": true
+        },
+        "tls": {
+          "ja3": "771,4865-4866-4867,0-10,29,0",
+          "ja3Hash": "compiler-fixture",
+          "ja4": "t13d1516h2_fixture",
+          "http2": "h2-fixture",
+          "grease": true,
+          "greaseKnown": true,
+          "cipherCount": 3
+        },
+        "memory_growth": {
+          "before": 1179648,
+          "explicit": 1310720,
+          "after": 1966080
+        },
+        "unicode_after_growth": "after-growth-λ",
+        "module_bytes": 480089,
+        "runtime_compilation": false,
+        "page_errors": []
+      }
+    ],
+    "camoufox": {
+      "transport": "official Playwright1.62.0",
+      "browser": "158.0.1-beta.41",
+      "probe_cases": 34,
+      "utility_cases": 15,
+      "final_hash_asserted_in_harnesses": true,
+      "first_script_marker_claim": false
+    },
+    "existing_native_init_script_case": {
+      "name": "native_script_and_config_match_original_generator",
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "seconds": 6.37,
+      "fixture_sha_and_canonical_ten_configs_preserved": true,
+      "log": "init-contract.log"
+    },
+    "actual_new_core_frames": {
+      "artifact_bytes": 480089,
+      "open_frames": 40,
+      "evaluate_frames": 440,
+      "max_open_frame_bytes": 484016,
+      "max_evaluate_frame_bytes": 480869,
+      "limit": 1048576,
+      "minimum_margin_bytes": 564560
+    },
+    "strict_clippy": {
+      "browser_host_lib_and_builder": "PASS16.59s",
+      "core_lib_and_existing_init_target": "PASS0.50s"
+    },
+    "no_new_test_ids_or_types": true
+  },
+  "source_sha256": {
+    "browser-page-rust/Cargo.toml": "4f7762b092e78e6b24a66c6f4df62af625b54d2a17969ebed65d130cad9a652d",
+    "browser-page-rust/Cargo.lock": "8fcc41ba4bc8d851489223142aea47f2bda6a37724bbe132110dff835cf363dd",
+    "browser-page-rust/src/lib.rs": "a224dd625e2f024128a806da3da7403362bfd51a18f569ecb180b5d59148c302",
+    "browser-page-rust/src/printer.rs": "52a38fe2ad16eb1076797c14378366f1a16e67b257c630888426f19142107025",
+    "browser-page-rust/src/bin/browser-page-build.rs": "ed99d45e380b61e8a9410ac5f8a0a283c3a71bd9b08758d5b5035610313be9ba",
+    "browser-page-rust/src/artifact.rs": "17389a9b21aeac34c10d56d46c965d9200b9ef131715f4eb144ecd2025591cf3",
+    "browser-page-rust/README.md": "120907814675baed12a34811fd11e122f220909e9597e146239d8ab1a87d2786",
+    "engine-rust/tests/init_script_parity/contracts.rs": "123e397fbbac3f9bd8269bcba9690ff5444be52cbb0087a3aaa0971a8b3acfa3",
+    "browser-page-rust/generated/runtime.js": "d9df186713bf3517efb0d9785b2f0aed40bab9d4edc35307690c90a47fb2d9ca",
+    "browser-page-rust/generated/receipt.json": "2106e86dab77733ed6523ea630501327165336e7a014de5037c19df36bfbc645"
+  },
+  "full_review_sha256": "7bc4a24adeb27ca5d6eff71850baa8513d62e91cb8e59232c216b99c8a91a195",
+  "proof_manifest_sha256": "1c6e60c5bf8d63f9fa6976b533badd449bf8031fa4c5bd1d654129fa351b68e3",
+  "qualifications": [
+    "No native peak-memory, timing or strict performance acceptance claim.",
+    "All custom sections and exact intermediate hashes remain verified; no canonicalized or discarded byte comparisons.",
+    "The prior headerless Oxc candidate was not substituted for these final-hash-bound browser and frame checks.",
+    "minify-js remains rejected after nine actual literal/directive failures."
+  ]
+}

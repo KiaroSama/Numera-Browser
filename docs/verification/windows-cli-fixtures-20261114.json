@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "scope": "Two existing native CLI cases; fixture corrections only; immutable observations and application code unchanged",
+  "original_source_commit": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+  "source_contracts": [
+    {
+      "path": "engine/numera/cli/setup.py",
+      "git_blob": "e810f1498fcb32a8155ef95d1678bfe7e970ed4e",
+      "locations": [301, 302, 408, 409],
+      "contract": "The two extension-removal errors interpolate str(path) inside literal quotes; backslashes are not repr-escaped"
+    },
+    {
+      "path": "engine/numera/store.py",
+      "git_blob": "bded96e41b8e58b732ffc215707ca8ba1390d05f",
+      "locations": [65],
+      "contract": "The unloadable-folder diagnostic uses entry!r and retains doubled Windows backslashes"
+    }
+  ],
+  "changes": [
+    {
+      "path": "engine-rust/tests/cli_registry_parity/version.rs",
+      "before_sha256": "a97046c5a29756fe96dd253d4ff64b5037abe7cd46c71229997ac149752ae6b5",
+      "after_sha256": "4e631f319eb016c2d5c02e2ed91f68439da4d10c26e421abfbfc130462b53f34",
+      "contract": "Assert all117 frozen rows before the existing platform filter, then117 Unix or114 Windows rows afterward. The original three Unix native-byte argument vectors and all parser/value/help/error assertions remain unchanged."
+    },
+    {
+      "path": "engine-rust/tests/cli_characterization/mod.rs",
+      "before_sha256": "caf07689ae126f4b625d71298ecc8e75956e95914d73d84a1838cd476b031c93",
+      "after_sha256": "5854da2e58248d59dae0a175b0c996bcfeac136f836b0c3c59b226d75f1c9122",
+      "contract": "Only the two exact removal diagnostic suffixes materialize the dynamic root as raw text. Repr diagnostics, unknown suffixes, other strings and argv keep their original behavior."
+    },
+    {
+      "path": "engine-rust/tests/cli_settings_parity.rs",
+      "before_sha256": "a6c40a0af1538c95af2ee546bc9cc57ee290cccd3d77d33b75eabce77320c7e4",
+      "after_sha256": "63d0cc44329c3128bbdae99cd83c6dd152302758bda0a666334168d0b9e1a76e",
+      "contract": "Fold seven Windows-string materialization controls into the existing settings case; no new test declaration"
+    }
+  ],
+  "unchanged_observations": {
+    "engine-rust/tests/fixtures/characterization/version_flag_matches_original_root_scope_and_value_admission.json": "1aabd42aa6218e01dc9266120d9276a3ed8eb0b47e7c590f18219032ce8a82cf",
+    "engine-rust/tests/fixtures/cli-characterization/cli_settings_parity.json": "424e6846d77a68e9c58a2df205cc6f20c5cfcaff503282489c5ea003b21a6060"
+  },
+  "verification": {
+    "exact_old_materializer_with_new_controls_exit": 101,
+    "exact_new_materializer_with_same_controls_exit": 0,
+    "standalone_control_kind": "Host-independent Rust execution with Windows path strings; no Windows OS execution claimed",
+    "old_probe_source_sha256": "a07970685db4c8c5818bc96b7898a2715adc986395c2f60f54a857983028afc8",
+    "new_probe_source_sha256": "7454d47f0b290b96ccd2bb5fa27d4429194c5443aca5370c36151470cc034c85",
+    "linux_cli_registry_reported": {"passed": 7, "failed": 0, "ignored": 0, "filtered_out": 0, "seconds": 5.65},
+    "linux_cli_settings_reported": {"passed": 3, "failed": 0, "ignored": 0, "filtered_out": 0, "seconds": 3.14},
+    "log": "ci7-final-cli.log",
+    "actual_windows_execution": "Required on next hosted head; not inferred from Linux or string controls",
+    "test_count_change": 0
+  }
+}

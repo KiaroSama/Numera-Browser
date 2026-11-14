@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "purpose": "Public synthetic key for native Windows signing regression tests only; never an approved owner signing identity.",
+  "password": "Numera public Windows signing fixture only",
+  "subject": "CN=KiaroSama",
+  "algorithm": "RSA 2048, SHA256, self-signed codeSigning EKU",
+  "generator": "OpenSSL 3.5.7 9 Jun 2026 (Library: OpenSSL 3.5.7 9 Jun 2026)",
+  "validity": [
+    "notBefore=Nov 13 20:20:18 2026 GMT",
+    "notAfter=Nov 10 20:20:18 2036 GMT"
+  ],
+  "files": {
+    "public-fixture.der": {
+      "sha256": "8fedb7633c7d447b6607375392c9bb02b549ed7c5fbaf7b562312f50d1edd7db",
+      "bytes": 802
+    },
+    "public-fixture.pfx": {
+      "sha256": "4bc4ea7fa927262945f0eed6418d1a60b7f43e69d773007c79e6c7d129480782",
+      "bytes": 2563
+    }
+  },
+  "private_material": "The PFX intentionally contains its public test-only synthetic private key. No owner/private production material was accessed or copied."
+}

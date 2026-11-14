@@ -1,0 +1,37 @@
+[package]
+name = "numera-dashboard"
+version = "0.36.0"
+edition = "2024"
+license-file = "../LICENSE"
+description = "Numera Browser dashboard, implemented in Rust and WebAssembly"
+
+[lib]
+path = "rust/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "dashboard-build"
+path = "rust/build.rs"
+
+[[bin]]
+name = "dashboard-dev"
+path = "rust/dev.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+url = "2"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-futures = "=0.4.79"
+js-sys = "=0.3.106"
+web-sys = { version = "=0.3.106", features = ["AbortController", "AbortSignal", "Blob", "BlobPropertyBag", "Clipboard", "DataTransfer", "DataTransferItemList", "DataTransferItem", "Document", "Element", "Event", "EventInit", "EventTarget", "File", "FileList", "Headers", "HtmlAnchorElement", "HtmlElement", "HtmlInputElement", "HtmlSelectElement", "HtmlTextAreaElement", "KeyboardEvent", "KeyboardEventInit", "Location", "Navigator", "Node", "NodeList", "Request", "RequestCache", "RequestCredentials", "RequestInit", "RequestRedirect", "ReadableStream", "Response", "ResponseInit", "Storage", "Url", "Window", "console"] }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "=0.3.79"
+
+[profile.release]
+lto = true
+opt-level = "s"
+strip = true

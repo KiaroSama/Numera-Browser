@@ -6,6 +6,57 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+mod common;
+
+#[test]
+fn unreadable_active_config_preserves_original_recovery_causes_and_bytes()
+-> Result<(), Box<dyn std::error::Error>> {
+    let temporary = common::TempDirectory::new("recovery-config-causes")?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/unreadable_active_config_preserves_original_recovery_causes_and_bytes.json"
+    ))?;
+    assert_eq!(cases.len(), 5);
+    for (index, case) in cases.iter().enumerate() {
+        let root = temporary.path().join(format!("native-{index}"));
+        fs::create_dir_all(&root)?;
+        if case["config_directory"] == true {
+            fs::create_dir(root.join("config.json"))?;
+        }
+        let mut before = Vec::new();
+        for (name, data) in case["files"].as_object().ok_or("Files missing")? {
+            let bytes: Vec<u8> = serde_json::from_value(data.clone())?;
+            fs::write(root.join(name), &bytes)?;
+            before.push((name, bytes));
+        }
+        for expected in case["attempts"].as_array().ok_or("Attempts missing")? {
+            let actual = match recover_enable(&root, None) {
+                Ok(result) => serde_json::json!({"result":result,"error":null,"codes":[]}),
+                Err(error) => {
+                    serde_json::json!({"result":null,"error":error.to_string(),"codes":error.codes})
+                }
+            };
+            assert_eq!(
+                actual, *expected,
+                "Active config recovery causes differ for case {index}"
+            );
+            for (name, bytes) in &before {
+                assert_eq!(
+                    fs::read(root.join(name))?,
+                    *bytes,
+                    "Recovery changed unreadable evidence"
+                );
+            }
+            if case["config_directory"] == true {
+                let path = root.join("config.json");
+                assert!(path.is_dir() && fs::read_dir(path)?.next().is_none());
+            }
+        }
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
 #[test]
 fn interrupted_enable_is_authenticated_or_refused_without_losing_evidence()
 -> Result<(), Box<dyn std::error::Error>> {

@@ -1,0 +1,13 @@
+//! Browser-realm application logic. The distribution includes only compiler-
+//! generated wasm-bindgen JavaScript; all authored behavior lives in Rust.
+#[cfg(not(target_arch = "wasm32"))]
+pub mod artifact;
+pub mod identity;
+pub mod probes;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod source_paths;
+pub mod webrtc_rules;
+
+// Keep host compiler modules after the unchanged WASM module declarations.
+#[cfg(not(target_arch = "wasm32"))]
+pub mod printer;

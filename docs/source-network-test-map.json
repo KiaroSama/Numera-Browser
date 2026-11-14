@@ -1,0 +1,2047 @@
+{
+  "schema": 1,
+  "baseline": "docs/rust-test-baseline.json",
+  "baseline_source_commit": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+  "suite": "source_network",
+  "count": 150,
+  "scope_count": 150,
+  "native_only": true,
+  "cases": [
+    {
+      "python_id": "tests/test_webstore.py::test_id_is_found_in_every_shape_of_link[ddkjiahejlhfcafbddmgiahcphecmpfh]",
+      "rust_test": "webstore::c000_id_is_found_in_every_shape_of_link",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "id_is_found_in_every_shape_of_link",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_id_is_found_in_every_shape_of_link[https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh]",
+      "rust_test": "webstore::c001_id_is_found_in_every_shape_of_link",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "id_is_found_in_every_shape_of_link",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_id_is_found_in_every_shape_of_link[https://chrome.google.com/webstore/detail/x/ddkjiahejlhfcafbddmgiahcphecmpfh?hl=en]",
+      "rust_test": "webstore::c002_id_is_found_in_every_shape_of_link",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "id_is_found_in_every_shape_of_link",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_id_is_found_in_every_shape_of_link[  https://chromewebstore.google.com/detail/ublock/ddkjiahejlhfcafbddmgiahcphecmpfh/reviews  ]",
+      "rust_test": "webstore::c003_id_is_found_in_every_shape_of_link",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "id_is_found_in_every_shape_of_link",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_download_refuses_invalid_ids_before_constructing_a_request[../outside]",
+      "rust_test": "webstore::c000_download_refuses_invalid_ids_before_constructing_a_request",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "download_refuses_invalid_ids_before_constructing_a_request",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Calls the strict URL-construction function used by the native downloader, asserting refusal before any request can be constructed, replacing the Python Request-constructor spy."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_download_refuses_invalid_ids_before_constructing_a_request[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]",
+      "rust_test": "webstore::c001_download_refuses_invalid_ids_before_constructing_a_request",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "download_refuses_invalid_ids_before_constructing_a_request",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Calls the strict URL-construction function used by the native downloader, asserting refusal before any request can be constructed, replacing the Python Request-constructor spy."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_download_refuses_invalid_ids_before_constructing_a_request[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\n]",
+      "rust_test": "webstore::c002_download_refuses_invalid_ids_before_constructing_a_request",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "download_refuses_invalid_ids_before_constructing_a_request",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Calls the strict URL-construction function used by the native downloader, asserting refusal before any request can be constructed, replacing the Python Request-constructor spy."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_download_refuses_invalid_ids_before_constructing_a_request[AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA]",
+      "rust_test": "webstore::c003_download_refuses_invalid_ids_before_constructing_a_request",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "download_refuses_invalid_ids_before_constructing_a_request",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Calls the strict URL-construction function used by the native downloader, asserting refusal before any request can be constructed, replacing the Python Request-constructor spy."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_install_refuses_linked_extension_before_network_or_replacement",
+      "rust_test": "webstore::c000_install_refuses_linked_extension_before_network_or_replacement",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "install_refuses_linked_extension_before_network_or_replacement",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Uses an actual owned directory symlink on Unix or directory junction on Windows instead of monkeypatching is_symlink/realpath. Protected outside bytes and download/read boundaries are asserted."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_a_truncated_id_says_so",
+      "rust_test": "webstore::c000_a_truncated_id_says_so",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_truncated_id_says_so",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_a_letter_past_p_says_which_one",
+      "rust_test": "webstore::c000_a_letter_past_p_says_which_one",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_letter_past_p_says_which_one",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_empty_input",
+      "rust_test": "webstore::c000_empty_input",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "empty_input",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_unpack_strips_the_header",
+      "rust_test": "webstore::c000_unpack_strips_the_header",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "unpack_strips_the_header",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_unpack_refuses_to_escape_the_folder",
+      "rust_test": "webstore::c000_unpack_refuses_to_escape_the_folder",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "unpack_refuses_to_escape_the_folder",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_unpack_rejects_an_unknown_crx_version",
+      "rust_test": "webstore::c000_unpack_rejects_an_unknown_crx_version",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "unpack_rejects_an_unknown_crx_version",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_name_falls_back_to_the_locale_file[english-first]",
+      "rust_test": "webstore::c000_name_falls_back_to_the_locale_file",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "name_falls_back_to_the_locale_file",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_name_falls_back_to_the_locale_file[regional-fallback]",
+      "rust_test": "webstore::c001_name_falls_back_to_the_locale_file",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "name_falls_back_to_the_locale_file",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_name_falls_back_to_the_locale_file[default-fallback]",
+      "rust_test": "webstore::c002_name_falls_back_to_the_locale_file",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "name_falls_back_to_the_locale_file",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_description_refuses_locale_paths_outside_the_extension[traversal]",
+      "rust_test": "webstore::c000_description_refuses_locale_paths_outside_the_extension",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "description_refuses_locale_paths_outside_the_extension",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "A scoped observer at the real catalog-read boundary refuses unexpected reads; protected outside catalog bytes remain intact. This replaces the source Path.read_text monkeypatch."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_description_refuses_locale_paths_outside_the_extension[absolute]",
+      "rust_test": "webstore::c001_description_refuses_locale_paths_outside_the_extension",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "description_refuses_locale_paths_outside_the_extension",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "A scoped observer at the real catalog-read boundary refuses unexpected reads; protected outside catalog bytes remain intact. This replaces the source Path.read_text monkeypatch."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_description_refuses_locale_paths_outside_the_extension[..]",
+      "rust_test": "webstore::c002_description_refuses_locale_paths_outside_the_extension",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "description_refuses_locale_paths_outside_the_extension",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "A scoped observer at the real catalog-read boundary refuses unexpected reads; protected outside catalog bytes remain intact. This replaces the source Path.read_text monkeypatch."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_description_refuses_locale_paths_outside_the_extension[.]",
+      "rust_test": "webstore::c003_description_refuses_locale_paths_outside_the_extension",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "description_refuses_locale_paths_outside_the_extension",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "A scoped observer at the real catalog-read boundary refuses unexpected reads; protected outside catalog bytes remain intact. This replaces the source Path.read_text monkeypatch."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_description_refuses_locale_paths_outside_the_extension[]",
+      "rust_test": "webstore::c004_description_refuses_locale_paths_outside_the_extension",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "description_refuses_locale_paths_outside_the_extension",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "A scoped observer at the real catalog-read boundary refuses unexpected reads; protected outside catalog bytes remain intact. This replaces the source Path.read_text monkeypatch."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_description_refuses_locale_paths_outside_the_extension[en/fr]",
+      "rust_test": "webstore::c005_description_refuses_locale_paths_outside_the_extension",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "description_refuses_locale_paths_outside_the_extension",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "A scoped observer at the real catalog-read boundary refuses unexpected reads; protected outside catalog bytes remain intact. This replaces the source Path.read_text monkeypatch."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_description_refuses_locale_paths_outside_the_extension[en\\\\fr]",
+      "rust_test": "webstore::c006_description_refuses_locale_paths_outside_the_extension",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "description_refuses_locale_paths_outside_the_extension",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "A scoped observer at the real catalog-read boundary refuses unexpected reads; protected outside catalog bytes remain intact. This replaces the source Path.read_text monkeypatch."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_description_refuses_locale_paths_outside_the_extension[C:outside]",
+      "rust_test": "webstore::c007_description_refuses_locale_paths_outside_the_extension",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "description_refuses_locale_paths_outside_the_extension",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "A scoped observer at the real catalog-read boundary refuses unexpected reads; protected outside catalog bytes remain intact. This replaces the source Path.read_text monkeypatch."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_description_refuses_locale_paths_outside_the_extension[None]",
+      "rust_test": "webstore::c008_description_refuses_locale_paths_outside_the_extension",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "description_refuses_locale_paths_outside_the_extension",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "A scoped observer at the real catalog-read boundary refuses unexpected reads; protected outside catalog bytes remain intact. This replaces the source Path.read_text monkeypatch."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_description_refuses_locale_paths_outside_the_extension[42]",
+      "rust_test": "webstore::c009_description_refuses_locale_paths_outside_the_extension",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "description_refuses_locale_paths_outside_the_extension",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "A scoped observer at the real catalog-read boundary refuses unexpected reads; protected outside catalog bytes remain intact. This replaces the source Path.read_text monkeypatch."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_description_refuses_a_locale_catalog_linked_outside_the_extension",
+      "rust_test": "webstore::c000_description_refuses_a_locale_catalog_linked_outside_the_extension",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "description_refuses_a_locale_catalog_linked_outside_the_extension",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Uses an actual owned directory symlink on Unix or directory junction on Windows instead of monkeypatching is_symlink/realpath. Protected outside bytes and download/read boundaries are asserted."
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_name_survives_a_broken_manifest",
+      "rust_test": "webstore::c000_name_survives_a_broken_manifest",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "name_survives_a_broken_manifest",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_installed_lists_only_real_extensions",
+      "rust_test": "webstore::c000_installed_lists_only_real_extensions",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "installed_lists_only_real_extensions",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_uninstall_removes_the_folder",
+      "rust_test": "webstore::c000_uninstall_removes_the_folder",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "uninstall_removes_the_folder",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_icon_picks_the_largest_declared_size",
+      "rust_test": "webstore::c000_icon_picks_the_largest_declared_size",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "icon_picks_the_largest_declared_size",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_icon_skips_a_size_whose_file_is_missing",
+      "rust_test": "webstore::c000_icon_skips_a_size_whose_file_is_missing",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "icon_skips_a_size_whose_file_is_missing",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_icon_falls_back_to_the_action_icon",
+      "rust_test": "webstore::c000_icon_falls_back_to_the_action_icon",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "icon_falls_back_to_the_action_icon",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_icon_accepts_a_plain_string_action_icon",
+      "rust_test": "webstore::c000_icon_accepts_a_plain_string_action_icon",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "icon_accepts_a_plain_string_action_icon",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_icon_refuses_a_path_that_escapes_the_folder",
+      "rust_test": "webstore::c000_icon_refuses_a_path_that_escapes_the_folder",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "icon_refuses_a_path_that_escapes_the_folder",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_icon_is_none_when_nothing_is_declared",
+      "rust_test": "webstore::c000_icon_is_none_when_nothing_is_declared",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "icon_is_none_when_nothing_is_declared",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webstore.py::test_describe_carries_name_and_icon",
+      "rust_test": "webstore::c000_describe_carries_name_and_icon",
+      "rust_file": "engine-rust/tests/source_network/webstore.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "describe_carries_name_and_icon",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_no_url_is_a_clear_refusal_not_a_silent_no_op",
+      "rust_test": "proxy_rotate::c000_no_url_is_a_clear_refusal_not_a_silent_no_op",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "no_url_is_a_clear_refusal_not_a_silent_no_op",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_a_non_http_url_is_refused_before_anything_is_fetched",
+      "rust_test": "proxy_rotate::c000_a_non_http_url_is_refused_before_anything_is_fetched",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_non_http_url_is_refused_before_anything_is_fetched",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_the_cooldown_refuses_instead_of_returning_the_same_ip",
+      "rust_test": "proxy_rotate::c000_the_cooldown_refuses_instead_of_returning_the_same_ip",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "the_cooldown_refuses_instead_of_returning_the_same_ip",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "The same production rotate_service executes with a scoped test-only local destination policy, fixed clock, and supplied checker verdict, replacing source monkeypatches. Provider control traffic is real local HTTP; production public-IP policy is unchanged."
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_a_dead_endpoint_is_reported_and_the_proxy_is_not_marked_rotated",
+      "rust_test": "proxy_rotate::c000_a_dead_endpoint_is_reported_and_the_proxy_is_not_marked_rotated",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_dead_endpoint_is_reported_and_the_proxy_is_not_marked_rotated",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "The same production rotate_service executes with a scoped test-only local destination policy, fixed clock, and supplied checker verdict, replacing source monkeypatches. Provider control traffic is real local HTTP; production public-IP policy is unchanged."
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_an_endpoint_that_answers_but_does_not_move_the_ip_is_not_a_success",
+      "rust_test": "proxy_rotate::c000_an_endpoint_that_answers_but_does_not_move_the_ip_is_not_a_success",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "an_endpoint_that_answers_but_does_not_move_the_ip_is_not_a_success",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "The same production rotate_service executes with a scoped test-only local destination policy, fixed clock, and supplied checker verdict, replacing source monkeypatches. Provider control traffic is real local HTTP; production public-IP policy is unchanged."
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_a_real_move_is_reported_with_both_addresses",
+      "rust_test": "proxy_rotate::c000_a_real_move_is_reported_with_both_addresses",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_real_move_is_reported_with_both_addresses",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "The same production rotate_service executes with a scoped test-only local destination policy, fixed clock, and supplied checker verdict, replacing source monkeypatches. Provider control traffic is real local HTTP; production public-IP policy is unchanged."
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_a_first_rotate_with_no_previous_ip_counts_as_moved",
+      "rust_test": "proxy_rotate::c000_a_first_rotate_with_no_previous_ip_counts_as_moved",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_first_rotate_with_no_previous_ip_counts_as_moved",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "The same production rotate_service executes with a scoped test-only local destination policy, fixed clock, and supplied checker verdict, replacing source monkeypatches. Provider control traffic is real local HTTP; production public-IP policy is unchanged."
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_the_endpoint_is_fetched_directly_not_through_the_proxy",
+      "rust_test": "proxy_rotate::c000_the_endpoint_is_fetched_directly_not_through_the_proxy",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "the_endpoint_is_fetched_directly_not_through_the_proxy",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "The same production rotate_service executes with a scoped test-only local destination policy, fixed clock, and supplied checker verdict, replacing source monkeypatches. Provider control traffic is real local HTTP; production public-IP policy is unchanged."
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_the_protocol_survives_a_round_trip[HTTP]",
+      "rust_test": "proxy_rotate::c000_the_protocol_survives_a_round_trip",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_protocol_survives_a_round_trip",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_the_protocol_survives_a_round_trip[HTTPS]",
+      "rust_test": "proxy_rotate::c001_the_protocol_survives_a_round_trip",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_protocol_survives_a_round_trip",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_the_protocol_survives_a_round_trip[SOCKS5]",
+      "rust_test": "proxy_rotate::c002_the_protocol_survives_a_round_trip",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_protocol_survives_a_round_trip",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_the_protocol_survives_a_round_trip[SOCKS4]",
+      "rust_test": "proxy_rotate::c003_the_protocol_survives_a_round_trip",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_protocol_survives_a_round_trip",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_an_unsupported_protocol_is_refused_not_downgraded",
+      "rust_test": "proxy_rotate::c000_an_unsupported_protocol_is_refused_not_downgraded",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "an_unsupported_protocol_is_refused_not_downgraded",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_ipv6_survives_both_directions",
+      "rust_test": "proxy_rotate::c000_ipv6_survives_both_directions",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "ipv6_survives_both_directions",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_credential_variants_are_different_proxies",
+      "rust_test": "proxy_rotate::c000_credential_variants_are_different_proxies",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "credential_variants_are_different_proxies",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_split_server_understands_ipv6[http://1.2.3.4:8080-want0]",
+      "rust_test": "proxy_rotate::c000_split_server_understands_ipv6",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "split_server_understands_ipv6",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_split_server_understands_ipv6[socks5://[2001:db8::1]:1080-want1]",
+      "rust_test": "proxy_rotate::c001_split_server_understands_ipv6",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "split_server_understands_ipv6",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_split_server_understands_ipv6[1.2.3.4:3128-want2]",
+      "rust_test": "proxy_rotate::c002_split_server_understands_ipv6",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "split_server_understands_ipv6",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_proxy_rotate.py::test_split_server_understands_ipv6[[fe80::1]:8080-want3]",
+      "rust_test": "proxy_rotate::c003_split_server_understands_ipv6",
+      "rust_file": "engine-rust/tests/source_network/proxy_rotate.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "split_server_understands_ipv6",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_a_web_store_url_in_the_folder_list_points_at_the_installer",
+      "rust_test": "extension_validation::c000_a_web_store_url_in_the_folder_list_points_at_the_installer",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_web_store_url_in_the_folder_list_points_at_the_installer",
+      "original_fixtures": [
+        "client"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_a_path_that_does_not_exist_is_refused",
+      "rust_test": "extension_validation::c000_a_path_that_does_not_exist_is_refused",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_path_that_does_not_exist_is_refused",
+      "original_fixtures": [
+        "client",
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_a_folder_without_a_manifest_is_refused",
+      "rust_test": "extension_validation::c000_a_folder_without_a_manifest_is_refused",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_folder_without_a_manifest_is_refused",
+      "original_fixtures": [
+        "client",
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_a_real_unpacked_extension_is_accepted",
+      "rust_test": "extension_validation::c000_a_real_unpacked_extension_is_accepted",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_real_unpacked_extension_is_accepted",
+      "original_fixtures": [
+        "client",
+        "unpacked"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_nothing_is_stored_when_one_entry_is_bad",
+      "rust_test": "extension_validation::c000_nothing_is_stored_when_one_entry_is_bad",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "nothing_is_stored_when_one_entry_is_bad",
+      "original_fixtures": [
+        "client",
+        "unpacked",
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_the_launcher_would_have_dropped_exactly_what_we_now_refuse",
+      "rust_test": "extension_validation::c000_the_launcher_would_have_dropped_exactly_what_we_now_refuse",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "the_launcher_would_have_dropped_exactly_what_we_now_refuse",
+      "original_fixtures": [
+        "tmp_path",
+        "unpacked"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_the_icon_endpoint_serves_the_extension_own_icon",
+      "rust_test": "extension_validation::c000_the_icon_endpoint_serves_the_extension_own_icon",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "the_icon_endpoint_serves_the_extension_own_icon",
+      "original_fixtures": [
+        "client",
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_the_icon_endpoint_refuses_a_folder_it_was_never_told_about",
+      "rust_test": "extension_validation::c000_the_icon_endpoint_refuses_a_folder_it_was_never_told_about",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "the_icon_endpoint_refuses_a_folder_it_was_never_told_about",
+      "original_fixtures": [
+        "client",
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_an_extension_with_no_icon_404s_rather_than_serving_something_else",
+      "rust_test": "extension_validation::c000_an_extension_with_no_icon_404s_rather_than_serving_something_else",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "an_extension_with_no_icon_404s_rather_than_serving_something_else",
+      "original_fixtures": [
+        "client",
+        "unpacked"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_a_hand_unpacked_folder_is_named_too",
+      "rust_test": "extension_validation::c000_a_hand_unpacked_folder_is_named_too",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_hand_unpacked_folder_is_named_too",
+      "original_fixtures": [
+        "client",
+        "unpacked"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_the_cli_config_refuses_what_the_api_refuses[missing]",
+      "rust_test": "extension_validation::c000_the_cli_config_refuses_what_the_api_refuses",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_cli_config_refuses_what_the_api_refuses",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Calls the production native CLI command service and asserts its Result/Outcome or protected bytes; source cli.main/capsys become typed native output assertions."
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_the_cli_config_refuses_what_the_api_refuses[empty]",
+      "rust_test": "extension_validation::c001_the_cli_config_refuses_what_the_api_refuses",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_cli_config_refuses_what_the_api_refuses",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Calls the production native CLI command service and asserts its Result/Outcome or protected bytes; source cli.main/capsys become typed native output assertions."
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_ext_default_add_refuses_what_the_api_refuses[missing]",
+      "rust_test": "extension_validation::c000_ext_default_add_refuses_what_the_api_refuses",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "ext_default_add_refuses_what_the_api_refuses",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Calls the production native CLI command service and asserts its Result/Outcome or protected bytes; source cli.main/capsys become typed native output assertions."
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_ext_default_add_refuses_what_the_api_refuses[empty]",
+      "rust_test": "extension_validation::c001_ext_default_add_refuses_what_the_api_refuses",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "ext_default_add_refuses_what_the_api_refuses",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Calls the production native CLI command service and asserts its Result/Outcome or protected bytes; source cli.main/capsys become typed native output assertions."
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_a_real_unpacked_extension_is_accepted_by_every_writer",
+      "rust_test": "extension_validation::c000_a_real_unpacked_extension_is_accepted_by_every_writer",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_real_unpacked_extension_is_accepted_by_every_writer",
+      "original_fixtures": [
+        "tmp_path",
+        "unpacked",
+        "client"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Calls the production native CLI command service and asserts its Result/Outcome or protected bytes; source cli.main/capsys become typed native output assertions."
+    },
+    {
+      "python_id": "tests/test_extension_validation.py::test_removing_a_default_still_works_when_its_folder_is_gone",
+      "rust_test": "extension_validation::c000_removing_a_default_still_works_when_its_folder_is_gone",
+      "rust_file": "engine-rust/tests/source_network/extension_validation.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "removing_a_default_still_works_when_its_folder_is_gone",
+      "original_fixtures": [
+        "tmp_path",
+        "unpacked"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extensions.py::test_no_extensions_means_no_flags",
+      "rust_test": "extensions::c000_no_extensions_means_no_flags",
+      "rust_file": "engine-rust/tests/source_network/extensions.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "no_extensions_means_no_flags",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extensions.py::test_both_flags_are_emitted",
+      "rust_test": "extensions::c000_both_flags_are_emitted",
+      "rust_file": "engine-rust/tests/source_network/extensions.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "both_flags_are_emitted",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extensions.py::test_multiple_paths_are_comma_joined",
+      "rust_test": "extensions::c000_multiple_paths_are_comma_joined",
+      "rust_file": "engine-rust/tests/source_network/extensions.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "multiple_paths_are_comma_joined",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extensions.py::test_missing_folders_are_dropped",
+      "rust_test": "extensions::c000_missing_folders_are_dropped",
+      "rust_file": "engine-rust/tests/source_network/extensions.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "missing_folders_are_dropped",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extensions.py::test_only_missing_folders_means_no_flags",
+      "rust_test": "extensions::c000_only_missing_folders_means_no_flags",
+      "rust_file": "engine-rust/tests/source_network/extensions.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "only_missing_folders_means_no_flags",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extensions.py::test_extensions_survive_a_save_round_trip",
+      "rust_test": "extensions::c000_extensions_survive_a_save_round_trip",
+      "rust_file": "engine-rust/tests/source_network/extensions.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "extensions_survive_a_save_round_trip",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extensions.py::test_profiles_saved_before_extensions_existed_still_load",
+      "rust_test": "extensions::c000_profiles_saved_before_extensions_existed_still_load",
+      "rust_file": "engine-rust/tests/source_network/extensions.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "profiles_saved_before_extensions_existed_still_load",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extensions.py::test_default_extensions_round_trip",
+      "rust_test": "extensions::c000_default_extensions_round_trip",
+      "rust_file": "engine-rust/tests/source_network/extensions.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "default_extensions_round_trip",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extensions.py::test_new_profiles_inherit_the_default_set",
+      "rust_test": "extensions::c000_new_profiles_inherit_the_default_set",
+      "rust_file": "engine-rust/tests/source_network/extensions.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "new_profiles_inherit_the_default_set",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extensions.py::test_an_empty_folder_is_not_an_extension",
+      "rust_test": "extensions::c000_an_empty_folder_is_not_an_extension",
+      "rust_file": "engine-rust/tests/source_network/extensions.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "an_empty_folder_is_not_an_extension",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extensions.py::test_a_web_store_url_is_not_an_extension_path",
+      "rust_test": "extensions::c000_a_web_store_url_is_not_an_extension_path",
+      "rust_file": "engine-rust/tests/source_network/extensions.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_web_store_url_is_not_an_extension_path",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extensions.py::test_a_real_unpacked_extension_is_still_added",
+      "rust_test": "extensions::c000_a_real_unpacked_extension_is_still_added",
+      "rust_file": "engine-rust/tests/source_network/extensions.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_real_unpacked_extension_is_still_added",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_extensions.py::test_bulk_apply_pushes_extensions_onto_existing_profiles",
+      "rust_test": "extensions::c000_bulk_apply_pushes_extensions_onto_existing_profiles",
+      "rust_file": "engine-rust/tests/source_network/extensions.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "bulk_apply_pushes_extensions_onto_existing_profiles",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_the_stub_upstream_refuses_an_unauthenticated_request",
+      "rust_test": "relay::c000_the_stub_upstream_refuses_an_unauthenticated_request",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "the_stub_upstream_refuses_an_unauthenticated_request",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_relay_supplies_the_upstream_credentials",
+      "rust_test": "relay::c000_relay_supplies_the_upstream_credentials",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "relay_supplies_the_upstream_credentials",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_a_wrong_password_still_fails",
+      "rust_test": "relay::c000_a_wrong_password_still_fails",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_wrong_password_still_fails",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_the_browsers_own_proxy_authorization_is_replaced",
+      "rust_test": "relay::c000_the_browsers_own_proxy_authorization_is_replaced",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "the_browsers_own_proxy_authorization_is_replaced",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_connect_tunnel_reaches_the_origin",
+      "rust_test": "relay::c000_connect_tunnel_reaches_the_origin",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "connect_tunnel_reaches_the_origin",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_socks5_upstream_carries_a_connect_tunnel",
+      "rust_test": "relay::c000_socks5_upstream_carries_a_connect_tunnel",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "socks5_upstream_carries_a_connect_tunnel",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_socks5_upstream_rewrites_an_absolute_request",
+      "rust_test": "relay::c000_socks5_upstream_rewrites_an_absolute_request",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "socks5_upstream_rewrites_an_absolute_request",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_socks5_upstream_forwards_a_request_body",
+      "rust_test": "relay::c000_socks5_upstream_forwards_a_request_body",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "socks5_upstream_forwards_a_request_body",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_socks5_wrong_password_is_reported_not_swallowed",
+      "rust_test": "relay::c000_socks5_wrong_password_is_reported_not_swallowed",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "socks5_wrong_password_is_reported_not_swallowed",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_socks4_with_credentials_is_refused_up_front",
+      "rust_test": "relay::c000_socks4_with_credentials_is_refused_up_front",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "socks4_with_credentials_is_refused_up_front",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_a_dead_upstream_answers_502_rather_than_hanging",
+      "rust_test": "relay::c000_a_dead_upstream_answers_502_rather_than_hanging",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_dead_upstream_answers_502_rather_than_hanging",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_a_malformed_request_gets_400_not_a_crash",
+      "rust_test": "relay::c000_a_malformed_request_gets_400_not_a_crash",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_malformed_request_gets_400_not_a_crash",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_close_releases_the_port_and_every_thread",
+      "rust_test": "relay::c000_close_releases_the_port_and_every_thread",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "close_releases_the_port_and_every_thread",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_the_tunnel_thread_ends_when_its_sockets_are_pulled",
+      "rust_test": "relay::c000_the_tunnel_thread_ends_when_its_sockets_are_pulled",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "the_tunnel_thread_ends_when_its_sockets_are_pulled",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_close_does_not_hang_on_an_open_tunnel",
+      "rust_test": "relay::c000_close_does_not_hang_on_an_open_tunnel",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "close_does_not_hang_on_an_open_tunnel",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_start_and_close_are_idempotent",
+      "rust_test": "relay::c000_start_and_close_are_idempotent",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "start_and_close_are_idempotent",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Native Relay::start is a ready-only constructor, with no separate restartable start method. The test asserts stable published address, real traffic, and repeated close success."
+    },
+    {
+      "python_id": "tests/test_relay.py::test_two_relays_take_different_ephemeral_ports",
+      "rust_test": "relay::c000_two_relays_take_different_ephemeral_ports",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "two_relays_take_different_ephemeral_ports",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_the_relay_is_not_reachable_off_the_machine",
+      "rust_test": "relay::c000_the_relay_is_not_reachable_off_the_machine",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "the_relay_is_not_reachable_off_the_machine",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Always checks the actual relay bind URL is loopback, and attempts a real connection via a discovered non-loopback interface when available. The source may skip entirely when no such interface exists; the native case remains reported and tests binding on every host."
+    },
+    {
+      "python_id": "tests/test_relay.py::test_port_is_unavailable_before_start",
+      "rust_test": "relay::c000_port_is_unavailable_before_start",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "port_is_unavailable_before_start",
+      "original_fixtures": [
+        "serve"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Rust ownership exposes no unstarted Relay value or pre-start port property. The equivalent boundary is constructor readiness: its first published address must already carry real traffic."
+    },
+    {
+      "python_id": "tests/test_relay.py::test_a_proxy_without_a_port_is_refused",
+      "rust_test": "relay::c000_a_proxy_without_a_port_is_refused",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_proxy_without_a_port_is_refused",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay.py::test_only_a_credentialed_proxy_gets_a_relay",
+      "rust_test": "relay::c000_only_a_credentialed_proxy_gets_a_relay",
+      "rust_file": "engine-rust/tests/source_network/relay.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "only_a_credentialed_proxy_gets_a_relay",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay_socks4.py::test_a_socks4_proxy_carries_a_real_request",
+      "rust_test": "relay_socks4::c000_a_socks4_proxy_carries_a_real_request",
+      "rust_file": "engine-rust/tests/source_network/relay_socks4.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_socks4_proxy_carries_a_real_request",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay_socks4.py::test_the_destination_is_resolved_by_the_proxy_not_by_us",
+      "rust_test": "relay_socks4::c000_the_destination_is_resolved_by_the_proxy_not_by_us",
+      "rust_file": "engine-rust/tests/source_network/relay_socks4.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "the_destination_is_resolved_by_the_proxy_not_by_us",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay_socks4.py::test_the_user_id_goes_in_the_ident_field",
+      "rust_test": "relay_socks4::c000_the_user_id_goes_in_the_ident_field",
+      "rust_file": "engine-rust/tests/source_network/relay_socks4.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "the_user_id_goes_in_the_ident_field",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay_socks4.py::test_a_refusal_is_reported_as_a_refusal",
+      "rust_test": "relay_socks4::c000_a_refusal_is_reported_as_a_refusal",
+      "rust_file": "engine-rust/tests/source_network/relay_socks4.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_refusal_is_reported_as_a_refusal",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay_socks4.py::test_a_socks4_proxy_with_a_password_is_refused_with_the_real_reason",
+      "rust_test": "relay_socks4::c000_a_socks4_proxy_with_a_password_is_refused_with_the_real_reason",
+      "rust_file": "engine-rust/tests/source_network/relay_socks4.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_socks4_proxy_with_a_password_is_refused_with_the_real_reason",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_relay_socks4.py::test_socks4_is_no_longer_reported_as_untestable",
+      "rust_test": "relay_socks4::c000_socks4_is_no_longer_reported_as_untestable",
+      "rust_file": "engine-rust/tests/source_network/relay_socks4.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "socks4_is_no_longer_reported_as_untestable",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Real SOCKS protocol bytes carry health requests to an owned local echo service through native check_at. The endpoint list is supplied through test-support; no external service or Python runtime is needed. Replaces the source inspect.getsource negative-string check with an actual successful SOCKS4 health request and observed handshake."
+    },
+    {
+      "python_id": "tests/test_proxy_check_socks.py::test_a_socks_proxy_is_no_longer_reported_as_untestable",
+      "rust_test": "proxy_check_socks::c000_a_socks_proxy_is_no_longer_reported_as_untestable",
+      "rust_file": "engine-rust/tests/source_network/proxy_check_socks.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_socks_proxy_is_no_longer_reported_as_untestable",
+      "original_fixtures": [
+        "socks"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Real SOCKS protocol bytes carry health requests to an owned local echo service through native check_at. The endpoint list is supplied through test-support; no external service or Python runtime is needed."
+    },
+    {
+      "python_id": "tests/test_proxy_check_socks.py::test_a_wrong_socks_password_fails_and_says_so",
+      "rust_test": "proxy_check_socks::c000_a_wrong_socks_password_fails_and_says_so",
+      "rust_file": "engine-rust/tests/source_network/proxy_check_socks.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_wrong_socks_password_fails_and_says_so",
+      "original_fixtures": [
+        "socks"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Real SOCKS protocol bytes carry health requests to an owned local echo service through native check_at. The endpoint list is supplied through test-support; no external service or Python runtime is needed."
+    },
+    {
+      "python_id": "tests/test_proxy_check_socks.py::test_a_socks_upstream_that_refuses_the_target_fails",
+      "rust_test": "proxy_check_socks::c000_a_socks_upstream_that_refuses_the_target_fails",
+      "rust_file": "engine-rust/tests/source_network/proxy_check_socks.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_socks_upstream_that_refuses_the_target_fails",
+      "original_fixtures": [
+        "socks"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Real SOCKS protocol bytes carry health requests to an owned local echo service through native check_at. The endpoint list is supplied through test-support; no external service or Python runtime is needed."
+    },
+    {
+      "python_id": "tests/test_proxy_check_socks.py::test_a_dead_socks_port_fails_rather_than_hanging",
+      "rust_test": "proxy_check_socks::c000_a_dead_socks_port_fails_rather_than_hanging",
+      "rust_file": "engine-rust/tests/source_network/proxy_check_socks.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_dead_socks_port_fails_rather_than_hanging",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Real SOCKS protocol bytes carry health requests to an owned local echo service through native check_at. The endpoint list is supplied through test-support; no external service or Python runtime is needed."
+    },
+    {
+      "python_id": "tests/test_proxy_check_socks.py::test_a_dead_socks4_proxy_fails_rather_than_shrugging",
+      "rust_test": "proxy_check_socks::c000_a_dead_socks4_proxy_fails_rather_than_shrugging",
+      "rust_file": "engine-rust/tests/source_network/proxy_check_socks.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_dead_socks4_proxy_fails_rather_than_shrugging",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Real SOCKS protocol bytes carry health requests to an owned local echo service through native check_at. The endpoint list is supplied through test-support; no external service or Python runtime is needed."
+    },
+    {
+      "python_id": "tests/test_proxy_check_socks.py::test_the_check_routes_through_the_socks_server[False]",
+      "rust_test": "proxy_check_socks::c000_the_check_routes_through_the_socks_server",
+      "rust_file": "engine-rust/tests/source_network/proxy_check_socks.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_check_routes_through_the_socks_server",
+      "original_fixtures": [
+        "socks"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Real SOCKS protocol bytes carry health requests to an owned local echo service through native check_at. The endpoint list is supplied through test-support; no external service or Python runtime is needed."
+    },
+    {
+      "python_id": "tests/test_proxy_check_socks.py::test_the_check_routes_through_the_socks_server[True]",
+      "rust_test": "proxy_check_socks::c001_the_check_routes_through_the_socks_server",
+      "rust_file": "engine-rust/tests/source_network/proxy_check_socks.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_check_routes_through_the_socks_server",
+      "original_fixtures": [
+        "socks"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Real SOCKS protocol bytes carry health requests to an owned local echo service through native check_at. The endpoint list is supplied through test-support; no external service or Python runtime is needed."
+    },
+    {
+      "python_id": "tests/test_bulk_proxy_check_skips.py::test_a_wholly_locked_selection_reports_skipped_instead_of_failing",
+      "rust_test": "bulk_proxy_check_skips::c000_a_wholly_locked_selection_reports_skipped_instead_of_failing",
+      "rust_file": "engine-rust/tests/source_network/bulk_proxy_check_skips.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_wholly_locked_selection_reports_skipped_instead_of_failing",
+      "original_fixtures": [
+        "store",
+        "checked"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "The real HTTP router, pool file, vault encryption, selection and health persistence execute. A scoped thread-local typed checker records hosts and returns the original source fake verdict, replacing the source monkeypatch; withheld credentials never reach it."
+    },
+    {
+      "python_id": "tests/test_bulk_proxy_check_skips.py::test_a_locked_sweep_leaves_every_health_field_alone",
+      "rust_test": "bulk_proxy_check_skips::c000_a_locked_sweep_leaves_every_health_field_alone",
+      "rust_file": "engine-rust/tests/source_network/bulk_proxy_check_skips.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_locked_sweep_leaves_every_health_field_alone",
+      "original_fixtures": [
+        "store",
+        "checked"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "The real HTTP router, pool file, vault encryption, selection and health persistence execute. A scoped thread-local typed checker records hosts and returns the original source fake verdict, replacing the source monkeypatch; withheld credentials never reach it."
+    },
+    {
+      "python_id": "tests/test_bulk_proxy_check_skips.py::test_a_mixed_selection_tests_what_it_can_and_skips_the_rest",
+      "rust_test": "bulk_proxy_check_skips::c000_a_mixed_selection_tests_what_it_can_and_skips_the_rest",
+      "rust_file": "engine-rust/tests/source_network/bulk_proxy_check_skips.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_mixed_selection_tests_what_it_can_and_skips_the_rest",
+      "original_fixtures": [
+        "store",
+        "checked"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "The real HTTP router, pool file, vault encryption, selection and health persistence execute. A scoped thread-local typed checker records hosts and returns the original source fake verdict, replacing the source monkeypatch; withheld credentials never reach it."
+    },
+    {
+      "python_id": "tests/test_bulk_proxy_check_skips.py::test_an_all_readable_sweep_is_unchanged",
+      "rust_test": "bulk_proxy_check_skips::c000_an_all_readable_sweep_is_unchanged",
+      "rust_file": "engine-rust/tests/source_network/bulk_proxy_check_skips.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "an_all_readable_sweep_is_unchanged",
+      "original_fixtures": [
+        "store",
+        "checked"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "The real HTTP router, pool file, vault encryption, selection and health persistence execute. A scoped thread-local typed checker records hosts and returns the original source fake verdict, replacing the source monkeypatch; withheld credentials never reach it."
+    },
+    {
+      "python_id": "tests/test_bulk_proxy_check_skips.py::test_ids_nothing_in_the_pool_matches_are_refused",
+      "rust_test": "bulk_proxy_check_skips::c000_ids_nothing_in_the_pool_matches_are_refused",
+      "rust_file": "engine-rust/tests/source_network/bulk_proxy_check_skips.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "ids_nothing_in_the_pool_matches_are_refused",
+      "original_fixtures": [
+        "store",
+        "checked"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "The real HTTP router, pool file, vault encryption, selection and health persistence execute. A scoped thread-local typed checker records hosts and returns the original source fake verdict, replacing the source monkeypatch; withheld credentials never reach it."
+    },
+    {
+      "python_id": "tests/test_bulk_proxy_check_skips.py::test_a_missing_id_beside_a_locked_one_still_reports_the_locked_one",
+      "rust_test": "bulk_proxy_check_skips::c000_a_missing_id_beside_a_locked_one_still_reports_the_locked_one",
+      "rust_file": "engine-rust/tests/source_network/bulk_proxy_check_skips.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_missing_id_beside_a_locked_one_still_reports_the_locked_one",
+      "original_fixtures": [
+        "store",
+        "checked"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "The real HTTP router, pool file, vault encryption, selection and health persistence execute. A scoped thread-local typed checker records hosts and returns the original source fake verdict, replacing the source monkeypatch; withheld credentials never reach it."
+    },
+    {
+      "python_id": "tests/test_bulk_proxy_check_skips.py::test_an_empty_pool_is_refused_rather_than_swept",
+      "rust_test": "bulk_proxy_check_skips::c000_an_empty_pool_is_refused_rather_than_swept",
+      "rust_file": "engine-rust/tests/source_network/bulk_proxy_check_skips.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "an_empty_pool_is_refused_rather_than_swept",
+      "original_fixtures": [
+        "store",
+        "checked"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "The real HTTP router, pool file, vault encryption, selection and health persistence execute. A scoped thread-local typed checker records hosts and returns the original source fake verdict, replacing the source monkeypatch; withheld credentials never reach it."
+    },
+    {
+      "python_id": "tests/test_rotate_legacy_endpoint.py::test_the_destination_check_itself_fails_closed[http://example.test:99999/rotate]",
+      "rust_test": "rotate_legacy_endpoint::c000_the_destination_check_itself_fails_closed",
+      "rust_file": "engine-rust/tests/source_network/rotate_legacy_endpoint.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_destination_check_itself_fails_closed",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_rotate_legacy_endpoint.py::test_the_destination_check_itself_fails_closed[http://[oops/rotate]",
+      "rust_test": "rotate_legacy_endpoint::c001_the_destination_check_itself_fails_closed",
+      "rust_file": "engine-rust/tests/source_network/rotate_legacy_endpoint.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_destination_check_itself_fails_closed",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_rotate_legacy_endpoint.py::test_the_api_answers_with_the_problem_and_no_traceback[http://example.test:99999/rotate]",
+      "rust_test": "rotate_legacy_endpoint::c000_the_api_answers_with_the_problem_and_no_traceback",
+      "rust_file": "engine-rust/tests/source_network/rotate_legacy_endpoint.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_api_answers_with_the_problem_and_no_traceback",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_rotate_legacy_endpoint.py::test_the_api_answers_with_the_problem_and_no_traceback[http://[oops/rotate]",
+      "rust_test": "rotate_legacy_endpoint::c001_the_api_answers_with_the_problem_and_no_traceback",
+      "rust_file": "engine-rust/tests/source_network/rotate_legacy_endpoint.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_api_answers_with_the_problem_and_no_traceback",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_rotate_legacy_endpoint.py::test_the_cli_reports_it_and_exits_nonzero[http://example.test:99999/rotate]",
+      "rust_test": "rotate_legacy_endpoint::c000_the_cli_reports_it_and_exits_nonzero",
+      "rust_file": "engine-rust/tests/source_network/rotate_legacy_endpoint.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_cli_reports_it_and_exits_nonzero",
+      "original_fixtures": [
+        "tmp_path",
+        "capsys"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Calls the production native CLI command service and asserts its Result/Outcome or protected bytes; source cli.main/capsys become typed native output assertions."
+    },
+    {
+      "python_id": "tests/test_rotate_legacy_endpoint.py::test_the_cli_reports_it_and_exits_nonzero[http://[oops/rotate]",
+      "rust_test": "rotate_legacy_endpoint::c001_the_cli_reports_it_and_exits_nonzero",
+      "rust_file": "engine-rust/tests/source_network/rotate_legacy_endpoint.rs",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "case_type": "parameterized",
+      "assertion_family": "the_cli_reports_it_and_exits_nonzero",
+      "original_fixtures": [
+        "tmp_path",
+        "capsys"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Calls the production native CLI command service and asserts its Result/Outcome or protected bytes; source cli.main/capsys become typed native output assertions."
+    },
+    {
+      "python_id": "tests/test_rotate_transport.py::test_the_first_connection_uses_the_validated_address",
+      "rust_test": "rotate_transport::c000_the_first_connection_uses_the_validated_address",
+      "rust_file": "engine-rust/tests/source_network/rotate_transport.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "the_first_connection_uses_the_validated_address",
+      "original_fixtures": [
+        "resolves",
+        "dialled"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Real native control_with transport connects to owned local servers through its actual per-hop DNS pins. A test-support local-only destination policy permits fixtures; independent public_destination assertions retain the production global-IP allow rule. Distinct loopback addresses prove redirect pin replacement."
+    },
+    {
+      "python_id": "tests/test_rotate_transport.py::test_a_redirect_connects_to_the_hop_it_validated",
+      "rust_test": "rotate_transport::c000_a_redirect_connects_to_the_hop_it_validated",
+      "rust_file": "engine-rust/tests/source_network/rotate_transport.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_redirect_connects_to_the_hop_it_validated",
+      "original_fixtures": [
+        "resolves",
+        "dialled",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Real native control_with transport connects to owned local servers through its actual per-hop DNS pins. A test-support local-only destination policy permits fixtures; independent public_destination assertions retain the production global-IP allow rule. Distinct loopback addresses prove redirect pin replacement."
+    },
+    {
+      "python_id": "tests/test_rotate_transport.py::test_a_redirect_to_a_private_address_is_refused",
+      "rust_test": "rotate_transport::c000_a_redirect_to_a_private_address_is_refused",
+      "rust_file": "engine-rust/tests/source_network/rotate_transport.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_redirect_to_a_private_address_is_refused",
+      "original_fixtures": [
+        "monkeypatch",
+        "dialled"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Real native control_with transport connects to owned local servers through its actual per-hop DNS pins. A test-support local-only destination policy permits fixtures; independent public_destination assertions retain the production global-IP allow rule. Distinct loopback addresses prove redirect pin replacement."
+    },
+    {
+      "python_id": "tests/test_rotate_transport.py::test_a_cgnat_address_is_still_refused",
+      "rust_test": "rotate_transport::c000_a_cgnat_address_is_still_refused",
+      "rust_file": "engine-rust/tests/source_network/rotate_transport.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "a_cgnat_address_is_still_refused",
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Real native control_with transport connects to owned local servers through its actual per-hop DNS pins. A test-support local-only destination policy permits fixtures; independent public_destination assertions retain the production global-IP allow rule. Distinct loopback addresses prove redirect pin replacement."
+    },
+    {
+      "python_id": "tests/test_rotate_transport.py::test_the_environment_proxy_is_not_used",
+      "rust_test": "rotate_transport::c000_the_environment_proxy_is_not_used",
+      "rust_file": "engine-rust/tests/source_network/rotate_transport.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "the_environment_proxy_is_not_used",
+      "original_fixtures": [
+        "resolves",
+        "dialled",
+        "monkeypatch"
+      ],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "A native child test process receives HTTP/HTTPS/ALL_PROXY settings targeting an owned closed local port, then reaches a pinned real local HTTP server. Only child-process environment changes; product has no test environment branch."
+    },
+    {
+      "python_id": "tests/test_webrtc.py::test_default_mode_is_altered",
+      "rust_test": "webrtc::c000_default_mode_is_altered",
+      "rust_file": "engine-rust/tests/source_network/webrtc.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "default_mode_is_altered",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webrtc.py::test_profiles_saved_before_the_field_existed_still_load",
+      "rust_test": "webrtc::c000_profiles_saved_before_the_field_existed_still_load",
+      "rust_file": "engine-rust/tests/source_network/webrtc.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "profiles_saved_before_the_field_existed_still_load",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_webrtc.py::test_mode_reaches_the_init_script",
+      "rust_test": "webrtc::c000_mode_reaches_the_init_script",
+      "rust_file": "engine-rust/tests/source_network/webrtc.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "mode_reaches_the_init_script",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Parses the actual delivered canonical configuration and verifies the shared Rust mode selector used by the generated browser runtime for altered, disabled and real modes."
+    },
+    {
+      "python_id": "tests/test_webrtc.py::test_real_mode_leaves_webrtc_alone",
+      "rust_test": "webrtc::c000_real_mode_leaves_webrtc_alone",
+      "rust_file": "engine-rust/tests/source_network/webrtc.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "real_mode_leaves_webrtc_alone",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Verifies real mode through the actual shared Rust selector that returns before listener/SDP wrapping, plus immutable original null/end-event observations. Actual browser descriptors and event behavior remain independently checked by the existing live browser case."
+    },
+    {
+      "python_id": "tests/test_webrtc.py::test_candidate_filter_keeps_private_and_mdns",
+      "rust_test": "webrtc::c000_candidate_filter_keeps_private_and_mdns",
+      "rust_file": "engine-rust/tests/source_network/webrtc.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "candidate_filter_keeps_private_and_mdns",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips",
+      "adaptation": "Executes the same pure Rust rules compiled into the browser runtime against55 candidate and9 SDP observations frozen from immutable13b source behavior; covers private IPv4/IPv6 boundaries, mDNS, malformed candidates and CR/LF semantics rather than authored JavaScript text."
+    },
+    {
+      "python_id": "tests/test_webrtc.py::test_dashboard_choice_survives_the_round_trip",
+      "rust_test": "webrtc::c000_dashboard_choice_survives_the_round_trip",
+      "rust_file": "engine-rust/tests/source_network/webrtc.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "dashboard_choice_survives_the_round_trip",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_dns.py::test_no_proxy_country_is_baseline_only",
+      "rust_test": "dns::c000_no_proxy_country_is_baseline_only",
+      "rust_file": "engine-rust/tests/source_network/dns.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "no_proxy_country_is_baseline_only",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_dns.py::test_all_resolvers_in_proxy_country_passes",
+      "rust_test": "dns::c000_all_resolvers_in_proxy_country_passes",
+      "rust_file": "engine-rust/tests/source_network/dns.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "all_resolvers_in_proxy_country_passes",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_dns.py::test_resolver_outside_proxy_country_is_a_leak",
+      "rust_test": "dns::c000_resolver_outside_proxy_country_is_a_leak",
+      "rust_file": "engine-rust/tests/source_network/dns.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "resolver_outside_proxy_country_is_a_leak",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_dns.py::test_ignores_non_resolver_rows",
+      "rust_test": "dns::c000_ignores_non_resolver_rows",
+      "rust_file": "engine-rust/tests/source_network/dns.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "ignores_non_resolver_rows",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    },
+    {
+      "python_id": "tests/test_dns.py::test_no_resolvers_observed_fails_the_first_check",
+      "rust_test": "dns::c000_no_resolvers_observed_fails_the_first_check",
+      "rust_file": "engine-rust/tests/source_network/dns.rs",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "case_type": "standard",
+      "assertion_family": "no_resolvers_observed_fails_the_first_check",
+      "original_fixtures": [],
+      "platform": "all source-applicable platforms; no native OS skips"
+    }
+  ],
+  "unported": [],
+  "files": {
+    "tests/test_bulk_proxy_check_skips.py": 7,
+    "tests/test_dns.py": 5,
+    "tests/test_extension_validation.py": 16,
+    "tests/test_extensions.py": 13,
+    "tests/test_proxy_check_socks.py": 7,
+    "tests/test_proxy_rotate.py": 19,
+    "tests/test_relay.py": 21,
+    "tests/test_relay_socks4.py": 6,
+    "tests/test_rotate_legacy_endpoint.py": 6,
+    "tests/test_rotate_transport.py": 5,
+    "tests/test_webrtc.py": 6,
+    "tests/test_webstore.py": 39
+  },
+  "case_types": {
+    "parameterized": 41,
+    "standard": 109
+  },
+  "required_features": [
+    "test-support"
+  ],
+  "source_os_skips": [
+    {
+      "python_id": "tests/test_relay.py::test_the_relay_is_not_reachable_off_the_machine",
+      "condition": "Runtime skips if UDP route discovery finds no non-loopback address."
+    }
+  ],
+  "native_os_skips": [],
+  "source_file_sha256": {
+    "tests/test_bulk_proxy_check_skips.py": "a5d3653db892610635eb0929339944a2cc67e2f87af4fa6997162ebd52d4b361",
+    "tests/test_dns.py": "dad98277e98d30f9042a2067cb40b234c9365d87ebe982df4fcc89bb484c3731",
+    "tests/test_extension_validation.py": "7c0a8b4255009e58ab6513b07e0a49c2777b76a5da312196da2ba9834cbcae92",
+    "tests/test_extensions.py": "5ef4b1e9a06aa209594189a4ee312fb155a578585e900b43a41d858220e45f4f",
+    "tests/test_proxy_check_socks.py": "2f03aa8e1eb3484cacd6d14467df62f113db1e260603acb4d39a846113cd17fb",
+    "tests/test_proxy_rotate.py": "e96065049f119cbdf77eaa3d2703099892bcf2cd7e636946ba2d945665c8fe40",
+    "tests/test_relay.py": "df582ec027b525cb24e7795f4e0c74d459f5e50e065cb6478bc081a86bc7bdde",
+    "tests/test_relay_socks4.py": "6e1716bf2038fdff89077cceff81e1cfd1ee4740009c483b2f2b0253693adfee",
+    "tests/test_rotate_legacy_endpoint.py": "d8f482ea6febfec050e4f879987133b07b10587916febd7e25ae736b24c1b12c",
+    "tests/test_rotate_transport.py": "2b50ae0c3d8689191cdc5dca3992beaaba3fc13a727a03c6c52af7b8c542ff61",
+    "tests/test_webrtc.py": "7b25533965745defd8761b17ae09cf2afe2cd94c8bbc8189dbfdef1d4a5a1712",
+    "tests/test_webstore.py": "580b8682dc8a7dac1f930c9fb190a4bb5c12db6f2392ca0882230bfcd64eca90"
+  },
+  "adaptations": [
+    "Each frozen source ID expands to one separately reported Rust #[test] with a documented exact source ID; no generic case dispatcher, source runtime, ignored test, or fixture-equality substitute is used.",
+    "Protocol fixtures are independent actual local TCP servers for authenticated HTTP, SOCKS4a, SOCKS5, origin requests, body forwarding, tunnels, refusals and worker shutdown. Synthetic fixture credentials never leave the owned local endpoints.",
+    "All HTTP API cases use the production native router and real owned data roots. CLI assertions use the production native command services and typed Result/Outcome output.",
+    "Filesystem cases build actual ZIP/CRX bytes, unpacked manifests, locale catalogs, icon bytes, protected outside targets and OS directory links. Package extraction preflights every member before creating the destination.",
+    "Test-support hooks are scoped typed observers or explicit local policy/dependency injection around actual production service functions; no global product fault environment settings exist. Detailed source-language/API adaptations are recorded per case.",
+    "Native relay construction cannot represent an unstarted or restartable Python relay instance; constructor-readiness and repeated-close cases are documented structural adaptations. No source assertion is represented solely by a test count.",
+    "Original optional dependency skips become native implementations linked into this feature-gated target. Original platform applicability is retained with Unix symlinks or Windows junctions; no native tests are ignored."
+  ],
+  "verification": {
+    "status": "passed",
+    "command": "cargo test --manifest-path engine-rust/Cargo.toml --no-default-features --features test-support --test source_network --test source_contracts --test source_domain -- --test-threads=8",
+    "reported": 150,
+    "passed": 150,
+    "failed": 0,
+    "ignored": 0,
+    "seconds": 9.36,
+    "source_oracle_processes": 0,
+    "individually_reported_cases": 150,
+    "mapping_set_equals_frozen_baseline_subset": true,
+    "mapping_matches_reported_native_test_ids": true,
+    "regression": {
+      "source_contracts": {
+        "passed": 520,
+        "failed": 0,
+        "ignored": 0
+      },
+      "source_domain": {
+        "passed": 242,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "clippy": "passed: cargo clippy --manifest-path engine-rust/Cargo.toml --no-default-features --features test-support --test source_network -- -D warnings",
+    "format": "passed: rustfmt --check on all owned files",
+    "gaps": [],
+    "fixed_regressions": [
+      "The downloader refuses invalid raw extension IDs before request URL construction.",
+      "Extension target link refusals retain a useful reason.",
+      "Extension ZIP preflight covers every directory/file before creating missing destination folders.",
+      "Both SOCKS4 and SOCKS5 health checks retain protocol failure diagnostics.",
+      "Relay 502 bodies retain the actual safe upstream refusal reason."
+    ]
+  }
+}

@@ -4,6 +4,52 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+- Select the Rust CLI, MCP, Axum API and native browser worker as the application
+  runtime, and replace the dashboard with Rust/WASM while retaining its 195
+  cases. Port all 3,418 backend/tooling source test identities and preserve the
+  original platform-specific native inventories. Compile the real application
+  on Linux, Windows and macOS in CI; complete acceptance remains tied to the
+  exact current PR revision.
+- Port the current Camoufox font, media-device and speech-voice catalogs and
+  seeded selection algorithms to Rust. Check their original data digests and
+  360 frozen upstream draws in the existing browser-policy test. Preserve both
+  branches of the source random-sampling algorithm and existing test identities.
+- Preserve SDK evaluation integers, typed arrays, shared references and URL
+  tuples; refuse non-finite/cyclic/non-JSON results instead of coercing them to
+  null or text. Bound response encoding and reference expansion, retain ASCII
+  wire escaping and source numeric formatting, and acknowledge encoding failure
+  through the existing SDK error envelope. Existing tests gain 38 frozen source
+  value/encoding cases and real-browser value assertions without new test IDs.
+- Port Camoufox's pinned fpgen model sampling to Rust, with archive/member/data
+  integrity checks, bounded Bayesian sampling and streaming value decoding.
+  Extend the existing browser-policy checks with 18 frozen upstream posteriors,
+  generation and model-tampering checks, preserving reported test counts. Native
+  Camoufox preparation is exercised by policy and real-browser acceptance.
+- Add a Rust SDK subprocess for Playwright/Patchright with bounded protocol I/O,
+  cancellable stdin, persistent profiles, page identity policy, routes, mouse
+  input, evaluation, full cookie objects and owned driver cleanup. Native builds
+  package both executables after checking their independent Cargo records and
+  matching compiled identities. Real-browser acceptance passes for Playwright
+  1.64/1.65 and Patchright 1.64.1 without Python; vendor Node/SDK resources remain
+  external. The native application is now selected by default; complete product
+  distribution acceptance remains tied to current CI.
+- Review CloakBrowser 0.7.2's Playwright compatibility cap and current Camoufox
+  fingerprint-model/geometry changes. Update repository topics through the
+  authorized saved GitHub profile, retaining language topics until cutover.
+- Continue the native checkpoint on a separate Rust rewrite integration branch.
+  Record the source test baseline, review current upstream browser releases and
+  add automatic Linux, Windows and macOS native candidate builds. A Rust build
+  tool verifies Cargo artifact provenance and compiled identity, then packages
+  executable/source ZIPs with notices and SHA-256 checksums. These candidates
+  do not complete runtime selection, test migration or desktop distributions.
+- Pass the source archive destination to Git as an open file handle, preserving
+  native Windows paths without Git's incompatible verbatim-path parsing.
+- Give portable ZIP entries an explicit Unix creator format so Windows builds
+  preserve executable and notice permissions when archives move between systems.
+- Copy first-run files through bounded reads on Linux so filesystem copy offload
+  cannot skip source access-time updates required by the original copy policy.
+  Existing destination bytes and copytree metadata snapshots remain preserved.
+
 - Begin a parity-gated native Rust domain library with source-generated identity,
   model, validation, conversion and vault fixtures; keep the current Python
   application selected until the complete migration is verified.

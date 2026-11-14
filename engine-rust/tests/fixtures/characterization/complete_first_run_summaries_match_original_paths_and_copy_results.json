@@ -1,0 +1,828 @@
+[
+  {
+    "operation": "import_from",
+    "variant": "new",
+    "source": {
+      "profiles/a.json": [
+        123,
+        34,
+        110,
+        97,
+        109,
+        101,
+        34,
+        58,
+        34,
+        115,
+        111,
+        117,
+        114,
+        99,
+        101,
+        34,
+        125
+      ],
+      "user-data/a/state.bin": [
+        0,
+        255,
+        10,
+        13
+      ],
+      "tokens.json": [
+        123,
+        34,
+        102,
+        105,
+        120,
+        116,
+        117,
+        114,
+        101,
+        34,
+        58,
+        116,
+        114,
+        117,
+        101,
+        125
+      ]
+    },
+    "initial": {},
+    "result": {
+      "source": "/workspace/work/native-characterization-qvxzh6n2/cases/0/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-qvxzh6n2/cases/0/destination with spaces",
+      "copied": [
+        "profiles (1)",
+        "user-data (1)",
+        "tokens.json"
+      ],
+      "skipped": [],
+      "failed": [],
+      "profiles": 1
+    },
+    "again": {
+      "source": "/workspace/work/native-characterization-qvxzh6n2/cases/0/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-qvxzh6n2/cases/0/destination with spaces",
+      "copied": [],
+      "skipped": [
+        "profiles (1 already here)",
+        "user-data (1 already here)",
+        "tokens.json"
+      ],
+      "failed": [],
+      "profiles": 1
+    },
+    "written": {
+      "profiles/a.json": [
+        123,
+        34,
+        110,
+        97,
+        109,
+        101,
+        34,
+        58,
+        34,
+        115,
+        111,
+        117,
+        114,
+        99,
+        101,
+        34,
+        125
+      ],
+      "tokens.json": [
+        123,
+        34,
+        102,
+        105,
+        120,
+        116,
+        117,
+        114,
+        101,
+        34,
+        58,
+        116,
+        114,
+        117,
+        101,
+        125
+      ],
+      "user-data/a/state.bin": [
+        0,
+        255,
+        10,
+        13
+      ]
+    },
+    "marker_present": false,
+    "source_unchanged": true
+  },
+  {
+    "operation": "import_from",
+    "variant": "overlap",
+    "source": {
+      "profiles/a.json": [
+        123,
+        34,
+        110,
+        97,
+        109,
+        101,
+        34,
+        58,
+        34,
+        115,
+        111,
+        117,
+        114,
+        99,
+        101,
+        34,
+        125
+      ],
+      "user-data/a/state.bin": [
+        0,
+        255,
+        10,
+        13
+      ],
+      "tokens.json": [
+        123,
+        34,
+        102,
+        105,
+        120,
+        116,
+        117,
+        114,
+        101,
+        34,
+        58,
+        116,
+        114,
+        117,
+        101,
+        125
+      ]
+    },
+    "initial": {
+      "profiles/a.json": [
+        123,
+        34,
+        110,
+        97,
+        109,
+        101,
+        34,
+        58,
+        34,
+        100,
+        101,
+        115,
+        116,
+        105,
+        110,
+        97,
+        116,
+        105,
+        111,
+        110,
+        34,
+        125
+      ],
+      "tokens.json": [
+        123,
+        34,
+        100,
+        101,
+        115,
+        116,
+        105,
+        110,
+        97,
+        116,
+        105,
+        111,
+        110,
+        34,
+        58,
+        116,
+        114,
+        117,
+        101,
+        125
+      ]
+    },
+    "result": {
+      "source": "/workspace/work/native-characterization-qvxzh6n2/cases/1/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-qvxzh6n2/cases/1/destination with spaces",
+      "copied": [
+        "user-data (1)"
+      ],
+      "skipped": [
+        "profiles (1 already here)",
+        "tokens.json"
+      ],
+      "failed": [],
+      "profiles": 1
+    },
+    "again": {
+      "source": "/workspace/work/native-characterization-qvxzh6n2/cases/1/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-qvxzh6n2/cases/1/destination with spaces",
+      "copied": [],
+      "skipped": [
+        "profiles (1 already here)",
+        "user-data (1 already here)",
+        "tokens.json"
+      ],
+      "failed": [],
+      "profiles": 1
+    },
+    "written": {
+      "profiles/a.json": [
+        123,
+        34,
+        110,
+        97,
+        109,
+        101,
+        34,
+        58,
+        34,
+        100,
+        101,
+        115,
+        116,
+        105,
+        110,
+        97,
+        116,
+        105,
+        111,
+        110,
+        34,
+        125
+      ],
+      "tokens.json": [
+        123,
+        34,
+        100,
+        101,
+        115,
+        116,
+        105,
+        110,
+        97,
+        116,
+        105,
+        111,
+        110,
+        34,
+        58,
+        116,
+        114,
+        117,
+        101,
+        125
+      ],
+      "user-data/a/state.bin": [
+        0,
+        255,
+        10,
+        13
+      ]
+    },
+    "marker_present": false,
+    "source_unchanged": true
+  },
+  {
+    "operation": "import_from",
+    "variant": "empty",
+    "source": {},
+    "initial": {},
+    "result": {
+      "source": "/workspace/work/native-characterization-qvxzh6n2/cases/2/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-qvxzh6n2/cases/2/destination with spaces",
+      "copied": [],
+      "skipped": [],
+      "failed": [],
+      "profiles": 0
+    },
+    "again": {
+      "source": "/workspace/work/native-characterization-qvxzh6n2/cases/2/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-qvxzh6n2/cases/2/destination with spaces",
+      "copied": [],
+      "skipped": [],
+      "failed": [],
+      "profiles": 0
+    },
+    "written": {},
+    "marker_present": false,
+    "source_unchanged": true
+  },
+  {
+    "operation": "import_from",
+    "variant": "marked",
+    "source": {
+      "profiles/a.json": [
+        123,
+        34,
+        110,
+        97,
+        109,
+        101,
+        34,
+        58,
+        34,
+        115,
+        111,
+        117,
+        114,
+        99,
+        101,
+        34,
+        125
+      ],
+      "user-data/a/state.bin": [
+        0,
+        255,
+        10,
+        13
+      ],
+      "tokens.json": [
+        123,
+        34,
+        102,
+        105,
+        120,
+        116,
+        117,
+        114,
+        101,
+        34,
+        58,
+        116,
+        114,
+        117,
+        101,
+        125
+      ]
+    },
+    "initial": {
+      ".imported": [
+        101,
+        120,
+        105,
+        115,
+        116,
+        105,
+        110,
+        103,
+        32,
+        109,
+        97,
+        114,
+        107,
+        101,
+        114,
+        10
+      ]
+    },
+    "result": {
+      "source": "/workspace/work/native-characterization-qvxzh6n2/cases/3/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-qvxzh6n2/cases/3/destination with spaces",
+      "copied": [
+        "profiles (1)",
+        "user-data (1)",
+        "tokens.json"
+      ],
+      "skipped": [],
+      "failed": [],
+      "profiles": 1
+    },
+    "again": {
+      "source": "/workspace/work/native-characterization-qvxzh6n2/cases/3/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-qvxzh6n2/cases/3/destination with spaces",
+      "copied": [],
+      "skipped": [
+        "profiles (1 already here)",
+        "user-data (1 already here)",
+        "tokens.json"
+      ],
+      "failed": [],
+      "profiles": 1
+    },
+    "written": {
+      "profiles/a.json": [
+        123,
+        34,
+        110,
+        97,
+        109,
+        101,
+        34,
+        58,
+        34,
+        115,
+        111,
+        117,
+        114,
+        99,
+        101,
+        34,
+        125
+      ],
+      "tokens.json": [
+        123,
+        34,
+        102,
+        105,
+        120,
+        116,
+        117,
+        114,
+        101,
+        34,
+        58,
+        116,
+        114,
+        117,
+        101,
+        125
+      ],
+      "user-data/a/state.bin": [
+        0,
+        255,
+        10,
+        13
+      ]
+    },
+    "marker_present": true,
+    "source_unchanged": true
+  },
+  {
+    "operation": "run_if_needed",
+    "variant": "new",
+    "source": {
+      "profiles/a.json": [
+        123,
+        34,
+        110,
+        97,
+        109,
+        101,
+        34,
+        58,
+        34,
+        115,
+        111,
+        117,
+        114,
+        99,
+        101,
+        34,
+        125
+      ],
+      "user-data/a/state.bin": [
+        0,
+        255,
+        10,
+        13
+      ],
+      "tokens.json": [
+        123,
+        34,
+        102,
+        105,
+        120,
+        116,
+        117,
+        114,
+        101,
+        34,
+        58,
+        116,
+        114,
+        117,
+        101,
+        125
+      ]
+    },
+    "initial": {},
+    "result": {
+      "source": "/workspace/work/native-characterization-qvxzh6n2/cases/4/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-qvxzh6n2/cases/4/destination with spaces",
+      "copied": [
+        "profiles (1)",
+        "user-data (1)",
+        "tokens.json"
+      ],
+      "skipped": [],
+      "failed": [],
+      "profiles": 1
+    },
+    "again": null,
+    "written": {
+      "profiles/a.json": [
+        123,
+        34,
+        110,
+        97,
+        109,
+        101,
+        34,
+        58,
+        34,
+        115,
+        111,
+        117,
+        114,
+        99,
+        101,
+        34,
+        125
+      ],
+      "tokens.json": [
+        123,
+        34,
+        102,
+        105,
+        120,
+        116,
+        117,
+        114,
+        101,
+        34,
+        58,
+        116,
+        114,
+        117,
+        101,
+        125
+      ],
+      "user-data/a/state.bin": [
+        0,
+        255,
+        10,
+        13
+      ]
+    },
+    "marker_present": true,
+    "source_unchanged": true
+  },
+  {
+    "operation": "run_if_needed",
+    "variant": "overlap",
+    "source": {
+      "profiles/a.json": [
+        123,
+        34,
+        110,
+        97,
+        109,
+        101,
+        34,
+        58,
+        34,
+        115,
+        111,
+        117,
+        114,
+        99,
+        101,
+        34,
+        125
+      ],
+      "user-data/a/state.bin": [
+        0,
+        255,
+        10,
+        13
+      ],
+      "tokens.json": [
+        123,
+        34,
+        102,
+        105,
+        120,
+        116,
+        117,
+        114,
+        101,
+        34,
+        58,
+        116,
+        114,
+        117,
+        101,
+        125
+      ]
+    },
+    "initial": {
+      "profiles/a.json": [
+        123,
+        34,
+        110,
+        97,
+        109,
+        101,
+        34,
+        58,
+        34,
+        100,
+        101,
+        115,
+        116,
+        105,
+        110,
+        97,
+        116,
+        105,
+        111,
+        110,
+        34,
+        125
+      ],
+      "tokens.json": [
+        123,
+        34,
+        100,
+        101,
+        115,
+        116,
+        105,
+        110,
+        97,
+        116,
+        105,
+        111,
+        110,
+        34,
+        58,
+        116,
+        114,
+        117,
+        101,
+        125
+      ]
+    },
+    "result": {
+      "source": "/workspace/work/native-characterization-qvxzh6n2/cases/5/source \u65e5\u672c\u8a9e",
+      "destination": "/workspace/work/native-characterization-qvxzh6n2/cases/5/destination with spaces",
+      "copied": [
+        "user-data (1)"
+      ],
+      "skipped": [
+        "profiles (1 already here)",
+        "tokens.json"
+      ],
+      "failed": [],
+      "profiles": 1
+    },
+    "again": null,
+    "written": {
+      "profiles/a.json": [
+        123,
+        34,
+        110,
+        97,
+        109,
+        101,
+        34,
+        58,
+        34,
+        100,
+        101,
+        115,
+        116,
+        105,
+        110,
+        97,
+        116,
+        105,
+        111,
+        110,
+        34,
+        125
+      ],
+      "tokens.json": [
+        123,
+        34,
+        100,
+        101,
+        115,
+        116,
+        105,
+        110,
+        97,
+        116,
+        105,
+        111,
+        110,
+        34,
+        58,
+        116,
+        114,
+        117,
+        101,
+        125
+      ],
+      "user-data/a/state.bin": [
+        0,
+        255,
+        10,
+        13
+      ]
+    },
+    "marker_present": true,
+    "source_unchanged": true
+  },
+  {
+    "operation": "run_if_needed",
+    "variant": "empty",
+    "source": {},
+    "initial": {},
+    "result": null,
+    "again": null,
+    "written": {},
+    "marker_present": true,
+    "source_unchanged": true
+  },
+  {
+    "operation": "run_if_needed",
+    "variant": "marked",
+    "source": {
+      "profiles/a.json": [
+        123,
+        34,
+        110,
+        97,
+        109,
+        101,
+        34,
+        58,
+        34,
+        115,
+        111,
+        117,
+        114,
+        99,
+        101,
+        34,
+        125
+      ],
+      "user-data/a/state.bin": [
+        0,
+        255,
+        10,
+        13
+      ],
+      "tokens.json": [
+        123,
+        34,
+        102,
+        105,
+        120,
+        116,
+        117,
+        114,
+        101,
+        34,
+        58,
+        116,
+        114,
+        117,
+        101,
+        125
+      ]
+    },
+    "initial": {
+      ".imported": [
+        101,
+        120,
+        105,
+        115,
+        116,
+        105,
+        110,
+        103,
+        32,
+        109,
+        97,
+        114,
+        107,
+        101,
+        114,
+        10
+      ]
+    },
+    "result": null,
+    "again": null,
+    "written": {},
+    "marker_present": true,
+    "source_unchanged": true
+  }
+]

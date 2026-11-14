@@ -1,0 +1,902 @@
+{
+  "rows": [
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "80",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "port -1 is outside 1-65535"
+    },
+    {
+      "result": null,
+      "error": "port 0 is outside 1-65535"
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "65535",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "port 65536 is outside 1-65535"
+    },
+    {
+      "result": null,
+      "error": "port 0 is outside 1-65535"
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "80",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "'8.0' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "'8e1' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "'8__0' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "'_80' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "'80_' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "'+_80' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "'' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "'++80' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "'\u00b2' is not a valid port"
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "80",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "port 9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999 is outside 1-65535"
+    },
+    {
+      "result": null,
+      "error": "port -9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999 is outside 1-65535"
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "80",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "'00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080' is not a valid port"
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": "US",
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "80",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": "US",
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "80",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": "US",
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "80",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": "US",
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "80",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": "US",
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "80",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": "US",
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "80",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "None is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "True is not a valid port"
+    },
+    {
+      "result": {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "80",
+        "user": "fixture",
+        "pass": "synthetic",
+        "country": null,
+        "label": null,
+        "rotateUrl": null
+      },
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "80.0 is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "[] is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "{} is not a valid port"
+    }
+  ],
+  "batches": [
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "80",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: port -1 is outside 1-65535"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: port 0 is outside 1-65535"
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "65535",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: port 65536 is outside 1-65535"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: port 0 is outside 1-65535"
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "80",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: '8.0' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: '8e1' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: '8__0' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: '_80' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: '80_' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: '+_80' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: '' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: '++80' is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: '\u00b2' is not a valid port"
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "80",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: port 9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999 is outside 1-65535"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: port -9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999 is outside 1-65535"
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "80",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080' is not a valid port"
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": "US",
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "80",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": "US",
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "80",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": "US",
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "80",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": "US",
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "80",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": "US",
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "80",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "8080",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": "US",
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "80",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: None is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: True is not a valid port"
+    },
+    {
+      "result": [
+        {
+          "type": "HTTP",
+          "host": "host.test",
+          "port": "80",
+          "user": "fixture",
+          "pass": "synthetic",
+          "country": null,
+          "label": null,
+          "rotateUrl": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: 80.0 is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: [] is not a valid port"
+    },
+    {
+      "result": null,
+      "error": "proxies[0]: {} is not a valid port"
+    }
+  ]
+}

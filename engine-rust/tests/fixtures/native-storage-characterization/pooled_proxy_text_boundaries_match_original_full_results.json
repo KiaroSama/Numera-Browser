@@ -1,0 +1,918 @@
+[
+  {
+    "line": null,
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "one.test",
+        "port": "80",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      },
+      {
+        "type": "SOCKS5",
+        "host": "two.test",
+        "port": "1080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": null
+  },
+  {
+    "line": null,
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "one.test",
+        "port": "80",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      },
+      {
+        "type": "SOCKS5",
+        "host": "two.test",
+        "port": "1080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": null
+  },
+  {
+    "line": null,
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "one.test",
+        "port": "80",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      },
+      {
+        "type": "SOCKS5",
+        "host": "two.test",
+        "port": "1080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": null
+  },
+  {
+    "line": null,
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "one.test",
+        "port": "80",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      },
+      {
+        "type": "SOCKS5",
+        "host": "two.test",
+        "port": "1080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": null
+  },
+  {
+    "line": null,
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "one.test",
+        "port": "80",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      },
+      {
+        "type": "SOCKS5",
+        "host": "two.test",
+        "port": "1080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": null
+  },
+  {
+    "line": null,
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "one.test",
+        "port": "80",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      },
+      {
+        "type": "SOCKS5",
+        "host": "two.test",
+        "port": "1080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": null
+  },
+  {
+    "line": null,
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "one.test",
+        "port": "80",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      },
+      {
+        "type": "SOCKS5",
+        "host": "two.test",
+        "port": "1080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": null
+  },
+  {
+    "line": null,
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "one.test",
+        "port": "80",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      },
+      {
+        "type": "SOCKS5",
+        "host": "two.test",
+        "port": "1080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": null
+  },
+  {
+    "line": null,
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "one.test",
+        "port": "80",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      },
+      {
+        "type": "SOCKS5",
+        "host": "two.test",
+        "port": "1080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": null
+  },
+  {
+    "line": null,
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "one.test",
+        "port": "80",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      },
+      {
+        "type": "SOCKS5",
+        "host": "two.test",
+        "port": "1080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": null
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": null,
+    "many": [],
+    "rendered": null
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": "us-east"
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:us-east"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": null,
+    "many": [],
+    "rendered": null
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": "us-east"
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:us-east"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": null,
+    "many": [],
+    "rendered": null
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": "us-east"
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:us-east"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": null,
+    "many": [],
+    "rendered": null
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": "us-east"
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": "us-east"
+      }
+    ],
+    "rendered": "http://host.test:8080:us-east"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": null,
+    "many": [],
+    "rendered": null
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": "us-east"
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": "us-east"
+      }
+    ],
+    "rendered": "http://host.test:8080:us-east"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": null,
+    "many": [],
+    "rendered": null
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": "us-east"
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": "us-east"
+      }
+    ],
+    "rendered": "http://host.test:8080:us-east"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": null,
+    "many": [],
+    "rendered": null
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080:US"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": "US",
+      "label": "us-east"
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": "US",
+        "label": "us-east"
+      }
+    ],
+    "rendered": "http://host.test:8080:us-east"
+  },
+  {
+    "line": {
+      "type": "\u200bHTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": null,
+      "label": null
+    },
+    "many": [
+      {
+        "type": "\u200bHTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080"
+  },
+  {
+    "line": null,
+    "many": [],
+    "rendered": null
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "\u200bhost.test\u200b",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": null,
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "\u200bhost.test\u200b",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": "http://\u200bhost.test\u200b:8080"
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "8080",
+      "user": null,
+      "pass": null,
+      "country": null,
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "8080",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:8080"
+  },
+  {
+    "line": null,
+    "many": [],
+    "rendered": null
+  },
+  {
+    "line": null,
+    "many": [],
+    "rendered": null
+  },
+  {
+    "line": null,
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "one.test",
+        "port": "80",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      },
+      {
+        "type": "HTTP",
+        "host": "two.test",
+        "port": "81",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": null
+  },
+  {
+    "line": null,
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "one.test",
+        "port": "80",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      },
+      {
+        "type": "HTTP",
+        "host": "two.test",
+        "port": "81",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": null
+  },
+  {
+    "line": null,
+    "many": [],
+    "rendered": null
+  },
+  {
+    "line": {
+      "type": "HTTPS",
+      "host": "2001:db8::1",
+      "port": "443",
+      "user": "user",
+      "pass": "pass",
+      "country": "DE",
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTPS",
+        "host": "2001:db8::1",
+        "port": "443",
+        "user": "user",
+        "pass": "pass",
+        "country": "DE",
+        "label": null
+      }
+    ],
+    "rendered": "https://user:pass@[2001:db8::1]:443:DE"
+  },
+  {
+    "line": null,
+    "many": [],
+    "rendered": null
+  },
+  {
+    "line": {
+      "type": "HTTP",
+      "host": "host.test",
+      "port": "\u0668\u0660\u0668\u0660",
+      "user": null,
+      "pass": null,
+      "country": null,
+      "label": null
+    },
+    "many": [
+      {
+        "type": "HTTP",
+        "host": "host.test",
+        "port": "\u0668\u0660\u0668\u0660",
+        "user": null,
+        "pass": null,
+        "country": null,
+        "label": null
+      }
+    ],
+    "rendered": "http://host.test:\u0668\u0660\u0668\u0660"
+  }
+]

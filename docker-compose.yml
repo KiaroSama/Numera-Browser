@@ -2,7 +2,8 @@
 #
 #   1. generate a token:  openssl rand -base64 32
 #   2. put it in .env as  NUMERA_API_TOKEN=...
-#   3. docker compose up -d
+#   3. cargo xtask build-product build/container --resources /path/to/resources --server-only
+#   4. docker compose up --build -d
 #
 # The port is published to 127.0.0.1 on purpose. `8787:8787` would bind every
 # interface on the host, and this API creates profiles, launches browsers and
@@ -27,7 +28,7 @@ services:
       # Profiles, browser sessions, the proxy pool and tokens. Losing this is
       # losing every logged-in session.
       #
-      # A *named* volume, deliberately. The image runs as `pwuser` (uid 1001)
+      # A named volume. The image runs as `numera` (uid 1001)
       # and Docker initialises a named volume from the image, so /data arrives
       # already owned by that user. Swapping this for a bind mount
       # (`- ./data:/data`) keeps the host directory's ownership instead, the

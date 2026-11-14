@@ -1,0 +1,570 @@
+{
+  "prefix": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n",
+  "cases": [
+    {
+      "label": "job-absent",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "job",
+          "group": "fixture-job"
+        }
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"job\",\"group\":\"fixture-job\"},\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": true,
+      "problem": false,
+      "trees": [
+        {
+          "pid": 7,
+          "pidToken": null,
+          "tree": {
+            "kind": "job",
+            "group": "fixture-job"
+          }
+        }
+      ]
+    },
+    {
+      "label": "job-null",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "job",
+          "group": "fixture-job"
+        },
+        "pidToken": null
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"job\",\"group\":\"fixture-job\"},\"pidToken\":null,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": true,
+      "problem": false,
+      "trees": [
+        {
+          "pid": 7,
+          "pidToken": null,
+          "tree": {
+            "kind": "job",
+            "group": "fixture-job"
+          }
+        }
+      ]
+    },
+    {
+      "label": "job-false",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "job",
+          "group": "fixture-job"
+        },
+        "pidToken": false
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"job\",\"group\":\"fixture-job\"},\"pidToken\":false,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "job-true",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "job",
+          "group": "fixture-job"
+        },
+        "pidToken": true
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"job\",\"group\":\"fixture-job\"},\"pidToken\":true,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "job-zero",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "job",
+          "group": "fixture-job"
+        },
+        "pidToken": 0
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"job\",\"group\":\"fixture-job\"},\"pidToken\":0,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "job-negative",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "job",
+          "group": "fixture-job"
+        },
+        "pidToken": -1
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"job\",\"group\":\"fixture-job\"},\"pidToken\":-1,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "job-one",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "job",
+          "group": "fixture-job"
+        },
+        "pidToken": 1
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"job\",\"group\":\"fixture-job\"},\"pidToken\":1,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": true,
+      "problem": false,
+      "trees": [
+        {
+          "pid": 7,
+          "pidToken": 1,
+          "tree": {
+            "kind": "job",
+            "group": "fixture-job"
+          }
+        }
+      ]
+    },
+    {
+      "label": "job-positive",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "job",
+          "group": "fixture-job"
+        },
+        "pidToken": 7
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"job\",\"group\":\"fixture-job\"},\"pidToken\":7,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": true,
+      "problem": false,
+      "trees": [
+        {
+          "pid": 7,
+          "pidToken": 7,
+          "tree": {
+            "kind": "job",
+            "group": "fixture-job"
+          }
+        }
+      ]
+    },
+    {
+      "label": "job-u64-max",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "job",
+          "group": "fixture-job"
+        },
+        "pidToken": 18446744073709551615
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"job\",\"group\":\"fixture-job\"},\"pidToken\":18446744073709551615,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": true,
+      "problem": false,
+      "trees": [
+        {
+          "pid": 7,
+          "pidToken": 18446744073709551615,
+          "tree": {
+            "kind": "job",
+            "group": "fixture-job"
+          }
+        }
+      ]
+    },
+    {
+      "label": "job-float",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "job",
+          "group": "fixture-job"
+        },
+        "pidToken": 1.0
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"job\",\"group\":\"fixture-job\"},\"pidToken\":1.0,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "job-string",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "job",
+          "group": "fixture-job"
+        },
+        "pidToken": "7"
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"job\",\"group\":\"fixture-job\"},\"pidToken\":\"7\",\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "job-array",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "job",
+          "group": "fixture-job"
+        },
+        "pidToken": []
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"job\",\"group\":\"fixture-job\"},\"pidToken\":[],\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "job-object",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "job",
+          "group": "fixture-job"
+        },
+        "pidToken": {}
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"job\",\"group\":\"fixture-job\"},\"pidToken\":{},\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "pgid-absent",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "pgid",
+          "group": 7
+        }
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"pgid\",\"group\":7},\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "pgid-null",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "pgid",
+          "group": 7
+        },
+        "pidToken": null
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"pgid\",\"group\":7},\"pidToken\":null,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "pgid-false",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "pgid",
+          "group": 7
+        },
+        "pidToken": false
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"pgid\",\"group\":7},\"pidToken\":false,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "pgid-true",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "pgid",
+          "group": 7
+        },
+        "pidToken": true
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"pgid\",\"group\":7},\"pidToken\":true,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "pgid-zero",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "pgid",
+          "group": 7
+        },
+        "pidToken": 0
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"pgid\",\"group\":7},\"pidToken\":0,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "pgid-negative",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "pgid",
+          "group": 7
+        },
+        "pidToken": -1
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"pgid\",\"group\":7},\"pidToken\":-1,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "pgid-one",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "pgid",
+          "group": 7
+        },
+        "pidToken": 1
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"pgid\",\"group\":7},\"pidToken\":1,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": true,
+      "problem": false,
+      "trees": [
+        {
+          "pid": 7,
+          "pidToken": 1,
+          "tree": {
+            "kind": "pgid",
+            "group": 7
+          }
+        }
+      ]
+    },
+    {
+      "label": "pgid-positive",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "pgid",
+          "group": 7
+        },
+        "pidToken": 7
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"pgid\",\"group\":7},\"pidToken\":7,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": true,
+      "problem": false,
+      "trees": [
+        {
+          "pid": 7,
+          "pidToken": 7,
+          "tree": {
+            "kind": "pgid",
+            "group": 7
+          }
+        }
+      ]
+    },
+    {
+      "label": "pgid-u64-max",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "pgid",
+          "group": 7
+        },
+        "pidToken": 18446744073709551615
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"pgid\",\"group\":7},\"pidToken\":18446744073709551615,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": true,
+      "problem": false,
+      "trees": [
+        {
+          "pid": 7,
+          "pidToken": 18446744073709551615,
+          "tree": {
+            "kind": "pgid",
+            "group": 7
+          }
+        }
+      ]
+    },
+    {
+      "label": "pgid-float",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "pgid",
+          "group": 7
+        },
+        "pidToken": 1.0
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"pgid\",\"group\":7},\"pidToken\":1.0,\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "pgid-string",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "pgid",
+          "group": 7
+        },
+        "pidToken": "7"
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"pgid\",\"group\":7},\"pidToken\":\"7\",\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "pgid-array",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "pgid",
+          "group": 7
+        },
+        "pidToken": []
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"pgid\",\"group\":7},\"pidToken\":[],\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "pgid-object",
+      "input": {
+        "pid": 7,
+        "tree": {
+          "kind": "pgid",
+          "group": 7
+        },
+        "pidToken": {}
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"tree\":{\"kind\":\"pgid\",\"group\":7},\"pidToken\":{},\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "job-name-empty",
+      "input": {
+        "pid": 7,
+        "pidToken": 1,
+        "tree": {
+          "kind": "job",
+          "group": ""
+        }
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"pidToken\":1,\"tree\":{\"kind\":\"job\",\"group\":\"\"},\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "job-name-blank",
+      "input": {
+        "pid": 7,
+        "pidToken": 1,
+        "tree": {
+          "kind": "job",
+          "group": " \t"
+        }
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"pidToken\":1,\"tree\":{\"kind\":\"job\",\"group\":\" \\t\"},\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "job-name-nul",
+      "input": {
+        "pid": 7,
+        "pidToken": 1,
+        "tree": {
+          "kind": "job",
+          "group": "bad\u0000name"
+        }
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"pidToken\":1,\"tree\":{\"kind\":\"job\",\"group\":\"bad\\u0000name\"},\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "job-name-number",
+      "input": {
+        "pid": 7,
+        "pidToken": 1,
+        "tree": {
+          "kind": "job",
+          "group": 7
+        }
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"pidToken\":1,\"tree\":{\"kind\":\"job\",\"group\":7},\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "job-name-bool",
+      "input": {
+        "pid": 7,
+        "pidToken": 1,
+        "tree": {
+          "kind": "job",
+          "group": false
+        }
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"pidToken\":1,\"tree\":{\"kind\":\"job\",\"group\":false},\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "pgid-group-mismatch",
+      "input": {
+        "pid": 7,
+        "pidToken": 1,
+        "tree": {
+          "kind": "pgid",
+          "group": 8
+        }
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"pidToken\":1,\"tree\":{\"kind\":\"pgid\",\"group\":8},\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    },
+    {
+      "label": "pgid-group-bool",
+      "input": {
+        "pid": 7,
+        "pidToken": 1,
+        "tree": {
+          "kind": "pgid",
+          "group": true
+        }
+      },
+      "raw": "{\"version\":2,\"event\":\"header\"}\n{\"event\":\"pending\",\"attempt\":\"fixture\"}\n{\"pid\":7,\"pidToken\":1,\"tree\":{\"kind\":\"pgid\",\"group\":true},\"event\":\"unit\",\"attempt\":\"fixture\"}\n",
+      "complete": false,
+      "problem": true,
+      "trees": []
+    }
+  ]
+}

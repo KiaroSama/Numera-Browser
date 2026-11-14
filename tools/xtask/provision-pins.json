@@ -1,0 +1,202 @@
+{
+  "schema": 1,
+  "reviewed_on": "2026-11-14",
+  "drivers": {
+    "playwright": {
+      "version": "1.65.1",
+      "wheel_package": "playwright",
+      "platforms": {
+        "linux-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/a9/5c/fddffe92237452d23b19c4703ca8a2ddffc3da9eaf4424b0f019dd5608f3/playwright-1.65.0-py3-none-manylinux1_x86_64.whl",
+          "sha256": "e8e4d4a177bef2c2f2a17019febadded1c84cd1499b80f7100bb30ff20df7bad",
+          "size": 53470748
+        },
+        "linux-aarch64": {
+          "url": "https://files.pythonhosted.org/packages/c0/ff/952586cd6d9ec43739d66fa6bfebfd92656ab03e97bc54659b23c23ad069/playwright-1.65.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+          "sha256": "9072e6394fec07e56e17fec0ca271a7847dda4716db9d716291d1f7344f199bb",
+          "size": 53142506
+        },
+        "macos-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/a9/8c/e98c8ac52e9187bff759893a4009bf468dbd56255dc34ad8f53c8e77f10c/playwright-1.65.0-py3-none-macosx_10_13_x86_64.whl",
+          "sha256": "78d2bd6127463552ddd890516e5eb4cc805559af474aa5ccf5b62e907972ce16",
+          "size": 50319011
+        },
+        "macos-aarch64": {
+          "url": "https://files.pythonhosted.org/packages/c4/5d/213c3f278d4f3b110d61b4082222c52b9f7187d3f4ca3dde2d217e0d752f/playwright-1.65.0-py3-none-macosx_11_0_arm64.whl",
+          "sha256": "229d6b184de3da7bf292cc38a63ee82aefb5c9f0a4233b1142f3ffb1cbd410ec",
+          "size": 48808710
+        },
+        "windows-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/8c/0d/32e96514b48fabd16ece31bae11afba5e18cf425123fb7c36c6b8bd8db8f/playwright-1.65.0-py3-none-win_amd64.whl",
+          "sha256": "ab22611318e8747477c949c81b055ee6e224ecedf66c2a794209c7fd0210a743",
+          "size": 42664080
+        }
+      },
+      "wheel_version": "1.65.0",
+      "package_archive": {
+        "url": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.65.1.tgz",
+        "sha256": "6f5a60be62a4fddfbe7d10c448d8fbd54547da3358f2f8a04211440471ee863e",
+        "size": 3232772
+      }
+    },
+    "patchright": {
+      "version": "1.64.1",
+      "wheel_package": "patchright",
+      "platforms": {
+        "linux-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/11/1a/2822f0f5a530d47161cc78fa35381023831e1068749378ecff3eb54a766d/patchright-1.64.1-py3-none-manylinux1_x86_64.whl",
+          "sha256": "ff5f7e2f46b6cb26008e401a2c52d6ff09c1c09ba4b24e2c75bc501f62a3f084",
+          "size": 48276484
+        },
+        "linux-aarch64": {
+          "url": "https://files.pythonhosted.org/packages/df/10/f00d4eba7f3b944a77cfcf04ce25262123021c9b56dfb0e0234d6546c724/patchright-1.64.1-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+          "sha256": "2654f77810ad02980124bd8a7bc8d28658787b1583a94bcb2529faa612773992",
+          "size": 47962034
+        },
+        "macos-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/a2/a0/19b2d80eedc22fd8935ee3a7c0ee627eed6443a521f62d98e5b950f23694/patchright-1.64.1-py3-none-macosx_10_13_x86_64.whl",
+          "sha256": "cfbff95e926b1a1a61339dc59da2e8f0236c2bc13c508959432532bbabeafbbd",
+          "size": 44337731
+        },
+        "macos-aarch64": {
+          "url": "https://files.pythonhosted.org/packages/a4/49/1ba8f64f2f4e1ad430af213ef3bbc3ac44d9e106f4ec20d3078a2f7e8b01/patchright-1.64.1-py3-none-macosx_11_0_arm64.whl",
+          "sha256": "5cf5aa747646a2824cf4ca88a4f0a6c758865c4575c74cdef250d92b6fd76d44",
+          "size": 43004006
+        },
+        "windows-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/82/a5/f0d454cecbaef15c35574268ce6a4327f370788bb8e2da3a216cf5f9908f/patchright-1.64.1-py3-none-win_amd64.whl",
+          "sha256": "3cd3e7e1e94034e3f3a732ef7d6f87376dc7d27a9b598de51565051acabf3428",
+          "size": 38665415
+        }
+      }
+    },
+    "camoufox": {
+      "version": "1.62.0",
+      "wheel_package": "playwright",
+      "platforms": {
+        "linux-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/43/6b/b24aebc2b04bffcb342bccf96e287c78b363e1615bed5cea97500cc0393a/playwright-1.62.0-py3-none-manylinux1_x86_64.whl",
+          "sha256": "ba33bae6a13b3d9d354c751cb618af357d20fe1d57767cbcce52079bbef17ad3",
+          "size": 47748926
+        },
+        "linux-aarch64": {
+          "url": "https://files.pythonhosted.org/packages/36/43/b4b18bdc87e1949568fffdcde3ff9a0456266b2d0c6d4432cc34d89ea6eb/playwright-1.62.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+          "sha256": "db2d76613a57ad844362ce42f7d0c2fa26b19a4f7a46d4f76b891c631e6e5aff",
+          "size": 47441423
+        },
+        "macos-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/6c/5b/ca2abcf3aa69f9fb510215e3064f30b57fe57657c8d04ede45bb966d5606/playwright-1.62.0-py3-none-macosx_10_13_x86_64.whl",
+          "sha256": "d8da938f3748841a8754f2e1f0216902c1c8f8ae3720de8b32ccf8e6913a7c4f",
+          "size": 43732091
+        },
+        "macos-aarch64": {
+          "url": "https://files.pythonhosted.org/packages/af/1a/0bfbe9904350961f4dbb713f04342e40d548c5fc26c8157bd13617c81492/playwright-1.62.0-py3-none-macosx_11_0_arm64.whl",
+          "sha256": "db755ab27db21a04186f1fe8169888e42356086e439b1059b923ef417f0b6034",
+          "size": 42510842
+        },
+        "windows-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/2b/a9/4160c1033c07af98bf841ad079457dd78408a5ee0dd56cbfe50b8b6a1c22/playwright-1.62.0-py3-none-win_amd64.whl",
+          "sha256": "92c0d98ed04eb35af557b709875edba415b1f548bdb22ddb5bb3e1e6c835c2f1",
+          "size": 38164458
+        }
+      }
+    },
+    "cloak": {
+      "version": "1.65.1",
+      "wheel_package": "playwright",
+      "platforms": {
+        "linux-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/a9/5c/fddffe92237452d23b19c4703ca8a2ddffc3da9eaf4424b0f019dd5608f3/playwright-1.65.0-py3-none-manylinux1_x86_64.whl",
+          "sha256": "e8e4d4a177bef2c2f2a17019febadded1c84cd1499b80f7100bb30ff20df7bad",
+          "size": 53470748
+        },
+        "linux-aarch64": {
+          "url": "https://files.pythonhosted.org/packages/c0/ff/952586cd6d9ec43739d66fa6bfebfd92656ab03e97bc54659b23c23ad069/playwright-1.65.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+          "sha256": "9072e6394fec07e56e17fec0ca271a7847dda4716db9d716291d1f7344f199bb",
+          "size": 53142506
+        },
+        "macos-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/a9/8c/e98c8ac52e9187bff759893a4009bf468dbd56255dc34ad8f53c8e77f10c/playwright-1.65.0-py3-none-macosx_10_13_x86_64.whl",
+          "sha256": "78d2bd6127463552ddd890516e5eb4cc805559af474aa5ccf5b62e907972ce16",
+          "size": 50319011
+        },
+        "macos-aarch64": {
+          "url": "https://files.pythonhosted.org/packages/c4/5d/213c3f278d4f3b110d61b4082222c52b9f7187d3f4ca3dde2d217e0d752f/playwright-1.65.0-py3-none-macosx_11_0_arm64.whl",
+          "sha256": "229d6b184de3da7bf292cc38a63ee82aefb5c9f0a4233b1142f3ffb1cbd410ec",
+          "size": 48808710
+        },
+        "windows-x86_64": {
+          "url": "https://files.pythonhosted.org/packages/8c/0d/32e96514b48fabd16ece31bae11afba5e18cf425123fb7c36c6b8bd8db8f/playwright-1.65.0-py3-none-win_amd64.whl",
+          "sha256": "ab22611318e8747477c949c81b055ee6e224ecedf66c2a794209c7fd0210a743",
+          "size": 42664080
+        }
+      },
+      "wheel_version": "1.65.0",
+      "package_archive": {
+        "url": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.65.1.tgz",
+        "sha256": "6f5a60be62a4fddfbe7d10c448d8fbd54547da3358f2f8a04211440471ee863e",
+        "size": 3232772
+      }
+    }
+  },
+  "camoufox": {
+    "version": "158.0.1",
+    "build": "beta.41",
+    "platforms": {
+      "lin.x86_64": {
+        "url": "https://github.com/daijro/camoufox/releases/download/v158.0.1-beta.41/camoufox-158.0.1-beta.41-lin.x86_64.zip",
+        "sha256": "3f2eb1d0451fa58e45e43e55f5e6181565069791ae60c0574f0ceb1f01341c33"
+      },
+      "lin.arm64": {
+        "url": "https://github.com/daijro/camoufox/releases/download/v158.0.1-beta.41/camoufox-158.0.1-beta.41-lin.arm64.zip",
+        "sha256": "60e25f6eb95e13d9ec655bc02913d51057e669cb31542e6ace9d2190ab5380af"
+      },
+      "mac.x86_64": {
+        "url": "https://github.com/daijro/camoufox/releases/download/v158.0.1-beta.41/camoufox-158.0.1-beta.41-mac.x86_64.zip",
+        "sha256": "1afd6caa1e82caa41a4f56d8519f673e36b0835700b1c9c904e78a84c5711f3a"
+      },
+      "mac.arm64": {
+        "url": "https://github.com/daijro/camoufox/releases/download/v158.0.1-beta.41/camoufox-158.0.1-beta.41-mac.arm64.zip",
+        "sha256": "9038f86d666c9780b6fff199d488737b8596c01f24e3e517845a0ecfb0cf8add"
+      },
+      "win.x86_64": {
+        "url": "https://github.com/daijro/camoufox/releases/download/v158.0.1-beta.41/camoufox-158.0.1-beta.41-win.x86_64.zip",
+        "sha256": "2644bd14f1cc345c768f6a70b576bcc87eb3d0bf0df54856d6fe0bbc3027515f"
+      }
+    }
+  },
+  "sources": [
+    {
+      "component": "camoufox",
+      "version": "158.0.1-beta.41",
+      "license": "MPL-2.0",
+      "source_url": "https://codeload.github.com/daijro/camoufox/tar.gz/c3ad3bf2c3c6e93225aa6587246c8b70f9314664",
+      "sha256": "e6859d944d79aa1c07a7cc012588820560d1ddb61bc51581eafaaa20d8673327",
+      "archive": "sources/third-party/camoufox-c3ad3bf2.tar.gz"
+    },
+    {
+      "component": "ublock-origin",
+      "version": "1.75.4",
+      "license": "GPL-3.0-or-later",
+      "source_url": "https://codeload.github.com/gorhill/uBlock/tar.gz/f417911934edb2d3e2700110803ed7fde6f51022",
+      "sha256": "d4a90ee3a4d15f2c792ce891e2e56c6a4fe79548d2ec7993d7d30fb476bc7159",
+      "archive": "sources/third-party/ublock-1.75.4.tar.gz"
+    }
+  ],
+  "geoip": {
+    "version": "2026.11.11",
+    "url": "https://github.com/daijro/geoip-all-in-one/releases/download/2026.11.11/geoip-aio-all.mmdb",
+    "sha256": "6ee1f89253392dadfee55aff6955077c318e61aa141c1a91a977c60f277890b4",
+    "notice_url": "https://raw.githubusercontent.com/daijro/geoip-all-in-one/cd4f0e2f2756b11d93d6ab6062eaa63c92131742/README.md",
+    "notice_sha256": "d9b337a3e7981a8e587ed1bc1ed0ca36728672451802ca73522dece58a119093"
+  },
+  "addons": {
+    "ublock-origin": {
+      "version": "1.75.4",
+      "id": "uBlock0@raymondhill.net",
+      "url": "https://addons.mozilla.org/firefox/downloads/file/5203014/ublock_origin-1.75.4.xpi",
+      "sha256": "e2df503cce7cf5069130618c349695f62bdddb9eb8c189156d027269ae4ae267",
+      "upstream_commit": "df9ca1156abf94bf5e8e7764effd35d3a7b298f9"
+    }
+  }
+}

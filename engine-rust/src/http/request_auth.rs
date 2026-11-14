@@ -16,6 +16,9 @@ impl RequestAuth {
             environment: environment.trim().into(),
         }
     }
+    pub(crate) fn root(&self) -> &std::path::Path {
+        self.tokens.root()
+    }
     pub fn adopt(&self, now: f64) -> io::Result<bool> {
         self.tokens.adopt(now)
     }
@@ -33,6 +36,9 @@ impl RequestAuth {
         alternate: Option<&str>,
         now: f64,
     ) -> io::Result<bool> {
+        if super::update_routes::private_path(path) {
+            return Ok(false);
+        }
         if method == "OPTIONS"
             || !path.starts_with("/api/")
             || path.trim_end_matches('/') == "/api/ready"
@@ -59,6 +65,11 @@ impl RequestAuth {
         {
             return Ok(true);
         }
-        Ok(self.tokens.verify(sent, now)?.is_some())
+        let cleanup = method == "POST"
+            && path
+                .strip_prefix("/api/profiles/")
+                .and_then(|path| path.strip_suffix("/stop"))
+                .is_some_and(|id| !id.is_empty() && !id.contains('/'));
+        Ok(self.tokens.verify_usage(sent, now, !cleanup)?.is_some())
     }
 }

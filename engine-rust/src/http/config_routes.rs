@@ -60,8 +60,11 @@ async fn engines(State(state): State<Arc<Settings>>) -> Json<Value> {
     Json(json!(state.installed))
 }
 fn view(state: &Settings) -> Result<Value, ()> {
-    let config = state.config.read();
-    let engine = state.config.default_engine(&state.installed);
+    let config = state.config.read().map_err(|_| ())?;
+    let engine = state
+        .config
+        .default_engine(&state.installed)
+        .map_err(|_| ())?;
     let extensions = state.config.default_extensions().map_err(|_| ())?;
     let meta = state.dashboard.get_meta().map_err(|_| ())?;
     let metadata = meta.as_object().ok_or(())?;
@@ -121,7 +124,7 @@ fn view(state: &Settings) -> Result<Value, ()> {
     )
 }
 async fn read(State(state): State<Arc<Settings>>) -> Response {
-    match tokio::task::spawn_blocking(move || view(&state)).await {
+    match super::admission::blocking(move || view(&state)).await {
         Ok(Ok(value)) => Json(value).into_response(),
         _ => failure(),
     }
@@ -195,7 +198,7 @@ fn patch(
     Ok(clean)
 }
 async fn write(State(state): State<Arc<Settings>>, ObjectBody(body): ObjectBody) -> Response {
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let clean = match patch(body, &state.installed) {
             Ok(clean) => clean,
             Err(message) => {

@@ -9,6 +9,56 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
+mod common;
+
+#[test]
+fn persisted_json_text_matches_original_escaping_and_platform_newlines()
+-> Result<(), Box<dyn std::error::Error>> {
+    use serde_json::Value;
+
+    let temporary = common::TempDirectory::new("persisted-json")?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/characterization/persisted_json_text_matches_original_escaping_and_platform_newlines.json"
+    ))?;
+    assert_eq!(cases.len(), 12, "Persisted JSON observations missing");
+    for (index, case) in cases.iter().enumerate() {
+        let path = temporary
+            .path()
+            .join("cases")
+            .join(index.to_string())
+            .join("document.json");
+        let expected: Vec<u8> = serde_json::from_value(case["bytes"].clone())?;
+        #[cfg(windows)]
+        let expected = String::from_utf8(expected)?
+            .replace("\r\n", "\n")
+            .replace('\n', "\r\n")
+            .into_bytes();
+        // The retired observer prepared this file before native publication.
+        // Recreate its independently frozen bytes in an owned directory.
+        fs::create_dir_all(path.parent().ok_or("Original JSON parent missing")?)?;
+        fs::write(&path, &expected)?;
+        assert_eq!(fs::read(&path)?, expected, "Original JSON bytes changed");
+        fs::write(&path, b"previous document must be replaced completely")?;
+        write_json(&path, &case["input"])?;
+        assert_eq!(
+            fs::read(&path)?,
+            expected,
+            "Persisted JSON bytes differ: case={index}"
+        );
+        assert_eq!(serde_json::from_slice::<Value>(&expected)?, case["input"]);
+        write_json(&path, &case["input"])?;
+        assert_eq!(fs::read(&path)?, expected, "Repeated JSON write differs");
+        assert_eq!(
+            fs::read_dir(path.parent().ok_or("Parent missing")?)?.count(),
+            1,
+            "JSON publication left temporary files"
+        );
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
+
 #[test]
 fn locked_atomic_write_and_rollback_preserve_original_bytes()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -39,6 +89,25 @@ fn locked_atomic_write_and_rollback_preserve_original_bytes()
             fs::read(&path)?,
             original,
             "Failed stream must never publish partial bytes"
+        );
+        let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            write_stream(&path, |file| -> std::io::Result<()> {
+                use std::io::Write;
+                file.write_all(b"partial secret before a writer panic")?;
+                std::panic::panic_any((17_u32, "controlled writer panic"));
+            })
+        }))
+        .expect_err("The writer's original panic must keep unwinding");
+        assert_eq!(
+            panic.downcast_ref::<(u32, &'static str)>(),
+            Some(&(17, "controlled writer panic")),
+            "Atomic publication must preserve the exact panic payload"
+        );
+        assert_eq!(fs::read(&path)?, original);
+        assert!(
+            !fs::read_dir(&root)?.any(|entry| entry
+                .is_ok_and(|entry| { entry.file_name().to_string_lossy().contains(".tmp-") })),
+            "An unwinding writer must remove its owned partial temporary file"
         );
         let mut batch = Batch::default();
         batch.write(&path, &json!({"name":"changed"}))?;

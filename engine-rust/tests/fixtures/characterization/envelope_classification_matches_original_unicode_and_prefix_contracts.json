@@ -1,0 +1,4162 @@
+[
+  {
+    "value": "enc:v\u0661:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v1:",
+    "envelope": true,
+    "supported": true
+  },
+  {
+    "value": "enc:v2:invalid",
+    "envelope": true,
+    "supported": true
+  },
+  {
+    "value": "enc:v9:",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v01:",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v0:",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v12:\n",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v:",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v1",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v1x:",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v-1:",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v+1:",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v1.0:",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "ENC:v1:",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": " enc:v1:",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "\nenc:v1:",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v1\n:",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u00b2:",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u00bd:",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u2160:",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v1\u0662:",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v1:\u0000",
+    "envelope": true,
+    "supported": true
+  },
+  {
+    "value": "plain",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v/:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v1:opaque",
+    "envelope": true,
+    "supported": true
+  },
+  {
+    "value": "enc:v2:opaque",
+    "envelope": true,
+    "supported": true
+  },
+  {
+    "value": "enc:v3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v::opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u065f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0660:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0661:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0662:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0663:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0664:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0665:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0666:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0667:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0668:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0669:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u066a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u06ef:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u06f0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u06f1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u06f2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u06f3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u06f4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u06f5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u06f6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u06f7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u06f8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u06f9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u06fa:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u07bf:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u07c0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u07c1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u07c2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u07c3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u07c4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u07c5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u07c6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u07c7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u07c8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u07c9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u07ca:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0965:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0966:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0967:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0968:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0969:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u096a:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u096b:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u096c:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u096d:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u096e:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u096f:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0970:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u09e5:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u09e6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u09e7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u09e8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u09e9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u09ea:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u09eb:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u09ec:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u09ed:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u09ee:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u09ef:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u09f0:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0a65:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0a66:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0a67:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0a68:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0a69:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0a6a:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0a6b:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0a6c:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0a6d:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0a6e:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0a6f:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0a70:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ae5:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ae6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ae7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ae8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ae9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0aea:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0aeb:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0aec:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0aed:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0aee:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0aef:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0af0:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0b65:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0b66:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0b67:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0b68:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0b69:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0b6a:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0b6b:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0b6c:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0b6d:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0b6e:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0b6f:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0b70:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0be5:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0be6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0be7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0be8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0be9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0bea:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0beb:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0bec:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0bed:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0bee:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0bef:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0bf0:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0c65:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0c66:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0c67:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0c68:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0c69:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0c6a:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0c6b:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0c6c:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0c6d:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0c6e:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0c6f:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0c70:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ce5:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ce6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ce7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ce8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ce9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0cea:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ceb:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0cec:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ced:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0cee:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0cef:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0cf0:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0d65:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0d66:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0d67:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0d68:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0d69:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0d6a:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0d6b:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0d6c:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0d6d:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0d6e:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0d6f:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0d70:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0de5:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0de6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0de7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0de8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0de9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0dea:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0deb:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0dec:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ded:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0dee:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0def:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0df0:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0e4f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0e50:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0e51:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0e52:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0e53:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0e54:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0e55:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0e56:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0e57:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0e58:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0e59:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0e5a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ecf:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ed0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ed1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ed2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ed3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ed4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ed5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ed6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ed7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ed8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0ed9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0eda:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0f1f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0f20:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0f21:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0f22:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0f23:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0f24:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0f25:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0f26:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0f27:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0f28:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0f29:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u0f2a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u103f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1040:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1041:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1042:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1043:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1044:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1045:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1046:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1047:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1048:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1049:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u104a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u108f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1090:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1091:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1092:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1093:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1094:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1095:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1096:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1097:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1098:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1099:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u109a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u17df:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u17e0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u17e1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u17e2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u17e3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u17e4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u17e5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u17e6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u17e7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u17e8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u17e9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u17ea:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u180f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1810:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1811:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1812:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1813:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1814:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1815:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1816:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1817:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1818:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1819:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u181a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1945:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1946:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1947:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1948:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1949:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u194a:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u194b:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u194c:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u194d:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u194e:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u194f:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1950:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u19cf:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u19d0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u19d1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u19d2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u19d3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u19d4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u19d5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u19d6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u19d7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u19d8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u19d9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u19da:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a7f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a80:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a81:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a82:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a83:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a84:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a85:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a86:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a87:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a88:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a89:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a8a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a8f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a90:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a91:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a92:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a93:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a94:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a95:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a96:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a97:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a98:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a99:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1a9a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1b4f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1b50:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1b51:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1b52:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1b53:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1b54:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1b55:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1b56:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1b57:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1b58:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1b59:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1b5a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1baf:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1bb0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1bb1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1bb2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1bb3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1bb4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1bb5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1bb6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1bb7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1bb8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1bb9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1bba:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c3f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c40:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c41:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c42:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c43:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c44:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c45:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c46:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c47:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c48:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c49:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c4a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c4f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c50:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c51:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c52:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c53:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c54:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c55:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c56:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c57:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c58:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c59:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\u1c5a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua61f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua620:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua621:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua622:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua623:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua624:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua625:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua626:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua627:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua628:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua629:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua62a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua8cf:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua8d0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua8d1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua8d2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua8d3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua8d4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua8d5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua8d6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua8d7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua8d8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua8d9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua8da:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua8ff:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua900:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua901:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua902:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua903:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua904:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua905:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua906:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua907:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua908:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua909:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua90a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9cf:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9d0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9d1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9d2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9d3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9d4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9d5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9d6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9d7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9d8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9d9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9da:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9ef:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9f0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9f1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9f2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9f3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9f4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9f5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9f6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9f7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9f8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9f9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ua9fa:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uaa4f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uaa50:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uaa51:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uaa52:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uaa53:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uaa54:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uaa55:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uaa56:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uaa57:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uaa58:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uaa59:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uaa5a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uabef:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uabf0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uabf1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uabf2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uabf3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uabf4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uabf5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uabf6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uabf7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uabf8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uabf9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uabfa:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uff0f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uff10:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uff11:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uff12:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uff13:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uff14:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uff15:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uff16:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uff17:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uff18:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uff19:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\uff1a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud801\udc9f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud801\udca0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud801\udca1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud801\udca2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud801\udca3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud801\udca4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud801\udca5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud801\udca6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud801\udca7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud801\udca8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud801\udca9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud801\udcaa:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud803\udd2f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud803\udd30:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud803\udd31:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud803\udd32:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud803\udd33:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud803\udd34:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud803\udd35:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud803\udd36:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud803\udd37:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud803\udd38:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud803\udd39:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud803\udd3a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udc65:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udc66:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udc67:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udc68:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udc69:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udc6a:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udc6b:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udc6c:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udc6d:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udc6e:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udc6f:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udc70:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udcef:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udcf0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udcf1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udcf2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udcf3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udcf4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udcf5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udcf6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udcf7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udcf8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udcf9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udcfa:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udd35:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udd36:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udd37:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udd38:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udd39:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udd3a:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udd3b:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udd3c:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udd3d:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udd3e:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udd3f:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udd40:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\uddcf:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\uddd0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\uddd1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\uddd2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\uddd3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\uddd4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\uddd5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\uddd6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\uddd7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\uddd8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\uddd9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\uddda:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udeef:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udef0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udef1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udef2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udef3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udef4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udef5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udef6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udef7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udef8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udef9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud804\udefa:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udc4f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udc50:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udc51:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udc52:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udc53:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udc54:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udc55:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udc56:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udc57:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udc58:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udc59:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udc5a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udccf:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udcd0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udcd1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udcd2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udcd3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udcd4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udcd5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udcd6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udcd7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udcd8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udcd9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udcda:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\ude4f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\ude50:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\ude51:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\ude52:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\ude53:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\ude54:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\ude55:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\ude56:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\ude57:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\ude58:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\ude59:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\ude5a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udebf:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udec0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udec1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udec2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udec3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udec4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udec5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udec6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udec7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udec8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udec9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udeca:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udf2f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udf30:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udf31:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udf32:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udf33:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udf34:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udf35:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udf36:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udf37:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udf38:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udf39:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud805\udf3a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udcdf:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udce0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udce1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udce2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udce3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udce4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udce5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udce6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udce7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udce8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udce9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udcea:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udd4f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udd50:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udd51:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udd52:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udd53:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udd54:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udd55:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udd56:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udd57:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udd58:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udd59:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud806\udd5a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udc4f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udc50:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udc51:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udc52:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udc53:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udc54:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udc55:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udc56:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udc57:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udc58:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udc59:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udc5a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udd4f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udd50:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udd51:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udd52:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udd53:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udd54:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udd55:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udd56:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udd57:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udd58:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udd59:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udd5a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udd9f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udda0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udda1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udda2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udda3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udda4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udda5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udda6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udda7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udda8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udda9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\uddaa:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udf4f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udf50:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udf51:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udf52:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udf53:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udf54:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udf55:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udf56:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udf57:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udf58:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udf59:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud807\udf5a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\ude5f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\ude60:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\ude61:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\ude62:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\ude63:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\ude64:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\ude65:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\ude66:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\ude67:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\ude68:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\ude69:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\ude6a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udebf:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udec0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udec1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udec2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udec3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udec4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udec5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udec6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udec7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udec8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udec9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udeca:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udf4f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udf50:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udf51:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udf52:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udf53:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udf54:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udf55:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udf56:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udf57:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udf58:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udf59:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud81a\udf5a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfcd:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfce:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfcf:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfd0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfd1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfd2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfd3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfd4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfd5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfd6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfd7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfd8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfd9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfda:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfdb:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfdc:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfdd:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfde:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfdf:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfe0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfe1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfe2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfe3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfe4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfe5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfe6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfe7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfe8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfe9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfea:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfeb:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfec:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfed:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfee:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfef:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udff0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udff1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udff2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udff3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udff4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udff5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udff6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udff7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udff8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udff9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udffa:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udffb:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udffc:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udffd:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udffe:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud835\udfff:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud836\udc00:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udd3f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udd40:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udd41:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udd42:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udd43:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udd44:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udd45:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udd46:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udd47:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udd48:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udd49:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udd4a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udeef:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udef0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udef1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udef2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udef3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udef4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udef5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udef6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udef7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udef8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udef9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud838\udefa:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud839\udcef:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud839\udcf0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud839\udcf1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud839\udcf2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud839\udcf3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud839\udcf4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud839\udcf5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud839\udcf6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud839\udcf7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud839\udcf8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud839\udcf9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud839\udcfa:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83a\udd4f:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83a\udd50:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83a\udd51:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83a\udd52:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83a\udd53:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83a\udd54:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83a\udd55:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83a\udd56:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83a\udd57:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83a\udd58:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83a\udd59:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83a\udd5a:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83e\udfef:opaque",
+    "envelope": false,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83e\udff0:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83e\udff1:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83e\udff2:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83e\udff3:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83e\udff4:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83e\udff5:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83e\udff6:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83e\udff7:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83e\udff8:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83e\udff9:opaque",
+    "envelope": true,
+    "supported": false
+  },
+  {
+    "value": "enc:v\ud83e\udffa:opaque",
+    "envelope": false,
+    "supported": false
+  }
+]

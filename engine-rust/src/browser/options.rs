@@ -14,7 +14,7 @@ const RESOLVERS: [(&str, &str); 8] = [
 ];
 
 fn dns_args(profile: &Profile) -> io::Result<Vec<String>> {
-    let dns = profile.dns.trim();
+    let dns = crate::pool::trim(&profile.dns);
     if dns.is_empty() {
         return Ok(Vec::new());
     }
@@ -80,7 +80,7 @@ pub fn build(
     if !["playwright", "patchright", "camoufox", "cloak"].contains(&backend) {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
-            "Unknown browser backend",
+            "Unknown engine",
         ));
     }
     let proxy = match &profile.proxy {
@@ -159,7 +159,7 @@ pub fn build(
             json!({"user_data_dir":user_data_dir,"headless":headless,"proxy":proxy,"user_agent":fp.user_agent,"viewport":{"width":fp.viewport_width,"height":fp.viewport_height},"locale":fp.locale,"timezone":fp.timezone,"geoip":profile.proxy.is_some(),"args":args}),
         );
     }
-    let mut options = json!({"user_data_dir":user_data_dir,"headless":headless,"channel":if headless { Some("chromium") } else { None },"args":args,"ignore_default_args":["--enable-automation"],"user_agent":fp.user_agent,"locale":fp.locale,"timezone_id":fp.timezone,"viewport":{"width":fp.viewport_width,"height":fp.viewport_height},"screen":{"width":fp.screen_width,"height":fp.screen_height},"is_mobile":fp.is_mobile,"device_scale_factor":if fp.device_pixel_ratio != 0.0 { fp.device_pixel_ratio } else if fp.is_mobile { 2.0 } else { 1.0 },"has_touch":fp.max_touch_points>0});
+    let mut options = json!({"user_data_dir":user_data_dir,"headless":headless,"channel":if headless { Some("chromium") } else { None },"args":args,"ignore_default_args":["--enable-automation"],"user_agent":fp.user_agent,"locale":fp.locale,"timezone_id":fp.timezone,"viewport":{"width":fp.viewport_width,"height":fp.viewport_height},"screen":{"width":fp.screen_width,"height":fp.screen_height},"is_mobile":fp.is_mobile,"device_scale_factor":if fp.device_pixel_ratio.as_f64().is_some_and(|value| value != 0.0) { Value::Number(fp.device_pixel_ratio.clone()) } else if fp.is_mobile { json!(2.0) } else { json!(1.0) },"has_touch":fp.max_touch_points>0});
     let mut headers = identity::headers(fp).map_err(io::Error::other)?["low"].clone();
     headers["accept-language"] = fp
         .languages
@@ -196,4 +196,26 @@ pub fn build(
         }
     }
     Ok(options)
+}
+
+/// Use a registry-issued descriptor for a custom engine. Profile strings alone
+/// remain subject to the builtin-only build boundary above.
+pub fn build_registered(
+    profile: &Profile,
+    driver: &super::registry::ResolvedDriver,
+    user_data_dir: &str,
+    headless: bool,
+    extra_args: &[String],
+    extensions: &[String],
+    relay: Option<&str>,
+) -> io::Result<Value> {
+    build(
+        profile,
+        driver.family().options_backend(),
+        user_data_dir,
+        headless,
+        extra_args,
+        extensions,
+        relay,
+    )
 }

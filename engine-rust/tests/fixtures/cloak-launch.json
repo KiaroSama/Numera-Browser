@@ -1,0 +1,2780 @@
+{
+  "upstream": "CloakBrowser 0.7.2 1a145dbb90a26d6dd223c7642cb49fb9c850f22c",
+  "cases": [
+    {
+      "name": "default-headless",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "default-headed",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "headless": false
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": false,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "explicit-viewport",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        },
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "null-viewport",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "viewport": null
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "no-viewport-wins",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        },
+        "no_viewport": true
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "no-viewport-false",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "no_viewport": false
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": false,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "window-size",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--window-size=1280,720"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--window-size=1280,720"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "window-position",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--window-position=12,34"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--window-position=12,34"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "source-flags",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--fingerprint-screen-width=1920",
+          "--fingerprint-screen-height=1080",
+          "--fingerprint-max-touch-points=5",
+          "--fingerprint-platform=linux"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=linux",
+          "--fingerprint-screen-width=1920",
+          "--fingerprint-screen-height=1080",
+          "--fingerprint-max-touch-points=5",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "ordered-overrides",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--a=1",
+          "--b=1",
+          "--a=2",
+          "--lang=ru-RU",
+          "--fingerprint-timezone=Asia/Tokyo"
+        ],
+        "locale": "de-DE",
+        "timezone": "Europe/Berlin"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--a=2",
+          "--b=1",
+          "--lang=de-DE",
+          "--fingerprint-timezone=Europe/Berlin",
+          "--fingerprint-locale=de-DE",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "timezone-alias",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "timezone_id": "Europe/London",
+        "locale": "en-GB"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--fingerprint-timezone=Europe/London",
+          "--lang=en-GB",
+          "--fingerprint-locale=en-GB",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "timezone-primary",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "timezone_id": "Asia/Tokyo",
+        "timezone": "Europe/London"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--fingerprint-timezone=Europe/London",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "stealth-off",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "stealth_args": false,
+        "args": [
+          "--test-type"
+        ],
+        "timezone": "UTC",
+        "locale": "en-US"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--test-type",
+          "--fingerprint-timezone=UTC",
+          "--lang=en-US",
+          "--fingerprint-locale=en-US",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "fingerprint-off",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--fingerprint=off"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=off",
+          "--fingerprint-platform=windows",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "http-proxy",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "bypass": "localhost"
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "bypass": "localhost"
+        },
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "http-auth",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "https://PROXY.test:443/path;p?q#f",
+          "username": "a%=é",
+          "password": "p:@=",
+          "bypass": "<-loopback>"
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--proxy-server=https://a%25%3D%C3%A9:p%3A%40%3D@proxy.test:443/path",
+          "--proxy-bypass-list=<-loopback>",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "http-auth-string",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": "USER:p=ss@PROXY.test:80"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--proxy-server=http://USER:p%3Dss@proxy.test:80",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "http-empty-password",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": "http://user:@PROXY.test:80"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--proxy-server=http://user:@proxy.test:80",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "socks-auth",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "socks5://[2001:db8::1]:1080",
+          "username": "user=",
+          "password": "p%="
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--proxy-server=socks5://user%3D:p%25%3D@[2001:db8::1]:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "socks-encoded",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": "socks5://a%3Db:p%40%3D@PROXY.test:1080"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--proxy-server=socks5://a%3Db:p%40%3D@proxy.test:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "socks-empty-password",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": "socks5h://user:@PROXY.test:1080"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--proxy-server=socks5h://user:@proxy.test:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "socks-dict-inline",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "socks5://user:p=ss@PROXY.test:1080"
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--proxy-server=socks5://user:p=ss@PROXY.test:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "proxy-last-override",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "socks5://127.0.0.1:1080",
+          "bypass": "localhost"
+        },
+        "args": [
+          "--proxy-server=socks5://old:1080",
+          "--proxy-bypass-list=old"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--proxy-server=socks5://127.0.0.1:1080",
+          "--proxy-bypass-list=localhost",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "extensions",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "extension_paths": [
+          "$ROOT/ext-a",
+          "$ROOT/ext-b"
+        ],
+        "args": [
+          "--load-extension=old",
+          "--disable-extensions-except=old"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--load-extension=$ROOT/ext-a,$ROOT/ext-b",
+          "--disable-extensions-except=$ROOT/ext-a,$ROOT/ext-b",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "context-passthrough",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "user_agent": "fixture-agent",
+        "color_scheme": "dark",
+        "accept_downloads": false,
+        "screen": {
+          "width": 1920,
+          "height": 1080
+        },
+        "device_scale_factor": 2,
+        "has_touch": true,
+        "permissions": []
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "userAgent": "fixture-agent",
+        "noDefaultViewport": true,
+        "colorScheme": "dark",
+        "acceptDownloads": "deny",
+        "screen": {
+          "width": 1920,
+          "height": 1080
+        },
+        "deviceScaleFactor": 2,
+        "hasTouch": true,
+        "permissions": [],
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "custom-env",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "env": {
+          "A": "value",
+          "DROP": null
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "env": [
+          {
+            "name": "A",
+            "value": "value"
+          }
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "geoip-exit",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "geoip": true,
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "timezone": "UTC",
+        "locale": "en-US",
+        "resolved_exit_ip": "203.0.113.10"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--fingerprint-webrtc-ip=203.0.113.10",
+          "--fingerprint-timezone=UTC",
+          "--lang=en-US",
+          "--fingerprint-locale=en-US",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "geoip-explicit-webrtc",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "geoip": true,
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "timezone": "UTC",
+        "locale": "en-US",
+        "resolved_exit_ip": "203.0.113.10",
+        "args": [
+          "--fingerprint-webrtc-ip=198.51.100.1"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--fingerprint-webrtc-ip=198.51.100.1",
+          "--fingerprint-timezone=UTC",
+          "--lang=en-US",
+          "--fingerprint-locale=en-US",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "geoip-raw-flags",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "geoip": true,
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "resolved_exit_ip": "203.0.113.10",
+        "args": [
+          "--lang=en-GB",
+          "--fingerprint-timezone=Europe/London"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--lang=en-GB",
+          "--fingerprint-timezone=Europe/London",
+          "--fingerprint-webrtc-ip=203.0.113.10",
+          "--fingerprint-locale=en-GB",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "auto-with-exit",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "socks5://127.0.0.1:1080"
+        },
+        "resolved_exit_ip": "203.0.113.10",
+        "args": [
+          "--fingerprint-webrtc-ip=auto"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--fingerprint-webrtc-ip=203.0.113.10",
+          "--proxy-server=socks5://127.0.0.1:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "auto-no-exit",
+      "system": "Linux",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--fingerprint-webrtc-ip=auto"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "default-headless",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "default-headed",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "headless": false
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": false,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--ignore-gpu-blocklist",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "explicit-viewport",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        },
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "null-viewport",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "viewport": null
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "no-viewport-wins",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        },
+        "no_viewport": true
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "no-viewport-false",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "no_viewport": false
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": false,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "window-size",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--window-size=1280,720"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--window-size=1280,720"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "window-position",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--window-position=12,34"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--window-position=12,34"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "source-flags",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--fingerprint-screen-width=1920",
+          "--fingerprint-screen-height=1080",
+          "--fingerprint-max-touch-points=5",
+          "--fingerprint-platform=linux"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=linux",
+          "--fingerprint-screen-width=1920",
+          "--fingerprint-screen-height=1080",
+          "--fingerprint-max-touch-points=5",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "ordered-overrides",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--a=1",
+          "--b=1",
+          "--a=2",
+          "--lang=ru-RU",
+          "--fingerprint-timezone=Asia/Tokyo"
+        ],
+        "locale": "de-DE",
+        "timezone": "Europe/Berlin"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--a=2",
+          "--b=1",
+          "--lang=de-DE",
+          "--fingerprint-timezone=Europe/Berlin",
+          "--fingerprint-locale=de-DE",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "timezone-alias",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "timezone_id": "Europe/London",
+        "locale": "en-GB"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--fingerprint-timezone=Europe/London",
+          "--lang=en-GB",
+          "--fingerprint-locale=en-GB",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "timezone-primary",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "timezone_id": "Asia/Tokyo",
+        "timezone": "Europe/London"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--fingerprint-timezone=Europe/London",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "stealth-off",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "stealth_args": false,
+        "args": [
+          "--test-type"
+        ],
+        "timezone": "UTC",
+        "locale": "en-US"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--test-type",
+          "--fingerprint-timezone=UTC",
+          "--lang=en-US",
+          "--fingerprint-locale=en-US",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "fingerprint-off",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--fingerprint=off"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=off",
+          "--fingerprint-platform=macos",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "http-proxy",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "bypass": "localhost"
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "bypass": "localhost"
+        },
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "http-auth",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "https://PROXY.test:443/path;p?q#f",
+          "username": "a%=é",
+          "password": "p:@=",
+          "bypass": "<-loopback>"
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--proxy-server=https://a%25%3D%C3%A9:p%3A%40%3D@proxy.test:443/path",
+          "--proxy-bypass-list=<-loopback>",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "http-auth-string",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": "USER:p=ss@PROXY.test:80"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--proxy-server=http://USER:p%3Dss@proxy.test:80",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "http-empty-password",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": "http://user:@PROXY.test:80"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--proxy-server=http://user:@proxy.test:80",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "socks-auth",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "socks5://[2001:db8::1]:1080",
+          "username": "user=",
+          "password": "p%="
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--proxy-server=socks5://user%3D:p%25%3D@[2001:db8::1]:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "socks-encoded",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": "socks5://a%3Db:p%40%3D@PROXY.test:1080"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--proxy-server=socks5://a%3Db:p%40%3D@proxy.test:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "socks-empty-password",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": "socks5h://user:@PROXY.test:1080"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--proxy-server=socks5h://user:@proxy.test:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "socks-dict-inline",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "socks5://user:p=ss@PROXY.test:1080"
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--proxy-server=socks5://user:p=ss@PROXY.test:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "proxy-last-override",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "socks5://127.0.0.1:1080",
+          "bypass": "localhost"
+        },
+        "args": [
+          "--proxy-server=socks5://old:1080",
+          "--proxy-bypass-list=old"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--proxy-server=socks5://127.0.0.1:1080",
+          "--proxy-bypass-list=localhost",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "extensions",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "extension_paths": [
+          "$ROOT/ext-a",
+          "$ROOT/ext-b"
+        ],
+        "args": [
+          "--load-extension=old",
+          "--disable-extensions-except=old"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--load-extension=$ROOT/ext-a,$ROOT/ext-b",
+          "--disable-extensions-except=$ROOT/ext-a,$ROOT/ext-b",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "context-passthrough",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "user_agent": "fixture-agent",
+        "color_scheme": "dark",
+        "accept_downloads": false,
+        "screen": {
+          "width": 1920,
+          "height": 1080
+        },
+        "device_scale_factor": 2,
+        "has_touch": true,
+        "permissions": []
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "userAgent": "fixture-agent",
+        "noDefaultViewport": true,
+        "colorScheme": "dark",
+        "acceptDownloads": "deny",
+        "screen": {
+          "width": 1920,
+          "height": 1080
+        },
+        "deviceScaleFactor": 2,
+        "hasTouch": true,
+        "permissions": [],
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "custom-env",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "env": {
+          "A": "value",
+          "DROP": null
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "env": [
+          {
+            "name": "A",
+            "value": "value"
+          }
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "geoip-exit",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "geoip": true,
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "timezone": "UTC",
+        "locale": "en-US",
+        "resolved_exit_ip": "203.0.113.10"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--fingerprint-webrtc-ip=203.0.113.10",
+          "--fingerprint-timezone=UTC",
+          "--lang=en-US",
+          "--fingerprint-locale=en-US",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "geoip-explicit-webrtc",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "geoip": true,
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "timezone": "UTC",
+        "locale": "en-US",
+        "resolved_exit_ip": "203.0.113.10",
+        "args": [
+          "--fingerprint-webrtc-ip=198.51.100.1"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--fingerprint-webrtc-ip=198.51.100.1",
+          "--fingerprint-timezone=UTC",
+          "--lang=en-US",
+          "--fingerprint-locale=en-US",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "geoip-raw-flags",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "geoip": true,
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "resolved_exit_ip": "203.0.113.10",
+        "args": [
+          "--lang=en-GB",
+          "--fingerprint-timezone=Europe/London"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--lang=en-GB",
+          "--fingerprint-timezone=Europe/London",
+          "--fingerprint-webrtc-ip=203.0.113.10",
+          "--fingerprint-locale=en-GB",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "auto-with-exit",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "socks5://127.0.0.1:1080"
+        },
+        "resolved_exit_ip": "203.0.113.10",
+        "args": [
+          "--fingerprint-webrtc-ip=auto"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--fingerprint-webrtc-ip=203.0.113.10",
+          "--proxy-server=socks5://127.0.0.1:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "auto-no-exit",
+      "system": "Darwin",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--fingerprint-webrtc-ip=auto"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=macos",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "default-headless",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "default-headed",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "headless": false
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": false,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "explicit-viewport",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        },
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "null-viewport",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "viewport": null
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "no-viewport-wins",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        },
+        "no_viewport": true
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "no-viewport-false",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "no_viewport": false
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": false,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "window-size",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--window-size=1280,720"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--window-size=1280,720"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "window-position",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--window-position=12,34"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--window-position=12,34"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "source-flags",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--fingerprint-screen-width=1920",
+          "--fingerprint-screen-height=1080",
+          "--fingerprint-max-touch-points=5",
+          "--fingerprint-platform=linux"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=linux",
+          "--ignore-gpu-blocklist",
+          "--fingerprint-screen-width=1920",
+          "--fingerprint-screen-height=1080",
+          "--fingerprint-max-touch-points=5",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "ordered-overrides",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--a=1",
+          "--b=1",
+          "--a=2",
+          "--lang=ru-RU",
+          "--fingerprint-timezone=Asia/Tokyo"
+        ],
+        "locale": "de-DE",
+        "timezone": "Europe/Berlin"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--a=2",
+          "--b=1",
+          "--lang=de-DE",
+          "--fingerprint-timezone=Europe/Berlin",
+          "--fingerprint-locale=de-DE",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "timezone-alias",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "timezone_id": "Europe/London",
+        "locale": "en-GB"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--fingerprint-timezone=Europe/London",
+          "--lang=en-GB",
+          "--fingerprint-locale=en-GB",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "timezone-primary",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "timezone_id": "Asia/Tokyo",
+        "timezone": "Europe/London"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--fingerprint-timezone=Europe/London",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "stealth-off",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "stealth_args": false,
+        "args": [
+          "--test-type"
+        ],
+        "timezone": "UTC",
+        "locale": "en-US"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--ignore-gpu-blocklist",
+          "--test-type",
+          "--fingerprint-timezone=UTC",
+          "--lang=en-US",
+          "--fingerprint-locale=en-US",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "fingerprint-off",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--fingerprint=off"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=off",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "http-proxy",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "bypass": "localhost"
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "bypass": "localhost"
+        },
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "http-auth",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "https://PROXY.test:443/path;p?q#f",
+          "username": "a%=é",
+          "password": "p:@=",
+          "bypass": "<-loopback>"
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--proxy-server=https://a%25%3D%C3%A9:p%3A%40%3D@proxy.test:443/path",
+          "--proxy-bypass-list=<-loopback>",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "http-auth-string",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": "USER:p=ss@PROXY.test:80"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--proxy-server=http://USER:p%3Dss@proxy.test:80",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "http-empty-password",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": "http://user:@PROXY.test:80"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--proxy-server=http://user:@proxy.test:80",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "socks-auth",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "socks5://[2001:db8::1]:1080",
+          "username": "user=",
+          "password": "p%="
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--proxy-server=socks5://user%3D:p%25%3D@[2001:db8::1]:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "socks-encoded",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": "socks5://a%3Db:p%40%3D@PROXY.test:1080"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--proxy-server=socks5://a%3Db:p%40%3D@proxy.test:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "socks-empty-password",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": "socks5h://user:@PROXY.test:1080"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--proxy-server=socks5h://user:@proxy.test:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "socks-dict-inline",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "socks5://user:p=ss@PROXY.test:1080"
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--proxy-server=socks5://user:p=ss@PROXY.test:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "proxy-last-override",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "socks5://127.0.0.1:1080",
+          "bypass": "localhost"
+        },
+        "args": [
+          "--proxy-server=socks5://old:1080",
+          "--proxy-bypass-list=old"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--proxy-server=socks5://127.0.0.1:1080",
+          "--proxy-bypass-list=localhost",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "extensions",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "extension_paths": [
+          "$ROOT/ext-a",
+          "$ROOT/ext-b"
+        ],
+        "args": [
+          "--load-extension=old",
+          "--disable-extensions-except=old"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--load-extension=$ROOT/ext-a,$ROOT/ext-b",
+          "--disable-extensions-except=$ROOT/ext-a,$ROOT/ext-b",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "context-passthrough",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "user_agent": "fixture-agent",
+        "color_scheme": "dark",
+        "accept_downloads": false,
+        "screen": {
+          "width": 1920,
+          "height": 1080
+        },
+        "device_scale_factor": 2,
+        "has_touch": true,
+        "permissions": []
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "userAgent": "fixture-agent",
+        "noDefaultViewport": true,
+        "colorScheme": "dark",
+        "acceptDownloads": "deny",
+        "screen": {
+          "width": 1920,
+          "height": 1080
+        },
+        "deviceScaleFactor": 2,
+        "hasTouch": true,
+        "permissions": [],
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "custom-env",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "env": {
+          "A": "value",
+          "DROP": null
+        }
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "env": [
+          {
+            "name": "A",
+            "value": "value"
+          }
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "geoip-exit",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "geoip": true,
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "timezone": "UTC",
+        "locale": "en-US",
+        "resolved_exit_ip": "203.0.113.10"
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--fingerprint-webrtc-ip=203.0.113.10",
+          "--fingerprint-timezone=UTC",
+          "--lang=en-US",
+          "--fingerprint-locale=en-US",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "geoip-explicit-webrtc",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "geoip": true,
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "timezone": "UTC",
+        "locale": "en-US",
+        "resolved_exit_ip": "203.0.113.10",
+        "args": [
+          "--fingerprint-webrtc-ip=198.51.100.1"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--fingerprint-webrtc-ip=198.51.100.1",
+          "--fingerprint-timezone=UTC",
+          "--lang=en-US",
+          "--fingerprint-locale=en-US",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "geoip-raw-flags",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "geoip": true,
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "resolved_exit_ip": "203.0.113.10",
+        "args": [
+          "--lang=en-GB",
+          "--fingerprint-timezone=Europe/London"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--lang=en-GB",
+          "--fingerprint-timezone=Europe/London",
+          "--fingerprint-webrtc-ip=203.0.113.10",
+          "--fingerprint-locale=en-GB",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "proxy": {
+          "server": "http://127.0.0.1:8080"
+        },
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "auto-with-exit",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "proxy": {
+          "server": "socks5://127.0.0.1:1080"
+        },
+        "resolved_exit_ip": "203.0.113.10",
+        "args": [
+          "--fingerprint-webrtc-ip=auto"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--fingerprint-webrtc-ip=203.0.113.10",
+          "--proxy-server=socks5://127.0.0.1:1080",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    },
+    {
+      "name": "auto-no-exit",
+      "system": "Windows",
+      "input": {
+        "user_data_dir": "$ROOT/profile",
+        "args": [
+          "--fingerprint-webrtc-ip=auto"
+        ]
+      },
+      "expected": {
+        "executablePath": "$ROOT/chrome",
+        "headless": true,
+        "args": [
+          "--no-sandbox",
+          "--fingerprint=54321",
+          "--fingerprint-platform=windows",
+          "--ignore-gpu-blocklist",
+          "--start-maximized"
+        ],
+        "ignoreDefaultArgs": [
+          "--enable-automation",
+          "--enable-unsafe-swiftshader"
+        ],
+        "noDefaultViewport": true,
+        "userDataDir": "$ROOT/profile"
+      }
+    }
+  ]
+}

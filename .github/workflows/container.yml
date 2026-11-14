@@ -1,0 +1,50 @@
+name: Container verification
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_BUILD_JOBS: "2"
+  CARGO_INCREMENTAL: "0"
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
+  NUMERA_MAX_TEST_WORKERS: "2"
+
+jobs:
+  docker:
+    name: Native container and offline bundled Chromium
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.99.1
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+        with:
+          workspaces: |
+            engine-rust
+            dashboard
+            tools/xtask
+      - name: Compile the native finite owner
+        run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Provision the exact Rust WASM packaging tool
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Explicitly acquire and hash reviewed vendor resources
+        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "$RUNNER_TEMP/numera-container-resources"
+      - name: Build the native server and Rust dashboard from the exact source
+        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask build-product build/container --resources "$RUNNER_TEMP/numera-container-resources" --server-only
+      - name: Validate the actual generated Docker copy context
+        run: cargo xtask ci owned --wall 60 --idle 30 -- cargo xtask ci container-context
+      - name: Build the image from the verified native installation
+        run: cargo xtask ci owned --wall 1200 --idle 150 -- docker build --pull --no-cache -t numera-browser:ci .
+      - name: Require native health, authentication and persistent profile writes
+        run: cargo xtask ci owned --wall 180 --idle 90 -- cargo xtask ci container-api numera-browser:ci
+      - name: Require the real image browser without network or host cache
+        run: cargo xtask ci owned --wall 120 --idle 60 -- cargo xtask ci container-browser numera-browser:ci 1.65.1

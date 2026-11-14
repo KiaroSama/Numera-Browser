@@ -29,6 +29,41 @@ pub(crate) fn kind(value: &Value) -> &'static str {
         }
     }
 }
+fn printable(character: char) -> bool {
+    if character.is_ascii() {
+        return !character.is_ascii_control();
+    }
+    static PRINTABLE: OnceLock<regex::Regex> = OnceLock::new();
+    // The frozen Python 3.13 oracle uses Unicode 15.1 printability.
+    PRINTABLE
+        .get_or_init(|| {
+            regex::Regex::new(r"\A[[\p{L}\p{M}\p{N}\p{P}\p{S}]&&\p{Age:15.1}]\z")
+                .expect("Frozen printable expression is valid")
+        })
+        .is_match(character.encode_utf8(&mut [0; 4]))
+}
+fn number_text(number: &serde_json::Number) -> String {
+    let raw = number.to_string();
+    if !raw.contains(['.', 'e', 'E']) {
+        return raw;
+    }
+    let Some(canonical) = number.as_f64().and_then(serde_json::Number::from_f64) else {
+        return raw;
+    };
+    // Keep the existing shortest-rounding engine; only Python's notation differs.
+    let text = canonical.to_string();
+    if let Some((mantissa, exponent)) = text.split_once('e') {
+        let exponent: i32 = exponent.parse().expect("Finite JSON exponent is numeric");
+        return format!("{mantissa}e{exponent:+03}");
+    }
+    if let Some(digits) = text.trim_start_matches('-').strip_prefix("0.0000") {
+        let (first, rest) = digits.split_at(1);
+        let point = if rest.is_empty() { "" } else { "." };
+        let sign = if text.starts_with('-') { "-" } else { "" };
+        return format!("{sign}{first}{point}{rest}e-05");
+    }
+    text
+}
 pub(crate) fn repr(value: &Value) -> String {
     match value {
         Value::Null => "None".into(),
@@ -39,12 +74,27 @@ pub(crate) fn repr(value: &Value) -> String {
             } else {
                 '\''
             };
-            let body = v
-                .replace('\\', "\\\\")
-                .replace(quote, &format!("\\{quote}"))
-                .replace('\n', "\\n")
-                .replace('\r', "\\r")
-                .replace('\t', "\\t");
+            let mut body = String::new();
+            for character in v.chars() {
+                match character {
+                    '\n' => body.push_str("\\n"),
+                    '\r' => body.push_str("\\r"),
+                    '\t' => body.push_str("\\t"),
+                    c if c == '\\' || c == quote => {
+                        body.push('\\');
+                        body.push(c);
+                    }
+                    c if !printable(c) => {
+                        let code = u32::from(c);
+                        body.push_str(&match code {
+                            0..=0xff => format!("\\x{code:02x}"),
+                            0x100..=0xffff => format!("\\u{code:04x}"),
+                            _ => format!("\\U{code:08x}"),
+                        });
+                    }
+                    c => body.push(c),
+                }
+            }
             format!("{quote}{body}{quote}")
         }
         Value::Array(v) => format!("[{}]", v.iter().map(repr).collect::<Vec<_>>().join(", ")),
@@ -55,12 +105,23 @@ pub(crate) fn repr(value: &Value) -> String {
                 .collect::<Vec<_>>()
                 .join(", ")
         ),
-        _ => value.to_string(),
+        Value::Number(number) => number_text(number),
     }
 }
 fn short(value: &Value, quoted: bool) -> String {
+    if let Some(raw) = value.as_number().map(ToString::to_string) {
+        let digits = raw.trim_start_matches('-');
+        if digits.len() > 4300
+            && digits.bytes().all(|c| c.is_ascii_digit())
+            && let Some(integer) = num_bigint::BigUint::parse_bytes(digits.as_bytes(), 10)
+        {
+            return format!("int of {} bits", integer.bits());
+        }
+    }
     let text = if quoted {
         repr(value)
+    } else if let Value::Number(number) = value {
+        number_text(number)
     } else {
         value.to_string()
     };
@@ -115,6 +176,11 @@ fn number_problem(field: &str, value: &Value, rule: &Value, optional: bool) -> O
     };
     let bounds = &rule["bounds"];
     let raw = number.to_string();
+    if matches!(raw.as_str(), "NaN" | "Infinity" | "-Infinity") {
+        return Some(format!(
+            "profile: '{field}' must be a finite number. Nothing was written."
+        ));
+    }
     if !raw.contains(['.', 'e', 'E']) {
         let in_range = raw.parse::<i128>().ok().is_some_and(|n| {
             bounds[0].as_f64().is_none_or(|low| n >= low.ceil() as i128)
@@ -143,7 +209,10 @@ fn number_problem(field: &str, value: &Value, rule: &Value, optional: bool) -> O
         ));
     }
     let fractions = rule["fractions"].as_array();
-    if rule["kind"] == "int" && n.fract() != 0.0 && !fractions.is_some_and(|v| v.contains(value)) {
+    if rule["kind"] == "int"
+        && n.fract() != 0.0
+        && !fractions.is_some_and(|values| values.iter().any(|value| value.as_f64() == Some(n)))
+    {
         let allowed = fractions
             .filter(|v| !v.is_empty())
             .map_or(String::new(), |v| {
@@ -340,12 +409,13 @@ pub fn profile_problems(record: &Value, shape: &str) -> Result<Vec<String>, serd
             if let Some(problem) = text_problem("screen", value, true, false) {
                 found.push(problem);
             } else if let Some(screen) = value.as_str() {
-                let sides: Result<Vec<i64>, _> = screen
+                let sides: Option<Vec<i64>> = screen
                     .to_lowercase()
                     .split('x')
-                    .map(|s| s.trim().parse::<i64>())
+                    .map(|part| crate::decimal::integer(part)?.parse::<i64>().ok())
                     .collect();
-                if !sides.is_ok_and(|v| v.len() == 2 && v.iter().all(|v| (1..=65536).contains(v))) {
+                if !sides.is_some_and(|v| v.len() == 2 && v.iter().all(|v| (1..=65536).contains(v)))
+                {
                     found.push(format!("profile: 'screen' must be two whole numbers between 1 and 65536 as '<width>x<height>', got {}. Nothing was written.",repr(&Value::String(screen.chars().take(40).collect()))));
                 }
             }
