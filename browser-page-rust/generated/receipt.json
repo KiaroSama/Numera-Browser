@@ -1,7 +1,7 @@
 {
   "artifact": "browser-page-rust/generated/runtime.js",
-  "artifact_bytes": 827882,
-  "artifact_sha256": "17f41961f6762e06978cd04fd8e2feccb05f145be18c7b81bbcf38d8978b639f",
+  "artifact_bytes": 480089,
+  "artifact_sha256": "d9df186713bf3517efb0d9785b2f0aed40bab9d4edc35307690c90a47fb2d9ca",
   "authored_language": "Rust",
   "binaryen": "wasm2js version 133 (version_133)",
   "binaryen_archive": "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz",
@@ -19,7 +19,7 @@
     "JavaScript"
   ],
   "input_wasm_sha256": "5ad97d9bdb0adcd601678ab314d45d9e812fb1180dcbadc8c105b126c96cddcd",
-  "minified": false,
+  "minified": true,
   "path_remapping": [
     "repository=numera",
     "cargo-home=cargo",
@@ -30,13 +30,31 @@
   "runtime_compilation": false,
   "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
   "schema": 1,
+  "source_printer": {
+    "ascii_only": false,
+    "crate_sha256": {
+      "oxc_allocator": "9f65d07f047239a6535aee5f9eb5f741ce9d7a19c13d3f5d68a507878368f847",
+      "oxc_codegen": "4e96b922b09e06196c28df4bc860b692957246ebf705fe1f49198871e0c91d81",
+      "oxc_parser": "7abfa2897dd082cd208a089692dd40e2e00166015de6993398689025ce8ea0ed",
+      "oxc_span": "ac083572f49ac3941fb954304666da42e44e9154abbdd32fd9b594fd269a952c"
+    },
+    "identifier_mangling": false,
+    "mode": "parse_expression+CodegenOptions::minify+print_expression",
+    "name": "oxc",
+    "preserve_parentheses": true,
+    "regex_pattern_validation": true,
+    "semantic_transforms": false,
+    "source_type": "cjs",
+    "version": "0.158.0"
+  },
   "source_sha256": {
-    "browser-page-rust/Cargo.lock": "317576e2b9c4ff958dc35e79b1e53e2f05943b1208767bcfc9b87253ce623d92",
-    "browser-page-rust/Cargo.toml": "ba9d580cd5e9242f7375365f9651785e36cc7620d442569fbc7fbf607b4fbf11",
-    "browser-page-rust/src/artifact.rs": "a9da1e5bd6ed7896a56b5a46178cae2d240243545e81f7727cbd21c3c15be2b8",
-    "browser-page-rust/src/bin/browser-page-build.rs": "24593d80d9ebda853fda2405113f23040a4ab44ab8ed4ce3e9f1d2d40fc540c2",
+    "browser-page-rust/Cargo.lock": "8fcc41ba4bc8d851489223142aea47f2bda6a37724bbe132110dff835cf363dd",
+    "browser-page-rust/Cargo.toml": "4f7762b092e78e6b24a66c6f4df62af625b54d2a17969ebed65d130cad9a652d",
+    "browser-page-rust/src/artifact.rs": "17389a9b21aeac34c10d56d46c965d9200b9ef131715f4eb144ecd2025591cf3",
+    "browser-page-rust/src/bin/browser-page-build.rs": "ed99d45e380b61e8a9410ac5f8a0a283c3a71bd9b08758d5b5035610313be9ba",
     "browser-page-rust/src/identity.rs": "13439ae3f2ccc78baf5eb782fe7151f91f0997b5866ab76fcc02230c8e4bc642",
-    "browser-page-rust/src/lib.rs": "e22c11e60c83f8fe258d5fea75f016f4afc222e8c078564db87fe34dca2cf1e1",
+    "browser-page-rust/src/lib.rs": "a224dd625e2f024128a806da3da7403362bfd51a18f569ecb180b5d59148c302",
+    "browser-page-rust/src/printer.rs": "52a38fe2ad16eb1076797c14378366f1a16e67b257c630888426f19142107025",
     "browser-page-rust/src/probes.rs": "05e28abdc49f7f3902369207003d192e248fc4da1d6d8ee4980123623c9d311e",
     "browser-page-rust/src/source_paths.rs": "2f88fe1fbc432930970470bc8a1efe4ec5a7d64fef5e42cd0537364ff007c3cb",
     "browser-page-rust/src/webrtc_rules.rs": "170b820fd26e3fc5a9b0ef17777e64ac173bde92fb0f61cb18a231aa3bf4932a",

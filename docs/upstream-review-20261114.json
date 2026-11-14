@@ -397,5 +397,7 @@
     "camoufox": "Two main commits fix the upstream Firefox Windows cross-build's32-bit loader and keep every release target running, then calibrate only the upper timing bound for WebGL renderer round trips. Numera consumes the unchanged official158.0.1-beta.41 binary; its build matrix already has fail-fast:false. No unreleased browser patch or timing-test relaxation is claimed.",
     "patchright": "Source head and stable release unchanged.",
     "cloak": "Source head and Chromium156.0.8078.47.1 release unchanged. The valid-key requirement remains an explicit live-browser prerequisite."
-  }
+  },
+  "source_heads_revalidated_at": "2026-11-14T07:28:43Z",
+  "source_heads_revalidation": "Authenticated GitHub default-branch commit endpoints for all four reference repositories still match reviewed_source_head. No newer source changes were omitted at this observation."
 }

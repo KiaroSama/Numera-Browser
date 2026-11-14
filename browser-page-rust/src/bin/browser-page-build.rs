@@ -107,8 +107,8 @@ fn replace_once(text: &mut String, before: &str, after: &str) -> Result<()> {
     Ok(())
 }
 
-/// The input bodies are untouched third-party compiler output. This bridge only
-/// joins their module imports/exports and adapts the generated memory-view caches.
+/// Join module imports/exports, adapt generated memory-view caches, then print
+/// the resulting expression with the pinned parser/printer and no semantic pass.
 fn factory(mut glue: String, mut compiled: String) -> Result<String> {
     replace_once(
         &mut compiled,
@@ -175,7 +175,8 @@ fn factory(mut glue: String, mut compiled: String) -> Result<String> {
         }
     }
     let output = format!(
-        "// GENERATED from browser-page-rust by locked wasm-bindgen and Binaryen133.\n// Regenerate with browser-page-build; authored browser behavior lives in Rust.\n(function numera_browser_page() {{\n{glue}\nwasm_bindgen.initSync();\nreturn wasm_bindgen;\n}})\n"
+        "{}(function numera_browser_page() {{\n{glue}\nwasm_bindgen.initSync();\nreturn wasm_bindgen;\n}})\n",
+        numera_browser_page::artifact::GENERATED_BANNER
     );
     if output.len() >= MAX_SOURCE {
         return Err(format!(
@@ -183,6 +184,25 @@ fn factory(mut glue: String, mut compiled: String) -> Result<String> {
             output.len()
         )
         .into());
+    }
+    let printed = numera_browser_page::printer::expression(&output)?;
+    let output = format!(
+        "{}{printed}\n",
+        numera_browser_page::artifact::GENERATED_BANNER
+    );
+    if !printed.starts_with(numera_browser_page::artifact::FACTORY_PREFIX)
+        || !printed.ends_with("})")
+        || output.len() >= MAX_SOURCE
+    {
+        return Err("Printed factory framing changed or exceeds the1MiB request ceiling".into());
+    }
+    // Printing can re-encode literals: check the delivered bytes as well.
+    for prohibited in ["WebAssembly", "eval(", "eval (", "new Function"] {
+        if output.contains(prohibited) {
+            return Err(
+                format!("Runtime compiler remained in printed page code: {prohibited}").into(),
+            );
+        }
     }
     Ok(output)
 }
@@ -342,7 +362,8 @@ fn main() -> Result<()> {
         "input_wasm_sha256":digest(&fs::read(input)?),"binding_wasm_sha256":digest(&fs::read(wasm)?),
         "bindgen_glue_sha256":digest(glue.as_bytes()),"compiler_javascript_sha256":digest(code.as_bytes()),
         "compiler_javascript_bytes":code.len(),"artifact_sha256":digest(output.as_bytes()),
-        "artifact_bytes":output.len(),"minified":false,"runtime_compilation":false,
+        "artifact_bytes":output.len(),"minified":true,"runtime_compilation":false,
+        "source_printer":numera_browser_page::artifact::printer_policy(),
         "bridge":["generated module imports/exports become a synchronous classic factory","generated Uint8Array and DataView caches observe non-detaching ArrayBuffer growth"],
         "regeneration_host":"Linux x86_64; output uses portable relative source paths"
     });

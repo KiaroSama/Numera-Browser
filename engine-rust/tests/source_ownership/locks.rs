@@ -277,8 +277,21 @@ source_test!(
     {
         let t = temp("process-lock-retry")?;
         let lock = DataLock::transaction(t.path())?;
-        let guard = lock.acquire(Duration::from_secs(1))?;
+        fs::create_dir_all(lock.path().parent().ok_or("lock parent absent")?)?;
+        let sentinel = b"source lock identity must survive contention\n";
+        fs::write(lock.path(), sentinel)?;
         let before = fs::read(lock.path())?;
+        let physical_identity = || -> io::Result<(u64, u64)> {
+            // Attribute-only kernel queries also work while Windows denies
+            // reads of the held byte range. Compare actual file identity,
+            // matching the source's st_ino contract rather than its spelling.
+            let stat = numera_core::ownership::file_stat::path(lock.path())?;
+            assert!(stat.regular && !stat.reparse);
+            Ok((stat.device, stat.inode))
+        };
+        let identity_before = physical_identity()?;
+        let guard = lock.acquire(Duration::from_secs(1))?;
+        assert_eq!(physical_identity()?, identity_before);
         let mut child = command("lock")?;
         child.arg(lock.path());
         let output = capture::run(&mut child, limit(Duration::from_secs(5)))?;
@@ -288,7 +301,9 @@ source_test!(
         let output = capture::run(&mut child, limit(Duration::from_secs(5)))?;
         assert_eq!(output.exit, 0);
         assert_eq!(output.stdout, b"entered\n");
+        assert_eq!(physical_identity()?, identity_before);
         assert_eq!(fs::read(lock.path())?, before);
+        assert_eq!(before, sentinel);
         Ok(())
     }
 );

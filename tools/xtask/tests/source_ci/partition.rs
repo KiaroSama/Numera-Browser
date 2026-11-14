@@ -93,6 +93,7 @@ fn module_report(damage: &str) -> TestResult {
     let selected = scope::partition(&modules, 0, 2)?;
     let mut value = report(&selected);
     if damage == "None" {
+        owned_verdict_transcript()?;
         let path = temp.0.join("redacted.log");
         let (stdout, stderr) = evidence::retain_test_diagnostics(
             &path,
@@ -185,6 +186,115 @@ fn module_report(damage: &str) -> TestResult {
         assert_eq!(result?, 2);
     } else {
         assert!(result.is_err());
+    }
+    Ok(())
+}
+
+fn owned_verdict_transcript() -> TestResult {
+    use std::{process::Command, time::Duration};
+    let temp = Temp::new("owned-verdict-diagnostics")?;
+    let binary = super::migration::compile(
+        &temp,
+        r#"use std::{io::Write,process::Command,time::Duration};
+fn main()->Result<(),Box<dyn std::error::Error>>{
+ if std::env::args().nth(1).as_deref()==Some("leaf"){
+  std::thread::sleep(Duration::from_secs(30));return Ok(());
+ }
+ let leaf=Command::new(std::env::current_exe()?).arg("leaf").spawn()?;
+ let pid=leaf.id();
+ let birth=numera_core::ownership::identity::started_at(pid)?.ok_or("leaf birth")?;
+ println!("owned verdict stdout marker pid={pid} birth={birth} owner={}",std::process::id());
+ std::io::stdout().flush()?;
+ std::io::stderr().write_all(b"owned verdict stderr marker\npassword=synthetic-owned-")?;
+ std::io::stderr().flush()?;
+ std::thread::sleep(Duration::from_millis(80));
+ std::io::stderr().write_all(b"split-value\n")?;
+ std::io::stderr().flush()?;
+ Ok(())
+}"#,
+    )?;
+    let error = ci::owned::run(
+        &temp.0,
+        &mut Command::new(binary),
+        numera_core::ownership::capture::Limits {
+            wall: Duration::from_secs(8),
+            idle: Duration::from_secs(4),
+            cleanup: Duration::from_secs(4),
+            bytes: 65536,
+        },
+    )
+    .err()
+    .ok_or("a surviving child acquired a successful worker verdict")?;
+    assert_eq!(
+        error.to_string(),
+        "Native worker left a running owned subprocess"
+    );
+    assert!(
+        temp.0.join("build").is_dir(),
+        "fatal ownership verdict lost its captured transcript"
+    );
+    let logs = fs::read_dir(temp.0.join("build"))?
+        .map(|entry| entry.map(|entry| entry.path()))
+        .collect::<io::Result<Vec<_>>>()?;
+    let stdout = logs
+        .iter()
+        .filter(|path| {
+            let name = path.file_name().expect("log filename").to_string_lossy();
+            name.starts_with("owned-command-failure-") && !name.ends_with("stderr.log")
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        stdout.len(),
+        1,
+        "fatal ownership verdict lost its captured transcript"
+    );
+    let stdout = fs::read_to_string(stdout[0])?;
+    let stderr = fs::read_to_string(
+        logs.iter()
+            .find(|path| {
+                path.file_name()
+                    .expect("log filename")
+                    .to_string_lossy()
+                    .ends_with("stderr.log")
+            })
+            .ok_or("fatal ownership verdict lost stderr")?,
+    )?;
+    assert!(stdout.contains("owned verdict stdout marker"));
+    assert!(stderr.contains("owned verdict stderr marker"));
+    assert!(!stderr.contains("synthetic-owned-") && !stderr.contains("split-value"));
+    let marker = stdout
+        .lines()
+        .find(|line| line.starts_with("owned verdict stdout marker"))
+        .ok_or("owned leaf identity missing")?;
+    let fields = marker.split_whitespace().collect::<Vec<_>>();
+    let pid: u32 = fields
+        .iter()
+        .find_map(|field| field.strip_prefix("pid="))
+        .ok_or("leaf pid")?
+        .parse()?;
+    let birth: u64 = fields
+        .iter()
+        .find_map(|field| field.strip_prefix("birth="))
+        .ok_or("leaf birth")?
+        .parse()?;
+    #[cfg(windows)]
+    assert!(
+        !numera_core::ownership::identity::alive(pid, Some(birth))?,
+        "fatal worker verdict abandoned its actual descendant"
+    );
+    #[cfg(unix)]
+    {
+        let owner: u32 = fields
+            .iter()
+            .find_map(|field| field.strip_prefix("owner="))
+            .ok_or("owned process group")?
+            .parse()?;
+        assert!(
+            numera_core::ownership::recorded_tree::empty(&json!({
+                "pid":pid,"pidToken":birth,"tree":{"kind":"pgid","group":owner}
+            }))?,
+            "fatal worker verdict abandoned a live member of its actual group"
+        );
     }
     Ok(())
 }

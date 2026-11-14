@@ -207,6 +207,7 @@ fn command(mode: &str) -> io::Result<Command> {
     Ok(command)
 }
 fn capture_initialization_evidence(report: &Value) {
+    handle_attribution_evidence(report);
     #[cfg(windows)]
     {
         let phase = &report["initialization"];
@@ -221,6 +222,83 @@ fn capture_initialization_evidence(report: &Value) {
     }
     #[cfg(not(windows))]
     let _ = report;
+}
+fn handle_attribution_evidence(report: &Value) {
+    fn array(value: &Value, length: usize, signed: bool) -> bool {
+        value.as_array().is_some_and(|values| {
+            values.len() == length
+                && values.iter().all(|n| {
+                    if signed {
+                        n.as_i64().is_some_and(|n| (-4096..=4096).contains(&n))
+                    } else {
+                        n.as_u64().is_some_and(|n| n <= 4096)
+                    }
+                })
+        })
+    }
+    fn sample(value: &Value) -> bool {
+        value.as_object().is_some_and(|fields| {
+            fields.len() == 7
+                && fields
+                    .get("status")
+                    .and_then(Value::as_u64)
+                    .is_some_and(|n| n <= 8)
+                && fields
+                    .get("total")
+                    .and_then(Value::as_u64)
+                    .is_some_and(|n| n <= 4096)
+                && fields
+                    .get("duplicates_failed")
+                    .and_then(Value::as_u64)
+                    .is_some_and(|n| n <= 4224)
+                && fields
+                    .get("queries_failed")
+                    .and_then(Value::as_u64)
+                    .is_some_and(|n| n <= 128)
+                && array(&value["types"], 28, false)
+                && array(&value["files"], 4, false)
+                && array(&value["standard"], 3, false)
+        })
+    }
+    fn valid(value: &Value) -> bool {
+        value.as_object().is_some_and(|fields| fields.len() == 4)
+            && value["schema"] == 1
+            && sample(&value["before"])
+            && sample(&value["after"])
+            && array(&value["type_delta"], 28, true)
+    }
+    if let Some(control) = report.get("handle_attribution_control") {
+        // These pure formatting controls execute under the existing capture
+        // cases; they neither query Windows nor publish invented live samples.
+        assert!(valid(control), "Portable attribution JSON is invalid");
+        let mut malformed = control.clone();
+        malformed["unexpected_name"] = "must never be forwarded".into();
+        assert!(
+            !valid(&malformed),
+            "Arbitrary attribution fields were admitted"
+        );
+        let mut malformed = control.clone();
+        malformed["before"]["types"][0] = u64::MAX.into();
+        assert!(
+            !valid(&malformed),
+            "Unbounded attribution values were admitted"
+        );
+    }
+    for field in ["handle_attribution_before_cleanup", "handle_attribution"] {
+        let Some(text) = report[field].as_str() else {
+            continue;
+        };
+        let decoded = (text.len() <= 16384)
+            .then(|| serde_json::from_str::<Value>(text).ok())
+            .flatten();
+        if let Some(value) = decoded.filter(valid) {
+            eprintln!(
+                "Windows own-handle attribution stage={field} type_order=File,Thread,Process,Event,Job,IoCompletion,Mutant,Section,Semaphore,Timer,Key,Token,Directory,SymbolicLink,ALPC_Port,WaitCompletionPacket,TpWorkerFactory,IRTimer,Desktop,WindowStation,EtwRegistration,EtwConsumer,Partition,Session,DebugObject,Device,Driver,Other files=Pipe,Disk,Char,Unknown standard=stdin,stdout,stderr status=complete,deadline,unsupported,symbols,query,bounds,type_cap,unresolved_type,duplicate sampling=non_atomic complete=bounded_query_procedure_only report={value}"
+            );
+        } else {
+            eprintln!("Windows own-handle attribution unavailable: invalid fixed schema");
+        }
+    }
 }
 fn emit(payload: &str, code: i32) -> Result<capture::Output, capture::Failure> {
     let mut child = command("emit").map_err(capture::Failure::from)?;

@@ -1,0 +1,880 @@
+{
+  "schema": 1,
+  "review_date": "2026-11-14",
+  "status": "fresh369_raw_findings_revalidated_trusted_exact_head_failure_default_python_and_reported_alerts",
+  "provenance": {
+    "repository": "KiaroSama/Numera-Browser",
+    "pull_request": 76,
+    "workflow_run": 43562788658,
+    "analysis_job": 132351190468,
+    "head_commit": "369e93bfdca84021b66098a43656edb09ff65b07",
+    "actual_scanned_merge_commit": "5b8f74aed64e5e53cf0f2c0ae93977c9d145dcf9",
+    "identical_tree": "5c74baca63249d2ac5d2c19014c8657157537879",
+    "ordered_merge_parents": [
+      "6b486e16653bca1b18eb0007238a50175421d54a",
+      "369e93bfdca84021b66098a43656edb09ff65b07"
+    ],
+    "artifact_id": 14102001433,
+    "artifact_bytes": 12047702,
+    "artifact_zip_sha256": "1c4349141c063eea24c2ca2949b78fdfd85346aa1e470f78f7b600f494f7caf4",
+    "sarif_sha256": "4c8f4227a14355e4b45af801cc0473b86ddb0fa82371fd514e63ced7d24c1887",
+    "authenticated_metadata_sha256": "00cb85b6c8c0f027436ad14db2bfedf3dc1184f9cd876aa2e9a6b72567b0fc52",
+    "analysis_log_sha256": "ec016d5cabf0db377e97c659f4a1cc7e723c292dcf6bba4de71b75448be25a6a",
+    "event_recorded_old_merge": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+    "event_note": "Old pr.merge.sha is recorded separately; actual checkout/workflow SHA is5b8f, independently authenticated with tree and exact ordered parents.",
+    "extraction_scope": "Only SARIF and small evidence receipts extracted from12MB authenticated ZIP;189,997,368B total archive expansion was not extracted."
+  },
+  "analysis": {
+    "evaluated_queries": 39,
+    "security_queries": 19,
+    "diagnostic_metric_queries": 20,
+    "evaluated_query_receipt_sha256": "721f239d9fdcd12504f488b334a5108d2764b7aedfa1b8d74b99ac65722a4bdc",
+    "same_query_set_and_receipt_as68_and63": true,
+    "codeql_cli": "2.27.4",
+    "query_pack": "codeql/rust-queries0.1.46+1be292a1e54696ca543b4ad0f9b4537b9687caa7",
+    "rule_metadata_count": 28,
+    "same_full_rules_by_id_as68_and63": true,
+    "raw_results": 124,
+    "by_rule": {
+      "rust/hard-coded-cryptographic-value": 120,
+      "rust/access-invalid-pointer": 4
+    },
+    "classifications": {
+      "unreachable_salt_default": 7,
+      "unreachable_password_default": 3,
+      "unreachable_generated_descriptor_default": 1,
+      "intentional_isolated_test_input": 105,
+      "intentional_empty_salt_exploit_regression_fixture": 4,
+      "ffi_out_parameter_model_gap": 4
+    },
+    "by_kind": {
+      "production": 13,
+      "test": 111
+    },
+    "ordered_code_flow_paths": 44,
+    "related_locations": 351,
+    "suppressions": 0,
+    "new_confirmed_defects": []
+  },
+  "comparison": {
+    "matched_each_prior": 124,
+    "added_each_prior": 0,
+    "removed_each_prior": 0,
+    "changed_primary_source_signatures": [],
+    "changed_ordered_flow_signatures": [],
+    "changed_result_messages": [],
+    "changed_related_source_multisets": [],
+    "related_location_list_reorderings_only": [
+      109,
+      110
+    ],
+    "rule_list_order_vs63": "Different ordering only; full metadata identical when keyed by ruleID.",
+    "source_files_including_related_locations": 46,
+    "changed_whole_file_vs68": "Only tests/source_network/relay.rs changed, adding an endpoint-EOF lifecycle control outside reported expressions. Existing primary/flow/related source expressions remain unchanged.",
+    "prior68_review": "docs/verification/codeql-review-ci6-20261114.json",
+    "prior68_review_sha256": "febb6d2e7320a996edaaede3e4a17fbf7f5f1b7cab3c66999bbebae12b122555",
+    "prior63_review": "docs/verification/codeql-review-ci5-20261114.json",
+    "prior63_review_sha256": "b52eaa655c35dd086135386554ddd80be5e268c4b8f9959cc5283ae19c409f6b",
+    "full_comparison_receipt_sha256": "a74bcf980ea013484cfd7b692178c81946a66eb5102205e10d923ddc69554255"
+  },
+  "manual_new_source_review": {
+    "engine-rust/src/http/dashboard_tests.rs": {
+      "source_sha256": "8462163bc29395e0789d1d604f6c73202eac6e536ccf4c362cba2ce7b2cefb2a",
+      "symbols": [
+        "source_registry_type",
+        "source_content_type"
+      ],
+      "assessment": "Independent read-only registry query uses a successful live HKEY, initialized bounded UTF-16 buffer, returned type/size/terminator checks and closes its handle. No registry writes. Platform expectation adapter only; no new result reported here.",
+      "sarif_artifact_present": true
+    },
+    "engine-rust/tests/first_run_parity/windows_access.rs": {
+      "source_sha256": "050e7af1d70a66159d22e94a246f0a9667bddde47f03e6041df03a4a193a2261",
+      "symbols": [
+        "ThreadToken::install",
+        "ThreadToken::restore",
+        "without_traversal_bypass"
+      ],
+      "assessment": "Owned token handles are constructed only on successful OS opens/duplication. Prior impersonation level and handle are retained; only duplicate SeChangeNotifyPrivilege is disabled, bool and ERROR_NOT_ALL_ASSIGNED are checked. RAII restores the prior thread token without process/global token changes. No new result reported here; Windows runtime proof is separate.",
+      "sarif_artifact_present": true
+    },
+    "engine-rust/src/ownership/windows.rs": {
+      "source_sha256": "51faf2746535e4dc44a3f7fe802d5a91d99a81a545abea3f12e6483960a8d61a",
+      "symbols": [
+        "snapshot_image_class",
+        "Job::member_diagnostics"
+      ],
+      "assessment": "Toolhelp record is zero-initialized and declares exact size, snapshot handle stays owned, iteration and UTF-16 lengths are bounded. The fallback emits static image classes only and grants no signaling/settlement authority. No new result reported here.",
+      "sarif_artifact_present": true
+    },
+    "engine-rust/src/ownership/pending_spawn.rs": {
+      "source_sha256": "00be7f4cfbca3c597c213ff0009e9cc9fd6d35c57193ff83f4a6b10102fca25c",
+      "symbols": [
+        "KernelTree::captured_group",
+        "Unpublished::settle",
+        "retry_retained"
+      ],
+      "assessment": "Passive PGID query occurs while original Child is retained. Direct-child exit plus complete tree proof precede intent cancellation. Unknown/nonempty Unix tree is retained without group signaling absent birth authority; Windows retained Job handle remains authority. Failure retains the raw owner instead of publishing synthetic successful zero-unit cleanup. No new result reported here.",
+      "sarif_artifact_present": true
+    }
+  },
+  "source_bridge": {
+    "job_id": 132355260409,
+    "conclusion": "failure",
+    "artifact_id": 14101039592,
+    "artifact_bytes": 462,
+    "artifact_zip_sha256": "583fc22f0d3e56a86ce09e181122f4d74a7f232b87ff2605a41d78de8d67fb25",
+    "receipt_sha256": "dcfa209de2318bfea1f9016e8bb5deacd6a70fa20cf850aa234f2d6e78a2a3f4",
+    "receipt": {
+      "schema": 1,
+      "source_subject": {
+        "repository": "KiaroSama/Numera-Browser",
+        "build_commit": "5b8f74aed64e5e53cf0f2c0ae93977c9d145dcf9",
+        "analysis_commit": "369e93bfdca84021b66098a43656edb09ff65b07",
+        "identical_tree": "5c74baca63249d2ac5d2c19014c8657157537879",
+        "base_parent": "6b486e16653bca1b18eb0007238a50175421d54a",
+        "head_parent": "369e93bfdca84021b66098a43656edb09ff65b07",
+        "pull_request": 76
+      },
+      "trusted_check_id": null,
+      "trusted_verdict": "pending_or_unsuccessful"
+    },
+    "log_sha256": "6ad0e58b64184910fef58d91463bed53329a280fa54add7b04448797b754b4ee",
+    "interpretation": "Valid exact-head/merge/tree/parent source binding; independent gate correctly rejected unsuccessful trusted verdict. Null trusted_check_id is not a successful check selection."
+  },
+  "extraction_limits": {
+    "metrics": {
+      "Extraction errors": 0,
+      "Extraction warnings": 5,
+      "Files extracted - total user": 697,
+      "Files extracted - with errors": 4,
+      "Files extracted - without errors": 693,
+      "Files extracted - without errors %": 99,
+      "Inconsistencies - AST": 0,
+      "Inconsistencies - CFG": 0,
+      "Inconsistencies - Path resolution": 1171,
+      "Inconsistencies - SSA": 0,
+      "Inconsistencies - data flow": 0,
+      "Lines of code extracted": 185839,
+      "Lines of user code extracted": 185839,
+      "Macro calls - resolved": 66548,
+      "Macro calls - total": 67808,
+      "Macro calls - unresolved": 1260
+    },
+    "warnings": [
+      {
+        "message": "Extraction warning in /home/runner/work/Numera-Browser/Numera-Browser/desktop/src-tauri/src/main.rs with message expected expression",
+        "locations": [
+          {
+            "path": "desktop/src-tauri/src/main.rs",
+            "line": 67
+          }
+        ]
+      },
+      {
+        "message": "Extraction warning in /home/runner/work/Numera-Browser/Numera-Browser/desktop/src-tauri/src/main.rs with message macro expansion failed: the macro 'tauri::generate_context' expands to ERROR but a Expr was expected",
+        "locations": [
+          {
+            "path": "desktop/src-tauri/src/main.rs",
+            "line": 67
+          }
+        ]
+      },
+      {
+        "message": "Extraction warning in /home/runner/work/Numera-Browser/Numera-Browser/engine-rust/tests/browser_extensions_parity.rs with message macro expansion failed for '$crate::format_args'",
+        "locations": [
+          {
+            "path": "engine-rust/tests/browser_extensions_parity.rs",
+            "line": 92
+          }
+        ]
+      },
+      {
+        "message": "Extraction warning in /home/runner/work/Numera-Browser/Numera-Browser/engine-rust/tests/command_capture_lifecycle.rs with message macro expansion failed for '$crate::panic::panic_2021'",
+        "locations": [
+          {
+            "path": "engine-rust/tests/command_capture_lifecycle.rs",
+            "line": 67
+          }
+        ]
+      },
+      {
+        "message": "Extraction warning in /home/runner/work/Numera-Browser/Numera-Browser/engine-rust/tests/source_browser/registered_drivers.rs with message macro expansion failed for '$crate::panic::panic_2021'",
+        "locations": [
+          {
+            "path": "engine-rust/tests/source_browser/registered_drivers.rs",
+            "line": 50
+          }
+        ]
+      }
+    ],
+    "comparison": "Same5 warning identities and4affected files as68/63. Zero Extractionerrors coexistswith4Files extracted-with-errors. Unresolved macro notifications1260vs1236in68; totaluserfiles697vs694. Artifact presence is not proof every macro/cfg/FFI path was fully analyzed; no complete-coverage claim."
+  },
+  "remediation": {
+    "new_source_changes": [],
+    "new_tests": [],
+    "suppressions": [],
+    "query_exclusions": [],
+    "dismissals": [],
+    "reason": "No new reachable defect established in unchanged findings and reviewed new FFI/cleanup code. Existing classifications remain explicit source/OS-contract reviews, not waivers or a green GitHub verdict."
+  },
+  "review_material": {
+    "full_raw_review_sha256": "101d7127e00dcf5afaf33c291ca8bf44894ee1ccbf91183797b3dd8ca0cfba66",
+    "identity_mapping_columns": [
+      "current369_index",
+      "prior68_index",
+      "prior63_index"
+    ],
+    "identity_mapping": [
+      [
+        0,
+        0,
+        4
+      ],
+      [
+        1,
+        1,
+        5
+      ],
+      [
+        2,
+        2,
+        6
+      ],
+      [
+        3,
+        3,
+        7
+      ],
+      [
+        4,
+        4,
+        8
+      ],
+      [
+        5,
+        5,
+        9
+      ],
+      [
+        6,
+        6,
+        10
+      ],
+      [
+        7,
+        7,
+        11
+      ],
+      [
+        8,
+        8,
+        12
+      ],
+      [
+        9,
+        9,
+        13
+      ],
+      [
+        10,
+        10,
+        14
+      ],
+      [
+        11,
+        11,
+        15
+      ],
+      [
+        12,
+        12,
+        16
+      ],
+      [
+        13,
+        13,
+        17
+      ],
+      [
+        14,
+        14,
+        18
+      ],
+      [
+        15,
+        15,
+        19
+      ],
+      [
+        16,
+        16,
+        20
+      ],
+      [
+        17,
+        17,
+        21
+      ],
+      [
+        18,
+        18,
+        22
+      ],
+      [
+        19,
+        19,
+        23
+      ],
+      [
+        20,
+        20,
+        24
+      ],
+      [
+        21,
+        21,
+        25
+      ],
+      [
+        22,
+        22,
+        26
+      ],
+      [
+        23,
+        23,
+        27
+      ],
+      [
+        24,
+        24,
+        28
+      ],
+      [
+        25,
+        25,
+        29
+      ],
+      [
+        26,
+        26,
+        30
+      ],
+      [
+        27,
+        27,
+        31
+      ],
+      [
+        28,
+        28,
+        32
+      ],
+      [
+        29,
+        29,
+        33
+      ],
+      [
+        30,
+        30,
+        34
+      ],
+      [
+        31,
+        31,
+        35
+      ],
+      [
+        32,
+        32,
+        36
+      ],
+      [
+        33,
+        33,
+        37
+      ],
+      [
+        34,
+        34,
+        38
+      ],
+      [
+        35,
+        35,
+        39
+      ],
+      [
+        36,
+        36,
+        40
+      ],
+      [
+        37,
+        37,
+        41
+      ],
+      [
+        38,
+        38,
+        42
+      ],
+      [
+        39,
+        39,
+        43
+      ],
+      [
+        40,
+        40,
+        44
+      ],
+      [
+        41,
+        41,
+        45
+      ],
+      [
+        42,
+        42,
+        46
+      ],
+      [
+        43,
+        43,
+        47
+      ],
+      [
+        44,
+        44,
+        48
+      ],
+      [
+        45,
+        45,
+        49
+      ],
+      [
+        46,
+        46,
+        50
+      ],
+      [
+        47,
+        47,
+        51
+      ],
+      [
+        48,
+        48,
+        52
+      ],
+      [
+        49,
+        49,
+        53
+      ],
+      [
+        50,
+        50,
+        54
+      ],
+      [
+        51,
+        51,
+        55
+      ],
+      [
+        52,
+        52,
+        56
+      ],
+      [
+        53,
+        53,
+        57
+      ],
+      [
+        54,
+        54,
+        58
+      ],
+      [
+        55,
+        55,
+        59
+      ],
+      [
+        56,
+        56,
+        60
+      ],
+      [
+        57,
+        57,
+        61
+      ],
+      [
+        58,
+        58,
+        62
+      ],
+      [
+        59,
+        59,
+        63
+      ],
+      [
+        60,
+        60,
+        64
+      ],
+      [
+        61,
+        61,
+        65
+      ],
+      [
+        62,
+        62,
+        66
+      ],
+      [
+        63,
+        63,
+        67
+      ],
+      [
+        64,
+        64,
+        68
+      ],
+      [
+        65,
+        65,
+        69
+      ],
+      [
+        66,
+        66,
+        70
+      ],
+      [
+        67,
+        67,
+        71
+      ],
+      [
+        68,
+        68,
+        72
+      ],
+      [
+        69,
+        69,
+        73
+      ],
+      [
+        70,
+        70,
+        74
+      ],
+      [
+        71,
+        71,
+        75
+      ],
+      [
+        72,
+        72,
+        76
+      ],
+      [
+        73,
+        73,
+        77
+      ],
+      [
+        74,
+        74,
+        79
+      ],
+      [
+        75,
+        75,
+        80
+      ],
+      [
+        76,
+        76,
+        81
+      ],
+      [
+        77,
+        77,
+        82
+      ],
+      [
+        78,
+        80,
+        78
+      ],
+      [
+        79,
+        78,
+        83
+      ],
+      [
+        80,
+        79,
+        84
+      ],
+      [
+        81,
+        81,
+        85
+      ],
+      [
+        82,
+        82,
+        86
+      ],
+      [
+        83,
+        83,
+        87
+      ],
+      [
+        84,
+        84,
+        88
+      ],
+      [
+        85,
+        85,
+        89
+      ],
+      [
+        86,
+        86,
+        90
+      ],
+      [
+        87,
+        87,
+        91
+      ],
+      [
+        88,
+        88,
+        92
+      ],
+      [
+        89,
+        89,
+        93
+      ],
+      [
+        90,
+        90,
+        94
+      ],
+      [
+        91,
+        91,
+        95
+      ],
+      [
+        92,
+        92,
+        96
+      ],
+      [
+        93,
+        93,
+        97
+      ],
+      [
+        94,
+        94,
+        98
+      ],
+      [
+        95,
+        95,
+        99
+      ],
+      [
+        96,
+        96,
+        100
+      ],
+      [
+        97,
+        97,
+        101
+      ],
+      [
+        98,
+        98,
+        102
+      ],
+      [
+        99,
+        99,
+        103
+      ],
+      [
+        100,
+        100,
+        104
+      ],
+      [
+        101,
+        101,
+        105
+      ],
+      [
+        102,
+        102,
+        106
+      ],
+      [
+        103,
+        103,
+        107
+      ],
+      [
+        104,
+        104,
+        108
+      ],
+      [
+        105,
+        105,
+        110
+      ],
+      [
+        106,
+        107,
+        111
+      ],
+      [
+        107,
+        106,
+        109
+      ],
+      [
+        108,
+        108,
+        112
+      ],
+      [
+        109,
+        109,
+        113
+      ],
+      [
+        110,
+        110,
+        114
+      ],
+      [
+        111,
+        111,
+        115
+      ],
+      [
+        112,
+        112,
+        116
+      ],
+      [
+        113,
+        113,
+        117
+      ],
+      [
+        114,
+        114,
+        118
+      ],
+      [
+        115,
+        115,
+        119
+      ],
+      [
+        116,
+        116,
+        120
+      ],
+      [
+        117,
+        117,
+        121
+      ],
+      [
+        118,
+        118,
+        122
+      ],
+      [
+        119,
+        119,
+        123
+      ],
+      [
+        120,
+        120,
+        0
+      ],
+      [
+        121,
+        121,
+        1
+      ],
+      [
+        122,
+        122,
+        2
+      ],
+      [
+        123,
+        123,
+        3
+      ]
+    ],
+    "binding": "Each current result maps by rule, exact path and both primary fingerprints to the individually classified full prior63 review. Full ordered flow source and related-location multiset comparisons were revalidated; this mapping is not a dismissal or a successful gate."
+  },
+  "trusted_aggregate_initial_observation": {
+    "check_id": 132353953670,
+    "app": "github-advanced-security",
+    "head_sha": "369e93bfdca84021b66098a43656edb09ff65b07",
+    "status": "completed",
+    "conclusion": "neutral",
+    "completed_at": "2026-11-14T05:58:51Z",
+    "title": "2 configurations not found",
+    "summary": "**Warning**: Code scanning cannot determine the alerts introduced by this pull request, because 2 configurations present on `refs/heads/main` were not found:\n\n### Default setup\n\n* :question:&nbsp;&nbsp;`/language:python`\n* :question:&nbsp;&nbsp;`/language:rust`\n\n\n[View all branch alerts](/KiaroSama/Numera-Browser/security/code-scanning?query=pr%3A76+tool%3ACodeQL+is%3Aopen).",
+    "new_alert_counts": null,
+    "interpretation": "Neutral2missingconfigs is not security approval. GitHub states it cannot determine introduced alerts; no zero or inferred NEW-alert count is asserted from raw124. Missing defaultPython ANDRust differs from prior68 missingPython/failure aggregate."
+  },
+  "trusted_aggregate": {
+    "head_sha": "369e93bfdca84021b66098a43656edb09ff65b07",
+    "status": "completed",
+    "conclusion": "failure",
+    "completed_at": "2026-11-14T05:58:51Z",
+    "app": "github-advanced-security",
+    "check_id": 132353953670,
+    "observed_at": "2026-11-14T07:18:41.999Z",
+    "title": "1 configuration not found",
+    "summary": "**Warning**: Code scanning may not have found all the alerts introduced by this pull request, because 1 configuration present on `refs/heads/main` was not found:\n\n### Default setup\n\n* :question:&nbsp;&nbsp;`/language:python`\n\n\n### New alerts in code changed by this pull request\n\nSecurity Alerts:\n * 116 critical\n * 4 high\n\n\n_Alerts not introduced by this pull request might have been detected because the code changes were too large._\n\nSee annotations below for details.\n\n[View all branch alerts](/KiaroSama/Numera-Browser/security/code-scanning?query=pr%3A76+tool%3ACodeQL+is%3Aopen).",
+    "new_alert_counts": {
+      "critical": 116,
+      "high": 4
+    },
+    "refresh_receipt_sha256": "77b20cf2e481fa66884c65da3de605193bd72618c09b9efe5da017f7943f4451",
+    "interpretation": "Fresh authenticated exact-head check output now reports failure, missing defaultPython and116critical/4high NEW alerts. These are GitHub aggregate severities, not confirmed vulnerabilities or raw Rust result counts. Earlier observed neutral/two-missing-config state is retained separately. completed_at is unchanged in the API despite changed output."
+  }
+}

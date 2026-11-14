@@ -8,12 +8,30 @@ use std::{
     path::Path,
 };
 pub const MAX_ARTIFACT: usize = 1024 * 1024;
+pub const GENERATED_BANNER: &str = "// GENERATED from browser-page-rust by locked wasm-bindgen and Binaryen133.\n// Regenerate with browser-page-build; authored browser behavior lives in Rust.\n";
+pub const FACTORY_PREFIX: &str = "(function numera_browser_page()";
 pub const PATH_REMAPPING: [&str; 4] = [
     "repository=numera",
     "cargo-home=cargo",
     "rustup-home=rustup",
     "dependency-crates=crates/name-version",
 ];
+/// The lockfile/source receipt also pins every transitive host dependency.
+pub fn printer_policy() -> Value {
+    json!({
+        "name":"oxc","version":"0.158.0",
+        "mode":"parse_expression+CodegenOptions::minify+print_expression",
+        "source_type":"cjs","preserve_parentheses":true,
+        "regex_pattern_validation":true,"semantic_transforms":false,
+        "identifier_mangling":false,"ascii_only":false,
+        "crate_sha256":{
+            "oxc_allocator":"9f65d07f047239a6535aee5f9eb5f741ce9d7a19c13d3f5d68a507878368f847",
+            "oxc_codegen":"4e96b922b09e06196c28df4bc860b692957246ebf705fe1f49198871e0c91d81",
+            "oxc_parser":"7abfa2897dd082cd208a089692dd40e2e00166015de6993398689025ce8ea0ed",
+            "oxc_span":"ac083572f49ac3941fb954304666da42e44e9154abbdd32fd9b594fd269a952c"
+        }
+    })
+}
 pub fn digest(bytes: &[u8]) -> String {
     Sha256::digest(bytes)
         .iter()
@@ -101,7 +119,8 @@ pub fn validate(repo: &Path, artifact: &[u8], receipt: &Value) -> io::Result<()>
         "wasm2js_binary_sha256":"52597efec0ad2416f8b5c245864960e775b8ffc94c751cc0b016c4b4986d3bcb",
         "path_remapping":PATH_REMAPPING,
         "wasm2js_flags":["--enable-bulk-memory","--enable-bulk-memory-opt","--enable-nontrapping-float-to-int","--pedantic","-O"],
-        "minified":false,"runtime_compilation":false,
+        "minified":true,"runtime_compilation":false,
+        "source_printer":printer_policy(),
         "bridge":["generated module imports/exports become a synchronous classic factory","generated Uint8Array and DataView caches observe non-detaching ArrayBuffer growth"],
         "regeneration_host":"Linux x86_64; output uses portable relative source paths"
     });
@@ -109,6 +128,11 @@ pub fn validate(repo: &Path, artifact: &[u8], receipt: &Value) -> io::Result<()>
     let object = receipt.as_object().ok_or_else(refuse)?;
     if artifact.is_empty()
         || artifact.len() > MAX_ARTIFACT
+        || artifact
+            .strip_prefix(GENERATED_BANNER.as_bytes())
+            .is_none_or(|body| {
+                !body.starts_with(FACTORY_PREFIX.as_bytes()) || !body.ends_with(b"})\n")
+            })
         || object.len() != fixed.as_object().ok_or_else(refuse)?.len() + 8
         || fixed
             .as_object()

@@ -75,3 +75,20 @@ jobs:
       - name: Verify native macOS identity, uncertainty and real descendant settlement
         if: runner.os == 'macOS'
         run: cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci macos-ownership test
+      - name: Preserve bounded macOS historical proof evidence
+        if: always() && runner.os == 'macOS'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: macos-ownership-proof-${{ github.sha }}
+          path: |
+            build/history/macos-proof-185ef69eb619b035c324c7b8e88618ce67ad7aa8eafb749deaa580c94b4ecd66.json
+            build/history/macos-proof-0efb45f8523026f989da925600aac1e1babc9b4f192c318caf6f255bd1f54d1b.json
+            build/history/adaptation-0efb45f8523026f989da925600aac1e1babc9b4f192c318caf6f255bd1f54d1b.json
+            build/history/compile-dfd114e8eee9ff58c7127d48972f00ee9496b387705b927225f77678c41e7a36*.log
+            build/history/proof-dfd114e8eee9ff58c7127d48972f00ee9496b387705b927225f77678c41e7a36*.log
+            build/history/restored-dfd114e8eee9ff58c7127d48972f00ee9496b387705b927225f77678c41e7a36*.log
+            build/history/compile-5746567eaada6eaf3eee268f2d73d24deeaae07d3a9d0eb148ef4a63e3597efe*.log
+            build/history/proof-5746567eaada6eaf3eee268f2d73d24deeaae07d3a9d0eb148ef4a63e3597efe*.log
+            build/history/restored-5746567eaada6eaf3eee268f2d73d24deeaae07d3a9d0eb148ef4a63e3597efe*.log
+          if-no-files-found: warn
+          retention-days: 7

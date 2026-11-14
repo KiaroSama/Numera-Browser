@@ -293,7 +293,7 @@ source_test!(
         fs::create_dir_all(&outside).expect("outside");
         let payload = br#"{"extName":{"message":"Outside catalog must not be returned"}}"#;
         fs::write(outside.join("messages.json"), payload).expect("catalog bytes");
-        link_directory(&outside, &ext.join("_locales/en"));
+        link_directory(&outside, &ext.join("_locales").join("en"));
         let description = with_observer(
             |e| {
                 if e.operation == "before-extension-json-read"

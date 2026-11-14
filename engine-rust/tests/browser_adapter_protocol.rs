@@ -144,6 +144,112 @@ fn actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure()
         assert!(!log.contains("[WARNING]"));
         temporary.cleanup()?;
     }
+    #[cfg(feature = "native-browser")]
+    startup_diagnostics_preserve_the_existing_boundary()?;
+    Ok(())
+}
+#[cfg(feature = "native-browser")]
+fn startup_diagnostics_preserve_the_existing_boundary() -> Result<(), Box<dyn std::error::Error>> {
+    for (mode, category, timeout_pattern) in [
+        ("init-diagnostic-refusal", "protocol", Value::Null),
+        ("init-diagnostic-root-pattern", "timeout", json!("unknown")),
+        ("init-diagnostic-near-pattern", "timeout", json!("unknown")),
+        (
+            "init-diagnostic-object-pattern",
+            "timeout",
+            json!("unknown"),
+        ),
+    ] {
+        let temporary = common::TempDirectory::new("sdk-startup-diagnostic")?;
+        let root = temporary.path();
+        let mut command = fixture::worker(root, "playwright", mode)?;
+        let mut sdk = Adapter::spawn(
+            root,
+            "a",
+            "fixture-host",
+            &mut command,
+            Duration::from_secs(5),
+        )?;
+        assert!(
+            sdk.open(
+                "playwright",
+                Map::from_iter([("user_data_dir".into(), json!(root.join("profile")))]),
+                Vec::new(),
+                Duration::from_secs(5),
+            )
+            .is_err(),
+            "Startup diagnostic changed the native refusal"
+        );
+        sdk.finish(Duration::from_secs(5))?;
+        drop(sdk);
+        assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
+        assert!(!root.join("driver/context-created").exists());
+        assert!(root.join("driver/driver-stopped").is_file());
+        let paths = std::fs::read_dir(root.join("logs"))?
+            .map(|entry| entry.map(|entry| entry.path()))
+            .collect::<std::io::Result<Vec<_>>>()?;
+        assert!(
+            paths.len() <= 8,
+            "Existing live diagnostic retention bound exceeded"
+        );
+        let mut observations = Vec::new();
+        let mut driver_files = 0;
+        for path in paths {
+            let text = std::fs::read_to_string(&path)?;
+            assert!(std::fs::metadata(&path)?.len() <= 65_536);
+            for private in [
+                "synthetic-private-sdk-marker",
+                "fixture-private-path",
+                "fixture-private-argv",
+                "fixture-private-guid",
+                "outside-retained-prefix",
+            ] {
+                assert!(
+                    !text.contains(private),
+                    "Startup diagnostic exposed fixture data"
+                );
+            }
+            if path
+                .file_name()
+                .is_some_and(|name| name.to_string_lossy().starts_with("browser-driver_"))
+            {
+                driver_files += 1;
+                for line in text.lines() {
+                    if let Some((_, summary)) = line.split_once("SDK initialization observation=") {
+                        observations.push(serde_json::from_str::<Value>(summary)?);
+                    }
+                }
+                // The existing live helper retains these exact files in its
+                // selected-sdk.log. Deletion also proves the logger is closed.
+                std::fs::remove_file(path)?;
+            }
+        }
+        assert_eq!(driver_files, 1);
+        assert_eq!(observations.len(), 1);
+        let observation = &observations[0];
+        assert_eq!(observation["boundary"], "initialization-failed");
+        assert_eq!(observation["category"], category);
+        // Even exact vendor message text gains the binding's stack separator,
+        // so it cannot match the fixed native root-timeout string. Real timer
+        // qualification remains outside this existing five-second case.
+        assert_eq!(observation["timeout_pattern"], timeout_pattern);
+        assert_eq!(
+            observation["child"],
+            json!({"state":"running","sampled":true})
+        );
+        let stderr = &observation["stderr"];
+        assert_eq!(stderr["captured_bytes"], 65_536);
+        assert!(
+            stderr["observed_bytes"]
+                .as_u64()
+                .is_some_and(|bytes| bytes > 65_536 && bytes <= 3 * 65_536)
+        );
+        assert_eq!(stderr["truncated"], true);
+        assert_eq!(stderr["sample_complete"], false);
+        assert_eq!(stderr["read_state"], "reading");
+        assert_eq!(stderr["signatures"], json!(["node-module-not-found"]));
+        temporary.cleanup()?;
+    }
     Ok(())
 }
 #[test]

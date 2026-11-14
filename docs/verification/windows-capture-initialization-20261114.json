@@ -5,6 +5,16 @@
   "source_url": "https://github.com/rust-lang/rust/blob/58cf8f9c35b355199727627d07ae34a4e2846d67/library/std/src/sys/process/windows/child_pipe.rs",
   "git_blob_sha1": "9ac024c45b91724366084097aa5a2b3b45a04d14",
   "verified_source_fact": "child_pipe caches one process-wide PIPE_FS handle to the NamedPipe filesystem; it persists until process exit. An uncaptured child does not initialize it.",
+  "retained_owner_cost": {
+    "source_url": "https://github.com/rust-lang/rust/blob/58cf8f9c35b355199727627d07ae34a4e2846d67/library/std/src/sys/process/windows.rs",
+    "git_blob_sha1": "0cff0fb7945c45076f4c95014d5b96c1b95162db",
+    "source_sha256": "06733e1a32748ed2f16f54afeb0dc106e6a2f4013afd9ae9ff138273bb192916",
+    "constructor_lines": "431-435",
+    "process_fields_lines": "705-708",
+    "wait_lines": "733-742",
+    "verified_fact": "std Child retains both the process HANDLE and main-thread HANDLE. wait only queries the process wait state and exit code; neither handle closes until Process drops. A retained Child plus one Job therefore owns exactly three handles.",
+    "adaptation": "The failed-Drop/retry control subtracts exactly these three identified owners from its pre-Drop count. This is an ownership-cost correction, with strict equality preserved; it does not explain or allow unrelated cold initialization deltas."
+  },
   "hosted_observations_before_instrumentation": {
     "first_capture_handle_delta": 3,
     "first_capture_after_uncaptured_owned_tree_handle_delta": 1

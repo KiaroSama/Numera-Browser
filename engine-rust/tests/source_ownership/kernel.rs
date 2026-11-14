@@ -487,6 +487,7 @@ source_test!(
         );
         let value: Value = serde_json::from_slice(&output.stdout)?;
         assert_eq!(value["panicked"], true);
+        handle_attribution_evidence(&value);
         assert_eq!(value["child_gone"], true);
         assert_eq!(value["tree_empty"], true);
         assert_eq!(

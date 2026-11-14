@@ -39,6 +39,9 @@ impl Sample {
 }
 pub trait Observer {
     fn register(&mut self) -> Result<()>;
+    fn register_before(&mut self, _deadline: u64) -> Result<()> {
+        self.register()
+    }
     fn ticks(&mut self) -> u64;
     fn spawn(&mut self) -> Result<()>;
     fn owned(&self) -> bool {
@@ -56,11 +59,15 @@ pub trait Observer {
     fn close(&mut self) -> Result<()>;
 }
 pub fn observe(host: &mut impl Observer, wall: Duration) -> Result<Sample> {
-    host.register()?;
-    let start = host.ticks();
-    let deadline = start
+    let deadline = host
+        .ticks()
         .checked_add(u64::try_from(wall.as_nanos())?)
         .ok_or("Browser benchmark deadline overflow")?;
+    host.register_before(deadline)?;
+    let start = host.ticks();
+    if start >= deadline {
+        return fail("Browser observer registration exceeded its original command deadline");
+    }
     if let Err(error) = host.spawn() {
         if host.owned() {
             let cleanup = host.cleanup();
@@ -161,23 +168,55 @@ fn key(record: &Value) -> (u64, u64) {
 pub fn registration(
     pid: u32,
     birth: u64,
-    mut read: impl FnMut() -> Result<unit_report::Report>,
-    mut pause: impl FnMut() -> Result<()>,
+    command_deadline: u64,
+    mut ticks: impl FnMut() -> u64,
+    mut read: impl FnMut(u64) -> Result<unit_report::Report>,
+    mut pause: impl FnMut(Duration) -> Result<()>,
+    mut own_tree: impl FnMut(&Value) -> Result<bool>,
 ) -> Result<BTreeSet<(u64, u64)>> {
-    let mut report = read()?;
-    if !report.complete {
-        pause()?;
-        report = read()?;
+    let deadline = command_deadline.min(
+        ticks()
+            .checked_add(2_000_000_000)
+            .ok_or("Browser observer registration deadline overflow")?,
+    );
+    loop {
+        if ticks() >= deadline {
+            return fail("Browser observer receipt registration or birth identity missing");
+        }
+        let report = read(deadline)?;
+        let now = ticks();
+        if now >= deadline {
+            return fail("Browser observer receipt registration or birth identity missing");
+        }
+        if report.complete
+            && report
+                .trees
+                .iter()
+                .any(|record| record["pid"].as_u64() == Some(u64::from(pid)))
+        {
+            let mut matched = false;
+            for observer in report
+                .trees
+                .iter()
+                .filter(|record| key(record) == (u64::from(pid), birth))
+            {
+                if own_tree(observer)? {
+                    matched = true;
+                    break;
+                }
+            }
+            if !matched {
+                return fail("Browser observer ownership identity differs from its receipt");
+            }
+            if ticks() >= deadline {
+                return fail(
+                    "Browser observer registration exceeded its original command deadline",
+                );
+            }
+            return Ok(report.trees.iter().map(key).collect());
+        }
+        pause(Duration::from_nanos((deadline - now).min(10_000_000)))?;
     }
-    if !report.complete
-        || !report
-            .trees
-            .iter()
-            .any(|r| key(r) == (u64::from(pid), birth))
-    {
-        return fail("Browser observer receipt registration or birth identity missing");
-    }
-    Ok(report.trees.iter().map(key).collect())
 }
 pub struct Native {
     command: Command,
@@ -225,19 +264,53 @@ impl Observer for Native {
         self.tree.is_some()
     }
     fn register(&mut self) -> Result<()> {
+        let deadline = self
+            .ticks()
+            .checked_add(2_000_000_000)
+            .ok_or("Browser observer registration deadline overflow")?;
+        self.register_before(deadline)
+    }
+    fn register_before(&mut self, command_deadline: u64) -> Result<()> {
+        let deadline = command_deadline.min(
+            self.ticks()
+                .checked_add(2_000_000_000)
+                .ok_or("Browser observer registration deadline overflow")?,
+        );
+        let end = self
+            .started
+            .checked_add(Duration::from_nanos(deadline))
+            .ok_or("Browser observer registration deadline overflow")?;
         unit_report::validate(&self.report)?;
         let pid = u64::from(std::process::id());
         let birth = identity::started_at(std::process::id())?
             .ok_or("Browser observer birth identity missing")?;
-        self.prior = registration(
+        let started = self.started;
+        let registration = registration(
             pid as u32,
             birth,
-            || Ok(unit_report::read(&self.report)?),
-            || {
-                std::thread::sleep(Duration::from_millis(10));
+            deadline,
+            || u64::try_from(started.elapsed().as_nanos()).unwrap_or(u64::MAX),
+            |_| Ok(unit_report::read_before(&self.report, end)?),
+            |duration| {
+                std::thread::sleep(duration);
                 Ok(())
             },
-        )?;
+            |record| Ok(recorded_tree::current_record_matches(record)?),
+        );
+        match registration {
+            Ok(prior) => self.prior = prior,
+            Err(error) => {
+                let diagnostic = unit_report::diagnostic(&self.report, Duration::ZERO, None)
+                    .unwrap_or_else(
+                        |error| json!({"available":false,"query_error_code":error.raw_os_error()}),
+                    );
+                eprintln!(
+                    "Browser observer registration refusal {}",
+                    json!({"pid":pid,"birth":birth,"receipt":diagnostic})
+                );
+                return Err(error);
+            }
+        }
         Ok(())
     }
     fn ticks(&mut self) -> u64 {

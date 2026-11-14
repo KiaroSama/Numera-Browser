@@ -390,6 +390,7 @@ source_test!(
 
 fn caller_bridge_controls() -> TestResult {
     clock_and_pool_caller_controls()?;
+    capture_caller_controls()?;
     let root = root();
     let cases = history::Registry::read()?.cases()?;
     let config = cases
@@ -656,6 +657,117 @@ fn caller_bridge_controls() -> TestResult {
         fs::read(root.join("engine-rust/src/storage/atomic.rs"))?,
         before
     );
+    Ok(())
+}
+fn capture_caller_controls() -> TestResult {
+    const PRIMARY: &str = "engine-rust/src/ownership/capture.rs";
+    const UNITS: &str = "engine-rust/src/ownership/capture_units.rs";
+    const ADAPTER: &str = "engine-rust/src/browser/adapter.rs";
+    let root = root();
+    let cases = history::Registry::read()?.cases()?;
+    assert_eq!(cases.len(), 99);
+    let case = cases.get(40).ok_or("Reviewed capture case missing")?;
+    let selected = ci::git(&root, &["show", &format!("{}:{PRIMARY}", case.commit)])?;
+    assert_eq!(
+        ci::sha(&selected),
+        "aa93ca78468acf0874bf58cf6e1fbd3ca70c7990146ce36e92ff4c3285c51e54"
+    );
+    let primary_before = fs::read(root.join(PRIMARY))?;
+    let before = [
+        (UNITS, fs::read(root.join(UNITS))?),
+        (ADAPTER, fs::read(root.join(ADAPTER))?),
+    ];
+    let bridges = ci::history_compat::additional_callers(&root, case)?;
+    assert_eq!(bridges.len(), 2);
+    for ((name, bridge), (path, original)) in bridges.iter().zip(&before) {
+        assert_eq!(name.as_str(), *path);
+        assert!(!case.files.contains_key(*path) && !case.companions.contains_key(*path));
+        assert_eq!(bridge.receipt["before_sha256"], ci::sha(original));
+        assert_eq!(bridge.receipt["after_sha256"], ci::sha(&bridge.bytes));
+        assert_eq!(bridge.receipt["historical_source_path"], PRIMARY);
+        assert_eq!(
+            bridge.receipt["historical_source_sha256"],
+            ci::sha(&selected)
+        );
+        assert_eq!(bridge.receipt["selected_primary_bytes_unchanged"], true);
+        assert_eq!(
+            bridge.receipt["caller_only_current_green_probe_sha256"],
+            "a7b104c8ab212a471a8fe64be3712e3f4507e724f97d458ecf64d97fc59b1924"
+        );
+        assert!(
+            bridge.receipt["secondary_diagnostic_limitation"]
+                .as_str()
+                .ok_or("Missing historical limitation")?
+                .contains("original capture error remains fatal")
+        );
+        assert_eq!(fs::read(root.join(path))?, *original);
+    }
+    assert_eq!(
+        ci::sha(&bridges[0].1.bytes),
+        "c0ce84fc39ef1af75e56033fe485b233743a5b29d07a5a2c88d2b7289189808f"
+    );
+    assert_eq!(
+        ci::sha(&bridges[1].1.bytes),
+        "029549a0e5badba41fd2f1b48ce836c18aa09b9417f49526f15b91934a5c5699"
+    );
+    assert_eq!(fs::read(root.join(PRIMARY))?, primary_before);
+    assert_eq!(ci::sha(&selected), case.files[PRIMARY]);
+    // Every selector is independent; none may broaden the reviewed graph.
+    for damage in [
+        "commit",
+        "primary",
+        "extra-selected",
+        "companion",
+        "platform",
+        "symptom",
+    ] {
+        let mut changed = case.clone();
+        match damage {
+            "commit" => changed.commit = "0".repeat(40),
+            "primary" => {
+                changed.files.insert(PRIMARY.into(), "0".repeat(64));
+            }
+            "extra-selected" => {
+                changed.files.insert(UNITS.into(), ci::sha(&before[0].1));
+            }
+            "companion" => {
+                changed.companions.insert(
+                    ADAPTER.into(),
+                    history::Source {
+                        commit: case.commit.clone(),
+                        sha256: ci::sha(&before[1].1),
+                    },
+                );
+            }
+            "platform" => changed.platform = Some("linux".into()),
+            "symptom" => changed.symptom.push_str(" changed"),
+            _ => unreachable!(),
+        }
+        assert!(
+            ci::history_compat::additional_callers(&root, &changed).is_err(),
+            "capture caller guard accepted {damage}"
+        );
+    }
+    for damage in ["target", "test"] {
+        let mut changed = case.clone();
+        if damage == "target" {
+            changed.target.push_str("_other");
+        } else {
+            changed.test.push_str("_other");
+        }
+        assert!(ci::history_compat::additional_callers(&root, &changed)?.is_empty());
+    }
+    for damaged_path in [UNITS, ADAPTER] {
+        let wrong = Temp::new("unreviewed capture caller")?;
+        for (path, original) in &before {
+            let mut bytes = original.clone();
+            if *path == damaged_path {
+                bytes.extend_from_slice(b"\n// unreviewed");
+            }
+            wrong.write(path, &bytes)?;
+        }
+        assert!(ci::history_compat::additional_callers(&wrong.0, case).is_err());
+    }
     Ok(())
 }
 fn clock_and_pool_caller_controls() -> TestResult {

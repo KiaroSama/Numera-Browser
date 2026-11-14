@@ -15,6 +15,47 @@ pub fn verified(record: &Value) -> bool {
             .is_some_and(|s| !s.is_empty()))
         || record["pidToken"].as_u64().is_some()
 }
+/// Verify a receipt's observer against this process's actual kernel identity.
+/// This only queries membership; it never joins or adopts the recorded tree.
+/// Windows membership may include an ancestor Job; no innermost-Job claim or
+/// signal authority is established by this read-only predicate.
+pub fn current_record_matches(record: &Value) -> io::Result<bool> {
+    let current = std::process::id();
+    if record["pid"].as_u64() != Some(u64::from(current)) {
+        return Ok(false);
+    }
+    let Some(birth) = record["pidToken"].as_u64() else {
+        return Ok(false);
+    };
+    if identity::started_at(current)? != Some(birth) {
+        return Ok(false);
+    }
+    #[cfg(unix)]
+    {
+        #[allow(unsafe_code)]
+        // SAFETY: getpgrp has no pointers or side effects.
+        let group = unsafe { libc::getpgrp() };
+        Ok(record["tree"]["kind"] == "pgid"
+            && group > 0
+            && u32::try_from(group).ok() == Some(current)
+            && record["tree"]["group"].as_u64() == Some(u64::from(current)))
+    }
+    #[cfg(windows)]
+    {
+        let Some(name) = record["tree"]["group"]
+            .as_str()
+            .filter(|name| !name.is_empty())
+        else {
+            return Ok(false);
+        };
+        if record["tree"]["kind"] != "job" {
+            return Ok(false);
+        }
+        super::windows::named_contains_current(name)
+    }
+    #[cfg(not(any(unix, windows)))]
+    Ok(false)
+}
 fn pid(record: &Value) -> io::Result<u32> {
     record["pid"]
         .as_u64()

@@ -1,4 +1,6 @@
 use super::*;
+#[path = "macos_session.rs"]
+mod session_bridge;
 fn phase(phase: &str) -> TestResult {
     let plan = history::macos_plan(Path::new("/fixture-native-root"), phase)?;
     if phase == "build" {
@@ -32,6 +34,7 @@ fn phase(phase: &str) -> TestResult {
         );
         assert!(command.iter().any(|arg| arg == "ownership_identity_parity"));
         assert!(command.iter().any(|arg| arg == "ownership_tree_parity"));
+        session_bridge::verify()?;
     } else {
         assert_eq!(plan.len(), 6);
         assert!(plan[0].iter().any(|arg| arg == "ownership::macos::tests::"));

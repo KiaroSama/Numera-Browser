@@ -26,6 +26,7 @@ fn receipt_failure(damage: &str) -> TestResult {
         String::from_utf8_lossy(&output.stderr)
     );
     let observed: Value = serde_json::from_slice(&output.stdout)?;
+    handle_attribution_evidence(&observed);
     assert!(
         elapsed < Duration::from_secs(5),
         "worker required supervisor rescue"
