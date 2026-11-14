@@ -71,14 +71,18 @@ impl Session {
         let lock = DataLock::transaction(&self.root)?;
         let _guard = lock.acquire_configured()?;
         super::update_admission::assert_open_locked(&self.root)?;
-        self.tree = Some(match OwnedTree::spawn(command) {
+        self.tree = Some(match OwnedTree::spawn_classified(command) {
             Ok(tree) => tree,
-            Err(error) => {
+            Err(failure) => {
                 // Spawn failures may retain an uncertain tree in capture quarantine.
-                if let Some(admission) = &mut self.admission {
+                // A positive no-child/empty proof permits the original owner
+                // to release admission; error kinds alone never provide it.
+                if !failure.settled
+                    && let Some(admission) = &mut self.admission
+                {
                     admission.retain();
                 }
-                return Err(error);
+                return Err(failure.error);
             }
         });
         let tree = self

@@ -69,7 +69,18 @@ fn blocking_boxed(
     let observer = crate::vault::testing::capture();
     tokio::task::spawn_blocking(move || {
         let operation = || match owner {
-            Some(owner) => REQUEST_OWNER.sync_scope(owner, operation),
+            Some(owner) => REQUEST_OWNER.sync_scope(owner, || {
+                // Observe the active worker before application transaction
+                // locks, so cancellation fixtures do not race their own I/O
+                // barrier timeout while quiesce waits for the same lock.
+                #[cfg(feature = "test-support")]
+                crate::vault::testing::event(
+                    "before-owned-http-blocking-work",
+                    std::path::Path::new(""),
+                )
+                .expect("Owned HTTP blocking observer failed");
+                operation()
+            }),
             None => operation(),
         };
         #[cfg(feature = "test-support")]

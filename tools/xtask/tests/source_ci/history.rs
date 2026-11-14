@@ -392,6 +392,36 @@ fn caller_bridge_controls() -> TestResult {
     clock_and_pool_caller_controls()?;
     let root = root();
     let cases = history::Registry::read()?.cases()?;
+    let config = cases
+        .iter()
+        .find(|case| {
+            case.test
+                == "settings_instance_cache_matches_original_file_identity_and_detached_results"
+        })
+        .ok_or("Historical settings cache case missing")?;
+    let path = "engine-rust/tests/config_parity.rs";
+    let source = config
+        .companions
+        .get(path)
+        .ok_or("Config fixture companion missing")?;
+    let original = ci::git(&root, &["show", &format!("{}:{path}", source.commit)])?;
+    let current = fs::read(root.join(path))?;
+    let selected_before = fs::read(root.join("engine-rust/src/storage/config.rs"))?;
+    let bridge =
+        ci::history_compat::fixture_replacement(&root, config, path, source, &current, &original)?
+            .ok_or("Native config fixture ABI bridge missing")?;
+    let patches = bridge.receipt["caller_abi_patches"]
+        .as_array()
+        .ok_or("Fixture ABI patches absent")?;
+    assert!(patches.iter().any(
+        |patch| patch[0] == "store.headless_launch().map(Value::Bool)"
+            && patch[1] == "Ok(Value::Bool(store.headless_launch()))"
+    ));
+    assert_eq!(fs::read(root.join(path))?, current);
+    assert_eq!(
+        fs::read(root.join("engine-rust/src/storage/config.rs"))?,
+        selected_before
+    );
     let repo = cases
         .iter()
         .find(|case| {
@@ -446,6 +476,168 @@ fn caller_bridge_controls() -> TestResult {
         "engine-rust/src/vault/mod.rs"
     );
     assert!(!String::from_utf8_lossy(&policy.bytes).contains("VaultError::message("));
+    let receipt_root = Temp::new("distinct-historical-vault-receipts")?;
+    for path in [
+        "engine-rust/src/vault/mod.rs",
+        "engine-rust/src/vault/policy.rs",
+        "engine-rust/src/vault/durability.rs",
+        "engine-rust/src/ownership/update_admission.rs",
+    ] {
+        receipt_root.write(path, &fs::read(root.join(path))?)?;
+    }
+    let mut receipts = Vec::new();
+    for hash in [
+        "5fbf9a042308ce8405b66c8e2276372272157566cc2e420594e0aa9e1ae677fd",
+        "71150ac122b5f5c26199ff9fcac4c042db5fcd403beb89f1a809dd0da925de3b",
+    ] {
+        let case = cases
+            .iter()
+            .find(|case| {
+                case.files
+                    .get("engine-rust/src/vault/mod.rs")
+                    .is_some_and(|value| value == hash)
+            })
+            .ok_or("Crypto-admission historical source missing")?;
+        let original = ci::git(
+            &root,
+            &[
+                "show",
+                &format!("{}:engine-rust/src/vault/mod.rs", case.commit),
+            ],
+        )?;
+        assert_eq!(ci::sha(&original), hash);
+        assert!(String::from_utf8_lossy(&original).contains("pub struct VaultError(String)"));
+        let bridges = ci::history_compat::additional_callers(&root, case)?;
+        assert_eq!(bridges.len(), 2);
+        assert!(
+            bridges
+                .iter()
+                .all(|(path, _)| !case.files.contains_key(path)
+                    && !case.companions.contains_key(path))
+        );
+        assert!(
+            bridges
+                .iter()
+                .any(|(path, bridge)| path == "engine-rust/src/vault/policy.rs"
+                    && !String::from_utf8_lossy(&bridge.bytes).contains("VaultError::message("))
+        );
+        let mut inputs = BTreeMap::new();
+        let mut swap = history::SourceSwap::prepare_with(
+            &receipt_root.0,
+            case,
+            &mut inputs,
+            |commit, name| {
+                assert_eq!(name, "engine-rust/src/vault/mod.rs");
+                assert_eq!(commit, case.commit);
+                Ok(original.clone())
+            },
+        )?;
+        assert_eq!(
+            fs::read(receipt_root.0.join("engine-rust/src/vault/mod.rs"))?,
+            original
+        );
+        swap.restore()?;
+        let receipt = receipt_root.0.join("build/history").join(format!(
+            "adaptation-{}.json",
+            ci::sha(format!("{}:{}:{}", case.commit, case.target, case.test).as_bytes())
+        ));
+        receipts.push((receipt, hash));
+    }
+    assert_ne!(receipts[0].0, receipts[1].0);
+    for (path, hash) in receipts {
+        let saved: Value = serde_json::from_slice(&fs::read(path)?)?;
+        let rows = saved.as_array().ok_or("Historical receipt rows absent")?;
+        assert_eq!(rows.len(), 2);
+        assert!(
+            rows.iter()
+                .all(|row| row["historical_source_sha256"] == hash)
+        );
+    }
+    let recovery = cases
+        .iter()
+        .find(|case| case.target == "recovery_parity")
+        .ok_or("Recovery historical source missing")?;
+    let path = "engine-rust/src/vault/transaction.rs";
+    let transaction_before = fs::read(root.join(path))?;
+    let primary_before = fs::read(root.join("engine-rust/src/vault/recovery.rs"))?;
+    let rotation_before = fs::read(root.join("engine-rust/src/vault/rotation_recovery.rs"))?;
+    let bridges = ci::history_callers::additional(&root, recovery)?;
+    assert_eq!(bridges.len(), 1);
+    let (name, bridge) = &bridges[0];
+    assert_eq!(name, path);
+    assert!(!recovery.files.contains_key(path) && !recovery.companions.contains_key(path));
+    assert_eq!(
+        bridge.receipt["before_sha256"],
+        ci::sha(&transaction_before)
+    );
+    assert_eq!(bridge.receipt["after_sha256"], ci::sha(&bridge.bytes));
+    let changed = String::from_utf8_lossy(&bridge.bytes);
+    assert!(!changed.contains("caused_refusal"));
+    assert!(!changed.contains("super::recovery::migration_failure"));
+    assert!(!changed.contains("super::recovery::rollback_failed"));
+    assert!(changed.contains("Vault migration failed: {rollback}; journal retained"));
+    assert!(changed.contains("Some(old_salt), Some(old_verifier)"));
+    assert!(changed.contains("check_password(old_password, old_salt, old_verifier)"));
+    assert_eq!(fs::read(root.join(path))?, transaction_before);
+    assert_eq!(
+        fs::read(root.join("engine-rust/src/vault/recovery.rs"))?,
+        primary_before
+    );
+    assert_eq!(
+        fs::read(root.join("engine-rust/src/vault/rotation_recovery.rs"))?,
+        rotation_before
+    );
+    let wrong = Temp::new("unknown-recovery-history-caller")?;
+    wrong.write(
+        path,
+        &[transaction_before.as_slice(), b"\n// unreviewed"].concat(),
+    )?;
+    assert!(ci::history_callers::additional(&wrong.0, recovery).is_err());
+    let mut selected = recovery.clone();
+    selected
+        .files
+        .insert(path.into(), ci::sha(&transaction_before));
+    assert!(ci::history_callers::additional(&root, &selected).is_err());
+    let tree = cases
+        .iter()
+        .find(|case| case.files.contains_key("engine-rust/src/ownership/tree.rs"))
+        .ok_or("Original tree uncertainty history missing")?;
+    let path = "engine-rust/src/ownership/session.rs";
+    let current_session = fs::read(root.join(path))?;
+    let primary_before = fs::read(root.join("engine-rust/src/ownership/tree.rs"))?;
+    let bridges = ci::history_callers::additional(&root, tree)?;
+    assert_eq!(bridges.len(), 1);
+    let (name, bridge) = &bridges[0];
+    assert_eq!(name, path);
+    assert!(!tree.files.contains_key(path) && !tree.companions.contains_key(path));
+    assert_eq!(bridge.receipt["before_sha256"], ci::sha(&current_session));
+    assert_eq!(bridge.receipt["after_sha256"], ci::sha(&bridge.bytes));
+    assert_eq!(
+        bridge.receipt["historical_source_path"],
+        "engine-rust/src/ownership/tree.rs"
+    );
+    let changed = String::from_utf8_lossy(&bridge.bytes);
+    assert!(!changed.contains("spawn_classified") && !changed.contains("failure.settled"));
+    assert!(changed.contains("OwnedTree::spawn(command)"));
+    assert!(changed.contains(
+        "if let Some(admission) = &mut self.admission {\n                    admission.retain();"
+    ));
+    assert_eq!(fs::read(root.join(path))?, current_session);
+    assert_eq!(
+        fs::read(root.join("engine-rust/src/ownership/tree.rs"))?,
+        primary_before
+    );
+    let wrong = Temp::new("unknown-session-history-caller")?;
+    wrong.write(
+        path,
+        &[current_session.as_slice(), b"\n// unreviewed"].concat(),
+    )?;
+    assert!(ci::history_callers::additional(&wrong.0, tree).is_err());
+    let mut selected = tree.clone();
+    selected
+        .files
+        .insert(path.into(), ci::sha(&current_session));
+    assert!(ci::history_callers::additional(&root, &selected).is_err());
     let atomic = cases
         .iter()
         .find(|case| {

@@ -131,6 +131,229 @@ fn descriptors() -> io::Result<usize> {
         Ok(count as usize)
     }
 }
+fn cancellation_error(root: &Path) -> Result<i32, Box<dyn std::error::Error>> {
+    use numera_core::ownership::{
+        test_support::{Backend, with_backend},
+        unit_report,
+    };
+    use std::sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+        mpsc,
+    };
+    struct Refuse {
+        request: mpsc::Sender<()>,
+        acquired: Mutex<mpsc::Receiver<()>>,
+        reached: AtomicBool,
+        code: i32,
+    }
+    impl Backend for Refuse {
+        fn before_spawn(&self) -> Option<io::Result<()>> {
+            self.reached.store(true, Ordering::SeqCst);
+            Some((|| {
+                self.request.send(()).map_err(io::Error::other)?;
+                self.acquired
+                    .lock()
+                    .map_err(|_| io::Error::other("Receipt rendezvous poisoned"))?
+                    .recv_timeout(Duration::from_secs(2))
+                    .map_err(io::Error::other)?;
+                Err(io::Error::from_raw_os_error(self.code))
+            })())
+        }
+    }
+    let receipt =
+        std::env::var_os(unit_report::ENV).ok_or("Cancellation fixture receipt absent")?;
+    let lock = DataLock::for_file(Path::new(&receipt))?;
+    let (request, requested) = mpsc::channel();
+    let (held, acquired) = mpsc::channel();
+    let (release, released) = mpsc::channel();
+    let holder = thread::spawn(move || -> io::Result<()> {
+        requested
+            .recv_timeout(Duration::from_secs(3))
+            .map_err(io::Error::other)?;
+        let _guard = lock.acquire(Duration::from_secs(1))?;
+        held.send(()).map_err(io::Error::other)?;
+        released
+            .recv_timeout(Duration::from_secs(8))
+            .map_err(io::Error::other)?;
+        Ok(())
+    });
+    let code = if cfg!(windows) { 5 } else { 13 };
+    let original = io::Error::from_raw_os_error(code);
+    let hook = Arc::new(Refuse {
+        request,
+        acquired: Mutex::new(acquired),
+        reached: AtomicBool::new(false),
+        code,
+    });
+    let mut session = Session::admit(root, "p", "cancellation-fixture")?;
+    let work = fs::read_dir(root.join(".updates/work"))?
+        .next()
+        .ok_or("Admission receipt absent")??
+        .path();
+    let before = fs::read(&work)?;
+    let mut command = Command::new(std::env::current_exe()?);
+    command
+        .args(["emit", "unexpected", "0"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    let started = Instant::now();
+    let outcome = with_backend(hook.clone(), || {
+        session
+            .spawn(&mut command, "inert fixture")
+            .map(|tree| tree.pid())
+    });
+    let elapsed = started.elapsed();
+    release.send(())?;
+    holder
+        .join()
+        .map_err(|_| "Receipt cancellation lock holder panicked")??;
+    assert!(hook.reached.load(Ordering::SeqCst));
+    let error = outcome.err().ok_or("Pre-birth failure was accepted")?;
+    assert!(
+        error.kind() == original.kind(),
+        "Cancellation failure replaced the original OS error kind"
+    );
+    assert!(
+        error.raw_os_error() == original.raw_os_error(),
+        "Cancellation failure replaced the original raw OS error"
+    );
+    assert!(
+        error.to_string() == original.to_string(),
+        "Cancellation failure replaced the original error display"
+    );
+    assert!(
+        elapsed < Duration::from_secs(7),
+        "Failed receipt cancellation exceeded its existing five-second lock window"
+    );
+    drop(session);
+    assert!(
+        fs::read(&work)? == before,
+        "Failed cancellation released or changed its admission receipt"
+    );
+    let report = unit_report::read(Path::new(&receipt))?;
+    assert!(
+        !report.complete,
+        "Failed cancellation invented a completed receipt"
+    );
+    assert!(
+        report.trees.is_empty(),
+        "Pre-birth refusal invented a process tree"
+    );
+    assert!(matches!(
+        numera_core::ownership::claims::read(root, "p"),
+        numera_core::ownership::claims::Claim::Absent
+    ));
+    Ok(0)
+}
+#[cfg(unix)]
+fn uncertain_spawn(root: &Path) -> Result<i32, Box<dyn std::error::Error>> {
+    use std::{
+        ffi::CString,
+        os::{
+            fd::AsRawFd,
+            unix::{ffi::OsStrExt, process::CommandExt},
+        },
+    };
+    let marker = fs::File::create(root.join("forked-child"))?;
+    let descriptor = marker.as_raw_fd();
+    let mut command = Command::new(std::env::current_exe()?);
+    command.stdout(Stdio::null()).stderr(Stdio::null());
+    // SAFETY: the callback uses only async-signal-safe OS calls and stack data.
+    // It deliberately leaves a real descendant, then reports ENOENT before exec.
+    unsafe {
+        command.pre_exec(move || {
+            let descendant = libc::fork();
+            if descendant < 0 {
+                return Err(io::Error::last_os_error());
+            }
+            if descendant == 0 {
+                libc::close(descriptor);
+                loop {
+                    libc::pause();
+                }
+            }
+            let row = [libc::getpid(), descendant];
+            if libc::write(descriptor, row.as_ptr().cast(), std::mem::size_of_val(&row))
+                != std::mem::size_of_val(&row) as isize
+            {
+                libc::kill(descendant, libc::SIGKILL);
+                libc::waitpid(descendant, std::ptr::null_mut(), 0);
+                return Err(io::Error::last_os_error());
+            }
+            Err(io::Error::from_raw_os_error(libc::ENOENT))
+        });
+    }
+    let outcome = OwnedTree::spawn(&mut command);
+    let row = fs::read(root.join("forked-child"))?;
+    let leader = i32::from_ne_bytes(row.get(..4).ok_or("Fork leader missing")?.try_into()?);
+    let descendant = u32::try_from(i32::from_ne_bytes(
+        row.get(4..8).ok_or("Fork descendant missing")?.try_into()?,
+    ))?;
+    let token = numera_core::ownership::identity::started_at(descendant)?
+        .ok_or("Real fork descendant vanished")?;
+    let alive = numera_core::ownership::identity::alive(descendant, Some(token))?;
+    // SAFETY: this controlled paused descendant cannot exit/recycle itself;
+    // its exact observed birth still matches immediately before termination.
+    if alive && unsafe { libc::kill(i32::try_from(descendant)?, libc::SIGKILL) } != 0 {
+        return Err(io::Error::last_os_error().into());
+    }
+    let tree = serde_json::json!({"tree":{"kind":"pgid","group":leader}});
+    let end = Instant::now() + Duration::from_secs(2);
+    while !numera_core::ownership::tree::record_empty(&tree)? {
+        if Instant::now() >= end {
+            return Err("Fork control tree did not settle".into());
+        }
+        thread::sleep(Duration::from_millis(5));
+    }
+    assert!(
+        alive,
+        "Post-fork failure control never had its real live descendant"
+    );
+    let error = outcome.err().ok_or("Post-fork ENOENT was accepted")?;
+    assert_eq!(error.kind(), io::ErrorKind::NotFound);
+    assert_eq!(error.raw_os_error(), Some(libc::ENOENT));
+    let path = std::env::var_os(numera_core::ownership::unit_report::ENV)
+        .ok_or("Negative fixture receipt absent")?;
+    let report = numera_core::ownership::unit_report::read(Path::new(&path))?;
+    assert!(
+        !report.complete,
+        "Post-fork ENOENT resolved an uncertain spawn intent"
+    );
+    assert!(
+        report.trees.is_empty(),
+        "Failed generic spawn invented a tree identity"
+    );
+
+    // A generic factory can create its executable in pre_exec. Builtin worker
+    // validation must never become an unconditional Command path preflight.
+    let destination = root.join("callback-created-executable");
+    let source = CString::new(std::env::current_exe()?.as_os_str().as_bytes())?;
+    let target = CString::new(destination.as_os_str().as_bytes())?;
+    let mut command = Command::new(&destination);
+    command
+        .args(["emit", "created", "0"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    // SAFETY: stable NUL-terminated buffers and one async-signal-safe OS call.
+    unsafe {
+        command.pre_exec(move || {
+            if libc::symlink(source.as_ptr(), target.as_ptr()) == 0 {
+                Ok(())
+            } else {
+                Err(io::Error::last_os_error())
+            }
+        });
+    }
+    let mut owner = OwnedTree::spawn(&mut command)?;
+    owner.settle(Duration::from_secs(2))?;
+    assert!(destination.is_file());
+    assert!(
+        !numera_core::ownership::unit_report::read(Path::new(&path))?.complete,
+        "A later successful spawn cancelled an unrelated uncertain attempt"
+    );
+    Ok(0)
+}
 fn capture_initialization_diagnostic() -> io::Result<serde_json::Value> {
     #[cfg(windows)]
     {
@@ -822,6 +1045,9 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
             io::stderr().write_all(payload.as_bytes())?;
             Ok(args[2].parse()?)
         }
+        "cancellation-error" => cancellation_error(Path::new(&args[1])),
+        #[cfg(unix)]
+        "uncertain-spawn" => uncertain_spawn(Path::new(&args[1])),
         "leaf" => {
             fs::write(&args[1], std::process::id().to_string())?;
             thread::sleep(Duration::from_secs(30));

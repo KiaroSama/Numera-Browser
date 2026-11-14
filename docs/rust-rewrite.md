@@ -106,6 +106,8 @@ record named execution evidence. Required acceptance includes ownership checks,
 complete product packaging, actual Windows signing-fixture execution and the
 full CI result for the exact current PR revision. An ancestor's green candidate
 matrix does not establish current product acceptance.
+The [current validation record](verification/functional-ci7-20261114.json)
+distinguishes hosted results, local followup checks and remaining platform work.
 
 Repository CodeQL default setup is a separate administration setting. It still
 expects the main branch's Python configuration, so a Rust-only pull request can
@@ -115,11 +117,13 @@ workflow retains all security-extended queries and full SARIF evidence, and its
 independent verdict must not be replaced with a local successful process exit.
 Resolving the repository configuration and reviewing reported findings remain
 part of final CI acceptance.
-The [initial individual CodeQL review](verification/codeql-review-20261114.json)
-and [fresh scan review](verification/codeql-review-ci5-20261114.json) record exact
+The [initial individual CodeQL review](verification/codeql-review-20261114.json),
+[full result review](verification/codeql-review-ci5-20261114.json) and
+[latest scan comparison](verification/codeql-review-ci6-20261114.json) record exact
 source identities, confirmed defects and the remaining test-data or FFI-model
-findings. The fresh scan no longer reports the 152 logging sinks or four proved
-salt-admission defects; these reviews are not a passing independent verdict.
+findings. The latest scan retains the same 124 reviewed result identities and
+no longer reports the 152 logging sinks or four proved salt-admission defects;
+these reviews are not a passing independent verdict.
 
 Performance compares the genuine `3bf1d8` native application checkpoint with the
 current native product, using the same current Rust SDK transport and resources.

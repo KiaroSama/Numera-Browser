@@ -38,6 +38,9 @@ mod common;
 mod nested_copy;
 #[path = "first_run_parity/support.rs"]
 mod support;
+#[cfg(windows)]
+#[path = "first_run_parity/windows_access.rs"]
+mod windows_access;
 
 #[test]
 fn complete_first_run_summaries_match_original_paths_and_copy_results()
@@ -180,7 +183,42 @@ fn legacy_discovery_preserves_original_order_and_never_marks_denied_sources_comp
             if denied {
                 discovery_access(&first, true)?;
             }
-            run_if_needed(&destination, &candidates)
+            let discover = || run_if_needed(&destination, &candidates);
+            #[cfg(windows)]
+            if denied {
+                return windows_access::without_traversal_bypass(|| {
+                    // Windows normally bypasses directory traversal ACLs.
+                    // Match the frozen chmod(0) fixture with an actual native
+                    // denial, without imposing extra production access rights.
+                    let probe = || -> io::Result<()> {
+                        let error = fs::metadata(first.join("profiles"))
+                            .expect_err("Denied source traversal must refuse metadata");
+                        assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+                        Ok(())
+                    };
+                    probe()?;
+                    // Exercise restoration of an existing impersonation token,
+                    // then retain the outer denial for the real discovery call.
+                    windows_access::without_traversal_bypass(probe)?;
+                    probe()?;
+                    let error = windows_access::without_traversal_bypass(|| {
+                        fs::metadata(first.join("profiles")).map(|_| ())
+                    })
+                    .expect_err("Denied nested probe must retain its access error");
+                    assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+                    probe()?;
+                    let panic = std::panic::catch_unwind(|| {
+                        windows_access::without_traversal_bypass::<()>(|| {
+                            std::panic::panic_any(17_u8);
+                        })
+                    })
+                    .expect_err("Owned token scope must preserve an operation panic");
+                    assert_eq!(panic.downcast_ref::<u8>(), Some(&17));
+                    probe()?;
+                    discover()
+                });
+            }
+            discover()
         })();
         // Restore the owned fixture before assertions or recursive cleanup.
         if denied {
@@ -388,7 +426,7 @@ fn discovery_access(path: &Path, denied: bool) -> std::io::Result<()> {
         use std::{io, process::Command, time::Duration};
         let mut command = Command::new("icacls");
         command.arg(path).args(if denied {
-            ["/deny", "*S-1-1-0:(OI)(CI)(RD,REA,RA)"]
+            ["/deny", "*S-1-1-0:(OI)(CI)(RD,REA,RA,X)"]
         } else {
             ["/remove:d", "*S-1-1-0"]
         });

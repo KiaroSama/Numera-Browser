@@ -255,13 +255,9 @@ pub fn build(root: &Path, options: Options) -> Result<(), Box<dyn Error>> {
     let result = build_inner(
         root, &options, &identity, &receipt, &engine, &browser, &bundles,
     );
-    if result.is_err() {
-        // Exclusively created here; no existing user output can be removed.
-        if let Err(error) = fs::remove_dir_all(&options.output) {
-            eprintln!("product build cleanup failed: {error}");
-        }
+    if let Err(error) = result {
+        return Err(rollback_failed_build(root, &options.output, error));
     }
-    result?;
     println!(
         "Built unsigned native {} at {}. Release signing and acceptance remain required.",
         if options.server_only {
@@ -272,6 +268,24 @@ pub fn build(root: &Path, options: Options) -> Result<(), Box<dyn Error>> {
         options.output.display()
     );
     Ok(())
+}
+
+/// The cause remains authoritative even when retaining evidence or removing an
+/// exclusively created failed product also fails.
+pub fn rollback_failed_build(root: &Path, output: &Path, cause: Box<dyn Error>) -> Box<dyn Error> {
+    match crate::product_diagnostics::preserve_failure(root, output) {
+        Ok(paths) => {
+            for path in paths {
+                eprintln!("Retained failed Tauri diagnostic: {}", path.display());
+            }
+        }
+        Err(error) => eprintln!("product diagnostic retention failed: {error}"),
+    }
+    // Exclusively created by build; no existing user output can be removed.
+    if let Err(error) = fs::remove_dir_all(output) {
+        eprintln!("product build cleanup failed: {error}");
+    }
+    cause
 }
 
 pub fn verify_dashboard(dashboard: &Path, identity: &BuildIdentity) -> Result<(), Box<dyn Error>> {
@@ -518,7 +532,11 @@ pub fn desktop_bundle_resources(
                 format!("/usr/share/{product}/engine"),
                 json!(source),
             )]);
-            Ok(json!({"resources":{},"linux":{"appimage":{"files":files},"deb":{"files":files}}}))
+            // Tauri appends its GTK/WebKit dependencies to this explicit list.
+            // The separately launched Node runtime also needs libatomic.so.1.
+            Ok(
+                json!({"resources":{},"linux":{"appimage":{"files":files},"deb":{"files":files,"depends":["libatomic1"]}}}),
+            )
         }
         "macos" | "windows" => Ok(
             json!({"resources":serde_json::Map::from_iter([(source.to_owned(),json!("engine/"))])}),
@@ -530,6 +548,24 @@ pub fn desktop_bundle_resources(
     }
 }
 
+/// Resolve the actual file identity using a path external installer tools can
+/// consume. WiX3 rejects Rust's Windows verbatim prefix even for short paths.
+pub fn desktop_tool_path(path: &Path) -> io::Result<PathBuf> {
+    let path = dunce::canonicalize(path)?;
+    #[cfg(windows)]
+    if !matches!(
+        path.components().next(),
+        Some(std::path::Component::Prefix(prefix))
+            if matches!(prefix.kind(), std::path::Prefix::Disk(_) | std::path::Prefix::UNC(..))
+    ) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Native desktop bundling requires a canonical Windows path compatible with WiX",
+        ));
+    }
+    Ok(path)
+}
+
 fn build_desktop(
     root: &Path,
     options: &Options,
@@ -539,9 +575,9 @@ fn build_desktop(
 ) -> Result<(), Box<dyn Error>> {
     let work = options.output.join(".desktop-build");
     fs::create_dir(&work)?;
-    let work = work.canonicalize()?;
+    let work = desktop_tool_path(&work)?;
     let config = work.join("tauri.product.json");
-    let runtime = stage.join("engine").canonicalize()?;
+    let runtime = desktop_tool_path(&stage.join("engine"))?;
     let shell_config: Value =
         serde_json::from_slice(&fs::read(root.join("desktop/src-tauri/tauri.conf.json"))?)?;
     let product = shell_config["productName"]
@@ -551,7 +587,7 @@ fn build_desktop(
     bundle["targets"] = json!(bundles);
     write_json(
         &config,
-        &json!({"build":{"frontendDist":root.join("dashboard/dist").canonicalize()?}, "bundle":bundle}),
+        &json!({"build":{"frontendDist":desktop_tool_path(&root.join("dashboard/dist"))?}, "bundle":bundle}),
     )?;
     let mut build = Command::new(cargo());
     build

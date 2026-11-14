@@ -18,60 +18,115 @@ pub struct OwnedTree {
     token: u64,
     settled: bool,
 }
+enum SpawnFailure {
+    #[cfg(windows)]
+    BeforeBirth(io::Error),
+    Uncertain(io::Error),
+    Born(io::Error, Box<super::pending_spawn::Unpublished>),
+}
+impl SpawnFailure {
+    fn born(error: io::Error, child: Child, tree: super::pending_spawn::KernelTree) -> Self {
+        Self::Born(
+            error,
+            Box::new(super::pending_spawn::Unpublished::new(child, tree)),
+        )
+    }
+}
+pub(super) struct SpawnError {
+    pub(super) error: io::Error,
+    pub(super) settled: bool,
+}
+impl From<io::Error> for SpawnError {
+    fn from(error: io::Error) -> Self {
+        Self {
+            error,
+            settled: false,
+        }
+    }
+}
+impl SpawnError {
+    fn after_settlement(
+        error: io::Error,
+        intent: Option<&super::unit_report::SpawnIntent>,
+    ) -> Self {
+        // Receipt failure must retain the unresolved disposition without
+        // replacing the original OS error, including its raw error number.
+        let settled = intent.is_none_or(|intent| intent.cancel().is_ok());
+        Self { error, settled }
+    }
+}
 impl OwnedTree {
     /// Capability is withheld until the child belongs to its own kernel tree.
     pub fn spawn(command: &mut Command) -> io::Result<Self> {
-        let attempt = super::unit_report::begin_spawn()?;
+        Self::spawn_classified(command).map_err(|failure| failure.error)
+    }
+    pub(super) fn spawn_classified(command: &mut Command) -> Result<Self, SpawnError> {
+        let attempt = super::unit_report::begin_transfer()?;
         #[cfg(feature = "test-support")]
         if let Some(Err(error)) = super::test_support::before_spawn() {
             // This boundary precedes the OS spawn. Its intent cannot own a
             // child, unlike an uncertain failure after a spawn syscall.
-            super::unit_report::cancel_spawn(attempt.as_deref())?;
-            return Err(error);
+            return Err(SpawnError::after_settlement(error, attempt.as_ref()));
         }
         // Failed creation can be uncertain after the OS accepted a child. Leave
         // the intent pending rather than inventing a zero-unit cancellation.
-        let mut tree = Self::spawn_tree(command)?;
+        let mut tree = match Self::spawn_tree(command) {
+            Ok(tree) => tree,
+            #[cfg(windows)]
+            Err(SpawnFailure::BeforeBirth(error)) => {
+                return Err(SpawnError::after_settlement(error, attempt.as_ref()));
+            }
+            Err(SpawnFailure::Uncertain(error)) => return Err(error.into()),
+            Err(SpawnFailure::Born(error, child)) => {
+                let settled = (*child).failed(attempt);
+                return Err(SpawnError { error, settled });
+            }
+        };
         #[cfg(feature = "test-support")]
         if let Some(Err(error)) = super::test_support::spawned(&tree.record()) {
-            if tree.settle(Duration::from_secs(5)).is_ok() {
-                super::unit_report::cancel_spawn(attempt.as_deref())?;
-            } else {
-                super::capture::retain_tree(tree);
+            let settled = tree.settle(Duration::from_secs(5)).is_ok();
+            if settled {
+                return Err(SpawnError::after_settlement(error, attempt.as_ref()));
             }
-            return Err(error);
+            super::capture::retain_tree(tree);
+            return Err(error.into());
         }
-        if let Err(error) = super::unit_report::record(&tree.record(), attempt.as_deref()) {
-            if tree.settle(Duration::from_secs(5)).is_ok() {
-                super::unit_report::cancel_spawn(attempt.as_deref())?;
-            } else {
-                super::capture::retain_tree(tree);
+        if let Err(error) = attempt
+            .as_ref()
+            .map_or(Ok(()), |intent| intent.record(&tree.record()))
+        {
+            let settled = tree.settle(Duration::from_secs(5)).is_ok();
+            if settled {
+                return Err(SpawnError::after_settlement(error, attempt.as_ref()));
             }
-            return Err(error);
+            super::capture::retain_tree(tree);
+            return Err(error.into());
         }
         Ok(tree)
     }
-    fn spawn_tree(command: &mut Command) -> io::Result<Self> {
+    fn spawn_tree(command: &mut Command) -> Result<Self, SpawnFailure> {
         #[cfg(windows)]
         {
             use std::os::windows::process::CommandExt;
-            let job = Job::new()?;
+            let job = Job::new().map_err(SpawnFailure::BeforeBirth)?;
             command.creation_flags(0x0000_0004 | 0x0800_0000); // suspended, no console
-            let mut child = command.spawn()?;
+            let child = command.spawn().map_err(SpawnFailure::Uncertain)?;
             let token = match super::identity::started_at(child.id()) {
                 Ok(Some(token)) => token,
                 _ => {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    return Err(io::Error::other(
-                        "Suspended tree leader has no birth identity",
+                    return Err(SpawnFailure::born(
+                        io::Error::other("Suspended tree leader has no birth identity"),
+                        child,
+                        super::pending_spawn::KernelTree::Job(job),
                     ));
                 }
             };
             if let Err(error) = job.assign(&child).and_then(|_| resume(child.id())) {
-                let _ = child.kill();
-                let _ = child.wait();
-                return Err(error);
+                return Err(SpawnFailure::born(
+                    error,
+                    child,
+                    super::pending_spawn::KernelTree::Job(job),
+                ));
             }
             Ok(Self {
                 child,
@@ -84,15 +139,27 @@ impl OwnedTree {
         {
             use std::os::unix::process::CommandExt;
             command.process_group(0);
-            let mut child = command.spawn()?;
-            let group = i32::try_from(child.id()).map_err(io::Error::other)?;
+            let child = command.spawn().map_err(SpawnFailure::Uncertain)?;
+            // A Unix PID is a positive pid_t. Keep conversion failure uncertain;
+            // it cannot authorize a receipt cancellation.
+            let group = match i32::try_from(child.id()) {
+                Ok(group) if group > 0 => group,
+                _ => {
+                    return Err(SpawnFailure::born(
+                        io::Error::other("Spawned tree leader PID is invalid"),
+                        child,
+                        super::pending_spawn::KernelTree::Unobservable,
+                    ));
+                }
+            };
             let token = match started_at(child.id()) {
                 Ok(Some(token)) => token,
                 _ => {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    return Err(io::Error::other(
-                        "Spawned tree leader has no birth identity",
+                    let captured = super::pending_spawn::KernelTree::captured_group(&child, group);
+                    return Err(SpawnFailure::born(
+                        io::Error::other("Spawned tree leader has no birth identity"),
+                        child,
+                        captured,
                     ));
                 }
             };
@@ -162,6 +229,8 @@ impl OwnedTree {
         let deadline = Instant::now()
             .checked_add(budget)
             .ok_or_else(|| io::Error::other("Invalid tree cleanup budget"))?;
+        #[cfg(unix)]
+        let mut signal_error = None;
         if !self.observed_empty(deadline)? {
             #[cfg(windows)]
             {
@@ -217,21 +286,60 @@ impl OwnedTree {
                             .min(Duration::from_millis(10)),
                     );
                 };
-                if may_signal
-                    && let Err(error) = terminate_group(self.group)
-                    && !self.observed_empty(deadline)?
-                {
-                    return Err(error);
+                if may_signal && let Err(error) = terminate_group(self.group) {
+                    // Refusal is not emptiness. Preserve the exact error and
+                    // observe only until the existing deadline; an exiting
+                    // group can disappear after the signal snapshot. Never
+                    // retry this signal or turn a live/unknown group free.
+                    signal_error = Some(error);
                 }
             }
         }
         loop {
-            if self.observed_empty(deadline)? {
-                self.child.wait()?;
-                self.settled = true;
-                return Ok(());
+            #[cfg(unix)]
+            if Instant::now() >= deadline
+                && let Some(error) = signal_error.take()
+            {
+                return Err(error);
+            }
+            let observed = self.observed_empty(deadline);
+            #[cfg(unix)]
+            let observed = observed.map_err(|error| signal_error.take().unwrap_or(error));
+            if observed? {
+                #[cfg(unix)]
+                if signal_error.is_some() {
+                    // A complete group observation and this retained child's
+                    // actual exit are both required. Do not wait unboundedly
+                    // on a stale empty snapshot after a refused signal.
+                    if Instant::now() >= deadline
+                        && let Some(error) = signal_error.take()
+                    {
+                        return Err(error);
+                    }
+                    if matches!(self.child.try_wait(), Ok(Some(_))) {
+                        self.settled = true;
+                        return Ok(());
+                    }
+                    // An error here remains an unknown child observation.
+                    // Retry only within the original window, preserving the
+                    // first signal error rather than replacing its OS code.
+                } else {
+                    self.child.wait()?;
+                    self.settled = true;
+                    return Ok(());
+                }
+                #[cfg(windows)]
+                {
+                    self.child.wait()?;
+                    self.settled = true;
+                    return Ok(());
+                }
             }
             if Instant::now() >= deadline {
+                #[cfg(unix)]
+                if let Some(error) = signal_error.take() {
+                    return Err(error);
+                }
                 return Err(io::Error::new(
                     io::ErrorKind::TimedOut,
                     "Owned process tree is not proved empty; retain its claim",

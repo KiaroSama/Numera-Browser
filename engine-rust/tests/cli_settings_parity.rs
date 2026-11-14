@@ -12,6 +12,7 @@ mod strict_settings;
 #[test]
 fn settings_folder_token_and_schedule_services_match_original_verdicts()
 -> Result<(), Box<dyn std::error::Error>> {
+    cli_characterization::check_extension_path_materialization();
     let temporary = common::TempDirectory::new("cli-settings-parity")?;
     let document =
         cli_characterization::load("cli_settings_parity", &temporary.path().join("source"))?;

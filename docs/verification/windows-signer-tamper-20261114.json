@@ -1,7 +1,29 @@
 {
   "schema": 1,
   "review_date": "2026-11-14",
-  "status": "CI5 confirmed the checked executable-byte mutation also returns NOSIGNATURE. Independent authenticated-CMS versus native Windows SIP digest comparison is implemented and typechecked; fresh native Windows execution remains required.",
+  "status": "CI6 actual Windows execution passed the independent authenticated-CMS versus native SIP digest comparison, native malformed/error controls and strict BAD_DIGEST tamper controls. Full Windows product packaging and other CI gates remain separate.",
+  "ci6_native_success": {
+    "source_head": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+    "actual_checkout_and_github_sha": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+    "head_tree": "5912136069b70587970d3fee68d3e83361ef2671",
+    "checkout_tree": "5912136069b70587970d3fee68d3e83361ef2671",
+    "tree_equality_verified": true,
+    "run": 43553932142,
+    "job": 132322948497,
+    "step_started_at": "2026-11-14T04:08:04Z",
+    "step_completed_at": "2026-11-14T04:10:00Z",
+    "artifact_id": 14097766981,
+    "artifact_name": "windows-native-signing-ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+    "artifact_zip_bytes": 958,
+    "artifact_zip_sha256": "9201f5c2fb5b7833670434681be6e4ead911bbef76ffdfaef7219539ff3940ab",
+    "downloaded_digest_verified": true,
+    "reported_result": "1 passed; 0 failed; 0 ignored; 642 filtered out; 1.22s",
+    "evidence_directory": "/workspace/work/ci6-windows-signing",
+    "stdout_sha256": "f45d004f95eac9c978c254db4790eb855aacf539150f3d1dcd210ff246f0201c",
+    "stderr_sha256": "70be727202ef2b24526260271b5845b628922a9ee51598bd11a4677511282cf1",
+    "coverage": "The existing single case executed actual Windows DER/provider/error controls, then signed and verified three staged PE files copied from the freshly compiled native engine/SDK worker. Each file passed pinned CMS/native-SIP/WinTrust positive verification, rejected a wrong pin, rejected byte64 tampering and required exact BAD_DIGEST for a checked executable-section mutation with unchanged certificate blob. The fixture does not stand for the later Tauri desktop/product signing operation.",
+    "limitations": "This is the actual native signer proof at the stated source/tree. The full Windows product job continued afterward; no full product, notarization, owner publication or complete-CI success is claimed."
+  },
   "ci5_failure": {
     "source_head": "63b09f46a65071ca4bbb25862525151c866c0169",
     "actual_checkout": "cb0fcc3239cd52ba21283516dbc9b9834db885cd",
@@ -82,5 +104,5 @@
       "limitation": "The Linux case executes the actual portable PE parser controls. Real signing remains mandatory only in its Windows branch and is not established by this run."
     }
   ],
-  "pending_evidence": "The fresh Windows product lane must execute the unchanged single ReleaseIdentity case, sign all real staged PEs, reject the wrong pin and byte-64 mutation, and obtain exact BAD_DIGEST for every selected executable-byte mutation."
+  "pending_evidence": "The required actual Windows signer case passed at CI6 as recorded above. Later source/tool changes and the complete product installer/signing paths still require their own fresh mandatory native-host checks."
 }

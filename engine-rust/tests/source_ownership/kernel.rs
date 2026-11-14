@@ -1,5 +1,278 @@
 use super::*;
 
+fn inherited_transfer(case: &str, scenario: impl FnOnce() -> TestResult) -> TestResult {
+    const CHILD: &str = "NUMERA_OWNERSHIP_TRANSFER_CASE";
+    if std::env::var(CHILD).ok().as_deref() == Some(case) {
+        return scenario();
+    }
+    let root = temp("inherited-spawn-transfer")?;
+    let mut child = Command::new(std::env::current_exe()?);
+    child
+        .args(["--exact", case, "--test-threads=1"])
+        .env(CHILD, case);
+    let mut units = numera_core::ownership::capture_units::Units::new(root.path(), &mut child)?;
+    let output = units
+        .run(&mut child, limit(Duration::from_secs(45)), || false)
+        .map_err(|error| {
+            io::Error::other(format!(
+                "Original transfer case left its inherited receipt incomplete: {error}"
+            ))
+        })?;
+    let transcript = String::from_utf8_lossy(&output.stdout);
+    let snapshot_unavailable = transcript.contains("Receipt counter snapshot unavailable");
+    let assertion_line = transcript
+        .split("panicked at tests/source_ownership/kernel.rs:")
+        .nth(1)
+        .and_then(|tail| tail.split(':').next())
+        .and_then(|line| line.parse::<u32>().ok());
+    assert_eq!(
+        output.exit, 0,
+        "Original nested transfer case failed (snapshot_unavailable={snapshot_unavailable}, assertion_line={assertion_line:?})"
+    );
+    assert!(
+        !units.pending(),
+        "Successful child retained its transfer receipt"
+    );
+    Ok(())
+}
+fn selected_pending() -> Result<u64, Box<dyn std::error::Error>> {
+    let path = std::env::var_os(unit_report::ENV).ok_or("Inherited receipt absent")?;
+    let scope = std::env::var(unit_report::SCOPE_ENV)?;
+    // Other producers legitimately append to this shared receipt. Counter
+    // assertions need a consistent bounded read, rather than a try-lock poll.
+    unit_report::diagnostic(Path::new(&path), Duration::from_secs(1), Some(&scope))
+        .map_err(|error| io::Error::new(error.kind(), "Receipt counter snapshot unavailable"))?["pending_selected"]
+        .as_u64()
+        .ok_or_else(|| "Pending transfer count absent".into())
+}
+fn contended_snapshot() -> Result<u64, Box<dyn std::error::Error>> {
+    let path = std::env::var_os(unit_report::ENV).ok_or("Inherited receipt absent")?;
+    let lock = DataLock::for_file(Path::new(&path))?;
+    let (held, acquired) = mpsc::channel();
+    let holder = thread::spawn(move || -> io::Result<()> {
+        let _guard = lock.acquire(Duration::from_secs(1))?;
+        held.send(()).map_err(io::Error::other)?;
+        thread::sleep(Duration::from_millis(50));
+        Ok(())
+    });
+    acquired.recv_timeout(Duration::from_secs(2))?;
+    let snapshot = selected_pending();
+    holder
+        .join()
+        .map_err(|_| "Receipt snapshot lock holder panicked")??;
+    snapshot
+}
+fn cancellation_error_preserves_os_cause() -> TestResult {
+    let root = temp("failed-cancellation-os-cause")?;
+    let receipt = receipt(root.path())?;
+    let mut child = command("cancellation-error")?;
+    child
+        .arg(root.path())
+        .env(unit_report::ENV, &receipt)
+        .env(unit_report::SCOPE_ENV, "failed-cancellation-fixture");
+    let output = capture::run(&mut child, limit(Duration::from_secs(10)))
+        .map_err(|error| io::Error::other(error.to_string()))?;
+    assert_eq!(
+        output.exit, 0,
+        "Held-lock cancellation replaced the original OS cause or released admission"
+    );
+    assert!(!unit_report::read(&receipt)?.complete);
+    assert_eq!(
+        unit_report::diagnostic(&receipt, Duration::from_secs(1), None)?["pending_total"],
+        1
+    );
+    Ok(())
+}
+fn unpublished_query_failure() -> TestResult {
+    use numera_core::ownership::test_support::{Backend, with_backend};
+    struct Missing {
+        pid: std::sync::atomic::AtomicU32,
+        queries: std::sync::atomic::AtomicUsize,
+    }
+    impl Backend for Missing {
+        fn birth(&self, pid: u32) -> Option<io::Result<Option<u64>>> {
+            self.pid.store(pid, std::sync::atomic::Ordering::SeqCst);
+            Some(Ok(None))
+        }
+        fn group_empty(&self, group: i32) -> Option<io::Result<bool>> {
+            (group as u32 == self.pid.load(std::sync::atomic::Ordering::SeqCst)).then(|| {
+                self.queries
+                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                Err(io::Error::new(
+                    io::ErrorKind::PermissionDenied,
+                    "controlled unpublished tree observation refusal",
+                ))
+            })
+        }
+        #[cfg(windows)]
+        fn job_query(&self) -> Option<io::Result<()>> {
+            self.queries
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Some(Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "controlled unpublished Job observation refusal",
+            )))
+        }
+    }
+    let before = selected_pending()?;
+    let mut child = command("sleep")?;
+    child.stdout(Stdio::null()).stderr(Stdio::null());
+    let hook = Arc::new(Missing {
+        pid: std::sync::atomic::AtomicU32::new(0),
+        queries: std::sync::atomic::AtomicUsize::new(0),
+    });
+    assert!(with_backend(hook.clone(), || OwnedTree::spawn(&mut child)).is_err());
+    let pid = hook.pid.load(std::sync::atomic::Ordering::SeqCst);
+    assert!(pid > 0);
+    assert!(
+        !identity::alive(pid, None)?,
+        "Failed birth observation retained a live direct child"
+    );
+    assert_eq!(
+        selected_pending()?,
+        before + 1,
+        "Unknown kernel result resolved an intent"
+    );
+    let queries = hook.queries.load(std::sync::atomic::Ordering::SeqCst);
+    assert!(!with_backend(hook.clone(), || capture::retry_retained(Duration::ZERO)).is_empty());
+    assert_eq!(
+        hook.queries.load(std::sync::atomic::Ordering::SeqCst),
+        queries,
+        "Expired cleanup performed another kernel observation"
+    );
+    assert!(!with_backend(hook, || capture::retry_retained(Duration::from_secs(1))).is_empty());
+    assert_eq!(
+        selected_pending()?,
+        before + 1,
+        "Repeated query failure resolved an intent"
+    );
+    let receipt = PathBuf::from(std::env::var_os(unit_report::ENV).ok_or("Receipt absent")?);
+    let lock = DataLock::for_file(&receipt)?;
+    let (held, acquired) = mpsc::channel();
+    let (release, released) = mpsc::channel();
+    let holder = thread::spawn(move || -> io::Result<()> {
+        let _guard = lock.acquire(Duration::from_secs(1))?;
+        held.send(()).map_err(io::Error::other)?;
+        released.recv().map_err(io::Error::other)?;
+        Ok(())
+    });
+    acquired.recv_timeout(Duration::from_secs(2))?;
+    let started = Instant::now();
+    let blocked = capture::retry_retained(Duration::from_millis(30));
+    let elapsed = started.elapsed();
+    release.send(())?;
+    holder
+        .join()
+        .map_err(|_| "Receipt lock holder panicked")??;
+    assert!(
+        !blocked.is_empty(),
+        "Contended cancellation receipt was treated as durable"
+    );
+    assert!(
+        elapsed < Duration::from_secs(1),
+        "Receipt cancellation extended the original cleanup deadline"
+    );
+    assert_eq!(selected_pending()?, before + 1);
+    assert!(capture::retry_retained(Duration::from_secs(1)).is_empty());
+    assert_eq!(
+        selected_pending()?,
+        before,
+        "Proved-empty retry failed to resolve its original receipt"
+    );
+    Ok(())
+}
+#[cfg(unix)]
+fn unpublished_live_descendant() -> TestResult {
+    use numera_core::ownership::test_support::{Backend, with_backend};
+    struct Native;
+    impl Backend for Native {}
+    struct Missing {
+        root: PathBuf,
+        record: std::sync::Mutex<Option<Value>>,
+    }
+    impl Backend for Missing {
+        fn birth(&self, pid: u32) -> Option<io::Result<Option<u64>>> {
+            Some((|| {
+                wait_file(&self.root.join("descendant"))?;
+                let birth = with_backend(Arc::new(Native), || identity::started_at(pid))?
+                    .ok_or_else(|| io::Error::other("Live fixture birth absent"))?;
+                *self.record.lock().expect("fixture record") =
+                    Some(json!({"pid":pid,"pidToken":birth,"tree":{"kind":"pgid","group":pid}}));
+                Ok(None)
+            })())
+        }
+    }
+    let root = temp("unpublished-live-descendant")?;
+    let before = selected_pending()?;
+    let mut child = command("tree")?;
+    child
+        .arg(root.path())
+        .arg("hold")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    let hook = Arc::new(Missing {
+        root: root.path().into(),
+        record: std::sync::Mutex::new(None),
+    });
+    assert!(with_backend(hook.clone(), || OwnedTree::spawn(&mut child)).is_err());
+    let record = hook
+        .record
+        .lock()
+        .expect("fixture record")
+        .clone()
+        .ok_or("Live tree record absent")?;
+    let leaf: u32 = fs::read_to_string(root.path().join("descendant"))?.parse()?;
+    assert!(
+        process_running(leaf, None)?,
+        "Refusal fixture lost its actual live descendant"
+    );
+    assert!(!recorded_tree::empty(&record)?);
+    assert_eq!(
+        selected_pending()?,
+        before + 1,
+        "Live descendant resolved a spawn intent"
+    );
+    assert!(!capture::retry_retained(Duration::from_secs(1)).is_empty());
+    assert_eq!(selected_pending()?, before + 1);
+    assert!(
+        process_running(leaf, None)?,
+        "Unidentified PGID was used as signal authority"
+    );
+    assert!(recorded_tree::settle(&record, Duration::from_secs(2))?);
+    assert!(recorded_tree::empty(&record)?);
+    assert!(capture::retry_retained(Duration::from_secs(1)).is_empty());
+    assert_eq!(selected_pending()?, before);
+    Ok(())
+}
+#[cfg(unix)]
+fn uncertain_post_fork() -> TestResult {
+    // Expected-uncertain protocol fixtures use their own receipt. It remains
+    // physically pending after the real descendant has been independently
+    // settled; no production cancellation or outer-scope suppression occurs.
+    let root = temp("uncertain-post-fork")?;
+    let receipt = receipt(root.path())?;
+    let mut child = command("uncertain-spawn")?;
+    child
+        .arg(root.path())
+        .env(unit_report::ENV, &receipt)
+        .env(unit_report::SCOPE_ENV, "uncertain-fixture");
+    let output = capture::run(&mut child, limit(Duration::from_secs(5)))
+        .map_err(|error| io::Error::other(error.to_string()))?;
+    assert_eq!(output.exit, 0, "Generic post-fork fixture failed");
+    let report = unit_report::read(&receipt)?;
+    assert!(
+        !report.complete,
+        "Generic post-fork failure was relabelled no-child"
+    );
+    assert_eq!(
+        unit_report::diagnostic(&receipt, Duration::ZERO, None)?["pending_total"],
+        1
+    );
+    for tree in &report.trees {
+        assert!(recorded_tree::empty(tree)?);
+    }
+    Ok(())
+}
 fn normalized(mut record: Value) -> Value {
     record["pidToken"] = record["token"].take();
     record
@@ -343,50 +616,101 @@ source_test!(
     session_tree_mandatory_a_session_may_not_open_a_browser_it_cannot_own,
     "tests/test_session_tree_mandatory.py::test_a_session_may_not_open_a_browser_it_cannot_own",
     {
-        let t = temp("refused-unnamed-session")?;
-        profile(t.path(), "p")?;
-        let session = Session::admit(t.path(), "p", "source-host")?;
-        let mut child = Command::new(t.path().join("missing-sdk-driver"));
-        let error = numera_core::browser::adapter::Adapter::spawn_admitted(
-            session,
-            &mut child,
-            Duration::from_secs(1),
+        inherited_transfer(
+            "kernel::session_tree_mandatory_a_session_may_not_open_a_browser_it_cannot_own",
+            || {
+                let t = temp("refused-unnamed-session")?;
+                let profile = profile(t.path(), "p")?;
+                let session = Session::admit(t.path(), "p", "source-host")?;
+                let adapter = t.path().join(if cfg!(windows) {
+                    "missing-sdk-driver.exe"
+                } else {
+                    "missing-sdk-driver"
+                });
+                let expected = fs::metadata(&adapter)
+                    .err()
+                    .ok_or("Missing SDK fixture exists")?;
+                assert_eq!(expected.kind(), io::ErrorKind::NotFound);
+                let runtime = numera_core::browser::runtime::Runtime {
+                    adapter,
+                    cwd: t.path().into(),
+                    home: t.path().into(),
+                    logs: t.path().join("logs"),
+                    country: None,
+                    relay: None,
+                    binary_options: Default::default(),
+                    deployment: None,
+                    registry: None,
+                };
+                let error = runtime
+                    .open(session, profile, true, 1000.0)
+                    .err()
+                    .ok_or("unnamed driver accepted")?;
+                assert_eq!(error.kind, "failed");
+                assert_eq!(
+                    error.message,
+                    expected.to_string(),
+                    "Builtin preparation lost the actual NotFound cause"
+                );
+                assert!(matches!(claims::read(t.path(), "p"), claims::Claim::Absent));
+                let _lease = SessionLease::acquire(&SessionLease::path_for(t.path(), "p")?)?;
+                assert_eq!(
+                    contended_snapshot()?,
+                    0,
+                    "No-child builtin refusal created a spawn intent"
+                );
+                Ok(())
+            },
         )
-        .err()
-        .ok_or("unnamed driver accepted")?;
-        assert_eq!(error.kind(), io::ErrorKind::NotFound);
-        assert!(matches!(claims::read(t.path(), "p"), claims::Claim::Absent));
-        let _lease = SessionLease::acquire(&SessionLease::path_for(t.path(), "p")?)?;
-        Ok(())
     }
 );
 source_test!(
     session_tree_mandatory_a_driver_that_started_in_no_tree_is_stopped,
     "tests/test_session_tree_mandatory.py::test_a_driver_that_started_in_no_tree_is_stopped",
     {
-        use numera_core::ownership::test_support::{Backend, with_backend};
-        struct Missing(std::sync::Mutex<Option<u32>>);
-        impl Backend for Missing {
-            fn birth(&self, pid: u32) -> Option<io::Result<Option<u64>>> {
-                *self.0.lock().expect("pid") = Some(pid);
-                Some(Ok(None))
-            }
-        }
-        let t = temp("unnamed-born-driver")?;
-        let mut session = Session::admit(t.path(), "p", "source-host")?;
-        let missing = Arc::new(Missing(std::sync::Mutex::new(None)));
-        let mut child = command("sleep")?;
-        child.stdout(Stdio::null()).stderr(Stdio::null());
-        assert!(with_backend(missing.clone(), || session.spawn(&mut child, "browser")).is_err());
-        let pid = missing
-            .0
-            .lock()
-            .expect("pid")
-            .ok_or("real child was never identified")?;
-        assert!(!identity::alive(pid, None)?);
-        assert!(session.tree_record().is_none());
-        assert!(matches!(claims::read(t.path(), "p"), claims::Claim::Absent));
-        Ok(())
+        inherited_transfer(
+            "kernel::session_tree_mandatory_a_driver_that_started_in_no_tree_is_stopped",
+            || {
+                use numera_core::ownership::test_support::{Backend, with_backend};
+                struct Missing(std::sync::Mutex<Option<u32>>);
+                impl Backend for Missing {
+                    fn birth(&self, pid: u32) -> Option<io::Result<Option<u64>>> {
+                        *self.0.lock().expect("pid") = Some(pid);
+                        Some(Ok(None))
+                    }
+                }
+                let t = temp("unnamed-born-driver")?;
+                let mut session = Session::admit(t.path(), "p", "source-host")?;
+                let missing = Arc::new(Missing(std::sync::Mutex::new(None)));
+                let mut child = command("sleep")?;
+                child.stdout(Stdio::null()).stderr(Stdio::null());
+                assert!(
+                    with_backend(missing.clone(), || session.spawn(&mut child, "browser")).is_err()
+                );
+                let pid = missing
+                    .0
+                    .lock()
+                    .expect("pid")
+                    .ok_or("real child was never identified")?;
+                assert!(!identity::alive(pid, None)?);
+                assert!(session.tree_record().is_none());
+                assert!(matches!(claims::read(t.path(), "p"), claims::Claim::Absent));
+                assert_eq!(
+                    selected_pending()?,
+                    0,
+                    "Proved-empty child left a pending transfer"
+                );
+                drop(session);
+                assert!(
+                    fs::read_dir(t.path().join(".updates/work"))?
+                        .next()
+                        .is_none(),
+                    "Proved-empty failed spawn retained its update admission receipt"
+                );
+                unpublished_query_failure()?;
+                cancellation_error_preserves_os_cause()
+            },
+        )
     }
 );
 source_test!(
@@ -538,24 +862,32 @@ source_test!(
     owned_tree_a_job_that_could_not_be_identified_refuses_to_stop,
     "tests/test_owned_tree.py::test_a_job_that_could_not_be_identified_refuses_to_stop",
     {
-        use numera_core::ownership::test_support::{Backend, with_backend};
-        struct Missing(std::sync::Mutex<Option<u32>>);
-        impl Backend for Missing {
-            fn birth(&self, pid: u32) -> Option<io::Result<Option<u64>>> {
-                *self.0.lock().expect("pid") = Some(pid);
-                Some(Ok(None))
-            }
-        }
-        let mut child = command("sleep")?;
-        child.stdout(Stdio::null()).stderr(Stdio::null());
-        let hook = Arc::new(Missing(std::sync::Mutex::new(None)));
-        assert!(with_backend(hook.clone(), || OwnedTree::spawn(&mut child)).is_err());
-        let pid = hook.0.lock().expect("pid").ok_or("child was never born")?;
-        assert!(
-            !identity::alive(pid, None)?,
-            "native refusal left an unnamed child alive"
-        );
-        legacy_refusal()
+        inherited_transfer(
+            "kernel::owned_tree_a_job_that_could_not_be_identified_refuses_to_stop",
+            || {
+                use numera_core::ownership::test_support::{Backend, with_backend};
+                struct Missing(std::sync::Mutex<Option<u32>>);
+                impl Backend for Missing {
+                    fn birth(&self, pid: u32) -> Option<io::Result<Option<u64>>> {
+                        *self.0.lock().expect("pid") = Some(pid);
+                        Some(Ok(None))
+                    }
+                }
+                let mut child = command("sleep")?;
+                child.stdout(Stdio::null()).stderr(Stdio::null());
+                let hook = Arc::new(Missing(std::sync::Mutex::new(None)));
+                assert!(with_backend(hook.clone(), || OwnedTree::spawn(&mut child)).is_err());
+                let pid = hook.0.lock().expect("pid").ok_or("child was never born")?;
+                assert!(
+                    !identity::alive(pid, None)?,
+                    "native refusal left an unnamed child alive"
+                );
+                legacy_refusal()?;
+                unpublished_live_descendant()?;
+                uncertain_post_fork()?;
+                super::signal_errors::controls()
+            },
+        )
     }
 );
 source_test!(
@@ -652,6 +984,7 @@ source_test!(
                         | "cmd"
                         | "powershell"
                         | "rustup"
+                        | "node"
                         | "numera-engine"
                         | "numera-browser-runtime"
                         | "numera-xtask"
@@ -660,6 +993,28 @@ source_test!(
                         | "unclassified"
                 )
             ));
+            if let Some(source) = row.get("image_source") {
+                assert!(matches!(
+                    source.as_str(),
+                    Some(
+                        "retained-process-handle"
+                            | "process-snapshot"
+                            | "process-snapshot-no-match"
+                            | "unavailable"
+                    )
+                ));
+            }
+            for key in ["image_error_code", "image_snapshot_error_code"] {
+                if let Some(code) = row.get(key) {
+                    assert!(
+                        code.is_null()
+                            || code
+                                .as_i64()
+                                .is_some_and(|value| i32::try_from(value).is_ok()),
+                        "Diagnostic image error code exceeded its numeric bound"
+                    );
+                }
+            }
             assert!(row.get("argv").is_none());
             assert!(row.get("path").is_none());
         }

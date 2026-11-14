@@ -81,9 +81,20 @@ pub fn validate(path: &Path) -> io::Result<PathBuf> {
     ))
 }
 fn append(path: &Path, value: &Value) -> io::Result<()> {
+    append_before(path, value, None)
+}
+fn append_before(path: &Path, value: &Value, deadline: Option<Instant>) -> io::Result<()> {
     let path = validate(path)?;
     let lock = DataLock::for_file(&path)?;
-    let _guard = lock.acquire(Duration::from_secs(5))?;
+    let _guard = lock.acquire(deadline.map_or(Duration::from_secs(5), |end| {
+        end.saturating_duration_since(Instant::now())
+    }))?;
+    if deadline.is_some_and(|end| Instant::now() >= end) {
+        return Err(io::Error::new(
+            io::ErrorKind::TimedOut,
+            "Ownership transfer receipt deadline expired",
+        ));
+    }
     let mut bytes = serde_json::to_vec(value).map_err(io::Error::other)?;
     bytes.push(b'\n');
     let mut file = OpenOptions::new().append(true).open(&path)?;
@@ -105,11 +116,39 @@ pub fn initialize(path: &Path) -> io::Result<()> {
     append(path, &json!({"version":2,"event":"header"}))
 }
 pub fn begin_spawn() -> io::Result<Option<String>> {
+    Ok(begin_transfer()?.map(|intent| intent.attempt))
+}
+/// Keep the exact receipt capability with an interrupted unpublished child;
+/// retrying cleanup must not resolve an unrelated ambient receipt.
+pub(crate) struct SpawnIntent {
+    path: PathBuf,
+    attempt: String,
+}
+impl SpawnIntent {
+    pub(crate) fn cancel(&self) -> io::Result<()> {
+        append(
+            &self.path,
+            &json!({"event":"cancelled","attempt":self.attempt}),
+        )
+    }
+    pub(crate) fn record(&self, tree: &Value) -> io::Result<()> {
+        record_at(&self.path, tree, &self.attempt)
+    }
+    pub(crate) fn cancel_before(&self, deadline: Instant) -> io::Result<()> {
+        append_before(
+            &self.path,
+            &json!({"event":"cancelled","attempt":self.attempt}),
+            Some(deadline),
+        )
+    }
+}
+pub(crate) fn begin_transfer() -> io::Result<Option<SpawnIntent>> {
     let Some(path) = report_path()? else {
         return Ok(None);
     };
     let scope = std::env::var(SCOPE_ENV).ok();
-    begin_scoped(&path, scope.as_deref()).map(Some)
+    let attempt = begin_scoped(&path, scope.as_deref())?;
+    Ok(Some(SpawnIntent { path, attempt }))
 }
 pub fn begin_at(path: &Path) -> io::Result<String> {
     begin_scoped(path, None)

@@ -8,16 +8,17 @@ fn version_flag_matches_original_root_scope_and_value_admission()
     let rows: Vec<Value> = serde_json::from_str(include_str!(
         "../fixtures/characterization/version_flag_matches_original_root_scope_and_value_admission.json"
     ))?;
-    assert_eq!(
-        rows.len(),
-        if cfg!(unix) { 117 } else { 114 },
-        "Version flag observations missing"
-    );
+    assert_eq!(rows.len(), 117, "Version flag observations missing");
     #[cfg(not(unix))]
     let rows: Vec<Value> = rows
         .into_iter()
         .filter(|row| row["argv"][0].is_string())
         .collect();
+    assert_eq!(
+        rows.len(),
+        if cfg!(unix) { 117 } else { 114 },
+        "Applicable version flag observations missing"
+    );
     let mut registry = cli::registry();
     registry.build();
     for (index, row) in rows.iter().enumerate() {

@@ -1,7 +1,38 @@
 {
   "schema": 1,
   "review_date": "2026-11-14",
-  "status": "Real bundler diagnostics identified vendor ELF rewriting; immutable resource relocation awaits fresh hosted AppImage proof.",
+  "status": "CI6 real Linux product succeeded, including AppImage, Debian installer, immutable resource verification and artifact upload. The direct bundled-Node libatomic1 package declaration awaits the next source build.",
+  "ci6_success": {
+    "run": 43553932142,
+    "job": 132322948489,
+    "job_url": "https://github.com/KiaroSama/Numera-Browser/actions/runs/43553932142/job/132322948489",
+    "source_head": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+    "actual_checkout_and_github_sha": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+    "head_and_checkout_tree": "5912136069b70587970d3fee68d3e83361ef2671",
+    "tree_equality_verified": true,
+    "job_started_at": "2026-11-14T03:57:20Z",
+    "job_completed_at": "2026-11-14T04:26:29Z",
+    "product_step_started_at": "2026-11-14T04:11:09Z",
+    "product_step_completed_at": "2026-11-14T04:24:34Z",
+    "product_step_seconds": 805,
+    "result": "Tauri produced both Numera Browser_0.36.0_amd64.AppImage and Numera Browser_0.36.0_amd64.deb. The actual product command completed inventory/identity/archive checks; artifact upload completed at04:26:12Z. These are unsigned review artifacts, not publication or owner signing.",
+    "artifact": {
+      "id": 14098681843,
+      "name": "native-product-linux-ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+      "size_in_bytes": 4083727316,
+      "api_reported_digest": "sha256:d8a441dc193a66a5c20579a54fdbfa0fc0d9051a987d5bf0c1143f88059f8d5c",
+      "download_policy": "Authenticated API metadata only. The4.08GB artifact was not downloaded or locally hashed."
+    },
+    "retained_evidence": {
+      "directory": "/workspace/work/ci6-linux-product",
+      "complete_decoded_job_log": "job.log",
+      "log_utf8_bytes": 472006,
+      "log_sha256": "3a3face2ed2e6f25e1e293466a51dc7c2fdcdcefda26e05d536bbbdaebaf7403",
+      "metadata": ["job-metadata.json", "artifact-metadata.json"],
+      "commit_receipts": ["checkout-commit.json", "head-commit.json"],
+      "retrieval": "Authenticated GitHub connector supplied the complete decoded log; authenticated REST calls supplied job and commit metadata."
+    }
+  },
   "observed": {
     "run": 43536453687,
     "job": 132266996876,
@@ -33,7 +64,16 @@
     "resource_resolver": "Tauri2.12.4 desktop.rs blob109f0f923f0fe5b26c9dbf607193409bd91cc6cc delegates to tauri-utils/platform.rs blob9a148d2eb82bd8c82cf3958d75b6a189b7d597b1. AppImage resource_dir uses APPDIR/usr/lib/package_info.name; codegen/context.rs blob2f4042c8ab33f876de4e224a00fb5902137e8671 sets that name from productName.",
     "change": "Place the complete immutable engine tree at usr/share/Numera Browser/engine for AppImage and Debian files maps. Linux lifecycle resolves only the sibling share/productName from a validated usr/lib/productName resource path. Existing portable, macOS, Windows and legacy installed resource lookup remain available.",
     "policy": "No dependency exclusions, vendor mutations, missing backends, installer omissions, receipt changes or wall/idle increases.",
-    "pending": "Existing layout and lifecycle controls plus a fresh hosted AppImage build must verify this relocation; local system libraries are insufficient for a full AppImage build."
+    "verified": "CI6 job132322948489 completed the real AppImage/Debian product and immutable installation/inventory checks after this relocation. Existing native layout/lifecycle controls remain in their original cases."
+  },
+  "bundled_node_runtime_prerequisite": {
+    "evidence": "The same CI6 image's actual Node loader reported missing libatomic.so.1 in Docker job132323256978; see network-container-ci-20261114.json for the authenticated full diagnostic.",
+    "debian_dependency_contract": "Pinned tauri-cli2.12.4 src/interface/rust.rs1364 initializes depends_deb from config.linux.deb.depends, then1422-1423 appends libwebkit2gtk-4.1-0 and libgtk-3-0. Pinned bundler2.10.4 debian.rs writes this complete vector to Depends. An explicit libatomic1 preserves those automatic dependencies.",
+    "current_transitive_dependency": "Official Ubuntu Noble amd64 libjavascriptcoregtk-4.1-0 version2.52.6-0ubuntu0.24.04.1 declares Depends:libatomic1>=4.8. Current WebKit installation therefore already supplies this transitively; the explicit entry records the separately launched bundled Node prerequisite directly.",
+    "ubuntu_source": "https://packages.ubuntu.com/noble/amd64/libjavascriptcoregtk-4.1-0",
+    "change": "Only Linux deb.depends=[libatomic1] is added in product::desktop_bundle_resources, with an assertion inside the existing candidate_layout_integrity case. AppImage files mapping and vendor bytes are unchanged.",
+    "appimage_limit": "The retained CLI console output contains only bounded tails of the deployment transcript and no libatomic copy entry. The successful real AppImage build proves bundling, but does not independently prove libatomic's individual inclusion or bundled-Node execution from that installer. No speculative AppImage mutation was added.",
+    "validation": "Fresh full643 source-CI cases passed in41.50 seconds, including the existing candidate_layout_integrity dependency/layout control and all43 container cases. Original tooling6 passed in0.25 seconds; Tools all-target strict Clippy passed in10.28 seconds. Logs:/workspace/work/ci7-{source643,tooling6,clippy}.log. The changed declaration still requires the next hosted source build; existing CI6 installer success predates this direct-dependency addition."
   },
   "implementation": {
     "paths": [
@@ -48,6 +88,7 @@
       "build/native-product/.desktop-build/tauri-build.log",
       "build/native-product/.desktop-build/tauri-build.stderr.log"
     ],
+    "failure_rollback_retention": "CI6 Windows exposed that exclusive failed-product rollback removed these files before artifact upload. The corrected production rollback copies only this complete bounded already-redacted pair to unique build/native-phase-tauri-*.log files first, then removes the failed product and preserves the original cause. Existing workflow glob already covers the new names; see windows-product-wix-20261114.json for actual-child/unsafe-source/rollback controls and exact proof hashes.",
     "scope": "Pinned tools, Ubuntu packages, AppImage/Debian and other native bundle requirements, signature policy and installer verification remain unchanged."
   },
   "validation": {
@@ -61,6 +102,6 @@
       "/workspace/work/tauri-diagnostics-green.log",
       "/workspace/work/tauri-diagnostics-clippy.log"
     ],
-    "limitation": "This validates diagnostic capture with real native subprocesses. It does not establish a local AppImage build or identify the hidden hosted prerequisite failure. The fresh hosted lane must provide that evidence before another behavior change."
+    "limitation": "The original local control validates diagnostic capture with real native subprocesses. CI5 then identified vendor ELF rewriting, and CI6 established the actual AppImage/Debian build after resource relocation. No local AppImage execution or installer-specific Node launch is claimed."
   }
 }

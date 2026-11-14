@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "review_date": "2026-11-14",
+  "status": "Actual CI6 Windows installer failure is traced to the verbatim canonical path passed to WiX. The minimal fix passed local host/lint and MSVC metadata checks; fresh real Windows MSI/NSIS creation remains mandatory.",
+  "source": {
+    "run": 43553932142,
+    "job": 132322948497,
+    "head_sha": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+    "actual_checkout": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+    "tree": "5912136069b70587970d3fee68d3e83361ef2671"
+  },
+  "observed": {
+    "job_conclusion": "failure",
+    "product_step_started_at": "2026-11-14T04:26:53Z",
+    "product_step_completed_at": "2026-11-14T04:38:56Z",
+    "application_compile": "Actual Tauri release build completed in6m28s; the previous real ephemeral signer case also passed.",
+    "installer_error": "candle.exe : error CNDL0103 : The system cannot find the file '\\\\?\\D:\\a\\Numera-Browser\\Numera-Browser\\build\\native-product\\.desktop-build\\target\\release\\wix\\x64\\main.wxs' with type 'Source'.",
+    "separate_signer_evidence": "windows-signer-tamper-20261114.json",
+    "unchanged_bounds": "wall1800s/idle300s; actual failure after723s, not a deadline extension request."
+  },
+  "cause": {
+    "application": "product::build_desktop used std::fs canonicalize on the work directory and supplied that Windows verbatim path through CARGO_TARGET_DIR.",
+    "upstream_cli": "Pinned tauri-cli2.12.4 src/interface/rust.rs1274 get_cargo_target_dir preserves cargo metadata target_directory; get_target_dir appends the release profile.",
+    "upstream_bundler": "Pinned tauri-bundler2.10.4 windows/msi/mod.rs494 appends wix/arch;788 writes main.wxs; run_candle378-431 passes wxs_file_path.to_string_lossy directly as the source argument, unlike the separately simplified -dSourceDir.",
+    "bundler_crate_sha256": "ec436f80e3f9dc5f87e449652cc21fd546760b5ee6b4646cec30e95b68fd9104",
+    "contract": "The exact real candle command and CNDL0103 identify the unsupported prefix. The source path is short; this was not a missing source-generation or long-path timeout inference."
+  },
+  "fix": {
+    "files": [
+      "tools/xtask/src/product.rs",
+      "tools/xtask/Cargo.toml",
+      "tools/xtask/Cargo.lock",
+      "tools/xtask/tests/source_ci/candidate.rs"
+    ],
+    "behavior": "desktop_tool_path uses dunce::canonicalize to preserve actual canonical identity while choosing a safe Win32-compatible representation. Retained unsupported prefixes produce a clear InvalidInput; no raw prefix stripping occurs. Work/CARGO_TARGET_DIR, runtime resources and frontendDist all use this external-tool boundary.",
+    "dependency": "Direct dunce=1.0.5, already present at the same checksum/version in the authoritative lock. The only lock change adds dunce to numera-xtask's dependency vector.",
+    "unchanged": "MSI and NSIS both remain required. No tool pin, installer type, OS-signature check or wall/idle budget is relaxed."
+  },
+  "checks": {
+    "existing_case": "candidate_cases::candidate_layout_integrity",
+    "host": "1 passed;0 failed;0 ignored;642 filtered out;0.42s. Real temp path with spaces, canonical identity/roundtrip and missing-path refusal, plus original resource/layout/diagnostic controls.",
+    "windows_controls": "The same existing case contains real Windows canonical/verbatim-input and drive-output assertions, actual NT trailing-space name refusal and >280-UTF16-unit path refusal. Length uses encode_wide, including when the test workspace contains Unicode. These OS behaviors require the next Windows test execution; no local execution is claimed.",
+    "tools_strict_clippy": "All targets passed5.38s.",
+    "host_log": "/workspace/work/ci7-wix-layout.log",
+    "host_log_sha256": "1b943702f25ef078da2df0e49e0ccdfe9b75c2d304c840a9d13524f01035c8ba",
+    "lint_log": "/workspace/work/ci7-wix-clippy.log",
+    "lint_log_sha256": "e0bd43cfc33e8585f6960cc3e3799900a2e3bdd53b5808966c30b47a4caf717f",
+    "msvc": "The exact production path helper, existing Windows path-control block and new reparse metadata accessor were extracted into a metadata-only scratch crate with cached dunce1.0.5; clippy-driver --target x86_64-pc-windows-msvc --emit metadata -D warnings passed. This proves typing, not Windows execution.",
+    "msvc_directory": "/workspace/work/wix-path-msvc",
+    "msvc_helper_sha256": "05cf5d499cf9f7dec54f6f5efd857624890b201f7430b95f794e70aa9a1a2326",
+    "msvc_harness_sha256": "b9f15cd549ac99104be1b185fd16bab0f52b3ca45ef17a7984474ebb84174eeb",
+    "msvc_reparse_source_sha256": "aa1a45c4223565ed00b119b6a77acc42c51bc77ffd18f04a9e2f23f959d39791",
+    "inventory": "No test IDs, test types or case counts added/removed."
+  },
+  "evidence": {
+    "directory": "/workspace/work/ci6-windows-product",
+    "job_log": "job.log",
+    "job_log_bytes": 534892,
+    "job_log_sha256": "a42eac3f40f87baeaadcceaef20e773583dd8c1974dd77652b4aa282c0770153",
+    "log_format": "Complete authenticated decoded job transcript retained locally with LF line endings.",
+    "job_metadata": "job-metadata.json",
+    "artifact": {
+      "id": 14098748784,
+      "bytes": 1992,
+      "sha256": "3cae47eb329b2cb09530c5d27d940e31071304efffa26011937499ad1c64e7a5",
+      "locally_downloaded_and_hash_verified": true,
+      "contents": "Only owned progress logs; actual candle error is retained in the authenticated job transcript."
+    }
+  },
+  "failure_evidence_preservation": {
+    "observed_defect": "The downloaded artifact contains only owned progress logs. product::build removed the whole exclusively created output after the bundler failed, including its .desktop-build/tauri-build stdout/stderr transcripts; include-hidden-files:true could not preserve files that rollback deleted.",
+    "implementation": "product::rollback_failed_build invokes product_diagnostics::preserve_failure before removing the failed output. Only the two fixed Tauri stdout/stderr file names are eligible. The complete pair is copied to unique create_new build/native-phase-tauri-<pid>-<counter>.log and matching .stderr.log files already covered by the workflow glob.",
+    "source_guards": "symlink_metadata rejects symbolic links and Windows reparse points on source directories/logs. Both logs must be regular files no larger than16MiB; bounded reads and post-read size/type checks reject changed/oversized input. Complete contents are re-redacted, checked against the same bound, then written and synced through exclusively created handles. Incomplete destination pairs are removed on write failure.",
+    "failure_policy": "Diagnostic persistence failure is reported separately. The exclusively created failed product is always removed, and the original boxed bundler error is returned unchanged. No vendor bytes, partial installers, configuration, arbitrary adjacent files or failed product tree are published.",
+    "existing_case": "candidate_cases::candidate_layout_integrity, retaining its original ID/count/type.",
+    "real_controls": "Actual compiled child exit7; complete20,000-lambda stdout; original error equality; vendor-tree deletion; child-secret and newly planted secret re-redaction; unique names; directory, oversized sparse file, missing log and linked source rejection; existing destination preservation and rollback even after persistence failure. Windows adds a real directory-junction control without requiring symbolic-link privilege; its execution awaits the next Windows lane.",
+    "final_host_result": "1 passed;0 failed;0 ignored;642 filtered out;0.56s.",
+    "final_host_log": "/workspace/work/ci7-wix-retention-layout.log",
+    "final_host_log_sha256": "94abadffe17f98fc8cefd0e1bac23735d8ed5df541a8d9d80f458d4d3d675e6d",
+    "final_tools_strict_clippy": "All targets passed5.66s.",
+    "final_lint_log": "/workspace/work/ci7-wix-retention-clippy.log",
+    "final_lint_log_sha256": "7d465da7b17717afd891f9f548fe5efbefff7e597e9394dcee7e493849f06e91"
+  },
+  "remaining": "The next actual Windows native product lane must create and verify both MSI/NSIS installers and execute the Windows path/junction controls. Corrected failure-artifact persistence also needs the next real failing bundler occurrence if one occurs; the local actual-child control proves the preservation path without inducing a hosted packaging failure."
+}

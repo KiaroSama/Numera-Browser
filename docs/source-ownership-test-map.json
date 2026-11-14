@@ -23,6 +23,54 @@
       "warnings": "denied",
       "elapsed_seconds": 9.47,
       "log": "/workspace/work/ownership-complete-clippy.txt"
+    },
+    "spawn_transfer": {
+      "base_commit": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+      "source_state": "Frozen uncommitted classified-spawn correction over68; canonical proof precedes separately reviewed cancellation-error-priority and post-signal-error bounded-wait followups.",
+      "platform": "linux",
+      "status": "passed",
+      "cases": 380,
+      "failed": 0,
+      "ignored": 0,
+      "elapsed_seconds": 25.6,
+      "log": "/workspace/work/spawn-transfer-owned-ownership380-final.txt",
+      "log_sha256": "339c5ab8ec2b64e3feeb16686adcacfc00d06558b821b806f7097babb38d380f",
+      "execution": "Actual outer ci-owned around current380suite; complete inherited receipt settlement, exit0.",
+      "canonical_native_phase": {
+        "summaries": 132,
+        "named_passes": 2940,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 0,
+        "outer_exit": 0,
+        "receipt": "/workspace/work/spawn-transfer-native-phase/receipt.json",
+        "receipt_sha256": "2ae541688cc94f10a7c5e3712101ed3e836f9b9bb732bf42ee04fa9eca13046a",
+        "named_transcript_sha256": "e41b28d97f9ff0c3aff937b99102f35944b1d4cbaaa9406fa80b8e6c4e130186",
+        "outer_log_sha256": "b3effdf48a6bbba3795cd3b5adbcc8286c6a6e4ac674706a41c68858a27f6113",
+        "frozen_14_file_hashes": "/workspace/work/spawn-transfer-native-phase/frozen-own-source-hashes.json",
+        "binary_hashes_unchanged": true,
+        "source_delta": "Authorized Windows-only node static class/whitelist appeared duringrun; original and resulting kernel hashes are retained. Linux executed-body behavior unchanged.",
+        "live1": "Separate; canonical native-phase excludes live1."
+      },
+      "windows_macos_runtime": "New-host runtime validation pending; MSVCmetadata and Linux proof are not relabelled as other-host runtime.",
+      "latest_followup": {
+        "status": "passed",
+        "source_state": "Final reviewed original-error-priority and bounded one-signal failure-path followups; separately tested after canonical2940, not silently relabelled as same binary.",
+        "cases": 380,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 0,
+        "outer_exit": 0,
+        "elapsed_seconds": 30.42,
+        "log": "/workspace/work/spawn-error-followup-owned380.txt",
+        "log_sha256": "cfa9201ff015ddc8a65cf74690ca42231e2e7ef0706eb4e80a896ec8f8ea1ffc",
+        "old_code_red": "/workspace/work/spawn-error-followup-red.txt",
+        "old_code_red_result": "15 passed /2 failed in the existing kernel suite: real held-lock cancellation priority and real natural exit after refused signal.",
+        "first_patched_kernel17": "/workspace/work/spawn-error-followup-green.txt",
+        "protocol8": "/workspace/work/spawn-error-followup-protocol8.txt",
+        "strict_lib_ownership_protocol_browser": "/workspace/work/spawn-error-followup-strict-clippy.txt",
+        "actual_macos_windows_runtime": "pending new hosted run; no OS-cause or runtime-pass claim from Linux/typecheck"
+      }
     }
   },
   "adaptations": [
@@ -5277,7 +5325,14 @@
       "verification": {
         "platform": "linux",
         "status": "passed"
-      }
+      },
+      "spawn_transfer_controls": [
+        "Real surviving descendant remains live and pending after leader-only cleanup; an unidentified PGID is not used as signal authority.",
+        "Independent verified-record cleanup proves the complete group empty before retry resolves the original receipt.",
+        "A generic pre_exec forks a real descendant then returns ENOENT: original raw OS error and pending receipt survive; isolated fixture cleanup independently settles the actual group without cancelling that unknown attempt.",
+        "A generic pre_exec creates its executable via symlink and still launches; builtin path validation does not change arbitrary Command callback semantics.",
+        "Three real-process refused-signal controls preserve one signal and original deadline: natural exit after a genuinely nonempty snapshot succeeds only with complete kernel emptiness plus retained child exit; live and query-unknown cases retain the original raw signal error."
+      ]
     },
     {
       "python_id": "tests/test_owned_tree.py::test_a_finished_job_that_left_something_running_is_not_called_finished",
@@ -8795,7 +8850,11 @@
       "verification": {
         "platform": "linux",
         "status": "passed"
-      }
+      },
+      "spawn_transfer_controls": [
+        "Actual builtin Runtime refuses an absent absolute selected worker before creating a spawn intent; Windows fixture uses the explicit native .exe suffix while generic implicit .exe lookup is preserved.",
+        "Real inherited Units capture completes; refusal preserves the actual NotFound message, absent claim and reacquirable session lease."
+      ]
     },
     {
       "python_id": "tests/test_session_tree_mandatory.py::test_a_driver_that_started_in_no_tree_is_stopped",
@@ -8820,7 +8879,13 @@
       "verification": {
         "platform": "linux",
         "status": "passed"
-      }
+      },
+      "spawn_transfer_controls": [
+        "Real child birth-identity failure resolves its intent only after retained direct-child exit and authoritative kernel-tree emptiness; Session releases its admission receipt on the positive internal proof.",
+        "Denied kernel observation retains the exact receipt and raw owner; zero-budget retry performs no further observation; restored real emptiness permits retry.",
+        "A real contended cancellation receipt respects the original remaining cleanup budget and remains pending until the durable cancellation succeeds.",
+        "Real receipt-lock cancellation failure preserves original OS error kind/raw number/display and leaves pending receipt plus byte-identical admission evidence; no error wrapping or false settled disposition."
+      ]
     },
     {
       "python_id": "tests/test_session_tree_mandatory.py::test_a_claim_that_cannot_be_narrowed_stops_the_driver",

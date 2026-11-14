@@ -181,6 +181,13 @@ fn fixture() -> io::Result<PathBuf> {
                     .map_err(|error| error.to_string())?
                     .display()
             ));
+            #[cfg(unix)]
+            command.arg("--extern").arg(format!(
+                "libc={}",
+                library(&deps, "libc")
+                    .map_err(|error| error.to_string())?
+                    .display()
+            ));
             let output = capture::run(&mut command, limit(Duration::from_secs(60)))
                 .map_err(|error| error.to_string())?;
             if output.exit != 0 {
@@ -336,6 +343,9 @@ mod trees;
 
 #[path = "source_ownership/kernel.rs"]
 mod kernel;
+#[cfg(unix)]
+#[path = "source_ownership/signal_errors.rs"]
+mod signal_errors;
 
 #[path = "source_ownership/integration.rs"]
 mod integration;

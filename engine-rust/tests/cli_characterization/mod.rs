@@ -10,7 +10,6 @@ fn materialize(text: &str, root: &str) -> String {
     while let Some(at) = rest.find(TOKEN) {
         let prefix = &rest[..at];
         output.push_str(prefix);
-        let quoted = prefix.ends_with('\'') || prefix.ends_with('"');
         let tail = &rest[at + TOKEN.len()..];
         let end = tail
             .find(|c: char| c.is_whitespace() || c == '\'' || c == '"' || c == '\u{1b}')
@@ -19,7 +18,17 @@ fn materialize(text: &str, root: &str) -> String {
             "{root}{}",
             tail[..end].replace('/', std::path::MAIN_SEPARATOR_STR)
         );
-        if quoted {
+        // setup.py's two removal diagnostics interpolate str(path) inside
+        // literal quotes. store.py's unloadable-folder error uses path!r.
+        // Quotation alone cannot select the latter's backslash escaping.
+        let suffix = &tail[end..];
+        let literal_removal = prefix.ends_with('\'')
+            && suffix
+                .strip_prefix("' isn't on this profile")
+                .or_else(|| suffix.strip_prefix("' isn't in the default set"))
+                .is_some_and(|rest| matches!(rest, "" | "." | ".\n" | ".\u{1b}[0m\n"));
+        let quoted = prefix.ends_with('\'') || prefix.ends_with('"');
+        if quoted && !literal_removal {
             output.push_str(&path.replace('\\', "\\\\"));
         } else {
             output.push_str(&path);
@@ -28,6 +37,46 @@ fn materialize(text: &str, root: &str) -> String {
     }
     output.push_str(rest);
     output
+}
+
+// This shared fixture module is compiled by several original targets. Only
+// the existing settings case calls these platform-independent fault controls.
+#[allow(dead_code)]
+pub fn check_extension_path_materialization() {
+    let root = r"C:\fixture root\extensions\missing";
+    for (template, expected) in [
+        (
+            "'@CLI_ROOT@' isn't on this profile",
+            r"'C:\fixture root\extensions\missing' isn't on this profile",
+        ),
+        (
+            "'@CLI_ROOT@' isn't in the default set.\n",
+            "'C:\\fixture root\\extensions\\missing' isn't in the default set.\n",
+        ),
+        (
+            "\u{1b}[31m'@CLI_ROOT@' isn't on this profile.\u{1b}[0m\n",
+            "\u{1b}[31m'C:\\fixture root\\extensions\\missing' isn't on this profile.\u{1b}[0m\n",
+        ),
+        (
+            "'@CLI_ROOT@' is not a folder on this machine.",
+            r"'C:\\fixture root\\extensions\\missing' is not a folder on this machine.",
+        ),
+        (
+            "'@CLI_ROOT@' isn't on this profiles",
+            r"'C:\\fixture root\\extensions\\missing' isn't on this profiles",
+        ),
+        (
+            "other '@CLI_ROOT@' diagnostic",
+            r"other 'C:\\fixture root\\extensions\\missing' diagnostic",
+        ),
+        ("@CLI_ROOT@", root),
+    ] {
+        assert_eq!(
+            materialize(template, root),
+            expected,
+            "CLI path observation materialization differs"
+        );
+    }
 }
 fn paths(value: &mut Value, root: &str) {
     match value {

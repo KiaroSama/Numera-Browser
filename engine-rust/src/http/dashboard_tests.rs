@@ -2,6 +2,103 @@ use super::*;
 use crate::common;
 use axum::body::to_bytes;
 
+fn source_content_type(case: &serde_json::Value, build: &Path) -> String {
+    let frozen = case["type"].as_str().expect("Source content type");
+    #[cfg(windows)]
+    if case["status"] == 200
+        && !case["path"]
+            .as_str()
+            .expect("Source path")
+            .starts_with("/api/")
+    {
+        let candidate = build.join(
+            case["path"]
+                .as_str()
+                .expect("Source path")
+                .trim_start_matches('/'),
+        );
+        let path = if candidate.is_file() {
+            candidate
+        } else {
+            build.join("index.html")
+        };
+        if let Some(mut value) = source_registry_type(&path) {
+            if value.starts_with("text/") && !value.to_ascii_lowercase().contains("charset=") {
+                value.push_str("; charset=utf-8");
+            }
+            return value;
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = build;
+    frozen.to_owned()
+}
+
+/// The immutable observations were captured on Linux. CPython's Windows
+/// mimetypes also reads the local extension registry. Query that source with
+/// separate open/query APIs, without changing either the registry or fixture.
+#[cfg(windows)]
+fn source_registry_type(path: &Path) -> Option<String> {
+    use windows_sys::Win32::{
+        Foundation::ERROR_SUCCESS,
+        System::Registry::{
+            HKEY_CLASSES_ROOT, KEY_QUERY_VALUE, REG_SZ, RegCloseKey, RegOpenKeyExW,
+            RegQueryValueExW,
+        },
+    };
+    let extension = path.extension()?.to_str()?;
+    let key = format!(".{extension}")
+        .encode_utf16()
+        .chain([0])
+        .collect::<Vec<_>>();
+    let name = "Content Type".encode_utf16().chain([0]).collect::<Vec<_>>();
+    let mut handle = std::ptr::null_mut();
+    // SAFETY: terminated names, predefined read-only root and writable handle.
+    #[allow(unsafe_code)]
+    if unsafe {
+        RegOpenKeyExW(
+            HKEY_CLASSES_ROOT,
+            key.as_ptr(),
+            0,
+            KEY_QUERY_VALUE,
+            &mut handle,
+        )
+    } != ERROR_SUCCESS
+    {
+        return None;
+    }
+    let mut buffer = [0u16; 1024];
+    let mut bytes = std::mem::size_of_val(&buffer) as u32;
+    let mut kind = 0;
+    // SAFETY: successful open owns this handle; initialized buffer has its exact
+    // byte capacity. Close it before interpreting any returned data.
+    #[allow(unsafe_code)]
+    let status = unsafe {
+        let status = RegQueryValueExW(
+            handle,
+            name.as_ptr(),
+            std::ptr::null(),
+            &mut kind,
+            buffer.as_mut_ptr().cast(),
+            &mut bytes,
+        );
+        RegCloseKey(handle);
+        status
+    };
+    if status != ERROR_SUCCESS
+        || kind != REG_SZ
+        || bytes == 0
+        || bytes as usize > std::mem::size_of_val(&buffer)
+        || !bytes.is_multiple_of(2)
+    {
+        return None;
+    }
+    let units = &buffer[..bytes as usize / 2];
+    let end = units.iter().position(|unit| *unit == 0)?;
+    let value = String::from_utf16(&units[..end]).ok()?;
+    (!value.is_empty() && axum::http::HeaderValue::from_str(&value).is_ok()).then_some(value)
+}
+
 #[test]
 fn dashboard_files_and_spa_fallback_match_original_without_swallowing_api()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -54,7 +151,7 @@ fn dashboard_files_and_spa_fallback_match_original_without_swallowing_api()
             );
             assert_eq!(
                 response.headers()["content-type"].to_str()?,
-                case["type"].as_str().ok_or("Type missing")?
+                source_content_type(case, &build)
             );
             let body = to_bytes(response.into_body(), 65536).await?;
             let text = String::from_utf8(body.to_vec())?;
@@ -108,7 +205,7 @@ fn dashboard_files_and_spa_fallback_match_original_without_swallowing_api()
             );
             assert_eq!(
                 response.headers()["content-type"].to_str()?,
-                case["type"].as_str().ok_or("Protected type missing")?
+                source_content_type(case, &build)
             );
             let text = String::from_utf8(to_bytes(response.into_body(), 65536).await?.to_vec())?;
             if case["path"] == "/" {

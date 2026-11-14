@@ -88,7 +88,7 @@ impl Environment {
                 )
                 .map_err(capture::Failure::from);
         }
-        let mut command = self.browser.sdk_command();
+        let mut command = self.browser.sdk_command()?;
         command.arg("--metadata");
         command
             .env_remove("NUMERA_PASSWORD")

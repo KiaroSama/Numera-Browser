@@ -74,6 +74,13 @@ pub(super) struct Server {
     sockets: Arc<Mutex<Vec<TcpStream>>>,
     worker: Option<thread::JoinHandle<io::Result<()>>>,
 }
+struct HandlerSocket(TcpStream);
+impl Drop for HandlerSocket {
+    fn drop(&mut self) {
+        // The registry clone must not keep a completed handler's peer alive.
+        let _ = self.0.shutdown(Shutdown::Both);
+    }
+}
 impl Server {
     pub fn start(handler: impl Fn(TcpStream) -> io::Result<()> + Send + Sync + 'static) -> Self {
         Self::at("127.0.0.1:0".parse().expect("loopback"), handler).expect("local fixture")
@@ -115,7 +122,11 @@ impl Server {
                         registered.push(stream.try_clone()?);
                         drop(registered);
                         let call = handler.clone();
-                        workers.push(thread::spawn(move || call(stream)));
+                        let completed = HandlerSocket(stream.try_clone()?);
+                        workers.push(thread::spawn(move || {
+                            let _completed = completed;
+                            call(stream)
+                        }));
                     }
                     Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
                         thread::sleep(Duration::from_millis(2))
@@ -243,6 +254,12 @@ pub(super) fn response(stream: &mut TcpStream) -> (u16, String) {
     (status, String::from_utf8_lossy(&r.body).into_owned())
 }
 pub(super) fn duplex(a: TcpStream, b: TcpStream) -> io::Result<()> {
+    // Both directions must remain finite, including the connected origin.
+    // finish() joins these copies after it pulls the accepted client socket.
+    for stream in [&a, &b] {
+        stream.set_read_timeout(Some(Duration::from_secs(3)))?;
+        stream.set_write_timeout(Some(Duration::from_secs(3)))?;
+    }
     let mut a_read = a.try_clone()?;
     let mut b_write = b.try_clone()?;
     thread::scope(|scope| {

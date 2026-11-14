@@ -12,7 +12,8 @@ use windows_sys::Win32::{
     },
     System::{
         Diagnostics::ToolHelp::{
-            CreateToolhelp32Snapshot, TH32CS_SNAPTHREAD, THREADENTRY32, Thread32First, Thread32Next,
+            CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
+            TH32CS_SNAPPROCESS, TH32CS_SNAPTHREAD, THREADENTRY32, Thread32First, Thread32Next,
         },
         JobObjects::{
             AssignProcessToJobObject, CreateJobObjectW, IsProcessInJob,
@@ -45,6 +46,7 @@ fn image_class(path: &str) -> &'static str {
         "cmd.exe" => "cmd",
         "powershell.exe" | "pwsh.exe" => "powershell",
         "rustup.exe" => "rustup",
+        "node.exe" => "node",
         "numera-engine.exe" => "numera-engine",
         "numera-browser-runtime.exe" => "numera-browser-runtime",
         "numera-xtask.exe" => "numera-xtask",
@@ -52,6 +54,49 @@ fn image_class(path: &str) -> &'static str {
         "numera-http-observer.exe" => "numera-http-observer",
         _ => "unclassified",
     }
+}
+fn snapshot_image_class(pid: u32) -> io::Result<Option<&'static str>> {
+    // This is diagnostic only. The caller still holds the original process
+    // handle and has verified its retained Job membership, preventing PID reuse
+    // while this separate snapshot supplies only a static basename class.
+    // SAFETY: a read-only process snapshot has no caller-provided pointers.
+    let raw = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
+    if raw == INVALID_HANDLE_VALUE {
+        return Err(io::Error::last_os_error());
+    }
+    // SAFETY: successful snapshot creation transfers one CloseHandle owner.
+    let snapshot = unsafe { OwnedHandle::from_raw_handle(raw) };
+    // SAFETY: PROCESSENTRY32W is a plain integer/UTF-16 record; initialize its
+    // required size before passing the writable bounded record to Toolhelp.
+    let mut entry: PROCESSENTRY32W = unsafe { mem::zeroed() };
+    entry.dwSize = mem::size_of::<PROCESSENTRY32W>() as u32;
+    // SAFETY: snapshot is live and entry has the exact declared record size.
+    let mut present = unsafe { Process32FirstW(snapshot.as_raw_handle(), &mut entry) };
+    for _ in 0..65536 {
+        if present == 0 {
+            let error = io::Error::last_os_error();
+            return if error.raw_os_error() == Some(ERROR_NO_MORE_FILES as i32) {
+                Ok(None)
+            } else {
+                Err(error)
+            };
+        }
+        if entry.th32ProcessID == pid {
+            let length = entry
+                .szExeFile
+                .iter()
+                .position(|value| *value == 0)
+                .unwrap_or(entry.szExeFile.len());
+            return Ok(Some(image_class(&String::from_utf16_lossy(
+                &entry.szExeFile[..length],
+            ))));
+        }
+        // SAFETY: the same owned snapshot and initialized record remain live.
+        present = unsafe { Process32NextW(snapshot.as_raw_handle(), &mut entry) };
+    }
+    Err(io::Error::other(
+        "Process diagnostic snapshot exceeds its bound",
+    ))
 }
 fn job_name() -> io::Result<String> {
     let mut bytes = [0u8; 16];
@@ -327,9 +372,21 @@ impl Job {
                     && let Ok(name) = String::from_utf16(image)
                 {
                     row["image_class"] = image_class(&name).into();
+                    row["image_source"] = "retained-process-handle".into();
                 }
             } else {
                 row["image_error_code"] = io::Error::last_os_error().raw_os_error().into();
+                match snapshot_image_class(pid) {
+                    Ok(Some(class)) => {
+                        row["image_class"] = class.into();
+                        row["image_source"] = "process-snapshot".into();
+                    }
+                    Ok(None) => row["image_source"] = "process-snapshot-no-match".into(),
+                    Err(error) => {
+                        row["image_source"] = "unavailable".into();
+                        row["image_snapshot_error_code"] = error.raw_os_error().into();
+                    }
+                }
             }
             rows.push(row);
         }

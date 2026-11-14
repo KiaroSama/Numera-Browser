@@ -119,7 +119,7 @@ impl DriverRegistration {
                     "Registered browser command preparation failed",
                 )
             }),
-            None => Ok(Command::new(context.adapter)),
+            None => super::runtime::selected_sdk_command(context.adapter),
         }
     }
     fn installed(&self, name: &str, builtin_status: &BTreeMap<String, bool>) -> io::Result<bool> {

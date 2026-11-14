@@ -184,14 +184,16 @@ fn product_diagnostics(temp: &Temp) -> TestResult {
         "{}",
         String::from_utf8_lossy(&compiled.stderr)
     );
-    let log = temp.0.join("tauri-build.log");
-    let error = numera_xtask::product_diagnostics::execute(
+    let output = temp.0.join("failed-product");
+    fs::create_dir_all(output.join(".desktop-build"))?;
+    let log = output.join(".desktop-build/tauri-build.log");
+    let failure = numera_xtask::product_diagnostics::execute(
         &root(),
         std::process::Command::new(&binary).arg("fail"),
         &log,
     )
-    .expect_err("a real failed bundle tool must remain failed")
-    .to_string();
+    .expect_err("a real failed bundle tool must remain failed");
+    let error = failure.to_string();
     assert!(error.contains("exit=7"), "{error}");
     assert!(
         error.contains("linuxdeploy fixture missing controlled library"),
@@ -205,6 +207,154 @@ fn product_diagnostics(temp: &Temp) -> TestResult {
     let retained = fs::read_to_string(log.with_extension("stderr.log"))?;
     assert!(retained.contains("linuxdeploy fixture missing controlled library"));
     assert!(!retained.contains("synthetic-private-bundle-value"));
+    fs::write(
+        log.with_extension("stderr.log"),
+        format!("{retained}\npassword=second-synthetic-private-value\n"),
+    )?;
+    fs::write(output.join("vendor.dll"), "must not be published")?;
+    let original = numera_xtask::product::rollback_failed_build(&temp.0, &output, failure);
+    assert_eq!(
+        original.to_string(),
+        error,
+        "rollback replaced the real bundler cause"
+    );
+    assert!(!output.exists());
+    let retained_paths = fs::read_dir(temp.0.join("build"))?
+        .map(|entry| entry.map(|entry| entry.path()))
+        .collect::<std::io::Result<Vec<_>>>()?;
+    assert_eq!(
+        retained_paths.len(),
+        2,
+        "only stdout/stderr may survive rollback"
+    );
+    let mut combined = String::new();
+    for path in &retained_paths {
+        let name = path.file_name().expect("diagnostic name").to_string_lossy();
+        assert!(name.starts_with("native-phase-tauri-") && name.ends_with(".log"));
+        combined.push_str(&fs::read_to_string(path)?);
+    }
+    assert!(combined.contains("linuxdeploy fixture missing controlled library"));
+    assert_eq!(
+        combined.matches('λ').count(),
+        20000,
+        "retention clipped the complete transcript"
+    );
+    for private in [
+        "synthetic-private-bundle-value",
+        "second-synthetic-private-value",
+        "must not be published",
+    ] {
+        assert!(!combined.contains(private));
+    }
+    for damage in ["directory", "oversized", "missing", "destination"] {
+        let output = temp.0.join(format!("failed-product-{damage}"));
+        let work = output.join(".desktop-build");
+        fs::create_dir_all(&work)?;
+        let stdout = work.join("tauri-build.log");
+        fs::write(&stdout, "bounded original stdout")?;
+        fs::write(
+            work.join("tauri-build.stderr.log"),
+            "bounded original stderr",
+        )?;
+        let mut retention_root = temp.0.clone();
+        match damage {
+            "directory" => {
+                fs::remove_file(&stdout)?;
+                fs::create_dir(&stdout)?;
+            }
+            "oversized" => fs::File::create(&stdout)?.set_len(16 * 1024 * 1024 + 1)?,
+            "missing" => fs::remove_file(&stdout)?,
+            _ => {
+                retention_root = temp.0.join("blocked-retention");
+                fs::create_dir(&retention_root)?;
+                fs::write(retention_root.join("build"), "preexisting destination")?;
+            }
+        }
+        assert!(
+            numera_xtask::product_diagnostics::preserve_failure(&retention_root, &output).is_err(),
+            "{damage}"
+        );
+        let cause = numera_xtask::product::rollback_failed_build(
+            &retention_root,
+            &output,
+            std::io::Error::other("original bundler failure").into(),
+        );
+        assert_eq!(cause.to_string(), "original bundler failure");
+        assert!(
+            !output.exists(),
+            "persistence failure skipped rollback: {damage}"
+        );
+        if damage == "destination" {
+            assert_eq!(
+                fs::read_to_string(retention_root.join("build"))?,
+                "preexisting destination"
+            );
+        }
+    }
+    let output = temp.0.join("failed-product-linked");
+    let work = output.join(".desktop-build");
+    fs::create_dir_all(&work)?;
+    let outside = temp.0.join("outside-retention");
+    fs::create_dir(&outside)?;
+    fs::write(outside.join("tauri-build.log"), "outside private log")?;
+    fs::write(
+        outside.join("tauri-build.stderr.log"),
+        "outside private stderr",
+    )?;
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink(
+            outside.join("tauri-build.log"),
+            work.join("tauri-build.log"),
+        )?;
+        fs::write(work.join("tauri-build.stderr.log"), "regular stderr")?;
+    }
+    #[cfg(windows)]
+    {
+        fs::remove_dir(&work)?;
+        // Directory junctions need no symbolic-link privilege on Windows.
+        let made = ci::capture(
+            std::process::Command::new("cmd.exe")
+                .args(["/d", "/c", "mklink", "/J"])
+                .arg(&work)
+                .arg(&outside),
+            Duration::from_secs(30),
+            Duration::from_secs(30),
+            65536,
+        )?;
+        assert_eq!(made.exit, 0, "{}", String::from_utf8_lossy(&made.stderr));
+    }
+    assert!(numera_xtask::product_diagnostics::preserve_failure(&temp.0, &output).is_err());
+    let cause = numera_xtask::product::rollback_failed_build(
+        &temp.0,
+        &output,
+        std::io::Error::other("linked bundler failure").into(),
+    );
+    assert_eq!(cause.to_string(), "linked bundler failure");
+    assert!(!output.exists());
+    assert_eq!(
+        fs::read_to_string(outside.join("tauri-build.log"))?,
+        "outside private log"
+    );
+    assert_eq!(
+        fs::read_dir(temp.0.join("build"))?.count(),
+        2,
+        "rejected logs were retained"
+    );
+    let output = temp.0.join("second-failed-product");
+    fs::create_dir_all(output.join(".desktop-build"))?;
+    fs::write(
+        output.join(".desktop-build/tauri-build.log"),
+        "second stdout",
+    )?;
+    fs::write(
+        output.join(".desktop-build/tauri-build.stderr.log"),
+        "second stderr",
+    )?;
+    let second = numera_xtask::product_diagnostics::preserve_failure(&temp.0, &output)?;
+    assert_eq!(second.len(), 2);
+    assert!(second.iter().all(|path| !retained_paths.contains(path)));
+    assert_eq!(fs::read_dir(temp.0.join("build"))?.count(), 4);
     numera_xtask::product_diagnostics::execute(
         &root(),
         &mut std::process::Command::new(&binary),
@@ -222,9 +372,52 @@ source_test!(
             resources::{self, FileRecord, Receipt, SourceOffer},
         };
         let temp = Temp::new("candidate layout with spaces")?;
+        let tool_dir = temp.0.join("external bundler path with spaces");
+        fs::create_dir(&tool_dir)?;
+        let canonical = tool_dir.canonicalize()?;
+        let compatible = product::desktop_tool_path(&tool_dir)?;
+        assert!(compatible.is_absolute());
+        assert_eq!(compatible.canonicalize()?, canonical);
+        assert_eq!(product::desktop_tool_path(&canonical)?, compatible);
+        assert!(product::desktop_tool_path(&tool_dir.join("missing")).is_err());
+        #[cfg(windows)]
+        {
+            use std::os::windows::ffi::OsStrExt;
+            assert!(matches!(
+                compatible.components().next(),
+                Some(std::path::Component::Prefix(prefix))
+                    if matches!(prefix.kind(), std::path::Prefix::Disk(_) | std::path::Prefix::UNC(..))
+            ));
+            assert!(matches!(
+                canonical.components().next(),
+                Some(std::path::Component::Prefix(prefix))
+                    if matches!(prefix.kind(), std::path::Prefix::VerbatimDisk(_))
+            ));
+            // NT names with a trailing space have a different Win32 meaning.
+            // They must be refused, never changed by blindly stripping \\?\.
+            let ambiguous = canonical.join("trailing space ");
+            fs::create_dir(&ambiguous)?;
+            let error = product::desktop_tool_path(&ambiguous).expect_err("ambiguous Win32 path");
+            assert_eq!(error.kind(), std::io::ErrorKind::InvalidInput);
+            assert!(error.to_string().contains("compatible with WiX"));
+            fs::remove_dir(&ambiguous)?;
+            let mut long = canonical.clone();
+            while long.as_os_str().encode_wide().count() <= 280 {
+                long.push("bounded-long-component");
+            }
+            fs::create_dir_all(&long)?;
+            assert_eq!(
+                product::desktop_tool_path(&long)
+                    .expect_err("long Win32 installer path")
+                    .kind(),
+                std::io::ErrorKind::InvalidInput
+            );
+        }
         let runtime = temp.0.join("staged engine with spaces");
         let linux = product::desktop_bundle_resources("linux", &runtime, "Numera Browser")?;
         assert_eq!(linux["resources"], json!({}));
+        assert_eq!(linux["linux"]["deb"]["depends"], json!(["libatomic1"]));
+        assert!(linux["linux"]["appimage"].get("depends").is_none());
         for kind in ["appimage", "deb"] {
             assert_eq!(
                 linux["linux"][kind]["files"],

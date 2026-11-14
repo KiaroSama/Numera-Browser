@@ -302,7 +302,16 @@ fn vault_callers(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>>
     let Some(source) = sources.get("engine-rust/src/vault/mod.rs") else {
         return Ok(Vec::new());
     };
-    if source.sha256 != "ecbe0ae8c19f4ca8c15c71fab2dab37ecac024a6a05d784b5041db12ccc12dd8" {
+    // These exact snapshots all use the old tuple constructor and a private
+    // durability module. The two crypto-admission variants have a private
+    // tuple field, still accessible to their child policy module.
+    if ![
+        "ecbe0ae8c19f4ca8c15c71fab2dab37ecac024a6a05d784b5041db12ccc12dd8",
+        "5fbf9a042308ce8405b66c8e2276372272157566cc2e420594e0aa9e1ae677fd",
+        "71150ac122b5f5c26199ff9fcac4c042db5fcd403beb89f1a809dd0da925de3b",
+    ]
+    .contains(&source.sha256.as_str())
+    {
         return Ok(Vec::new());
     }
     let path = "engine-rust/src/vault/policy.rs";
@@ -507,6 +516,11 @@ pub fn fixture_replacement(
                 (
                     "ConfigStore::new(root.clone()).read()?",
                     "ConfigStore::new(root.clone()).read()",
+                    1,
+                ),
+                (
+                    "store.headless_launch().map(Value::Bool)",
+                    "Ok(Value::Bool(store.headless_launch()))",
                     1,
                 ),
             ],

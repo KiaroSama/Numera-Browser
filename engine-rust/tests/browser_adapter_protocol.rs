@@ -482,6 +482,7 @@ fn fixed_adapter_probe_calls_preserve_sdk_args_and_refuse_invalid_deadlines()
             Ok(())
         })();
         sdk.finish(Duration::from_secs(5))?;
+        drop(sdk);
         result?;
         let seen: serde_json::Value = serde_json::from_slice(&std::fs::read(observed)?)?;
         let seen = seen.as_array().ok_or("SDK observations missing")?;
@@ -546,6 +547,9 @@ fn fixed_adapter_probe_calls_preserve_sdk_args_and_refuse_invalid_deadlines()
         Ok(())
     })();
     sdk.finish(Duration::from_secs(5))?;
+    // RuntimeLog deliberately omits Windows FILE_SHARE_DELETE. Close the
+    // completed adapter's log owner before deleting its fixture directory.
+    drop(sdk);
     result?;
     assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));
     for entry in std::fs::read_dir(root.join("logs"))? {
@@ -673,17 +677,83 @@ fn settle_input_fixture(
     {
         use numera_core::ownership::{observation, test_support};
         use std::sync::{
-            Arc,
+            Arc, Mutex,
             atomic::{AtomicUsize, Ordering},
         };
+        #[derive(Default)]
+        struct Samples {
+            rows: std::collections::VecDeque<Value>,
+            omitted: usize,
+        }
         #[derive(Default)]
         struct Probe {
             births: AtomicUsize,
             signals: AtomicUsize,
             groups: AtomicUsize,
             last: AtomicUsize,
+            expected_pid: u32,
+            expected_token: Option<u64>,
+            samples: Mutex<Samples>,
         }
         impl test_support::Backend for Probe {
+            fn macos_observed(&self, sample: &test_support::MacosObservation) {
+                use test_support::MacosObservation;
+                let sample = match sample {
+                    MacosObservation::Birth { pid, token, error } => json!({
+                        "kind":"birth", "pid":pid,
+                        "branch":if error.is_some() { "error" } else if token.is_some() { "present" } else { "absent" },
+                        "expected_pid":*pid == self.expected_pid,
+                        "expected_token_present":self.expected_token.is_some(),
+                        "token_matches":token.map(|token| Some(token) == self.expected_token),
+                        "error_kind":error.map(|(kind,_)| format!("{kind:?}")),
+                        "errno":error.and_then(|(_,errno)| errno),
+                    }),
+                    MacosObservation::Process {
+                        requested_pid,
+                        returned_bytes,
+                        errno,
+                        fields_complete,
+                        fields,
+                    } => json!({
+                        "kind":"bsd", "requested_pid":requested_pid,
+                        "returned_bytes":returned_bytes, "errno":errno,
+                        "fields_complete":fields_complete, "pid":fields.pid,
+                        "ppid":fields.parent, "pgid":fields.group,
+                        "status":fields.status, "flags":fields.flags,
+                        "in_exit":fields.in_exit,
+                        "uids_uid_ruid_svuid":fields.uids,
+                        "gids_gid_rgid_svgid":fields.gids,
+                        "exit_status":fields.exit_status,
+                        "birth_seconds":fields.birth_seconds,
+                        "birth_micros":fields.birth_micros,
+                    }),
+                    MacosObservation::Group {
+                        group,
+                        capacity,
+                        returned_bytes,
+                        errno,
+                        sampled_pids,
+                        omitted_pids,
+                        incomplete_sample,
+                    } => json!({
+                        "kind":"group", "group":group, "capacity":capacity,
+                        "returned_bytes":returned_bytes, "errno":errno,
+                        "sampled_pids":sampled_pids, "omitted_pids":omitted_pids,
+                        "incomplete_sample":incomplete_sample,
+                        "bsd_fields_only_for_existing_queries":true,
+                    }),
+                };
+                let Ok(mut samples) = self.samples.lock() else {
+                    return;
+                };
+                if samples.rows.len() == 32 {
+                    samples.rows.pop_front();
+                    samples.omitted += 1;
+                }
+                samples.rows.push_back(json!({
+                    "boundary_code":self.last.load(Ordering::Relaxed), "sample":sample
+                }));
+            }
             fn birth(&self, _pid: u32) -> Option<std::io::Result<Option<u64>>> {
                 self.births.fetch_add(1, Ordering::Relaxed);
                 self.last.store(1, Ordering::Relaxed);
@@ -700,7 +770,11 @@ fn settle_input_fixture(
                 None
             }
         }
-        let probe = Arc::new(Probe::default());
+        let probe = Arc::new(Probe {
+            expected_pid: tree.pid(),
+            expected_token: tree.record()["token"].as_u64(),
+            ..Probe::default()
+        });
         let start = Instant::now();
         let result =
             test_support::with_backend(probe.clone(), || tree.settle(Duration::from_secs(5)));
@@ -721,6 +795,15 @@ fn settle_input_fixture(
                     false
                 )
             );
+            if let Ok(samples) = probe.samples.lock() {
+                eprintln!(
+                    "Input fixture macOS passive samples case={case_index} rows={} omitted_events={} incomplete_event_history={} no_extra_queries=true enumerated_pids_may_be_unqueried=true samples={}",
+                    samples.rows.len(),
+                    samples.omitted,
+                    samples.omitted != 0,
+                    json!(samples.rows)
+                );
+            }
         }
         result
     }
