@@ -73,6 +73,88 @@ fn baseline(mode: &str) -> TestResult {
             browser::SENTINEL
         );
         assert_eq!(calls.len(), 3);
+        assert_eq!(browser::fixture_expiry(1000)?, 2_593_000);
+        assert!(browser::fixture_expiry(u64::MAX).is_err());
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs();
+        let expiry = seeded[0]["expires"]
+            .as_f64()
+            .ok_or("canonical floating fixture expiry")?;
+        assert!(expiry > now as f64 && expiry <= (now + 30 * 24 * 60 * 60) as f64);
+        assert_eq!(seeded[1]["expires"], seeded[0]["expires"]);
+        let wanted = Value::Array(seeded.clone());
+        for (field, value, descriptor) in [
+            (
+                "expires",
+                json!(1),
+                "field=expires expected=float actual=integer",
+            ),
+            (
+                "expires",
+                json!(1.0),
+                "field=expires expected=float actual=float",
+            ),
+            (
+                "httpOnly",
+                json!(1),
+                "field=httpOnly expected=boolean actual=integer",
+            ),
+            (
+                "value",
+                json!("private-cookie-material"),
+                "field=value expected=string actual=string",
+            ),
+            (
+                "unreviewed-private-key",
+                json!("private-cookie-material"),
+                "other-fields differ",
+            ),
+        ] {
+            let mut changed = wanted.clone();
+            changed[0][field] = value;
+            let error = browser::require_cookie_persistence(&changed, &wanted)
+                .err()
+                .ok_or("Changed cookie accepted")?
+                .to_string();
+            assert!(
+                error.contains(descriptor),
+                "redacted field/type diagnostic missing"
+            );
+            assert!(error.len() < 2048);
+            for secret in [
+                "synthetic",
+                "fixture.test",
+                "private-cookie-material",
+                "unreviewed-private-key",
+            ] {
+                assert!(
+                    !error.contains(secret),
+                    "Cookie material appeared in diagnostics"
+                );
+            }
+        }
+        let mut missing = wanted.clone();
+        missing[0]
+            .as_object_mut()
+            .ok_or("cookie object")?
+            .remove("sameSite");
+        assert!(
+            browser::require_cookie_persistence(&missing, &wanted)
+                .err()
+                .ok_or("Missing field accepted")?
+                .to_string()
+                .contains("field=sameSite expected=string actual=missing")
+        );
+        let swapped = Value::Array(seeded.iter().rev().cloned().collect());
+        assert!(browser::require_cookie_persistence(&swapped, &wanted).is_err());
+        let mut large = vec![json!({"value":"private-cookie-material"}); 100];
+        large[0]["name"] = json!("private-cookie-name");
+        let error = browser::require_cookie_persistence(&Value::Array(large), &wanted)
+            .err()
+            .ok_or("Different array accepted")?
+            .to_string();
+        assert!(error.len() < 2048 && !error.contains("private-cookie"));
     } else {
         let error = result.err().ok_or("Damaged seed was accepted")?.to_string();
         if matches!(mode, "seed-refusal" | "stderr-refusal") {

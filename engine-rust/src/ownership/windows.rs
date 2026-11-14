@@ -6,19 +6,26 @@ use std::{
     ptr,
 };
 use windows_sys::Win32::{
-    Foundation::{CloseHandle, ERROR_NO_MORE_FILES, HANDLE, INVALID_HANDLE_VALUE},
+    Foundation::{
+        CloseHandle, ERROR_NO_MORE_FILES, HANDLE, INVALID_HANDLE_VALUE, WAIT_FAILED, WAIT_OBJECT_0,
+        WAIT_TIMEOUT,
+    },
     System::{
         Diagnostics::ToolHelp::{
             CreateToolhelp32Snapshot, TH32CS_SNAPTHREAD, THREADENTRY32, Thread32First, Thread32Next,
         },
         JobObjects::{
-            AssignProcessToJobObject, CreateJobObjectW, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
-            JOBOBJECT_BASIC_ACCOUNTING_INFORMATION, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
-            JobObjectBasicAccountingInformation, JobObjectExtendedLimitInformation, OpenJobObjectW,
+            AssignProcessToJobObject, CreateJobObjectW, IsProcessInJob,
+            JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE, JOBOBJECT_BASIC_ACCOUNTING_INFORMATION,
+            JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JobObjectBasicAccountingInformation,
+            JobObjectBasicProcessIdList, JobObjectExtendedLimitInformation, OpenJobObjectW,
             QueryInformationJobObject, SetInformationJobObject, TerminateJobObject,
         },
         SystemServices::{JOB_OBJECT_QUERY, JOB_OBJECT_TERMINATE},
-        Threading::{OpenThread, ResumeThread, THREAD_SUSPEND_RESUME},
+        Threading::{
+            OpenProcess, OpenThread, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE,
+            ResumeThread, THREAD_SUSPEND_RESUME, WaitForSingleObject,
+        },
     },
 };
 
@@ -123,6 +130,92 @@ impl Job {
             return Err(io::Error::last_os_error());
         }
         u64::try_from(info.PeakJobMemoryUsed).map_err(io::Error::other)
+    }
+    /// Read only: every member in a complete snapshot must already be signaled.
+    /// This does not prove an empty Job and never permits accepting a survivor.
+    pub fn all_members_exited(&self, leader: &Child) -> io::Result<bool> {
+        #[cfg(feature = "test-support")]
+        if let Some(result) = super::test_support::job_query() {
+            result?;
+        }
+        let mut buffer = vec![
+            0usize;
+            (8 + super::memory::MAX_PROCESSES * mem::size_of::<usize>())
+                .div_ceil(mem::size_of::<usize>())
+        ];
+        let size = buffer.len() * mem::size_of::<usize>();
+        let mut returned = 0;
+        // SAFETY: initialized, pointer-aligned output for this retained Job;
+        // no process or Job is reopened to establish tree ownership.
+        if unsafe {
+            QueryInformationJobObject(
+                self.0.as_raw_handle(),
+                JobObjectBasicProcessIdList,
+                buffer.as_mut_ptr().cast(),
+                size as u32,
+                &mut returned,
+            )
+        } == 0
+        {
+            return Err(io::Error::last_os_error());
+        }
+        // SAFETY: the initialized allocation bounds this temporary byte view.
+        let bytes = unsafe { std::slice::from_raw_parts(buffer.as_ptr().cast::<u8>(), size) };
+        let members =
+            super::memory::members_from_buffer(bytes, returned as usize, mem::size_of::<usize>())?;
+        for pid in members {
+            // Keep the original leader handle: exited processes may disappear
+            // from OpenProcess before the Job's accounting finishes updating.
+            let queried;
+            let process = if pid == leader.id() {
+                leader.as_raw_handle() as HANDLE
+            } else {
+                // SAFETY: passive, non-inheritable query/synchronize handle.
+                // A recycled or foreign PID is rejected against our exact Job.
+                let raw = unsafe {
+                    OpenProcess(
+                        PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_SYNCHRONIZE,
+                        0,
+                        pid,
+                    )
+                };
+                if raw.is_null() {
+                    return Err(io::Error::last_os_error());
+                }
+                // SAFETY: successful OpenProcess transfers one owned handle.
+                queried = unsafe { OwnedHandle::from_raw_handle(raw) };
+                let mut contained = 0;
+                if unsafe {
+                    IsProcessInJob(
+                        queried.as_raw_handle(),
+                        self.0.as_raw_handle(),
+                        &mut contained,
+                    )
+                } == 0
+                {
+                    return Err(io::Error::last_os_error());
+                }
+                if contained == 0 {
+                    return Err(io::Error::other(
+                        "Observed process no longer belongs to the retained Job",
+                    ));
+                }
+                queried.as_raw_handle()
+            };
+            // SAFETY: either a borrowed retained child or the live query owner
+            // above. Zero timeout observes state without waiting or signaling.
+            match unsafe { WaitForSingleObject(process, 0) } {
+                WAIT_OBJECT_0 => {}
+                WAIT_TIMEOUT => return Ok(false),
+                WAIT_FAILED => return Err(io::Error::last_os_error()),
+                _ => {
+                    return Err(io::Error::other(
+                        "Retained Job member exit observation is incomplete",
+                    ));
+                }
+            }
+        }
+        Ok(true)
     }
     pub fn terminate(&self) -> io::Result<()> {
         // SAFETY: this job contains only the tree this owner spawned.

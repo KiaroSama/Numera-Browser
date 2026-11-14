@@ -1,5 +1,7 @@
 use super::*;
 use numera_xtask::ci::{evidence, release, scope, workflow};
+#[path = "reviewed_secrets.rs"]
+mod reviewed_secrets;
 fn expected_modules(names: &[&str]) -> BTreeMap<String, BTreeSet<String>> {
     names
         .iter()
@@ -1398,65 +1400,11 @@ source_test!(
     "tests/test_live_engine_contract.py::test_secret_exceptions_are_only_exact_reviewed_rule_path_and_literal",
     {
         let root = source_root();
-        let config = fs::read_to_string(root.join("scripts/ci/gitleaks.toml"))?;
+        let config = reviewed_secrets::template(&root)?;
         assert!(config.contains("useDefault = true"));
         assert!(!config.contains("disabledRules"));
-        assert_eq!(config.matches("[[rules.allowlists]]").count(), 4);
-        assert_eq!(config.matches("condition = \"AND\"").count(), 4);
-        assert_eq!(config.matches("regexTarget = \"secret\"").count(), 4);
-        let literal = regex::Regex::new(r"\x27{3}([^\x27]+)\x27{3}")?;
-        let mut patterns = Vec::new();
-        let mut paths = Vec::new();
-        for block in config.split("[[rules.allowlists]]").skip(1) {
-            for line in block.lines() {
-                if line.starts_with("regexes =") {
-                    patterns.extend(literal.captures_iter(line).map(|c| c[1].to_owned()));
-                }
-                if line.starts_with("paths =") {
-                    paths.push(
-                        literal.captures(line).ok_or("allowlist path missing")?[1].to_owned(),
-                    );
-                }
-            }
-        }
-        let expected = [
-            "f577f82af741d32085294020c093c7decd65544fe2f43c88bc76768245a5b409",
-            "ac215b3e0151a72e3e3e5b898b61827612735ed8fdf7865d7a4c90959a242e03",
-            "4c0b89ca29dd4fd13eeefc41a69fee0b64d8244e5fc8e2654ac31ad7c96fc426",
-            "7e65f47df01dbc8677d2ced7c8ad02a06afbb21e07c1e872713d2bfaf8773128",
-            "bf23e95aa0ff67388daa3728f36a013b9ddafdc2bd280decb03bacbaad9eb8a1",
-        ];
-        assert_eq!(patterns.len(), expected.len());
-        for (pattern, digest) in patterns.iter().zip(expected) {
-            assert!(pattern.starts_with('^') && pattern.ends_with('$'));
-            assert_eq!(ci::sha(&pattern.as_bytes()[1..pattern.len() - 1]), digest);
-            let regex = regex::Regex::new(pattern)?;
-            assert!(regex.is_match(&pattern[1..pattern.len() - 1]));
-            assert!(!regex.is_match(&format!("{}changed", &pattern[1..pattern.len() - 1])));
-        }
-        let positive = [
-            (
-                "engine-rust/tests/fixtures/request-auth.json",
-                "engine-rust/tests/fixtures/unreviewed.json",
-            ),
-            (
-                "engine-rust/src/http/documentation-assets/provenance.json",
-                "engine-rust/src/http/documentation-assets/unreviewed.json",
-            ),
-            (
-                "engine/tests/test_portable_root.py",
-                "engine/tests/test_new_credential.py",
-            ),
-            (
-                "desktop/src-tauri/build.rs",
-                "desktop/src-tauri/src/unreviewed.rs",
-            ),
-        ];
-        for (path, (accepted, refused)) in paths.iter().zip(positive) {
-            let regex = regex::Regex::new(path)?;
-            assert!(regex.is_match(accepted));
-            assert!(!regex.is_match(refused));
-        }
+        let patterns = reviewed_secrets::groups(&config)?;
+        reviewed_secrets::signing_guards(&root)?;
         let assets = root.join("engine-rust/src/http/documentation-assets");
         let provenance = ci::decode(&fs::read(assets.join("provenance.json"))?)?;
         for name in ["openapi.json", "oauth2-redirect.html"] {
@@ -1485,7 +1433,7 @@ source_test!(
             .map(|b| format!("{b:02x}"))
             .collect::<String>();
         assert_eq!(
-            patterns.last().ok_or("public allowlist missing")?,
+            patterns[3].first().ok_or("public allowlist missing")?,
             &format!("^{public}$")
         );
         assert!(
@@ -1517,7 +1465,7 @@ source_test!(
         assert_eq!(fs::read(&base)?, payload);
         assert!(!output.exists());
         scope::prepare_secret_config_checked(&source_root(), &base, &output, &ci::sha(&payload))?;
-        let changed = fs::read_to_string(base)?;
+        let changed = fs::read_to_string(&base)?;
         assert_eq!(changed.matches("paths = []").count(), 1);
         for removed in [
             "package-lock.json",
@@ -1539,7 +1487,12 @@ source_test!(
         let config = fs::read_to_string(output)?;
         assert!(!config.contains("useDefault"));
         assert!(config.contains("path = "));
-        assert_eq!(config.matches("condition = \"AND\"").count(), 4);
+        reviewed_secrets::groups(&config)?;
+        let expected = reviewed_secrets::template(&source_root())?.replace(
+            "useDefault = true",
+            &format!("path = {}", serde_json::to_string(&base.canonicalize()?)?),
+        );
+        assert_eq!(config, expected);
 
         Ok(())
     }
@@ -1565,7 +1518,7 @@ source_test!(
         assert_eq!(fs::read(&base)?, payload);
         assert!(!output.exists());
         scope::prepare_secret_config_checked(&source_root(), &base, &output, &ci::sha(&payload))?;
-        let changed = fs::read_to_string(base)?;
+        let changed = fs::read_to_string(&base)?;
         assert_eq!(changed.matches("paths = []").count(), 1);
         for removed in [
             "package-lock.json",
@@ -1587,7 +1540,12 @@ source_test!(
         let config = fs::read_to_string(output)?;
         assert!(!config.contains("useDefault"));
         assert!(config.contains("path = "));
-        assert_eq!(config.matches("condition = \"AND\"").count(), 4);
+        reviewed_secrets::groups(&config)?;
+        let expected = reviewed_secrets::template(&source_root())?.replace(
+            "useDefault = true",
+            &format!("path = {}", serde_json::to_string(&base.canonicalize()?)?),
+        );
+        assert_eq!(config, expected);
 
         Ok(())
     }

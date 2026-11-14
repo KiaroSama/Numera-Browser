@@ -247,7 +247,13 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: native-live-${{ matrix.os }}-${{ matrix.engine }}-${{ github.sha }}
-          path: build/live-*.log
+          path: |
+            .ci-work/logs/ci-owned_*.log
+            build/selected-sdk.log
+            build/selected-sdk.stderr.log
+            build/logs/camoufox-runtime_*.log
+            build/native-candidate/entry-performance.json
+            build/native-candidate/browser-performance.json
           if-no-files-found: error
 
   history:

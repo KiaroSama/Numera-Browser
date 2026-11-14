@@ -112,6 +112,7 @@ pub fn hash(path: &Path) -> Result<String, Box<dyn Error>> {
             break;
         }
         digest.update(&bytes[..read]);
+        crate::progress::completed("hashed", read);
     }
     Ok(digest
         .finalize()

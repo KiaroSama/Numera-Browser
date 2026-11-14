@@ -663,6 +663,93 @@ pub struct Baseline {
     pub id: String,
     pub payload: Value,
 }
+pub fn fixture_expiry(now: u64) -> Result<u64> {
+    // Chromium caps persistent cookies at400 days. Keep a single fixture
+    // deadline inside that range so the browser need not rewrite its value.
+    now.checked_add(30 * 24 * 60 * 60).ok_or_else(|| {
+        io::Error::other("Browser fixture expiry exceeds its timestamp bound").into()
+    })
+}
+/// Keep full, type-sensitive parity while reporting only bounded field/type
+/// metadata. Cookie names, values, domains and arbitrary vendor keys stay private.
+pub fn require_cookie_persistence(observed: &Value, expected: &Value) -> Result<()> {
+    if crate::acceptance::require_equal(observed, expected, "Native checkpoint cookie persistence")
+        .is_ok()
+    {
+        return Ok(());
+    }
+    fn kind(value: Option<&Value>) -> &'static str {
+        match value {
+            None => "missing",
+            Some(Value::Null) => "null",
+            Some(Value::Bool(_)) => "boolean",
+            Some(Value::String(_)) => "string",
+            Some(Value::Array(_)) => "array",
+            Some(Value::Object(_)) => "object",
+            Some(Value::Number(number)) if number.to_string().contains(['.', 'e', 'E']) => "float",
+            Some(Value::Number(_)) => "integer",
+        }
+    }
+    let (Some(actual), Some(wanted)) = (observed.as_array(), expected.as_array()) else {
+        return fail(format!(
+            "Native checkpoint cookie persistence differs expected={} actual={} (values redacted)",
+            kind(Some(expected)),
+            kind(Some(observed))
+        ));
+    };
+    let mut changes = Vec::new();
+    for index in 0..actual.len().max(wanted.len()).min(4) {
+        let (row, seed) = (actual.get(index), wanted.get(index));
+        if row == seed {
+            continue;
+        }
+        if kind(row) != kind(seed) {
+            changes.push(format!(
+                "row={index} expected={} actual={}",
+                kind(seed),
+                kind(row)
+            ));
+        } else {
+            let mut described = false;
+            for field in [
+                "name",
+                "value",
+                "domain",
+                "path",
+                "expires",
+                "secure",
+                "httpOnly",
+                "sameSite",
+                "partitionKey",
+            ] {
+                let before = seed.and_then(|row| row.get(field));
+                let after = row.and_then(|row| row.get(field));
+                if before != after && changes.len() < 8 {
+                    changes.push(format!(
+                        "row={index} field={field} expected={} actual={}",
+                        kind(before),
+                        kind(after)
+                    ));
+                    described = true;
+                }
+            }
+            if !described && changes.len() < 8 {
+                changes.push(format!(
+                    "row={index} other-fields differ (keys and values redacted)"
+                ));
+            }
+        }
+        if changes.len() >= 8 {
+            break;
+        }
+    }
+    fail(format!(
+        "Native checkpoint cookie persistence differs expected_rows={} actual_rows={} changes=[{}] (values redacted)",
+        wanted.len(),
+        actual.len(),
+        changes.join("; ")
+    ))
+}
 pub fn baseline(
     parent: &Path,
     engine: &str,
@@ -725,7 +812,14 @@ pub fn baseline(
         })
         .ok_or("Native checkpoint profile identity invalid")?
         .to_owned();
-    let cookie = json!({"name":"persistent-fixture","value":"synthetic","domain":".fixture.test","path":"/","expires":2524608000u64,"secure":false,"httpOnly":true,"sameSite":"Lax"});
+    let expiry = fixture_expiry(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs(),
+    )?;
+    // The checkpoint's CLI normalizes epoch values to floats before export.
+    // Seed that canonical type rather than relaxing the strict comparison.
+    let cookie = json!({"name":"persistent-fixture","value":"synthetic","domain":".fixture.test","path":"/","expires":expiry as f64,"secure":false,"httpOnly":true,"sameSite":"Lax"});
     let mut second = cookie.clone();
     second["name"] = json!("second-fixture");
     second["httpOnly"] = json!(false);
@@ -766,11 +860,7 @@ pub fn baseline(
         .cloned()
         .ok_or("Native checkpoint cookies missing")?;
     observed.sort_by_key(|row| row["name"].as_str().unwrap_or("").to_owned());
-    crate::acceptance::require_equal(
-        &Value::Array(observed),
-        &cookies,
-        "Native checkpoint cookie persistence",
-    )?;
+    require_cookie_persistence(&Value::Array(observed), &cookies)?;
     if payload["origins"] != json!([]) {
         return fail("Native checkpoint cookie persistence origins differ");
     }

@@ -323,11 +323,16 @@ impl Prepared {
             let context = driver.open("camoufox", probe_options).await?;
             self.probe = Some(context.clone());
             let observation = tokio::time::timeout(Duration::from_secs(30), async {
-                let page = match context.pages().into_iter().next() { Some(page) => page, None => context.new_page().await? };
-                let expression = crate::page_runtime::expression(crate::page_runtime::Program::HostEnvironment);
+                let page = match context.pages().into_iter().next() {
+                    Some(page) => page,
+                    None => context.new_page().await?,
+                };
+                let expression =
+                    crate::page_runtime::expression(crate::page_runtime::Program::HostEnvironment);
                 let value = super::evaluate_raw(&page, &expression, &Value::Null, false).await?;
                 super::values::decode(&value).map_err(playwright_rs::Error::from)
-            }).await;
+            })
+            .await;
             if !self.cleanup_probe().await {
                 return Err(bad("Camoufox host probe did not close").into());
             }

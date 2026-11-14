@@ -300,11 +300,61 @@ source_test!(
 fn failure(damage: &str) -> TestResult {
     let case = &history::Registry::read()?.cases()?[0];
     let mut evidence = evidence::Failure::new(&case.test, &case.symptom);
-    for(key,line)in[("empty","running 1 test".into()),("name",format!("test {} ... FAILED",case.test)),("symptom",format!("assertion left == right failed: {}",case.symptom)),("summary","test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.01s".into())]{if key!=damage{evidence.accept(&line);}}
+    for line in failed_transcript(&case.test, &case.symptom).lines() {
+        let removed = match damage {
+            "empty" => line == "running 1 test",
+            "name" => line == format!("test {} ... FAILED", case.test),
+            "symptom" => line.starts_with("assertion left == right failed:"),
+            "summary" => line.starts_with("test result:"),
+            _ => false,
+        };
+        if !removed {
+            evidence.accept(line);
+        }
+    }
     verdict(
         evidence.verify(if damage == "exit" { 0 } else { 101 }),
         damage == "None",
     );
+    if damage == "None" {
+        let good = failed_transcript(&case.test, &case.symptom);
+        let unrelated = failed_transcript(&case.test, "unrelated production assertion");
+        let compiler = json!({"reason":"compiler-message","message":{"rendered":case.symptom}});
+        for poisoned in [
+            format!("{compiler}\n{unrelated}"),
+            unrelated.replace(
+                &format!("thread '{}'", case.test),
+                &format!("earlier printed {}\nthread '{}'", case.symptom, case.test),
+            ),
+            format!("{good}{good}"),
+            good.replacen("running 1 test", "running 2 tests", 1),
+            good.replace(
+                &format!("thread '{}'", case.test),
+                "thread 'unrelated_worker'",
+            ),
+            good.replace("failures:\n    ", "failures:\n    unrelated_test\n    "),
+            unrelated.replace(
+                "unrelated production assertion",
+                &format!(
+                    "unrelated production assertion\n  left: {{\"data\":\"{}\"}}",
+                    case.symptom
+                ),
+            ),
+            good.replace(
+                &format!("test {} ... FAILED", case.test),
+                &format!("test unrelated ... FAILED\ntest {} ... FAILED", case.test),
+            ),
+        ] {
+            let mut refused = evidence::Failure::new(&case.test, &case.symptom);
+            for line in poisoned.lines() {
+                refused.accept(line);
+            }
+            assert!(
+                refused.verify(101).is_err(),
+                "Unrelated or mixed transcript manufactured a named RED proof"
+            );
+        }
+    }
     Ok(())
 }
 source_cases!("tests/test_native_regressions.py::test_failure_proof_requires_the_exact_production_assertion",failure,[history_failure_good=>("None","None"),history_failure_exit=>("exit","exit"),history_failure_empty=>("empty","empty"),history_failure_name=>("name","name"),history_failure_symptom=>("symptom","symptom"),history_failure_summary=>("summary","summary")]);
@@ -455,14 +505,13 @@ fn restoration(
                     io::Error::new(io::ErrorKind::TimedOut, "fixture runner timeout").into(),
                 );
             }
-            let output = format!(
-                "running 1 test\ntest {} ... FAILED\n{}\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.01s\n",
-                case.test,
+            let output = failed_transcript(
+                &case.test,
                 if damage == "assertion" {
                     "unrelated failure"
                 } else {
                     &case.symptom
-                }
+                },
             );
             Ok(ci::owned::Output {
                 command: capture::Output {

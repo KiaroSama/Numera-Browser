@@ -278,11 +278,14 @@ impl Runner for Native<'_> {
 pub fn run(root: &Path, resources: &Path) -> Result<()> {
     let host =
         Host::current(resources).map_err(|_| "Camoufox runtime host metadata is unavailable")?;
-    let logs = std::env::var_os("NUMERA_LOG_DIR")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| root.join("logs"));
+    let logs = log_directory(root, std::env::var_os("NUMERA_LOG_DIR").as_deref());
     if logged(&host, &mut Native { root }, &logs) != 0 {
         return fail("Camoufox runtime prerequisites failed");
     }
     Ok(())
+}
+pub fn log_directory(root: &Path, explicit: Option<&std::ffi::OsStr>) -> std::path::PathBuf {
+    explicit
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| root.join("build/logs"))
 }

@@ -401,7 +401,13 @@ pub fn copy_file(source: &Path, target: &Path) -> Result<(), Box<dyn Error>> {
     if let Some(parent) = target.parent() {
         fs::create_dir_all(parent)?;
     }
-    fs::copy(source, target)?;
+    let mut input = fs::File::open(source)?;
+    let mut output = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(target)?;
+    crate::progress::copy(&mut input, &mut output)?;
+    fs::set_permissions(target, input.metadata()?.permissions())?;
     Ok(())
 }
 

@@ -80,6 +80,13 @@ See [current upstream review](upstream-review-20261113.json) for release/source
 compatibility limits. New source-only browser features are not assumed to exist
 in an older packaged engine.
 
+CloakBrowser **156.0.8078.47.1** requires a valid vendor license key, including
+for headless CI. The vendor's free tier supports the current binary with one
+concurrent session; a paid plan is not required for the basic acceptance test.
+Store the key as the repository Actions secret `CLOAKBROWSER_LICENSE_KEY`.
+Do not commit it or include it in test reports. The earlier key-free 146 browser
+is not a substitute for verification of the current pinned release.
+
 ### Dashboard development
 
 Keep the engine running in one terminal, then start the Rust development server:

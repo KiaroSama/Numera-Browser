@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "reviewed_on": "2026-11-10",
+  "reviewed_on": "2026-11-13",
   "base": "main",
   "merge_into_main": false,
   "branches": [
@@ -11,7 +11,8 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 74,
@@ -20,7 +21,8 @@
       "disposition": "close as unaccepted update; carry compatibility work in the integration PR",
       "reason": "The container image cannot be upgraded independently of the pinned Playwright client and bundled-browser smoke contract; track the paired update in the integration PR.",
       "ancestor_of_integration": false,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 73,
@@ -29,7 +31,8 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 72,
@@ -38,7 +41,8 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 71,
@@ -47,7 +51,8 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 70,
@@ -56,7 +61,8 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 68,
@@ -65,7 +71,15 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false,
+      "retirement": {
+        "remote_branch_present": false,
+        "method": "exact-lease atomic push",
+        "local_backup_ref": "refs/backup/rust-rewrite-20261113/pr-68",
+        "backup_head_sha": "dd069087dbbabedd5fbf7b8a99efb5a408f0a67d",
+        "backup_verified": true
+      }
     },
     {
       "pr": 66,
@@ -74,7 +88,8 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 65,
@@ -83,7 +98,8 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 64,
@@ -92,7 +108,8 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 63,
@@ -101,7 +118,8 @@
       "disposition": "close as unaccepted update; carry compatibility work in the integration PR",
       "reason": "A broad Playwright range change alone does not update the paired driver/browser/container contract; retain the tested selected runtime until the adapter port and paired acceptance.",
       "ancestor_of_integration": false,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 61,
@@ -110,7 +128,8 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 59,
@@ -119,7 +138,8 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 56,
@@ -128,7 +148,15 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false,
+      "retirement": {
+        "remote_branch_present": false,
+        "method": "exact-lease atomic push",
+        "local_backup_ref": "refs/backup/rust-rewrite-20261113/pr-56",
+        "backup_head_sha": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+        "backup_verified": true
+      }
     },
     {
       "pr": 55,
@@ -137,7 +165,8 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 54,
@@ -146,7 +175,15 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false,
+      "retirement": {
+        "remote_branch_present": false,
+        "method": "exact-lease atomic push",
+        "local_backup_ref": "refs/backup/rust-rewrite-20261113/pr-54",
+        "backup_head_sha": "471dd712c0667f47afe3c1df5c998ec9dc6a3847",
+        "backup_verified": true
+      }
     },
     {
       "pr": 52,
@@ -155,7 +192,8 @@
       "disposition": "integrated into the Rust rewrite branch",
       "reason": null,
       "ancestor_of_integration": true,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
     },
     {
       "pr": 49,
@@ -164,8 +202,276 @@
       "disposition": "close as unaccepted update; carry compatibility work in the integration PR",
       "reason": "TypeScript 7.0.2 is outside the installed typescript-eslint 8.71.2 peer range (>=4.8.4 <6.1.0); retain supported compiler during the UI rewrite.",
       "ancestor_of_integration": false,
-      "pr_state": "closed"
+      "pr_state": "closed",
+      "remote_branch_present": false
+    },
+    {
+      "pr": 78,
+      "branch": "dependabot/npm_and_yarn/dashboard/build-tooling-407960d8ef",
+      "head_sha": "ab211f87d157f605f35adcba89a45a8cf1f37246",
+      "disposition": "closed as obsolete after retirement of the original dependency manifest",
+      "reason": "Changes only retired dashboard package.json/package-lock.json. The dashboard is now Rust/WASM; this npm update supplies no applicable dependency change to the selected graph.",
+      "ancestor_of_integration": false,
+      "pr_state": "closed",
+      "merged": false,
+      "changed_files": [
+        "dashboard/package-lock.json",
+        "dashboard/package.json"
+      ],
+      "remote_branch_present": false,
+      "retirement": {
+        "remote_branch_present": false,
+        "method": "exact-lease atomic push",
+        "local_backup_ref": "refs/backup/rust-rewrite-20261113/pr-78",
+        "backup_head_sha": "ab211f87d157f605f35adcba89a45a8cf1f37246",
+        "backup_verified": true
+      },
+      "closed_at": "2026-11-13T23:48:27Z",
+      "retained_pull_head_ref": "refs/pull/78/head",
+      "pull_head_sha_verified": true
+    },
+    {
+      "pr": 79,
+      "branch": "dependabot/cargo/engine-rust/tokio-1.54.1",
+      "head_sha": "2f00ca379261361b2fded6727aaf72c1130e0b31",
+      "disposition": "closed as an unaccepted core dependency update",
+      "reason": "Tokio1.54.1 was declined for this migration to retain the audited/tested core lock at1.53.3. Tools use of1.54.1 is independent. The exact unmerged candidate was preserved in its verified local backup and retained GitHub pull head ref before branch retirement.",
+      "ancestor_of_integration": false,
+      "pr_state": "closed",
+      "merged": false,
+      "changed_files": [
+        "engine-rust/Cargo.lock"
+      ],
+      "remote_branch_present": false,
+      "retirement": {
+        "remote_branch_present": false,
+        "method": "exact-lease atomic push",
+        "local_backup_ref": "refs/backup/rust-rewrite-20261113/pr-79",
+        "backup_head_sha": "2f00ca379261361b2fded6727aaf72c1130e0b31",
+        "backup_verified": true
+      },
+      "closed_at": "2026-11-13T23:48:14Z",
+      "retained_pull_head_ref": "refs/pull/79/head",
+      "pull_head_sha_verified": true
+    },
+    {
+      "pr": 80,
+      "branch": "dependabot/npm_and_yarn/dashboard/lucide-react-1.70.0",
+      "head_sha": "dc4c6412fad78080baa4bdceb97a48d1eccc1fa7",
+      "disposition": "closed as obsolete after retirement of the original dependency manifest",
+      "reason": "Changes only retired dashboard package.json/package-lock.json. The dashboard is now Rust/WASM; this npm update supplies no applicable dependency change to the selected graph.",
+      "ancestor_of_integration": false,
+      "pr_state": "closed",
+      "merged": false,
+      "changed_files": [
+        "dashboard/package-lock.json",
+        "dashboard/package.json"
+      ],
+      "remote_branch_present": false,
+      "retirement": {
+        "remote_branch_present": false,
+        "method": "exact-lease atomic push",
+        "local_backup_ref": "refs/backup/rust-rewrite-20261113/pr-80",
+        "backup_head_sha": "dc4c6412fad78080baa4bdceb97a48d1eccc1fa7",
+        "backup_verified": true
+      },
+      "closed_at": "2026-11-13T23:48:33Z",
+      "retained_pull_head_ref": "refs/pull/80/head",
+      "pull_head_sha_verified": true
+    },
+    {
+      "pr": 82,
+      "branch": "dependabot/npm_and_yarn/dashboard/react-dom-19.3.1",
+      "head_sha": "20e88e08917b98ccc9262c6db6df54deee88e6ff",
+      "disposition": "closed as obsolete after retirement of the original dependency manifest",
+      "reason": "Changes only retired dashboard package.json/package-lock.json. The dashboard is now Rust/WASM; this npm update supplies no applicable dependency change to the selected graph.",
+      "ancestor_of_integration": false,
+      "pr_state": "closed",
+      "merged": false,
+      "changed_files": [
+        "dashboard/package-lock.json",
+        "dashboard/package.json"
+      ],
+      "remote_branch_present": false,
+      "retirement": {
+        "remote_branch_present": false,
+        "method": "already absent after PR closure",
+        "local_backup_ref": "refs/backup/rust-rewrite-20261113/pr-82",
+        "backup_head_sha": "20e88e08917b98ccc9262c6db6df54deee88e6ff",
+        "backup_verified": true
+      },
+      "closed_at": "2026-11-13T23:48:39Z",
+      "retained_pull_head_ref": "refs/pull/82/head",
+      "pull_head_sha_verified": true
+    },
+    {
+      "pr": 83,
+      "branch": "dependabot/npm_and_yarn/dashboard/types/node-26.6.6",
+      "head_sha": "8a7d7cb5724cc00ea5ccbf68dad1e0edc4792e3e",
+      "disposition": "closed as obsolete after retirement of the original dependency manifest",
+      "reason": "Changes only retired dashboard package.json/package-lock.json. The dashboard is now Rust/WASM; this npm update supplies no applicable dependency change to the selected graph.",
+      "ancestor_of_integration": false,
+      "pr_state": "closed",
+      "merged": false,
+      "changed_files": [
+        "dashboard/package-lock.json",
+        "dashboard/package.json"
+      ],
+      "remote_branch_present": false,
+      "retirement": {
+        "remote_branch_present": false,
+        "method": "exact-lease atomic push",
+        "local_backup_ref": "refs/backup/rust-rewrite-20261113/pr-83",
+        "backup_head_sha": "8a7d7cb5724cc00ea5ccbf68dad1e0edc4792e3e",
+        "backup_verified": true
+      },
+      "closed_at": "2026-11-13T23:48:46Z",
+      "retained_pull_head_ref": "refs/pull/83/head",
+      "pull_head_sha_verified": true
+    },
+    {
+      "pr": 84,
+      "branch": "security/gitleaks-2026-11-11",
+      "head_sha": "a54b37543bc4557b2e8afe4599b6fe4612c769b3",
+      "disposition": "integrated via squash into main and retained in the Rust rewrite",
+      "reason": "PR84 is merged via 6b486e16653bca1b18eb0007238a50175421d54a, which is an ancestor of the rewrite. Its complete238-line workflow is byte-identical to the merge commit; the original head is not an ancestor because the PR was squashed. The rewrite retains security scanning through its reviewed Rust implementation.",
+      "ancestor_of_integration": false,
+      "pr_state": "closed",
+      "merged": true,
+      "changed_files": [
+        ".github/workflows/gitleaks.yml"
+      ],
+      "remote_branch_present": false,
+      "retirement": {
+        "remote_branch_present": false,
+        "method": "exact-lease atomic push",
+        "local_backup_ref": "refs/backup/rust-rewrite-20261113/pr-84",
+        "backup_head_sha": "a54b37543bc4557b2e8afe4599b6fe4612c769b3",
+        "backup_verified": true
+      },
+      "squash_equivalence": {
+        "merge_commit_sha": "6b486e16653bca1b18eb0007238a50175421d54a",
+        "merge_commit_is_ancestor": true,
+        "path": ".github/workflows/gitleaks.yml",
+        "head_and_merge_sha256": "e0ef7bc9233cc60d44eda6dbb4f8c56acaac047d9f5590e33038f2694e5c8a13",
+        "exact_bytes_equal": true
+      },
+      "closed_at": "2026-11-11T19:41:46Z"
+    },
+    {
+      "pr": 85,
+      "branch": "dependabot/npm_and_yarn/dashboard/undici-8.12.4",
+      "head_sha": "b5c416e8f3760da5b1df1a58ed142721ba42fc93",
+      "disposition": "closed as obsolete after retirement of the original dependency manifest",
+      "reason": "Changes only retired dashboard package.json/package-lock.json. The dashboard is now Rust/WASM; this npm update supplies no applicable dependency change to the selected graph.",
+      "ancestor_of_integration": false,
+      "pr_state": "closed",
+      "merged": false,
+      "changed_files": [
+        "dashboard/package-lock.json"
+      ],
+      "remote_branch_present": false,
+      "retirement": {
+        "remote_branch_present": false,
+        "method": "already absent after PR closure",
+        "local_backup_ref": "refs/backup/rust-rewrite-20261113/pr-85",
+        "backup_head_sha": "b5c416e8f3760da5b1df1a58ed142721ba42fc93",
+        "backup_verified": true
+      },
+      "closed_at": "2026-11-13T23:48:52Z",
+      "retained_pull_head_ref": "refs/pull/85/head",
+      "pull_head_sha_verified": true
+    },
+    {
+      "pr": 86,
+      "branch": "dependabot/cargo/engine-rust/zip-9.5.0",
+      "head_sha": "391cffe35b2d2b07662d4aec17204d1769a32b04",
+      "disposition": "closed as an unaccepted core dependency update",
+      "reason": "Core ZIP9.5.0 was declined for this migration to retain the audited/tested core lock at9.1.3. Tools use of9.5.0 does not validate the core API/behavior upgrade. The exact unmerged candidate was preserved in its verified local backup and retained GitHub pull head ref before branch retirement.",
+      "ancestor_of_integration": false,
+      "pr_state": "closed",
+      "merged": false,
+      "changed_files": [
+        "engine-rust/Cargo.lock",
+        "engine-rust/Cargo.toml"
+      ],
+      "remote_branch_present": false,
+      "retirement": {
+        "remote_branch_present": false,
+        "method": "already absent after PR closure",
+        "local_backup_ref": "refs/backup/rust-rewrite-20261113/pr-86",
+        "backup_head_sha": "391cffe35b2d2b07662d4aec17204d1769a32b04",
+        "backup_verified": true
+      },
+      "closed_at": "2026-11-13T23:48:21Z",
+      "retained_pull_head_ref": "refs/pull/86/head",
+      "pull_head_sha_verified": true
+    },
+    {
+      "pr": 87,
+      "branch": "dependabot/pip/engine/playwright-gte-1.62.0-and-lt-1.66",
+      "head_sha": "e837bf307ec3e78af509196d9dc600f7dded7b76",
+      "disposition": "closed as obsolete after retirement of the original dependency manifest",
+      "reason": "Changes only engine/pyproject.toml, removed by the Rust rewrite. Native browser SDK version/driver acceptance is maintained separately; merging a deleted pip manifest would revive retired infrastructure.",
+      "ancestor_of_integration": false,
+      "pr_state": "closed",
+      "merged": false,
+      "changed_files": [
+        "engine/pyproject.toml"
+      ],
+      "remote_branch_present": false,
+      "retirement": {
+        "remote_branch_present": false,
+        "method": "exact-lease atomic push",
+        "local_backup_ref": "refs/backup/rust-rewrite-20261113/pr-87",
+        "backup_head_sha": "e837bf307ec3e78af509196d9dc600f7dded7b76",
+        "backup_verified": true
+      },
+      "closed_at": "2026-11-13T23:48:59Z",
+      "retained_pull_head_ref": "refs/pull/87/head",
+      "pull_head_sha_verified": true
     }
   ],
-  "integration_pr": "https://github.com/KiaroSama/Numera-Browser/pull/76"
+  "integration_pr": "https://github.com/KiaroSama/Numera-Browser/pull/76",
+  "integration_sha": "77d69f1c231450502be130ab3a025cd40166d76c",
+  "verification": {
+    "verified_at": "2026-11-13T23:52:49.960836+00:00",
+    "open_prs": [
+      76
+    ],
+    "remote_heads": {
+      "main": "6b486e16653bca1b18eb0007238a50175421d54a",
+      "rewrite/rust-complete-20261110": "77d69f1c231450502be130ab3a025cd40166d76c"
+    },
+    "main_sha_before_and_after": "6b486e16653bca1b18eb0007238a50175421d54a",
+    "main_unchanged": true,
+    "new_prs_closed": [
+      78,
+      79,
+      80,
+      82,
+      83,
+      85,
+      86,
+      87
+    ],
+    "retired_remote_heads": 12,
+    "direct_atomic_exact_lease_deletions": 9,
+    "automatic_deletions_after_closure": 3,
+    "all_12_local_backup_refs_verified": true,
+    "all_8_closed_pull_head_refs_retained": true,
+    "backup_scope": "Local backup refs were verified before and after retirement; they are not hosted-CI inputs. Closed GitHub PR head refs also retain every newly declined/obsolete candidate.",
+    "historical_ci": {
+      "registry": "tools/xtask/src/ci/history-cases.json",
+      "registry_sha256": "1ae0d723f6f06a87fad243e9da9d182a72d05119d0b49ace5dc2212b15393a1d",
+      "cases": 99,
+      "source_occurrences": 453,
+      "unique_file_snapshots": 145,
+      "unique_commits": 90,
+      "all_commits_reachable_from_integration": true,
+      "all_recorded_source_hashes_match": true,
+      "verified_without_git_replace_objects": true,
+      "receipt_sha256": "6d20050fedff494b99b6d0a570f8c33049aee0cf8cb56f7ed91788a248c38783"
+    }
+  }
 }

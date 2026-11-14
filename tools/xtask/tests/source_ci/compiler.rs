@@ -34,6 +34,9 @@ fn event(scope: &phase::Scope, value: &Value) -> TestResult {
     Ok(())
 }
 fn projection(damage: &str) -> TestResult {
+    if damage == "None" && super::progress_support::child()? {
+        return Ok(());
+    }
     if damage == "None" && streamed_child()? {
         return Ok(());
     }
@@ -115,6 +118,7 @@ fn projection(damage: &str) -> TestResult {
             s.contains("event=archive-complete elapsed_ns=200 archive_to_artifact_ns=100")
         }));
         live_stream()?;
+        super::progress_support::controls()?;
     }
     Ok(())
 }
@@ -367,7 +371,7 @@ fn proof(platform: &str, failure: bool, invalid: bool) -> TestResult {
             let stdout = if compile || invalid {
                 Vec::new()
             } else {
-                format!("running 1 test\ntest {} ... FAILED\n{}\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.01s\n",case.test,case.symptom).into_bytes()
+                failed_transcript(&case.test, &case.symptom).into_bytes()
             };
             Ok(ci::owned::Output {
                 command: capture::Output {
@@ -408,6 +412,45 @@ fn proof(platform: &str, failure: bool, invalid: bool) -> TestResult {
         result?;
     }
     if platform == "linux" && !failure && !invalid {
+        fixture_bridge_controls()?;
+        let metadata = history::Registry::read()?
+            .cases()?
+            .into_iter()
+            .find(|row| row.target == "native_environment")
+            .ok_or("Metadata historical case missing")?;
+        let path = "engine-rust/src/native_environment.rs";
+        let old = history::case_sources(&metadata)?
+            .remove(path)
+            .ok_or("Metadata source missing")?;
+        let fixed = fs::read(root().join(path))?;
+        let replacement = ci::history_compat::replacement(&metadata, path, &old, &fixed)?
+            .ok_or("Metadata semantic adaptation missing")?;
+        assert_eq!(
+            replacement.receipt["mode"],
+            "native-equivalent-semantic-mutation"
+        );
+        assert_eq!(replacement.receipt["literal_historical_execution"], false);
+        assert_eq!(
+            replacement.receipt["current_before_sha256"],
+            ci::sha(&fixed)
+        );
+        assert_eq!(
+            replacement.receipt["mutated_after_sha256"],
+            ci::sha(&replacement.bytes)
+        );
+        assert!(String::from_utf8_lossy(&replacement.bytes).contains(".numera-metadata-cache"));
+        let mut unreviewed = metadata.clone();
+        unreviewed.commit = "b".repeat(40);
+        assert!(ci::history_compat::replacement(&unreviewed, path, &old, &fixed).is_err());
+        assert!(
+            ci::history_compat::replacement(
+                &metadata,
+                path,
+                &old,
+                b"different native source shape"
+            )
+            .is_err()
+        );
         let synthetic = "q".repeat(1000);
         let refused = history::prove_cases_with(
             &tmp.0,
@@ -455,7 +498,12 @@ fn proof(platform: &str, failure: bool, invalid: bool) -> TestResult {
                 let stdout = if compile {
                     Vec::new()
                 } else {
-                    format!("{}\nrunning 1 test\ntest {} ... FAILED\ndifferent production assertion\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.01s\n",json!({"reason":"compiler-message","message":{"rendered":case.symptom}}),case.test).into_bytes()
+                    format!(
+                        "{}\n{}",
+                        json!({"reason":"compiler-message","message":{"rendered":case.symptom}}),
+                        failed_transcript(&case.test, "different production assertion")
+                    )
+                    .into_bytes()
                 };
                 Ok(ci::owned::Output {
                     command: capture::Output {
@@ -503,6 +551,121 @@ fn proof(platform: &str, failure: bool, invalid: bool) -> TestResult {
         assert_eq!(fs::read(&cache)?, diagnostic);
         assert_eq!(fs::read(tmp.0.join("engine-rust/src/models.rs"))?, b"fixed");
         assert!(!phase::active());
+    }
+    Ok(())
+}
+
+fn fixture_bridge_controls() -> TestResult {
+    let root = root();
+    let cases = history::Registry::read()?.cases()?;
+    for (target, old_hash, count) in [
+        (
+            "cli_profile_parity",
+            "656a8fc05ffd03f89914c586cb0fa2bc66ffde8c7f23d292269a4c702f904fe9",
+            0,
+        ),
+        (
+            "config_parity",
+            "3bdc096885588ad4640650934e1118c5068c112afb045d9815be6586f4432c1a",
+            2,
+        ),
+        (
+            "config_parity",
+            "a13add91f09aca8457fee8f40e50e2bc999808f9282c0a068a51a395afd24574",
+            5,
+        ),
+        (
+            "integer_seed_parity",
+            "a00dffeec7f9fc93972b58cc4696958b5f4f7d6a2e37b7b90fe708a7365107cb",
+            1,
+        ),
+        (
+            "lock_interop_parity",
+            "48b2c974fbf8761af26708db181fe5fae3e974216dbb6a73bc68a95a538b3b84",
+            5,
+        ),
+        (
+            "repo_lookup_parity",
+            "3267e368991ce775f580b66f2068211d2835dddcf98eb37c205a2e371386d406",
+            3,
+        ),
+        (
+            "schedule_store_parity",
+            "0419aa623eb9ec63e9d442af7e683756e7d4e04436c56ef0537691c6386504a4",
+            2,
+        ),
+    ] {
+        let path = format!("engine-rust/tests/{target}.rs");
+        let (case, source) = cases
+            .iter()
+            .filter(|case| case.target == target || count == 0)
+            .find_map(|case| {
+                history::case_sources(case)
+                    .ok()?
+                    .remove(&path)
+                    .filter(|source| source.sha256 == old_hash)
+                    .map(|source| (case, source))
+            })
+            .ok_or("Reviewed historical fixture case missing")?;
+        let current = fs::read(root.join(&path))?;
+        let old = ci::git(&root, &["show", &format!("{}:{path}", source.commit)])?;
+        assert_eq!(ci::sha(&old), old_hash);
+        if count == 0 {
+            // This companion is never selected by an owning --test command;
+            // its literal Git bytes need no transport bridge.
+            assert!(
+                ci::history_compat::fixture_replacement(
+                    &root, case, &path, &source, &current, &old
+                )?
+                .is_none()
+            );
+            continue;
+        }
+        let bridge =
+            ci::history_compat::fixture_replacement(&root, case, &path, &source, &current, &old)?
+                .ok_or("Reviewed fixture bridge missing")?;
+        assert_eq!(bridge.receipt["mode"], "reviewed-native-fixture-bridge");
+        assert_eq!(bridge.receipt["literal_historical_execution"], false);
+        assert_eq!(
+            bridge.receipt["original_tests"]
+                .as_array()
+                .ok_or("Original names missing")?
+                .len(),
+            count
+        );
+        assert_eq!(
+            bridge.receipt["mutated_after_sha256"],
+            ci::sha(&bridge.bytes)
+        );
+        let changed = [current.as_slice(), b"\n// unreviewed change"].concat();
+        assert!(
+            ci::history_compat::fixture_replacement(&root, case, &path, &source, &changed, &old)
+                .is_err()
+        );
+        let mut wrong = source.clone();
+        wrong.sha256 = "0".repeat(64);
+        assert!(
+            ci::history_compat::fixture_replacement(&root, case, &path, &wrong, &current, &old)?
+                .is_none()
+        );
+        for (production, selected) in &case.files {
+            if production.starts_with("engine-rust/src/") {
+                let selected = history::Source {
+                    commit: case.commit.clone(),
+                    sha256: selected.clone(),
+                };
+                assert!(
+                    ci::history_compat::fixture_replacement(
+                        &root, case, production, &selected, &current, &old
+                    )?
+                    .is_none()
+                );
+                assert!(
+                    ci::history_compat::companion_replacement(case, production, &selected, &old)?
+                        .is_none()
+                );
+            }
+        }
     }
     Ok(())
 }

@@ -122,30 +122,87 @@ impl Current {
 pub struct Failure {
     name: String,
     symptom: String,
-    started: bool,
-    named: bool,
+    started: usize,
+    named: usize,
     symptomatic: bool,
-    summary: bool,
+    summary: usize,
+    sections: usize,
+    panics: usize,
+    listed: usize,
+    inside: bool,
+    panic_message: bool,
+    listing: bool,
+    invalid: bool,
 }
 impl Failure {
     pub fn new(name: &str, symptom: &str) -> Self {
         Self {
             name: name.into(),
             symptom: symptom.into(),
-            started: false,
-            named: false,
+            started: 0,
+            named: 0,
             symptomatic: false,
-            summary: false,
+            summary: 0,
+            sections: 0,
+            panics: 0,
+            listed: 0,
+            inside: false,
+            panic_message: false,
+            listing: false,
+            invalid: false,
         }
     }
     pub fn accept(&mut self, line: &str) {
-        self.started |= line == "running 1 test";
-        self.named |= line == format!("test {} ... FAILED", self.name);
-        self.symptomatic |= line.contains(&self.symptom);
-        self.summary|=regex::Regex::new(r"^test result: FAILED\. 0 passed; 1 failed; 0 ignored; 0 measured; \d+ filtered out; finished in [0-9.]+s$").is_ok_and(|pattern|pattern.is_match(line));
+        if line.starts_with("running ") {
+            self.started += 1;
+            self.invalid |= line != "running 1 test";
+        } else if line.starts_with("test result:") {
+            self.summary += 1;
+            self.invalid |= !regex::Regex::new(r"^test result: FAILED\. 0 passed; 1 failed; 0 ignored; 0 measured; \d+ filtered out; finished in [0-9.]+s$").is_ok_and(|pattern|pattern.is_match(line));
+            self.listing = false;
+            self.inside = false;
+        } else if line.starts_with("test ")
+            && (line.ends_with(" ... FAILED")
+                || line.ends_with(" ... ok")
+                || line.ends_with(" ... ignored"))
+        {
+            self.named += 1;
+            self.invalid |= line != format!("test {} ... FAILED", self.name);
+        } else if line.starts_with("---- ") && line.ends_with(" ----") {
+            self.sections += 1;
+            self.inside = line == format!("---- {} stdout ----", self.name);
+            self.invalid |= !self.inside;
+            self.panic_message = false;
+        } else if line == "failures:" {
+            self.listing = self.sections != 0;
+            self.inside = false;
+            self.panic_message = false;
+        } else if self.inside && line.starts_with("thread '") && line.contains(" panicked at ") {
+            self.panics += 1;
+            self.invalid |= !line.starts_with(&format!("thread '{}'", self.name));
+            self.panic_message = true;
+        } else if self.inside && self.panic_message && !line.is_empty() {
+            // The first panic diagnostic line contains the assertion message.
+            // Earlier captured output, compiler messages and Debug left/right
+            // values must not stand in for the required production assertion.
+            self.symptomatic = line.contains(&self.symptom);
+            self.panic_message = false;
+        } else if self.listing && !line.is_empty() {
+            self.listed += 1;
+            self.invalid |= line != format!("    {}", self.name);
+        }
     }
     pub fn verify(&self, exit: i32) -> Result<()> {
-        if exit != 101 || !self.started || !self.named || !self.symptomatic || !self.summary {
+        if exit != 101
+            || self.invalid
+            || self.started != 1
+            || self.named != 1
+            || !self.symptomatic
+            || self.summary != 1
+            || self.sections != 1
+            || self.panics != 1
+            || self.listed != 1
+        {
             return fail(
                 "Historical native regression did not fail at its required production assertion",
             );

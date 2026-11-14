@@ -4,6 +4,7 @@ mod product;
 mod resources;
 
 use numera_xtask::artifact_identity;
+use numera_xtask::progress;
 #[cfg(test)]
 use numera_xtask::provision;
 use serde_json::Value;
@@ -110,6 +111,11 @@ fn build_candidate(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
         .current_dir(root)
         .output()?;
     if !dirty.status.success() || !dirty.stdout.is_empty() {
+        let status = numera_core::ownership::resources::redact_diagnostics(
+            &String::from_utf8_lossy(&dirty.stdout),
+        );
+        let diagnostic = status.chars().take(8192).collect::<String>();
+        eprintln!("Candidate source-status diagnostic (bounded and redacted):\n{diagnostic}");
         return Err("candidate packaging requires a clean tracked source tree".into());
     }
     let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());

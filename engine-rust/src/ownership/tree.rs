@@ -124,6 +124,12 @@ impl OwnedTree {
     pub fn peak_job_memory(&self) -> io::Result<u64> {
         self.job.peak_memory()
     }
+    /// An accounting-settlement hint, never an empty-tree proof. Every member
+    /// must already be signaled; inaccessible or uncertain membership is Err.
+    #[cfg(windows)]
+    pub fn all_job_members_exited(&self) -> io::Result<bool> {
+        self.job.all_members_exited(&self.child)
+    }
     #[cfg(windows)]
     pub(crate) fn job_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
         self.job.handle()

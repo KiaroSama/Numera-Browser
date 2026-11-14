@@ -109,7 +109,7 @@ fn main() -> io::Result<()> {
     assert!(!installed["camoufox"]);
     assert!(!environment.metadata(true)?["camoufox"]);
     assert!(
-        !root.join("__pycache__").exists(),
+        !root.join("__pycache__").exists() && !root.join(".numera-metadata-cache").exists(),
         "SDK metadata wrote bytecode into runtime inputs"
     );
     assert!(

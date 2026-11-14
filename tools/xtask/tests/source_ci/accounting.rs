@@ -247,10 +247,7 @@ fn public_runner(failure: bool) -> TestResult {
                     let text = if compile {
                         String::new()
                     } else {
-                        format!(
-                            "running 1 test\ntest {} ... FAILED\n{}\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.01s\n",
-                            case.test, case.symptom
-                        )
+                        failed_transcript(&case.test, &case.symptom)
                     };
                     Ok(ci::owned::Output {
                         command: numera_core::ownership::capture::Output {

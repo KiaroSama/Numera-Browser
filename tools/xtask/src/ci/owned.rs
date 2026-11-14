@@ -129,6 +129,14 @@ pub fn run_streamed(
             }
         },
         |index, bytes| {
+            crate::progress::completed(
+                if index == 0 {
+                    "owned-stdout"
+                } else {
+                    "owned-stderr"
+                },
+                bytes.len(),
+            );
             super::compiler::observe_current(index, bytes);
             on_chunk(index, bytes);
         },

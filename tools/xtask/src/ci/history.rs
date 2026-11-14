@@ -241,6 +241,7 @@ pub fn prove_cases_with_cleanup(
     let mut seen = super::compiler::Seen::new();
     for (index, case) in selected.into_iter().enumerate() {
         let mut swap = SourceSwap::prepare(root, case, inputs)?;
+        let mut negative_exit = None;
         let result = (|| -> Result<()> {
             if warmed.insert(case.target.clone()) {
                 let output = execute(true, case, &mut proof_command(root, case, true, platform))?;
@@ -263,6 +264,7 @@ pub fn prove_cases_with_cleanup(
             };
             let proof = (|| -> Result<()> {
                 let output = execute(false, case, &mut proof_command(root, case, false, platform))?;
+                negative_exit = Some(output.command.exit);
                 scope.captured(&output.command.stdout, &output.command.stderr);
                 let mut evidence = super::evidence::Failure::new(&case.test, &case.symptom);
                 for raw in [&output.command.stdout, &output.command.stderr] {
@@ -292,6 +294,23 @@ pub fn prove_cases_with_cleanup(
         })();
         swap.restore()?;
         result?;
+        if !swap.adaptations.is_empty() {
+            let output = execute(false, case, &mut proof_command(root, case, false, platform))?;
+            let mut evidence = super::evidence::Current::new([case.test.clone()])?;
+            for line in std::str::from_utf8(&output.command.stdout)?.lines() {
+                evidence.accept(line);
+            }
+            if let Err(error) = evidence.verify(output.command.exit) {
+                retain_compile_failure(root, case, &output.command)?;
+                return Err(error);
+            }
+            for receipt in &mut swap.adaptations {
+                receipt["negative_exit"] = serde_json::json!(negative_exit);
+                receipt["restored_exit"] = serde_json::json!(output.command.exit);
+                receipt["status"] = "named-negative-and-restored-positive-verified".into();
+            }
+            swap.publish_adaptations(root, case)?;
+        }
     }
     Ok(())
 }
@@ -432,6 +451,7 @@ pub fn case_sources(case: &Case) -> Result<BTreeMap<String, Source>> {
 }
 pub struct SourceSwap {
     originals: BTreeMap<PathBuf, Vec<u8>>,
+    adaptations: Vec<serde_json::Value>,
     restored: bool,
 }
 impl SourceSwap {
@@ -464,6 +484,7 @@ impl SourceSwap {
     ) -> Result<Self> {
         let mut originals = BTreeMap::new();
         let mut replacements = BTreeMap::new();
+        let mut adaptations = Vec::new();
         for (name, source) in case_sources(case)? {
             let key = (source.commit.clone(), name.clone(), source.sha256.clone());
             let bytes = match inputs.get(&key) {
@@ -478,12 +499,42 @@ impl SourceSwap {
             }
             let path = root.join(&name);
             check(&path)?;
-            originals.insert(path.clone(), fs::read(&path)?);
-            replacements.insert(path, bytes.clone());
+            let current = fs::read(&path)?;
+            let adaptation = super::history_compat::replacement(case, &name, &source, &current)?
+                .or(super::history_compat::fixture_replacement(
+                    root, case, &name, &source, &current, &bytes,
+                )?)
+                .or(super::history_compat::companion_replacement(
+                    case, &name, &source, &bytes,
+                )?);
+            let replacement = match adaptation {
+                Some(mut replacement) => {
+                    let assertion = root.join(format!("engine-rust/tests/{}.rs", case.target));
+                    if assertion.is_file() {
+                        replacement.receipt["assertion_source_sha256"] =
+                            super::digest(&assertion)?.into();
+                    }
+                    adaptations.push(replacement.receipt);
+                    replacement.bytes
+                }
+                None => bytes.clone(),
+            };
+            originals.insert(path.clone(), current);
+            replacements.insert(path, replacement);
             inputs.insert(key, bytes);
+        }
+        for (name, replacement) in super::history_compat::additional_callers(root, case)? {
+            let path = root.join(name);
+            check(&path)?;
+            if originals.insert(path.clone(), fs::read(&path)?).is_some() {
+                return fail("Historical caller bridge overlaps original source inventory");
+            }
+            replacements.insert(path, replacement.bytes);
+            adaptations.push(replacement.receipt);
         }
         let mut guard = Self {
             originals,
+            adaptations,
             restored: false,
         };
         for (path, bytes) in replacements {
@@ -492,7 +543,25 @@ impl SourceSwap {
                 return Err(error.into());
             }
         }
+        guard.publish_adaptations(root, case)?;
         Ok(guard)
+    }
+    fn publish_adaptations(&self, root: &Path, case: &Case) -> Result<()> {
+        if self.adaptations.is_empty() {
+            return Ok(());
+        }
+        let directory = root.join("build/history");
+        fs::create_dir_all(&directory)?;
+        let path = directory.join(format!(
+            "adaptation-{}.json",
+            super::sha(format!("{}:{}", case.target, case.test).as_bytes())
+        ));
+        fs::write(&path, serde_json::to_vec_pretty(&self.adaptations)?)?;
+        eprintln!(
+            "Historical proof uses an explicitly labeled native semantic adaptation: {}",
+            path.display()
+        );
+        Ok(())
     }
     pub fn restore(&mut self) -> Result<()> {
         if self.restored {

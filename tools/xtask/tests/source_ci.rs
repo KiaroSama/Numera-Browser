@@ -8,6 +8,11 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 type TestResult = ci::Result<()>;
+fn failed_transcript(name: &str, symptom: &str) -> String {
+    format!(
+        "running 1 test\ntest {name} ... FAILED\n\nfailures:\n\n---- {name} stdout ----\n\nthread '{name}' panicked at fixture.rs:1:1:\nassertion left == right failed: {symptom}\n\nfailures:\n    {name}\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.01s\n"
+    )
+}
 macro_rules! source_test {($name:ident,$id:expr,$body:block)=>{#[test]#[doc=$id]fn $name()->TestResult $body};}
 macro_rules! source_cases {
     ($prefix:literal,$helper:ident,[$($name:ident=>($parameter:literal,$args:expr)),*$(,)?])=>{$(source_test!($name,concat!($prefix,"[",$parameter,"]"),{$helper($args)});)*};
@@ -93,3 +98,5 @@ mod release_support;
 
 #[path = "source_ci/compiler.rs"]
 mod compiler;
+#[path = "source_ci/progress_support.rs"]
+mod progress_support;

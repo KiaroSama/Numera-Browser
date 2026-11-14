@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "reviewed_on": "2026-11-14",
+  "failure": {
+    "run": 43527542083,
+    "job": 132239151852,
+    "platform": "Linux",
+    "backend": "patchright",
+    "commit": "77d69f1c231450502be130ab3a025cd40166d76c",
+    "artifact": 14086713303,
+    "message": "Native checkpoint cookie persistence",
+    "artifact_scope": "Only the checkpoint source and transport receipt was retained; the hosted artifact did not contain the failed cookie rows."
+  },
+  "reference": {
+    "source": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+    "files_verified": 461,
+    "bridge_paths": [
+      "engine-rust/src/browser/runtime.rs",
+      "engine-rust/src/native_environment.rs"
+    ],
+    "bridge_scope": "Exactly the two reviewed SDK process transport substitutions; application cookie code and locked dependencies remain the checkpoint bytes.",
+    "build": "Actual release-opt3 native-candidate compilation with successful build identity and SDK receipt.",
+    "local_generation": 202611140025
+  },
+  "observations": {
+    "sdk": "Patchright1.64.1 with the same native SDK worker and browser cache for both applications",
+    "sdk_sha256": "04820f18393e51377e5c329d2eb04dfc5c4334493f4a86f91e5b34631eba2011",
+    "original_fixture": "An absolute2050 expiry exceeds Chromium's400-day persistent-cookie lifetime.",
+    "original_real_baseline": "Both cookies survived import, process close, reopen and export. Full key sets matched. Only expires changed to approximately400 days after creation.",
+    "original_real_current": "The same two rows, key sets, export count and expiry clamp occurred in the current application.",
+    "second_fixture_error": "A whole-second integer deadline survives numerically, but the unchanged checkpoint and current CLI normalize expiry to a JSON float before export. The strict comparator correctly rejected the integer/float mismatch.",
+    "source_review": "The checkpoint and current cookie_normalize.rs and cli/cookie_commands.rs files compare byte-identically. Export explicitly composes SDK read with normalize_many; no application normalization or SDK field projection was changed."
+  },
+  "adaptation": {
+    "fixture": "Compute one checked whole-second deadline30 days ahead and encode it as the existing CLI's canonical JSON float. Both cookies share it; both measured applications receive the same persisted baseline profile.",
+    "strict_comparison": "Unchanged complete JSON equality, including numeric kind, values, field sets and array order. No expiry tolerance, timestamp removal, output cast or vendor-field filter was introduced.",
+    "diagnostics": "At most four rows and eight changes, with fixed field names and type labels. Cookie values, names, domains and arbitrary vendor keys are redacted."
+  },
+  "validation": {
+    "existing_baseline_cases": 5,
+    "baseline_cases_failed": 0,
+    "new_case_names_or_types": 0,
+    "negative_controls": [
+      "expiry integer/float mismatch",
+      "changed expiry with the same floating type",
+      "changed boolean type",
+      "changed secret value without value disclosure",
+      "unexpected vendor key without key disclosure",
+      "missing field",
+      "array order",
+      "bounded diagnostics for a large mismatching array",
+      "timestamp overflow"
+    ],
+    "strict_all_targets_clippy": "Passed with -D warnings.",
+    "real_postfix_baseline": "Actual production baseline() passed import-close-reopen-export and full two-row persistence checks using the genuine checkpoint binary.",
+    "real_postfix_current": "Fresh release-opt3 current application read a copied persistent baseline profile. Complete payload equality, protected metadata equality and session sentinel retention passed.",
+    "current_build_marker": "77d69f1c231450502be130ab3a025cd40166d76c",
+    "current_build_context": "Local working tree based on the marker, including pending reviewed CI fixes; this is not an exact-head hosted performance verdict.",
+    "performance_claim": "None. Hosted paired latency and lifetime-memory gates remain required.",
+    "evidence_directory": "/workspace/work/ci-cookie-review-20261114"
+  },
+  "privacy": "This review contains metadata only. Synthetic cookie contents and actual exported rows remain outside the repository."
+}
